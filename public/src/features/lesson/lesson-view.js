@@ -24,7 +24,7 @@ import {
   getLessonProgress,
   resolveRevealedSections,
 } from "./lesson-schema.js";
-import { renderBlock, equipQuestionBlocks, renderMathIn } from "./lesson-blocks.js";
+import { renderBlock, equipQuestionBlocks } from "./lesson-blocks.js";
 import { renderLessonToc, equipLessonToc } from "./lesson-toc.js";
 import {
   getReaderPrefs,
@@ -56,6 +56,27 @@ function resolveLessonId() {
 }
 
 async function fetchLesson(idOrSlug) {
+  if (new URLSearchParams(window.location.search).get("type") === "user") {
+    try {
+      const active = JSON.parse(sessionStorage.getItem("active_user_lesson") || "null");
+      let row = active && (active.id || active.meta?.id) === idOrSlug ? active : null;
+      if (!row) {
+        const local = JSON.parse(localStorage.getItem("user_quizzes") || "[]");
+        row = Array.isArray(local)
+          ? local.find((item) => (item.id || item.meta?.id) === idOrSlug && item.meta?.type === "lesson")
+          : null;
+      }
+      if (row) return {
+        id: row.id || row.meta?.id,
+        title: row.meta?.title || "",
+        content: row.lesson || { sections: [] },
+        reader_prefs_default: row.meta?.readerPrefs || {},
+      };
+    } catch (error) {
+      console.error("[lesson-view] local lesson lookup failed:", error);
+    }
+    return null;
+  }
   const supabase = await ensureSharedSupabaseClient();
   if (!supabase) return null;
 
@@ -261,9 +282,6 @@ export async function renderLessonView() {
     equipQuestionBlocks(container, lesson.id, paint);
     equipLessonToc(container, lesson.id);
     equipTts(container);
-    // KaTeX pass AFTER the innerHTML write, so the nodes exist for it to
-    // walk (same ordering rule create-quiz.js follows).
-    renderMathIn(lessonEl);
   };
 
   paint();

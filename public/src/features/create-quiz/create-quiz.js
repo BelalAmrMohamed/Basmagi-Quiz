@@ -13,6 +13,7 @@ import {
 } from "../../shared/quiz-json.js";
 import { showDownloadModal } from "../../components/download-quiz-modal/download-quiz-modal.js";
 import { renderMarkdown } from "../../shared/markdown.js";
+import { readEditorDrafts, upsertEditorDraft, removeEditorDraft, migrateWorkspaceDrafts } from "../../shared/editor-drafts.js";
 import { isAdminAuthenticated, getToken } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { loadFullQuizData, checkQuizHasPassword } from "../home/quiz-data-loader.js";
@@ -96,25 +97,6 @@ let isAdmin = false;
  * Call this AFTER any innerHTML update that may contain raw markdown/LaTeX
  * source, so the DOM nodes actually exist for KaTeX to walk and replace.
  */
-function renderMathIn(container) {
-  if (!container) return;
-  if (typeof window.renderMathInElement !== "function") return;
-  try {
-    window.renderMathInElement(container, {
-      delimiters: [
-        { left: "$$", right: "$$", display: true },
-        { left: "$", right: "$", display: false },
-        { left: "\\(", right: "\\)", display: false },
-        { left: "\\[", right: "\\]", display: true },
-      ],
-      throwOnError: false,
-      ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"],
-    });
-  } catch (err) {
-    console.error("KaTeX rendering error:", err);
-  }
-}
-
 // ============================================================================
 // WRITE / PREVIEW EDITOR SYSTEM (GitHub-style)
 // ============================================================================
@@ -449,9 +431,8 @@ function applyGlobalMdAction(cmd, latex = null, headingLevel = null) {
 
   if (latex !== null) {
     // Raw LaTeX snippets (superscript, fraction, matrix, etc.) must be
-    // wrapped in $...$ inline-math delimiters, or renderMathIn()'s KaTeX
-    // auto-render extension has no delimiter to detect and leaves the raw
-    // LaTeX source showing as plain text. Insert at cursor, place cursor
+    // wrapped in $...$ inline-math delimiters so the shared markdown engine
+    // can render it. Insert at cursor, place cursor
     // inside the first {} placeholder.
     const snippet = selected ? selected + latex : latex;
     const inserted = `$${snippet}$`;
@@ -723,6 +704,13 @@ function setupGlobalMdBar() {
     });
   });
 
+  bar.querySelectorAll(".gmd-highlight-custom").forEach((input) => {
+    input.addEventListener("input", () => {
+      applyGlobalMdAction("highlight", null, input.value);
+      closeAllGmdDropdowns();
+    });
+  });
+
   // Dropdown toggles (LaTeX "more" menu, heading levels menu). aria-
   // haspopup/aria-expanded wired here (rather than hardcoded in the HTML)
   // since aria-expanded needs to flip on every open/close anyway — one
@@ -947,6 +935,7 @@ function resetHistory() {
 // ============================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+  migrateWorkspaceDrafts();
   // Detect admin role — controls upload-tab visibility
   isAdmin = isAdminAuthenticated();
 
@@ -1068,9 +1057,7 @@ function renderEntryItemsGrid() {
           },
           questions: d.questions || [],
         };
-        const quizzes = _readUserQuizzes();
-        quizzes.push(entry);
-        localStorage.setItem("user_quizzes", JSON.stringify(quizzes));
+        upsertEditorDraft(entry);
       }
       localStorage.removeItem("quiz_draft");
     }
@@ -1141,7 +1128,7 @@ function renderEntryItemsGrid() {
   }
 
   // ── Drafts section ────────────────────────────────────────────────────────
-  const draftItems = userQuizzes
+  const draftItems = readEditorDrafts()
     .filter((q) => q.meta?.type === "draft")
     .map((q) => ({
       kind: "draft",
@@ -1161,7 +1148,7 @@ function renderEntryItemsGrid() {
   const savedItems = userQuizzes
     .filter((quiz) => {
       const t = quiz.meta?.type;
-      return t !== "folder" && t !== "course" && t !== "draft";
+      return t !== "folder" && t !== "course" && t !== "draft" && t !== "lesson" && t !== "draft-lesson";
     })
     .map((quiz) => ({
       kind: "mine",
@@ -1367,7 +1354,7 @@ window.chooseEntryAction = function (action) {
 /** User picked a specific saved quiz OR draft tile from the entry screen. */
 window.chooseUserQuizToEdit = function (quizId) {
   const quizzes = _readUserQuizzes();
-  const quiz = quizzes.find((q) => q.id === quizId);
+  const quiz = readEditorDrafts().find((q) => q.id === quizId && q.meta?.type === "draft") || quizzes.find((q) => q.id === quizId);
   if (!quiz) return;
 
   if (quiz.meta?.type === "draft") {
@@ -2456,7 +2443,6 @@ function renderQuestion(question, insertAtIndex = null) {
   }
 
   setupQuestionEventListeners(question.id);
-  renderMathIn(questionCard);
 }
 
 // Click on header area (but not buttons/drag) collapses the card
@@ -4199,8 +4185,6 @@ function autosave() {
       // If editing a published quiz (?edit=<id>), fall back to the old single-key
       // quiz_draft behaviour so the editor's state is preserved across refreshes.
       if (currentDraftId) {
-        const quizzes = _readUserQuizzes();
-        const idx = quizzes.findIndex((q) => q.id === currentDraftId);
         const entry = {
           id: currentDraftId,
           meta: {
@@ -4212,12 +4196,7 @@ function autosave() {
           },
           questions: quizData.questions,
         };
-        if (idx >= 0) {
-          quizzes[idx] = entry;
-        } else {
-          quizzes.push(entry);
-        }
-        _writeUserQuizzes(quizzes);
+        upsertEditorDraft(entry);
       } else {
         // Editing a published quiz — keep a local recovery copy under quiz_draft
         const dataToSave = {
@@ -4964,8 +4943,7 @@ window.saveLocally = function () {
       quizId = saveToUserQuizzes(quizData);
       // Promote: remove the draft entry that was tracking this work-in-progress
       if (currentDraftId) {
-        const quizzes = _readUserQuizzes();
-        _writeUserQuizzes(quizzes.filter((q) => q.id !== currentDraftId));
+        removeEditorDraft(currentDraftId);
         currentDraftId = null;
       }
       editingQuizId = quizId;
@@ -5177,7 +5155,6 @@ window.previewQuiz = function () {
 
   content.innerHTML = html;
   modal.style.display = "flex";
-  renderMathIn(content);
 };
 
 /** Preview a single question, opened from its ⋮ dropdown menu. Reuses the
@@ -5209,7 +5186,6 @@ window.previewSingleQuestion = function (questionId) {
 
   content.innerHTML = renderQuestionPreviewHtml(question, index);
   modal.style.display = "flex";
-  renderMathIn(content);
 };
 
 window.closePreview = function () {

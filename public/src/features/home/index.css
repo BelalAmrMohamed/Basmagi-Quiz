@@ -4902,3 +4902,18 @@ kbd {
     flex-wrap: wrap;
   }
 }
+
+.exam-card.user-lesson-card {
+  border-color: color-mix(in srgb, var(--color-success) 38%, var(--color-border));
+}
+
+.exam-card.user-lesson-card .start-btn:not(.desktop-download-btn) {
+  background: var(--color-success);
+  color: #fff;
+}
+
+.exam-card.user-lesson-card .desktop-download-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  filter: grayscale(1);
+}

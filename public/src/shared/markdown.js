@@ -193,6 +193,8 @@ export function renderInlineMediaTag(kind, url, mediaBaseUrl) {
 // @param {{mediaBaseUrl?: string|null}} [options]
 export function applyInline(s, options = {}) {
   const { mediaBaseUrl = null } = options;
+  // Normalize KaTeX's alternate inline delimiters before the shared renderer.
+  s = s.replace(/\\\\\(([^\n]*?)\\\\\)/g, (_, math) => `$${math}$`);
   // ── Inline math $…$ ─────────────────────────────────────────────────────
   const iMathStash = [];
   s = s.replace(/\$([^\$\n]+)\$/g, (_, m) => {
@@ -2354,6 +2356,9 @@ export function renderMarkdown(str, options = {}) {
   if (!str) return "";
   const { mediaBaseUrl = null } = options;
   try {
+    // Use the engine for alternate display delimiters too; authoring pages
+    // must not need an additional KaTeX auto-render pass.
+    str = str.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => `$$${math}$$`);
     // SAFETY: the engine uses \x00/\x01/\x02/\x03 control-character
     // sentinels internally (stash placeholders for math, code blocks,
     // tables, etc.). If the raw input already contains one of these bytes

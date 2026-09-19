@@ -50,7 +50,7 @@ import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
-import { createUserQuizCard } from "./user-quiz-card.js";
+import { createUserQuizCard, createUserLessonCard } from "./user-quiz-card.js";
 import { openInlineCreateQuizModal } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
@@ -752,7 +752,9 @@ export function renderUserQuizzesView() {
           const folderCard = createFolderOrCourseCard(item);
           quizzesContainer.appendChild(folderCard);
         } else {
-          const quizCard = createUserQuizCard(item, index);
+          const quizCard = item.meta?.type === "lesson"
+            ? createUserLessonCard(item)
+            : createUserQuizCard(item, index);
           // Attach drag and context menu to quiz card
           quizCard.draggable = true;
           quizCard.addEventListener("dragstart", (e) => handleDragStart(e, item.id || item.meta?.id));
@@ -898,6 +900,10 @@ function classifyBulkSelection(rows) {
  * @param {Array} selected - raw user_quizzes rows matching the selection
  */
 function routeBulkUpload(selected) {
+  if (selected.some((row) => row?.meta?.type === "lesson")) {
+    showNotification("الدروس لا تُرفع بعد", "نشر الدروس سيُضاف في مرحلة لاحقة.", "warning");
+    return;
+  }
   const { mode, courses, folders, quizzes } = classifyBulkSelection(selected);
 
   if (mode === "empty") return;
@@ -1135,8 +1141,12 @@ function renderBulkActionBar() {
       const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
       const selected = userQuizzes.filter((q) => {
         const qId = qz(q, "id") || q.id;
-        return selectedUserQuizzes.has(qId);
+        return selectedUserQuizzes.has(qId) && q.meta?.type !== "lesson";
       });
+      if (selected.length === 0) {
+        showNotification("التصدير غير متاح", "تصدير الدروس سيُضاف في مرحلة لاحقة.", "warning");
+        return;
+      }
       if (selected.length === 0) return;
       const dataStr =
         "data:text/json;charset=utf-8," +

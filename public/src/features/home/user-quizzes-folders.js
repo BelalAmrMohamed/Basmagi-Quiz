@@ -70,7 +70,10 @@ function saveUserQuizzes(userQuizzes) {
 }
 
 export function getChildren(userQuizzes, parentId) {
-  return userQuizzes.filter((q) => (q.meta?.parentId || null) === parentId);
+  return userQuizzes.filter((q) =>
+    (q.meta?.parentId || null) === parentId &&
+    q.meta?.type !== "draft" && q.meta?.type !== "draft-lesson",
+  );
 }
 
 /**

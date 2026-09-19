@@ -20,24 +20,11 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 
 ### Lessons Page
 Last session partially implemented phase 3: `docs\docs\plans\lessons-feature-plan.md`. But since it was big, it still needs work.
-- The `#menuBar` doesn't have any of the dropdowns from create-quiz, which means create-lesson is missing alot of tools.
-- Inside the user workspace, lessons should be a different type than quizzes (not the same type, but a forth type). So they should be styled differently, The download button on them should appear dispabled for now (because lessons will get their export features later). You can choose to give lessons an emoji or not. And the start button should redirect to `/lesson/` not `/quiz/`.
-- The create-quiz and create-lesson render math by themsleves, but the MD Engine (markdown.js) might also be rendering math, check the engine, if it's rendering math, then the pages shouldn't render again.
-- Drafts from the create-quiz and create-lesson shouldn't be saved until the draft is saved as a quiz/lesson
-- The `#gmdHighlightToggle` was designed in the UI extremely poorly, it has lables on the colors, and it doesn't have a custom color picker. Redesign the whole dropdown, it should be how color dropdowns usually look like in advanced professional appas like canva.com or Google Docs.
+- The `.undo-redo-group` buttons on create-lesson should behave like the ones on the create-quiz page, and should be disabled in the same way.
+- On the create-quiz and create-lesson, the `.gmd-dropdown-menu--highlight` stays open forever, and it's still a very bad design/button functionally. Improvement: ![screenshot](image.png), design it like the Google docs version: More colors + Better color picker.
+- Inside the user workspace, `.user-lesson-card` should get its own dropdown with all actions that exist on the `.user-quiz-card`, so the user can see it's info (don't reuse quizzes info modal, new custom modular info modal spacifically for lessons), with all other actions, too.
 
-Things that also should be done to continue the 3rd phase:
-1. Fix the stale "admin-only" comments, and mount #lessonCreatorForm as display:flex. I haven't edited the file yet.
-2. **`create-lesson.css`:** add `.gmd-select`, `.lesson-preview-overlay` and its panel classes, `body.lesson-preview-open`, and `.lesson-question-type-actions`. Also remove or repurpose the old `.lesson-metadata` and `.entry-not-admin-message` rules.
-3. **Workspace wiring (biggest remaining gap):** `user-quizzes-view.js` and `user-quiz-card.js` have zero lesson handling, and the viewer only reads the Supabase `lessons` table. So a saved local lesson won't display or open from امتحاناتك yet. It needs three things:
-   - a lesson card that renders instead of the quiz card;
-   - an open action that mirrors `playUserQuiz` (`sessionStorage` plus `?type=user`);
-   - a local-source path in `lesson-view.js`'s `fetchLesson`.
-
-   Also check `user-quizzes-trash.js` and `move-to-dialog.js`, since they treat non-folder rows as quizzes.
-4. **Cleanup:** the old admin `create-lesson`, `update-lesson` and `delete-lesson` actions in `api/admin.js` are now unused by this page. They're harmless, and I'd keep them until lesson publishing is decided.
-5. Then start on the workspace wiring.
-
+Do that, complete the 3rd phase, then take a sanitiy check, to make sure everything is implemented perfectly before going to the next phase, which needs a decision on whether `/lesson/` should be a completely new page or not. Because there are fundametal things that we didn't decide yet, like should we redesign the bottom nav on phones to include the new create-lesson page and update the icon of the create-quiz page, or should we keep it as it is?
 
 ### Result Pages
 

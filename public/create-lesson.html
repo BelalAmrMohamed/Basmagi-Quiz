@@ -173,7 +173,6 @@
          canonical npm release unmodified. -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
     <!-- Theme Controller Script -->
     <script type="module" src="src/shared/theme-controller.js"></script>
@@ -824,30 +823,35 @@
             </div>
         </div>
 
-        <!-- Right-aligned actions: preview + save. No Docs-style Insert/View
-             menu bar — lessons don't have bulk/reorder/template modes to
-             hang menus off of, so this is just the two primary actions. -->
-        <div class="app-title-actions">
-            <button type="button" class="btn btn-secondary" id="previewLessonBtn" onclick="previewLesson()">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path
-                        d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
-                    <circle cx="12" cy="12" r="3" />
-                </svg>
-                <span>معاينة</span>
-            </button>
-            <button type="button" class="btn btn-primary" id="saveLessonBtn" onclick="saveLesson()">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path
-                        d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
-                    <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
-                    <path d="M7 3v4a1 1 0 0 0 1 1h7" />
-                </svg>
-                <span>حفظ الدرس</span>
-            </button>
-        </div>
+        <nav class="app-bar-menu" id="menuBar" aria-label="القائمة الرئيسية">
+            <div class="menu-bar-item"><button type="button" class="menu-trigger"
+                    onclick="toggleLessonMenu(event, 'lessonFileMenu')">ملف</button>
+                <div class="menu-dropdown" id="lessonFileMenu"><button class="menu-option"
+                        onclick="lessonMenuAction('save')">حفظ الدرس</button><button class="menu-option"
+                        onclick="chooseEntryAction('exit')">العودة إلى الدروس</button><button class="menu-option"
+                        disabled title="سيتوفر قريباً">تحميل الدرس</button></div>
+            </div>
+            <div class="menu-bar-item"><button type="button" class="menu-trigger"
+                    onclick="toggleLessonMenu(event, 'lessonInsertMenu')">إدراج</button>
+                <div class="menu-dropdown" id="lessonInsertMenu"><button class="menu-option"
+                        onclick="lessonMenuAction('section')">قسم جديد</button><button class="menu-option"
+                        onclick="lessonMenuAction('markdown')">نص</button><button class="menu-option"
+                        onclick="lessonMenuAction('media')">وسائط</button><button class="menu-option"
+                        onclick="lessonMenuAction('question')">سؤال مدمج</button></div>
+            </div>
+            <div class="menu-bar-item"><button type="button" class="menu-trigger"
+                    onclick="toggleLessonMenu(event, 'lessonViewMenu')">عرض</button>
+                <div class="menu-dropdown" id="lessonViewMenu"><button class="menu-option"
+                        onclick="lessonMenuAction('preview')">معاينة</button><button class="menu-option"
+                        onclick="lessonMenuAction('expand')">توسيع الأقسام</button><button class="menu-option"
+                        onclick="lessonMenuAction('collapse')">طي الأقسام</button></div>
+            </div>
+            <div class="menu-bar-item"><button type="button" class="menu-trigger"
+                    onclick="toggleLessonMenu(event, 'lessonHelpMenu')">مساعدة</button>
+                <div class="menu-dropdown" id="lessonHelpMenu"><button class="menu-option"
+                        onclick="lessonMenuAction('help')">اختصارات لوحة المفاتيح</button></div>
+            </div>
+        </nav>
     </div>
 
     <!-- Global Markdown + LaTeX toolbar — fixed bar at top: 48px (just below
@@ -990,6 +994,8 @@
                         data-gmd-color="#fb923c" style="--swatch-color:#fb923c" title="برتقالي">برتقالي</button>
                     <button type="button" class="gmd-btn gmd-highlight-swatch" data-gmd-cmd="highlight"
                         data-gmd-color="#c084fc" style="--swatch-color:#c084fc" title="بنفسجي">بنفسجي</button>
+                    <input type="color" class="gmd-highlight-custom" value="#facc15" title="لون مخصص"
+                        aria-label="لون تظليل مخصص">
                 </div>
             </div>
             <button type="button" class="gmd-btn" id="gmdLink" title="رابط" aria-label="رابط" data-gmd-cmd="link">

@@ -231,6 +231,85 @@ export function createUserQuizCard(quiz, index) {
   return card;
 }
 
+/** A local lesson is a workspace item with reading, not quiz, behavior. */
+export function createUserLessonCard(lesson) {
+  const lessonId = lesson.id || lesson.meta?.id;
+  const title = lesson.meta?.title || "درس بدون عنوان";
+  const sections = lesson.stats?.sectionCount ?? lesson.lesson?.sections?.length ?? 0;
+  const card = document.createElement("div");
+  card.className = "exam-card user-quiz-card user-lesson-card";
+  card.setAttribute("role", "article");
+  card.setAttribute("aria-label", `درس: ${title}`);
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.className = "user-quiz-select-checkbox";
+  checkbox.dataset.quizId = lessonId;
+  const selected = getSelectedUserQuizzes();
+  checkbox.checked = selected.has(lessonId);
+  checkbox.onclick = (event) => {
+    event.stopPropagation();
+    checkbox.checked ? selected.add(lessonId) : selected.delete(lessonId);
+    updateBulkActionBar();
+  };
+
+  const icon = document.createElement("span");
+  icon.className = "user-quiz--phone-only-emoji";
+  icon.textContent = "📘";
+  icon.setAttribute("aria-hidden", "true");
+  const text = document.createElement("div");
+  text.className = "card-text";
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  const meta = document.createElement("div");
+  meta.className = "exam-card-meta user-quiz-card-meta";
+  const label = document.createElement("p");
+  label.className = "exam-question-count";
+  label.textContent = `${sections} ${sections === 1 ? "قسم" : "أقسام"}`;
+  meta.appendChild(label);
+  text.append(heading, meta);
+
+  const actions = document.createElement("div");
+  actions.className = "exam-card-actions-wrap";
+  const edit = document.createElement("button");
+  edit.className = "exam-more-btn";
+  edit.type = "button";
+  edit.innerHTML = EDIT_ICON_SVG;
+  edit.title = "تعديل الدرس";
+  edit.onclick = (event) => {
+    event.stopPropagation();
+    window.location.href = `/create-lesson?edit=${encodeURIComponent(lessonId)}`;
+  };
+  const start = document.createElement("button");
+  start.className = "start-btn";
+  start.type = "button";
+  start.textContent = "ابدأ القراءة";
+  start.onclick = (event) => {
+    event.stopPropagation();
+    playUserLesson(lesson);
+  };
+  const download = document.createElement("button");
+  download.className = "start-btn desktop-download-btn";
+  download.type = "button";
+  download.textContent = "تحميل";
+  download.disabled = true;
+  download.title = "تصدير الدروس سيتوفر قريباً";
+  actions.append(edit, start, download);
+  card.append(checkbox, icon, text, actions);
+  return card;
+}
+
+export function playUserLesson(lesson) {
+  const lessonId = lesson.id || lesson.meta?.id;
+  try {
+    sessionStorage.setItem("active_user_lesson", JSON.stringify(lesson));
+    window.location.href = `/lesson/${encodeURIComponent(lessonId)}?type=user`;
+  } catch (error) {
+    console.error("Error opening user lesson:", error);
+    _alert("حدث خطأ أثناء فتح الدرس. حاول مرة أخرى.");
+  }
+}
+
 /**
  * Play a user-created quiz
  */

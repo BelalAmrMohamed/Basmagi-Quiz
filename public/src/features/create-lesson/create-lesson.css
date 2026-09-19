@@ -249,38 +249,51 @@ body.sidebar-expanded .app-title-bar {
     outline: none;
 }
 
-/* Right-aligned actions cluster: fills remaining space and pushes preview/
-   save to the bar's trailing edge — the direct equivalent of create-quiz's
-   .app-bar-menu slot, but with two buttons instead of an embedded menu nav
-   since this editor has no menu bar. */
-.app-title-actions {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
+@media (max-width: 768px) {
+    .app-title-bar {
+        right: 0;
+    }
+
+    .app-title-bar,
+    .global-md-bar,
+    .menu-bar {
+        right: 0;
+        padding-left: 16px;
+        padding-right: 16px;
+    }
 }
 
 @media (max-width: 640px) {
+    .app-title-bar {
+        padding-left: 8px;
+        padding-right: 8px;
+        /* The whole bar scrolls horizontally on phones — same behavior as
+       #globalMdBar — instead of trapping the menu inside its own
+       vertically-scrolled dropdown. */
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+    }
+
+    .app-title-bar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .app-title-start {
+        flex-shrink: 0;
+    }
+
     .app-title-text {
         max-width: 120px;
     }
 
-    .app-title-actions .btn span {
-        display: none;
+    .app-bar-menu {
+        flex: 0 0 auto;
     }
 
-    .app-title-actions .btn {
-        padding: 10px 12px;
-    }
-
-    /* Sidebar collapses off-screen below this breakpoint (see side-menu.css),
-       so both fixed bars should run edge-to-edge rather than leave a gap on
-       the right for a sidebar that isn't actually reserving that space. */
-    .app-title-bar,
-    .global-md-bar {
-        right: 0;
+    .menu-bar-inner {
+        /* No longer scrolls internally — the parent .app-title-bar scrolls. */
+        overflow: visible;
     }
 }
 
@@ -1353,6 +1366,12 @@ body.sidebar-expanded .global-md-bar {
     right: var(--sidebar-expanded-width);
 }
 
+@media (max-width: 768px) {
+    .global-md-bar {
+        right: 0;
+    }
+}
+
 .gmd-group {
     display: flex;
     align-items: center;
@@ -1562,9 +1581,94 @@ body.sidebar-expanded .global-md-bar {
    color's name — same list shape as the LaTeX "more" menu so the two
    dropdowns feel like the same UI family. */
 .gmd-dropdown-menu--highlight {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(6, 26px);
+    gap: 7px;
+    min-width: 0;
+    padding: 10px;
+}
+
+.gmd-dropdown-menu--highlight.open {
+    display: grid;
+}
+
+.app-bar-menu {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+    .app-bar-menu {
+        flex: 0 0 auto;
+    }
+}
+
+.menu-bar-item {
+    position: relative;
+}
+
+.menu-trigger {
+    border: 0;
+    border-radius: 5px;
+    padding: 5px 9px;
+    background: transparent;
+    color: var(--color-text-primary);
+    font: inherit;
+    font-size: .82rem;
+    cursor: pointer;
+}
+
+.menu-trigger:hover,
+.menu-trigger:focus-visible {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    outline: none;
+}
+
+.menu-dropdown {
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 0;
+    z-index: 80;
+    display: none;
+    min-width: 170px;
+    padding: 5px;
+    border: 1px solid var(--color-border);
+    border-radius: 7px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-lg);
+}
+
+.menu-dropdown.open {
+    display: grid;
     gap: 2px;
-    min-width: 130px;
+}
+
+.menu-option {
+    border: 0;
+    border-radius: 5px;
+    padding: 7px 9px;
+    background: transparent;
+    color: var(--color-text-primary);
+    text-align: right;
+    font: inherit;
+    font-size: .82rem;
+    cursor: pointer;
+}
+
+.menu-option:hover:not(:disabled),
+.menu-option:focus-visible {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    outline: none;
+}
+
+.menu-option:disabled {
+    cursor: not-allowed;
+    opacity: .5;
 }
 
 .gmd-highlight-swatch {
@@ -1842,4 +1946,86 @@ body.sidebar-expanded .global-md-bar {
     font-family: "Fira Code", "Courier New", monospace;
     font-size: 0.88em;
     font-style: normal;
+}
+
+.gmd-dropdown-menu--highlight .gmd-highlight-swatch {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    padding: 0;
+    font-size: 0;
+    justify-content: center;
+}
+
+.gmd-dropdown-menu--highlight .gmd-highlight-swatch::before {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.gmd-highlight-custom {
+    width: 26px;
+    height: 26px;
+    padding: 1px;
+    border: 1px dashed var(--color-border);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.gmd-select {
+    height: 28px;
+    max-width: 125px;
+    border: 1px solid var(--color-border);
+    border-radius: 5px;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    font: inherit;
+    font-size: 0.78rem;
+}
+
+.lesson-preview-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, .48);
+}
+
+.lesson-preview-panel {
+    width: min(920px, 100%);
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    border-radius: 8px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-lg);
+}
+
+.lesson-preview-topbar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.lesson-preview-badge {
+    color: var(--color-success);
+    font-size: .82rem;
+    font-weight: 700;
+}
+
+body.lesson-preview-open {
+    overflow: hidden;
+}
+
+.lesson-question-type-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }

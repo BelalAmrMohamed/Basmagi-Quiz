@@ -17,32 +17,8 @@ import { recordQuestionAnswer, appendEssayAnswerText, getLessonProgress } from "
 import { gradeEssay } from "../../shared/rate-answers.js";
 
 /**
- * KaTeX pass. Ported verbatim from create-quiz.js's renderMathIn() (see the
- * plan's Phase 2 step 8) — same delimiters, same ignoredTags, same
- * no-op-if-not-loaded guard. Call AFTER any innerHTML update that may
- * contain raw LaTeX, so the nodes exist for KaTeX to walk.
- *
- * @param {HTMLElement} container
+ * Math is rendered by shared markdown.js as each markdown block is built.
  */
-export function renderMathIn(container) {
-  if (!container) return;
-  if (typeof window.renderMathInElement !== "function") return;
-  try {
-    window.renderMathInElement(container, {
-      delimiters: [
-        { left: "$$", right: "$$", display: true },
-        { left: "$", right: "$", display: false },
-        { left: "\\(", right: "\\)", display: false },
-        { left: "\\[", right: "\\]", display: true },
-      ],
-      throwOnError: false,
-      ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"],
-    });
-  } catch (err) {
-    console.error("KaTeX rendering error:", err);
-  }
-}
-
 /**
  * Renders one block to an HTML string.
  *
@@ -300,7 +276,6 @@ function revealMcqAnswer(questionEl, correctIndex, wasCorrect, chosenIndex) {
       verdict.classList.toggle("is-correct", wasCorrect);
       verdict.classList.toggle("is-wrong", !wasCorrect);
     }
-    renderMathIn(feedback);
   }
 }
 
@@ -336,6 +311,5 @@ function revealEssayAnswer(questionEl, modelAnswer, answerText) {
     }
     const modelEl = feedback.querySelector(".lesson-question__model-answer");
     if (modelEl) modelEl.innerHTML = `<strong>الإجابة النموذجية:</strong> ${renderMarkdown(modelAnswer || "")}`;
-    renderMathIn(feedback);
   }
 }

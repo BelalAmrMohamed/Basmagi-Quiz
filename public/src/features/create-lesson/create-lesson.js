@@ -18,7 +18,7 @@
 //     rename-from-the-title-bar flow all match create-quiz.
 //
 // It does NOT import create-quiz.js (per the plan's explicit ⚠️): the few
-// pieces that are shared in spirit (renderMathIn, replaceTextareaRange, the
+// pieces that are shared in spirit (replaceTextareaRange, the
 // global-bar dispatcher, the media-upload helper) are ported here.
 //
 // Content shape is the one lesson-schema.js's normalizeLessonContent() and
@@ -36,6 +36,7 @@ import { isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { getManifest } from "../../shared/quizManifest.js";
 import { renderMarkdown } from "../../shared/markdown.js";
+import { readEditorDrafts, upsertEditorDraft, removeEditorDraft, migrateWorkspaceDrafts } from "../../shared/editor-drafts.js";
 import { escapeHtml } from "../home/escape-html.js";
 import {
     showNotification,
@@ -282,11 +283,8 @@ function autosave() {
                 }
             } else {
                 if (!currentDraftId) currentDraftId = _generateId("draft-lesson");
-                const idx = items.findIndex((r) => r.id === currentDraftId);
-                const row = buildRow(currentDraftId, LESSON_DRAFT_TYPE, idx >= 0 ? items[idx] : null);
-                if (idx >= 0) items[idx] = row;
-                else items.push(row);
-                _writeUserItems(items);
+                const existing = readEditorDrafts().find((r) => r.id === currentDraftId);
+                upsertEditorDraft(buildRow(currentDraftId, LESSON_DRAFT_TYPE, existing));
             }
             updateAutosaveIndicator("saved");
         } catch (error) {
@@ -327,11 +325,8 @@ function flushAutosave() {
             }
         } else {
             if (!currentDraftId) currentDraftId = _generateId("draft-lesson");
-            const idx = items.findIndex((r) => r.id === currentDraftId);
-            const row = buildRow(currentDraftId, LESSON_DRAFT_TYPE, idx >= 0 ? items[idx] : null);
-            if (idx >= 0) items[idx] = row;
-            else items.push(row);
-            _writeUserItems(items);
+            const existing = readEditorDrafts().find((r) => r.id === currentDraftId);
+            upsertEditorDraft(buildRow(currentDraftId, LESSON_DRAFT_TYPE, existing));
         }
         updateAutosaveIndicator("saved");
     } catch (error) {
@@ -352,6 +347,7 @@ document.addEventListener("visibilitychange", () => {
 // =============================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+    migrateWorkspaceDrafts();
     isAdmin = isAdminAuthenticated();
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -372,6 +368,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     document.dispatchEvent(new Event("app:ready"));
+});
+
+window.toggleLessonMenu = function (event, id) {
+    event.preventDefault();
+    event.stopPropagation();
+    const menu = document.getElementById(id);
+    const open = menu?.classList.contains("open");
+    document.querySelectorAll("#menuBar .menu-dropdown.open").forEach((item) => item.classList.remove("open"));
+    if (menu && !open) menu.classList.add("open");
+};
+
+window.lessonMenuAction = function (action) {
+    document.querySelectorAll("#menuBar .menu-dropdown.open").forEach((item) => item.classList.remove("open"));
+    if (action === "save") return window.saveLesson();
+    if (action === "preview") return window.previewLesson();
+    if (action === "section") return window.addSection();
+    if (action === "help") return showNotification("اختصارات", "Ctrl+S للحفظ، Ctrl+Z للتراجع، Ctrl+Y للإعادة.", "info");
+    const section = lessonData.sections[lessonData.sections.length - 1];
+    if (["markdown", "media", "question"].includes(action) && section) return window.addBlock(section.id, action);
+    if (action === "expand" || action === "collapse") {
+        document.querySelectorAll(".lesson-section-card").forEach((card) => card.classList.toggle("collapsed", action === "collapse"));
+    }
+};
+
+document.addEventListener("click", (event) => {
+    if (!event.target.closest("#menuBar")) {
+        document.querySelectorAll("#menuBar .menu-dropdown.open").forEach((item) => item.classList.remove("open"));
+    }
 });
 
 async function loadQuizExamList() {
@@ -453,6 +477,7 @@ function renderEntryItemsGrid() {
     if (!grid) return;
 
     const items = _readUserItems();
+    const draftItems = readEditorDrafts();
     const toTile = (row, kind) => ({
         kind,
         id: row.id,
@@ -462,7 +487,7 @@ function renderEntryItemsGrid() {
         updatedAt: row.meta?.updatedAt || null,
     });
 
-    const drafts = items
+    const drafts = draftItems
         .filter((r) => r.meta?.type === LESSON_DRAFT_TYPE)
         .map((r) => toTile(r, "draft"))
         .sort(_byNewest);
@@ -549,8 +574,9 @@ window.renameEntryItem = async function (event, id) {
     closeAllEntryItemMenus();
     const items = _readUserItems();
     const idx = items.findIndex((r) => r.id === id);
-    if (idx < 0) return;
-    const row = items[idx];
+    const draft = idx < 0 ? readEditorDrafts().find((r) => r.id === id) : null;
+    if (idx < 0 && !draft) return;
+    const row = draft || items[idx];
 
     const next = await _prompt("اسم الدرس الجديد:", row.meta?.title || "");
     if (next === null || next === undefined) return;
@@ -568,8 +594,12 @@ window.renameEntryItem = async function (event, id) {
         showNotification("تنبيه", "يوجد درس بنفس الاسم في هذا المستوى من امتحاناتك بالفعل.", "warning");
         return;
     }
-    items[idx] = { ...row, meta: { ...row.meta, title, updatedAt: new Date().toISOString() } };
-    _writeUserItems(items);
+    const updated = { ...row, meta: { ...row.meta, title, updatedAt: new Date().toISOString() } };
+    if (draft) upsertEditorDraft(updated);
+    else {
+        items[idx] = updated;
+        _writeUserItems(items);
+    }
     renderEntryItemsGrid();
 };
 
@@ -577,14 +607,16 @@ window.deleteEntryItem = async function (event, id) {
     event.stopPropagation();
     closeAllEntryItemMenus();
     const items = _readUserItems();
-    const row = items.find((r) => r.id === id);
+    const draft = readEditorDrafts().find((r) => r.id === id);
+    const row = draft || items.find((r) => r.id === id);
     if (!row) return;
     const isDraft = row.meta?.type === LESSON_DRAFT_TYPE;
     const ok = await _confirm(
         isDraft ? "هل تريد حذف هذه المسودة نهائياً؟" : "هل تريد حذف هذا الدرس نهائياً؟",
     );
     if (!ok) return;
-    _writeUserItems(items.filter((r) => r.id !== id));
+    if (draft) removeEditorDraft(id);
+    else _writeUserItems(items.filter((r) => r.id !== id));
     renderEntryItemsGrid();
 };
 
@@ -623,7 +655,7 @@ window.chooseUserLessonToEdit = function (id) {
  * @returns {boolean} false if the id isn't a lesson/draft-lesson row.
  */
 function openLessonById(id) {
-    const row = _readUserItems().find((r) => r.id === id);
+    const row = readEditorDrafts().find((r) => r.id === id) || _readUserItems().find((r) => r.id === id);
     if (!row || (row.meta?.type !== LESSON_TYPE && row.meta?.type !== LESSON_DRAFT_TYPE)) return false;
 
     const normalized = normalizeLessonContent(row.lesson);
@@ -730,27 +762,8 @@ window.handleTitleEditKeydown = function (event) {
 };
 
 // =============================================================================
-// KaTeX — ported verbatim from create-quiz.js's renderMathIn()
+// Markdown field primitives
 // =============================================================================
-
-function renderMathIn(container) {
-    if (!container) return;
-    if (typeof window.renderMathInElement !== "function") return;
-    try {
-        window.renderMathInElement(container, {
-            delimiters: [
-                { left: "$$", right: "$$", display: true },
-                { left: "$", right: "$", display: false },
-                { left: "\\(", right: "\\)", display: false },
-                { left: "\\[", right: "\\]", display: true },
-            ],
-            throwOnError: false,
-            ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"],
-        });
-    } catch (err) {
-        console.error("KaTeX rendering error:", err);
-    }
-}
 
 // =============================================================================
 // MARKDOWN FIELD PRIMITIVES (ported from create-quiz.js)
@@ -1058,6 +1071,13 @@ function setupGlobalMdBar() {
             // `extra` doubles as the heading level OR the highlight swatch color.
             const extra = btn.dataset.gmdHeading || btn.dataset.gmdColor || null;
             applyGlobalMdAction(cmd, latex, extra);
+            closeAllGmdDropdowns();
+        });
+    });
+
+    bar.querySelectorAll(".gmd-highlight-custom").forEach((input) => {
+        input.addEventListener("input", () => {
+            applyGlobalMdAction("highlight", null, input.value);
             closeAllGmdDropdowns();
         });
     });
@@ -1442,7 +1462,6 @@ function renderSections() {
     lessonData.sections.forEach((section) => {
         section.blocks.forEach((block) => wireBlock(section.id, block));
     });
-    renderMathIn(container);
 }
 
 function sectionCardHtml(section, index) {
@@ -1765,7 +1784,6 @@ window.setMdMode = function (fieldId, mode) {
     root.querySelectorAll(".lesson-md-tab").forEach((t) => t.classList.toggle("active", t.dataset.mode === mode));
     if (mode === "preview") {
         preview.innerHTML = renderMarkdown(textarea.value || "");
-        renderMathIn(preview);
         textarea.style.display = "none";
         preview.style.display = "";
     } else {
@@ -2217,7 +2235,6 @@ window.previewLesson = async function () {
 
     const article = overlay.querySelector(".lesson-view");
     mods.applyReaderPrefs(article, readerPrefsFromData());
-    renderMathIn(article);
 
     overlay.querySelector("#lessonPreviewClose").addEventListener("click", closeLessonPreview);
     overlay.addEventListener("click", (e) => {
@@ -2330,9 +2347,9 @@ window.saveLesson = function () {
                     errorMessage = "يوجد درس بنفس الاسم في المستوى الرئيسي من امتحاناتك بالفعل.";
                 } else {
                     const id = `user_lesson_${Date.now()}`;
-                    const remaining = items.filter((r) => r.id !== currentDraftId);
-                    remaining.push(buildRow(id, LESSON_TYPE, null));
-                    _writeUserItems(remaining);
+                    items.push(buildRow(id, LESSON_TYPE, null));
+                    _writeUserItems(items);
+                    if (currentDraftId) removeEditorDraft(currentDraftId);
                     currentDraftId = null;
                     savedId = id;
                 }

@@ -736,10 +736,14 @@ body.sidebar-expanded .global-md-bar {
    color's name — same list shape as the LaTeX "more" menu so the two
    dropdowns feel like the same UI family. */
 .gmd-dropdown-menu--highlight {
-  flex-direction: column;
-  gap: 2px;
-  min-width: 130px;
+    display: grid;
+    grid-template-columns: repeat(6, 26px);
+    gap: 7px;
+    min-width: 0;
+    padding: 10px;
 }
+
+.gmd-dropdown-menu--highlight.open { display: grid; }
 
 .gmd-highlight-swatch {
   display: flex;
@@ -4780,3 +4784,20 @@ html[data-animations="enabled"] .search-bar-fixed {
     padding: 12px 14px;
   }
 }
+
+.gmd-dropdown-menu--highlight .gmd-highlight-swatch {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    padding: 0;
+    font-size: 0;
+    justify-content: center;
+}
+
+.gmd-dropdown-menu--highlight .gmd-highlight-swatch::before {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.gmd-highlight-custom { width: 26px; height: 26px; padding: 1px; border: 1px dashed var(--color-border); border-radius: 4px; background: transparent; cursor: pointer; }

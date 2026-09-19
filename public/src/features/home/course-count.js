@@ -71,22 +71,25 @@ function pruneOrphanedRows(userQuizzes) {
  * actually visible in the "امتحاناتك" view.
  *
  * @param {Array} userQuizzes - raw entries from the "user_quizzes" key
- * @returns {{quizCount: number, folderCount: number, courseCount: number, total: number}}
+ * @returns {{quizCount: number, lessonCount: number, folderCount: number, courseCount: number, total: number}}
  */
 export function getUserQuizzesBreakdown(userQuizzes) {
   let quizCount = 0;
+  let lessonCount = 0;
   let folderCount = 0;
   let courseCount = 0;
   for (const row of pruneOrphanedRows(userQuizzes)) {
     if (row?.meta?.type === "course") courseCount += 1;
     else if (row?.meta?.type === "folder") folderCount += 1;
+    else if (row?.meta?.type === "lesson") lessonCount += 1;
     else quizCount += 1;
   }
   return {
     quizCount,
+    lessonCount,
     folderCount,
     courseCount,
-    total: quizCount + folderCount + courseCount,
+    total: quizCount + lessonCount + folderCount + courseCount,
   };
 }
 
@@ -107,14 +110,16 @@ function pluralizeArabic(count, singular, dual, plural, plural11Plus = plural) {
  * subtext line just needs the headline "N امتحان" figure a user expects from
  * every other card on this page, not a repeat of the whole breakdown.
  */
-export function formatUserQuizzesBreakdown({ quizCount, folderCount, courseCount, total }) {
+export function formatUserQuizzesBreakdown({ quizCount, lessonCount = 0, folderCount, courseCount, total }) {
   if (total === 0) return "لا يوجد محتوى بعد";
-  if (quizCount === 0) {
+  if (quizCount === 0 && lessonCount === 0) {
     // Edge case: only folders/courses, no quizzes yet directly visible in
     // the count — still say something rather than a blank "0 امتحان".
     return "لا يوجد امتحانات بعد";
   }
-  return pluralizeArabic(quizCount, "امتحان واحد", "امتحانان", "امتحانات", "امتحان");
+  const quizLabel = quizCount ? pluralizeArabic(quizCount, "امتحان واحد", "امتحانان", "امتحانات", "امتحان") : "";
+  const lessonLabel = lessonCount ? pluralizeArabic(lessonCount, "درس واحد", "درسان", "دروس", "درس") : "";
+  return [quizLabel, lessonLabel].filter(Boolean).join(" و");
 }
 
 export function formatArabicQuestionCount(count) {
