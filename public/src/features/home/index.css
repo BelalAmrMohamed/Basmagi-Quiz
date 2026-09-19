@@ -4732,7 +4732,7 @@ kbd {
 /* ── Floating bulk action bar ── */
 .bulk-action-bar {
   position: fixed;
-  bottom: calc(24px + var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px));
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--color-surface);
@@ -4876,6 +4876,12 @@ kbd {
 [data-animations="disabled"] .bulk-action-bar .btn {
   transition: none;
   animation: none;
+}
+
+@media (max-width: 768px) {
+  .bulk-action-bar {
+    bottom: calc(24px + var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (max-width: 600px) {

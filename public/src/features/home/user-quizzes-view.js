@@ -1026,7 +1026,7 @@ export function updateBulkActionBar(forceActive) {
       ".user-quiz-select-checkbox",
     ).length;
     const allSelected = totalCheckboxes > 0 && count >= totalCheckboxes;
-    selectAllBtn.textContent = allSelected ? "إلغاء تحديد الكل" : "تحديد الكل";
+    selectAllBtn.textContent = allSelected ? "إلغاء التحديد" : "الكل";
     selectAllBtn.classList.toggle("all-selected", allSelected);
   }
 }
@@ -1048,7 +1048,7 @@ function renderBulkActionBar() {
     bar.innerHTML = `
       <div class="bulk-count">لم يتم تحديد أي شيء</div>
       <div class="bulk-actions">
-        <button class="btn bulk-select-all-btn">تحديد الكل</button>
+        <button class="btn bulk-select-all-btn">الكل</button>
         <button class="btn bulk-move-btn" style="display:none" title="نقل إلى" aria-label="نقل إلى">${MOVE_TO_ICON_SVG}</button>
         <button class="btn bulk-extract-btn" style="display:none" title="استخراج" aria-label="استخراج">${DOWNLOAD_ICON_SVG}</button>
         <button class="btn bulk-delete-btn" style="display:none" title="حذف" aria-label="حذف">${TRASH_ICON_SVG}</button>
