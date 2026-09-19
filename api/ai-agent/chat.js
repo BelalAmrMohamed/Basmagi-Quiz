@@ -73,7 +73,7 @@
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { callProvider, isSupportedProvider } from "./_providerClients.js";
-import { CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL } from "./_tools.js";
+import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
 
@@ -270,6 +270,7 @@ function isLevel10PlusUser(req) {
 // one of the two should ever appear in a single request's `toolNames`.
 const TOOLS_BY_NAME = {
   create_quiz: CREATE_QUIZ_TOOL,
+  add_lesson_question: ADD_LESSON_QUESTION_TOOL,
   edit_quiz: EDIT_QUIZ_TOOL,
   edit_current_quiz: EDIT_CURRENT_QUIZ_TOOL,
   delete_quiz: DELETE_QUIZ_TOOL,

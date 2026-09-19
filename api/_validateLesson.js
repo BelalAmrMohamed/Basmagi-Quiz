@@ -32,6 +32,8 @@ const ALLOWED_BLOCK_KEYS_BY_TYPE = {
         "questionKind",
         "options",
         "correctIndex",
+        "correctIndexes",
+        "multiSelect",
         "modelAnswer",
         "explanation",
         "onWrong",
@@ -162,8 +164,12 @@ function validateBlock(block, index, sectionIds) {
         if (!text.trim()) throw new Error(`الخيار رقم ${i + 1} فارغ في العنصر رقم ${index + 1}.`);
         return text;
     });
-    const correctIndex = Number(block.correctIndex);
-    if (!Number.isInteger(correctIndex) || correctIndex < 0 || correctIndex >= cleanOptions.length) {
+    const multiSelect = Boolean(block.multiSelect);
+    const rawCorrectIndexes = multiSelect
+        ? block.correctIndexes
+        : [block.correctIndex];
+    const correctIndexes = Array.isArray(rawCorrectIndexes) ? rawCorrectIndexes.map(Number) : [];
+    if (!correctIndexes.length || correctIndexes.some((i) => !Number.isInteger(i) || i < 0 || i >= cleanOptions.length) || new Set(correctIndexes).size !== correctIndexes.length) {
         throw new Error(`فهرس الإجابة الصحيحة غير صالح في العنصر رقم ${index + 1}.`);
     }
     const clean = {
@@ -172,7 +178,8 @@ function validateBlock(block, index, sectionIds) {
         questionKind: "mcq",
         prompt,
         options: cleanOptions,
-        correctIndex,
+        correctIndex: correctIndexes[0], // compatibility with existing readers
+        ...(multiSelect && { multiSelect: true, correctIndexes }),
     };
     if (typeof block.explanation === "string" && block.explanation) {
         clean.explanation = block.explanation.slice(0, MAX_MARKDOWN_LENGTH);

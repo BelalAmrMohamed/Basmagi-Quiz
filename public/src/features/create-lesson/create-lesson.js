@@ -46,6 +46,8 @@ import {
 import { normalizeLessonContent, hasLessonLevelCollision } from "../lesson/lesson-schema.js";
 import { FONT_CHOICES, HIGHLIGHT_CHOICES } from "../lesson/lesson-reader-prefs.js";
 import { mountColorPicker } from "../../shared/color-picker.js";
+import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
+import { CREATE_LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 
 // =============================================================================
 // STATE
@@ -471,6 +473,68 @@ function showLessonForm() {
     if (globalMdBar) globalMdBar.style.display = "flex";
     document.body.classList.add("lesson-form-active");
     updateAppTitleBar();
+    mountCreatorAgent();
+}
+
+function lessonEditorContext() {
+    return {
+        title: lessonData.title || "درس بدون عنوان",
+        sections: lessonData.sections.map((section, index) => ({
+            title: section.title || `قسم ${index + 1}`,
+            blockCount: section.blocks.length,
+        })),
+    };
+}
+
+function addLessonQuestionFromAgent(toolCall) {
+    if (toolCall?.name !== "add_lesson_question") throw new Error("Unknown lesson editor tool");
+    const input = toolCall.input || {};
+    const prompt = String(input.prompt || "").trim();
+    if (!prompt) throw new Error("Question prompt is required");
+    const target = input.sectionTitle
+        ? lessonData.sections.find((section) => section.title === input.sectionTitle)
+        : lessonData.sections[0];
+    if (!target) {
+        const error = new Error("Section not found");
+        error.userMessage = "تعذر العثور على القسم المطلوب لإضافة السؤال.";
+        throw error;
+    }
+    const isEssay = input.questionKind === "essay";
+    const options = Array.isArray(input.options) ? input.options.map((option) => String(option || "").trim()) : [];
+    const correctIndexes = Array.isArray(input.correctIndexes) ? input.correctIndexes.map(Number) : [0];
+    if (isEssay && !String(input.modelAnswer || "").trim()) {
+        const error = new Error("Essay model answer is required");
+        error.userMessage = "السؤال المقالي يحتاج إجابة نموذجية.";
+        throw error;
+    }
+    if (!isEssay && (options.length < 2 || correctIndexes.some((index) => !Number.isInteger(index) || index < 0 || index >= options.length))) {
+        const error = new Error("Invalid MCQ options");
+        error.userMessage = "السؤال يحتاج خيارين صالحين وإجابة صحيحة.";
+        throw error;
+    }
+    pushHistorySnapshot();
+    target.blocks.push(isEssay
+        ? { type: "question", id: newLocalId("q"), _localId: newLocalId("b"), questionKind: "essay", prompt, modelAnswer: String(input.modelAnswer).trim(), explanation: String(input.explanation || "") }
+        : { type: "question", id: newLocalId("q"), _localId: newLocalId("b"), questionKind: "mcq", prompt, options, correctIndex: correctIndexes[0], multiSelect: Boolean(input.multiSelect), correctIndexes, explanation: String(input.explanation || "") });
+    renderSections();
+    autosave();
+    showNotification("تمت الإضافة", `أُضيف السؤال إلى ${target.title || "القسم الأول"}.`, "success");
+    return `✅ تمت إضافة السؤال إلى ${target.title || "القسم الأول"}.`;
+}
+
+function mountCreatorAgent() {
+    if (document.querySelector(".create-lesson-agent-fab")) return;
+    const fab = createAIAgentFab({
+        pageKey: "create-lesson",
+        placeholder: "اطلب من الباشــمبصمج مساعدتك في هذا الدرس",
+        defaultSystemPrompt: CREATE_LESSON_PAGE_SYSTEM_PROMPT,
+        contextSummary: lessonEditorContext,
+        enableTools: true,
+        toolNames: ["add_lesson_question"],
+        onToolCall: addLessonQuestionFromAgent,
+    });
+    fab.classList.add("create-lesson-agent-fab");
+    document.body.appendChild(fab);
 }
 
 function formatEntryItemDate(isoString) {
@@ -723,6 +787,10 @@ function hydrateBlock(block) {
             b.questionKind = "mcq";
             b.options = Array.isArray(b.options) && b.options.length >= 2 ? [...b.options] : ["", ""];
             b.correctIndex = Number.isInteger(b.correctIndex) ? b.correctIndex : 0;
+            b.multiSelect = Boolean(b.multiSelect);
+            b.correctIndexes = b.multiSelect && Array.isArray(b.correctIndexes) && b.correctIndexes.length
+                ? b.correctIndexes.filter((i) => Number.isInteger(i) && i >= 0 && i < b.options.length)
+                : [b.correctIndex];
         }
     }
     return b;
@@ -1727,6 +1795,8 @@ function makeBlock(type) {
         prompt: "",
         options: ["", ""],
         correctIndex: 0,
+        multiSelect: false,
+        correctIndexes: [0],
         explanation: "",
         _localId,
     };
@@ -2070,7 +2140,7 @@ function questionBlockInnerHtml(sectionId, block) {
             .map(
                 (opt, i) => `
       <div class="lesson-question-option-row">
-        <input type="radio" name="correct-${bid}" ${block.correctIndex === i ? "checked" : ""}
+        <input type="${block.multiSelect ? "checkbox" : "radio"}" name="correct-${bid}" ${(block.correctIndexes || [block.correctIndex]).includes(i) ? "checked" : ""}
           title="تحديد كإجابة صحيحة" aria-label="تحديد الخيار ${i + 1} كإجابة صحيحة"
           onchange="setQuestionCorrectIndex('${sid}', '${bid}', ${i})">
         <div class="option-md-wrap" style="flex:1;min-width:0;">
@@ -2102,12 +2172,13 @@ function questionBlockInnerHtml(sectionId, block) {
       ${mdEditorHtml(`q-prompt-${block._localId}`, block.prompt, "أدخل سؤالك هنا...", 1)}
     </div>
     <div class="lesson-question-options">
-      <label>${isEssay ? "الإجابة المرجعية" : "الإختيارات (اختر الإجابة الصحيحة)"}</label>
+      <label>${isEssay ? "الإجابة المرجعية" : block.multiSelect ? "الإختيارات (حدد كل الإجابات الصحيحة)" : "الإختيارات (اختر الإجابة الصحيحة)"}</label>
       ${optionsHtml}
       <div class="lesson-question-type-actions">
         ${isEssay
             ? `<button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'mcq')">تحويل إلى اختيار متعدد</button>`
             : `<button type="button" class="btn btn-secondary btn-sm" ${block.options.length >= 8 ? "disabled" : ""} onclick="addQuestionOption('${sid}', '${bid}')">+ خيار</button>
+                   <button type="button" class="btn btn-secondary btn-sm" onclick="toggleQuestionMultiSelect('${sid}', '${bid}')">${block.multiSelect ? "إجابة واحدة" : "إجابات متعددة"}</button>
                    <button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'essay')">تحويل إلى سؤال مقالي</button>`
         }
       </div>
@@ -2167,8 +2238,9 @@ window.removeQuestionOption = function (sectionId, localId, index) {
     if (!block || block.questionKind === "essay" || block.options.length <= 2) return;
     pushHistorySnapshot();
     block.options.splice(index, 1);
-    if (block.correctIndex >= block.options.length) block.correctIndex = block.options.length - 1;
-    else if (block.correctIndex > index) block.correctIndex -= 1;
+    block.correctIndexes = (block.correctIndexes || [block.correctIndex]).filter((i) => i !== index).map((i) => i > index ? i - 1 : i);
+    if (!block.correctIndexes.length) block.correctIndexes = [0];
+    block.correctIndex = block.correctIndexes[0];
     renderSections();
     autosave();
 };
@@ -2177,7 +2249,26 @@ window.setQuestionCorrectIndex = function (sectionId, localId, index) {
     const block = findBlock(sectionId, localId);
     if (!block) return;
     pushHistorySnapshot();
-    block.correctIndex = index;
+    if (block.multiSelect) {
+        const selected = new Set(block.correctIndexes || [block.correctIndex]);
+        if (selected.has(index) && selected.size > 1) selected.delete(index);
+        else selected.add(index);
+        block.correctIndexes = [...selected].sort((a, b) => a - b);
+    } else {
+        block.correctIndex = index;
+        block.correctIndexes = [index];
+    }
+    autosave();
+};
+
+window.toggleQuestionMultiSelect = function (sectionId, localId) {
+    const block = findBlock(sectionId, localId);
+    if (!block || block.questionKind === "essay") return;
+    pushHistorySnapshot();
+    block.multiSelect = !block.multiSelect;
+    block.correctIndexes = block.multiSelect ? (block.correctIndexes || [block.correctIndex]) : [block.correctIndexes?.[0] ?? block.correctIndex];
+    block.correctIndex = block.correctIndexes[0];
+    renderSections();
     autosave();
 };
 
@@ -2213,6 +2304,8 @@ window.convertQuestionKind = async function (sectionId, localId, kind) {
         block.questionKind = "essay";
         delete block.options;
         delete block.correctIndex;
+        delete block.correctIndexes;
+        delete block.multiSelect;
         // An essay has no reliable right/wrong signal, and the validator
         // rejects reveal rules on essay questions outright.
         delete block.onWrong;
@@ -2223,6 +2316,8 @@ window.convertQuestionKind = async function (sectionId, localId, kind) {
         block.questionKind = "mcq";
         block.options = [draft, "", "", ""];
         block.correctIndex = 0;
+        block.multiSelect = false;
+        block.correctIndexes = [0];
         delete block.modelAnswer;
     }
     renderSections();
@@ -2360,7 +2455,8 @@ function validateLesson() {
                     if ((block.options || []).some((o) => !o || !o.trim())) {
                         errors.push(`${label}: جميع الخيارات يجب أن تحتوي على نص`);
                     }
-                    if (!Number.isInteger(block.correctIndex) || block.correctIndex < 0 || block.correctIndex >= (block.options || []).length) {
+                    const correctIndexes = block.multiSelect ? block.correctIndexes : [block.correctIndex];
+                    if (!Array.isArray(correctIndexes) || !correctIndexes.length || correctIndexes.some((i) => !Number.isInteger(i) || i < 0 || i >= (block.options || []).length)) {
                         errors.push(`${label}: حدّد الإجابة الصحيحة`);
                     }
                 }

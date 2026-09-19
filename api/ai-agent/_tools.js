@@ -297,3 +297,25 @@ export const GET_USER_ACTIVITY_TOOL = {
     required: ["which"],
   },
 };
+
+// Create-lesson page only. One question per call is intentional: the chat
+// provider executes at most one tool call per turn, and inserting one block
+// is atomic, undoable, and never replaces the rest of the lesson.
+export const ADD_LESSON_QUESTION_TOOL = {
+  name: "add_lesson_question",
+  description: "Insert one embedded question into the current lesson. Only call after the creator explicitly confirms the proposed question. Use questionKind 'essay' with modelAnswer for an essay. For MCQ, provide options and 0-based correctIndexes; set multiSelect true when more than one option is correct. sectionTitle must exactly match a section supplied in the current lesson summary, or omit it to use the first section.",
+  input_schema: {
+    type: "object",
+    properties: {
+      sectionTitle: { type: "string" },
+      questionKind: { type: "string", enum: ["mcq", "essay"] },
+      prompt: { type: "string" },
+      options: { type: "array", items: { type: "string" } },
+      correctIndexes: { type: "array", items: { type: "integer" } },
+      multiSelect: { type: "boolean" },
+      modelAnswer: { type: "string" },
+      explanation: { type: "string" },
+    },
+    required: ["prompt"],
+  },
+};

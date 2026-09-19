@@ -25,9 +25,10 @@ import { getCategoryTree } from "./app-state.js";
 import { buildCourseInfoRows } from "./course-info-fields.js";
 import { escapeHtml } from "./escape-html.js";
 
-function getCourseContentsStats(course) {
+export function getCourseContentsStats(course) {
   const tree = getCategoryTree() || {};
   let quizCount = Array.isArray(course?.exams) ? course.exams.length : 0;
+  let lessonCount = Array.isArray(course?.lessons) ? course.lessons.length : 0;
   let subfolderCount = 0;
 
   function visitFolder(key) {
@@ -35,11 +36,12 @@ function getCourseContentsStats(course) {
     if (!folder) return;
     subfolderCount += 1;
     quizCount += Array.isArray(folder.exams) ? folder.exams.length : 0;
+    lessonCount += Array.isArray(folder.lessons) ? folder.lessons.length : 0;
     (folder.subcategories || []).forEach(visitFolder);
   }
 
   (course?.subcategories || []).forEach(visitFolder);
-  return { quizCount, subfolderCount };
+  return { quizCount, lessonCount, subfolderCount };
 }
 
 /**
@@ -118,11 +120,12 @@ export function showCourseInfoModal(course) {
   const h2 = document.createElement("h2");
   h2.textContent = "معلومات المادة";
 
-  const { quizCount, subfolderCount } = getCourseContentsStats(course);
+  const { quizCount, lessonCount, subfolderCount } = getCourseContentsStats(course);
   const stats = document.createElement("div");
   stats.className = "course-info-stats";
   stats.innerHTML = `
     <div class="course-info-stat"><strong>${quizCount}</strong><span>امتحان</span></div>
+    <div class="course-info-stat"><strong>${lessonCount}</strong><span>درس</span></div>
     <div class="course-info-stat"><strong>${subfolderCount}</strong><span>مجلد فرعي</span></div>
   `;
 

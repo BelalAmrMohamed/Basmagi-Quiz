@@ -361,7 +361,8 @@ export function createCategoryCard(
         const counts = document.createElement("div");
         counts.className = "exam-action-btn";
         counts.disabled = true;
-        counts.textContent = `${itemCount} امتحان · ${(courseData.subcategories || []).length} مجلد فرعي`;
+        const { quizCount, lessonCount, subfolderCount } = getCategoryContentsStats(courseData);
+        counts.textContent = `${quizCount} امتحان · ${lessonCount} درس · ${subfolderCount} مجلد فرعي`;
         menu.appendChild(counts);
 
         // ── Admin manage group — نقل / إعادة تسمية / حذف (→ trash) ──────
@@ -419,4 +420,20 @@ export function createCategoryCard(
   });
 
   return card;
+}
+
+function getCategoryContentsStats(category) {
+  const tree = getCategoryTree() || {};
+  let quizCount = 0;
+  let lessonCount = 0;
+  let subfolderCount = 0;
+  const visit = (node, isChild = false) => {
+    if (!node) return;
+    if (isChild) subfolderCount += 1;
+    quizCount += Array.isArray(node.exams) ? node.exams.length : 0;
+    lessonCount += Array.isArray(node.lessons) ? node.lessons.length : 0;
+    (node.subcategories || []).forEach((key) => visit(tree[key], true));
+  };
+  visit(category);
+  return { quizCount, lessonCount, subfolderCount };
 }

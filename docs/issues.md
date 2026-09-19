@@ -23,8 +23,12 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 
 ### Lessons Page
 Last session partially completed the implementation of phase 4: `docs\plans\lessons-feature-plan.md`.
-- The `/lesson/` should be its own independent page (similar to `/quiz/` page), with the ability to view the lesson's info modal.
-- The embedded questions inside
+- The `/lesson/` should be its own independent page (similar to `/quiz/` page), with the ability to view the lesson's info modal, and I want new ideas to give the user control over the lessons. In that page:
+  - Integrate the الباشــمبصمج so users can ask it questions, or tell it to create a quiz about that lesson, and the الباشــمبصمج should be able to create an interactive quiz that users can actually solve and get graded (all types of questions)
+- The embedded questions inside lessons don't get all features as normal quiz questions, they should get all features like: 
+  - Use the `public/src/shared/rate-answers.js` file for correcting questions, and it should show the grading, that would be very usefull, specially for essay questions.
+  - The create-lesson and the lesson page should support multi correct answer questions just like create-quiz and quiz pages.
+  - The الباشــمبصمج should also be able to help creators in create-lesson page, similar to the lesson page, the الباشــمبصمج should be able to add a questions to a lesson in the create-lesson page.
 
 ### Result Pages
 

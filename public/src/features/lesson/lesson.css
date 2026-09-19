@@ -34,6 +34,16 @@
   color: var(--color-text-primary);
 }
 
+.lesson-view__info-btn {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
 /* ── Sections ──────────────────────────────────────────────────────────────── */
 
 .lesson-section {
@@ -167,6 +177,23 @@
 .lesson-question__option.is-wrong {
   border-color: #ef4444;
   background: rgba(239, 68, 68, 0.12);
+}
+
+.lesson-question__option.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light, rgba(99, 102, 241, 0.1));
+}
+
+.lesson-question__check-btn {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .lesson-question__feedback {

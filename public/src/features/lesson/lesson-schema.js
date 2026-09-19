@@ -195,10 +195,14 @@ export function markSectionVisited(lessonId, sectionId) {
  * @param {string} questionId
  * @param {boolean} wasCorrect
  */
-export function recordQuestionAnswer(lessonId, questionId, wasCorrect) {
+export function recordQuestionAnswer(lessonId, questionId, wasCorrect, selectedIndexes = null) {
   if (!lessonId || !questionId) return;
   const entry = getLessonProgress(lessonId);
-  entry.questions[questionId] = { answered: true, wasCorrect: Boolean(wasCorrect) };
+  entry.questions[questionId] = {
+    answered: true,
+    wasCorrect: Boolean(wasCorrect),
+    ...(Array.isArray(selectedIndexes) && { selectedIndexes: [...selectedIndexes] }),
+  };
   saveLessonProgress(lessonId, entry);
 }
 

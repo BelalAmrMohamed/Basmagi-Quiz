@@ -34,6 +34,11 @@ import {
   HIGHLIGHT_CHOICES,
 } from "./lesson-reader-prefs.js";
 import { renderTtsControl, equipTts } from "./lesson-tts.js";
+import { showUserLessonInfoModal } from "../home/lesson-info-modal.js";
+import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
+import { LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
+import { saveNewUserQuiz } from "../home/quiz-schema.js";
+import { showNotification } from "../../components/notifications/notifications.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -71,6 +76,8 @@ async function fetchLesson(idOrSlug) {
         title: row.meta?.title || "",
         content: row.lesson || { sections: [] },
         reader_prefs_default: row.meta?.readerPrefs || {},
+        created_at: row.meta?.createdAt || null,
+        updated_at: row.meta?.updatedAt || null,
       };
     } catch (error) {
       console.error("[lesson-view] local lesson lookup failed:", error);
@@ -82,7 +89,7 @@ async function fetchLesson(idOrSlug) {
 
   const query = supabase
     .from("lessons")
-    .select("id, slug, title, content, reader_prefs_default");
+    .select("id, slug, title, content, reader_prefs_default, created_at, updated_at");
   const { data, error } = UUID_RE.test(idOrSlug)
     ? await query.eq("id", idOrSlug).maybeSingle()
     : await query.eq("slug", idOrSlug).maybeSingle();
@@ -193,6 +200,51 @@ function renderPrefsPopover(prefs) {
   );
 }
 
+function lessonAgentContext(lesson, normalized) {
+  const sections = normalized.sections.map((section, index) => ({
+    title: section.title || `قسم ${index + 1}`,
+    blocks: section.blocks.map((block) => ({
+      type: block.type,
+      body: block.body,
+      prompt: block.prompt,
+      options: block.options,
+      modelAnswer: block.modelAnswer,
+    })),
+  }));
+  return { title: lesson.title, sections };
+}
+
+function handleLessonAgentToolCall(toolCall) {
+  if (toolCall?.name !== "create_quiz") throw new Error("Unknown lesson tool");
+  const input = toolCall.input || {};
+  if (!Array.isArray(input.questions) || input.questions.length === 0) {
+    const error = new Error("Quiz needs questions");
+    error.userMessage = "تعذر إنشاء الامتحان: لا توجد أسئلة صالحة.";
+    throw error;
+  }
+  const title = String(input.title || "امتحان من الدرس").trim();
+  const result = saveNewUserQuiz({ questions: input.questions, meta: { title, description: input.description || "" } }, title, null);
+  if (result?.ok === false) {
+    const error = new Error(result.reason);
+    error.userMessage = result.reason;
+    throw error;
+  }
+  showNotification("تم الإنشاء", 'تمت إضافة الامتحان التفاعلي إلى «امتحاناتك».', "success");
+  return `✅ تم إنشاء امتحان قابل للحل والتقييم بعنوان: ${title}`;
+}
+
+function mountLessonAgent(root, lesson, normalized) {
+  root.appendChild(createAIAgentFab({
+    pageKey: `lesson-${lesson.id}`,
+    placeholder: "اسأل الباشــمبصمج عن هذا الدرس",
+    defaultSystemPrompt: LESSON_PAGE_SYSTEM_PROMPT,
+    contextSummary: () => lessonAgentContext(lesson, normalized),
+    enableTools: true,
+    toolNames: ["create_quiz"],
+    onToolCall: handleLessonAgentToolCall,
+  }));
+}
+
 function equipPrefs(root, lessonEl, authorDefaults) {
   const prefsEl = root.querySelector(".lesson-prefs");
   if (!prefsEl) return;
@@ -270,6 +322,7 @@ export async function renderLessonView() {
       `<article class="lesson-view" data-lesson-id="${escapeHtml(lesson.id)}">` +
       `<header class="lesson-view__header">` +
       `<h1 class="lesson-view__title">${escapeHtml(lesson.title || "")}</h1>` +
+      `<button type="button" class="lesson-view__info-btn">معلومات الدرس</button>` +
       renderPrefsPopover(getReaderPrefs(lesson.reader_prefs_default)) +
       `</header>` +
       renderLessonToc(visibleSections, progress.visitedSections) +
@@ -278,10 +331,23 @@ export async function renderLessonView() {
       `</div></article>`;
 
     const lessonEl = container.querySelector(".lesson-view");
+    lessonEl.querySelector(".lesson-view__info-btn")?.addEventListener("click", () => {
+      showUserLessonInfoModal({
+        id: lesson.id,
+        meta: {
+          title: lesson.title,
+          createdAt: lesson.created_at,
+          updatedAt: lesson.updated_at,
+          readerPrefs: lesson.reader_prefs_default,
+        },
+        lesson: lesson.content,
+      });
+    });
     equipPrefs(container, lessonEl, lesson.reader_prefs_default);
     equipQuestionBlocks(container, lesson.id, paint);
     equipLessonToc(container, lesson.id);
     equipTts(container);
+    mountLessonAgent(container, lesson, normalized);
   };
 
   paint();

@@ -14,7 +14,7 @@
 import { renderMarkdown, renderInlineMediaTag } from "../../shared/markdown.js";
 import { escapeHtml } from "../home/escape-html.js";
 import { recordQuestionAnswer, appendEssayAnswerText, getLessonProgress } from "./lesson-schema.js";
-import { gradeEssay } from "../../shared/rate-answers.js";
+import { gradeEssay, isAnswerCorrect } from "../../shared/rate-answers.js";
 
 /**
  * Math is rendered by shared markdown.js as each markdown block is built.
@@ -121,6 +121,10 @@ function renderQuestionBlock(block, ctx) {
 }
 
 function renderMcqQuestionBody(block, questionId, options, prior) {
+  const correctIndexes = block.multiSelect
+    ? (Array.isArray(block.correctIndexes) ? block.correctIndexes : [block.correctIndex])
+    : [Number(block.correctIndex) || 0];
+  const multiSelect = Boolean(block.multiSelect);
   // Restore a previously-recorded answer so a reload shows the same
   // revealed state the reader left behind (the reveal itself is recomputed
   // from progress by resolveRevealedSections, so these must agree).
@@ -137,11 +141,13 @@ function renderMcqQuestionBody(block, questionId, options, prior) {
     `<div class="lesson-block lesson-block--question lesson-question" ` +
     `data-question-kind="mcq" ` +
     `data-question-id="${escapeHtml(questionId)}" ` +
-    `data-correct-index="${Number(block.correctIndex) || 0}"` +
+    `data-correct-indexes="${escapeHtml(JSON.stringify(correctIndexes))}" ` +
+    `data-multi-select="${multiSelect}"` +
     (prior?.answered ? ` data-answered="true"` : "") +
     `>` +
     `<div class="lesson-question__prompt md-content">${renderMarkdown(block.prompt || "")}</div>` +
     `<div class="lesson-question__options">${optionsHtml}</div>` +
+    (multiSelect ? `<button type="button" class="lesson-question__check-btn">تحقق من الإجابات</button>` : "") +
     `<div class="lesson-question__feedback" hidden>` +
     `<span class="lesson-question__verdict"></span>` +
     (block.explanation
@@ -200,23 +206,39 @@ export function equipQuestionBlocks(root, lessonId, onAnswered) {
   if (!root) return;
   root.querySelectorAll('.lesson-question[data-question-kind="mcq"]').forEach((questionEl) => {
     const questionId = questionEl.dataset.questionId;
-    const correctIndex = Number(questionEl.dataset.correctIndex);
+    let correctIndexes = [0];
+    try { correctIndexes = JSON.parse(questionEl.dataset.correctIndexes || "[0]"); } catch (_) { }
+    const multiSelect = questionEl.dataset.multiSelect === "true";
 
     // Replay a stored answer into the DOM without re-firing the handler.
     const prior = getLessonProgress(lessonId)?.questions?.[questionId];
     if (prior?.answered) {
-      revealMcqAnswer(questionEl, correctIndex, prior.wasCorrect, null);
+      revealMcqAnswer(questionEl, correctIndexes, prior.wasCorrect, prior.selectedIndexes || null);
     }
 
     questionEl.querySelectorAll(".lesson-question__option").forEach((optionBtn) => {
       optionBtn.addEventListener("click", () => {
         if (questionEl.dataset.answered === "true") return; // reveal-once
         const chosen = Number(optionBtn.dataset.optionIndex);
-        const wasCorrect = chosen === correctIndex;
-        recordQuestionAnswer(lessonId, questionId, wasCorrect);
-        revealMcqAnswer(questionEl, correctIndex, wasCorrect, chosen);
+        if (multiSelect) {
+          optionBtn.classList.toggle("is-selected");
+          return;
+        }
+        const wasCorrect = isAnswerCorrect(chosen, correctIndexes);
+        recordQuestionAnswer(lessonId, questionId, wasCorrect, [chosen]);
+        revealMcqAnswer(questionEl, correctIndexes, wasCorrect, [chosen]);
         if (typeof onAnswered === "function") onAnswered();
       });
+    });
+    questionEl.querySelector(".lesson-question__check-btn")?.addEventListener("click", () => {
+      if (questionEl.dataset.answered === "true") return;
+      const selected = [...questionEl.querySelectorAll(".lesson-question__option.is-selected")]
+        .map((button) => Number(button.dataset.optionIndex));
+      if (!selected.length) return;
+      const wasCorrect = isAnswerCorrect(selected, correctIndexes);
+      recordQuestionAnswer(lessonId, questionId, wasCorrect, selected);
+      revealMcqAnswer(questionEl, correctIndexes, wasCorrect, selected);
+      if (typeof onAnswered === "function") onAnswered();
     });
   });
 
@@ -254,17 +276,14 @@ export function equipQuestionBlocks(root, lessonId, onAnswered) {
   });
 }
 
-function revealMcqAnswer(questionEl, correctIndex, wasCorrect, chosenIndex) {
+function revealMcqAnswer(questionEl, correctIndexes, wasCorrect, chosenIndexes) {
   questionEl.dataset.answered = "true";
 
   questionEl.querySelectorAll(".lesson-question__option").forEach((btn) => {
     const idx = Number(btn.dataset.optionIndex);
     btn.disabled = true;
-    if (idx === correctIndex) btn.classList.add("is-correct");
-    // chosenIndex is null when replaying a stored answer on load — we know
-    // whether it was right, but not which specific wrong option was picked,
-    // so only the correct one is marked in that case.
-    if (chosenIndex !== null && idx === chosenIndex && !wasCorrect) btn.classList.add("is-wrong");
+    if (correctIndexes.includes(idx)) btn.classList.add("is-correct");
+    if (chosenIndexes?.includes(idx) && !correctIndexes.includes(idx)) btn.classList.add("is-wrong");
   });
 
   const feedback = questionEl.querySelector(".lesson-question__feedback");
@@ -272,7 +291,7 @@ function revealMcqAnswer(questionEl, correctIndex, wasCorrect, chosenIndex) {
     feedback.hidden = false;
     const verdict = feedback.querySelector(".lesson-question__verdict");
     if (verdict) {
-      verdict.textContent = wasCorrect ? "إجابة صحيحة" : "إجابة غير صحيحة";
+      verdict.textContent = wasCorrect ? "إجابة صحيحة" : "إجابة غير صحيحة — راجع الخيارات الصحيحة";
       verdict.classList.toggle("is-correct", wasCorrect);
       verdict.classList.toggle("is-wrong", !wasCorrect);
     }
@@ -305,7 +324,7 @@ function revealEssayAnswer(questionEl, modelAnswer, answerText) {
     feedback.hidden = false;
     const verdict = feedback.querySelector(".lesson-question__verdict");
     if (verdict) {
-      verdict.textContent = wasClose ? "إجابتك قريبة من الإجابة النموذجية" : "إجابتك تختلف عن الإجابة النموذجية";
+      verdict.textContent = `تقدير الإجابة: ${score} من 5${wasClose ? " — إجابتك قريبة من الإجابة النموذجية" : " — راجع الإجابة النموذجية"}`;
       verdict.classList.toggle("is-correct", wasClose);
       verdict.classList.toggle("is-wrong", !wasClose);
     }
