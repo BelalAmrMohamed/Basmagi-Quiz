@@ -8,12 +8,11 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Patches
 
 ### AI Agent
-- The `.ai-agent-dictation-wave` 
+- The `.ai-agent-dictation-wave` has 2 issues
+  - It covers the whole input, so users can't see the text as it being recognised.
+  - When it gets activated, the `.ai-agent-chat-input-controls` grows in height slightly, which causes some elements to get misaligned.
 
-### Implement live-render in place for all input fields in create-quiz and create-lesson for the markdown engine.
-
-### امتحاناتك
-- Select mode: Pressing on a folder/course correctly selects it, but pressing on a quiz/lesson doesn't select it, I have to press on the `.user-quiz-select-checkbox` itself to select the quiz. Fix: Pressing the quiz/lesson card should select it.
+### Implement [plan](plans/live-render-md-prompt.md)
 
 ### Performance (Globally, but specially the main page)
 Performance Improvements: Currently, there are many custom mechanism fucntionalities built in JS that works perfectly, but it may exist natively in HTML, CSS, or as a browser API. In that case we shouldn't reinvent the wheel, specially if it exists natively. Anything that exists natively in HTML, CSS, or as a browser API should be used that way and we should delete any custom JS implementation that has native alternatives. That would improve performance very well. Search for everything, anything that can be implemented in HTML & CSS directly without JS should be done so. You can search the web for modern HTML & CSS, because sometimes they add new things, but watch out for compatibility with different browsers (minimum requirenment: Chrome). But I don't want to miss up any functionality, this is just for performance, not to change any fucntionality.
@@ -23,12 +22,9 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 ## New Features
 
 ### Lessons Page
-Last session completed the implementation of phase 3: `docs\plans\lessons-feature-plan.md`.
-- The `.undo-redo-group` buttons don't work as expected, for example, changing the name can't be undone, and editing on create-lesson can't be undone.
-- Inside the user workspace, `.user-lesson-card` isn't designed properly, the start and download buttons appear on top of each other, instead of next to each other.
-- I tested the last phase locally (which made drafts get stored in their own key instead of with the actual quizzes/lessons key), and I had quizzes stored as drafts based on the old schema, I couldn't delete them, and when I entered them, I got redirected to the home page for some reason. 
-  - First: An error in a quiz/lesson should redirect to the entry screen, not the home page.
-  - Second: The deleting issue and the old schema issue isn't a critical error, since create-quiz and create-lesson aren't used in production, so this is an issue on my localhost:8080 only.
+Last session partially completed the implementation of phase 4: `docs\plans\lessons-feature-plan.md`.
+- The `/lesson/` should be its own independent page (similar to `/quiz/` page), with the ability to view the lesson's info modal.
+- The embedded questions inside
 
 ### Result Pages
 

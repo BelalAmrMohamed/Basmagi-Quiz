@@ -4917,3 +4917,21 @@ kbd {
   opacity: 0.48;
   filter: grayscale(1);
 }
+
+/* Phase 4a: local-only completion summary shown at a course's root. */
+.course-lesson-progress {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--color-success) 35%, var(--color-border));
+  border-radius: var(--radius-md, 12px);
+  color: var(--color-text, #1f2937);
+  background: color-mix(in srgb, var(--color-success) 8%, transparent);
+  font-weight: 700;
+  text-align: center;
+}
+
+.lesson-card .start-btn {
+  background: var(--color-success);
+  color: #fff;
+}

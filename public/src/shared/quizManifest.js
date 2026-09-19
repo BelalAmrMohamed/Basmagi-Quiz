@@ -1,8 +1,8 @@
 // public/src/shared/quizManifest.js
 // =============================================================================
 // Loads the quiz manifest — DB-only. Supabase is the sole source of truth.
-// Queries Supabase for `quizzes`, `courses`, and `folders` directly, then
-// reconstructs each quiz's subject/subfolder placement by walking
+// Queries Supabase for `quizzes`, `lessons`, `courses`, and `folders` directly,
+// then reconstructs each content item's subject/subfolder placement by walking
 // course_id → course row and folder_id → parent_folder_id chain. Apart from
 // the last-good LOCALSTORAGE snapshot described below (a per-browser cache
 // of the last successful live fetch, not an independent data source), nothing
@@ -73,7 +73,7 @@ function withTimeout(promise, ms, label) {
 // ── Local snapshot persistence ────────────────────────────────────────────────
 
 /** Stores the last-good catalog (slimmed: quiz metadata only, no quiz bodies). */
-function saveManifestCache({ quizzes, courses, folders }) {
+function saveManifestCache({ quizzes, lessons, courses, folders }) {
   try {
     if (typeof localStorage === "undefined") return;
     const slimQuizzes = (quizzes || []).map((q) => ({
@@ -86,10 +86,14 @@ function saveManifestCache({ quizzes, courses, folders }) {
       stats: q.data?.stats,
     }));
     const payload = JSON.stringify({
-      v: 1,
+      // Lessons were added to the catalog in v2. An older snapshot cannot
+      // provide an honest course-level lesson-progress total, so let it miss
+      // the cache and fetch a current catalog instead.
+      v: 2,
       project: SUPABASE_URL,
       savedAt: new Date().toISOString(),
       quizzes: slimQuizzes,
+      lessons,
       courses,
       folders,
     });
@@ -115,11 +119,12 @@ function tryRestoreManifestCache() {
     const raw = localStorage.getItem(MANIFEST_CACHE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (!data || data.v !== 1 || data.project !== SUPABASE_URL) return null;
+    if (!data || data.v !== 2 || data.project !== SUPABASE_URL) return null;
     if (
       !Array.isArray(data.courses) ||
       !Array.isArray(data.folders) ||
-      !Array.isArray(data.quizzes)
+      !Array.isArray(data.quizzes) ||
+      !Array.isArray(data.lessons)
     ) {
       return null;
     }
@@ -156,8 +161,8 @@ export async function getManifest() {
   // live and the snapshot fallback paths can feed it.
   let foldersRaw;
   try {
-    const { quizzes, courses, folders } = await fetchDbManifest(liveTimeout);
-    saveManifestCache({ quizzes, courses, folders });
+    const { quizzes, lessons, courses, folders } = await fetchDbManifest(liveTimeout);
+    saveManifestCache({ quizzes, lessons, courses, folders });
     // buildSubjects() returns { subjects: [...] } (see its docstring/return
     // statement below) — unwrap here so `subjects` is the plain array
     // buildCompatStructures() expects (@param {Subject[]} subjects).
@@ -167,7 +172,7 @@ export async function getManifest() {
     // never surfaced during the Supabase outage itself (the throw/timeout
     // path was hit first every time).
     foldersRaw = folders;
-    ({ subjects } = await buildSubjects(quizzes, courses, folders));
+    ({ subjects } = await buildSubjects(quizzes, lessons, courses, folders));
   } catch (err) {
     if (!snapshot) throw err;
     console.warn(
@@ -177,6 +182,7 @@ export async function getManifest() {
     foldersRaw = snapshot.folders;
     ({ subjects } = await buildSubjects(
       snapshot.quizzes,
+      snapshot.lessons,
       snapshot.courses,
       snapshot.folders,
     ));
@@ -198,7 +204,8 @@ export function invalidateManifestCache() {
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 /**
- * Queries Supabase directly for the raw `quizzes`, `courses`, and `folders`
+ * Queries Supabase directly for the raw `quizzes`, `lessons`, `courses`, and
+ * `folders`
  * rows (public SELECT is allowed by each table's RLS policy) and returns
  * them unshaped — buildSubjects() turns them into the compatibility
  * manifest. Kept in this module (rather than a shared helper) since it's
@@ -213,11 +220,15 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
   const supabase = await ensureSharedSupabaseClient();
   if (!supabase) throw new Error("Supabase client unavailable");
 
-  const [{ data: quizzes, error: quizzesError }, { data: courses, error: coursesError }, { data: folders, error: foldersError }] = await withTimeout(
+  const [{ data: quizzes, error: quizzesError }, { data: lessons, error: lessonsError }, { data: courses, error: coursesError }, { data: folders, error: foldersError }] = await withTimeout(
     Promise.all([
       supabase
         .from("quizzes")
         .select("id, course_id, folder_id, title, data, password")
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("lessons")
+        .select("id, course_id, folder_id, title, slug, content, created_at")
         .order("created_at", { ascending: true }),
       supabase
         .from("courses")
@@ -233,10 +244,11 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
   );
 
   if (quizzesError) throw quizzesError;
+  if (lessonsError) throw lessonsError;
   if (coursesError) throw coursesError;
   if (foldersError) throw foldersError;
 
-  return { quizzes, courses, folders };
+  return { quizzes, lessons, courses, folders };
 }
 
 /**
@@ -245,7 +257,7 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
  * and slimmed snapshot rows from saveManifestCache() (meta/stats hoisted to
  * the row top level) — see the `row.data ?? row` normalization below.
  */
-async function buildSubjects(quizzes, courses, folders) {
+async function buildSubjects(quizzes, lessons, courses, folders) {
   const courseById = new Map((courses || []).map((course) => [course.id, course]));
   const folderById = new Map((folders || []).map((folder) => [folder.id, folder]));
 
@@ -273,6 +285,25 @@ async function buildSubjects(quizzes, courses, folders) {
 
   const subjectsMap = new Map();
 
+  function ensureSubject(course) {
+    if (subjectsMap.has(course.id)) return subjectsMap.get(course.id);
+    const subject = {
+      id: course.id,
+      name: course.name,
+      education_type: course.education_type,
+      created_by: course.created_by || null,
+      created_at: course.created_at || null,
+      quizzes: [],
+      lessons: [],
+    };
+    if (course.education_type === "University" && course.college) subject.faculty = course.college;
+    if (course.year != null) subject.year = course.year;
+    if (course.term != null) subject.term = course.term;
+    if (course.icon) subject.icon = course.icon;
+    subjectsMap.set(course.id, subject);
+    return subject;
+  }
+
   for (const row of quizzes || []) {
     const course = courseById.get(row.course_id);
     if (!course) {
@@ -288,30 +319,7 @@ async function buildSubjects(quizzes, courses, folders) {
       continue;
     }
 
-    if (!subjectsMap.has(course.id)) {
-      const subject = {
-        id: course.id,
-        name: course.name,
-        education_type: course.education_type,
-        // Admin-management metadata (see admin-item-actions.js's canManageItem):
-        // threaded through so the shared-area ⋮ dropdowns can authorize
-        // move/rename/delete against the creator/scope tiers without an extra
-        // per-item fetch. Public RLS already exposes these columns; this is
-        // just carrying them into the category-tree nodes.
-        created_by: course.created_by || null,
-        created_at: course.created_at || null,
-        quizzes: [],
-      };
-      if (course.education_type === "University" && course.college) {
-        subject.faculty = course.college;
-      }
-      if (course.year != null) subject.year = course.year;
-      if (course.term != null) subject.term = course.term;
-      if (course.icon) subject.icon = course.icon;
-      subjectsMap.set(course.id, subject);
-    }
-
-    const subjectEntry = subjectsMap.get(course.id);
+    const subjectEntry = ensureSubject(course);
     // Live rows nest meta/stats inside the `data` JSON column; slimmed
     // snapshot rows hoist them to the row top level — support both.
     const quizMeta = row.data?.meta || row.meta || {};
@@ -341,6 +349,33 @@ async function buildSubjects(quizzes, courses, folders) {
     if (quizMeta.createdAt) quizEntry.createdAt = quizMeta.createdAt;
 
     subjectEntry.quizzes.push(quizEntry);
+  }
+
+  for (const row of lessons || []) {
+    const course = courseById.get(row.course_id);
+    if (!course) {
+      console.warn(`[quizManifest] Lesson ${row.id} has no valid course_id`);
+      continue;
+    }
+    let folderSegments;
+    try {
+      folderSegments = getFolderSegments(row.folder_id, row.course_id);
+    } catch (error) {
+      console.warn(`[quizManifest] ${error.message}`);
+      continue;
+    }
+    const content = row.content;
+    const sections = Array.isArray(content?.sections) ? content.sections : [{ id: "s1" }];
+    ensureSubject(course).lessons.push({
+      id: row.id,
+      slug: row.slug || null,
+      title: row.title || "",
+      folderSegments,
+      sectionIds: sections.map((section, index) => String(section?.id || `s${index + 1}`)),
+      createdAt: row.created_at || null,
+      courseId: row.course_id || null,
+      folderId: row.folder_id || null,
+    });
   }
 
   return { subjects: Array.from(subjectsMap.values()) };
@@ -426,6 +461,7 @@ function buildCompatStructures(subjects, folders) {
         parent: null,
         subcategories: [],
         exams: [],
+        lessons: [],
         source: subject.source,
         ...(subject.created_by && { created_by: subject.created_by }),
         ...(subject.created_at && { created_at: subject.created_at }),
@@ -456,6 +492,7 @@ function buildCompatStructures(subjects, folders) {
               parent: currentParentKey,
               subcategories: [],
               exams: [],
+              lessons: [],
               education_type: subject.education_type,
               ...(folderInfo && { id: folderInfo.id }),
               ...(folderInfo?.course_id && { course_id: folderInfo.course_id }),
@@ -494,6 +531,38 @@ function buildCompatStructures(subjects, folders) {
 
       categoryTree[examCategoryKey].exams.push(examEntry);
       examList.push(examEntry);
+    }
+
+    for (const lesson of subject.lessons ?? []) {
+      const folderSegments = Array.isArray(lesson.folderSegments) ? lesson.folderSegments : [];
+      let lessonCategoryKey = key;
+      if (folderSegments.length > 0) {
+        let currentParentKey = key;
+        let currentPathArr = [...categoryTree[key].path];
+        for (const segment of folderSegments) {
+          const subKey = `${currentParentKey}/${segment}`;
+          currentPathArr.push(segment);
+          if (!categoryTree[subKey]) {
+            const folderInfo = folderInfoByPath.get(subKey);
+            categoryTree[subKey] = {
+              key: subKey, name: segment, path: [...currentPathArr], parent: currentParentKey,
+              subcategories: [], exams: [], lessons: [], education_type: subject.education_type,
+              ...(folderInfo && { id: folderInfo.id }),
+              ...(folderInfo?.course_id && { course_id: folderInfo.course_id }),
+              ...(folderInfo?.parent_folder_id && { parent_folder_id: folderInfo.parent_folder_id }),
+              ...(folderInfo?.created_by && { created_by: folderInfo.created_by }),
+              ...(folderInfo?.created_at && { created_at: folderInfo.created_at }),
+              ...(folderInfo?.icon && { icon: folderInfo.icon }),
+            };
+            if (!categoryTree[currentParentKey].subcategories.includes(subKey)) {
+              categoryTree[currentParentKey].subcategories.push(subKey);
+            }
+          }
+          currentParentKey = subKey;
+        }
+        lessonCategoryKey = currentParentKey;
+      }
+      categoryTree[lessonCategoryKey].lessons.push({ ...lesson, category: lessonCategoryKey });
     }
   }
 

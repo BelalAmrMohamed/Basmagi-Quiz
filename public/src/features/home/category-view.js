@@ -21,6 +21,8 @@ import { getCourseItemCount, refreshUserQuizzesCard } from "./course-count.js";
 import { isRecentlyAdded } from "./date-utils.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { createExamCard } from "./exam-card.js";
+import { createLessonCard } from "./lesson-card.js";
+import { createCourseLessonProgressSummary } from "./lesson-progress.js";
 import { openExamDropdownMenu, createActionGroupSubmenu } from "./exam-dropdown-menu.js";
 import {
   canManageItem,
@@ -162,6 +164,13 @@ export function renderCategory(category) {
 
     const fragment = document.createDocumentFragment();
 
+    // A course-level, same-device summary. It includes lesson leaves under
+    // nested folders too; lessons never participate in quiz scoring.
+    if (!category.parent) {
+      const progressSummary = createCourseLessonProgressSummary(category);
+      if (progressSummary) fragment.appendChild(progressSummary);
+    }
+
     // Render subcategories
     (category.subcategories || []).forEach((subCatKey) => {
       const subCat = categoryTree[subCatKey];
@@ -179,10 +188,14 @@ export function renderCategory(category) {
       fragment.appendChild(card);
     });
 
+    (category.lessons || []).forEach((lesson) => {
+      fragment.appendChild(createLessonCard(lesson));
+    });
+
     container.appendChild(fragment);
 
     // Show empty state if no content
-    if ((category.subcategories || []).length === 0 && (category.exams || []).length === 0) {
+    if ((category.subcategories || []).length === 0 && (category.exams || []).length === 0 && (category.lessons || []).length === 0) {
       container.innerHTML = `
         <div class="empty-state" role="status">
           <div class="empty-state-icon" aria-hidden="true">🔭</div>
