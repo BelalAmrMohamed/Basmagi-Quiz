@@ -20,7 +20,7 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 ## New Features
 
 ### Lessons Page
-- `docs\I'm continuing work on.md`
+- Last session partially implemented phase 3: `docs\docs\plans\lessons-feature-plan.md`. Last thing happened is that create-lesson was implemented, but in the worst way possible, missing almost every single feature the create-quiz has, and it has extra useless requirenements, like admins only can create lessons for some reason, and it requests setting course and folder. It has no header bars for markdown and LaTeX like the create-quiz, no undo feature, embedded questions can't be essay, and just almost no features from create-quiz, and the new highligh feature to highlight text in a certain color wasn't implemented dynamically, meaning users can't highlight different words in different colors, and it wasn't implemented in the create-quiz's header bar for markdown. Redo the whole page properly with all features. 
 
 ### Result Pages
 
