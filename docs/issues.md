@@ -7,6 +7,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Updgrade from a markdown based rendering to a Google-Docs-Like Rendering.
+
 ### امتحاناتك
 - Sometimes makes duplicates of the same item when editing.
 - Select mode: Pressing on a folder/course correctly selects it, but pressing on a quiz/lesson doesn't select it, I have to press on the `.user-quiz-select-checkbox` itself to select the quiz. Fix: Pressing the quiz/lesson card should select it.
@@ -19,12 +21,12 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 ## New Features
 
 ### Lessons Page
-Last session partially implemented phase 3: `docs\docs\plans\lessons-feature-plan.md`. But since it was big, it still needs work.
-- The `.undo-redo-group` buttons on create-lesson should behave like the ones on the create-quiz page, and should be disabled in the same way.
-- On the create-quiz and create-lesson, the `.gmd-dropdown-menu--highlight` stays open forever, and it's still a very bad design/button functionally. Improvement: ![screenshot](image.png), design it like the Google docs version: More colors + Better color picker.
-- Inside the user workspace, `.user-lesson-card` should get its own dropdown with all actions that exist on the `.user-quiz-card`, so the user can see it's info (don't reuse quizzes info modal, new custom modular info modal spacifically for lessons), with all other actions, too.
-
-Do that, complete the 3rd phase, then take a sanitiy check, to make sure everything is implemented perfectly before going to the next phase, which needs a decision on whether `/lesson/` should be a completely new page or not. Because there are fundametal things that we didn't decide yet, like should we redesign the bottom nav on phones to include the new create-lesson page and update the icon of the create-quiz page, or should we keep it as it is?
+Last session completed the implementation of phase 3: `docs\plans\lessons-feature-plan.md`.
+- The `.undo-redo-group` buttons don't work as expected, for example, changing the name can't be undone, and editing on create-lesson can't be undone.
+- Inside the user workspace, `.user-lesson-card` isn't designed properly, the start and download buttons appear on top of each other, instead of next to each other.
+- I tested the last phase locally (which made drafts get stored in their own key instead of with the actual quizzes/lessons key), and I had quizzes stored as drafts based on the old schema, I couldn't delete them, and when I entered them, I got redirected to the home page for some reason. 
+  - First: An error in a quiz/lesson should redirect to the entry screen, not the home page.
+  - Second: The deleting issue and the old schema issue isn't a critical error, since create-quiz and create-lesson aren't used in production, so this is an issue on my localhost:8080 only.
 
 ### Result Pages
 
