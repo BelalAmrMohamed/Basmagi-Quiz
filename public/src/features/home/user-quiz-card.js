@@ -23,6 +23,7 @@ import {
 import { createUploadButton } from "./adminUpload.js";
 import { showUserQuizDownloadPopup } from "./download-modal.js";
 import { showUserQuizInfoModal, formatDateForInfo } from "./quiz-info-modal.js";
+import { showUserLessonInfoModal, collectLessonInfo } from "./lesson-info-modal.js";
 import {
   createExamInfoSubmenu,
   openExamDropdownMenu,
@@ -32,7 +33,7 @@ import {
   renderUserQuizzesView,
   updateBulkActionBar,
 } from "./user-quizzes-view.js";
-import { openMoveToDialog, renameItem } from "./user-quizzes-folders.js";
+import { openMoveToDialog, renameItem, deleteFolder } from "./user-quizzes-folders.js";
 import { userProfile } from "../../shared/userProfile.js";
 import {
   LOCK_ICON_SVG,
@@ -271,14 +272,17 @@ export function createUserLessonCard(lesson) {
 
   const actions = document.createElement("div");
   actions.className = "exam-card-actions-wrap";
-  const edit = document.createElement("button");
-  edit.className = "exam-more-btn";
-  edit.type = "button";
-  edit.innerHTML = EDIT_ICON_SVG;
-  edit.title = "تعديل الدرس";
-  edit.onclick = (event) => {
+  // ⋮ button — same class/placement as the quiz card's, opening the lesson
+  // equivalent of showUserQuizActionsOverlay (edit lives inside that menu now,
+  // exactly like quizzes: the menu is the single entry point for editing).
+  const more = document.createElement("button");
+  more.className = "exam-more-btn";
+  more.type = "button";
+  more.innerHTML = MORE_DOTS_ICON_SVG;
+  more.setAttribute("aria-label", `خيارات إضافية لـ ${title}`);
+  more.onclick = (event) => {
     event.stopPropagation();
-    window.location.href = `/create-lesson?edit=${encodeURIComponent(lessonId)}`;
+    showUserLessonActionsOverlay(lesson, more);
   };
   const start = document.createElement("button");
   start.className = "start-btn";
@@ -294,9 +298,111 @@ export function createUserLessonCard(lesson) {
   download.textContent = "تحميل";
   download.disabled = true;
   download.title = "تصدير الدروس سيتوفر قريباً";
-  actions.append(edit, start, download);
+  actions.append(more, start, download);
   card.append(checkbox, icon, text, actions);
   return card;
+}
+
+/**
+ * Action Overlay for workspace lessons — the lesson twin of
+ * showUserQuizActionsOverlay below, built from the same .exam-dropdown-menu /
+ * .exam-action-btn classes so the two menus are visually identical.
+ *
+ * Every action reuses a type-generic helper rather than a lesson-specific
+ * copy: renameItem / openMoveToDialog / deleteFolder all operate on any
+ * user_quizzes row by id (deleteFolder is named for folders but its
+ * confirm/trash/cascade/refresh path is fully item-generic — see its doc
+ * comment). Deliberately absent vs. the quiz menu:
+ *   - Admin upload: no client flow exists yet for publishing a lesson (the
+ *     admin create-lesson endpoint has no caller), and the bulk bar already
+ *     tells the user lessons "don't upload yet" — a dead button here would
+ *     contradict that.
+ *   - Mobile-only download row: lesson export doesn't exist yet either.
+ */
+export function showUserLessonActionsOverlay(lesson, triggerBtn) {
+  const lessonId = lesson.id || lesson.meta?.id;
+  const title = lesson.meta?.title || "درس بدون عنوان";
+
+  openExamDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
+    const editOpt = document.createElement("button");
+    editOpt.type = "button";
+    editOpt.className = "exam-action-btn";
+    editOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل الدرس</span>`;
+    editOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      window.location.href = `/create-lesson?edit=${encodeURIComponent(lessonId)}`;
+    };
+    menu.appendChild(editOpt);
+
+    const renameOpt = document.createElement("button");
+    renameOpt.type = "button";
+    renameOpt.className = "exam-action-btn";
+    renameOpt.innerHTML = `${RENAME_ICON_SVG}<span>إعادة تسمية</span>`;
+    renameOpt.onclick = async (e) => {
+      e.stopPropagation();
+      closeMenu();
+      await renameItem(lessonId, title);
+    };
+    menu.appendChild(renameOpt);
+
+    // ── "معلومات الدرس" submenu — same quick-rows-then-"كل المعلومات"
+    // pattern as the quiz menu, but the rows come from collectLessonInfo()
+    // (sections/questions/dates), not quiz fields. The full dialog is the
+    // lesson-specific modal, never the quiz one.
+    const info = collectLessonInfo(lesson);
+    const basicRows = [
+      { label: "ID", val: info.id, multiline: true, copyable: true, ltr: true },
+      { label: "الأقسام", val: info.sectionCount || null },
+      { label: "الأسئلة المدمجة", val: info.questionCount || null },
+      { label: "التاريخ", val: formatDateForInfo(info.createdAt), ltr: true },
+    ].filter((r) => r.val);
+    menu.appendChild(
+      createExamInfoSubmenu(
+        basicRows,
+        () => showUserLessonInfoModal(lesson),
+        closeMenu,
+        reposition,
+        "معلومات الدرس",
+      ),
+    );
+
+    const moveOpt = document.createElement("button");
+    moveOpt.type = "button";
+    moveOpt.className = "exam-action-btn";
+    moveOpt.innerHTML = `${MOVE_TO_ICON_SVG}<span>نقل إلى</span>`;
+    moveOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      openMoveToDialog([lessonId]);
+    };
+    menu.appendChild(moveOpt);
+
+    const askAiOpt = document.createElement("button");
+    askAiOpt.type = "button";
+    askAiOpt.className = "exam-action-btn";
+    askAiOpt.innerHTML = `${SPARKLE_ICON_SVG}<span>اسأل الباشـمبصمج</span>`;
+    askAiOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      const attachment = resolveUserItemAttachment(lessonId);
+      if (attachment) {
+        openAIAgentWithAttachment(attachment, { defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT });
+      }
+    };
+    menu.appendChild(askAiOpt);
+
+    const deleteOpt = document.createElement("button");
+    deleteOpt.type = "button";
+    deleteOpt.className = "exam-action-btn exam-action-btn--danger";
+    deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف الدرس</span>`;
+    deleteOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      deleteFolder(lessonId);
+    };
+    menu.appendChild(deleteOpt);
+  });
 }
 
 export function playUserLesson(lesson) {

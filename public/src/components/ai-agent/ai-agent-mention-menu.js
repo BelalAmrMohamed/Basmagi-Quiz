@@ -163,6 +163,7 @@ export function createMentionMenu(options) {
     function iconFor(kind) {
         if (kind === "course") return icons.course;
         if (kind === "folder") return icons.folder;
+        if (kind === "lesson") return icons.lesson || icons.quiz;
         return icons.quiz;
     }
 

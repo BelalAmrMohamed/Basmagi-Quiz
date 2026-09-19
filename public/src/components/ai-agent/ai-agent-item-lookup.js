@@ -21,6 +21,7 @@
 import { getFromStorage } from "../../shared/storage-helpers.js";
 import { qz } from "../../features/home/quiz-schema.js";
 import { getFolderContentsCount } from "../../features/home/user-quizzes-folders.js";
+import { normalizeLessonContent } from "../../features/lesson/lesson-schema.js";
 
 /**
  * Reads the flat user_quizzes array from localStorage. Failure-safe (bad
@@ -54,6 +55,38 @@ export function summarizeQuiz(quiz) {
 }
 
 /**
+ * Compact plain-text summary for a lesson: section/question counts, and the
+ * section titles so the assistant can orient itself without the full body.
+ * @param {object} lesson - a user_quizzes entry with meta.type === "lesson"
+ * @returns {string}
+ */
+export function summarizeLesson(lesson) {
+  const { sections } = normalizeLessonContent(lesson?.lesson);
+  const questions = sections.reduce(
+    (n, sec) => n + sec.blocks.filter((b) => b?.type === "question").length,
+    0,
+  );
+  const parts = [`عدد الأقسام: ${sections.length}`];
+  if (questions) parts.push(`الأسئلة المدمجة: ${questions}`);
+  const titles = sections.map((sec) => sec.title).filter(Boolean);
+  if (titles.length) parts.push(`الأقسام: ${titles.join("، ")}`);
+  return parts.join(" — ");
+}
+
+/**
+ * The lesson content the assistant reads. Only the reading material is sent
+ * (markdown bodies, media/quiz-ref stubs, question prompts and options) — the
+ * per-question `correctIndex`/`explanation` are included too, since the user
+ * is the author asking about their own draft; lessons are never scored, so
+ * there is no answer-key secrecy to protect here (unlike a live quiz).
+ * @param {object} lesson
+ */
+function lessonPayload(lesson) {
+  const { sections } = normalizeLessonContent(lesson?.lesson);
+  return { meta: lesson?.meta || {}, sections };
+}
+
+/**
  * Builds a compact summary for a folder/course — how many quizzes and
  * subfolders it contains, recursively (see getFolderContentsCount).
  * @param {object[]} userQuizzes
@@ -61,9 +94,10 @@ export function summarizeQuiz(quiz) {
  * @returns {string}
  */
 export function summarizeFolder(userQuizzes, folderId) {
-  const { subfolderCount, quizCount } = getFolderContentsCount(userQuizzes, folderId);
+  const { subfolderCount, quizCount, lessonCount } = getFolderContentsCount(userQuizzes, folderId);
   const parts = [];
   if (quizCount) parts.push(`${quizCount} امتحان`);
+  if (lessonCount) parts.push(`${lessonCount} درس`);
   if (subfolderCount) parts.push(`${subfolderCount} مجلد فرعي`);
   return parts.length ? `يحتوي على: ${parts.join(" و")}` : "مجلد فارغ حاليًا";
 }
@@ -73,11 +107,12 @@ function buildItemTree(userQuizzes, parentId) {
     .filter((item) => (item.meta?.parentId || null) === parentId)
     .map((item) => {
       const id = item.meta?.id || item.id;
-      const kind = item.meta?.type === "course" || item.meta?.type === "folder"
+      const kind = item.meta?.type === "course" || item.meta?.type === "folder" || item.meta?.type === "lesson"
         ? item.meta.type
         : "quiz";
-      const node = { kind, id, title: qz(item, "title") || "بدون عنوان" };
+      const node = { kind, id, title: qz(item, "title") || item.meta?.title || "بدون عنوان" };
       if (kind === "quiz") node.questionCount = qz(item, "count");
+      else if (kind === "lesson") node.sectionCount = item.stats?.sectionCount ?? 0;
       else node.children = buildItemTree(userQuizzes, id);
       return node;
     });
@@ -91,7 +126,7 @@ function buildItemTree(userQuizzes, parentId) {
  * @param {object[]} [userQuizzes] - pass a pre-fetched list to avoid a
  *   redundant localStorage read when a caller (see listRecentUserItems)
  *   already has one on hand.
- * @returns {{kind: "quiz"|"course"|"folder", id: string, title: string, summary: string, source: "local"} | null}
+ * @returns {{kind: "quiz"|"lesson"|"course"|"folder", id: string, title: string, summary: string, source: "local"} | null}
  */
 export function resolveUserItemById(id, userQuizzes = readUserQuizzes()) {
   const item = userQuizzes.find((q) => (q.meta?.id || q.id) === id);
@@ -99,6 +134,16 @@ export function resolveUserItemById(id, userQuizzes = readUserQuizzes()) {
 
   const title = qz(item, "title") || item.meta?.title || "بدون عنوان";
   const metaType = item.meta?.type;
+  if (metaType === "lesson") {
+    return {
+      kind: "lesson",
+      id,
+      title,
+      summary: summarizeLesson(item),
+      source: "local",
+      payload: lessonPayload(item),
+    };
+  }
   const kind = metaType === "folder" || metaType === "course" ? metaType : "quiz";
   if (kind === "quiz") {
     return {
@@ -117,9 +162,14 @@ export function resolveUserItemById(id, userQuizzes = readUserQuizzes()) {
     kind,
     id,
     title,
-    summary: `عدد الامتحانات: ${counts.quizCount} — عدد المجلدات: ${counts.subfolderCount}`,
+    summary: `عدد الامتحانات: ${counts.quizCount} — عدد الدروس: ${counts.lessonCount} — عدد المجلدات: ${counts.subfolderCount}`,
     source: "local",
-    payload: { totalQuizCount: counts.quizCount, totalFolderCount: counts.subfolderCount, tree },
+    payload: {
+      totalQuizCount: counts.quizCount,
+      totalLessonCount: counts.lessonCount,
+      totalFolderCount: counts.subfolderCount,
+      tree,
+    },
   };
 }
 
@@ -146,7 +196,7 @@ export function listRecentUserItems(query = "", limit = 8) {
       const title = qz(item, "title") || item.meta?.title || "بدون عنوان";
       if (q && !title.toLowerCase().includes(q)) return null;
       const metaType = item.meta?.type;
-      const kind = metaType === "folder" || metaType === "course" ? metaType : "quiz";
+      const kind = metaType === "folder" || metaType === "course" || metaType === "lesson" ? metaType : "quiz";
       return {
         kind,
         id,
@@ -175,10 +225,11 @@ export function buildUserRootAttachment(userQuizzes = readUserQuizzes()) {
   const tree = buildItemTree(userQuizzes, null);
   const quizCount = tree.reduce((count, item) => {
     if (item.kind === "quiz") return count + 1;
+    if (item.kind === "lesson") return count; // a lesson is not a quiz
     return count + countTreeQuizzes(item.children || []);
   }, 0);
   const folderCount = tree.reduce((count, item) => {
-    if (item.kind === "quiz") return count;
+    if (item.kind === "quiz" || item.kind === "lesson") return count; // leaves
     return count + 1 + countTreeFolders(item.children || []);
   }, 0);
   return {
@@ -192,9 +243,16 @@ export function buildUserRootAttachment(userQuizzes = readUserQuizzes()) {
 }
 
 function countTreeQuizzes(nodes) {
-  return nodes.reduce((count, node) => count + (node.kind === "quiz" ? 1 : countTreeQuizzes(node.children || [])), 0);
+  return nodes.reduce((count, node) => {
+    if (node.kind === "quiz") return count + 1;
+    if (node.kind === "lesson") return count;
+    return count + countTreeQuizzes(node.children || []);
+  }, 0);
 }
 
 function countTreeFolders(nodes) {
-  return nodes.reduce((count, node) => count + (node.kind === "quiz" ? 0 : 1 + countTreeFolders(node.children || [])), 0);
+  return nodes.reduce((count, node) => {
+    if (node.kind === "quiz" || node.kind === "lesson") return count;
+    return count + 1 + countTreeFolders(node.children || []);
+  }, 0);
 }

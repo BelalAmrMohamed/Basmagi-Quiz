@@ -732,55 +732,6 @@ body.sidebar-expanded .global-md-bar {
   line-height: 1;
 }
 
-/* Highlight color menu: one swatch per row, a colored dot next to the
-   color's name — same list shape as the LaTeX "more" menu so the two
-   dropdowns feel like the same UI family. */
-.gmd-dropdown-menu--highlight {
-    display: grid;
-    grid-template-columns: repeat(6, 26px);
-    gap: 7px;
-    min-width: 0;
-    padding: 10px;
-}
-
-.gmd-dropdown-menu--highlight.open { display: grid; }
-
-.gmd-highlight-swatch {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
-  width: 100%;
-  height: auto;
-  min-width: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 400;
-  color: var(--color-text-primary);
-  text-align: right;
-}
-
-.gmd-highlight-swatch:hover,
-.gmd-highlight-swatch:focus-visible {
-  background: var(--color-surface-hover, rgba(127, 127, 127, 0.12));
-}
-
-.gmd-highlight-swatch::before {
-  content: "";
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--swatch-color);
-  border: 1px solid rgba(0, 0, 0, 0.15);
-}
-
 .gmd-dropdown-menu--latex .gmd-btn-latex-label {
   font-family: inherit;
   font-size: 0.85rem;
@@ -4785,19 +4736,210 @@ html[data-animations="enabled"] .search-bar-fixed {
   }
 }
 
-.gmd-dropdown-menu--highlight .gmd-highlight-swatch {
-    width: 26px;
-    height: 26px;
-    min-width: 26px;
-    padding: 0;
-    font-size: 0;
-    justify-content: center;
+/* ============================================================================
+   HIGHLIGHT COLOR PICKER  (Google-Docs-style; markup from
+   src/shared/color-picker.js). Kept identical in create-quiz.css and
+   create-lesson.css — see the note at the top of each about intentionally
+   duplicated toolbar styles.
+
+   ROOT-CAUSE NOTE — why the old menu "stayed open forever": the previous
+   rule `.gmd-dropdown-menu--highlight { display: grid }` had the same
+   specificity as the base `.gmd-dropdown-menu { display: none }` and came
+   LATER in the file, so it always won and the menu was permanently visible
+   regardless of the `.open` class. Layout below is therefore applied ONLY
+   under `.open`; the closed state falls through to the base `display: none`.
+   ============================================================================ */
+
+.gmd-dropdown-menu--highlight {
+  /* No `display` here on purpose — see the note above. */
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  width: max-content;
+  max-width: calc(100vw - 16px);
+  padding: 10px;
+  max-height: min(80vh, 460px);
+  overflow-y: auto;
 }
 
-.gmd-dropdown-menu--highlight .gmd-highlight-swatch::before {
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
+.gmd-dropdown-menu--highlight.open {
+  display: flex;
 }
 
-.gmd-highlight-custom { width: 26px; height: 26px; padding: 1px; border: 1px dashed var(--color-border); border-radius: 4px; background: transparent; cursor: pointer; }
+.cp-reset {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: right;
+  cursor: pointer;
+}
+
+.cp-reset svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.cp-reset:hover,
+.cp-reset:focus-visible {
+  background: var(--color-surface-hover, rgba(127, 127, 127, 0.12));
+  outline: none;
+}
+
+.cp-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cp-row,
+.cp-recent {
+  display: flex;
+  gap: 4px;
+}
+
+.cp-recent {
+  flex-wrap: wrap;
+}
+
+.cp-swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: var(--cp-color);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.cp-swatch:hover,
+.cp-swatch:focus-visible {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-primary);
+  outline: none;
+  position: relative;
+  z-index: 1;
+}
+
+.cp-section-title {
+  margin-top: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.cp-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cp-tool {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.cp-tool svg {
+  width: 16px;
+  height: 16px;
+}
+
+.cp-tool:hover,
+.cp-tool:focus-visible,
+.cp-tool:focus-within {
+  background: var(--color-surface-hover, rgba(127, 127, 127, 0.12));
+  color: var(--color-primary);
+  outline: none;
+}
+
+/* The native color input is visually hidden but still the real control the
+   surrounding <label> activates — kept in the layout box (not display:none)
+   so the OS picker anchors next to the "+" button. */
+.cp-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  padding: 0;
+  border: 0;
+}
+
+.cp-hex {
+  width: 84px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.cp-hex:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+}
+
+.cp-hex.is-invalid {
+  border-color: var(--color-error);
+  outline-color: var(--color-error);
+}
+
+.cp-apply {
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cp-apply:hover,
+.cp-apply:focus-visible {
+  background: var(--color-primary-hover, var(--color-primary));
+  outline: none;
+}
+
+@media (max-width: 480px) {
+  .cp-swatch {
+    width: 18px;
+    height: 18px;
+  }
+
+  .cp-row,
+  .cp-recent {
+    gap: 3px;
+  }
+}

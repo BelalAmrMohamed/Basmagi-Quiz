@@ -813,9 +813,16 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
     contextMenuEl.appendChild(createMenuItem(SELECT_SVG, "تحديد", () => selectItem(targetId)));
     contextMenuEl.appendChild(createMenuItem(RENAME_SVG, "إعادة تسمية", () => renameItem(targetId, targetTitle)));
     if (targetType === "item") {
+      // "item" covers both quizzes and lessons — send each to its own editor.
+      // (A lesson id opened in create-quiz would find no quiz and show an
+      // error/blank editor.)
+      const targetRow = readUserQuizzes().find((q) => (q.id || q.meta?.id) === targetId);
+      const isLesson = targetRow?.meta?.type === "lesson";
       contextMenuEl.appendChild(
-        createMenuItem(EDIT_SVG, "تعديل الامتحان", () => {
-          window.location.href = `create-quiz?edit=${encodeURIComponent(targetId)}`;
+        createMenuItem(EDIT_SVG, isLesson ? "تعديل الدرس" : "تعديل الامتحان", () => {
+          window.location.href = isLesson
+            ? `/create-lesson?edit=${encodeURIComponent(targetId)}`
+            : `create-quiz?edit=${encodeURIComponent(targetId)}`;
         }),
       );
     }
@@ -1310,6 +1317,14 @@ function appendSubtree(userQuizzes, node, ancestorNames, rootName, items) {
   for (const child of children) {
     const childId = child.id || child.meta?.id;
     const childName = (child.meta?.title || "").trim();
+    // Lessons have no upload path yet (the admin create-lesson endpoint has no
+    // client caller, and routeBulkUpload refuses lessons in a direct
+    // selection). Without this skip, a lesson nested inside an uploaded
+    // folder/course fell into the quiz branch below and was serialized as an
+    // empty quiz (questions: []) — which the server rejects wholesale or
+    // publishes as a blank quiz. Skipping is silent by design here: the
+    // folder upload itself is still valid, it just doesn't carry its lessons.
+    if (child.meta?.type === "lesson" || child.meta?.type === "draft-lesson") continue;
     if (child.meta?.type === "folder") {
       items.push({
         type: "folder",
@@ -1424,16 +1439,26 @@ export function selectItem(itemId) {
 export function getFolderContentsCount(userQuizzes, folderId) {
   let subfolderCount = 0;
   let quizCount = 0;
+  let lessonCount = 0;
 
   function walk(currentId) {
     const children = userQuizzes.filter(
-      (q) => (q.meta?.parentId || null) === currentId
+      (q) =>
+        (q.meta?.parentId || null) === currentId &&
+        // Drafts are never shown in the tree (see getChildren), so they must
+        // not be counted either.
+        q.meta?.type !== "draft" &&
+        q.meta?.type !== "draft-lesson",
     );
     for (const child of children) {
-      const isDir = child.meta?.type === "folder" || child.meta?.type === "course";
-      if (isDir) {
+      const type = child.meta?.type;
+      if (type === "folder" || type === "course") {
         subfolderCount++;
         walk(child.id || child.meta?.id);
+      } else if (type === "lesson") {
+        // Lessons used to fall into the `else` below and be reported as
+        // quizzes ("3 امتحانات" for a folder holding 1 quiz + 2 lessons).
+        lessonCount++;
       } else {
         quizCount++;
       }
@@ -1441,7 +1466,7 @@ export function getFolderContentsCount(userQuizzes, folderId) {
   }
 
   walk(folderId);
-  return { subfolderCount, quizCount };
+  return { subfolderCount, quizCount, lessonCount };
 }
 
 /**
@@ -1450,8 +1475,8 @@ export function getFolderContentsCount(userQuizzes, folderId) {
  * @param {number} quizCount
  * @returns {string}
  */
-export function formatFolderAndQuizCount(subfolderCount, quizCount) {
-  if (subfolderCount === 0 && quizCount === 0) {
+export function formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount = 0) {
+  if (subfolderCount === 0 && quizCount === 0 && lessonCount === 0) {
     return "فارغ";
   }
 
@@ -1469,6 +1494,13 @@ export function formatFolderAndQuizCount(subfolderCount, quizCount) {
     else if (quizCount === 2) parts.push("امتحانان");
     else if (quizCount >= 3 && quizCount <= 10) parts.push(`${quizCount} امتحانات`);
     else parts.push(`${quizCount} امتحان`);
+  }
+
+  if (lessonCount > 0) {
+    if (lessonCount === 1) parts.push("درس واحد");
+    else if (lessonCount === 2) parts.push("درسان");
+    else if (lessonCount >= 3 && lessonCount <= 10) parts.push(`${lessonCount} دروس`);
+    else parts.push(`${lessonCount} درس`);
   }
 
   return parts.join(" · ");
@@ -1529,8 +1561,8 @@ export function createFolderOrCourseCard(item) {
 
   // Subtext: total number of subfolders and quizzes (recursive)
   const userQuizzes = readUserQuizzes();
-  const { subfolderCount, quizCount } = getFolderContentsCount(userQuizzes, itemId);
-  const subtextStr = formatFolderAndQuizCount(subfolderCount, quizCount);
+  const { subfolderCount, quizCount, lessonCount } = getFolderContentsCount(userQuizzes, itemId);
+  const subtextStr = formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount);
 
   const subtextEl = document.createElement("p");
   subtextEl.className = "category-card-subtext user-quiz-count";

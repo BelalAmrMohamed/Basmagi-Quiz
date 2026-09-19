@@ -45,6 +45,7 @@ import {
 } from "../../components/notifications/notifications.js";
 import { normalizeLessonContent, hasLessonLevelCollision } from "../lesson/lesson-schema.js";
 import { FONT_CHOICES, HIGHLIGHT_CHOICES } from "../lesson/lesson-reader-prefs.js";
+import { mountColorPicker } from "../../shared/color-picker.js";
 
 // =============================================================================
 // STATE
@@ -219,6 +220,10 @@ function refreshEditorAfterHistoryChange() {
     renderSections();
     updateSectionNavigator();
     updateAppTitleBar();
+    // Undoing/redoing a reader-default change restores lessonData.fontId, but
+    // the <select> in the Markdown bar is not part of renderSections() — sync
+    // it or the control keeps showing the pre-undo value.
+    syncReaderDefaultsBar();
 }
 
 window.performUndo = function () {
@@ -829,6 +834,9 @@ function setupMdField(id, onChange, { minPx = 40, maxPx = 320 } = {}) {
 // =============================================================================
 
 let _activeMdSource = null;
+// Highlight picker state — see setupGlobalMdBar().
+let _highlightPicker = null;
+let _highlightSavedSelection = null;
 
 function _trackMdSourceFocus() {
     document.addEventListener(
@@ -1075,12 +1083,38 @@ function setupGlobalMdBar() {
         });
     });
 
-    bar.querySelectorAll(".gmd-highlight-custom").forEach((input) => {
-        input.addEventListener("input", () => {
-            applyGlobalMdAction("highlight", null, input.value);
-            closeAllGmdDropdowns();
-        });
-    });
+    // Highlight color picker (Google-Docs-style palette + custom + eyedropper).
+    // The picker's own controls are .cp-* elements, deliberately NOT .gmd-btn,
+    // so the generic command-button handler above never sees them.
+    //
+    // Selection safety: bar-level mousedown preventDefault (above) keeps the
+    // textarea focused for palette clicks, but the picker also contains a
+    // text field (#RRGGBB) and a native color input, which MUST be allowed to
+    // take focus/opening. Taking focus blurs the textarea, and although a
+    // textarea keeps its selectionStart/End after blur, the picker's own
+    // interactions could still move it in some browsers — so the range is
+    // captured when the menu opens and restored right before applying.
+    const highlightMenu = document.getElementById("gmdHighlightMenu");
+    if (highlightMenu) {
+        highlightMenu.addEventListener("mousedown", (e) => e.stopPropagation());
+        _highlightPicker = mountColorPicker(
+            highlightMenu,
+            (hex) => {
+                const ta = _highlightSavedSelection?.ta;
+                if (ta && document.body.contains(ta)) {
+                    _activeMdSource = ta;
+                    ta.focus();
+                    ta.setSelectionRange(_highlightSavedSelection.start, _highlightSavedSelection.end);
+                }
+                applyGlobalMdAction("highlight", null, hex);
+            },
+            closeAllGmdDropdowns,
+            () => {
+                closeAllGmdDropdowns();
+                document.getElementById("gmdHighlightToggle")?.focus();
+            },
+        );
+    }
 
     bar.querySelectorAll(".gmd-dropdown-toggle").forEach((toggle) => {
         toggle.setAttribute("aria-haspopup", "true");
@@ -1095,13 +1129,30 @@ function setupGlobalMdBar() {
             const isOpen = m.classList.contains("open");
             closeAllGmdDropdowns();
             if (!isOpen) {
+                if (m.id === "gmdHighlightMenu") {
+                    const ta = _activeMdSource;
+                    _highlightSavedSelection =
+                        ta && document.body.contains(ta)
+                            ? { ta, start: ta.selectionStart, end: ta.selectionEnd }
+                            : null;
+                    _highlightPicker?.refresh();
+                }
                 positionGmdDropdown(toggle, m);
                 m.classList.add("open");
                 toggle.setAttribute("aria-expanded", "true");
-                activateMenuKeyboardNav(m, () => {
-                    closeAllGmdDropdowns();
-                    toggle.focus();
-                });
+                if (m.id === "gmdHighlightMenu") {
+                    // The picker owns its keyboard handling (2D grid nav, free
+                    // Tab to the hex field). Only move focus in when the menu
+                    // was opened from the keyboard (Enter/Space fire a click
+                    // with detail === 0); a mouse click must leave the focus —
+                    // and the caret — in the textarea.
+                    if (e.detail === 0) _highlightPicker?.focusFirst();
+                } else {
+                    activateMenuKeyboardNav(m, () => {
+                        closeAllGmdDropdowns();
+                        toggle.focus();
+                    });
+                }
                 _armMenuOpenGuard();
             }
         });
@@ -1158,10 +1209,10 @@ function setupReaderDefaultsBar() {
 }
 
 function syncReaderDefaultsBar() {
+    // Only the font <select> exists in the bar (the per-word highlight color
+    // comes from the ==text==(color) picker, not a reader-default control).
     const f = document.getElementById("lessonFontSelect");
-    const h = document.getElementById("lessonHighlightSelect");
     if (f) f.value = lessonData.fontId || "default";
-    if (h) h.value = lessonData.highlightId || "yellow";
 }
 
 // =============================================================================

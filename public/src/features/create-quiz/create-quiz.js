@@ -23,6 +23,7 @@ import { CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai
 import { isMultiSelectQuestion } from "../../shared/rate-answers.js";
 import { hasSameLevelCollision } from "../home/user-quizzes-folders.js";
 import { renderCreateQuestionNavigator, initCreateQuestionNavigator } from "./question-navigator.js";
+import { mountColorPicker } from "../../shared/color-picker.js";
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -364,6 +365,9 @@ window.applyMdToolbarAction = function (e, id, cmd, headingLevel) {
 
 /** The currently (or last) focused .md-source textarea, or null. */
 let _activeMdSource = null;
+// Highlight picker state — see setupGlobalMdBar().
+let _highlightPicker = null;
+let _highlightSavedSelection = null;
 
 /** Track focus across all .md-source fields via event delegation. */
 function _trackMdSourceFocus() {
@@ -704,12 +708,37 @@ function setupGlobalMdBar() {
     });
   });
 
-  bar.querySelectorAll(".gmd-highlight-custom").forEach((input) => {
-    input.addEventListener("input", () => {
-      applyGlobalMdAction("highlight", null, input.value);
-      closeAllGmdDropdowns();
-    });
-  });
+  // Highlight color picker (Google-Docs-style palette + custom + eyedropper),
+  // shared with create-lesson.js via src/shared/color-picker.js. Its controls
+  // are .cp-* elements, deliberately NOT .gmd-btn, so the generic
+  // command-button handler above never sees them.
+  //
+  // Selection safety: this bar has no mousedown guard (unlike create-lesson),
+  // so pressing anything in the picker — especially its hex field and native
+  // color input, which must take focus — can blur the textarea. A textarea
+  // keeps selectionStart/End after blur, but the range is captured when the
+  // menu opens and restored right before applying so the result never
+  // depends on how the browser treated focus in between.
+  const highlightMenu = document.getElementById("gmdHighlightMenu");
+  if (highlightMenu) {
+    _highlightPicker = mountColorPicker(
+      highlightMenu,
+      (hex) => {
+        const ta = _highlightSavedSelection?.ta;
+        if (ta && document.body.contains(ta)) {
+          _activeMdSource = ta;
+          ta.focus();
+          ta.setSelectionRange(_highlightSavedSelection.start, _highlightSavedSelection.end);
+        }
+        applyGlobalMdAction("highlight", null, hex);
+      },
+      closeAllGmdDropdowns,
+      () => {
+        closeAllGmdDropdowns();
+        document.getElementById("gmdHighlightToggle")?.focus();
+      },
+    );
+  }
 
   // Dropdown toggles (LaTeX "more" menu, heading levels menu). aria-
   // haspopup/aria-expanded wired here (rather than hardcoded in the HTML)
@@ -734,13 +763,29 @@ function setupGlobalMdBar() {
       const isOpen = menu.classList.contains("open");
       closeAllGmdDropdowns();
       if (!isOpen) {
+        if (menu.id === "gmdHighlightMenu") {
+          const ta = _activeMdSource;
+          _highlightSavedSelection =
+            ta && document.body.contains(ta)
+              ? { ta, start: ta.selectionStart, end: ta.selectionEnd }
+              : null;
+          _highlightPicker?.refresh();
+        }
         positionGmdDropdown(toggle, menu);
         menu.classList.add("open");
         toggle.setAttribute("aria-expanded", "true");
-        activateMenuKeyboardNav(menu, () => {
-          closeAllGmdDropdowns();
-          toggle.focus();
-        });
+        if (menu.id === "gmdHighlightMenu") {
+          // The picker owns its keyboard handling (2D grid nav, free Tab to
+          // the hex field). Only move focus in when opened from the keyboard
+          // (Enter/Space fire a click with detail === 0); a mouse click must
+          // leave focus — and the caret — in the textarea.
+          if (e.detail === 0) _highlightPicker?.focusFirst();
+        } else {
+          activateMenuKeyboardNav(menu, () => {
+            closeAllGmdDropdowns();
+            toggle.focus();
+          });
+        }
         // See _armMenuOpenGuard (menu-bar section below) — same fix for
         // the same class of bug on this separately-scrolling toolbar.
         _armMenuOpenGuard();

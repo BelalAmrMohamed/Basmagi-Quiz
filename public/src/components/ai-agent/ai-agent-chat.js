@@ -174,7 +174,7 @@ export function createChatPanel(options = {}) {
    * Phase 4's `/`/`@` menu will do the same for multi-attach. Only ever
    * populated with at most one FILE at a time (backend limit, see above)
    * but any number of platform-item entries.
-   * @type {Array<{kind: "file", mimeType: string, base64: string, name: string} | {kind: "quiz"|"course"|"folder", id: string, title: string, source: "platform"|"local"}>}
+   * @type {Array<{kind: "file", mimeType: string, base64: string, name: string} | {kind: "quiz"|"lesson"|"course"|"folder", id: string, title: string, source: "platform"|"local"}>}
    */
   let pendingAttachments = [];
 
@@ -466,6 +466,8 @@ export function createChatPanel(options = {}) {
     '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
   const ATTACHMENT_FOLDER_ICON_SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>';
+  const ATTACHMENT_LESSON_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>';
   const ATTACHMENT_REMOVE_ICON_SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
 
@@ -505,10 +507,10 @@ export function createChatPanel(options = {}) {
    * per its own header comment) — falls back to just the title if no
    * summary was supplied (e.g. a server-hosted course whose quiz list
    * isn't loaded client-side at attach time).
-   * @param {{kind: "quiz"|"course"|"folder", title: string, summary?: string}} att
+   * @param {{kind: "quiz"|"lesson"|"course"|"folder", title: string, summary?: string}} att
    */
   function expandPlatformAttachment(att) {
-    const kindLabelAr = { quiz: "امتحان", course: "مادة", folder: "مجلد" }[att.kind] || att.kind;
+    const kindLabelAr = { quiz: "امتحان", lesson: "درس", course: "مادة", folder: "مجلد" }[att.kind] || att.kind;
     const body = att.payload
       ? JSON.stringify(att.payload)
       : att.summary || "(لا تفاصيل إضافية متاحة عن هذا العنصر)";
@@ -517,6 +519,7 @@ export function createChatPanel(options = {}) {
 
   function iconForAttachment(att) {
     if (att.kind === "quiz") return ATTACHMENT_QUIZ_ICON_SVG;
+    if (att.kind === "lesson") return ATTACHMENT_LESSON_ICON_SVG;
     if (att.kind === "course") return ATTACHMENT_COURSE_ICON_SVG;
     if (att.kind === "folder") return ATTACHMENT_FOLDER_ICON_SVG;
     return ATTACHMENT_FILE_ICON_SVG;
@@ -526,7 +529,7 @@ export function createChatPanel(options = {}) {
     return att.kind === "file" ? att.name : att.title;
   }
 
-  const ATTACHMENT_KIND_LABEL_AR = { quiz: "امتحان", course: "مادة", folder: "مجلد", file: "ملف" };
+  const ATTACHMENT_KIND_LABEL_AR = { quiz: "امتحان", lesson: "درس", course: "مادة", folder: "مجلد", file: "ملف" };
 
   /**
    * Shows a full preview of one attachment (file or platform-item) on
@@ -2164,7 +2167,7 @@ export function createChatPanel(options = {}) {
         .filter((a) => a.kind === "file" || (!a.kind && a.base64))
         .map(({ mimeType, base64, name }) => ({ mimeType, base64, name }));
       const platformAttachments = (attachments || []).filter(
-        (a) => a.kind === "quiz" || a.kind === "course" || a.kind === "folder",
+        (a) => a.kind === "quiz" || a.kind === "lesson" || a.kind === "course" || a.kind === "folder",
       );
       const expandedContext = platformAttachments.length
         ? platformAttachments.map(expandPlatformAttachment).join("\n\n")
@@ -2516,6 +2519,7 @@ export function createChatPanel(options = {}) {
     },
     icons: {
       quiz: ATTACHMENT_QUIZ_ICON_SVG,
+      lesson: ATTACHMENT_LESSON_ICON_SVG,
       course: ATTACHMENT_COURSE_ICON_SVG,
       folder: ATTACHMENT_FOLDER_ICON_SVG,
     },
@@ -2596,7 +2600,7 @@ export function createChatPanel(options = {}) {
    * user-picked file. Never auto-sends; that stays the user's call (send
    * button / Enter), per the plan's explicit "give the user the ability to
    * remove it or send it with a prompt" requirement.
-   * @param {{kind: "quiz"|"course"|"folder", id?: string, title: string, source?: string}} attachment
+   * @param {{kind: "quiz"|"lesson"|"course"|"folder", id?: string, title: string, source?: string}} attachment
    */
   panel.addPendingAttachment = function addPendingAttachment(attachment) {
     if (!attachment || !attachment.kind || attachment.kind === "file") return;
