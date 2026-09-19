@@ -32,9 +32,9 @@
 // passed_quizzes_count.
 // =============================================================================
 
-import { isAdminAuthenticated } from "../../shared/adminAuth.js";
+import { getToken, isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
-import { getManifest } from "../../shared/quizManifest.js";
+import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.js";
 import { renderMarkdown } from "../../shared/markdown.js";
 import { readEditorDrafts, upsertEditorDraft, removeEditorDraft, migrateWorkspaceDrafts } from "../../shared/editor-drafts.js";
 import { escapeHtml } from "../home/escape-html.js";
@@ -65,6 +65,12 @@ let lessonData = emptyLessonData();
 let currentDraftId = null;
 /** id of an already-saved local lesson row being edited (?edit=<id>), or null. */
 let editingLessonId = null;
+
+/** Published Supabase lesson currently open in the editor, if any. */
+let publishedLessonId = null;
+
+/** Public lesson rows used for the admin publishing picker and edit deep links. */
+let sharedLessons = [];
 
 /** `examList` from getManifest(), used by the quiz-reference picker. */
 let quizExamList = [];
@@ -278,6 +284,13 @@ function autosave() {
 
     autosaveTimeout = setTimeout(() => {
         try {
+            // Published lessons are only written through the authenticated
+            // admin action on an explicit save/publish. Never silently turn
+            // a shared lesson edit into a private browser draft.
+            if (publishedLessonId) {
+                updateAutosaveIndicator("saved");
+                return;
+            }
             const items = _readUserItems();
 
             if (editingLessonId) {
@@ -324,6 +337,10 @@ function flushAutosave() {
     clearTimeout(autosaveTimeout);
     autosaveTimeout = null;
     try {
+        if (publishedLessonId) {
+            updateAutosaveIndicator("saved");
+            return;
+        }
         const items = _readUserItems();
         if (editingLessonId) {
             const idx = items.findIndex((r) => r.id === editingLessonId);
@@ -354,7 +371,7 @@ document.addEventListener("visibilitychange", () => {
 // INIT
 // =============================================================================
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     migrateWorkspaceDrafts();
     isAdmin = isAdminAuthenticated();
 
@@ -380,6 +397,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (editId) {
         try {
             openedOk = openLessonById(editId);
+            if (!openedOk && isAdmin) openedOk = await openPublishedLessonById(editId);
         } catch (err) {
             console.error("Failed to open lesson for editing:", err);
             openedOk = false;
@@ -387,6 +405,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (!openedOk) {
+        if (isAdmin) await loadSharedLessons();
         showEntryScreen();
     } else {
         // Deep-linked edit bypasses the entry screen, same as create-quiz.
@@ -583,6 +602,16 @@ function renderEntryItemsGrid() {
         .filter((r) => r.meta?.type === LESSON_TYPE)
         .map((r) => toTile(r, "mine"))
         .sort(_byNewest);
+    const published = sharedLessons
+        .map((row) => ({
+            kind: "published",
+            id: row.id,
+            title: row.title || "درس بدون عنوان",
+            count: row.content?.sections?.flatMap((section) => section.blocks || []).filter((block) => block.type === "question").length || 0,
+            sections: row.content?.sections?.length || 0,
+            updatedAt: row.updated_at || row.created_at || null,
+        }))
+        .sort(_byNewest);
 
     const makeTile = (item) => {
         const meta = [
@@ -594,7 +623,7 @@ function renderEntryItemsGrid() {
         const id = escapeHtml(item.id);
         return `
       <div class="entry-item-wrap">
-        <button type="button" class="entry-item${item.kind === "draft" ? " entry-item-draft" : ""}" onclick="chooseUserLessonToEdit('${id}')">
+        <button type="button" class="entry-item${item.kind === "draft" ? " entry-item-draft" : ""}" onclick="${item.kind === "published" ? "choosePublishedLessonToEdit" : "chooseUserLessonToEdit"}('${id}')">
           <span class="entry-item-thumb">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 7v14" />
@@ -604,7 +633,7 @@ function renderEntryItemsGrid() {
           <span class="entry-item-title">${escapeHtml(item.title)}</span>
           <span class="entry-item-meta">${escapeHtml(meta)}</span>
         </button>
-        <div class="entry-item-more-wrap">
+        ${item.kind === "published" ? "" : `<div class="entry-item-more-wrap">
           <button type="button" class="entry-item-more-btn" onclick="toggleEntryItemMenu(event, '${id}')" aria-label="خيارات إضافية" title="خيارات إضافية">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></svg>
           </button>
@@ -618,7 +647,7 @@ function renderEntryItemsGrid() {
               <span>حذف</span>
             </button>
           </div>
-        </div>
+        </div>`}
       </div>`;
     };
 
@@ -628,6 +657,9 @@ function renderEntryItemsGrid() {
     }
     if (saved.length) {
         html += `<div class="entry-section"><h2 class="entry-screen-heading">الدروس المحفوظة</h2><div class="entry-items-grid">${saved.map(makeTile).join("")}</div></div>`;
+    }
+    if (published.length) {
+        html += `<div class="entry-section"><h2 class="entry-screen-heading">الدروس المنشورة</h2><div class="entry-items-grid">${published.map(makeTile).join("")}</div></div>`;
     }
     grid.innerHTML = html;
 
@@ -723,6 +755,7 @@ function startNewLesson() {
     lessonData = emptyLessonData();
     currentDraftId = null;
     editingLessonId = null;
+    publishedLessonId = null;
     resetHistory();
     renderLessonForm();
     showLessonForm();
@@ -2263,6 +2296,63 @@ window.setQuestionCorrectIndex = function (sectionId, localId, index) {
     autosave();
 };
 
+window.choosePublishedLessonToEdit = async function (id) {
+    if (!(await openPublishedLessonById(id))) {
+        showNotification("خطأ", "تعذّر فتح الدرس المنشور.", "error");
+        renderEntryItemsGrid();
+    }
+};
+
+async function loadSharedLessons() {
+    const client = await ensureSharedSupabaseClient();
+    if (!client) return;
+    const { data, error } = await client
+        .from("lessons")
+        .select("id, title, content, reader_prefs_default, course_id, folder_id, created_at, updated_at")
+        .order("updated_at", { ascending: false });
+    if (error) {
+        console.warn("[create-lesson] failed to load published lessons:", error.message);
+        return;
+    }
+    sharedLessons = Array.isArray(data) ? data : [];
+}
+
+async function openPublishedLessonById(id) {
+    const client = await ensureSharedSupabaseClient();
+    if (!client) return false;
+    let row = sharedLessons.find((lesson) => lesson.id === id);
+    if (!row) {
+        const { data, error } = await client
+            .from("lessons")
+            .select("id, title, content, reader_prefs_default, course_id, folder_id, created_at, updated_at")
+            .eq("id", id)
+            .maybeSingle();
+        if (error || !data) return false;
+        row = data;
+        sharedLessons = [row, ...sharedLessons.filter((lesson) => lesson.id !== row.id)];
+    }
+    const normalized = normalizeLessonContent(row.content);
+    const prefs = row.reader_prefs_default || {};
+    lessonData = {
+        title: row.title || "",
+        fontId: prefs.fontId || "default",
+        highlightId: prefs.highlightId || "yellow",
+        sections: normalized.sections.length ? normalized.sections.map((section) => ({
+            id: section.id,
+            title: section.title,
+            defaultHidden: section.defaultHidden,
+            blocks: section.blocks.map(hydrateBlock),
+        })) : [{ id: newLocalId("s"), title: "", defaultHidden: false, blocks: [] }],
+    };
+    publishedLessonId = row.id;
+    editingLessonId = null;
+    currentDraftId = null;
+    resetHistory();
+    renderLessonForm();
+    showLessonForm();
+    return true;
+}
+
 window.toggleQuestionMultiSelect = function (sectionId, localId) {
     const block = findBlock(sectionId, localId);
     if (!block || block.questionKind === "essay") return;
@@ -2480,6 +2570,7 @@ function validateLesson() {
 //   * an already-saved lesson is updated in place, keeping its parentId.
 
 window.saveLesson = function () {
+    if (publishedLessonId) return window.publishLesson();
     const errors = validateLesson();
     if (errors.length > 0) {
         showNotification("خطأ في التحقق", "الرجاء إصلاح الأخطاء التالية:\n\n" + errors.join("\n"), "error");
@@ -2548,6 +2639,67 @@ window.saveLesson = function () {
             showNotification("خطأ", errorMessage || "فشل حفظ الدرس", "error");
         }
     }, 400);
+};
+
+/**
+ * Saves the current editor state as a public, course-scoped lesson.  Local
+ * lessons remain useful as private drafts; this explicit action is the
+ * server-authorized publishing path required for the shared catalog.
+ */
+window.publishLesson = async function () {
+    if (!isAdmin || !getToken()) {
+        showNotification("تسجيل الدخول مطلوب", "انضم كمشرف لنشر الدرس في مكتبة المنصة.", "error");
+        return;
+    }
+    const errors = validateLesson();
+    if (errors.length) {
+        showNotification("خطأ في التحقق", "الرجاء إصلاح الأخطاء التالية:\n\n" + errors.join("\n"), "error");
+        return;
+    }
+
+    let courseId = sharedLessons.find((lesson) => lesson.id === publishedLessonId)?.course_id || null;
+    if (!courseId) {
+        const { subjects = [] } = await getManifest();
+        if (!subjects.length) {
+            showNotification("لا توجد مواد", "أنشئ مادة أولاً ثم انشر الدرس فيها.", "error");
+            return;
+        }
+        const choices = subjects.map((subject, index) => `${index + 1}. ${subject.name}`).join("\n");
+        const answer = await _prompt(`اختر رقم المادة التي سينشر فيها الدرس:\n${choices}`, "1");
+        const selected = subjects[Number(answer) - 1];
+        if (!selected) {
+            showNotification("اختيار غير صالح", "اكتب رقم مادة من القائمة.", "error");
+            return;
+        }
+        courseId = selected.id;
+    }
+
+    showLoading(publishedLessonId ? "يُحدّث الدرس المنشور…" : "يُنشر الدرس…");
+    try {
+        const action = publishedLessonId ? "update-lesson" : "create-lesson";
+        const body = publishedLessonId
+            ? { id: publishedLessonId, title: lessonData.title.trim(), content: serializeContent(), readerPrefsDefault: readerPrefsFromData() }
+            : { title: lessonData.title.trim(), content: serializeContent(), courseId, readerPrefsDefault: readerPrefsFromData() };
+        const response = await fetch("/api/admin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+            body: JSON.stringify({ action, ...body }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "تعذر نشر الدرس.");
+        publishedLessonId = result.id || publishedLessonId;
+        if (currentDraftId) removeEditorDraft(currentDraftId);
+        currentDraftId = null;
+        await loadSharedLessons();
+        invalidateManifestCache();
+        updateAutosaveIndicator("saved");
+        showNotification("تم النشر", "أصبح الدرس متاحًا للطلاب. يمكنك نقله إلى مجلد من صفحة المادة.", "success");
+    } catch (error) {
+        console.error("[create-lesson] publish failed:", error);
+        showNotification("تعذر النشر", error.message || "حاول مرة أخرى.", "error");
+    } finally {
+        hideLoading();
+    }
 };
 
 // =============================================================================

@@ -452,7 +452,10 @@ export default async function handler(req, res) {
     applyCors(req, res);
     if (req.method === "OPTIONS") return res.status(200).end();
 
-    if (req.query?.lessonComments === "true") return handleLessonComments(req, res);
+    // Both the public reader (`true`) and the moderation queue (`admin`)
+    // use this handler.  Checking only `true` let the admin GET fall through
+    // to the unrelated reports listing because it also carries `status`.
+    if (req.query?.lessonComments) return handleLessonComments(req, res);
 
     if (req.method === "GET") {
         return isReportsGet(req) ? handleGetReports(req, res) : handleListColleges(req, res);
