@@ -39,6 +39,8 @@ import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { saveNewUserQuiz } from "../home/quiz-schema.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { renderLessonComments, equipLessonComments } from "./lesson-comments.js";
+import { LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -238,6 +240,7 @@ function mountLessonAgent(root, lesson, normalized) {
     pageKey: `lesson-${lesson.id}`,
     placeholder: "اسأل الباشــمبصمج عن هذا الدرس",
     defaultSystemPrompt: LESSON_PAGE_SYSTEM_PROMPT,
+    suggestedPrompts: LESSON_PAGE_SUGGESTED_PROMPTS,
     contextSummary: () => lessonAgentContext(lesson, normalized),
     enableTools: true,
     toolNames: ["create_quiz"],
@@ -328,7 +331,7 @@ export async function renderLessonView() {
       renderLessonToc(visibleSections, progress.visitedSections) +
       `<div class="lesson-view__body">` +
       visibleSections.map((section) => renderSection(section, ctx)).join("") +
-      `</div></article>`;
+      `</div>` + renderLessonComments() + `</article>`;
 
     const lessonEl = container.querySelector(".lesson-view");
     lessonEl.querySelector(".lesson-view__info-btn")?.addEventListener("click", () => {
@@ -347,6 +350,7 @@ export async function renderLessonView() {
     equipQuestionBlocks(container, lesson.id, paint);
     equipLessonToc(container, lesson.id);
     equipTts(container);
+    equipLessonComments(container, lesson.id);
     mountLessonAgent(container, lesson, normalized);
   };
 

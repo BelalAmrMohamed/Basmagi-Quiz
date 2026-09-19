@@ -100,7 +100,7 @@
       "destination": "/api/college-quiz"
     },
     {
-      "source": "/((?!api/|_vercel/|assets/|src/|favicon\\.|manifest\\.json|robots\\.txt|sitemap\\.xml|sitemap-static\\.xml|llms\\.txt|service-worker\\.js|about$|control$|create-quiz$|create-lesson$|how-to-create-a-quiz$|how-to-upload-a-quiz$|how-to-use-ai-agent$|oauth-callback$|offline$|onboarding$|privacy-policy$|profile$|quiz$|reports$|result$|settings$|terms-of-service$|.*\\.[a-zA-Z0-9]+$).*)",
+      "source": "/((?!api/|_vercel/|assets/|src/|favicon\\.|manifest\\.json|robots\\.txt|sitemap\\.xml|sitemap-static\\.xml|llms\\.txt|service-worker\\.js|about$|control$|create-quiz$|create-lesson$|lesson-comments$|how-to-create-a-quiz$|how-to-upload-a-quiz$|how-to-use-ai-agent$|oauth-callback$|offline$|onboarding$|privacy-policy$|profile$|quiz$|reports$|result$|settings$|terms-of-service$|.*\\.[a-zA-Z0-9]+$).*)",
       "destination": "/"
     }
   ],

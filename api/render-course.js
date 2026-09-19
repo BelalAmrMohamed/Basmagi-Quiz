@@ -48,6 +48,7 @@ const supabase = createClient(
 // index.html is the SPA shell — course pages render inside it, not a
 // separate template (see quiz.html for contrast with render-quiz.js).
 const TEMPLATE_PATH = path.join(process.cwd(), "public", "index.html");
+const LESSON_TEMPLATE_PATH = path.join(process.cwd(), "public", "lesson.html");
 
 // Bump when /api/og's course-image layout changes, to bust platforms' cache.
 // Bumped to 2: course/folder OG images were redesigned (icon card + course-
@@ -132,9 +133,9 @@ async function handleLessonRequest(req, res) {
 
     let html;
     try {
-        html = fs.readFileSync(TEMPLATE_PATH, "utf8");
+        html = fs.readFileSync(LESSON_TEMPLATE_PATH, "utf8");
     } catch (err) {
-        console.error("[render-course] Could not read index.html:", err);
+        console.error("[render-course] Could not read lesson.html:", err);
         return res.status(500).send("Internal Server Error");
     }
 

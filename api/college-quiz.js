@@ -48,6 +48,8 @@ const supabase = createClient(
 
 const reportSubmitLog = new Map();
 const REPORT_SUBMIT_RATE_LIMIT = 10; // requests per minute for public submission
+const lessonCommentSubmitLog = new Map();
+const LESSON_COMMENT_RATE_LIMIT = 8;
 
 const isValidUUID = (uuid) =>
     typeof uuid === "string" &&
@@ -395,6 +397,42 @@ async function handlePostReports(req, res) {
     return res.status(400).json({ error: "إجراء غير صالح" });
 }
 
+async function handleLessonComments(req, res) {
+    if (req.method === "GET") {
+        if (req.query?.lessonComments === "admin") {
+            try { requireAdmin(req); } catch (err) { if (handleAuthError(err, res)) return; return res.status(401).json({ error: "غير مصرح" }); }
+            const requestedStatus = ["pending", "resolved", "dismissed", "all"].includes(req.query?.status) ? req.query.status : "pending";
+            let query = supabase.from("lesson_comments").select("id, body, created_at, status, lesson_id, lessons ( title )").order("created_at", { ascending: false });
+            if (requestedStatus !== "all") query = query.eq("status", requestedStatus);
+            const { data, error } = await query;
+            if (error) return res.status(500).json({ error: "فشل جلب أسئلة الدروس" });
+            return res.status(200).json({ comments: data || [] });
+        }
+        const lessonId = req.query?.lessonId;
+        if (!isValidUUID(lessonId)) return res.status(400).json({ error: "معرف الدرس غير صالح" });
+        const { data, error } = await supabase.from("lesson_comments").select("id, body, created_at, status").eq("lesson_id", lessonId).eq("status", "resolved").order("created_at");
+        if (error) return res.status(500).json({ error: "فشل جلب أسئلة الدرس" });
+        return res.status(200).json({ comments: data || [] });
+    }
+    const { action, lesson_id: lessonId, body, comment_id: commentId, status } = req.body || {};
+    if (action === "submit-lesson-comment") {
+        const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || "unknown";
+        if (isRateLimited(ip, LESSON_COMMENT_RATE_LIMIT, lessonCommentSubmitLog)) return res.status(429).json({ error: "طلبات كثيرة جدًا، حاول لاحقًا" });
+        if (!isValidUUID(lessonId) || typeof body !== "string" || !body.trim() || body.trim().length > 2000) return res.status(400).json({ error: "اكتب سؤالاً صالحاً لا يزيد عن 2000 حرف." });
+        const { data, error } = await supabase.from("lesson_comments").insert({ lesson_id: lessonId, body: body.trim() }).select("id, created_at, status").single();
+        if (error) return res.status(500).json({ error: "تعذر إرسال السؤال." });
+        return res.status(201).json({ comment: data });
+    }
+    if (action === "resolve-lesson-comment") {
+        try { requireAdmin(req); } catch (err) { if (handleAuthError(err, res)) return; return res.status(401).json({ error: "غير مصرح" }); }
+        if (!isValidUUID(commentId) || !["resolved", "dismissed"].includes(status)) return res.status(400).json({ error: "طلب غير صالح" });
+        const { error } = await supabase.from("lesson_comments").update({ status, resolved_at: new Date().toISOString() }).eq("id", commentId);
+        if (error) return res.status(500).json({ error: "تعذر تحديث السؤال." });
+        return res.status(200).json({ success: true });
+    }
+    return res.status(400).json({ error: "إجراء غير صالح" });
+}
+
 // ── Dispatch ─────────────────────────────────────────────────────────────────
 // GET is shared by colleges-list and reports-list. They're told apart by
 // query shape: reports-list always sends one of ids/scope/status/countOnly;
@@ -414,11 +452,17 @@ export default async function handler(req, res) {
     applyCors(req, res);
     if (req.method === "OPTIONS") return res.status(200).end();
 
+    if (req.query?.lessonComments === "true") return handleLessonComments(req, res);
+
     if (req.method === "GET") {
         return isReportsGet(req) ? handleGetReports(req, res) : handleListColleges(req, res);
     }
     if (req.method === "DELETE") return handleDeleteQuiz(req, res);
-    if (req.method === "POST") return handlePostReports(req, res);
+    if (req.method === "POST") {
+        return req.body?.action === "submit-lesson-comment" || req.body?.action === "resolve-lesson-comment"
+            ? handleLessonComments(req, res)
+            : handlePostReports(req, res);
+    }
 
     return res.status(405).json({ error: "Method not allowed" });
 }

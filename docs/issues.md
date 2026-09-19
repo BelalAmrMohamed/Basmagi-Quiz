@@ -13,6 +13,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 - The `.ai-agent-dictation-wave` has 2 issues
   - It covers the whole input, so users can't see the text as it being recognised.
   - When it gets activated, the `.ai-agent-chat-input-controls` grows in height slightly, which causes some elements to get misaligned.
+- The AI Agent modal should be self contained, meaning it shouldn't reuse other components like the exam dropdown and the `.modal-overlay` or any other thing, doing that makes it harder to integrate it in new pages that don't import/use these components + they weren't made for the agent anyways.
 
 ### Implement [plan](plans/live-render-md-prompt.md)
 

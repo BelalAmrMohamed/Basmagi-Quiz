@@ -48,6 +48,7 @@ import { FONT_CHOICES, HIGHLIGHT_CHOICES } from "../lesson/lesson-reader-prefs.j
 import { mountColorPicker } from "../../shared/color-picker.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { CREATE_LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
+import { CREATE_LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 
 // =============================================================================
 // STATE
@@ -528,6 +529,7 @@ function mountCreatorAgent() {
         pageKey: "create-lesson",
         placeholder: "اطلب من الباشــمبصمج مساعدتك في هذا الدرس",
         defaultSystemPrompt: CREATE_LESSON_PAGE_SYSTEM_PROMPT,
+        suggestedPrompts: CREATE_LESSON_PAGE_SUGGESTED_PROMPTS,
         contextSummary: lessonEditorContext,
         enableTools: true,
         toolNames: ["add_lesson_question"],

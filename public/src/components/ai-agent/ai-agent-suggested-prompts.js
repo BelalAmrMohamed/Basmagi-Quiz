@@ -23,6 +23,19 @@ export const CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS = [
   "راجع الأسئلة الحالية وقولي لو فيه أي غلط",
 ];
 
+export const LESSON_PAGE_SUGGESTED_PROMPTS = [
+  "لخّص لي هذا الدرس في نقاط بسيطة",
+  "اشرح لي أصعب فكرة في هذا الدرس بمثال",
+  "اقترح أسئلة تدريبية عن هذا الدرس",
+  "أنشئ لي امتحانًا تفاعليًا من هذا الدرس",
+];
+
+export const CREATE_LESSON_PAGE_SUGGESTED_PROMPTS = [
+  "اقترح سؤال اختيار من متعدد لهذا الدرس",
+  "أضف سؤالًا مقاليًا مع إجابة نموذجية",
+  "اقترح سؤالًا بإجابات متعددة",
+];
+
 /**
  * @param {object} summary - same shape as resultSummaryForAI in result.js
  * @returns {string[]}

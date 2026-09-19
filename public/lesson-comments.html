@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>إدارة أسئلة الدروس</title>
+    <link rel="stylesheet" href="/src/styles/themes.css">
+    <link rel="stylesheet" href="/src/features/home/index.css">
+    <link rel="stylesheet" href="/src/features/lesson/lesson.css">
+</head>
+
+<body>
+    <main class="lesson-view">
+        <header class="lesson-view__header">
+            <h1>إدارة أسئلة الدروس</h1>
+            <div class="lesson-comments__filters"><button data-status="pending">قيد الانتظار</button><button
+                    data-status="resolved">تم الحل</button><button data-status="dismissed">تم التجاهل</button></div>
+        </header>
+        <div id="lessonCommentsModeration">جارٍ التحميل…</div>
+    </main>
+    <script type="module" src="/src/features/control/lesson-comments-view.js"></script>
+</body>
+
+</html>
