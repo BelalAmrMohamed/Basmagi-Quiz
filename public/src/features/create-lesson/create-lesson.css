@@ -1785,6 +1785,10 @@ body.sidebar-expanded .global-md-bar {
     transform: none;
 }
 
+.wp-textarea:placeholder-shown {
+    text-align: right;
+}
+
 /* GitHub-style drag-and-drop media embedding: visual feedback while a file
    is dragged over a markdown field (question text, options, explanation,
    essay/formal answer — every .md-source textarea gets this via

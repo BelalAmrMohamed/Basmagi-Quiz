@@ -8,9 +8,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Patches
 
 ### امتحاناتك
-- Fix the margin on phones.
+- Drafts created at the `/create-quiz` page shouldn't appear in the امتحاناتك section until they are fully saved as an actual quiz.
 - Sometimes makes duplicates of the same item when editing.
-- Drafts created at the `/create-quiz` page shouldn't appear in the امتحاناتك section until they 
 
 ### Performance (Globally, but specially the main page)
 Performance Improvements: Currently, there are many custom mechanism fucntionalities built in JS that works perfectly, but it may exist natively in HTML, CSS, or as a browser API. In that case we shouldn't reinvent the wheel, specially if it exists natively. Anything that exists natively in HTML, CSS, or as a browser API should be used that way and we should delete any custom JS implementation that has native alternatives. That would improve performance very well. Search for everything, anything that can be implemented in HTML & CSS directly without JS should be done so. You can search the web for modern HTML & CSS, because sometimes they add new things, but watch out for compatibility with different browsers (minimum requirenment: Chrome). But I don't want to miss up any functionality, this is just for performance, not to change any fucntionality.
@@ -20,15 +19,24 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 ## New Features
 
 ### Lessons Page
-- Last session partially implemented phase 3: `docs\docs\plans\lessons-feature-plan.md`. Last thing happened is that create-lesson was implemented, but in the worst way possible, missing almost every single feature the create-quiz has, and it has extra useless requirenements, like admins only can create lessons for some reason, and it requests setting course and folder. It has no header bars for markdown and LaTeX like the create-quiz, no undo feature, embedded questions can't be essay, and just almost no features from create-quiz, and the new highligh feature to highlight text in a certain color wasn't implemented dynamically, meaning users can't highlight different words in different colors, and it wasn't implemented in the create-quiz's header bar for markdown. I implemented many of these things already in the HTML in CSS, but not all, and create-lesson.js needs to be updated.
-- The create-lesson should behave like the create-quiz.
-- Creating lessons is for all users not just admins.
-- Lessons get created in user workspace امتحاناتك
-- Remove the title, course, and folder from the `.lesson-metadata` card. Title is set in the header bar only. No course or folder should be set, because the lesson should be saved inside user workspace امتحاناتك like in create-quiz
-- Remove the `lessonFontSelect` and the `lessonHighlightSelect` from `.lesson-metadata`, those should be in the md bar.
-- Auto save doesn't work.
+Last session partially implemented phase 3: `docs\docs\plans\lessons-feature-plan.md`. But since it was big, it still needs work.
+- The `#menuBar` doesn't have any of the dropdowns from create-quiz, which means create-lesson is missing alot of tools.
+- Inside the user workspace, lessons should be a different type than quizzes (not the same type, but a forth type). So they should be styled differently, The download button on them should appear dispabled for now (because lessons will get their export features later). You can choose to give lessons an emoji or not. And the start button should redirect to `/lesson/` not `/quiz/`.
+- The create-quiz and create-lesson render math by themsleves, but the MD Engine (markdown.js) might also be rendering math, check the engine, if it's rendering math, then the pages shouldn't render again.
+- Drafts from the create-quiz and create-lesson shouldn't be saved until the draft is saved as a quiz/lesson
+- The `#gmdHighlightToggle` was designed in the UI extremely poorly, it has lables on the colors, and it doesn't have a custom color picker. Redesign the whole dropdown, it should be how color dropdowns usually look like in advanced professional appas like canva.com or Google Docs.
 
-Continue the 3rd phase
+Things that also should be done to continue the 3rd phase:
+1. Fix the stale "admin-only" comments, and mount #lessonCreatorForm as display:flex. I haven't edited the file yet.
+2. **`create-lesson.css`:** add `.gmd-select`, `.lesson-preview-overlay` and its panel classes, `body.lesson-preview-open`, and `.lesson-question-type-actions`. Also remove or repurpose the old `.lesson-metadata` and `.entry-not-admin-message` rules.
+3. **Workspace wiring (biggest remaining gap):** `user-quizzes-view.js` and `user-quiz-card.js` have zero lesson handling, and the viewer only reads the Supabase `lessons` table. So a saved local lesson won't display or open from امتحاناتك yet. It needs three things:
+   - a lesson card that renders instead of the quiz card;
+   - an open action that mirrors `playUserQuiz` (`sessionStorage` plus `?type=user`);
+   - a local-source path in `lesson-view.js`'s `fetchLesson`.
+
+   Also check `user-quizzes-trash.js` and `move-to-dialog.js`, since they treat non-folder rows as quizzes.
+4. **Cleanup:** the old admin `create-lesson`, `update-lesson` and `delete-lesson` actions in `api/admin.js` are now unused by this page. They're harmless, and I'd keep them until lesson publishing is decided.
+5. Then start on the workspace wiring.
 
 
 ### Result Pages

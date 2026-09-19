@@ -1193,66 +1193,10 @@
                      one .entry-section per admin (own lessons only, unless
                      the admin is the platform owner), sorted newest-first. -->
             </div>
-
-            <!-- Admin gate: authoring lessons is admin-only. Shown instead of
-                 the tiles above when the visitor isn't signed in as an
-                 admin. -->
-            <div class="entry-sections" id="entryNotAdmin" style="display: none;">
-                <div class="entry-section">
-                    <p class="entry-not-admin-message">
-                        إنشاء الدروس متاح للمشرفين فقط. سجّل الدخول كمشرف أولاً.
-                    </p>
-                </div>
-            </div>
         </div>
 
         <!-- Lesson Editor Form -->
         <div class="lesson-creator" id="lessonCreatorForm" style="display: none;">
-
-            <!-- Lesson Metadata: title (also editable via the top-bar title),
-                 placement (course/folder), optional slug, optional reader
-                 font/highlight defaults. -->
-            <div class="lesson-metadata card">
-                <h2>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 7v14" />
-                        <path
-                            d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
-                    </svg>
-                    بيانات الدرس
-                </h2>
-
-                <div class="form-group">
-                    <label for="lessonTitleInput">عنوان الدرس</label>
-                    <input type="text" id="lessonTitleInput" class="form-input"
-                        placeholder="مثال: مقدمة في قواعد البيانات" maxlength="200">
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="lessonCourseSelect">المادة</label>
-                        <select id="lessonCourseSelect" class="form-input"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="lessonFolderSelect">المجلد (اختياري)</label>
-                        <select id="lessonFolderSelect" class="form-input">
-                            <option value="">— مباشرة تحت المادة —</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="lessonFontSelect">الخط الافتراضي للقارئ (اختياري)</label>
-                        <select id="lessonFontSelect" class="form-input"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="lessonHighlightSelect">لون التظليل الافتراضي (اختياري)</label>
-                        <select id="lessonHighlightSelect" class="form-input"></select>
-                    </div>
-                </div>
-            </div>
 
             <!-- Section list -->
             <div class="lesson-sections card">
