@@ -5,7 +5,7 @@ already done and what's left:
 1. public/src/shared/markdown.js
 2. public/src/shared/markdown-css.js
 3. public/src/styles/markdown.css
-4. public/src/features/export/export-to-quiz.js
+4. public/src/features/export-quiz/export-to-quiz.js
 
 CONTEXT: Part 1 of a two-part task (restoring drag-to-resize for inline media
 in the markdown engine) is COMPLETE and tested — do not redo it. It added:

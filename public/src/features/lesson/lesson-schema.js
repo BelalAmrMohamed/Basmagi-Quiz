@@ -1,5 +1,5 @@
 // ============================================================================
-// public/src/features/lessons/lesson-schema.js
+// public/src/features/lesson/lesson-schema.js
 // LESSON SCHEMA HELPERS — field accessors over the `lessons.content` jsonb
 // shape, and the local (localStorage-only) reading-progress state.
 // ============================================================================

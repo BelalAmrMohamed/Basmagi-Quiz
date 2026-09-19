@@ -1,5 +1,5 @@
 // ============================================================================
-// public/src/features/lessons/lesson-blocks.js
+// public/src/features/lesson/lesson-blocks.js
 // BLOCK RENDERERS — one function per block type in `lessons.content`.
 // ============================================================================
 // Block types (see the lessons plan's Phase 2 step 1):

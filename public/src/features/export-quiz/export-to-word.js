@@ -1,4 +1,4 @@
-// public/src/features/export/export-to-word.js
+// public/src/features/export-quiz/export-to-word.js
 // Downloads the quiz as a Word file (.docx)
 // Deals with the export from both main page and results page
 // `docx` library used, included in this file.
@@ -15,7 +15,7 @@ import {
 4. Update it to use the new essay rating system (The imported `gradeEssay` function).
 5. Update it to properly resize for multi-line options, questions, essay-questions, or explanations
 
-There might be more features that I messed, see public/src/export/export-to-html.js for an up to date export format. */
+There might be more features that I messed, see public/src/export-quiz/export-to-html.js for an up to date export format. */
 
 // `gradeEssay` must be used for essay grading, see export-to-markdown for example usage.
 import {

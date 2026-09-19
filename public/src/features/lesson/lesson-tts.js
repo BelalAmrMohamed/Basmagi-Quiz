@@ -1,5 +1,5 @@
 // ============================================================================
-// public/src/features/lessons/lesson-tts.js
+// public/src/features/lesson/lesson-tts.js
 // READ-ALOUD — per-section play/pause via window.speechSynthesis.
 // ============================================================================
 // Client-only: no backend, no new serverless function (see the lessons

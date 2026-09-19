@@ -1,5 +1,5 @@
 // ============================================================================
-// public/src/features/lessons/lesson-view.js
+// public/src/features/lesson/lesson-view.js
 // LESSON VIEWER — the real /lesson/:id reading experience (Phase 2).
 // ============================================================================
 // Replaces the Phase 1 skeleton that lived at features/home/lesson-view.js
@@ -136,9 +136,9 @@ function renderSection(section, ctx) {
     `data-section-id="${escapeHtml(section.id)}">` +
     (section.title
       ? `<div class="lesson-section__header">` +
-        `<h2 class="lesson-section__title">${escapeHtml(section.title)}</h2>` +
-        renderTtsControl(escapeHtml(section.id)) +
-        `</div>`
+      `<h2 class="lesson-section__title">${escapeHtml(section.title)}</h2>` +
+      renderTtsControl(escapeHtml(section.id)) +
+      `</div>`
       : "") +
     `<div class="lesson-section__body">${blocksHtml}</div>` +
     `</section>`

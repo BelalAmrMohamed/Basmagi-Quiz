@@ -300,7 +300,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── documents-shell.js
 │   │   │   │   └── documents.css
 │   │   │   │
-│   │   │   ├── export/ [332.48 KB, 8748 LOC]
+│   │   │   ├── export-quiz/ [332.48 KB, 8748 LOC]
 │   │   │   │   ├── export-to-html.js
 │   │   │   │   ├── export-to-markdown.js
 │   │   │   │   ├── export-to-pdf.js
@@ -368,7 +368,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── user-quizzes-view.js
 │   │   │   │   └── welcome-message.js
 │   │   │   │
-│   │   │   ├── lessons/ [42.18 KB, 1094 LOC]
+│   │   │   ├── lesson/ [42.18 KB, 1094 LOC]
 │   │   │   │   ├── lesson-blocks.js
 │   │   │   │   ├── lesson-reader-prefs.js
 │   │   │   │   ├── lesson-schema.js
@@ -515,7 +515,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 | `public/src/features/create/create-quiz.js` | 5806 |
 | `public/src/features/home/index.css` | 4892 |
 | `public/src/features/create/create-quiz.css` | 4738 |
-| `public/src/features/export/export-to-quiz.js` | 4317 |
+| `public/src/features/export-quiz/export-to-quiz.js` | 4317 |
 | `public/src/features/quiz/quiz.js` | 3513 |
 | `public/src/features/quiz/quiz.css` | 3506 |
 | `public/src/features/profile/profile.css` | 3170 |

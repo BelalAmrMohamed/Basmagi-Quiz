@@ -2,7 +2,7 @@
 // api/_validateLesson.js
 // Validates and sanitizes a lesson's `content` jsonb payload (the
 // {sections: [{id, title, defaultHidden, blocks}]} shape defined by
-// public/src/features/lessons/lesson-schema.js's normalizeLessonContent()
+// public/src/features/lesson/lesson-schema.js's normalizeLessonContent()
 // — see docs/plans/lessons-feature-plan.md's Phase 2 step 1 for the shape
 // and the ⚠️ on keeping onWrong/onCorrect to a single revealSection target).
 //

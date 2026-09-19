@@ -1,4 +1,4 @@
-// public/src/features/export/export-to-pdf.js
+// public/src/features/export-quiz/export-to-pdf.js
 // "Exports" the quiz to PDF via the browser's native print pipeline (.pdf)
 // Deals with the export from both main page and results/summary page
 //

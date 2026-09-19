@@ -1,4 +1,4 @@
-// public/src/features/create/create-quiz.js
+// public/src/features/create-quiz/create-quiz.js
 
 import {
   showNotification,
@@ -4893,7 +4893,7 @@ window.exportQuiz = function () {
   // Shared modal (also used on the homepage's "My Quizzes" download popup —
   // see showDownloadModal() in
   // ../../components/download-quiz-modal/download-quiz-modal.js).
-  // buildJsonPayloadString is passed through so the JSON export/copy still
+  // buildJsonPayloadString is passed through so the JSON export-quiz/copy still
   // carries the current password/view/mode form state.
   showDownloadModal({
     config,

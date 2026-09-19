@@ -38,7 +38,7 @@ import { toSlug, fromSlug } from "./slug-utils.js";
 import { setFolderState } from "./user-quizzes-folders.js";
 import { getFromStorage } from "../../shared/storage-helpers.js";
 import { showNotification } from "../../components/notifications/notifications.js";
-import { renderLessonView } from "../lessons/lesson-view.js";
+import { renderLessonView } from "../lesson/lesson-view.js";
 
 // ============================================================================
 // findCategoryAncestors — original lines 1321-1343

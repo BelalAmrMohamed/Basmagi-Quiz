@@ -1,5 +1,5 @@
 // ============================================================================
-// public/src/features/lessons/lesson-toc.js
+// public/src/features/lesson/lesson-toc.js
 // LESSON TABLE OF CONTENTS — section jump-nav with visited checkmarks.
 // ============================================================================
 // ── Why this isn't features/documents/doc-toc.js ────────────────────────────

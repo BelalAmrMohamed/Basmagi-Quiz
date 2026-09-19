@@ -157,7 +157,7 @@
 
     <!-- CSS Files -->
     <link rel="stylesheet" href="src/styles/themes.css">
-    <link rel="stylesheet" href="src/features/lessons/create-lesson.css">
+    <link rel="stylesheet" href="src/features/lesson/create-lesson.css">
     <link rel="stylesheet" href="src/styles/markdown.css">
     <link rel="stylesheet" href="src/styles/lessons.css">
     <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
@@ -792,8 +792,8 @@
 
             <div class="autosave-indicator" id="autosaveIndicator">
                 <span class="save-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path
                             d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
                         <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
@@ -907,8 +907,8 @@
 
                 <div class="form-group">
                     <label for="lessonTitleInput">عنوان الدرس</label>
-                    <input type="text" id="lessonTitleInput" class="form-input" placeholder="مثال: مقدمة في قواعد البيانات"
-                        maxlength="200">
+                    <input type="text" id="lessonTitleInput" class="form-input"
+                        placeholder="مثال: مقدمة في قواعد البيانات" maxlength="200">
                 </div>
 
                 <div class="form-row">
@@ -977,7 +977,7 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="src/features/lessons/create-lesson.js"></script>
+    <script type="module" src="src/features/lesson/create-lesson.js"></script>
     <script type="module" src="src/components/side-menu/side-menu.js"></script>
     <script type="module">
         import { syncAdminSession } from "./src/shared/adminBadgeSync.js";

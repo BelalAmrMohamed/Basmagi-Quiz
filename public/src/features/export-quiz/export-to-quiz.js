@@ -1,4 +1,4 @@
-// public/src/features/export/export-to-quiz.js
+// public/src/features/export-quiz/export-to-quiz.js
 // Downloads the quiz as a standalone file (.html)
 // Deals with the export from the main page, create-quiz page, and results page
 // No libraries used.

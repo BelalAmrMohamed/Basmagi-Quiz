@@ -31,7 +31,7 @@
    ══════════════════════════════════════════════════════════════════════════════
    Two CSS-variable hooks only — no picker UI lives here. The lesson viewer
    sets --md-font-family / --md-highlight-color as inline styles on its own
-   container (see features/lessons/lesson-reader-prefs.js), so the choice is
+   container (see features/lesson/lesson-reader-prefs.js), so the choice is
    scoped to that subtree and every other renderMarkdown() call site on the
    platform keeps its existing appearance via the fallbacks below.
 

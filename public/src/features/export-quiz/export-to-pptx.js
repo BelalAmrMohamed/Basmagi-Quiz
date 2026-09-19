@@ -1,4 +1,4 @@
-// public/src/features/export/export-to-pptx.js
+// public/src/features/export-quiz/export-to-pptx.js
 // Downloads the quiz as a PowerPoint file (.pptx)
 // Deals with the export from both main page and results page
 // `PptxGenJS` library used, included in this file.

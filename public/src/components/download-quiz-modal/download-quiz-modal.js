@@ -10,21 +10,21 @@
 // Call sites:
 //   - features/home/download-modal.js       (home: user-made quiz cards)
 //   - features/home/exam-card.js             (home: manifest-exam cards)
-//   - features/create/create-quiz.js         (create-quiz page)
+//   - features/create-quiz/create-quiz.js         (create-quiz page)
 // ============================================================================
 
-import { exportToQuiz } from "../../features/export/export-to-quiz.js";
-import { exportToPdf } from "../../features/export/export-to-pdf.js";
-import { exportToWord } from "../../features/export/export-to-word.js";
-import { exportToPptx } from "../../features/export/export-to-pptx.js";
-import { exportToMarkdown } from "../../features/export/export-to-markdown.js";
+import { exportToQuiz } from "../../features/export-quiz/export-to-quiz.js";
+import { exportToPdf } from "../../features/export-quiz/export-to-pdf.js";
+import { exportToWord } from "../../features/export-quiz/export-to-word.js";
+import { exportToPptx } from "../../features/export-quiz/export-to-pptx.js";
+import { exportToMarkdown } from "../../features/export-quiz/export-to-markdown.js";
 import {
   JSON_FILE_ICON_SVG,
   DOWNLOAD_SOURCE_ICON_SVG,
 } from "../../features/home/icons.js";
 import { showNotification } from "../notifications/notifications.js";
-import { buildStandaloneQuizHtml } from "../../features/export/export-to-quiz.js";
-import { buildQuizMarkdown } from "../../features/export/export-to-markdown.js";
+import { buildStandaloneQuizHtml } from "../../features/export-quiz/export-to-quiz.js";
+import { buildQuizMarkdown } from "../../features/export-quiz/export-to-markdown.js";
 import { buildJsonQuizExport } from "../../shared/quiz-json.js";
 
 /**

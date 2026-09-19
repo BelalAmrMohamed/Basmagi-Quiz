@@ -1,5 +1,5 @@
 // ============================================================================
-// public/src/features/lessons/lesson-reader-prefs.js
+// public/src/features/lesson/lesson-reader-prefs.js
 // READER PREFERENCES — font family, highlight color, and TTS voice/rate.
 // ============================================================================
 // ONE combined localStorage key for all of it (deliberately not three

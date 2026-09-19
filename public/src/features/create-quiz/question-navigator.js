@@ -1,4 +1,4 @@
-// public/src/features/create/question-navigator.js
+// public/src/features/create-quiz/question-navigator.js
 // Lightweight question navigator for the quiz editor.
 
 let observer = null;
