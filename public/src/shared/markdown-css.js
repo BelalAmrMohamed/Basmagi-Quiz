@@ -75,7 +75,7 @@ export const MARKDOWN_CSS = `
 /* ==highlighted text== -> applyInline() in markdown.js. Deliberately a
    <span>, not <mark>, so the color is fully ours (see that function's
    comment). The default is a yellow-equivalent that stays legible on both
-   light and dark themes. A per-span `== text == (color)` suffix sets this
+   light and dark themes. A per-span \`== text == (color)\` suffix sets this
    variable inline on that one span, so several highlighted runs in the
    same document can each carry a different color independent of the
    container-wide default set here. */

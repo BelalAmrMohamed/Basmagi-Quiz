@@ -20,7 +20,17 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 ## New Features
 
 ### Lessons Page
-- Last session partially implemented phase 3: `docs\docs\plans\lessons-feature-plan.md`. Last thing happened is that create-lesson was implemented, but in the worst way possible, missing almost every single feature the create-quiz has, and it has extra useless requirenements, like admins only can create lessons for some reason, and it requests setting course and folder. It has no header bars for markdown and LaTeX like the create-quiz, no undo feature, embedded questions can't be essay, and just almost no features from create-quiz, and the new highligh feature to highlight text in a certain color wasn't implemented dynamically, meaning users can't highlight different words in different colors, and it wasn't implemented in the create-quiz's header bar for markdown. The whole page must be done properly with all features. Then continue the implementation of the rest of the plan
+- Last session partially implemented phase 3: `docs\docs\plans\lessons-feature-plan.md`. Last thing happened is that create-lesson was implemented, but in the worst way possible, missing almost every single feature the create-quiz has, and it has extra useless requirenements, like admins only can create lessons for some reason, and it requests setting course and folder. It has no header bars for markdown and LaTeX like the create-quiz, no undo feature, embedded questions can't be essay, and just almost no features from create-quiz, and the new highligh feature to highlight text in a certain color wasn't implemented dynamically, meaning users can't highlight different words in different colors, and it wasn't implemented in the create-quiz's header bar for markdown. I implemented many of these things already in the HTML in CSS, but not all, and create-lesson.js needs to be updated.
+- The create-lesson should behave like the create-quiz.
+- Creating lessons is for all users not just admins.
+- Lessons get created in user workspace امتحاناتك
+- Remove the title, course, and folder from the `.lesson-metadata` card. Title is set in the header bar only. No course or folder should be set, because the lesson should be saved inside user workspace امتحاناتك like in create-quiz
+- Remove the `lessonFontSelect` and the `lessonHighlightSelect` from `.lesson-metadata`, those should be in the md bar.
+- Auto save doesn't work.
+
+Continue the 3rd phase
+
+
 ### Result Pages
 
 #### Videos (Easy to make, but very important)
