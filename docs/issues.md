@@ -34,7 +34,7 @@ Last session partially implemented phase 4 of `docs\plans\lessons-feature-plan.m
 #### Decisions
 - The `/lesson/` should be in independent page just like `/quiz/` with the ability to view the lesson's info modal, and I want new ideas to give the user control over the lessons.
   - Integrate the الباشــمبصمج so users can ask it questions, or tell it to create questions about that lesson, and the الباشــمبصمج should be able to create an interactive quiz that users can actually solve and get graded (all types of questions). This should be full integration, with suggested prompts and all.
-- To implement comments safely: commenters should appear anonymously as “Student”?
+- The page isn't full at all, it doesn't have any og meta, it doesn't have the side-menu or bottom nav.
 
 ### Result Pages
 

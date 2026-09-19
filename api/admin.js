@@ -1279,6 +1279,31 @@ async function validateLessonPlacement(supabase, targetCourseId, targetFolderId)
   return { ok: true };
 }
 
+const LESSON_SLUG_RE = /^[a-z0-9\u0621-\u064a]+(?:-[a-z0-9\u0621-\u064a]+)*$/;
+const UUID_SHAPE_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Validates an optional lesson slug. The viewer and render-course.js decide
+ * whether /lesson/:x is an id or a slug by UUID shape, and look slugs up with
+ * maybeSingle() — so a UUID-shaped slug would be read as an id, and a duplicate
+ * slug would make the lookup error out. Both are rejected here; the partial
+ * unique index in 20260919130000_lesson_slug_unique.sql is the race backstop.
+ * @returns {Promise<{ok:true, slug:string|null}|{ok:false, error:string}>}
+ */
+async function validateLessonSlug(supabase, rawSlug, excludeId = null) {
+  if (typeof rawSlug !== "string" || !rawSlug.trim()) return { ok: true, slug: null };
+  const slug = rawSlug.trim().toLowerCase();
+  if (slug.length > 80) return { ok: false, error: "الرابط المختصر طويل جدًا (الحد 80 حرفًا)." };
+  if (UUID_SHAPE_RE.test(slug) || !LESSON_SLUG_RE.test(slug)) {
+    return { ok: false, error: "الرابط المختصر يجب أن يتكون من حروف وأرقام وشرطات فقط." };
+  }
+  let query = supabase.from("lessons").select("id").eq("slug", slug).limit(1);
+  if (excludeId) query = query.neq("id", excludeId);
+  const { data } = await query;
+  if (data && data.length > 0) return { ok: false, error: "هذا الرابط المختصر مستخدم لدرس آخر." };
+  return { ok: true, slug };
+}
+
 // ── action=create-lesson ────────────────────────────────────────────────────
 // Body: { title, content, courseId, folderId?, slug?, readerPrefsDefault? }
 // courseId is required (a lesson can go directly under a course or under
@@ -1313,18 +1338,22 @@ async function handleCreateLesson(req, res, adminPayload, adminId, supabase) {
     return res.status(400).json({ error: "يوجد درس آخر بهذا الاسم في هذا المكان." });
   }
 
+  const slugCheck = await validateLessonSlug(supabase, slug);
+  if (!slugCheck.ok) return res.status(400).json({ error: slugCheck.error });
+
   const insertRow = {
     title: nameCheck.clean,
     content: cleanContent,
     course_id: courseId,
     folder_id: folderId,
-    slug: typeof slug === "string" && slug.trim() ? slug.trim() : null,
+    slug: slugCheck.slug,
     reader_prefs_default: isPlainObjectLoose(readerPrefsDefault) ? readerPrefsDefault : null,
     created_by: adminId,
   };
 
   const { data, error } = await supabase.from("lessons").insert(insertRow).select("id, slug").maybeSingle();
   if (error) {
+    if (error.code === "23505") return res.status(400).json({ error: "هذا الرابط المختصر مستخدم لدرس آخر." });
     console.error("[admin:create-lesson] failed:", error.message);
     return res.status(500).json({ error: "فشل إنشاء الدرس." });
   }
@@ -1375,13 +1404,18 @@ async function handleUpdateLesson(req, res, adminPayload, adminId, supabase) {
     content: cleanContent,
     updated_at: new Date().toISOString(),
   };
-  if (typeof slug === "string") updates.slug = slug.trim() || null;
+  if (typeof slug === "string") {
+    const slugCheck = await validateLessonSlug(supabase, slug, id);
+    if (!slugCheck.ok) return res.status(400).json({ error: slugCheck.error });
+    updates.slug = slugCheck.slug;
+  }
   if (readerPrefsDefault !== undefined) {
     updates.reader_prefs_default = isPlainObjectLoose(readerPrefsDefault) ? readerPrefsDefault : null;
   }
 
   const { error } = await supabase.from("lessons").update(updates).eq("id", id);
   if (error) {
+    if (error.code === "23505") return res.status(400).json({ error: "هذا الرابط المختصر مستخدم لدرس آخر." });
     console.error("[admin:update-lesson] failed:", error.message);
     return res.status(500).json({ error: "فشل حفظ التعديلات." });
   }

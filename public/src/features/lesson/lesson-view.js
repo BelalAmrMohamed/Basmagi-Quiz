@@ -12,12 +12,8 @@
 // (lesson-schema.js).
 //
 // ⚠️ Lessons are NEVER scored: no result page, no points, no level. The only
-// persistence FROM THIS FILE'S OWN LOGIC is localStorage — the one
-// exception is lesson-progress-sync.js's completion push/pull (Phase 4a
-// cross-device sync), which is a separate, unscored "done or not" signal to
-// a dedicated Supabase Edge Function, entirely outside the
-// passed_quizzes_count/current_level/points system. See that module's
-// header comment before assuming any new write here is in scope.
+// persistence here is localStorage (same-device progress) — no Supabase
+// writes. Cross-device sync was deliberately dropped from scope.
 // ============================================================================
 
 import { container } from "../home/dom-refs.js";
@@ -28,10 +24,6 @@ import {
   getLessonProgress,
   resolveRevealedSections,
 } from "./lesson-schema.js";
-import {
-  syncLessonCompletionIfDone,
-  pullLessonCompletionIfNewer,
-} from "./lesson-progress-sync.js";
 import { renderBlock, equipQuestionBlocks } from "./lesson-blocks.js";
 import { renderLessonToc, equipLessonToc } from "./lesson-toc.js";
 import {

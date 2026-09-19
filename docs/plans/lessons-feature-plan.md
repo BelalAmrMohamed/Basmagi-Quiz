@@ -344,7 +344,11 @@ though they're grouped in one phase here for planning purposes.
   lessons under that course (you already have the course→lesson mapping
   from the catalog) and rendering "4 of 12 lessons completed." No new
   table, no new endpoint — this alone delivers the visible feature.
-- **Cross-device sync (optional, do only if time remains):** this is the
+- **Cross-device sync — DECIDED: OUT OF SCOPE (2026-09-19).** Not built. Note for anyone
+  revisiting: identity is a per-browser `device_id`, so a second device gets a different
+  profile and the design below would not actually sync across devices without a
+  recovery code or account link.
+- ~~**Cross-device sync (optional, do only if time remains):**~~ this is the
   one piece of this entire plan that should be a **Supabase Edge
   Function**, not a Vercel function — it's genuinely new, self-contained,
   and doesn't render HTML (unlike everything in Phase 1). New table:

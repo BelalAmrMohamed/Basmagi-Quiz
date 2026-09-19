@@ -372,6 +372,16 @@ async function buildSubjects(quizzes, lessons, courses, folders) {
       title: row.title || "",
       folderSegments,
       sectionIds: sections.map((section, index) => String(section?.id || `s${index + 1}`)),
+      // Completion is measured against the sections every reader is guaranteed
+      // to see. `defaultHidden` sections are adaptive remediation that only
+      // appear after a specific answer, so requiring them would make a lesson
+      // permanently un-completable for anyone who answers correctly.
+      // Must stay in sync with getRequiredSectionIds() in
+      // public/src/features/lesson/lesson-schema.js.
+      requiredSectionIds: sections
+        .map((section, index) => ({ id: String(section?.id || `s${index + 1}`), hidden: Boolean(section?.defaultHidden) }))
+        .filter((section) => !section.hidden)
+        .map((section) => section.id),
       createdAt: row.created_at || null,
       courseId: row.course_id || null,
       folderId: row.folder_id || null,

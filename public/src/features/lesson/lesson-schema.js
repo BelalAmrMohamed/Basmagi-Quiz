@@ -228,6 +228,26 @@ export function appendEssayAnswerText(lessonId, questionId, answerText) {
 }
 
 /**
+ * The section ids a reader must reach for a lesson to count as complete.
+ *
+ * `defaultHidden` sections are excluded on purpose: they are adaptive
+ * remediation that only appears after a specific answer (see
+ * resolveRevealedSections below), so a reader who answers correctly never
+ * sees them. Requiring them would make such a lesson permanently
+ * un-completable. A hidden section the reader DID get revealed is still
+ * tracked in visitedSections for the ToC checkmark; it just isn't required.
+ *
+ * Must stay in sync with `requiredSectionIds` in
+ * public/src/shared/quizManifest.js (the catalog-side copy of this rule).
+ *
+ * @param {{sections: Array<{id:string,defaultHidden:boolean}>}} normalizedContent
+ * @returns {string[]}
+ */
+export function getRequiredSectionIds(normalizedContent) {
+  return (normalizedContent?.sections || []).filter((s) => !s.defaultHidden).map((s) => s.id);
+}
+
+/**
  * Resolves which `defaultHidden` sections should currently be revealed,
  * by replaying every question's recorded answer against its one-rule
  * `onWrong` / `onCorrect` reveal target.
