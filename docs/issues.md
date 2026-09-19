@@ -7,12 +7,18 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Redesign the bottom nav on phones, and make the decision whether to include the new create-lesson page or not.
+
 ### AI Agent
 - The `.ai-agent-dictation-wave` has 2 issues
   - It covers the whole input, so users can't see the text as it being recognised.
   - When it gets activated, the `.ai-agent-chat-input-controls` grows in height slightly, which causes some elements to get misaligned.
 
 ### Implement [plan](plans/live-render-md-prompt.md)
+
+### Create-lesson Page
+- Changing the value of `#lessonFontSelect` doesn't change anything.
+- `.entry-item` is too tall, improve it's design. And I also want to improve the design of the whole `.entry-screen`, generate an ipmlementation plan suggesting any improvements. 
 
 ### Performance (Globally, but specially the main page)
 Performance Improvements: Currently, there are many custom mechanism fucntionalities built in JS that works perfectly, but it may exist natively in HTML, CSS, or as a browser API. In that case we shouldn't reinvent the wheel, specially if it exists natively. Anything that exists natively in HTML, CSS, or as a browser API should be used that way and we should delete any custom JS implementation that has native alternatives. That would improve performance very well. Search for everything, anything that can be implemented in HTML & CSS directly without JS should be done so. You can search the web for modern HTML & CSS, because sometimes they add new things, but watch out for compatibility with different browsers (minimum requirenment: Chrome). But I don't want to miss up any functionality, this is just for performance, not to change any fucntionality.
@@ -22,13 +28,12 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 ## New Features
 
 ### Lessons Page
-Last session partially completed the implementation of phase 4: `docs\plans\lessons-feature-plan.md`.
-- The `/lesson/` should be its own independent page (similar to `/quiz/` page), with the ability to view the lesson's info modal, and I want new ideas to give the user control over the lessons. In that page:
-  - Integrate the الباشــمبصمج so users can ask it questions, or tell it to create a quiz about that lesson, and the الباشــمبصمج should be able to create an interactive quiz that users can actually solve and get graded (all types of questions)
-- The embedded questions inside lessons don't get all features as normal quiz questions, they should get all features like: 
-  - Use the `public/src/shared/rate-answers.js` file for correcting questions, and it should show the grading, that would be very usefull, specially for essay questions.
-  - The create-lesson and the lesson page should support multi correct answer questions just like create-quiz and quiz pages.
-  - The الباشــمبصمج should also be able to help creators in create-lesson page, similar to the lesson page, the الباشــمبصمج should be able to add a questions to a lesson in the create-lesson page.
+Last session partially implemented phase 4 of `docs\plans\lessons-feature-plan.md`.
+
+#### Decisions
+- The `/lesson/` should be in independent page just like `/quiz/` with the ability to view the lesson's info modal, and I want new ideas to give the user control over the lessons.
+  - Integrate the الباشــمبصمج so users can ask it questions, or tell it to create questions about that lesson, and the الباشــمبصمج should be able to create an interactive quiz that users can actually solve and get graded (all types of questions). This should be full integration, with suggested prompts and all.
+- To implement comments safely: commenters should appear anonymously as “Student”?
 
 ### Result Pages
 
