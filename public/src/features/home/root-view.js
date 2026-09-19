@@ -366,6 +366,7 @@ export async function renderRootCategories() {
           );
           const breakdownRows = [
             { label: "الامتحانات", val: String(freshBreakdown.quizCount) },
+            { label: "الدروس", val: String(freshBreakdown.lessonCount) },
             { label: "المواد", val: String(freshBreakdown.courseCount) },
             { label: "المجلدات", val: String(freshBreakdown.folderCount) },
           ].filter((row) => row.val !== "0");

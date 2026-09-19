@@ -366,10 +366,27 @@ document.addEventListener("DOMContentLoaded", () => {
     updateUndoRedoButtons();
     loadQuizExamList();
 
-    if (editId && openLessonById(editId)) {
-        // Deep-linked edit bypasses the entry screen, same as create-quiz.
-    } else {
+    // Wrapped defensively: an old-schema/corrupt draft (e.g. a block shape
+    // that predates this feature) can throw while normalizing or rendering.
+    // Routing fix (vercel.json) stops the *wrong-page* symptom (browser nav
+    // to /create-lesson was being caught by the SPA catch-all and bounced to
+    // "/"), but a genuinely bad row can still throw client-side once we're
+    // on the right page — this catch is what sends that case to the entry
+    // screen instead of leaving a half-rendered/broken editor.
+    let openedOk = false;
+    if (editId) {
+        try {
+            openedOk = openLessonById(editId);
+        } catch (err) {
+            console.error("Failed to open lesson for editing:", err);
+            openedOk = false;
+        }
+    }
+
+    if (!openedOk) {
         showEntryScreen();
+    } else {
+        // Deep-linked edit bypasses the entry screen, same as create-quiz.
     }
 
     document.dispatchEvent(new Event("app:ready"));
@@ -744,6 +761,14 @@ window.commitTitleEdit = function () {
 
     const next = el.textContent.trim().slice(0, 200);
     if (next !== lessonData.title) {
+        // Unlike a quiz's mirrored #quizTitle input, this contenteditable
+        // span IS the only place lessonData.title is ever set (see the
+        // section header above) — so a commit here is a single discrete
+        // rename, not a per-keystroke edit. It needs its own snapshot the
+        // same as any other one-shot structural change (addSection,
+        // toggleSectionDefaultHidden, etc.), or renaming the lesson is
+        // silently unrecoverable via Ctrl+Z.
+        pushHistorySnapshot();
         lessonData.title = next;
         autosave();
     }

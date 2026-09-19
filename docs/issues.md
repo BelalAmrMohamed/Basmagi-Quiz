@@ -7,10 +7,12 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Updgrade from a markdown based rendering to a Google-Docs-Like Rendering.
+### AI Agent
+- The `.ai-agent-dictation-wave` 
+
+### Implement live-render in place for all input fields in create-quiz and create-lesson for the markdown engine.
 
 ### امتحاناتك
-- Sometimes makes duplicates of the same item when editing.
 - Select mode: Pressing on a folder/course correctly selects it, but pressing on a quiz/lesson doesn't select it, I have to press on the `.user-quiz-select-checkbox` itself to select the quiz. Fix: Pressing the quiz/lesson card should select it.
 
 ### Performance (Globally, but specially the main page)

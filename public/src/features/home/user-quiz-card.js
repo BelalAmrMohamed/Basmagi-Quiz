@@ -98,6 +98,20 @@ export function createUserQuizCard(quiz, index) {
   };
   card.appendChild(checkbox);
 
+  // Pressing the card itself selects it while in selection mode — mirrors
+  // the folder/course card's click handler in user-quizzes-folders.js
+  // (`if (container?.classList.contains("selection-mode-active")) { checkbox.click(); return; }`).
+  // Quiz/lesson cards previously had no whole-card click handler at all, so
+  // selection only worked by hitting the tiny checkbox directly.
+  card.addEventListener("click", (e) => {
+    if (e.target === checkbox) return; // checkbox's own onclick already handles this
+    const container = document.querySelector(".user-quizzes-container");
+    if (container?.classList.contains("selection-mode-active")) {
+      e.stopPropagation();
+      checkbox.click();
+    }
+  });
+
   const h = document.createElement("h3");
   // SECURITY FIX (stored XSS): quiz.title is free-text the user typed into
   // the create-quiz modal's title input and is persisted to localStorage
@@ -237,6 +251,10 @@ export function createUserLessonCard(lesson) {
   const lessonId = lesson.id || lesson.meta?.id;
   const title = lesson.meta?.title || "درس بدون عنوان";
   const sections = lesson.stats?.sectionCount ?? lesson.lesson?.sections?.length ?? 0;
+  // Reuses collectLessonInfo (same source the ⋮ menu's info rows and the
+  // info modal use) instead of re-deriving the question count here, so the
+  // card badge and the info modal can never disagree.
+  const questionCount = lesson.stats?.questionCount ?? collectLessonInfo(lesson).questionCount;
   const card = document.createElement("div");
   card.className = "exam-card user-quiz-card user-lesson-card";
   card.setAttribute("role", "article");
@@ -254,6 +272,18 @@ export function createUserLessonCard(lesson) {
     updateBulkActionBar();
   };
 
+  // Pressing the card itself selects it while in selection mode — same
+  // pattern as createUserQuizCard above and the folder/course cards in
+  // user-quizzes-folders.js.
+  card.addEventListener("click", (e) => {
+    if (e.target === checkbox) return;
+    const container = document.querySelector(".user-quizzes-container");
+    if (container?.classList.contains("selection-mode-active")) {
+      e.stopPropagation();
+      checkbox.click();
+    }
+  });
+
   const icon = document.createElement("span");
   icon.className = "user-quiz--phone-only-emoji";
   icon.textContent = "📘";
@@ -268,6 +298,17 @@ export function createUserLessonCard(lesson) {
   label.className = "exam-question-count";
   label.textContent = `${sections} ${sections === 1 ? "قسم" : "أقسام"}`;
   meta.appendChild(label);
+  // Embedded-question count on the right — .exam-types-subtext is already
+  // styled by .exam-card-meta to sit on the right side (order:2) opposite
+  // .exam-question-count's left side (order:1); see index.css. Only shown
+  // when the lesson actually has embedded questions, same "only if present"
+  // rule the info modal's rows follow.
+  if (questionCount > 0) {
+    const questionsLabel = document.createElement("p");
+    questionsLabel.className = "exam-types-subtext";
+    questionsLabel.textContent = `الأسئلة المدمجة: ${questionCount}`;
+    meta.appendChild(questionsLabel);
+  }
   text.append(heading, meta);
 
   const actions = document.createElement("div");
@@ -287,6 +328,14 @@ export function createUserLessonCard(lesson) {
   const start = document.createElement("button");
   start.className = "start-btn";
   start.type = "button";
+  // .start-btn's base rule is `width: 100%` (built for a single full-width
+  // play button on normal exam cards). The quiz card overrides this inline
+  // to flex:1/min-width:0 so its play + download buttons share the row
+  // instead of both claiming 100% width and stacking on top of each other
+  // (see createUserQuizCard above) — the lesson card needs the same
+  // override for the same two-button row.
+  start.style.flex = "1";
+  start.style.minWidth = "0";
   start.textContent = "ابدأ القراءة";
   start.onclick = (event) => {
     event.stopPropagation();
@@ -295,6 +344,8 @@ export function createUserLessonCard(lesson) {
   const download = document.createElement("button");
   download.className = "start-btn desktop-download-btn";
   download.type = "button";
+  download.style.flex = "1";
+  download.style.minWidth = "0";
   download.textContent = "تحميل";
   download.disabled = true;
   download.title = "تصدير الدروس سيتوفر قريباً";

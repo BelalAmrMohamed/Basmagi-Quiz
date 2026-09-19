@@ -127,13 +127,9 @@ export function buildLessonInfoHtml(info) {
         pills.push(pill(ICON_BRANCH, `${info.adaptiveRuleCount} شرط كشف`, "أسئلة تكشف قسماً عند الإجابة"));
     }
 
-    // Content breakdown, only for block types that are actually present, in a
-    // stable order (not object-insertion order, which depends on the content).
-    const breakdown = Object.keys(BLOCK_LABELS)
-        .filter((type) => info.blockCounts[type])
-        .map((type) => `${BLOCK_LABELS[type]}: ${info.blockCounts[type]}`)
-        .join(" · ");
-
+    // One row per present block type (not a single "·"-joined cell) — each
+    // content type gets its own label/value pair in the meta grid, same as
+    // every other fact in this dialog.
     const rows = [];
     const addRow = (label, valueHtml) => {
         rows.push(`
@@ -141,7 +137,14 @@ export function buildLessonInfoHtml(info) {
       <div class="quiz-meta-value">${valueHtml}</div>`);
     };
 
-    addRow("المحتوى", breakdown ? escapeHtml(breakdown) : "فارغ");
+    const presentTypes = Object.keys(BLOCK_LABELS).filter((type) => info.blockCounts[type]);
+    if (presentTypes.length) {
+        for (const type of presentTypes) {
+            addRow(BLOCK_LABELS[type], escapeHtml(String(info.blockCounts[type])));
+        }
+    } else {
+        addRow("المحتوى", "فارغ");
+    }
     if (info.essayCount) addRow("أسئلة مقالية", escapeHtml(String(info.essayCount)));
     if (info.fontLabel) addRow("خط القراءة", escapeHtml(info.fontLabel));
     const created = formatDateForInfo(info.createdAt);
