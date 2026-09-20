@@ -1,5 +1,4 @@
 // ============================================================================
-// public/src/features/lesson/lesson-progress.js
 // COURSE LESSON PROGRESS — same-device aggregation only (Phase 4a).
 // ============================================================================
 // Lesson readers own the per-lesson localStorage contract. This module only

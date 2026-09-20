@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,7 +18,7 @@
       try {
         document.documentElement.setAttribute("data-theme", localStorage.getItem("quiz_theme_pref") || "light");
         document.documentElement.setAttribute("data-animations", localStorage.getItem("quiz_animations_pref") === "disabled" ? "disabled" : "enabled");
-      } catch (_) {}
+      } catch (_) { }
     })();
   </script>
   <link rel="stylesheet" href="/src/styles/themes.css">
@@ -26,10 +27,20 @@
   <link rel="stylesheet" href="/src/features/lesson/lesson.css">
   <link rel="stylesheet" href="/src/components/quiz-info-modal/quiz-info-modal.css">
   <link rel="stylesheet" href="/src/components/ai-agent/ai-agent.css">
+  <!-- KaTeX must be a classic (non-deferred) script so window.katex exists
+       synchronously when the ES modules below execute; markdown.js falls back to
+       raw $...$ text if it is missing. Same tags/version as quiz.html. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 </head>
+
 <body>
   <main id="contentArea" class="lesson-page-shell" aria-live="polite" aria-busy="true"></main>
+  <!-- ensureSharedSupabaseClient() only builds a client if window.supabase exists.
+       Without this tag fetchLesson() returns null and every lesson shows "not found". -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module" src="/src/features/lesson/lesson-page.js"></script>
   <script defer src="/_vercel/insights/script.js"></script>
 </body>
+
 </html>

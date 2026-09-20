@@ -29,7 +29,6 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 ## New Features
 
 ### Lessons Page
-Last session partially implemented phase 4 of `docs\plans\lessons-feature-plan.md`.
 
 #### Decisions
 - The `/lesson/` should be in independent page just like `/quiz/` with the ability to view the lesson's info modal, and I want new ideas to give the user control over the lessons.

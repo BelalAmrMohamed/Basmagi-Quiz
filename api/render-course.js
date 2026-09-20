@@ -236,10 +236,26 @@ function buildLessonExcerpt(content) {
     if (typeof content === "string") {
         raw = content;
     } else if (content && typeof content === "object") {
-        // Best-effort forward-compat guess at a Phase-2-shaped sections
-        // array, without hard-depending on a shape that isn't defined yet.
-        const firstSection = Array.isArray(content.sections) ? content.sections[0] : null;
-        raw = firstSection?.text || firstSection?.body || content.body || "";
+        if (Array.isArray(content.sections)) {
+            // Real (Phase 2) shape: text lives in section.blocks[].body of
+            // type "markdown". Take the first markdown block from the first
+            // section that has one, skipping defaultHidden sections — those
+            // are adaptive remediation, and a link preview must not show
+            // content most readers are never supposed to see first.
+            // (Legacy section.text / section.body is still honoured.)
+            for (const section of content.sections) {
+                if (!section || section.defaultHidden) continue;
+                const block = Array.isArray(section.blocks)
+                    ? section.blocks.find(
+                        (b) => b && b.type === "markdown" && typeof b.body === "string" && b.body.trim(),
+                    )
+                    : null;
+                raw = block?.body || section.text || section.body || "";
+                if (raw) break;
+            }
+        } else {
+            raw = content.body || "";
+        }
     }
     const plain = String(raw)
         .replace(/[#*_`>[\]]/g, "")
