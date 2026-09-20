@@ -36,6 +36,7 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 - The page isn't full at all, it doesn't have any og meta, it doesn't have the side-menu or bottom nav.
 - There is no way to reset the page (qustions stay locked after answer)
 - The design is really really bad, it needs to be redesigned from scratch.
+- Implement a lesson reader using the browser api.
 
 ### Result Pages
 
