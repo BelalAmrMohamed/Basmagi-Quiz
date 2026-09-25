@@ -54,20 +54,27 @@
 // Failure 400/401/403/429/500: { error: string }
 //
 // AUTHORIZATION:
-// Access to the platform's rotated free-tier keys (getNextKey in
-// _keyPool.js) requires EITHER:
+// The platform's rotated free-tier keys (getNextKey in _keyPool.js) are
+// available to EVERYONE now, including anonymous/never-logged-in users —
+// there is no more level gate. What's required instead:
 //   - a valid admin JWT (see _middleware.js::requireAdmin) — "Verified
-//     Admin", OR
-//   - a valid regular-user JWT (see api/user-profile/identify.js and
-//     api/user-profile/sync-progress.js) with current_level >= 10.
+//     Admin" — uncapped, OR
+//   - a valid regular-user JWT (see api/user-profile.js's action=identify,
+//     minted for every user including anonymous ones via a client-side
+//     device_id — see public/src/shared/userLevel.js) — capped at
+//     AI_AGENT_DAILY_LIMIT platform-key requests per UTC day, tracked in
+//     user_profiles.ai_agent_usage_count/_date and enforced atomically via
+//     the increment_ai_agent_usage() Postgres function (see the migration
+//     that added it) so concurrent requests can't race past the cap — see
+//     checkAndIncrementDailyUsage() below.
 // Both JWTs are minted server-side with a server-computed claim (admin
-// role / user current_level), so neither is spoofable by a client simply
-// sending a bigger number — see isLevel10PlusUser() below.
+// role / user profileId), so neither the identity nor the resulting quota
+// row is spoofable by a client.
 //
-// Everyone else (including anonymous users) can still use the endpoint by
-// setting useOwnKey: true and supplying their own key — that path skips
-// the platform pool and authorization check entirely, and the key is never
-// persisted server-side.
+// Everyone can still use the endpoint uncapped by setting useOwnKey: true
+// and supplying their own key — that path skips the platform pool and both
+// the auth and quota checks entirely, and the key is never persisted
+// server-side.
 // =============================================================================
 
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
@@ -76,6 +83,7 @@ import { callProvider, isSupportedProvider } from "./_providerClients.js";
 import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
+import { createClient } from "@supabase/supabase-js";
 
 // ── File attachments (Task 3) ──────────────────────────────────────────────
 // Deliberately handled inside this single endpoint rather than a new
@@ -233,23 +241,70 @@ export const ownKeyRequestLog = new Map(); // ip -> [timestamps]
 const OWN_KEY_RATE_LIMIT = 20; // requests per minute, plain text
 const OWN_KEY_ATTACHMENT_RATE_LIMIT = 6; // requests per minute, file-bearing
 
-// Verifies a regular-user JWT minted by /api/user-profile/identify or
-// /api/user-profile/sync-progress. `current_level` in the token is
-// server-computed at mint time (see api/user-profile/_levelMath.js) —
-// never something the client set directly — so trusting the claim here is
-// safe as long as the token itself verifies (same guarantee as the admin
-// JWT path via requireAdmin).
-function isLevel10PlusUser(req) {
+// Daily cap on platform-key requests for regular (non-admin) users. Resets
+// at UTC midnight — see increment_ai_agent_usage() in the migration that
+// added user_profiles.ai_agent_usage_count/_date. Chosen as a plain
+// constant rather than a per-level scale: the old Level 10+ gate already
+// went away, so there's no remaining "tier" to scale a limit by, just a
+// single flat allowance shared by every non-admin user, logged in or not.
+const AI_AGENT_DAILY_LIMIT = 15;
+
+let cachedSupabaseClient = null;
+function getSupabaseClient() {
+  if (!cachedSupabaseClient) {
+    cachedSupabaseClient = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY,
+    );
+  }
+  return cachedSupabaseClient;
+}
+
+// Verifies a regular-user JWT minted by /api/user-profile.js (action=
+// identify or action=sync-progress) and returns its profileId, or null if
+// the token is missing/invalid. profileId is server-assigned at mint time
+// — never something the client set directly — so it's a safe row key for
+// the quota check below (same guarantee as the admin JWT path via
+// requireAdmin).
+function getRegularUserProfileId(req) {
   const authHeader = req.headers["authorization"] || "";
-  if (!authHeader.startsWith("Bearer ")) return false;
+  if (!authHeader.startsWith("Bearer ")) return null;
   const token = authHeader.slice(7).trim();
-  if (!token) return false;
+  if (!token) return null;
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
-    return payload.role === "user" && Number(payload.current_level) >= 10;
+    return payload.role === "user" && payload.profileId ? payload.profileId : null;
   } catch {
-    return false;
+    return null;
+  }
+}
+
+/**
+ * Atomically checks-and-increments today's platform-key usage counter for
+ * a regular user's profile, via the increment_ai_agent_usage() Postgres
+ * function (a single UPDATE...RETURNING, so concurrent requests from the
+ * same profile can't both read "under the limit" and both proceed — see
+ * that function's own comment in the migration).
+ * @param {string} profileId
+ * @returns {Promise<{allowed: boolean, usageCount: number}>} fails CLOSED
+ *   (allowed: false) on any unexpected DB error, rather than letting an
+ *   outage silently uncap usage.
+ */
+async function checkAndIncrementDailyUsage(profileId) {
+  try {
+    const { data, error } = await getSupabaseClient().rpc("increment_ai_agent_usage", {
+      p_profile_id: profileId,
+      p_daily_limit: AI_AGENT_DAILY_LIMIT,
+    });
+    if (error || !Array.isArray(data) || !data.length) {
+      console.error("[ai-agent/chat] increment_ai_agent_usage error:", error);
+      return { allowed: false, usageCount: 0 };
+    }
+    return { allowed: !!data[0].allowed, usageCount: Number(data[0].usage_count) || 0 };
+  } catch (err) {
+    console.error("[ai-agent/chat] increment_ai_agent_usage unexpected error:", err);
+    return { allowed: false, usageCount: 0 };
   }
 }
 
