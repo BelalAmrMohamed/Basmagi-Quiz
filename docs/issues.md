@@ -9,6 +9,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ### AI Agent
 
+#### Fix Dictation
+The dictation feature is so messed up, it doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser.
+
 #### Bug Fixes
 1. **`.ai-agent-dictation-wave` overlaps input text**
    - Currently covers the entire input field, hiding the text as it's being transcribed.

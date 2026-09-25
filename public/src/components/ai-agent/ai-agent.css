@@ -829,16 +829,9 @@
   border: 1.5px solid var(--color-border);
   border-radius: 26px;
   background: var(--color-background-secondary);
-  /* .ai-agent-chat-input-row (this pill's parent) is a flex column with
-     align-items: center, so without an explicit width this pill shrinks
-     to its content's intrinsic size — the collapsed textarea's min-height
-     flex-basis — on first render, well short of the 600px cap, and only
-     widens once typed content happens to force reflow. width: 100% (up to
-     the existing max-width) makes it fill the available row width from
-     the start, matching how a Gemini-style composer pill is expected to
-     render on load. */
   width: 100%;
   max-width: 600px;
+  min-height: 44px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -874,10 +867,6 @@
 .ai-agent-chat-input:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.ai-agent-chat-input[hidden] {
-  display: none;
 }
 
 .ai-agent-chat-input:placeholder-shown {
@@ -941,6 +930,10 @@
   color: var(--color-primary);
 }
 
+.ai-agent-mic-btn[hidden] {
+  display: none;
+}
+
 /* Shown together, replacing the mic button, while dictation is active
    (see setDictationUiState() in ai-agent-chat.js). Flex so both buttons
    share the space the single mic button normally occupies without
@@ -996,89 +989,24 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
-/* NOTE: an earlier, lower-specificity .ai-agent-dictation-wave rule set
-   used to live here (bordered pill of its own, ~line 1100 in prior
-   revisions). It was fully superseded by the more specific
-   `.ai-agent-dictation-wave:not([hidden])` rule further down this file
-   (higher specificity always won), so it was dead weight kept only for
-   history — removed as part of the Gemini-style redesign below, which
-   updates that surviving, actually-effective rule instead so the wave
-   sits flush inside the new borderless pill instead of drawing its own
-   nested border/background. */
+/* REDESIGN (v2): .ai-agent-dictation-wave is no longer a full-width
+   textarea replacement — it's a small fixed-size (36×36, matching
+   .ai-agent-mic-btn exactly) "listening" indicator that swaps into the
+   mic button's own slot while dictating (see setDictationUiState in
+   ai-agent-chat.js). Because it matches the mic button's footprint
+   exactly, swapping the two via `hidden` can never change
+   .ai-agent-chat-input-controls's height/width — the textarea stays
+   visible and unaffected the whole time. All of .ai-agent-dictation-wave's
+   actual sizing/animation rules live together in one place further down
+   this file (search "Voice dictation wave (v2)"); this comment marks
+   where the old full-row version used to be defined.
 
-.ai-agent-dictation-wave-bars {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  height: 20px;
-  flex-shrink: 0;
-}
-
-.ai-agent-dictation-wave-bars span {
-  display: block;
-  width: 3px;
-  height: 100%;
-  border-radius: 3px;
-  background: currentColor;
-  transform-origin: center;
-  animation: ai-agent-wave-bounce 1s ease-in-out infinite;
-  transition: transform 0.08s ease-out;
-}
-
-/* Once startMicMetering() confirms real volume data is flowing, JS sets
-   each bar's transform directly per animation frame — the CSS keyframe
-   loop below is switched off so it can't fight those inline values. */
-.ai-agent-dictation-wave--live .ai-agent-dictation-wave-bars span {
-  animation: none;
-}
-
-/* Staggered delays + slightly different durations per bar so the five
-   bars don't move in perfect unison — reads as an actual live audio
-   waveform reacting to sound rather than a single mechanical pulse. */
-.ai-agent-dictation-wave-bars span:nth-child(1) {
-  animation-delay: -0.9s;
-  animation-duration: 1.1s;
-}
-
-.ai-agent-dictation-wave-bars span:nth-child(2) {
-  animation-delay: -0.6s;
-  animation-duration: 0.9s;
-}
-
-.ai-agent-dictation-wave-bars span:nth-child(3) {
-  animation-delay: -0.3s;
-  animation-duration: 1.2s;
-}
-
-.ai-agent-dictation-wave-bars span:nth-child(4) {
-  animation-delay: -0.75s;
-  animation-duration: 0.95s;
-}
-
-.ai-agent-dictation-wave-bars span:nth-child(5) {
-  animation-delay: -0.45s;
-  animation-duration: 1.05s;
-}
-
-@keyframes ai-agent-wave-bounce {
-
-  0%,
-  100% {
-    transform: scaleY(0.3);
-  }
-
-  50% {
-    transform: scaleY(1);
-  }
-}
-
-html[data-motion="reduced"] {
-  .ai-agent-dictation-wave-bars span {
-    animation: none;
-    transform: scaleY(0.7);
-  }
-}
+   NOTE ON HISTORY: this file used to carry a full-row .ai-agent-dictation-
+   wave — a bordered pill that replaced the textarea's entire flex slot —
+   plus a stray duplicate rule-set both named .ai-agent-dictation-wave-bars.
+   Both were removed together with the redesign so there's now exactly one
+   definition of the wave and its bars, with no dead or shadowed CSS left
+   behind. */
 
 .ai-agent-firefox-warning {
   margin: 0 10px;
@@ -2129,61 +2057,59 @@ body.sidebar-expanded .ai-agent-fab {
   color: var(--color-text-tertiary);
 }
 
-/* ── Voice dictation wave ──
+/* ── Voice dictation wave (v2) ──
    Hidden by default via the HTML `hidden` attribute; shown only while the
-   mic is active (toggled in setDictationUiState in ai-agent-chat.js).
-   flex:1 + min-width:0 fills the available row space beside the icon
-   buttons (cancel/mic + send/attach) without breaking the row layout. */
+   mic is active, swapped 1-for-1 into micBtn's own slot (toggled together
+   in setDictationUiState in ai-agent-chat.js) — never into the textarea's
+   flex slot, and the textarea itself is never hidden, so the transcribed
+   text stays visible and readable as it's typed live. */
 .ai-agent-dictation-wave[hidden] {
-  display: none !important;
+  display: none;
 }
 
-/* REDESIGN: previously drew its own tinted pill (border-radius/background)
-   nested inside the input row's separately-bordered boxes. Now that
-   .ai-agent-chat-input-controls itself is the single outer pill, this
-   sits flush inside it exactly like the textarea it replaces — no
-   border, no radius, no background — so swapping between "typing" and
-   "dictating" doesn't introduce a second nested pill shape. */
+/* Fixed 36×36 footprint — deliberately identical to .ai-agent-mic-btn's
+   own box (width/height/border-radius) so this can only ever replace the
+   mic button visually, never add to or shrink
+   .ai-agent-chat-input-controls's height. flex-shrink: 0 keeps it that
+   size even if the textarea's content tries to squeeze the row. */
 .ai-agent-dictation-wave:not([hidden]) {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  flex: 1;
-  min-width: 0;
-  padding: 8px 10px;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: none;
-  border-radius: 0;
-  background: transparent;
+  border-radius: 999px;
+  background: var(--color-primary-light, color-mix(in srgb, var(--color-primary) 14%, transparent));
   color: var(--color-primary);
   cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 600;
-  font-family: inherit;
-  transition: color 0.2s ease;
-  min-height: 36px;
+  transition: opacity 0.15s ease;
 }
 
 .ai-agent-dictation-wave:not([hidden]):hover {
-  color: var(--color-primary);
-  opacity: 0.85;
+  opacity: 0.8;
 }
 
-/* Wave bars container */
+/* Wave bars container — sized to sit comfortably inside the 36×36 circle
+   with room to spare, Claude-style: a compact cluster of slim bars rather
+   than a wide waveform strip. */
 .ai-agent-dictation-wave-bars {
   display: flex;
   align-items: center;
-  gap: 3px;
-  height: 24px;
-  flex-shrink: 0;
+  justify-content: center;
+  gap: 2.5px;
+  height: 16px;
 }
 
 /* Individual bars — CSS fallback animation plays when no live mic data
    (getUserMedia denied/unavailable); live metering overrides transform
-   via JS once the AudioContext stream is running. */
+   via JS once the AudioContext stream is running (see startMicMetering
+   in ai-agent-chat.js). */
 .ai-agent-dictation-wave-bars span {
   display: block;
-  width: 3px;
+  width: 2.5px;
   border-radius: 2px;
   background: currentColor;
   transform-origin: center;
@@ -2191,27 +2117,27 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-dictation-wave-bars span:nth-child(1) {
-  height: 10px;
+  height: 6px;
   animation-delay: 0s;
 }
 
 .ai-agent-dictation-wave-bars span:nth-child(2) {
-  height: 16px;
+  height: 11px;
   animation-delay: 0.15s;
 }
 
 .ai-agent-dictation-wave-bars span:nth-child(3) {
-  height: 22px;
+  height: 16px;
   animation-delay: 0.3s;
 }
 
 .ai-agent-dictation-wave-bars span:nth-child(4) {
-  height: 16px;
+  height: 11px;
   animation-delay: 0.45s;
 }
 
 .ai-agent-dictation-wave-bars span:nth-child(5) {
-  height: 10px;
+  height: 6px;
   animation-delay: 0.6s;
 }
 
@@ -2236,12 +2162,6 @@ body.sidebar-expanded .ai-agent-fab {
 [data-animations="disabled"] .ai-agent-dictation-wave-bars span {
   animation: none;
   transform: scaleY(0.7);
-}
-
-/* Label text inside the wave button */
-.ai-agent-dictation-wave-label {
-  font-size: 0.78rem;
-  opacity: 0.85;
 }
 
 /* ── Desktop layout ── Wider modal + the sidebar shown alongside the active panel */

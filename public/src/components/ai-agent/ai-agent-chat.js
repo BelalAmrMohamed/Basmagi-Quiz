@@ -942,20 +942,21 @@ export function createChatPanel(options = {}) {
   let meterRafId = null;
   const waveBarEls = [];
 
-  // Replaces the textarea + attach button (both hidden while dictating —
-  // see setDictationUiState) with a live wave/mic animation, so the row
-  // reads as "actively listening" rather than a text field that happens
-  // to be auto-filling itself. Clicking it behaves exactly like the
-  // mic/cancel button (see onMicBtnClick below) — stops dictation and
-  // leaves the transcribed text for review — so there are two equally
-  // reachable ways to cancel (this element, and the still-visible
-  // cancel-shaped mic button) rather than only the small icon button.
+  // REDESIGN: no longer replaces the textarea. Sits in the mic button's own
+  // slot (same fixed 36×36 footprint — see .ai-agent-dictation-wave in the
+  // CSS) as a small live "listening" indicator, swapped in for micBtn while
+  // dictating so the row's height/width never changes and the textarea
+  // stays visible with its live-transcribed text the whole time (see
+  // recognition.onresult below, which writes straight into textarea.value
+  // regardless of this element's state). Clicking it behaves exactly like
+  // the mic/cancel button used to (see onMicBtnClick below) — stops
+  // dictation and leaves the transcribed text in place for review.
   const dictationWaveEl = document.createElement("button");
   dictationWaveEl.type = "button";
   dictationWaveEl.className = "ai-agent-dictation-wave";
-  // Hidden until dictation actually starts (toggled alongside the
-  // textarea in setDictationUiState below) — otherwise this would sit
-  // visible in the input row on every page load.
+  // Hidden until dictation actually starts (toggled alongside micBtn in
+  // setDictationUiState below) — otherwise this would sit visible in the
+  // input row on every page load.
   dictationWaveEl.hidden = true;
   dictationWaveEl.setAttribute("aria-label", "جارِ الاستماع — اضغط للإلغاء");
   dictationWaveEl.title = "جارِ الاستماع — اضغط للإلغاء";
@@ -963,7 +964,6 @@ export function createChatPanel(options = {}) {
     <span class="ai-agent-dictation-wave-bars" aria-hidden="true">
       <span></span><span></span><span></span><span></span><span></span>
     </span>
-    <span class="ai-agent-dictation-wave-label">جارِ الاستماع...</span>
   `;
   dictationWaveEl.addEventListener("click", () => {
     stopRecognition();
@@ -1144,13 +1144,13 @@ export function createChatPanel(options = {}) {
     }
     if (moreBtn) moreBtn.hidden = dictating;
     if (suggestionsEl) suggestionsEl.hidden = dictating;
-    // The textarea itself is replaced (not just styled) by the wave
-    // animation while dictating — it stays in the DOM and keeps
-    // receiving the live-transcribed value under the hood (see
-    // recognition.onresult below), just visually swapped out, so the
-    // moment dictation stops the transcribed text is already sitting in
-    // the field ready to review/edit/send with no extra sync step.
-    textarea.hidden = dictating;
+    // REDESIGN: the textarea now stays visible and in-place the entire
+    // time — it keeps receiving the live-transcribed value directly (see
+    // recognition.onresult below) and the user can watch it fill in as
+    // they speak, rather than being swapped out for a separate animation.
+    // Only the mic button's own slot swaps to the wave indicator, so
+    // nothing about the textarea's box changes size or visibility.
+    if (micBtn) micBtn.hidden = dictating;
     dictationWaveEl.hidden = !dictating;
     textarea.classList.toggle("ai-agent-chat-input--dictating", dictating);
     inputRow.classList.toggle("ai-agent-chat-input-row--dictating", dictating);
@@ -1336,25 +1336,25 @@ export function createChatPanel(options = {}) {
   // inserts itself as inputRow's own first child whenever there's at
   // least one pending attachment; inputControls always holds the
   // horizontal control line below it. DOM order within inputControls:
-  // more, textarea, wave, mic/cancel, send — send is deliberately the
+  // more, mic/cancel, wave, textarea, send — send is deliberately the
   // LAST child so it's the far-right control in this RTL row (first
   // child sits visually on the right in RTL flex; see
   // .ai-agent-chat-input-row's own comment in the CSS), matching "Send
   // Button Position: move the remaining send-btn to the far-right end"
-  // from the original request. The wave sits in the textarea's flex slot
-  // (see .ai-agent-dictation-wave's flex:1 in the CSS) so it visually
-  // replaces it in place rather than appearing as an extra element
-  // squeezed in. Only the send button (never more/mic/textarea) stays
-  // visible during dictation — see setDictationUiState, which hides
-  // moreBtn/textarea but never touches sendBtn.
+  // from the original request. REDESIGN: the wave sits right next to
+  // mic/cancel (same fixed-size slot, swapped 1-for-1 via `hidden` — see
+  // setDictationUiState) rather than in the textarea's flex slot, so the
+  // textarea itself is never hidden or resized during dictation. Only
+  // moreBtn and micBtn (never textarea/send) get hidden during dictation
+  // — see setDictationUiState.
   const inputControls = document.createElement("div");
   inputControls.className = "ai-agent-chat-input-controls";
 
   inputControls.appendChild(sendBtn);
   if (micBtn) inputControls.appendChild(micBtn);
+  inputControls.appendChild(dictationWaveEl);
 
   inputControls.appendChild(textarea);
-  inputControls.appendChild(dictationWaveEl);
 
   if (moreBtn) inputControls.appendChild(moreBtn);
 
