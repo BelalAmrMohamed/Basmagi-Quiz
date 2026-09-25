@@ -8,21 +8,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Patches
 
 ### AI Agent
-
-#### Fix Dictation
-The dictation feature is so messed up, it doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser.
-
-#### Bug Fixes
-1. **`.ai-agent-dictation-wave` overlaps input text**
-   - Currently covers the entire input field, hiding the text as it's being transcribed.
-   - Fix: reposition/resize so the wave animation doesn't obscure in-progress text (e.g. constrain it to a small indicator area, or render it behind/beside the text rather than on top).
-2. **`.ai-agent-dictation-wave` causes layout shift**
-   - When activated, `.ai-agent-chat-input-controls` grows slightly in height, misaligning sibling elements.
-   - Fix: reserve space for the wave state up front (e.g. fixed-height container or something) so activation doesn't change the controls' height.
-
-I tried to fix the issues but couldn't, they are still the same. 
-
-Files: `public\src\components\ai-agent\`
+Fix Dictation: The dictation feature is so messed up, it doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser.
 
 ### Lessons Page
 
@@ -68,6 +54,8 @@ Add a `/` command system to the agent input:
   - Needs an architecture that lets each page register its own action list without the agent core needing to know about all of them (plugin/registry pattern, TBD by implementation).
 - **No confirmation step for slash actions:** if the user explicitly invokes an action via `/`, the AI executes it immediately — it should *not* ask for confirmation ("do you want me to...?"). Confirmation prompts are reserved for actions inferred from free-text/natural language, not explicit slash commands.
 - **Image paste support:** users should be able to paste images directly into the input field (not just type text) and that image must appear as an attachment.
+
+Files: `public\src\components\ai-agent`
 
 ### Implement [plan](plans/live-render-md-prompt.md)
 
