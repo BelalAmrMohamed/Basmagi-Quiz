@@ -1585,12 +1585,13 @@
   }
 
   /* The sheet opened by "المزيد" reuses the desktop sidebar's <nav>, so hide
-     the 4 links that are now duplicated as their own bottom-nav tabs
-     (الرئيسية / الحساب / إنشاء / الإعدادات). Only the leftover links
+     the 5 links that are now duplicated as their own bottom-nav tabs
+     (الرئيسية / امتحان / درس / الحساب / الإعدادات). Only the leftover links
      (change name, theme, animations, contact dev, install app) remain. */
   .sidebar nav>a[href="/"],
   .sidebar nav>a[href="profile"],
   .sidebar nav>a[href="create-quiz"],
+  .sidebar nav>a[href="create-lesson"],
   .sidebar nav>a[href="settings"] {
     display: none;
   }
