@@ -23,6 +23,7 @@ Fix Dictation: The dictation feature is so messed up, it doesn't work on Brave b
 - Implement a lesson reader (read aloud) using the browser's api.
 - `أسئلة الطلاب` section shouldn't appear for user-created lessons.
 - The `lesson-prefs__panel` element is broken, changing the colors in it doesn't do anything, and the `lesson-prefs__panel` itself is always white on all different themes. It's dropdown has bad design.
+- The lesson page should get the `ai-agent-more-btn` like the other pages. Users should be allowed to upload content.
 
 ### Create-lesson Page
 - Changing the value of `#lessonFontSelect` doesn't change anything.
@@ -36,13 +37,6 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 ## New Features
 
 ### AI Agent
-
-#### New: Self-Contained Modal
-The AI Agent modal currently reuses shared components (e.g. the exam dropdown, `.modal-overlay`) that weren't built for it. This creates tight coupling and makes it hard to drop the agent into new pages that don't already import those components.
-**Requirement:** Rebuild the modal as fully self-contained:
-- No dependency on shared/external components — custom overlay, custom modal shell, etc.
-- Build custom dropdown components (with icon support) specific to the agent, replacing reused ones like the exam dropdown.
-- Goal: the agent should be a drop-in feature for any page, with no prerequisite imports.
 
 #### New: Modular Actions (Slash Commands)
 Add a `/` command system to the agent input:

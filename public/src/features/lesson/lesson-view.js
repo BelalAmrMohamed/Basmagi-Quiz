@@ -243,6 +243,7 @@ function mountLessonAgent(root, lesson, normalized) {
     suggestedPrompts: LESSON_PAGE_SUGGESTED_PROMPTS,
     contextSummary: () => lessonAgentContext(lesson, normalized),
     enableTools: true,
+    enableFileUpload: true,
     toolNames: ["create_quiz"],
     onToolCall: handleLessonAgentToolCall,
   }));

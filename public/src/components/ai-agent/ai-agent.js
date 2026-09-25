@@ -808,3 +808,4 @@ export function createAIAgentFab(options = {}) {
 // Kept for callers that genuinely want the tabbed widget embedded inline
 // rather than behind a FAB/modal (e.g. a future dedicated "AI Helper" page).
 export { buildWidgetContent as createAIAgentWidget };
+export { registerPageActions, getPageActions } from "./ai-agent-actions.js";

@@ -19,6 +19,8 @@ import { saveConversation, deriveConversationTitle } from "./ai-agent-history-id
 // whole widget rather than a bespoke one per popover.
 import { openAgentDropdown, closeAllAgentDropdowns, positionAgentDropdown } from "./ai-agent-dropdown.js";
 import { createMentionMenu } from "./ai-agent-mention-menu.js";
+import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
+
 
 // Safety cap on how many tool-driven rounds resendLastUserTurn() will
 // chain in a single agent turn (see its `agentDepth` param) before giving
@@ -613,7 +615,7 @@ export function createChatPanel(options = {}) {
     let contextText = att.summary || "";
     if (!contextText && att.kind === "file") {
       const sizeLabel = typeof att.base64 === "string"
-        ? `${Math.max(1, Math.round((att.base64.length * 0.75) / 1024))} كيلوبايت تقريبًا`
+        ? `${Math.max(1, Math.round((att.base64.length * 0.75) / 1024))} KB`
         : null;
       contextText = [att.mimeType, sizeLabel].filter(Boolean).join(" — ");
     }
@@ -941,6 +943,56 @@ export function createChatPanel(options = {}) {
   // direction/alignment from its own content instead of always starting
   // LTR even for an Arabic-only message.
   textarea.dir = "auto";
+
+  /**
+   * Image paste support: catches images pasted from clipboard (e.g. screenshots,
+   * clipboard copied files, snipping tool) directly into the textarea or panel,
+   * and attaches them immediately as pending attachments.
+   */
+  async function handleImagePaste(e) {
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+
+    let targetFile = null;
+
+    if (clipboardData.items) {
+      for (const item of Array.from(clipboardData.items)) {
+        if (item.type && item.type.startsWith("image/")) {
+          targetFile = item.getAsFile();
+          if (targetFile) break;
+        }
+      }
+    }
+
+    if (!targetFile && clipboardData.files) {
+      targetFile = Array.from(clipboardData.files).find((f) => f.type && f.type.startsWith("image/")) || null;
+    }
+
+    if (targetFile) {
+      const plainText = clipboardData.getData("text/plain");
+      if (!plainText || !plainText.trim()) {
+        e.preventDefault();
+      }
+
+      let fileToAttach = targetFile;
+      if (!fileToAttach.name || fileToAttach.name === "image.png") {
+        const ext = fileToAttach.type?.split("/")[1] || "png";
+        const dateStr = new Date().toISOString().replace(/[:.]/g, "-").slice(11, 19);
+        try {
+          fileToAttach = new File([targetFile], `صورة-ملصقة-${dateStr}.${ext}`, { type: targetFile.type });
+        } catch {
+          // fallback to original targetFile
+        }
+      }
+      await handlePickedFile(fileToAttach);
+      updateSendBtnVisibility();
+    }
+  }
+
+  textarea.addEventListener("paste", handleImagePaste);
+  panel.addEventListener("paste", (e) => {
+    if (e.target !== textarea) handleImagePaste(e);
+  });
 
   function resizeChatInput() {
     textarea.style.height = "auto";
@@ -2179,7 +2231,7 @@ export function createChatPanel(options = {}) {
     // actually lives). The client still renders it as a chip in the UI
     // the whole time (see renderAttachmentChips/appendMessage) — it never
     // disappears from the user's view, exactly as required.
-    const toWireMessage = ({ role, content, attachments, type }) => {
+    const toWireMessage = ({ role, content, attachments, type, isSlashCommand, slashCmdName, slashDirective }) => {
       const fileAttachments = (attachments || [])
         .filter((a) => a.kind === "file" || (!a.kind && a.base64))
         .map(({ mimeType, base64, name }) => ({ mimeType, base64, name }));
@@ -2517,6 +2569,27 @@ export function createChatPanel(options = {}) {
   // without closing. All the actual menu logic/state lives in
   // ai-agent-mention-menu.js; this wiring only supplies the callbacks it
   // needs into this panel's own pendingAttachments/render functions.
+
+  // ── Modular Actions (Slash Commands) menu ─────────────────────────────
+  const slashMenu = createSlashMenu({
+    textarea,
+    getActions: () => getPageActions(pageKey, options.actions),
+    onPick: (action) => {
+      const triggerStart = slashMenu.getTriggerStart();
+      const caret = textarea.selectionStart;
+      const before = textarea.value.slice(0, triggerStart);
+      const after = textarea.value.slice(caret);
+      const insert = `/${action.command} `;
+      textarea.value = before + insert + after;
+      const newCaret = before.length + insert.length;
+      textarea.setSelectionRange(newCaret, newCaret);
+      textarea.focus();
+      resizeChatInput();
+      updateSendBtnVisibility();
+    },
+    positionMenu: positionAgentDropdown,
+  });
+
   const mentionMenu = createMentionMenu({
     textarea,
     getPendingCount: () => pendingAttachments.length,

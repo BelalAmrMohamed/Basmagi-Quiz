@@ -551,6 +551,7 @@ function mountCreatorAgent() {
         suggestedPrompts: CREATE_LESSON_PAGE_SUGGESTED_PROMPTS,
         contextSummary: lessonEditorContext,
         enableTools: true,
+        enableFileUpload: true,
         toolNames: ["add_lesson_question"],
         onToolCall: addLessonQuestionFromAgent,
     });
