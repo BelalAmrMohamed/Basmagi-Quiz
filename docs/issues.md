@@ -24,6 +24,8 @@ Fix Dictation: The dictation feature is so messed up, it doesn't work on Brave b
 - `أسئلة الطلاب` section shouldn't appear for user-created lessons.
 - The `lesson-prefs__panel` element is broken, changing the colors in it doesn't do anything, and the `lesson-prefs__panel` itself is always white on all different themes. It's dropdown has bad design.
 - The lesson page should get the `ai-agent-more-btn` like the other pages. Users should be allowed to upload content.
+- Add `/create-lesson` to the AI Aggent's action menu on the home page.
+- Add a button in the `ai-agent-dropdown-menu` to open the slash menu, so users can open it without typing `/` 
 
 ### Create-lesson Page
 - Changing the value of `#lessonFontSelect` doesn't change anything.
@@ -35,21 +37,6 @@ Performance Improvements: Currently, there are many custom mechanism fucntionali
 Example: I lately found out that the `/quiz` page was rendering questions through the JS once, then when the user submits their answer, the JS renders the question again to add the explanation & formal answer, I removed it and depended fully on CSS & HTML, the whole question including explanation & formal answer is inserted at the first render, then I make things visible when the user submits the answer using CSS classes. That approach to get away from JS improved performance alot.  
 
 ## New Features
-
-### AI Agent
-
-#### New: Modular Actions (Slash Commands)
-Add a `/` command system to the agent input:
-- Typing `/` in the input opens a dropdown of available actions.
-- **Actions are page-specific and configurable per page:**
-  - Each page defines its own action set (or none at all).
-  - Example: `create-lesson` and `create-quiz` pages each have their own distinct actions.
-  - Example: on the home page, a "Create Quiz" action creates the quiz inside the "امتحاناتك" (Your Exams) section. On a lesson page, the equivalent action creates the quiz within that page/lesson, or within whichever section the user specifies.
-  - Needs an architecture that lets each page register its own action list without the agent core needing to know about all of them (plugin/registry pattern, TBD by implementation).
-- **No confirmation step for slash actions:** if the user explicitly invokes an action via `/`, the AI executes it immediately — it should *not* ask for confirmation ("do you want me to...?"). Confirmation prompts are reserved for actions inferred from free-text/natural language, not explicit slash commands.
-- **Image paste support:** users should be able to paste images directly into the input field (not just type text) and that image must appear as an attachment.
-
-Files: `public\src\components\ai-agent`
 
 ### Implement [plan](plans/live-render-md-prompt.md)
 

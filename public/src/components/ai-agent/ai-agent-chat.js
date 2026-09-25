@@ -2241,9 +2241,15 @@ export function createChatPanel(options = {}) {
       const expandedContext = platformAttachments.length
         ? platformAttachments.map(expandPlatformAttachment).join("\n\n")
         : "";
-      const effectiveContent = expandedContext
+      let effectiveContent = expandedContext
         ? [content, expandedContext].filter(Boolean).join("\n\n")
         : content;
+
+      if (isSlashCommand || (role === "user" && typeof content === "string" && content.trim().startsWith("/"))) {
+        const cmdName = slashCmdName || content.trim().match(/^\/([^\s]+)/)?.[1] || "";
+        const directive = slashDirective || "نفّذ المطلوب واستدعِ الأداة فوراً دون طلب تأكيد";
+        effectiveContent = `${effectiveContent}\n\n[توجيه تنفيذي مباشر: هذا طلب صريح ومباشر عبر أمر Slash (/${cmdName}). ${directive}].`;
+      }
 
       if (type === "tool-result") {
         return {
@@ -2492,7 +2498,35 @@ export function createChatPanel(options = {}) {
       removeSuggestions();
     }
 
-    const outgoingUserMessage = { role: "user", content: text };
+    // Check for slash command invocation
+    let isSlashCommand = false;
+    let slashCmdName = "";
+    let slashDirective = "";
+
+    if (text.startsWith("/")) {
+      const slashMatch = text.match(/^\/([^\s]+)(?:\s+([\s\S]*))?$/);
+      if (slashMatch) {
+        isSlashCommand = true;
+        slashCmdName = slashMatch[1];
+        const pageActions = getPageActions(pageKey, options.actions);
+        const action = pageActions.find(
+          (a) => a.command.toLowerCase() === slashCmdName.toLowerCase() || a.id.toLowerCase() === slashCmdName.toLowerCase()
+        );
+        if (action?.systemDirective) {
+          slashDirective = action.systemDirective;
+        } else {
+          slashDirective = `المستخدم استدعى الأمر المباشر (/${slashCmdName}). نفّذ الإجراء المناسب فوراً واستدعِ الأداة البرمجية دون طلب أي تأكيد مسبق.`;
+        }
+      }
+    }
+
+    const outgoingUserMessage = {
+      role: "user",
+      content: text,
+      isSlashCommand,
+      slashCmdName,
+      slashDirective,
+    };
     if (attachments.length) outgoingUserMessage.attachments = attachments;
     // Push BEFORE rendering so the new message's own index (history.length
     // - 1) is known for addEditButton's historyIndex — appendMessage
@@ -2514,6 +2548,10 @@ export function createChatPanel(options = {}) {
       // sent message if that assumption ever breaks.
       if (mentionMenu.isOpen()) {
         mentionMenu.close();
+        return;
+      }
+      if (slashMenu.isOpen()) {
+        slashMenu.close();
         return;
       }
       sendMessage();
@@ -2626,24 +2664,36 @@ export function createChatPanel(options = {}) {
     if (mentionMenu.handleKeydown(e)) {
       e.stopPropagation();
       e.preventDefault();
+      return;
+    }
+    if (slashMenu.handleKeydown(e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      return;
     }
   });
 
   textarea.addEventListener("input", () => {
     if (mentionMenu.handleInput()) return;
+    if (slashMenu.handleInput()) return;
 
     // Menu isn't open (or just closed itself above) — check whether the
-    // character just typed at the caret is `@` starting a new "word"
-    // (start of the field, or preceded by whitespace — never mid-word, so
-    // e.g. an email address typed elsewhere in the message doesn't pop
-    // this open).
+    // character just typed at the caret is `@` or `/` starting a new "word"
+    // (start of the field, or preceded by whitespace — never mid-word).
     const caret = textarea.selectionStart;
     const valueBeforeCaret = textarea.value.slice(0, caret);
     const lastChar = valueBeforeCaret.slice(-1);
     if (lastChar === "@") {
       const charBeforeTrigger = valueBeforeCaret.slice(-2, -1);
       if (charBeforeTrigger === "" || /\s/.test(charBeforeTrigger)) {
+        slashMenu.close();
         mentionMenu.open(caret - 1);
+      }
+    } else if (lastChar === "/") {
+      const charBeforeTrigger = valueBeforeCaret.slice(-2, -1);
+      if (charBeforeTrigger === "" || /\s/.test(charBeforeTrigger)) {
+        mentionMenu.close();
+        slashMenu.open(caret - 1);
       }
     }
   });
