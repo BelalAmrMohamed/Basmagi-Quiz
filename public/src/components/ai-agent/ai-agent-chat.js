@@ -12,14 +12,13 @@ import { getSelectedProvider, getSelectedModel, getModelsForProvider, setSelecte
 import { getUserToken } from "../../shared/userLevel.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
 import { saveConversation, deriveConversationTitle } from "./ai-agent-history-idb.js";
-// PHASE 3c: reuses the same anchored-popover engine already used for the
-// history sidebar's per-item "⋮" menu (ai-agent-history.js) and the exam
-// cards' own ⋮ menu — per the plan's explicit instruction not to invent a
-// third distinct dropdown-menu visual style in this codebase.
-import { openExamDropdownMenu, closeAllExamDropdownMenus } from "../../features/home/exam-dropdown-menu.js";
-import { positionExamDropdownMenu } from "../../features/home/floating-position.js";
+// PHASE 3c: reuses this widget's own self-contained anchored-popover
+// engine (ai-agent-dropdown.js), the same one used for the history
+// sidebar's per-item "⋮" menu (ai-agent-history.js) and the sidebar's
+// export menu (ai-agent.js) — one dropdown-menu visual style for the
+// whole widget rather than a bespoke one per popover.
+import { openAgentDropdown, closeAllAgentDropdowns, positionAgentDropdown } from "./ai-agent-dropdown.js";
 import { createMentionMenu } from "./ai-agent-mention-menu.js";
-import { fadeOutAndRemove } from "../../features/home/modal-utils.js";
 
 // Safety cap on how many tool-driven rounds resendLastUserTurn() will
 // chain in a single agent turn (see its `agentDepth` param) before giving
@@ -532,26 +531,48 @@ export function createChatPanel(options = {}) {
   const ATTACHMENT_KIND_LABEL_AR = { quiz: "امتحان", lesson: "درس", course: "مادة", folder: "مجلد", file: "ملف" };
 
   /**
+   * Standard fade-out-then-remove dismiss animation (opacity + translateY
+   * transition before removing the node). Local copy — this used to be
+   * imported from features/home/modal-utils.js, but that's the only thing
+   * this component needed from that module, so it's inlined here rather
+   * than keeping an import into features/home for one small utility (see
+   * ai-agent.js's own header comment on this component's self-containment
+   * goal).
+   * @param {HTMLElement} overlay
+   * @param {HTMLElement} [modalCard]
+   */
+  function fadeOutAndRemove(overlay, modalCard) {
+    overlay.style.opacity = "0";
+    overlay.style.transition = "opacity 0.2s";
+    if (modalCard) {
+      modalCard.style.transform = "translateY(10px)";
+      modalCard.style.transition = "transform 0.2s";
+    }
+    setTimeout(() => overlay.remove(), 200);
+  }
+
+  /**
    * Shows a full preview of one attachment (file or platform-item) on
    * click, matching the "click a chip to see more" pattern of default
    * chat UIs (Gemini/Claude's own attachment previews) — this app's own
    * tiles/chips only ever showed a truncated name before this, with no
    * way to see the rest of a long title or any of the attached context.
-   * Reuses the same .modal-overlay/.modal-card base every other modal in
-   * this app already relies on (see ai-agent.js's own header comment) —
-   * no new modal chrome invented just for this.
+   * Reuses this widget's own .ai-agent-overlay/.ai-agent-modal-shell base
+   * (ai-agent.css — see that file's own header comment) — this component's
+   * own self-contained modal chrome, not a shared external class, so no
+   * new modal chrome invented just for this.
    * @param {object} att - a pendingAttachments entry OR a persisted/
    *   in-history attachments[] entry; both share the same
    *   {kind, title|name, summary?, payload?, mimeType?, base64?} shape.
    */
   function openAttachmentPreviewModal(att) {
     const overlay = document.createElement("div");
-    overlay.className = "modal-overlay ai-agent-attachment-preview-overlay";
+    overlay.className = "ai-agent-overlay ai-agent-attachment-preview-overlay";
     overlay.setAttribute("role", "dialog");
     overlay.setAttribute("aria-modal", "true");
 
     const card = document.createElement("div");
-    card.className = "modal-card ai-agent-attachment-preview-card";
+    card.className = "ai-agent-modal-shell ai-agent-attachment-preview-card";
 
     const closeBtn = document.createElement("button");
     closeBtn.type = "button";
@@ -791,10 +812,11 @@ export function createChatPanel(options = {}) {
     // (per the plan's own stated reason for the redesign). Today it has
     // exactly one item ("إرفاق ملف"), wired to the same fileInput.click()
     // the old standalone paperclip button used — moved, not reimplemented.
-    // Styled to match the app's other small anchored popovers (see
-    // openExamDropdownMenu's .exam-dropdown-menu/.exam-action-btn classes,
-    // reused directly rather than inventing a third dropdown visual style —
-    // per the plan's own explicit instruction not to).
+    // Styled with this widget's own small-anchored-popover chrome (see
+    // ai-agent-dropdown.js's openAgentDropdown and its
+    // .ai-agent-dropdown-menu/.ai-agent-dropdown-item classes in
+    // ai-agent.css) rather than inventing a second dropdown visual style
+    // for this menu specifically.
     moreBtn = document.createElement("button");
     moreBtn.type = "button";
     moreBtn.className = "ai-agent-more-btn";
@@ -845,15 +867,15 @@ export function createChatPanel(options = {}) {
 
     moreBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      openExamDropdownMenu(moreBtn, (menu) => {
+      openAgentDropdown(moreBtn, (menu) => {
         moreMenuItems.forEach(({ icon, label, onClick }) => {
           const item = document.createElement("button");
           item.type = "button";
-          item.className = "exam-action-btn";
+          item.className = "ai-agent-dropdown-item";
           item.innerHTML = `${icon}<span>${label}</span>`;
           item.addEventListener("click", (evt) => {
             evt.stopPropagation();
-            closeAllExamDropdownMenus();
+            closeAllAgentDropdowns();
             onClick();
           });
           menu.appendChild(item);
@@ -2518,13 +2540,13 @@ export function createChatPanel(options = {}) {
       course: ATTACHMENT_COURSE_ICON_SVG,
       folder: ATTACHMENT_FOLDER_ICON_SVG,
     },
-    positionMenu: positionExamDropdownMenu,
+    positionMenu: positionAgentDropdown,
   });
 
   textarea.addEventListener("keydown", (e) => {
     // Escape (and, when the menu is open, arrow keys / Enter for keyboard
     // selection) are handled by the menu first — same priority order as
-    // every other dismissible layer in this app (see openExamDropdownMenu's
+    // every other dismissible layer in this app (see openAgentDropdown's
     // own onKeydown): without this, Escape would fall through to whatever
     // else listens for it (e.g. closing the whole AI Agent modal) while the
     // user almost certainly just meant to back out of the menu.

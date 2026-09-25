@@ -19,7 +19,7 @@ import {
   setPinned,
   displayTitleFor,
 } from "./ai-agent-history-idb.js";
-import { openExamDropdownMenu } from "../../features/home/exam-dropdown-menu.js";
+import { openAgentDropdown } from "./ai-agent-dropdown.js";
 import { detectDirection } from "../../shared/markdown.js";
 import { _confirm } from "../notifications/notifications.js";
 
@@ -128,19 +128,18 @@ export function createHistoryPanel(options = {}) {
 
   /**
    * PHASE 5: the per-item "⋮" menu — حذف / إعادة تسمية / تثبيت·إلغاء
-   * التثبيت. Reuses openExamDropdownMenu (exam-dropdown-menu.js), the same
-   * anchored-dropdown engine showUserQuizActionsOverlay already relies on
-   * elsewhere in the app, rather than introducing a third distinct
-   * dropdown-menu visual style into the codebase.
+   * التثبيت. Uses openAgentDropdown (ai-agent-dropdown.js) — the agent's own
+   * self-contained anchored-dropdown engine, forked from exam-dropdown-menu.js
+   * so this module no longer depends on features/home.
    * @param {HTMLElement} triggerBtn
    * @param {import("./ai-agent-history-idb.js").Conversation} conv
    * @param {HTMLElement} titleEl
    */
   function openItemMenu(triggerBtn, conv, titleEl) {
-    openExamDropdownMenu(triggerBtn, (menu, closeMenu) => {
+    openAgentDropdown(triggerBtn, (menu, closeMenu) => {
       const pinOpt = document.createElement("button");
       pinOpt.type = "button";
-      pinOpt.className = "exam-action-btn";
+      pinOpt.className = "ai-agent-dropdown-item";
       pinOpt.innerHTML = conv.pinned
         ? `${UNPIN_ICON_SVG}<span>إلغاء التثبيت</span>`
         : `${PIN_ICON_SVG}<span>تثبيت</span>`;
@@ -158,7 +157,7 @@ export function createHistoryPanel(options = {}) {
 
       const renameOpt = document.createElement("button");
       renameOpt.type = "button";
-      renameOpt.className = "exam-action-btn";
+      renameOpt.className = "ai-agent-dropdown-item";
       renameOpt.innerHTML = `${RENAME_ICON_SVG}<span>إعادة تسمية</span>`;
       renameOpt.onclick = (e) => {
         e.stopPropagation();
@@ -169,7 +168,7 @@ export function createHistoryPanel(options = {}) {
 
       const deleteOpt = document.createElement("button");
       deleteOpt.type = "button";
-      deleteOpt.className = "exam-action-btn exam-action-btn--danger";
+      deleteOpt.className = "ai-agent-dropdown-item ai-agent-dropdown-item--danger";
       deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف المحادثة</span>`;
       deleteOpt.onclick = async (e) => {
         e.stopPropagation();

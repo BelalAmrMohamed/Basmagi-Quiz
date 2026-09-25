@@ -1,10 +1,231 @@
 /* =============================================================================
    public/src/components/ai-agent/ai-agent.css
-   Scoped styles for the modular AI Helper widget. Reuses existing design
-   tokens (--color-*, --gradient-accent, --shadow-*) and mirrors the visual
-   language of .exam-action-btn / .adm-btn so the widget doesn't look bolted
-   on, whether it's mounted in "امتحاناتك" or result.html.
+   Scoped styles for the modular AI Helper widget. Fully self-contained: the
+   only things this file still reaches outside the ai-agent/ component are
+   the app's global design tokens (--color-*, --gradient-accent, --shadow-*,
+   --z-*, etc. — see src/styles/themes.css), which every host page already
+   loads for theming and which no widget in a themed app should re-invent.
+   No shared COMPONENT — no other stylesheet's classes — is depended on
+   anymore: every class used by ai-agent.js/*.js is defined in this file.
+
+   This used to reuse features/home/index.css's .modal-overlay/.modal-card/
+   .modal-header/.close-btn base rules, and a SEPARATE stylesheet,
+   features/home/exam-dropdown-menu.css, for the small anchored popovers
+   (.exam-dropdown-menu/.exam-action-btn). Both were real bugs waiting to
+   happen: a page only gets correctly styled agent modals/dropdowns if it
+   happens to also link those other stylesheets. index.html, create-quiz.html
+   and result.html do; lesson.html and create-lesson.html do NOT load
+   exam-dropdown-menu.css, so every agent dropdown opened on those two pages
+   rendered unstyled. The ".ai-agent-overlay/.ai-agent-modal-shell/
+   .ai-agent-modal-header/.ai-agent-close-btn" and ".ai-agent-dropdown-menu/
+   .ai-agent-dropdown-item" rules below are this file's own copies of that
+   chrome (values matched 1:1 against the originals so nothing visually
+   changes), so the agent now renders identically on ANY page that links
+   only this one stylesheet — no prerequisite imports.
    ============================================================================= */
+
+/* ── Self-contained modal shell ──
+   Direct copies of index.css's .modal-overlay/.modal-card/.modal-header/
+   .close-btn base rules, renamed so this file never depends on that other
+   stylesheet being loaded. ai-agent.js/ai-agent-chat.js build every modal
+   (main widget, settings, attachment preview) from these classes now,
+   layered with the same widget-specific sizing overrides that already
+   existed further down this file (.ai-agent-modal-card etc. — those blocks
+   are unchanged, only what they extend was renamed). */
+.ai-agent-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal, 5000);
+}
+
+/* Same phone bottom-nav reservation as .modal-overlay's own rule — see that
+   rule's original comment: reserves the fixed bottom-nav bar's height (plus
+   the home-indicator safe area) as bottom padding so a vertically-centered
+   card lands centered in the space ABOVE the nav, not the full viewport. */
+@media (max-width: 640px) {
+  .ai-agent-overlay {
+    padding-bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px));
+    align-items: center;
+    box-sizing: border-box;
+  }
+}
+
+.ai-agent-modal-shell {
+  padding: 32px;
+  border-radius: 20px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.ai-agent-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 2px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.ai-agent-modal-header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.2;
+}
+
+.ai-agent-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+}
+
+.ai-agent-close-btn:hover {
+  background: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+/* ── Self-contained anchored-dropdown chrome ──
+   Direct copies of features/home/exam-dropdown-menu.css's .exam-dropdown-
+   menu/.exam-action-btn rules, renamed for ai-agent-dropdown.js's own
+   openAgentDropdown() (which builds ".ai-agent-dropdown-menu" elements —
+   see that module's header comment for the full rationale). Used by the
+   input's "more" popover, the history item's ⋮ menu, the sidebar's export
+   menu, and the `@` mention menu (ai-agent-mention-menu.js). */
+.ai-agent-dropdown-menu {
+  position: fixed;
+  z-index: var(--z-tooltip);
+  width: 240px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  direction: rtl;
+  animation: aiAgentDropdownIn 0.15s ease;
+}
+
+@keyframes aiAgentDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-agent-dropdown-menu .ai-agent-dropdown-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.ai-agent-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  direction: rtl;
+}
+
+.ai-agent-dropdown-item:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.ai-agent-dropdown-item svg {
+  flex-shrink: 0;
+}
+
+.ai-agent-dropdown-item--primary {
+  background: var(--gradient-accent);
+  color: white;
+  border: none;
+  box-shadow:
+    var(--shadow-md),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-agent-dropdown-item--primary:hover {
+  background: var(--gradient-accent);
+  color: white;
+  border: none;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.ai-agent-dropdown-item.is-copying {
+  cursor: progress;
+  opacity: 0.85;
+}
+
+@media (max-width: 768px) {
+  .ai-agent-dropdown-menu .ai-agent-dropdown-item {
+    padding: 6px 10px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Danger variant — used by the history item menu's "حذف المحادثة". Same
+   shape/layout as a regular .ai-agent-dropdown-item, just colored to
+   signal a destructive action. */
+.ai-agent-dropdown-item--danger {
+  background: var(--color-error-light);
+  border-color: transparent;
+  color: var(--color-error);
+}
+
+.ai-agent-dropdown-item--danger:hover {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: white;
+}
 
 .ai-agent-widget {
   display: flex;
@@ -764,7 +985,7 @@
 /* ── "More" popover button (Phase 3c) — replaces the standalone paperclip
    .ai-agent-attach-btn (removed). Same footprint/shape as the old attach
    button so the input row's layout doesn't shift, but now opens a small
-   anchored menu (see openExamDropdownMenu in ai-agent-chat.js) instead of
+   anchored menu (see openAgentDropdown in ai-agent-chat.js) instead of
    directly triggering the file picker.
 
    REDESIGN (Gemini-style input): every control used to be its own little
@@ -1219,10 +1440,10 @@
 }
 
 /* Self-contained button styles for the settings tab. Previously this panel
-   reused .exam-action-btn (defined only in features/home/index.css), which
-   left these buttons unstyled on result.html — that page never loads
-   index.css. Defined here instead so the widget looks correct on any page
-   it's mounted on, matching this file's own stated goal above. */
+   reused .exam-action-btn (from features/home/exam-dropdown-menu.css), which
+   left these buttons unstyled on pages that didn't load that stylesheet.
+   Defined here instead so the widget looks correct on any page it's mounted
+   on, matching this file's own stated goal above. */
 .ai-agent-btn {
   display: inline-flex;
   align-items: center;
@@ -1336,7 +1557,7 @@
 
 /* ── Floating action button ──
    Bottom-right, fixed. Sits above the bottom mobile nav bar (see
-   --bottom-nav-height, same token the shared .modal-overlay uses) and
+   --bottom-nav-height, same token .ai-agent-overlay uses above) and
    above any content on desktop. Opens the modal below on click. */
 .ai-agent-fab {
   position: fixed;
@@ -1394,9 +1615,11 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 /* ── Modal ──
-   Reuses the shared .modal-overlay / .modal-card base rules (see
-   index.css and download-quiz-modal.css for the same pattern). This is
-   just the widget-specific sizing on top of that base. */
+   .ai-agent-modal-overlay / .ai-agent-modal-card are layered on top of this
+   file's own .ai-agent-overlay / .ai-agent-modal-shell base (see the
+   "Self-contained modal shell" block near the top of this file) — this is
+   just the widget-specific sizing on top of that base, same as before this
+   file stopped depending on index.css's .modal-overlay/.modal-card. */
 
 /* Keep this component-specific overlay aligned with the shared modal tier so
    it covers the persistent side menu whenever it is active. */
@@ -1416,7 +1639,7 @@ body.sidebar-expanded .ai-agent-fab {
   box-sizing: border-box;
 }
 
-.ai-agent-modal-card .modal-header {
+.ai-agent-modal-card .ai-agent-modal-header {
   padding: 18px 20px 14px;
   flex-shrink: 0;
 }
@@ -1537,7 +1760,7 @@ body.sidebar-expanded .ai-agent-fab {
     box-shadow: none;
   } */
 
-  .ai-agent-modal-card .modal-header {
+  .ai-agent-modal-card .ai-agent-modal-header {
     padding-top: calc(18px + env(safe-area-inset-top, 0px));
   }
 }
@@ -2200,16 +2423,17 @@ body.sidebar-expanded .ai-agent-fab {
 
 /* ── `@` mention menu (ai-agent-mention-menu.js) ──
    Base chrome (fixed position, z-index, surface/border/radius/shadow,
-   RTL, padding, the .exam-action-btn row shape, and — importantly —
+   RTL, padding, the .ai-agent-dropdown-item row shape, and — importantly —
    display:flex/flex-direction:column/gap:6px) is inherited from
-   .exam-dropdown-menu / .exam-dropdown-menu .exam-action-btn (index.css)
-   via the shared classes createMentionMenu's open() sets on the element
-   itself and buildRow() sets on every row. Everything below only adds
-   what's specific to this menu's content, PLUS explicit flex-sizing rules
-   the earlier pass of this file was missing (see the .ai-agent-mention-row
-   and .ai-agent-mention-section-header comments below for why those
-   caused real, screenshot-visible clipping/bleed rather than being
-   theoretical).
+   .ai-agent-dropdown-menu / .ai-agent-dropdown-menu .ai-agent-dropdown-item
+   (this file's own "Self-contained anchored-dropdown chrome" block near the
+   top) via the shared classes createMentionMenu's open() sets on the
+   element itself and buildRow() sets on every row. Everything below only
+   adds what's specific to this menu's content, PLUS explicit flex-sizing
+   rules the earlier pass of this file was missing (see the
+   .ai-agent-mention-row and .ai-agent-mention-section-header comments
+   below for why those caused real, screenshot-visible clipping/bleed
+   rather than being theoretical).
 
    Structural note the fixes below depend on: .ai-agent-mention-menu's
    DIRECT children are the Quick-Access section header, each Quick-Access
@@ -2283,15 +2507,16 @@ body.sidebar-expanded .ai-agent-fab {
   min-height: 40px;
 }
 
-/* Deliberate override, not inheritance, for hover: .exam-action-btn:hover
-   (index.css) sets background/border-color/color all to the primary
-   accent — correct for a short list of a handful of distinct actions
-   (like the real exam dropdown menu), but wrong here: with 3 sections and
-   up to ~20 rows, recoloring the row's TEXT on hover as well as its
-   background reads as much noisier, and it previously fully overrode this
-   menu's own title/description colors (see the .ai-agent-mention-row-title/
-   -desc rules below) since :hover's (0,2,0) specificity beat this menu's
-   original single-class rules. Hovering here only tints the background
+/* Deliberate override, not inheritance, for hover: .ai-agent-dropdown-item:
+   hover (this file's own dropdown-chrome block above) sets background/
+   border-color/color all to the primary accent — correct for a short list
+   of a handful of distinct actions (like the "more" menu), but wrong here:
+   with 3 sections and up to ~20 rows, recoloring the row's TEXT on hover as
+   well as its background reads as much noisier, and it previously fully
+   overrode this menu's own title/description colors (see the
+   .ai-agent-mention-row-title/-desc rules below) since :hover's (0,2,0)
+   specificity beat this menu's original single-class rules. Hovering here
+   only tints the background
    (via --color-hover-overlay, the theme's own token for exactly this) and
    leaves text color alone — title/description keep their own colors in
    every state, defined once below rather than fought over per-state. */
@@ -2393,7 +2618,7 @@ body.sidebar-expanded .ai-agent-fab {
 @media (max-width: 640px) {
 
   /* Narrow widths: the menu already goes full-clamped-width via
-     .exam-dropdown-menu's max-width: calc(100vw - 16px), so there's no
+     .ai-agent-dropdown-menu's max-width: calc(100vw - 16px), so there's no
      extra horizontal-narrowing rule needed here. What DOES need help at
      this width is vertical space — the on-screen keyboard eats a large
      chunk of the viewport, so rows stay compact (never below the same
@@ -2435,7 +2660,7 @@ body.sidebar-expanded .ai-agent-fab {
     order: 3;
   }
 
-  .ai-agent-modal-card .close-btn {
+  .ai-agent-modal-card .ai-agent-close-btn {
     order: 1;
   }
 
@@ -2469,7 +2694,7 @@ body.sidebar-expanded .ai-agent-fab {
   }
 }
 
-.exam-dropdown-menu.ai-agent-export-menu {
+.ai-agent-dropdown-menu.ai-agent-export-menu {
   width: min(320px, calc(100vw - 16px));
   max-height: calc(100vh - 16px);
   overflow-x: hidden;
@@ -2480,10 +2705,11 @@ body.sidebar-expanded .ai-agent-fab {
    Opened by clicking either a pending .ai-agent-attachment-tile or a sent
    .ai-agent-msg-attachment chip — shows the full title (untruncated,
    unlike the tile's ellipsized name) plus whatever context is available
-   (summary for platform items, mime/size for plain files). Reuses
-   .modal-overlay/.modal-card (index.css) for the same overlay/card chrome
-   every other modal in this app uses; these rules only add what's
-   specific to this modal's own content. */
+   (summary for platform items, mime/size for plain files). Layers on top
+   of this file's own .ai-agent-overlay/.ai-agent-modal-shell (see the
+   "Self-contained modal shell" block near the top) for the same overlay/
+   card chrome every other modal in this widget uses; these rules only add
+   what's specific to this modal's own content. */
 .ai-agent-attachment-preview-overlay {
   z-index: var(--z-modal-top, 11000);
 }

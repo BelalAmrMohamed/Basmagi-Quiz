@@ -151,7 +151,7 @@ export function createMentionMenu(options) {
         onPick,
         onConsumeTriggerText,
         icons,
-        positionMenu, // (menuEl, anchorEl) => void — host's positionExamDropdownMenu
+        positionMenu, // (menuEl, anchorEl) => void — host's positionAgentDropdown
     } = options;
 
     let menuEl = null;
@@ -206,7 +206,7 @@ export function createMentionMenu(options) {
         btn.type = "button";
         btn.setAttribute("data-mention-row", "");
         if (id != null) btn.setAttribute("data-mention-row-id", id);
-        btn.className = "exam-action-btn ai-agent-mention-row" + (checked ? " is-attached" : "");
+        btn.className = "ai-agent-dropdown-item ai-agent-mention-row" + (checked ? " is-attached" : "");
         // `checked` (already in pendingAttachments) makes the row disabled
         // too, not just visually checked — prevents attaching the exact
         // same item twice. `disabled` can also be true for its original
@@ -374,7 +374,7 @@ export function createMentionMenu(options) {
         close();
         triggerStart = atCharIndex + 1;
         menuEl = document.createElement("div");
-        menuEl.className = "exam-dropdown-menu ai-agent-mention-menu";
+        menuEl.className = "ai-agent-dropdown-menu ai-agent-mention-menu";
         menuEl.setAttribute("role", "menu");
         menuEl.style.visibility = "hidden";
         document.body.appendChild(menuEl);

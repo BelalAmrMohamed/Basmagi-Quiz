@@ -16,10 +16,19 @@
 //   someContainer.appendChild(fab);
 //
 // Requires the host page to link ai-agent.css (see download-quiz-modal.css
-// for the existing pattern of a static <link> tag per page) and to already
-// have the shared .modal-overlay/.modal-card base rules (index.css) loaded
-// — every page in this app does, since download-quiz-modal relies on them
-// too.
+// for the existing pattern of a static <link> tag per page). That's the
+// ONLY prerequisite import — this component is fully self-contained: its
+// own modal overlay/card/header/close-button chrome and its own anchored-
+// dropdown popover engine (ai-agent-dropdown.js) both live inside
+// ai-agent/, rather than reusing features/home's .modal-overlay/.modal-card
+// (index.css) or openExamDropdownMenu (exam-dropdown-menu.js) the way this
+// component used to. See ai-agent.css's own header comment and
+// ai-agent-dropdown.js's header comment for the full rationale — in short,
+// the old approach only rendered correctly on pages that happened to also
+// load those other stylesheets/modules, which wasn't true of every page
+// (lesson.html and create-lesson.html didn't load
+// features/home/exam-dropdown-menu.css, so the agent's small popovers
+// rendered unstyled there).
 //
 // PHASE 6 (this version): the old three-tab (Chat/History/Settings)
 // switcher is gone. The chat panel is now the ONLY panel inside
@@ -42,7 +51,7 @@
 import { createChatPanel } from "./ai-agent-chat.js";
 import { createSettingsPanel } from "./ai-agent-settings.js";
 import { createHistoryPanel } from "./ai-agent-history.js";
-import { openExamDropdownMenu } from "../../features/home/exam-dropdown-menu.js";
+import { openAgentDropdown } from "./ai-agent-dropdown.js";
 
 const CLOSE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
 const SPARKLE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>`;
@@ -330,7 +339,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   sidebarCopyBtn.addEventListener("click", (event) => {
     event.stopPropagation();
     if (sidebarCopyBtn.disabled) return;
-    openExamDropdownMenu(sidebarCopyBtn, (menu, closeMenu) => {
+    openAgentDropdown(sidebarCopyBtn, (menu, closeMenu) => {
       menu.classList.add("ai-agent-export-menu");
       const title = document.createElement("div");
       title.className = "ai-agent-export-menu-title";
@@ -574,19 +583,19 @@ function setChatPanelForPageKey(key, chatPanel) {
 
 function openSettingsModal(options, onClose) {
   const overlay = document.createElement("div");
-  overlay.className = "modal-overlay ai-agent-modal-overlay ai-agent-settings-modal-overlay";
+  overlay.className = "ai-agent-overlay ai-agent-modal-overlay ai-agent-settings-modal-overlay";
   overlay.setAttribute("role", "dialog");
   overlay.setAttribute("aria-modal", "true");
   overlay.setAttribute("aria-labelledby", "aiAgentSettingsModalTitle");
 
   const card = document.createElement("div");
-  card.className = "modal-card ai-agent-modal-card ai-agent-settings-modal-card";
+  card.className = "ai-agent-modal-shell ai-agent-modal-card ai-agent-settings-modal-card";
 
   const header = document.createElement("div");
-  header.className = "modal-header";
+  header.className = "ai-agent-modal-header";
   header.innerHTML = `
     <h2 id="aiAgentSettingsModalTitle">الإعدادات</h2>
-    <button type="button" class="close-btn ai-agent-settings-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
+    <button type="button" class="ai-agent-close-btn ai-agent-settings-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
   `;
 
   function closeSettingsModal() {
@@ -637,7 +646,7 @@ export function openAIAgentModal(options, fab) {
   }
 
   const modal = document.createElement("div");
-  modal.className = "modal-overlay ai-agent-modal-overlay";
+  modal.className = "ai-agent-overlay ai-agent-modal-overlay";
   modal.setAttribute("role", "dialog");
   modal.setAttribute("aria-modal", "true");
   modal.setAttribute("aria-labelledby", "aiAgentModalTitle");
@@ -676,14 +685,14 @@ export function openAIAgentModal(options, fab) {
   });
 
   const modalCard = document.createElement("div");
-  modalCard.className = "modal-card ai-agent-modal-card";
+  modalCard.className = "ai-agent-modal-shell ai-agent-modal-card";
 
   const header = document.createElement("div");
-  header.className = "modal-header";
+  header.className = "ai-agent-modal-header";
   header.innerHTML = `
     <button type="button" class="ai-agent-sidebar-collapse-btn ai-agent-mobile-sidebar-toggle" aria-label="فتح القائمة" aria-expanded="false" title="فتح القائمة">${SIDEBAR_EXPAND_DEFAULT_ICON_SVG_TOGGLE}${SIDEBAR_EXPAND_HOVER_ICON_SVG_TOGGLE}</button>
     <h2 id="aiAgentModalTitle"><img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="" class="ai-agent-logo" aria-hidden="true"> الباشــمبصمج</h2>
-    <button type="button" class="close-btn ai-agent-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
+    <button type="button" class="ai-agent-close-btn ai-agent-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
   `;
 
   // See getOrCreateChatPanel's own doc comment: this ref (one per
