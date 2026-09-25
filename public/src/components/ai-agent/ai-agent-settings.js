@@ -8,7 +8,6 @@
 
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { isAdminAuthenticated } from "../../shared/adminAuth.js";
-import { getCachedLevel } from "../../shared/userLevel.js";
 
 const PROVIDER_STORAGE_KEY = "ai_agent_provider";
 const KEY_STORAGE_PREFIX = "ai_agent_key__"; // + provider
@@ -122,23 +121,22 @@ export function resetSystemPrompt(pageKey) {
 }
 
 /**
- * Whether the AI Helper can actually be used right now, without a network
- * round-trip: either the user has saved their own API key (any provider),
- * or they have platform access (admin, or a cached Level 10+ user level).
- * Mirrors the exact precedence sendMessage() in ai-agent-chat.js uses when
- * deciding which key to send — this is the same eligibility check
- * refreshKeySourceIndicator() below already computes for the Settings
- * tab's key-source line, factored out so the Chat tab (ai-agent-chat.js)
- * can show an upfront "unavailable" placeholder instead of only surfacing
- * this as a backend error after the user tries to send a message.
+ * Whether the AI Helper can actually be used right now. Platform-key access
+ * is open to everyone (admins uncapped, everyone else subject to a daily
+ * quota enforced server-side — see AI_AGENT_DAILY_LIMIT in
+ * api/ai-agent/chat.js), so this always returns true; kept as a named
+ * function rather than inlined `true` since ai-agent-chat.js still calls
+ * it as its eligibility check at the two call sites that predate this
+ * change.
  * @returns {boolean}
  */
 export function isAiHelperAvailable() {
-  const { hasKey } = getOwnKey();
-  if (hasKey) return true;
-  const isAdmin = isAdminAuthenticated();
-  const level = getCachedLevel();
-  return isAdmin || (typeof level === "number" && level >= 10);
+  // Platform-key access is now open to everyone (admins uncapped, everyone
+  // else subject to a server-enforced daily quota — see AI_AGENT_DAILY_LIMIT
+  // in api/ai-agent/chat.js). There's no client-side way to know remaining
+  // quota without a round trip, so this just reflects "the feature exists
+  // for this user"; a 429 from the backend surfaces the actual cap.
+  return true;
 }
 
 /**
@@ -320,9 +318,10 @@ export function createSettingsPanel(options = {}) {
 
   // ── Key-source indicator ──
   // Mirrors the exact precedence ai-agent-chat.js::sendMessage uses (own
-  // key first if saved, otherwise the platform pool via admin/Level 10+
-  // auth) so what's shown here always matches what a message will actually
-  // use — without making a network call just to render this panel.
+  // key first if saved, otherwise the platform pool — open to everyone,
+  // admins uncapped, everyone else subject to a daily quota enforced
+  // server-side) so what's shown here always matches what a message will
+  // actually use — without making a network call just to render this panel.
   const keySourceIndicator = document.createElement("div");
   keySourceIndicator.className = "ai-agent-key-source";
   panel.appendChild(keySourceIndicator);
@@ -334,22 +333,11 @@ export function createSettingsPanel(options = {}) {
       keySourceIndicator.textContent = "🔑 يتم استخدام مفتاحك الخاص حاليًا";
       return;
     }
-    if (isAiHelperAvailable()) {
-      // Distinguish WHY platform access is granted — admin vs. Level 10+
-      // — rather than a single unexplained line, since a user who lands
-      // here with no saved key otherwise has no way to know which of the
-      // two criteria (see isAiHelperAvailable's own doc) applies to them.
-      const isAdmin = isAdminAuthenticated();
-      const reason = isAdmin
-        ? "لأنك مسجّل الدخول كمشرف"
-        : `لأن مستواك الحالي ${typeof getCachedLevel() === "number" ? getCachedLevel() : "10+"} (10 أو أعلى)`;
-      keySourceIndicator.className = "ai-agent-key-source ai-agent-key-source--platform";
-      keySourceIndicator.textContent = `🌐 يتم استخدام مفتاح المنصة — مسموح لك باستخدامه ${reason} (لا يوجد مفتاح خاص محفوظ).`;
-    } else {
-      keySourceIndicator.className = "ai-agent-key-source ai-agent-key-source--none";
-      keySourceIndicator.textContent =
-        "⚠️ لا يوجد مفتاح خاص محفوظ، ولا تملك صلاحية استخدام مفتاح المنصة (متاح للمشرفين أو مستخدمي المستوى 10+) — احفظ مفتاحك الخاص أعلاه لاستخدام المساعد.";
-    }
+    const isAdmin = isAdminAuthenticated();
+    keySourceIndicator.className = "ai-agent-key-source ai-agent-key-source--platform";
+    keySourceIndicator.textContent = isAdmin
+      ? "🌐 يتم استخدام مفتاح المنصة — بلا حد استخدام يومي (حساب مشرف)."
+      : "🌐 يتم استخدام مفتاح المنصة — يوجد حد استخدام يومي (لا يوجد مفتاح خاص محفوظ). احفظ مفتاحك الخاص أعلاه لاستخدام غير محدود.";
   }
   refreshKeySourceIndicator();
 

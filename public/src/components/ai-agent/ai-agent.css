@@ -829,6 +829,15 @@
   border: 1.5px solid var(--color-border);
   border-radius: 26px;
   background: var(--color-background-secondary);
+  /* .ai-agent-chat-input-row (this pill's parent) is a flex column with
+     align-items: center, so without an explicit width this pill shrinks
+     to its content's intrinsic size — the collapsed textarea's min-height
+     flex-basis — on first render, well short of the 600px cap, and only
+     widens once typed content happens to force reflow. width: 100% (up to
+     the existing max-width) makes it fill the available row width from
+     the start, matching how a Gemini-style composer pill is expected to
+     render on load. */
+  width: 100%;
   max-width: 600px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }

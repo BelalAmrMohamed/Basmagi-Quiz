@@ -1371,30 +1371,21 @@ export function createChatPanel(options = {}) {
   renderSuggestions();
 
   function renderEmptyState() {
-    // Swap between the normal friendly placeholder and a clear
-    // "unavailable" message when the user has neither their own saved API
-    // key nor platform access (admin / Level 10+) — computed client-side
-    // via isAiHelperAvailable() (ai-agent-settings.js), so this renders
-    // correctly on first paint instead of only surfacing as a confusing
-    // backend error after the user tries to send a message.
-    if (isAiHelperAvailable()) {
-      messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty">اسأل الباشــمبصمج عن أي سؤال متعلق بامتحاناتك 👋</div>`;
-    } else {
-      messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty ai-agent-msg--unavailable">الباشــمبصمج غير متاح حاليًا — يلزم مستوى 10 أو أن تكون مشرفاً. يمكنك استخدامه عن طريق إضافة مفتاح API خاص بك من الإعدادات ⚙️</div>`;
-    }
+    // Platform-key access is open to everyone now (see isAiHelperAvailable's
+    // own doc in ai-agent-settings.js), so there's no client-known
+    // "unavailable" state left to special-case here — a daily-limit 429, if
+    // it happens, surfaces from the backend once the user actually sends a
+    // message (via appendError), not as an upfront empty-state placeholder.
+    messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty">اسأل الباشــمبصمج عن أي سؤال متعلق بامتحاناتك 👋</div>`;
     updateAvailabilityGate();
   }
   renderEmptyState();
 
   /**
-   * Disables the input/send button (rather than leaving them enabled to
-   * let the backend error surface as a fallback) whenever the AI Helper
-   * is unavailable — avoids a confusing round-trip failure for something
-   * already knowable client-side. Re-checked on every render of the empty
-   * state (i.e. whenever there are no messages yet) and again whenever
-   * the Settings tab changes the saved API key, so switching to Settings,
-   * adding a key, and coming back updates this live without needing to
-   * reopen the modal.
+   * isAiHelperAvailable() always returns true now, so this no longer
+   * disables anything — kept as a no-op call site (rather than removed
+   * outright) since it's still invoked from the Settings-tab key-change
+   * listener below, and collapsing that wiring isn't part of this change.
    */
   function updateAvailabilityGate() {
     const available = isAiHelperAvailable();

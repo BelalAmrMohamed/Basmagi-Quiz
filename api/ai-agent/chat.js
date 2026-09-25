@@ -13,8 +13,9 @@
 //                              // the useOwnKey path — on the platform-key
 //                              // path (shared free-tier keys) this is
 //                              // always ignored and the default is forced,
-//                              // so a Level 10+/admin user can't select a
-//                              // heavier model and drain shared quota.
+//                              // so no caller — admin or capped regular
+//                              // user alike — can select a heavier model
+//                              // and drain shared quota.
 //   messages: [{
 //     role: "user"|"assistant",
 //     content: string,
