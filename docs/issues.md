@@ -7,15 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Redesign the sidebar and bottom nav
-- The bottom nav on phones is missing the `create-lesson` link, I need a unique way to redesign it. I'll list 3 design roads, either implement on, or recommend a different one. To make the sidebar and bottom nav have the same set of links.
-  1. Merge the create-quiz and create-lesson buttons in one button named (إنشاء), pressing that new button opens a small simple modal, that modal contains 2 links `create-quiz` and `create-lesson`.
-  2. Merge the `.enty-screen` of create-quiz and create-lesson. So the sidebar and bottom nav will have a create button (إنشاء), and that button leads to a new `/create` page, which is the new and redesigned entry screen that contains the 2 merged entry screens.
-  3. Just keep sidebar as it is, and add the `create-lesson` link to the bottom nav, but rearrange the links, since now the profile link isn't going to be centered.
-
-Q: Based on what should you choose a way?
-A: Based on the best UX. Not based on how easy it is to implement, because I have all the time, but based on the best User Experience.
-
 ### AI Agent
 
 #### Bug Fixes
@@ -25,9 +16,8 @@ A: Based on the best UX. Not based on how easy it is to implement, because I hav
 2. **`.ai-agent-dictation-wave` causes layout shift**
    - When activated, `.ai-agent-chat-input-controls` grows slightly in height, misaligning sibling elements.
    - Fix: reserve space for the wave state up front (e.g. fixed-height container or something) so activation doesn't change the controls' height.
-3. ![screenshot](image.png). I opened the AI Agent in a brand new browser, in localhost, and after the first prompt, it loaded for more than 15 seconds, then told me `لقد استخدمت الحد اليومي للمساعد الذكي (15 طلبات). حاول مرة أخرى غدًا، أو استخدم مفتاح API الخاص بك بدلاً من ذلك.` without even outputting a signle letter.
 
-I tried to fix the first 2 issues but couldn't, they are still the same. 
+I tried to fix the issues but couldn't, they are still the same. 
 
 Files: `public\src\components\ai-agent\`
 
@@ -37,15 +27,13 @@ Files: `public\src\components\ai-agent\`
 - The `/lesson/` page should have the lesson's info modal, and I want new ideas to give the user control over the lessons.
 - The `الباشــمبصمج`: 
   - Users should be able to tell it to create questions about that lesson, and the الباشــمبصمج should be able to create an interactive quiz that users can actually solve and get graded (all types of questions) in the lessons page itself, this is different than creating quizzes in the "امتحاناتك" section. This should be full integration, with suggested prompts and it should get the full context of the lesson.
+  - Users should be able to upload content.
 - Complete the implementation of the page:
-  - Custom og meta
-  - The sidebar and bottom nav.
-  - Custom design for the page, because it's currently flat.
-  - Add all missing elements like the `notifications.css` to the <head>.
-  - Everything else, too.
+  - Custom design for the page, because it's currently flat. Add any new elements you are totally free to do what ever.
 - There is no way to reset the page (qustions stay locked after answer).
 - Implement a lesson reader (read aloud) using the browser's api.
 - `أسئلة الطلاب` section shouldn't appear for user-created lessons.
+- The `lesson-prefs__panel` element is broken, changing the colors in it doesn't do anything, and the `lesson-prefs__panel` itself is always white on all different themes. It's dropdown has bad design.
 
 ### Create-lesson Page
 - Changing the value of `#lessonFontSelect` doesn't change anything.

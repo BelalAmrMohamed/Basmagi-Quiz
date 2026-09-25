@@ -876,6 +876,10 @@
   cursor: not-allowed;
 }
 
+.ai-agent-chat-input[hidden] {
+  display: none;
+}
+
 .ai-agent-chat-input:placeholder-shown {
   text-align: right;
 }
@@ -891,7 +895,7 @@
   border: none;
   border-radius: 999px;
   background: transparent;
-  color: #fff;
+  color: var(--color-text-primary);
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
@@ -927,7 +931,7 @@
   border: none;
   border-radius: 999px;
   background: transparent;
-  color: var(--color-text-secondary, var(--color-text-primary));
+  color: var(--color-text-primary);
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
