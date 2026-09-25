@@ -1349,11 +1349,15 @@ export function createChatPanel(options = {}) {
   // moreBtn/textarea but never touches sendBtn.
   const inputControls = document.createElement("div");
   inputControls.className = "ai-agent-chat-input-controls";
-  if (moreBtn) inputControls.appendChild(moreBtn);
+
+  inputControls.appendChild(sendBtn);
+  if (micBtn) inputControls.appendChild(micBtn);
+
   inputControls.appendChild(textarea);
   inputControls.appendChild(dictationWaveEl);
-  if (micBtn) inputControls.appendChild(micBtn);
-  inputControls.appendChild(sendBtn);
+
+  if (moreBtn) inputControls.appendChild(moreBtn);
+
   if (fileInput) inputControls.appendChild(fileInput);
   inputRow.appendChild(inputControls);
 

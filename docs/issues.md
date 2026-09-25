@@ -7,15 +7,50 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Redesign the bottom nav on phones, and make the decision whether to include the new create-lesson page or not.
+### Redesign the sidebar and bottom nav
+- The bottom nav on phones is missing the `create-lesson` link, I need a unique way to redesign it. I'll list 3 design roads, either implement on, or recommend a different one. To make the sidebar and bottom nav have the same set of links.
+  1. Merge the create-quiz and create-lesson buttons in one button named (إنشاء), pressing that new button opens a small simple modal, that modal contains 2 links `create-quiz` and `create-lesson`.
+  2. Merge the `.enty-screen` of create-quiz and create-lesson. So the sidebar and bottom nav will have a create button (إنشاء), and that button leads to a new `/create` page, which is the new and redesigned entry screen that contains the 2 merged entry screens.
+  3. Just keep sidebar as it is, and add the `create-lesson` link to the bottom nav, but rearrange the links, since now the profile link isn't going to be centered.
+
+Q: Based on what should you choose a way?
+A: Based on the best UX. Not based on how easy it is to implement, because I have all the time, but based on the best User Experience.
 
 ### AI Agent
+
+#### Fix
 - The `.ai-agent-dictation-wave` has 2 issues
   - It covers the whole input, so users can't see the text as it being recognised.
   - When it gets activated, the `.ai-agent-chat-input-controls` grows in height slightly, which causes some elements to get misaligned.
-- The AI Agent modal should be self contained, meaning it shouldn't reuse other components like the exam dropdown and the `.modal-overlay` or any other thing, doing that makes it harder to integrate it in new pages that don't import/use these components + they weren't made for the agent anyways.
+- The `.ai-agent-chat-input` is too narrow, the width is dynamic but it defaults to smaller width than expected. Fix it. 
 
-### Implement [plan](plans/live-render-md-prompt.md)
+#### New
+- The AI Agent modal should be self contained, meaning it shouldn't reuse other components like the exam dropdown and the `.modal-overlay` or any other thing, doing that makes it harder to integrate it in new pages that don't import/use these components + they weren't made for the agent anyways. It should have custom elements, and custom advanced dropdowns with actual icons.
+- Implement a new modular actions feature:
+  - The user can call an action by typing `/` in the input field.
+  - A dropdown appears where the user can choose to make an action.
+  - Actions are super dynamic, each page that uses the agent should have its own set of actions, or pages can have no actions at all.
+  - Pages like create-lesson and create-quiz have their own set of actions each.
+  - The home page for example should have its own set of actions like (create quiz, which creates quizzes in the "امتحاناتك" section), while creating quizzes on the lessons page, creates them in the page itself, or inside the section that the user asked about.
+  - Mentioning an action using `/`, means the AI shouldn't verify it. If I mentioned an action using `/`, the AI shouldn't say (do you want me to do...), it should just do it.
+  - I should be able to paste images inside the input field
+  - The AI Agent should be for all normal users but, with a limit, it's currently available only for users who are above level 10. 
+
+### Lessons Page
+
+#### Changes
+- The `/lesson/` page should have the lesson's info modal, and I want new ideas to give the user control over the lessons.
+- The `الباشــمبصمج`: 
+  - Users should be able to tell it to create questions about that lesson, and the الباشــمبصمج should be able to create an interactive quiz that users can actually solve and get graded (all types of questions) in the lessons page itself, this is different than creating quizzes in the "امتحاناتك" section. This should be full integration, with suggested prompts and it should get the full context of the lesson.
+- Complete the implementation of the page:
+  - Custom og meta
+  - The sidebar and bottom nav.
+  - Custom design for the page, because it's currently flat.
+  - Add all missing elements like the `notifications.css` to the <head>.
+  - Everything else, too.
+- There is no way to reset the page (qustions stay locked after answer).
+- Implement a lesson reader (read aloud) using the browser's api.
+- `أسئلة الطلاب` section shouldn't appear for user-created lessons.
 
 ### Create-lesson Page
 - Changing the value of `#lessonFontSelect` doesn't change anything.
@@ -28,15 +63,7 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 
 ## New Features
 
-### Lessons Page
-
-#### Decisions
-- The `/lesson/` should be in independent page just like `/quiz/` with the ability to view the lesson's info modal, and I want new ideas to give the user control over the lessons.
-  - Integrate the الباشــمبصمج so users can ask it questions, or tell it to create questions about that lesson, and the الباشــمبصمج should be able to create an interactive quiz that users can actually solve and get graded (all types of questions). This should be full integration, with suggested prompts and it should get the full context of the lesson.
-- The page isn't full at all, it doesn't have any og meta, it doesn't have the side-menu or bottom nav.
-- There is no way to reset the page (qustions stay locked after answer)
-- The design is really really bad, it needs to be redesigned from scratch.
-- Implement a lesson reader using the browser api.
+### Implement [plan](plans/live-render-md-prompt.md)
 
 ### Result Pages
 
