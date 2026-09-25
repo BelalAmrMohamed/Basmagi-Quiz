@@ -37,10 +37,9 @@ import { renderTtsControl, equipTts } from "./lesson-tts.js";
 import { showUserLessonInfoModal } from "../home/lesson-info-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
-import { saveNewUserQuiz } from "../home/quiz-schema.js";
-import { showNotification } from "../../components/notifications/notifications.js";
 import { renderLessonComments, equipLessonComments } from "./lesson-comments.js";
 import { LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
+import { createLessonQuiz, renderLessonQuiz, equipLessonQuiz } from "./lesson-ai-quiz.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -216,23 +215,18 @@ function lessonAgentContext(lesson, normalized) {
   return { title: lesson.title, sections };
 }
 
+let rerenderLessonQuiz = null;
 function handleLessonAgentToolCall(toolCall) {
   if (toolCall?.name !== "create_quiz") throw new Error("Unknown lesson tool");
-  const input = toolCall.input || {};
-  if (!Array.isArray(input.questions) || input.questions.length === 0) {
-    const error = new Error("Quiz needs questions");
-    error.userMessage = "تعذر إنشاء الامتحان: لا توجد أسئلة صالحة.";
+  try {
+    const quiz = createLessonQuiz(toolCall.input || {});
+    rerenderLessonQuiz?.();
+    return `تم إنشاء تدريب مؤقت بعنوان «${quiz.title}» داخل صفحة الدرس. لا يتم حفظه في امتحاناتك.`;
+  } catch (cause) {
+    const error = new Error(cause.message || "Invalid quiz");
+    error.userMessage = cause.message || "تعذر إنشاء تدريب صالح من الدرس.";
     throw error;
   }
-  const title = String(input.title || "امتحان من الدرس").trim();
-  const result = saveNewUserQuiz({ questions: input.questions, meta: { title, description: input.description || "" } }, title, null);
-  if (result?.ok === false) {
-    const error = new Error(result.reason);
-    error.userMessage = result.reason;
-    throw error;
-  }
-  showNotification("تم الإنشاء", 'تمت إضافة الامتحان التفاعلي إلى «امتحاناتك».', "success");
-  return `✅ تم إنشاء امتحان قابل للحل والتقييم بعنوان: ${title}`;
 }
 
 function mountLessonAgent(root, lesson, normalized) {
@@ -317,7 +311,9 @@ export async function renderLessonView() {
   // section changes both the section list and the ToC. Progress is re-read
   // from storage each time rather than held in a local variable, so the
   // rendered state always matches what Phase 4 would later aggregate.
+  const isUserCreated = new URLSearchParams(window.location.search).get("type") === "user";
   const paint = () => {
+    rerenderLessonQuiz = paint;
     const progress = getLessonProgress(lesson.id);
     const visibleSections = computeVisibleSections(normalized, progress);
     const ctx = { lessonId: lesson.id, quizLookup };
@@ -325,14 +321,14 @@ export async function renderLessonView() {
     container.innerHTML =
       `<article class="lesson-view" data-lesson-id="${escapeHtml(lesson.id)}">` +
       `<header class="lesson-view__header">` +
-      `<h1 class="lesson-view__title">${escapeHtml(lesson.title || "")}</h1>` +
+      `<div class="lesson-view__heading"><p class="lesson-view__eyebrow">مساحة التعلّم</p><h1 class="lesson-view__title">${escapeHtml(lesson.title || "")}</h1><p class="lesson-view__subtitle">تابع القراءة، راجع تقدمك، واسأل الباشــمبصمج.</p></div>` +
       `<button type="button" class="lesson-view__info-btn">معلومات الدرس</button>` +
       renderPrefsPopover(getReaderPrefs(lesson.reader_prefs_default)) +
       `</header>` +
       renderLessonToc(visibleSections, progress.visitedSections) +
       `<div class="lesson-view__body">` +
       visibleSections.map((section) => renderSection(section, ctx)).join("") +
-      `</div>` + renderLessonComments() + `</article>`;
+      `</div>` + renderLessonQuiz() + (isUserCreated ? "" : renderLessonComments()) + `</article>`;
 
     const lessonEl = container.querySelector(".lesson-view");
     lessonEl.querySelector(".lesson-view__info-btn")?.addEventListener("click", () => {
@@ -351,7 +347,8 @@ export async function renderLessonView() {
     equipQuestionBlocks(container, lesson.id, paint);
     equipLessonToc(container, lesson.id);
     equipTts(container);
-    equipLessonComments(container, lesson.id);
+    equipLessonQuiz(container, paint);
+    if (!isUserCreated) equipLessonComments(container, lesson.id);
     mountLessonAgent(container, lesson, normalized);
   };
 
