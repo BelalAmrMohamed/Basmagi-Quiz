@@ -435,23 +435,37 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── Platform-key path: requires Verified Admin OR a Level 10+ user ──────
+  // ── Platform-key path: open to everyone, capped by a daily quota ────────
+  // Verified admins bypass the quota entirely. Everyone else — logged in or
+  // fully anonymous — is identified via their user_profiles JWT (minted at
+  // /api/user-profile identify/sync-progress; see getRegularUserProfileId)
+  // and checked/incremented atomically against AI_AGENT_DAILY_LIMIT.
   try {
     requireAdmin(req);
   } catch (err) {
-    if (!isLevel10PlusUser(req)) {
-      // Only defer to the shared admin-token-expired message when that's
-      // literally what happened (a stale admin token) — any other failure
-      // (no token, malformed token, valid-but-under-level-10 user token)
-      // gets the friendlier, more accurate 403 below instead of a bare
-      // "غير مصرح".
-      if (err.message === "TOKEN_EXPIRED") {
-        handleAuthError(err, res);
-        return;
-      }
+    // Only defer to the shared admin-token-expired message when that's
+    // literally what happened (a stale admin token) — any other admin-auth
+    // failure (no token, malformed token, or simply "not an admin at all")
+    // just means this request should be evaluated as a regular user below.
+    if (err.message === "TOKEN_EXPIRED") {
+      handleAuthError(err, res);
+      return;
+    }
+
+    const profileId = getRegularUserProfileId(req);
+    if (!profileId) {
       return res.status(403).json({
         error:
-          "استخدام مفاتيح المنصة متاح فقط للمشرفين الموثقين أو المستخدمين من المستوى 10+. يمكنك استخدام مفتاح API الخاص بك بدلاً من ذلك.",
+          "تعذّر التحقق من هويتك لاستخدام المساعد الذكي. حاول تحديث الصفحة، أو استخدم مفتاح API الخاص بك بدلاً من ذلك.",
+      });
+    }
+
+    const { allowed, usageCount } = await checkAndIncrementDailyUsage(profileId);
+    if (!allowed) {
+      return res.status(429).json({
+        error: `لقد استخدمت الحد اليومي للمساعد الذكي (${AI_AGENT_DAILY_LIMIT} طلبات). حاول مرة أخرى غدًا، أو استخدم مفتاح API الخاص بك بدلاً من ذلك.`,
+        dailyLimit: AI_AGENT_DAILY_LIMIT,
+        usageCount,
       });
     }
   }
@@ -468,9 +482,10 @@ export default async function handler(req, res) {
   // Model selection is only meaningful when the caller supplies their own
   // API key (own-key path above). On the platform-key path every request
   // shares the same rotated Google AI Studio free-tier keys, so honoring a
-  // client-requested heavier model here would let any Level 10+/admin user
-  // drain the shared rate limit for everyone. Force the provider's
-  // lightest/cheapest/latest default regardless of what the client sent.
+  // client-requested heavier model here would let any caller — admin or
+  // capped regular user alike — drain the shared rate limit for everyone.
+  // Force the provider's lightest/cheapest/latest default regardless of
+  // what the client sent.
   try {
     const result = await callProvider(provider, picked.key, messages, systemPrompt, tools, undefined);
     return res.status(200).json(result);

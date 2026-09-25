@@ -5,10 +5,10 @@
 // Regular users have no login — this mints a random device_id once,
 // persists it in localStorage, and exchanges it with the backend
 // (/api/user-profile/identify) for a short-lived JWT carrying a
-// SERVER-COMPUTED current_level claim. That token is what
-// api/ai-agent/chat.js trusts for the "Level 10+" gate — nothing here
-// sends a level number to the server; the server always derives it from
-// user_profiles.passed_quizzes_count.
+// SERVER-COMPUTED profileId claim. That token is what api/ai-agent/chat.js
+// trusts to identify the caller for its daily AI Agent usage cap — nothing
+// here sends a level or usage count to the server; the server always
+// derives/tracks those itself against user_profiles.
 //
 // Usage:
 //   import { getUserToken, reportQuizResult, getCachedLevel } from "../../shared/userLevel.js";

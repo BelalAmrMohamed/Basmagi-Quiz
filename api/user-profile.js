@@ -14,10 +14,11 @@
 //
 // Creates the user_profiles row on first call for a given deviceId (level
 // 1, 0 passed quizzes), or fetches the existing one. Either way, mints a
-// short-lived JWT (role: "user") whose `current_level` claim is what
-// api/ai-agent/chat.js trusts for the Level 10+ gate — it is ALWAYS read
-// from the database here, never from anything the client sent, so a
-// forged deviceId only gets a fresh level-1 profile, not an elevated one.
+// short-lived JWT (role: "user") whose `profileId` claim is what
+// api/ai-agent/chat.js trusts to identify the caller for its daily AI
+// Agent usage cap — it is ALWAYS the database row id, never anything the
+// client sent, so a forged deviceId only gets a fresh profile with its
+// own empty quota, not someone else's.
 //
 // ── action=sync-progress ─────────────────────────────────────────────────────
 // POST /api/user-profile?action=sync-progress
@@ -36,8 +37,9 @@
 // NOTE: this still trusts the client's `passed: boolean` for a given call —
 // there's no server-side verification that a quiz was actually completed
 // honestly (that would require quiz-taking to move server-side entirely,
-// out of scope here). This is a soft progress signal, not an anti-cheat
-// system; treat the Level 10+ gate as a light throttle, not a hard wall.
+// out of scope here). This is a soft progress signal only; current_level
+// no longer gates anything security-relevant (the AI Agent's daily usage
+// cap in api/ai-agent/chat.js keys on profileId, not level).
 // =============================================================================
 
 import jwt from "jsonwebtoken";
