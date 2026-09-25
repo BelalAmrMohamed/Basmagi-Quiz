@@ -18,23 +18,18 @@ A: Based on the best UX. Not based on how easy it is to implement, because I hav
 
 ### AI Agent
 
-#### Fix
-- The `.ai-agent-dictation-wave` has 2 issues
-  - It covers the whole input, so users can't see the text as it being recognised.
-  - When it gets activated, the `.ai-agent-chat-input-controls` grows in height slightly, which causes some elements to get misaligned.
-- The `.ai-agent-chat-input` is too narrow, the width is dynamic but it defaults to smaller width than expected. Fix it. 
+#### Bug Fixes
+1. **`.ai-agent-dictation-wave` overlaps input text**
+   - Currently covers the entire input field, hiding the text as it's being transcribed.
+   - Fix: reposition/resize so the wave animation doesn't obscure in-progress text (e.g. constrain it to a small indicator area, or render it behind/beside the text rather than on top).
+2. **`.ai-agent-dictation-wave` causes layout shift**
+   - When activated, `.ai-agent-chat-input-controls` grows slightly in height, misaligning sibling elements.
+   - Fix: reserve space for the wave state up front (e.g. fixed-height container or something) so activation doesn't change the controls' height.
+3. ![screenshot](image.png). I opened the AI Agent in a brand new browser, in localhost, and after the first prompt, it loaded for more than 15 seconds, then told me `لقد استخدمت الحد اليومي للمساعد الذكي (15 طلبات). حاول مرة أخرى غدًا، أو استخدم مفتاح API الخاص بك بدلاً من ذلك.` without even outputting a signle letter.
 
-#### New
-- The AI Agent modal should be self contained, meaning it shouldn't reuse other components like the exam dropdown and the `.modal-overlay` or any other thing, doing that makes it harder to integrate it in new pages that don't import/use these components + they weren't made for the agent anyways. It should have custom elements, and custom advanced dropdowns with actual icons.
-- Implement a new modular actions feature:
-  - The user can call an action by typing `/` in the input field.
-  - A dropdown appears where the user can choose to make an action.
-  - Actions are super dynamic, each page that uses the agent should have its own set of actions, or pages can have no actions at all.
-  - Pages like create-lesson and create-quiz have their own set of actions each.
-  - The home page for example should have its own set of actions like (create quiz, which creates quizzes in the "امتحاناتك" section), while creating quizzes on the lessons page, creates them in the page itself, or inside the section that the user asked about.
-  - Mentioning an action using `/`, means the AI shouldn't verify it. If I mentioned an action using `/`, the AI shouldn't say (do you want me to do...), it should just do it.
-  - I should be able to paste images inside the input field
-  - The AI Agent should be for all normal users but, with a limit, it's currently available only for users who are above level 10. 
+I tried to fix the first 2 issues but couldn't, they are still the same. 
+
+Files: `public\src\components\ai-agent\`
 
 ### Lessons Page
 
@@ -62,6 +57,26 @@ Performance Improvements: Currently, there are many custom mechanism fucntionali
 Example: I lately found out that the `/quiz` page was rendering questions through the JS once, then when the user submits their answer, the JS renders the question again to add the explanation & formal answer, I removed it and depended fully on CSS & HTML, the whole question including explanation & formal answer is inserted at the first render, then I make things visible when the user submits the answer using CSS classes. That approach to get away from JS improved performance alot.  
 
 ## New Features
+
+### AI Agent
+
+#### New: Self-Contained Modal
+The AI Agent modal currently reuses shared components (e.g. the exam dropdown, `.modal-overlay`) that weren't built for it. This creates tight coupling and makes it hard to drop the agent into new pages that don't already import those components.
+**Requirement:** Rebuild the modal as fully self-contained:
+- No dependency on shared/external components — custom overlay, custom modal shell, etc.
+- Build custom dropdown components (with icon support) specific to the agent, replacing reused ones like the exam dropdown.
+- Goal: the agent should be a drop-in feature for any page, with no prerequisite imports.
+
+#### New: Modular Actions (Slash Commands)
+Add a `/` command system to the agent input:
+- Typing `/` in the input opens a dropdown of available actions.
+- **Actions are page-specific and configurable per page:**
+  - Each page defines its own action set (or none at all).
+  - Example: `create-lesson` and `create-quiz` pages each have their own distinct actions.
+  - Example: on the home page, a "Create Quiz" action creates the quiz inside the "امتحاناتك" (Your Exams) section. On a lesson page, the equivalent action creates the quiz within that page/lesson, or within whichever section the user specifies.
+  - Needs an architecture that lets each page register its own action list without the agent core needing to know about all of them (plugin/registry pattern, TBD by implementation).
+- **No confirmation step for slash actions:** if the user explicitly invokes an action via `/`, the AI executes it immediately — it should *not* ask for confirmation ("do you want me to...?"). Confirmation prompts are reserved for actions inferred from free-text/natural language, not explicit slash commands.
+- **Image paste support:** users should be able to paste images directly into the input field (not just type text) and that image must appear as an attachment.
 
 ### Implement [plan](plans/live-render-md-prompt.md)
 
