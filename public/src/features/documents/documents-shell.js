@@ -33,13 +33,92 @@ const sidebarMarkup = `
       <a href="profile" title="الحساب" class="menu-item" data-tooltip="الحساب"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></svg><span class="menu-label">الحساب</span></a>
     </nav>
   </aside>
+
+  <!-- Mobile Bottom Navigation Bar -->
   <nav class="bottom-nav" id="bottomNav" role="navigation" aria-label="التنقل الرئيسي">
-    <a href="/" class="bottom-nav-item" data-bottom-nav="home"><span class="bottom-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg></span><span class="bottom-nav-label">الرئيسية</span></a>
-    <a href="/create-quiz" class="bottom-nav-item" data-bottom-nav="create"><span class="bottom-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 21h8" /><path d="m15 5 4 4" /><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /></svg></span><span class="bottom-nav-label">إنشاء</span></a>
-    <a href="/profile" class="bottom-nav-item bottom-nav-item-profile" data-bottom-nav="profile"><span class="bottom-nav-icon bottom-nav-icon-profile"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></svg></span><span class="bottom-nav-label">الحساب</span></a>
-    <a href="/settings" class="bottom-nav-item" data-bottom-nav="settings"><span class="bottom-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg></span><span class="bottom-nav-label">الإعدادات</span></a>
-    <button type="button" class="bottom-nav-item" id="bottomNavMoreBtn" data-bottom-nav="more" aria-haspopup="true" aria-expanded="false" aria-controls="sidebar"><span class="bottom-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></svg></span><span class="bottom-nav-label">المزيد</span></button>
+      <a href="profile" class="bottom-nav-item active bottom-nav-item-profile" data-bottom-nav="leaderboard">
+          <span class="bottom-nav-icon bottom-nav-icon-profile">
+              <img class="bottom-nav-avatar" id="navBottomAvatar" src="" alt="" style="display:none;">
+          </span>
+          <span class="bottom-nav-label">الحساب</span>
+      </a>
+
+      <a href="/" class="bottom-nav-item" data-bottom-nav="home">
+          <span class="bottom-nav-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  aria-hidden="true">
+                  <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+                  <path
+                      d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              </svg>
+          </span>
+          <span class="bottom-nav-label">الرئيسية</span>
+      </a>
+
+      <a href="create-quiz" class="bottom-nav-item" data-bottom-nav="create">
+          <span class="bottom-nav-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  aria-hidden="true">
+                  <!-- Lightbulb outline -->
+                  <path
+                      d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.9 1.2 1.5 1.5 2.5" />
+                  <path d="M9 18h6" />
+                  <path d="M10 22h4" />
+                  <!-- Question Mark inside -->
+                  <path d="M10.5 6.5a1.5 1.5 0 0 1 3 0c0 1-1.5 1.5-1.5 2.5" />
+                  <path d="M12 12h.01" />
+
+                  <!-- Subtle "Creator" spark/plus -->
+                  <line x1="19" y1="18" x2="19" y2="22" />
+                  <line x1="17" y1="20" x2="21" y2="20" />
+              </svg>
+          </span>
+          <span class="bottom-nav-label">امتحان</span>
+      </a>
+
+      <a href="create-lesson" class="bottom-nav-item" data-bottom-nav="create-lesson">
+          <span class="bottom-nav-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  aria-hidden="true">
+                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                  <path d="M9 10h6" />
+                  <path d="M12 7v6" />
+              </svg>
+          </span>
+          <span class="bottom-nav-label">درس</span>
+      </a>
+
+      <a href="settings" class="bottom-nav-item" data-bottom-nav="settings" aria-current="page">
+          <span class="bottom-nav-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  aria-hidden="true">
+                  <path
+                      d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+                  <circle cx="12" cy="12" r="3" />
+              </svg>
+          </span>
+          <span class="bottom-nav-label">الإعدادات</span>
+      </a>
+
+      <button type="button" class="bottom-nav-item" id="bottomNavMoreBtn" data-bottom-nav="more" aria-haspopup="true"
+          aria-expanded="false" aria-controls="sidebar">
+          <span class="bottom-nav-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  aria-hidden="true">
+                  <circle cx="12" cy="12" r="1" />
+                  <circle cx="19" cy="12" r="1" />
+                  <circle cx="5" cy="12" r="1" />
+              </svg>
+          </span>
+          <span class="bottom-nav-label">المزيد</span>
+      </button>
   </nav>
+  <!-- End of Bottom Navigation Bar -->
 `;
 
 (function setInitialSidebarState() {
