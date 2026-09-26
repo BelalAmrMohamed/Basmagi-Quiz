@@ -34,8 +34,31 @@ export const HIGHLIGHT_CHOICES = [
   { id: "pink", label: "وردي", value: "rgba(236, 72, 153, 0.30)" },
 ];
 
+// Reading-width and text-size are curated scales (not free px input) for the
+// same reason FONT_CHOICES/HIGHLIGHT_CHOICES are curated: a stored value is
+// used to look up a CSS value, never injected directly.
+export const WIDTH_CHOICES = [
+  { id: "comfortable", label: "مريح", value: "820px" },
+  { id: "wide", label: "عريض", value: "1080px" },
+  { id: "narrow", label: "ضيق", value: "640px" },
+];
+
+export const TEXT_SIZE_CHOICES = [
+  { id: "medium", label: "متوسط", value: "1rem" },
+  { id: "large", label: "كبير", value: "1.125rem" },
+  { id: "xlarge", label: "كبير جداً", value: "1.25rem" },
+];
+
 export function buildDefaultReaderPrefs() {
-  return { fontId: "default", highlightId: "yellow", ttsVoiceURI: "", ttsRate: 1 };
+  return {
+    fontId: "default",
+    highlightId: "yellow",
+    ttsVoiceURI: "",
+    ttsRate: 1,
+    widthId: "comfortable",
+    textSizeId: "medium",
+    focusMode: false,
+  };
 }
 
 /**
@@ -87,10 +110,20 @@ export function applyReaderPrefs(container, prefs) {
   if (!container) return;
   const font = FONT_CHOICES.find((f) => f.id === prefs?.fontId);
   const highlight = HIGHLIGHT_CHOICES.find((h) => h.id === prefs?.highlightId);
+  const width = WIDTH_CHOICES.find((w) => w.id === prefs?.widthId) || WIDTH_CHOICES[0];
+  const textSize = TEXT_SIZE_CHOICES.find((t) => t.id === prefs?.textSizeId) || TEXT_SIZE_CHOICES[0];
 
   if (font && font.value) container.style.setProperty("--md-font-family", font.value);
   else container.style.removeProperty("--md-font-family");
 
   if (highlight) container.style.setProperty("--md-highlight-color", highlight.value);
   else container.style.removeProperty("--md-highlight-color");
+
+  container.style.setProperty("--lesson-reading-width", width.value);
+  container.style.setProperty("--lesson-reading-text-size", textSize.value);
+
+  // Reading mode (focus mode) is a class, not a var, since it toggles whole
+  // regions (secondary nav/controls) rather than a single CSS value — see
+  // lesson.css's `.lesson-view--focus` rules.
+  container.classList.toggle("lesson-view--focus", Boolean(prefs?.focusMode));
 }

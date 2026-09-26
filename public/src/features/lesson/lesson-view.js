@@ -32,6 +32,8 @@ import {
   applyReaderPrefs,
   FONT_CHOICES,
   HIGHLIGHT_CHOICES,
+  WIDTH_CHOICES,
+  TEXT_SIZE_CHOICES,
 } from "./lesson-reader-prefs.js";
 import { renderTtsControl, equipTts } from "./lesson-tts.js";
 import { showUserLessonInfoModal } from "../home/lesson-info-modal.js";
@@ -176,8 +178,10 @@ function renderSection(section, ctx) {
   );
 }
 
-/** The reader's font/highlight picker — lesson-page-only, not part of the
- * shared markdown engine (only the CSS-variable hook is shared). */
+/** The reader's font/highlight/reading-mode picker — lesson-page-only, not
+ * part of the shared markdown engine (only the CSS-variable hooks are
+ * shared). Phase 3 adds reading width, text size, and focus mode; font and
+ * highlight are unchanged from Phase 1/2. */
 function renderPrefsPopover(prefs) {
   const fontOptions = FONT_CHOICES.map(
     (f) =>
@@ -190,6 +194,16 @@ function renderPrefsPopover(prefs) {
       `data-highlight-id="${escapeHtml(h.id)}" style="background:${h.value}" ` +
       `title="${escapeHtml(h.label)}" aria-label="${escapeHtml(h.label)}"></button>`,
   ).join("");
+  const widthOptions = WIDTH_CHOICES.map(
+    (w) =>
+      `<option value="${escapeHtml(w.id)}"${w.id === prefs.widthId ? " selected" : ""}>` +
+      `${escapeHtml(w.label)}</option>`,
+  ).join("");
+  const textSizeOptions = TEXT_SIZE_CHOICES.map(
+    (t) =>
+      `<option value="${escapeHtml(t.id)}"${t.id === prefs.textSizeId ? " selected" : ""}>` +
+      `${escapeHtml(t.label)}</option>`,
+  ).join("");
 
   return (
     `<div class="lesson-prefs">` +
@@ -199,7 +213,30 @@ function renderPrefsPopover(prefs) {
     `<select class="lesson-prefs__font">${fontOptions}</select></label>` +
     `<div class="lesson-prefs__row"><span>لون التظليل</span>` +
     `<div class="lesson-prefs__swatches">${highlightSwatches}</div></div>` +
+    `<label class="lesson-prefs__row"><span>عرض القراءة</span>` +
+    `<select class="lesson-prefs__width">${widthOptions}</select></label>` +
+    `<label class="lesson-prefs__row"><span>حجم النص</span>` +
+    `<select class="lesson-prefs__text-size">${textSizeOptions}</select></label>` +
+    `<label class="lesson-prefs__row lesson-prefs__row--switch"><span>وضع التركيز</span>` +
+    `<input type="checkbox" class="lesson-prefs__focus-mode"${prefs.focusMode ? " checked" : ""}></label>` +
     `</div></div>`
+  );
+}
+
+/** The header's "resume last section" action — only rendered when the
+ * reader has visited at least one section on a previous visit, and only
+ * points at a section still visible under the current adaptive-reveal
+ * state (a hidden/no-longer-revealed section id is simply skipped). */
+function renderResumeAction(visibleSections, visitedSectionIds) {
+  const visited = new Set(visitedSectionIds || []);
+  // Last-visited-that-still-exists, not simply the last id in the array,
+  // since a section can vanish from `visibleSections` if reveal rules
+  // change (not expected in v1, but cheap to guard).
+  const target = [...visited].reverse().find((id) => visibleSections.some((s) => s.id === id));
+  if (!target) return "";
+  return (
+    `<button type="button" class="lesson-view__resume-btn" data-resume-section="${escapeHtml(target)}">` +
+    `متابعة القراءة</button>`
   );
 }
 
@@ -272,9 +309,33 @@ function equipPrefs(root, lessonEl, authorDefaults) {
     });
   });
 
+  prefsEl.querySelector(".lesson-prefs__width")?.addEventListener("change", (e) => {
+    const next = setReaderPrefs({ widthId: e.target.value });
+    applyReaderPrefs(lessonEl, next);
+  });
+
+  prefsEl.querySelector(".lesson-prefs__text-size")?.addEventListener("change", (e) => {
+    const next = setReaderPrefs({ textSizeId: e.target.value });
+    applyReaderPrefs(lessonEl, next);
+  });
+
+  prefsEl.querySelector(".lesson-prefs__focus-mode")?.addEventListener("change", (e) => {
+    const next = setReaderPrefs({ focusMode: Boolean(e.target.checked) });
+    applyReaderPrefs(lessonEl, next);
+  });
+
   // Author-set defaults only seed fields the reader hasn't chosen yet —
   // getReaderPrefs() handles that merge, so applying on load is enough.
   applyReaderPrefs(lessonEl, getReaderPrefs(authorDefaults));
+}
+
+function equipResumeAction(root, lessonId) {
+  root.querySelector("[data-resume-section]")?.addEventListener("click", (e) => {
+    const sectionId = e.currentTarget.dataset.resumeSection;
+    const target = root.querySelector(`#lesson-section-${CSS.escape(sectionId)}`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 }
 
 /**
@@ -325,6 +386,7 @@ export async function renderLessonView() {
       `<header class="lesson-view__header">` +
       `<div class="lesson-view__heading"><p class="lesson-view__eyebrow">مساحة التعلّم</p><h1 class="lesson-view__title">${escapeHtml(lesson.title || "")}</h1><p class="lesson-view__subtitle">تابع القراءة، راجع تقدمك، واسأل الباشــمبصمج.</p></div>` +
       `<button type="button" class="lesson-view__info-btn">معلومات الدرس</button>` +
+      renderResumeAction(visibleSections, progress.visitedSections) +
       renderPrefsPopover(getReaderPrefs(lesson.reader_prefs_default)) + renderLessonBookmarks(lesson.id) +
       `</header>` +
       renderLessonToc(visibleSections, progress.visitedSections) +
@@ -346,6 +408,7 @@ export async function renderLessonView() {
       });
     });
     equipPrefs(container, lessonEl, lesson.reader_prefs_default);
+    equipResumeAction(container, lesson.id);
     equipQuestionBlocks(container, lesson.id, paint);
     equipLessonToc(container, lesson.id);
     equipTts(container);
