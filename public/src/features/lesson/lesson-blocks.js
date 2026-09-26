@@ -13,7 +13,7 @@
 
 import { renderMarkdown, renderInlineMediaTag } from "../../shared/markdown.js";
 import { escapeHtml } from "../home/escape-html.js";
-import { recordQuestionAnswer, appendEssayAnswerText, getLessonProgress } from "./lesson-schema.js";
+import { recordQuestionAnswer, appendEssayAnswerText, resetQuestionAnswer, getLessonProgress } from "./lesson-schema.js";
 import { gradeEssay, isAnswerCorrect } from "../../shared/rate-answers.js";
 
 /**
@@ -154,6 +154,7 @@ function renderMcqQuestionBody(block, questionId, options, prior) {
       ? `<div class="lesson-question__explanation md-content">${renderMarkdown(block.explanation)}</div>`
       : "") +
     `</div>` +
+    `<button type="button" class="lesson-question__reset" data-question-reset hidden>إعادة المحاولة</button>` +
     `</div>`
   );
 }
@@ -190,6 +191,7 @@ function renderEssayQuestionBody(block, questionId, prior) {
       ? `<div class="lesson-question__explanation md-content">${renderMarkdown(block.explanation)}</div>`
       : "") +
     `</div>` +
+    `<button type="button" class="lesson-question__reset" data-question-reset hidden>إعادة المحاولة</button>` +
     `</div>`
   );
 }
@@ -204,6 +206,26 @@ function renderEssayQuestionBody(block, questionId, prior) {
  */
 export function equipQuestionBlocks(root, lessonId, onAnswered) {
   if (!root) return;
+  root.querySelectorAll("[data-question-reset]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const questionEl = button.closest(".lesson-question");
+      if (!questionEl) return;
+      resetQuestionAnswer(lessonId, questionEl.dataset.questionId);
+      questionEl.dataset.answered = "false";
+      questionEl.querySelectorAll(".lesson-question__option").forEach((option) => {
+        option.disabled = false;
+        option.classList.remove("is-selected", "is-correct", "is-wrong");
+      });
+      const textarea = questionEl.querySelector(".lesson-question__essay-input");
+      if (textarea) { textarea.disabled = false; textarea.value = ""; }
+      const check = questionEl.querySelector(".lesson-question__essay-check-btn, .lesson-question__check-btn");
+      if (check) check.disabled = false;
+      const feedback = questionEl.querySelector(".lesson-question__feedback");
+      if (feedback) feedback.hidden = true;
+      button.hidden = true;
+      if (typeof onAnswered === "function") onAnswered();
+    });
+  });
   root.querySelectorAll('.lesson-question[data-question-kind="mcq"]').forEach((questionEl) => {
     const questionId = questionEl.dataset.questionId;
     let correctIndexes = [0];
@@ -278,6 +300,8 @@ export function equipQuestionBlocks(root, lessonId, onAnswered) {
 
 function revealMcqAnswer(questionEl, correctIndexes, wasCorrect, chosenIndexes) {
   questionEl.dataset.answered = "true";
+  const resetButton = questionEl.querySelector("[data-question-reset]");
+  if (resetButton) resetButton.hidden = false;
 
   questionEl.querySelectorAll(".lesson-question__option").forEach((btn) => {
     const idx = Number(btn.dataset.optionIndex);
@@ -307,6 +331,8 @@ function revealMcqAnswer(questionEl, correctIndexes, wasCorrect, chosenIndexes) 
  */
 function revealEssayAnswer(questionEl, modelAnswer, answerText) {
   questionEl.dataset.answered = "true";
+  const resetButton = questionEl.querySelector("[data-question-reset]");
+  if (resetButton) resetButton.hidden = false;
 
   const textarea = questionEl.querySelector(".lesson-question__essay-input");
   if (textarea) {

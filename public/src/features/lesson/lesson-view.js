@@ -40,6 +40,7 @@ import { LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-de
 import { renderLessonComments, equipLessonComments } from "./lesson-comments.js";
 import { LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { createLessonQuiz, renderLessonQuiz, equipLessonQuiz } from "./lesson-ai-quiz.js";
+import { isLessonSectionBookmarked, renderLessonBookmarks, equipLessonBookmarks } from "./lesson-bookmarks.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -167,6 +168,7 @@ function renderSection(section, ctx) {
       ? `<div class="lesson-section__header">` +
       `<h2 class="lesson-section__title">${escapeHtml(section.title)}</h2>` +
       renderTtsControl(escapeHtml(section.id)) +
+      `<button type="button" class="lesson-bookmark-btn${isLessonSectionBookmarked(ctx.lessonId, section.id) ? " is-active" : ""}" data-bookmark-toggle="${escapeHtml(section.id)}" aria-label="حفظ القسم كعلامة مرجعية" title="حفظ القسم">🔖</button>` +
       `</div>`
       : "") +
     `<div class="lesson-section__body">${blocksHtml}</div>` +
@@ -323,7 +325,7 @@ export async function renderLessonView() {
       `<header class="lesson-view__header">` +
       `<div class="lesson-view__heading"><p class="lesson-view__eyebrow">مساحة التعلّم</p><h1 class="lesson-view__title">${escapeHtml(lesson.title || "")}</h1><p class="lesson-view__subtitle">تابع القراءة، راجع تقدمك، واسأل الباشــمبصمج.</p></div>` +
       `<button type="button" class="lesson-view__info-btn">معلومات الدرس</button>` +
-      renderPrefsPopover(getReaderPrefs(lesson.reader_prefs_default)) +
+      renderPrefsPopover(getReaderPrefs(lesson.reader_prefs_default)) + renderLessonBookmarks(lesson.id) +
       `</header>` +
       renderLessonToc(visibleSections, progress.visitedSections) +
       `<div class="lesson-view__body">` +
@@ -348,6 +350,7 @@ export async function renderLessonView() {
     equipLessonToc(container, lesson.id);
     equipTts(container);
     equipLessonQuiz(container, paint);
+    equipLessonBookmarks(container, lesson.id, paint);
     if (!isUserCreated) equipLessonComments(container, lesson.id);
     mountLessonAgent(container, lesson, normalized);
   };

@@ -219,6 +219,13 @@ export function recordQuestionAnswer(lessonId, questionId, wasCorrect, selectedI
  * @param {string} questionId
  * @param {string} answerText
  */
+export function resetQuestionAnswer(lessonId, questionId) {
+  if (!lessonId || !questionId) return;
+  const entry = getLessonProgress(lessonId);
+  delete entry.questions[questionId];
+  saveLessonProgress(lessonId, entry);
+}
+
 export function appendEssayAnswerText(lessonId, questionId, answerText) {
   if (!lessonId || !questionId) return;
   const entry = getLessonProgress(lessonId);

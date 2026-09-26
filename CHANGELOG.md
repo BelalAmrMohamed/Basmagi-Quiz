@@ -499,3 +499,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Happy Learning! 🎓✨**
+## Lesson page revamp follow-up
+
+- Added local lesson-section bookmarks with add/remove, an in-page bookmark list, and smooth navigation back to saved sections.
+- Bookmarks are scoped by lesson ID and stored locally; they work for database-backed and session/user-created lessons without adding backend storage.
+- Added focus-visible section navigation styling and reduced-motion handling for lesson interactions.
+- Verified JavaScript syntax across all `public` and `api` JavaScript/MJS files with `node --check`.
