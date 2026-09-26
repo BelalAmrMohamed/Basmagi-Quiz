@@ -44,28 +44,11 @@
 
 import jwt from "jsonwebtoken";
 import { createClient } from "@supabase/supabase-js";
-import { applyCors } from "./_middleware.js";
+import { applyCors, requireUserProfile, handleAuthError } from "./_middleware.js";
 import { computeLevel } from "./user-profile/_levelMath.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TOKEN_TTL = "2h";
-
-function verifyUserToken(req) {
-    const authHeader = req.headers["authorization"] || "";
-    if (!authHeader.startsWith("Bearer ")) throw new Error("UNAUTHORIZED");
-    const token = authHeader.slice(7).trim();
-    if (!token) throw new Error("UNAUTHORIZED");
-
-    let payload;
-    try {
-        payload = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
-    } catch (err) {
-        if (err.name === "TokenExpiredError") throw new Error("TOKEN_EXPIRED");
-        throw new Error("UNAUTHORIZED");
-    }
-    if (payload.role !== "user" || !payload.profileId) throw new Error("UNAUTHORIZED");
-    return payload;
-}
 
 async function handleIdentify(req, res, supabase) {
     const { deviceId } = req.body || {};
@@ -139,11 +122,9 @@ async function handleIdentify(req, res, supabase) {
 async function handleSyncProgress(req, res, supabase) {
     let payload;
     try {
-        payload = verifyUserToken(req);
+        payload = requireUserProfile(req);
     } catch (err) {
-        if (err.message === "TOKEN_EXPIRED") {
-            return res.status(401).json({ error: "انتهت صلاحية الجلسة، أعد المحاولة" });
-        }
+        if (handleAuthError(err, res)) return;
         return res.status(401).json({ error: "غير مصرح" });
     }
 

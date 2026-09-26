@@ -54,13 +54,14 @@ export function applyCors(req, res) {
 // ── JWT verification ──────────────────────────────────────────────────────────
 
 /**
- * Verifies the `Authorization: Bearer <token>` header.
- * Throws a typed Error string that callers map to HTTP status codes.
+ * Decodes and verifies a Bearer JWT without asserting a role — shared by
+ * requireAdmin() and requireUserProfile() below so the token-shape checks
+ * (missing header, "null"/"undefined" literal, expiry) live in one place.
  *
  * @param {import('http').IncomingMessage} req
- * @returns {{ role: string, iat: number, exp: number }} decoded payload
+ * @returns {object} decoded payload
  */
-export function requireAdmin(req) {
+function decodeBearerToken(req) {
   const authHeader = req.headers["authorization"] || "";
 
   if (!authHeader.startsWith("Bearer ")) {
@@ -72,18 +73,40 @@ export function requireAdmin(req) {
     throw new Error("UNAUTHORIZED");
   }
 
-  let payload;
   try {
-    payload = jwt.verify(token, process.env.JWT_SECRET, {
-      algorithms: ["HS256"],
-    });
+    return jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
   } catch (err) {
     if (err.name === "TokenExpiredError") throw new Error("TOKEN_EXPIRED");
     throw new Error("UNAUTHORIZED");
   }
+}
 
+/**
+ * Verifies the `Authorization: Bearer <token>` header.
+ * Throws a typed Error string that callers map to HTTP status codes.
+ *
+ * @param {import('http').IncomingMessage} req
+ * @returns {{ role: string, iat: number, exp: number }} decoded payload
+ */
+export function requireAdmin(req) {
+  const payload = decodeBearerToken(req);
   if (payload.role !== "admin") throw new Error("FORBIDDEN");
+  return payload;
+}
 
+/**
+ * Verifies a device-profile JWT (role:"user", minted by
+ * /api/user-profile?action=identify — see api/user-profile.js). This is the
+ * ONLY server-verified identity anonymous students have on this platform,
+ * and is what lesson-comment ownership (edit/delete/react/report) is
+ * checked against — never a client-supplied author id.
+ *
+ * @param {import('http').IncomingMessage} req
+ * @returns {{ role: "user", profileId: string, iat: number, exp: number }}
+ */
+export function requireUserProfile(req) {
+  const payload = decodeBearerToken(req);
+  if (payload.role !== "user" || !payload.profileId) throw new Error("UNAUTHORIZED");
   return payload;
 }
 

@@ -17,7 +17,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 ├── PROJECT_STRUCTURE.md
 ├── README.md
 ├── vercel.json
-├── api/ [474.34 KB, 10877 LOC]
+├── api/ [474.65 KB, 10880 LOC]
 │   ├── ai-agent/ [57.05 KB, 1189 LOC]
 │   │   ├── _keyPool.js
 │   │   ├── _providerClients.js
@@ -64,7 +64,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── issues.md
 │   └── NOTES.md
 │
-├── public/ [200.72 MB, 118843 LOC]
+├── public/ [200.74 MB, 119564 LOC]
 │   ├── assets/ [196.23 MB, 0 LOC]
 │   │   ├── images/ [4 MB, 0 LOC]
 │   │   │   ├── thumbnails/ [3.09 MB, 0 LOC]
@@ -240,7 +240,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   └── videos/ [354.78 KB, 0 LOC]
 │   │       └── AD.mp4
 │   │
-│   ├── src/ [3.65 MB, 104996 LOC]
+│   ├── src/ [3.66 MB, 105717 LOC]
 │   │   ├── components/ [660.18 KB, 17445 LOC]
 │   │   │   ├── ai-agent/ [409.73 KB, 9702 LOC]
 │   │   │   │   ├── ai-agent-actions.js
@@ -288,7 +288,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │       ├── side-menu.css
 │   │   │       └── side-menu.js
 │   │   │
-│   │   ├── features/ [2.57 MB, 75444 LOC]
+│   │   ├── features/ [2.59 MB, 76165 LOC]
 │   │   │   ├── control/ [69.85 KB, 2316 LOC]
 │   │   │   │   ├── control-stats.css
 │   │   │   │   ├── control.css
@@ -383,7 +383,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── user-quizzes-view.js
 │   │   │   │   └── welcome-message.js
 │   │   │   │
-│   │   │   ├── lesson/ [89.82 KB, 2106 LOC]
+│   │   │   ├── lesson/ [108.36 KB, 2827 LOC]
 │   │   │   │   ├── lesson-ai-quiz.js
 │   │   │   │   ├── lesson-blocks.js
 │   │   │   │   ├── lesson-bookmarks.js
@@ -508,12 +508,12 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── release.js
 │   └── seo-check.mjs
 │
-└── supabase/ [66.44 KB, 1456 LOC]
+└── supabase/ [73.35 KB, 1562 LOC]
     ├── functions/ [10.06 KB, 231 LOC]
     │   └── lesson-progress/ [10.06 KB, 231 LOC]
     │       └── index.ts
     │
-    ├── migrations/ [40.77 KB, 810 LOC]
+    ├── migrations/ [47.67 KB, 916 LOC]
     │   ├── 20260828051811_user_profiles_server_side_identity.sql
     │   ├── 20260901195646_courses_and_folders.sql
     │   ├── 20260904000000_colleges.sql
@@ -525,7 +525,8 @@ The map is useful for quickly identifying the layout of the project, understandi
     │   ├── 20260919000000_lesson_comments.sql
     │   ├── 20260919120000_lesson_progress.sql
     │   ├── 20260919130000_lesson_slug_unique.sql
-    │   └── 20260925163938_ai_agent_daily_usage.sql
+    │   ├── 20260925163938_ai_agent_daily_usage.sql
+    │   └── 20260926120000_lesson_comments_community.sql
     │
     └── config.toml
 ```
@@ -536,10 +537,10 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Directory | Lines of Code |
 |-----------|---------------|
-| `public` | 118843 |
-| `api` | 10877 |
-| `supabase` | 1456 |
-| `(root)` | 1413 |
+| `public` | 119564 |
+| `api` | 10880 |
+| `supabase` | 1562 |
+| `(root)` | 1420 |
 | `scripts` | 1330 |
 | `docs` | 821 |
 
@@ -562,11 +563,11 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Extension | Files | Lines of Code | Size |
 |-----------|-------|---------------|------------|
-| .js | 182 | 80081 | 3.24 MB |
-| .css | 28 | 36922 | 932.09 KB |
+| .js | 182 | 80396 | 3.25 MB |
+| .css | 28 | 37331 | 936.89 KB |
 | .html | 22 | 13512 | 812.15 KB |
-| .md | 12 | 2015 | 118.67 KB |
-| .sql | 12 | 810 | 40.77 KB |
+| .sql | 13 | 916 | 47.67 KB |
+| .md | 12 | 2022 | 118.55 KB |
 | .json | 4 | 282 | 146.49 KB |
 | .txt | 2 | 26 | 2.06 KB |
 | .xml | 2 | 21 | 1.4 KB |
@@ -575,7 +576,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .toml | 1 | 415 | 15.61 KB |
 | .ts | 1 | 231 | 10.06 KB |
 | .yml | 1 | 41 | 1.02 KB |
-| **Total** | **269** | **134740** | **5.28 MB** |
+| **Total** | **270** | **135577** | **5.31 MB** |
 
 ### Binary / Media Files (Physical Size)
 
@@ -590,5 +591,5 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .svg | 1 | 19.48 KB |
 | **Total** | **153** | **196.68 MB** |
 
-**Grand Total Files:** 422  
-**Total Repository Size:** 201.96 MB
+**Grand Total Files:** 423  
+**Total Repository Size:** 201.98 MB
