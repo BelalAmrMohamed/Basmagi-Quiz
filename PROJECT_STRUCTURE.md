@@ -17,8 +17,8 @@ The map is useful for quickly identifying the layout of the project, understandi
 ├── PROJECT_STRUCTURE.md
 ├── README.md
 ├── vercel.json
-├── api/ [474.65 KB, 10880 LOC]
-│   ├── ai-agent/ [57.05 KB, 1189 LOC]
+├── api/ [496.32 KB, 11335 LOC]
+│   ├── ai-agent/ [58.9 KB, 1218 LOC]
 │   │   ├── _keyPool.js
 │   │   ├── _providerClients.js
 │   │   ├── _tools.js
@@ -50,8 +50,8 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── upload-quiz.js
 │   └── user-profile.js
 │
-├── docs/ [477.94 KB, 821 LOC]
-│   ├── plans/ [54.07 KB, 523 LOC]
+├── docs/ [478.25 KB, 821 LOC]
+│   ├── plans/ [54.38 KB, 523 LOC]
 │   │   ├── admin-actions-update-testing-results.md
 │   │   ├── ai-agent-on-quiz-page-prompt.md
 │   │   ├── lesson-page-revamp.md
@@ -64,7 +64,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── issues.md
 │   └── NOTES.md
 │
-├── public/ [200.74 MB, 119564 LOC]
+├── public/ [200.82 MB, 121609 LOC]
 │   ├── assets/ [196.23 MB, 0 LOC]
 │   │   ├── images/ [4 MB, 0 LOC]
 │   │   │   ├── thumbnails/ [3.09 MB, 0 LOC]
@@ -240,9 +240,9 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   └── videos/ [354.78 KB, 0 LOC]
 │   │       └── AD.mp4
 │   │
-│   ├── src/ [3.66 MB, 105717 LOC]
-│   │   ├── components/ [660.18 KB, 17445 LOC]
-│   │   │   ├── ai-agent/ [409.73 KB, 9702 LOC]
+│   ├── src/ [3.74 MB, 107762 LOC]
+│   │   ├── components/ [668.05 KB, 17554 LOC]
+│   │   │   ├── ai-agent/ [417.6 KB, 9811 LOC]
 │   │   │   │   ├── ai-agent-actions.js
 │   │   │   │   ├── ai-agent-attach-launcher.js
 │   │   │   │   ├── ai-agent-chat.js
@@ -288,8 +288,8 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │       ├── side-menu.css
 │   │   │       └── side-menu.js
 │   │   │
-│   │   ├── features/ [2.59 MB, 76165 LOC]
-│   │   │   ├── control/ [69.85 KB, 2316 LOC]
+│   │   ├── features/ [2.66 MB, 78101 LOC]
+│   │   │   ├── control/ [70.35 KB, 2320 LOC]
 │   │   │   │   ├── control-stats.css
 │   │   │   │   ├── control.css
 │   │   │   │   ├── control.js
@@ -320,7 +320,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── export-to-quiz.js
 │   │   │   │   └── export-to-word.js
 │   │   │   │
-│   │   │   ├── home/ [857.11 KB, 22709 LOC]
+│   │   │   ├── home/ [857.42 KB, 22718 LOC]
 │   │   │   │   ├── admin-item-actions.js
 │   │   │   │   ├── adminUpload.js
 │   │   │   │   ├── ai-prompts.js
@@ -383,16 +383,19 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── user-quizzes-view.js
 │   │   │   │   └── welcome-message.js
 │   │   │   │
-│   │   │   ├── lesson/ [108.36 KB, 2827 LOC]
+│   │   │   ├── lesson/ [181.73 KB, 4750 LOC]
 │   │   │   │   ├── lesson-ai-quiz.js
 │   │   │   │   ├── lesson-blocks.js
 │   │   │   │   ├── lesson-bookmarks.js
 │   │   │   │   ├── lesson-comments.js
+│   │   │   │   ├── lesson-info-modal.js
 │   │   │   │   ├── lesson-page.js
+│   │   │   │   ├── lesson-progress-summary.js
 │   │   │   │   ├── lesson-progress-sync.js
 │   │   │   │   ├── lesson-progress.js
 │   │   │   │   ├── lesson-reader-prefs.js
 │   │   │   │   ├── lesson-schema.js
+│   │   │   │   ├── lesson-selection-actions.js
 │   │   │   │   ├── lesson-toc.js
 │   │   │   │   ├── lesson-tts.js
 │   │   │   │   ├── lesson-view.js
@@ -508,12 +511,12 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── release.js
 │   └── seo-check.mjs
 │
-└── supabase/ [73.35 KB, 1562 LOC]
+└── supabase/ [73.45 KB, 1562 LOC]
     ├── functions/ [10.06 KB, 231 LOC]
     │   └── lesson-progress/ [10.06 KB, 231 LOC]
     │       └── index.ts
     │
-    ├── migrations/ [47.67 KB, 916 LOC]
+    ├── migrations/ [47.78 KB, 916 LOC]
     │   ├── 20260828051811_user_profiles_server_side_identity.sql
     │   ├── 20260901195646_courses_and_folders.sql
     │   ├── 20260904000000_colleges.sql
@@ -537,10 +540,10 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Directory | Lines of Code |
 |-----------|---------------|
-| `public` | 119564 |
-| `api` | 10880 |
+| `public` | 121609 |
+| `api` | 11335 |
 | `supabase` | 1562 |
-| `(root)` | 1420 |
+| `(root)` | 1421 |
 | `scripts` | 1330 |
 | `docs` | 821 |
 
@@ -555,7 +558,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 | `public/src/features/quiz/quiz.js` | 3513 |
 | `public/src/features/quiz/quiz.css` | 3506 |
 | `public/src/features/profile/profile.css` | 3170 |
-| `public/src/components/ai-agent/ai-agent-chat.js` | 2916 |
+| `public/src/components/ai-agent/ai-agent-chat.js` | 2981 |
 | `public/src/components/ai-agent/ai-agent.css` | 2906 |
 | `public/src/features/create-lesson/create-lesson.js` | 2723 |
 
@@ -563,11 +566,11 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Extension | Files | Lines of Code | Size |
 |-----------|-------|---------------|------------|
-| .js | 182 | 80396 | 3.25 MB |
-| .css | 28 | 37331 | 936.89 KB |
+| .js | 185 | 82270 | 3.34 MB |
+| .css | 28 | 37957 | 952.47 KB |
 | .html | 22 | 13512 | 812.15 KB |
-| .sql | 13 | 916 | 47.67 KB |
-| .md | 12 | 2022 | 118.55 KB |
+| .sql | 13 | 916 | 47.78 KB |
+| .md | 12 | 2023 | 119.5 KB |
 | .json | 4 | 282 | 146.49 KB |
 | .txt | 2 | 26 | 2.06 KB |
 | .xml | 2 | 21 | 1.4 KB |
@@ -576,7 +579,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .toml | 1 | 415 | 15.61 KB |
 | .ts | 1 | 231 | 10.06 KB |
 | .yml | 1 | 41 | 1.02 KB |
-| **Total** | **270** | **135577** | **5.31 MB** |
+| **Total** | **273** | **138078** | **5.41 MB** |
 
 ### Binary / Media Files (Physical Size)
 
@@ -591,5 +594,5 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .svg | 1 | 19.48 KB |
 | **Total** | **153** | **196.68 MB** |
 
-**Grand Total Files:** 423  
-**Total Repository Size:** 201.98 MB
+**Grand Total Files:** 426  
+**Total Repository Size:** 202.09 MB

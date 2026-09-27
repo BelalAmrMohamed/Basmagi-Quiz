@@ -34,7 +34,7 @@ const POPUP_CLASS = "lesson-selection-popup";
  */
 export function equipLessonSelectionActions(root, onExplain, onSimplify) {
   const body = root.querySelector(".lesson-view__body");
-  if (!body) return () => {};
+  if (!body) return () => { };
 
   let popupEl = null;
   let capturedText = "";
@@ -79,6 +79,7 @@ export function equipLessonSelectionActions(root, onExplain, onSimplify) {
     popup.appendChild(explainBtn);
     popup.appendChild(simplifyBtn);
     document.body.appendChild(popup);
+    popupEl = popup;
 
     // Fixed-position, centered above the selection's own bounding rect
     // (viewport coords — getBoundingClientRect() is already viewport-
