@@ -6,7 +6,7 @@
 // writes progress and deliberately has no points, profile, or network path.
 
 import { getLessonProgress } from "../lesson/lesson-schema.js";
-import { getCategoryTree } from "./app-state.js";
+import { getCategoryTree } from "../home/app-state.js";
 
 function collectLessons(category, collected = []) {
   if (!category) return collected;

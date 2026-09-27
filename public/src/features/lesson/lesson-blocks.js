@@ -251,7 +251,14 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
       const check = questionEl.querySelector(".lesson-question__essay-check-btn, .lesson-question__check-btn");
       if (check) check.disabled = false;
       const feedback = questionEl.querySelector(".lesson-question__feedback");
-      if (feedback) feedback.hidden = true;
+      if (feedback) {
+        feedback.hidden = true;
+        // Clear any stale "explain my wrong answer" trigger from the prior
+        // attempt -- renderExplainWrongButton() only skips re-adding one if
+        // it finds an existing [data-explain-wrong] node, so without this
+        // a retry that becomes correct would still show the old button.
+        feedback.querySelector("[data-explain-wrong]")?.remove();
+      }
       button.hidden = true;
       if (typeof onAnswered === "function") onAnswered();
     });
