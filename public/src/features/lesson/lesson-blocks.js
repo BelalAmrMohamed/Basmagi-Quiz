@@ -204,8 +204,38 @@ function renderEssayQuestionBody(block, questionId, prior) {
  * @param {() => void} onAnswered - called after progress is written, so the
  *   viewer can re-evaluate adaptive section visibility
  */
-export function equipQuestionBlocks(root, lessonId, onAnswered) {
+export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) {
   if (!root) return;
+
+  // Delegated (not per-button) so it keeps working after revealMcqAnswer/
+  // revealEssayAnswer insert the button dynamically post-grading, without
+  // needing a matching addEventListener at each insertion site.
+  root.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-explain-wrong]");
+    if (!btn || typeof onExplainWrong !== "function") return;
+    const questionEl = btn.closest(".lesson-question");
+    if (!questionEl) return;
+    const promptEl = questionEl.querySelector(".lesson-question__prompt");
+    const questionText = promptEl?.textContent?.trim() || "";
+    if (questionEl.dataset.questionKind === "mcq") {
+      const options = [...questionEl.querySelectorAll(".lesson-question__option-text")].map((el) => el.textContent.trim());
+      const correctIndexes = (() => { try { return JSON.parse(questionEl.dataset.correctIndexes || "[]"); } catch { return []; } })();
+      const chosenIndexes = [...questionEl.querySelectorAll(".lesson-question__option.is-wrong")]
+        .map((el) => Number(el.dataset.optionIndex));
+      onExplainWrong({
+        kind: "mcq",
+        question: questionText,
+        options,
+        correctAnswers: correctIndexes.map((i) => options[i]).filter(Boolean),
+        chosenAnswers: chosenIndexes.map((i) => options[i]).filter(Boolean),
+      });
+    } else {
+      const modelAnswer = questionEl.dataset.modelAnswer || "";
+      const myAnswer = questionEl.querySelector(".lesson-question__essay-input")?.value || "";
+      onExplainWrong({ kind: "essay", question: questionText, modelAnswer, myAnswer });
+    }
+  });
+
   root.querySelectorAll("[data-question-reset]").forEach((button) => {
     button.addEventListener("click", () => {
       const questionEl = button.closest(".lesson-question");
@@ -298,6 +328,20 @@ export function equipQuestionBlocks(root, lessonId, onAnswered) {
   });
 }
 
+function renderExplainWrongButton(feedback) {
+  // One "اشرح لي إجابتي" trigger per feedback block — re-grading via
+  // "إعادة المحاولة" removes the whole feedback block anyway (see the
+  // reset handler above), so there's no separate cleanup needed when a
+  // question moves from wrong back to ungraded.
+  if (feedback.querySelector("[data-explain-wrong]")) return;
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "lesson-question__explain-wrong-btn";
+  btn.dataset.explainWrong = "true";
+  btn.textContent = "اشرح لي ليه إجابتي غلط";
+  feedback.appendChild(btn);
+}
+
 function revealMcqAnswer(questionEl, correctIndexes, wasCorrect, chosenIndexes) {
   questionEl.dataset.answered = "true";
   const resetButton = questionEl.querySelector("[data-question-reset]");
@@ -319,6 +363,7 @@ function revealMcqAnswer(questionEl, correctIndexes, wasCorrect, chosenIndexes) 
       verdict.classList.toggle("is-correct", wasCorrect);
       verdict.classList.toggle("is-wrong", !wasCorrect);
     }
+    if (!wasCorrect) renderExplainWrongButton(feedback);
   }
 }
 
@@ -356,5 +401,6 @@ function revealEssayAnswer(questionEl, modelAnswer, answerText) {
     }
     const modelEl = feedback.querySelector(".lesson-question__model-answer");
     if (modelEl) modelEl.innerHTML = `<strong>الإجابة النموذجية:</strong> ${renderMarkdown(modelAnswer || "")}`;
+    if (!wasClose) renderExplainWrongButton(feedback);
   }
 }

@@ -2759,6 +2759,23 @@ export function createChatPanel(options = {}) {
     attachmentToolHandler = typeof handler === "function" ? handler : null;
   };
 
+  /**
+   * Lets an outside caller (e.g. lesson-view.js's "explain this selection" /
+   * "explain my wrong answer" one-click actions) fill the composer with a
+   * ready-made prompt and send it immediately, exactly as if the user had
+   * typed it and pressed Send — reuses sendMessage() as-is rather than
+   * duplicating its slash-command/attachment/history handling here.
+   * Ignored while a generation is already in flight, so a stray double
+   * click can't queue two overlapping turns.
+   * @param {string} text
+   */
+  panel.submitText = function submitText(text) {
+    const value = String(text || "").trim();
+    if (!value || sendBtn.disabled) return;
+    textarea.value = value;
+    sendMessage();
+  };
+
   panel.loadConversation = function loadConversation(conversation) {
     stopSpeaking();
     typingController.clear();
