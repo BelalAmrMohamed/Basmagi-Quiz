@@ -56,7 +56,7 @@ export function equipLessonSelectionActions(root, onExplain, onSimplify) {
     const explainBtn = document.createElement("button");
     explainBtn.type = "button";
     explainBtn.className = `${POPUP_CLASS}__btn`;
-    explainBtn.textContent = "اشرح ده";
+    explainBtn.textContent = "اشرحها";
     // Capture-time text, not a live selection read — see module doc above.
     explainBtn.addEventListener("mousedown", (e) => e.preventDefault()); // don't let the button steal/collapse selection on mousedown either
     explainBtn.addEventListener("click", () => {
