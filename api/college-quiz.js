@@ -35,7 +35,7 @@
 // =============================================================================
 
 import { createClient } from "@supabase/supabase-js";
-import { requireAdmin, applyCors, handleAuthError } from "./_middleware.js";
+import { requireAdmin, requireUserProfile, applyCors, handleAuthError } from "./_middleware.js";
 import { resolveAdminId, isAuthorizedForItem, getTrashRetentionDays, computeExpiresAt } from "./_trash.js";
 import { isRateLimited } from "./_rateLimit.js";
 import { notifySearchEngines } from "./_seoNotify.js";
@@ -50,6 +50,46 @@ const reportSubmitLog = new Map();
 const REPORT_SUBMIT_RATE_LIMIT = 10; // requests per minute for public submission
 const lessonCommentSubmitLog = new Map();
 const LESSON_COMMENT_RATE_LIMIT = 8;
+const lessonCommentReactionLog = new Map();
+const LESSON_COMMENT_REACTION_RATE_LIMIT = 20;
+const lessonCommentReportLog = new Map();
+const LESSON_COMMENT_REPORT_RATE_LIMIT = 5;
+const lessonCommentWriteLog = new Map(); // edit/delete
+const LESSON_COMMENT_WRITE_RATE_LIMIT = 15;
+
+const LESSON_COMMENT_PAGE_SIZE = 20;
+const LESSON_COMMENT_SORTS = new Set(["newest", "most_reacted", "most_discussed"]);
+
+function clientIp(req) {
+    return (
+        req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+        req.socket?.remoteAddress ||
+        "unknown"
+    );
+}
+
+// Publicly displayed author label. There is no student login/display name
+// (see 20260926120000_lesson_comments_community.sql) — commenters are shown
+// as "Student" or, when several distinct profiles appear in one thread,
+// "Student #n" assigned by first-appearance order within that thread so the
+// same person keeps the same label across a render, without ever exposing
+// the actual profile id to the client.
+function buildAuthorLabels(rows) {
+    const order = [];
+    const seen = new Map();
+    for (const row of rows) {
+        const key = row.user_profile_id || `anon:${row.id}`; // no profile = always its own anonymous label
+        if (!seen.has(key)) {
+            seen.set(key, order.length);
+            order.push(key);
+        }
+    }
+    return (row) => {
+        const key = row.user_profile_id || `anon:${row.id}`;
+        const idx = seen.get(key);
+        return order.length > 1 ? `Student #${idx + 1}` : "Student";
+    };
+}
 
 const isValidUUID = (uuid) =>
     typeof uuid === "string" &&
@@ -397,39 +437,418 @@ async function handlePostReports(req, res) {
     return res.status(400).json({ error: "إجراء غير صالح" });
 }
 
+// Shape a raw lesson_comments row (+ its reaction rows) for public output.
+// Soft-deleted comments keep their id/parent_id/reply-count/reactions so the
+// thread structure survives, but their body/author label are replaced with
+// a tombstone — never returned to the client.
+function shapePublicComment(row, { reactionCounts, myReactionIds, authorLabelFor, replyCounts }) {
+    const isDeleted = !!row.deleted_at;
+    return {
+        id: row.id,
+        parent_id: row.parent_id,
+        created_at: row.created_at,
+        edited_at: row.edited_at,
+        deleted: isDeleted,
+        body: isDeleted ? null : row.body,
+        author: isDeleted ? null : authorLabelFor(row),
+        is_mine: !isDeleted && !!row.__isMine,
+        reaction_count: reactionCounts.get(row.id) || 0,
+        reacted_by_me: myReactionIds ? myReactionIds.has(row.id) : false,
+        reply_count: replyCounts.get(row.id) || 0,
+    };
+}
+
+async function fetchReactionCounts(commentIds) {
+    const counts = new Map();
+    if (!commentIds.length) return counts;
+    const { data, error } = await supabase
+        .from("lesson_comment_reactions")
+        .select("comment_id")
+        .in("comment_id", commentIds);
+    if (error) return counts; // best-effort — a count failure shouldn't break the list
+    for (const row of data || []) counts.set(row.comment_id, (counts.get(row.comment_id) || 0) + 1);
+    return counts;
+}
+
+async function fetchMyReactionIds(commentIds, profileId) {
+    if (!profileId || !commentIds.length) return new Set();
+    const { data, error } = await supabase
+        .from("lesson_comment_reactions")
+        .select("comment_id")
+        .eq("user_profile_id", profileId)
+        .in("comment_id", commentIds);
+    if (error) return new Set();
+    return new Set((data || []).map((r) => r.comment_id));
+}
+
+// ── Lesson comments: GET (public thread) ────────────────────────────────────
+
+async function handleGetLessonCommentsPublic(req, res) {
+    const lessonId = req.query?.lessonId;
+    if (!isValidUUID(lessonId)) return res.status(400).json({ error: "معرف الدرس غير صالح" });
+
+    const sort = LESSON_COMMENT_SORTS.has(req.query?.sort) ? req.query.sort : "newest";
+    const page = Math.max(1, parseInt(req.query?.page, 10) || 1);
+    const offset = (page - 1) * LESSON_COMMENT_PAGE_SIZE;
+
+    // Best-effort caller identity — used only to mark "is_mine" / "reacted_by_me".
+    // Never required: anonymous viewers can still read the public thread.
+    let profileId = null;
+    try {
+        profileId = requireUserProfile(req).profileId;
+    } catch (_) {
+        /* anonymous read is fine */
+    }
+
+    // Permalink: return one comment (plus its parent for context, if it's a
+    // reply) regardless of sort/page, so a shared link always resolves.
+    const permalinkId = req.query?.commentId;
+    if (permalinkId) {
+        if (!isValidUUID(permalinkId)) return res.status(400).json({ error: "معرف التعليق غير صالح" });
+        const { data: target, error: targetErr } = await supabase
+            .from("lesson_comments")
+            .select("id, body, created_at, edited_at, deleted_at, parent_id, user_profile_id, lesson_id, status")
+            .eq("id", permalinkId)
+            .eq("lesson_id", lessonId)
+            .maybeSingle();
+        if (targetErr || !target) return res.status(404).json({ error: "التعليق غير موجود" });
+        // Only a resolved, non-deleted comment is linkable — never leak a
+        // pending or removed one just because someone has its id/URL.
+        if (target.deleted_at || target.status !== "resolved") return res.status(404).json({ error: "التعليق غير متاح" });
+
+        let parent = null;
+        if (target.parent_id) {
+            const { data: parentRow } = await supabase
+                .from("lesson_comments")
+                .select("id, body, created_at, edited_at, deleted_at, parent_id, user_profile_id")
+                .eq("id", target.parent_id)
+                .maybeSingle();
+            parent = parentRow || null;
+        }
+        const ids = [target.id, ...(parent ? [parent.id] : [])];
+        const reactionCounts = await fetchReactionCounts(ids);
+        const myReactionIds = await fetchMyReactionIds(ids, profileId);
+        const replyCounts = new Map(); // not needed for a single-comment permalink view
+        const authorLabelFor = buildAuthorLabels(parent ? [parent, target] : [target]);
+        target.__isMine = profileId && target.user_profile_id === profileId;
+        const shapedTarget = shapePublicComment(target, { reactionCounts, myReactionIds, authorLabelFor, replyCounts });
+        const shapedParent = parent
+            ? shapePublicComment({ ...parent, __isMine: profileId && parent.user_profile_id === profileId }, { reactionCounts, myReactionIds, authorLabelFor, replyCounts })
+            : null;
+        return res.status(200).json({ comment: shapedTarget, parent: shapedParent });
+    }
+
+    // Top-level, resolved, non-deleted comments only — replies are nested
+    // under each and fetched separately (bounded by nesting depth of 1).
+    let topQuery = supabase
+        .from("lesson_comments")
+        .select("id, body, created_at, edited_at, deleted_at, parent_id, user_profile_id", { count: "exact" })
+        .eq("lesson_id", lessonId)
+        .eq("status", "resolved")
+        .is("parent_id", null);
+
+    if (sort === "newest") {
+        topQuery = topQuery.order("created_at", { ascending: false });
+    } else {
+        // most_reacted / most_discussed need reaction/reply counts, which
+        // aren't columns on lesson_comments — sort in JS after fetching a
+        // bounded window (newest-first cap) rather than a heavier SQL join,
+        // consistent with this table's current no-ORM raw-query style.
+        topQuery = topQuery.order("created_at", { ascending: false }).limit(500);
+    }
+    if (sort === "newest") {
+        topQuery = topQuery.range(offset, offset + LESSON_COMMENT_PAGE_SIZE - 1);
+    }
+
+    const { data: topRows, error: topErr, count } = await topQuery;
+    if (topErr) return res.status(500).json({ error: "فشل جلب النقاش" });
+
+    let pageTopRows = topRows || [];
+    let totalCount = count || 0;
+
+    if (sort !== "newest") {
+        const topIds = pageTopRows.map((r) => r.id);
+        const [reactionCounts, replyCountsRaw] = await Promise.all([
+            fetchReactionCounts(topIds),
+            (async () => {
+                if (!topIds.length) return new Map();
+                const { data } = await supabase.from("lesson_comments").select("parent_id").in("parent_id", topIds).eq("status", "resolved").is("deleted_at", null);
+                const m = new Map();
+                for (const r of data || []) m.set(r.parent_id, (m.get(r.parent_id) || 0) + 1);
+                return m;
+            })(),
+        ]);
+        pageTopRows = [...pageTopRows].sort((a, b) => {
+            const av = sort === "most_reacted" ? reactionCounts.get(a.id) || 0 : replyCountsRaw.get(a.id) || 0;
+            const bv = sort === "most_reacted" ? reactionCounts.get(b.id) || 0 : replyCountsRaw.get(b.id) || 0;
+            if (bv !== av) return bv - av;
+            return new Date(b.created_at) - new Date(a.created_at);
+        });
+        totalCount = pageTopRows.length;
+        pageTopRows = pageTopRows.slice(offset, offset + LESSON_COMMENT_PAGE_SIZE);
+    }
+
+    const topIds = pageTopRows.map((r) => r.id);
+    let replyRows = [];
+    if (topIds.length) {
+        const { data, error: replyErr } = await supabase
+            .from("lesson_comments")
+            .select("id, body, created_at, edited_at, deleted_at, parent_id, user_profile_id")
+            .in("parent_id", topIds)
+            .eq("status", "resolved")
+            .order("created_at", { ascending: true });
+        if (replyErr) return res.status(500).json({ error: "فشل جلب الردود" });
+        replyRows = data || [];
+    }
+
+    const allRows = [...pageTopRows, ...replyRows];
+    const allIds = allRows.map((r) => r.id);
+    const [reactionCounts, myReactionIds] = await Promise.all([
+        fetchReactionCounts(allIds),
+        fetchMyReactionIds(allIds, profileId),
+    ]);
+    const replyCounts = new Map();
+    for (const reply of replyRows) replyCounts.set(reply.parent_id, (replyCounts.get(reply.parent_id) || 0) + 1);
+
+    const authorLabelFor = buildAuthorLabels(allRows);
+    for (const row of allRows) row.__isMine = profileId && row.user_profile_id === profileId;
+
+    const shapedTop = pageTopRows.map((row) => ({
+        ...shapePublicComment(row, { reactionCounts, myReactionIds, authorLabelFor, replyCounts }),
+        replies: replyRows
+            .filter((r) => r.parent_id === row.id)
+            .map((r) => shapePublicComment(r, { reactionCounts, myReactionIds, authorLabelFor, replyCounts })),
+    }));
+
+    return res.status(200).json({
+        comments: shapedTop,
+        page,
+        pageSize: LESSON_COMMENT_PAGE_SIZE,
+        totalCount,
+        hasMore: offset + shapedTop.length < totalCount,
+        sort,
+    });
+}
+
+// ── Lesson comments: GET (admin moderation queue) ───────────────────────────
+
+async function handleGetLessonCommentsAdmin(req, res) {
+    try {
+        requireAdmin(req);
+    } catch (err) {
+        if (handleAuthError(err, res)) return;
+        return res.status(401).json({ error: "غير مصرح" });
+    }
+    const requestedStatus = ["pending", "resolved", "dismissed", "all"].includes(req.query?.status) ? req.query.status : "pending";
+    let query = supabase
+        .from("lesson_comments")
+        .select("id, body, created_at, status, lesson_id, parent_id, lessons ( title )")
+        .order("created_at", { ascending: false });
+    if (requestedStatus !== "all") query = query.eq("status", requestedStatus);
+    const { data, error } = await query;
+    if (error) return res.status(500).json({ error: "فشل جلب أسئلة الدروس" });
+
+    const rows = data || [];
+    // Replies show their parent's snippet so moderators aren't reviewing a
+    // reply with zero context (see plan decision: replies reuse the exact
+    // same pending/resolve queue, no separate admin UI).
+    const parentIds = [...new Set(rows.filter((r) => r.parent_id).map((r) => r.parent_id))];
+    let parentSnippets = new Map();
+    if (parentIds.length) {
+        const { data: parents } = await supabase.from("lesson_comments").select("id, body").in("id", parentIds);
+        parentSnippets = new Map((parents || []).map((p) => [p.id, p.body.slice(0, 140)]));
+    }
+    const comments = rows.map((r) => ({
+        ...r,
+        is_reply: !!r.parent_id,
+        parent_snippet: r.parent_id ? parentSnippets.get(r.parent_id) || null : null,
+    }));
+    return res.status(200).json({ comments });
+}
+
+// ── Lesson comments: dispatch ────────────────────────────────────────────────
+
 async function handleLessonComments(req, res) {
     if (req.method === "GET") {
-        if (req.query?.lessonComments === "admin") {
-            try { requireAdmin(req); } catch (err) { if (handleAuthError(err, res)) return; return res.status(401).json({ error: "غير مصرح" }); }
-            const requestedStatus = ["pending", "resolved", "dismissed", "all"].includes(req.query?.status) ? req.query.status : "pending";
-            let query = supabase.from("lesson_comments").select("id, body, created_at, status, lesson_id, lessons ( title )").order("created_at", { ascending: false });
-            if (requestedStatus !== "all") query = query.eq("status", requestedStatus);
-            const { data, error } = await query;
-            if (error) return res.status(500).json({ error: "فشل جلب أسئلة الدروس" });
-            return res.status(200).json({ comments: data || [] });
-        }
-        const lessonId = req.query?.lessonId;
-        if (!isValidUUID(lessonId)) return res.status(400).json({ error: "معرف الدرس غير صالح" });
-        const { data, error } = await supabase.from("lesson_comments").select("id, body, created_at, status").eq("lesson_id", lessonId).eq("status", "resolved").order("created_at");
-        if (error) return res.status(500).json({ error: "فشل جلب أسئلة الدرس" });
-        return res.status(200).json({ comments: data || [] });
+        if (req.query?.lessonComments === "admin") return handleGetLessonCommentsAdmin(req, res);
+        return handleGetLessonCommentsPublic(req, res);
     }
-    const { action, lesson_id: lessonId, body, comment_id: commentId, status } = req.body || {};
+
+    const { action, lesson_id: lessonId, body, comment_id: commentId, parent_id: parentId, status, reason } = req.body || {};
+
+    // 1. Submit a top-level comment or a reply (public, rate-limited).
     if (action === "submit-lesson-comment") {
-        const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || "unknown";
+        const ip = clientIp(req);
         if (isRateLimited(ip, LESSON_COMMENT_RATE_LIMIT, lessonCommentSubmitLog)) return res.status(429).json({ error: "طلبات كثيرة جدًا، حاول لاحقًا" });
-        if (!isValidUUID(lessonId) || typeof body !== "string" || !body.trim() || body.trim().length > 2000) return res.status(400).json({ error: "اكتب سؤالاً صالحاً لا يزيد عن 2000 حرف." });
-        const { data, error } = await supabase.from("lesson_comments").insert({ lesson_id: lessonId, body: body.trim() }).select("id, created_at, status").single();
+        if (!isValidUUID(lessonId) || typeof body !== "string" || !body.trim() || body.trim().length > 2000) {
+            return res.status(400).json({ error: "اكتب سؤالاً صالحاً لا يزيد عن 2000 حرف." });
+        }
+
+        let profileId = null;
+        try {
+            profileId = requireUserProfile(req).profileId;
+        } catch (_) {
+            /* allow anonymous submission — pre-Phase-4 behavior, ownership is simply absent */
+        }
+
+        let resolvedParentId = null;
+        if (parentId !== undefined && parentId !== null) {
+            if (!isValidUUID(parentId)) return res.status(400).json({ error: "معرف التعليق الأصلي غير صالح" });
+            const { data: parent, error: parentErr } = await supabase
+                .from("lesson_comments")
+                .select("id, lesson_id, parent_id, deleted_at")
+                .eq("id", parentId)
+                .maybeSingle();
+            if (parentErr || !parent || parent.deleted_at) return res.status(400).json({ error: "التعليق الأصلي غير موجود" });
+            if (parent.lesson_id !== lessonId) return res.status(400).json({ error: "لا يمكن الرد على تعليق من درس آخر" });
+            if (parent.parent_id) return res.status(400).json({ error: "لا يمكن الرد على رد" }); // one level of nesting only
+            resolvedParentId = parent.id;
+        }
+
+        const { data, error } = await supabase
+            .from("lesson_comments")
+            .insert({
+                lesson_id: lessonId,
+                body: body.trim(),
+                parent_id: resolvedParentId,
+                user_profile_id: profileId,
+            })
+            .select("id, created_at, status, parent_id")
+            .single();
         if (error) return res.status(500).json({ error: "تعذر إرسال السؤال." });
         return res.status(201).json({ comment: data });
     }
+
+    // 2. Toggle a reaction (public, requires a verified device profile).
+    if (action === "react-lesson-comment") {
+        const ip = clientIp(req);
+        if (isRateLimited(ip, LESSON_COMMENT_REACTION_RATE_LIMIT, lessonCommentReactionLog)) return res.status(429).json({ error: "طلبات كثيرة جدًا، حاول لاحقًا" });
+        let profileId;
+        try {
+            profileId = requireUserProfile(req).profileId;
+        } catch (err) {
+            if (handleAuthError(err, res)) return;
+            return res.status(401).json({ error: "غير مصرح" });
+        }
+        if (!isValidUUID(commentId)) return res.status(400).json({ error: "معرف التعليق غير صالح" });
+
+        const { data: comment } = await supabase.from("lesson_comments").select("id, status, deleted_at").eq("id", commentId).maybeSingle();
+        if (!comment || comment.status !== "resolved" || comment.deleted_at) return res.status(404).json({ error: "التعليق غير متاح" });
+
+        const { data: existing } = await supabase
+            .from("lesson_comment_reactions")
+            .select("id")
+            .eq("comment_id", commentId)
+            .eq("user_profile_id", profileId)
+            .maybeSingle();
+
+        if (existing) {
+            const { error: delErr } = await supabase.from("lesson_comment_reactions").delete().eq("id", existing.id);
+            if (delErr) return res.status(500).json({ error: "تعذر تحديث التفاعل." });
+            return res.status(200).json({ success: true, reacted: false });
+        }
+        const { error: insErr } = await supabase.from("lesson_comment_reactions").insert({ comment_id: commentId, user_profile_id: profileId });
+        if (insErr) {
+            // Unique constraint race (double-click) — treat as already-reacted, not an error.
+            if (insErr.code === "23505") return res.status(200).json({ success: true, reacted: true });
+            return res.status(500).json({ error: "تعذر تحديث التفاعل." });
+        }
+        return res.status(200).json({ success: true, reacted: true });
+    }
+
+    // 3. Edit own comment (server-verified ownership).
+    if (action === "edit-lesson-comment") {
+        const ip = clientIp(req);
+        if (isRateLimited(ip, LESSON_COMMENT_WRITE_RATE_LIMIT, lessonCommentWriteLog)) return res.status(429).json({ error: "طلبات كثيرة جدًا، حاول لاحقًا" });
+        let profileId;
+        try {
+            profileId = requireUserProfile(req).profileId;
+        } catch (err) {
+            if (handleAuthError(err, res)) return;
+            return res.status(401).json({ error: "غير مصرح" });
+        }
+        if (!isValidUUID(commentId) || typeof body !== "string" || !body.trim() || body.trim().length > 2000) {
+            return res.status(400).json({ error: "نص غير صالح" });
+        }
+        const { data: comment } = await supabase.from("lesson_comments").select("id, user_profile_id, deleted_at").eq("id", commentId).maybeSingle();
+        if (!comment || comment.deleted_at) return res.status(404).json({ error: "التعليق غير موجود" });
+        if (!comment.user_profile_id || comment.user_profile_id !== profileId) return res.status(403).json({ error: "لا يمكنك تعديل تعليق غيرك" });
+
+        const { error } = await supabase
+            .from("lesson_comments")
+            .update({ body: body.trim(), edited_at: new Date().toISOString() })
+            .eq("id", commentId);
+        if (error) return res.status(500).json({ error: "تعذر تعديل التعليق." });
+        return res.status(200).json({ success: true });
+    }
+
+    // 4. Delete own comment (soft delete, server-verified ownership) — or
+    //    admin moderation delete, reusing the same action with an admin token.
+    if (action === "delete-lesson-comment") {
+        const ip = clientIp(req);
+        if (isRateLimited(ip, LESSON_COMMENT_WRITE_RATE_LIMIT, lessonCommentWriteLog)) return res.status(429).json({ error: "طلبات كثيرة جدًا، حاول لاحقًا" });
+        if (!isValidUUID(commentId)) return res.status(400).json({ error: "معرف التعليق غير صالح" });
+
+        let isOwner = false;
+        try {
+            const { profileId } = requireUserProfile(req);
+            const { data: comment } = await supabase.from("lesson_comments").select("user_profile_id").eq("id", commentId).maybeSingle();
+            isOwner = !!comment?.user_profile_id && comment.user_profile_id === profileId;
+        } catch (_) {
+            /* not a user-profile token — fall through to admin check */
+        }
+
+        if (!isOwner) {
+            try {
+                requireAdmin(req);
+            } catch (err) {
+                if (handleAuthError(err, res)) return;
+                return res.status(403).json({ error: "لا يمكنك حذف تعليق غيرك" });
+            }
+        }
+
+        const { error } = await supabase.from("lesson_comments").update({ deleted_at: new Date().toISOString() }).eq("id", commentId);
+        if (error) return res.status(500).json({ error: "تعذر حذف التعليق." });
+        return res.status(200).json({ success: true });
+    }
+
+    // 5. Report a comment (public, rate-limited).
+    if (action === "report-lesson-comment") {
+        const ip = clientIp(req);
+        if (isRateLimited(ip, LESSON_COMMENT_REPORT_RATE_LIMIT, lessonCommentReportLog)) return res.status(429).json({ error: "طلبات كثيرة جدًا، حاول لاحقًا" });
+        if (!isValidUUID(commentId)) return res.status(400).json({ error: "معرف التعليق غير صالح" });
+        if (!reason || typeof reason !== "string" || !reason.trim() || reason.trim().length > 500) {
+            return res.status(400).json({ error: "سبب البلاغ مطلوب" });
+        }
+        const { data: comment } = await supabase.from("lesson_comments").select("id").eq("id", commentId).maybeSingle();
+        if (!comment) return res.status(404).json({ error: "التعليق غير موجود" });
+
+        let profileId = null;
+        try {
+            profileId = requireUserProfile(req).profileId;
+        } catch (_) {
+            /* anonymous reports allowed */
+        }
+
+        const { error } = await supabase.from("lesson_comment_reports").insert({ comment_id: commentId, user_profile_id: profileId, reason: reason.trim() });
+        if (error) return res.status(500).json({ error: "تعذر إرسال البلاغ." });
+        return res.status(201).json({ success: true });
+    }
+
+    // 6. Resolve/dismiss a comment — top-level or reply, same queue (admin only).
     if (action === "resolve-lesson-comment") {
-        try { requireAdmin(req); } catch (err) { if (handleAuthError(err, res)) return; return res.status(401).json({ error: "غير مصرح" }); }
+        try {
+            requireAdmin(req);
+        } catch (err) {
+            if (handleAuthError(err, res)) return;
+            return res.status(401).json({ error: "غير مصرح" });
+        }
         if (!isValidUUID(commentId) || !["resolved", "dismissed"].includes(status)) return res.status(400).json({ error: "طلب غير صالح" });
         const { error } = await supabase.from("lesson_comments").update({ status, resolved_at: new Date().toISOString() }).eq("id", commentId);
         if (error) return res.status(500).json({ error: "تعذر تحديث السؤال." });
         return res.status(200).json({ success: true });
     }
+
     return res.status(400).json({ error: "إجراء غير صالح" });
 }
 
@@ -462,7 +881,15 @@ export default async function handler(req, res) {
     }
     if (req.method === "DELETE") return handleDeleteQuiz(req, res);
     if (req.method === "POST") {
-        return req.body?.action === "submit-lesson-comment" || req.body?.action === "resolve-lesson-comment"
+        const lessonCommentActions = new Set([
+            "submit-lesson-comment",
+            "react-lesson-comment",
+            "edit-lesson-comment",
+            "delete-lesson-comment",
+            "report-lesson-comment",
+            "resolve-lesson-comment",
+        ]);
+        return lessonCommentActions.has(req.body?.action)
             ? handleLessonComments(req, res)
             : handlePostReports(req, res);
     }

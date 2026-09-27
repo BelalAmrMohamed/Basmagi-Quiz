@@ -1,3 +1,7 @@
+// =============================================================================
+// public/src/features/control/lesson-comments-view.js
+// =============================================================================
+
 import { getToken, isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { escapeHtml } from "../home/escape-html.js";
 
@@ -13,7 +17,7 @@ async function load() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     const comments = data.comments || [];
-    root.innerHTML = comments.length ? comments.map((comment) => `<article class="lesson-comment"><strong>${escapeHtml(comment.lessons?.title || "درس")}</strong><time>${new Date(comment.created_at).toLocaleString("ar-EG")}</time><p>${escapeHtml(comment.body)}</p>${comment.status === "pending" ? `<button data-id="${comment.id}" data-action="resolved">تم الحل</button><button data-id="${comment.id}" data-action="dismissed">تجاهل</button>` : `<span>${comment.status === "resolved" ? "تم الحل" : "تم التجاهل"}</span>`}</article>`).join("") : "لا توجد أسئلة في هذه الفئة.";
+    root.innerHTML = comments.length ? comments.map((comment) => `<article class="lesson-comment${comment.is_reply ? " lesson-comment--reply" : ""}"><strong>${escapeHtml(comment.lessons?.title || "درس")}</strong>${comment.is_reply ? `<span class="lesson-comment__reply-badge">رد</span>` : ""}<time>${new Date(comment.created_at).toLocaleString("ar-EG")}</time>${comment.is_reply && comment.parent_snippet ? `<p class="lesson-comment__parent-snippet">ردًا على: «${escapeHtml(comment.parent_snippet)}»</p>` : ""}<p>${escapeHtml(comment.body)}</p>${comment.status === "pending" ? `<button data-id="${comment.id}" data-action="resolved">تم الحل</button><button data-id="${comment.id}" data-action="dismissed">تجاهل</button>` : `<span>${comment.status === "resolved" ? "تم الحل" : "تم التجاهل"}</span>`}</article>`).join("") : "لا توجد أسئلة في هذه الفئة.";
   } catch (error) { root.textContent = error.message || "تعذر التحميل."; }
 }
 root.addEventListener("click", async (event) => {

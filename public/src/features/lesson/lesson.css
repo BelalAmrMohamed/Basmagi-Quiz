@@ -625,6 +625,269 @@
   background: var(--color-surface, transparent);
 }
 
+/* ── Phase 4: مجتمع الدرس ─────────────────────────────────────────────────── */
+
+.lesson-comments__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.lesson-comments__sort {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+
+.lesson-comments__sort-btn {
+  padding: .35rem .8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: .85rem;
+  cursor: pointer;
+  transition: background var(--lesson-transition, .15s ease), color var(--lesson-transition, .15s ease), border-color var(--lesson-transition, .15s ease);
+}
+
+.lesson-comments__sort-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.lesson-comments__sort-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.lesson-comments__sort-btn.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.lesson-comments__list {
+  display: grid;
+  gap: .75rem;
+  margin: 1rem 0;
+}
+
+.lesson-comments__skeleton {
+  height: 4.5rem;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--color-border) 25%, color-mix(in srgb, var(--color-border) 60%, transparent) 37%, var(--color-border) 63%);
+  background-size: 400% 100%;
+  animation: lesson-comment-shimmer 1.4s ease infinite;
+}
+
+@keyframes lesson-comment-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+.lesson-comments__empty,
+.lesson-comments__error,
+.lesson-comments__pending-note {
+  color: var(--color-text-secondary);
+  padding: .5rem 0;
+}
+
+.lesson-comments__error {
+  color: #c0392b;
+}
+
+.lesson-comments__more {
+  display: block;
+  margin: .5rem auto 0;
+  padding: .5rem 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-primary, inherit);
+  font: inherit;
+  cursor: pointer;
+}
+
+.lesson-comment {
+  scroll-margin-top: 5rem;
+  transition: box-shadow var(--lesson-transition, .2s ease);
+}
+
+.lesson-comment--highlighted {
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.lesson-comment__meta {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.lesson-comment__meta time {
+  color: var(--color-text-secondary);
+  font-size: .8rem;
+}
+
+.lesson-comment__body {
+  margin: .5rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.lesson-comment__tombstone {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.lesson-comment__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .9rem;
+  margin-top: .6rem;
+}
+
+.lesson-comment__react {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .25rem .6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: .82rem;
+  cursor: pointer;
+}
+
+.lesson-comment__react.is-active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.lesson-comment__react:focus-visible,
+.lesson-comment__link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.lesson-comment__link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: .82rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.lesson-comment__link--danger {
+  color: #c0392b;
+}
+
+.lesson-comment__replies {
+  display: grid;
+  gap: .6rem;
+  margin-top: .75rem;
+  padding-inline-start: 1.25rem;
+  border-inline-start: 2px solid var(--color-border);
+}
+
+.lesson-comment--reply {
+  padding: .75rem;
+}
+
+.lesson-comment__reply-slot:empty {
+  margin: 0;
+}
+
+.lesson-comments__form,
+.lesson-comment__edit-form {
+  display: grid;
+  gap: .5rem;
+  margin-top: .75rem;
+}
+
+.lesson-comments__form--reply {
+  padding-inline-start: 1.25rem;
+  border-inline-start: 2px solid var(--color-border);
+}
+
+.lesson-comments__form textarea,
+.lesson-comment__edit-form textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 4.5rem;
+  padding: .6rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.lesson-comments__form textarea:focus-visible,
+.lesson-comment__edit-form textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.lesson-comments__form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+}
+
+.lesson-comments__count {
+  color: var(--color-text-secondary);
+  font-size: .8rem;
+}
+
+.lesson-comments__form-row button,
+.lesson-comment__edit-form button {
+  padding: .5rem 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.lesson-comments__form-row button[data-action="cancel-reply"],
+.lesson-comment__edit-form button[data-action="cancel-edit"] {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.lesson-comment__reply-badge {
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: .72rem;
+}
+
+.lesson-comment__parent-snippet {
+  margin: .25rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: .85rem;
+  font-style: italic;
+}
+
 @media (max-width: 640px) {
   .lesson-view__header {
     border-radius: 14px;
