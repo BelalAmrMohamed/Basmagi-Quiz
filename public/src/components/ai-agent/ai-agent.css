@@ -1682,6 +1682,7 @@ body.sidebar-expanded .ai-agent-fab {
    the wider/taller chat-with-sidebar dimensions. */
 .ai-agent-settings-modal-card {
   height: min(560px, 80vh);
+  max-width: fit-content;
 }
 
 .ai-agent-settings-modal-card .ai-agent-panel {
@@ -2903,4 +2904,4 @@ body.sidebar-expanded .ai-agent-fab {
   text-align: center;
   font-size: 0.85rem;
   color: var(--color-text-secondary);
-}
+}
