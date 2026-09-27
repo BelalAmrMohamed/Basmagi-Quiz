@@ -1282,3 +1282,196 @@
     transition: none;
   }
 }
+
+/* ── Phase 5: text-selection AI popup ("اشرح ده / بسّطها") ────────────────
+   Fixed-position, JS-placed above (or, if clipped, below) the selection —
+   see lesson-selection-actions.js. Uses the same floating-control surface
+   treatment as .lesson-prefs__panel (solid surface + shadow, not glass, per
+   the plan's "glass only on floating controls" rule — this IS a floating
+   control). RTL-agnostic: it has no inline-direction-sensitive offsets of
+   its own, only top/left set from getBoundingClientRect(), which is
+   already writing-direction-independent. */
+.lesson-selection-popup {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface, var(--color-bg, #fff));
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.14));
+}
+
+.lesson-selection-popup__btn {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: var(--color-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.lesson-selection-popup__btn:hover {
+  background: var(--color-primary-hover, var(--color-primary));
+}
+
+.lesson-selection-popup__btn:focus-visible {
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-selection-popup__btn {
+    transition: none;
+  }
+}
+
+/* ── Phase 5: per-lesson progress summary (in the lesson info modal) ────── */
+
+.lesson-progress-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.lesson-progress-summary__bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-background-secondary, var(--color-border));
+  overflow: hidden;
+}
+
+.lesson-progress-summary__bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-primary);
+  transition: width 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-progress-summary__bar-fill {
+    transition: none;
+  }
+}
+
+.lesson-progress-summary__headline {
+  margin: 0;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.lesson-progress-summary__done {
+  font-weight: 600;
+  color: var(--color-success, #22c55e);
+}
+
+.lesson-progress-summary__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.lesson-progress-summary__resume {
+  align-self: flex-start;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lesson-progress-summary__resume:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light, rgba(99, 102, 241, 0.08));
+}
+
+.lesson-progress-summary__resume:focus-visible {
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: 2px;
+}
+
+/* ── Phase 5: AI study actions (in the lesson info modal) ────────────────
+   Shell (.quiz-info-section etc.) comes from the shared quiz-info-modal.css,
+   already loaded globally — only the button wrap/buttons themselves are
+   new. Pill style, matching .quiz-metric-pill's rounded/compact language
+   rather than the block-level .lesson-question__check-btn treatment, since
+   several of these sit side by side. */
+
+.lesson-info-modal__ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.lesson-info-modal__ai-action {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.lesson-info-modal__ai-action:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: var(--color-primary-light, rgba(99, 102, 241, 0.06));
+}
+
+.lesson-info-modal__ai-action:focus-visible {
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-info-modal__ai-action {
+    transition: none;
+  }
+}
+
+/* ── Phase 5: "explain my wrong answer" trigger (embedded question feedback) */
+
+.lesson-question__explain-wrong-btn {
+  margin-top: 0.6rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.lesson-question__explain-wrong-btn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light, rgba(99, 102, 241, 0.08));
+}
+
+.lesson-question__explain-wrong-btn:focus-visible {
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-question__explain-wrong-btn {
+    transition: none;
+  }
+}

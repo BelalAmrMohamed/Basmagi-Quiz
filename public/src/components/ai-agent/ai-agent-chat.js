@@ -62,6 +62,19 @@ function fileToBase64(file) {
 }
 
 /**
+ * Decoded byte length of a base64 string, without actually decoding it —
+ * mirrors api/ai-agent/chat.js's own base64ByteLength() so the client can
+ * enforce the same combined-attachment-size budget locally (fast UX
+ * feedback) that the server enforces authoritatively. Keep both in sync.
+ * @param {string} base64
+ * @returns {number}
+ */
+function base64ByteLength(base64) {
+  const padding = (base64.match(/=+$/) || [""])[0].length;
+  return Math.floor((base64.length * 3) / 4) - padding;
+}
+
+/**
  * @param {object} options
  * @param {string|(() => string)} [options.contextPrompt] - optional context
  *   text prepended as the first outgoing user-role message (e.g. the
@@ -151,17 +164,20 @@ export function createChatPanel(options = {}) {
   let conversationId = crypto.randomUUID();
   let conversationCreatedAt = Date.now();
 
-  const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024; // keep in sync with api/ai-agent/chat.js
+  const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024; // per-file ceiling; keep in sync with api/ai-agent/chat.js
+  const MAX_TOTAL_FILE_ATTACHMENT_BYTES = 3 * 1024 * 1024; // combined ceiling across all FILE attachments on one message; keep in sync with api/ai-agent/chat.js's MAX_TOTAL_ATTACHMENT_BYTES
   const ACCEPTED_ATTACHMENT_TYPES =
     "image/jpeg,image/png,image/gif,image/webp,application/pdf,.docx," +
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-  // PHASE 3/2a: the backend (api/ai-agent/chat.js's MAX_ATTACHMENTS_PER_MESSAGE)
-  // still enforces one FILE per message — this cap is client-side UX only
-  // (how many tiles the row will hold), covering a mix of a file + any
-  // number of platform-item attachments (quiz/course/folder references,
+  // v2: the backend (api/ai-agent/chat.js's MAX_ATTACHMENTS_PER_MESSAGE) now
+  // allows up to 10 files per message, gated by a COMBINED size budget
+  // rather than an equal per-file split — one attachment can be 4MB and
+  // another 50KB, as long as the total (MAX_TOTAL_FILE_ATTACHMENT_BYTES)
+  // fits. This same count cap covers a mix of FILE attachments (real
+  // uploads) and PLATFORM-ITEM attachments (quiz/course/folder references,
   // which cost the backend a text-context expansion, not a binary upload,
-  // so they aren't bound by the same 1-file limit).
-  const MAX_PENDING_ATTACHMENTS = 6;
+  // so they aren't bound by the byte budget — only by this count).
+  const MAX_PENDING_ATTACHMENTS = 10;
 
   /**
    * PHASE 2a attachment-model refactor: was a single `pendingAttachment`
@@ -172,9 +188,12 @@ export function createChatPanel(options = {}) {
    * {kind:"quiz"|"course"|"folder", id, title, source:"platform"|"local"})
    * can coexist. Phase 2's entry points (openAIAgentWithAttachment, see
    * ai-agent-attach-launcher.js) push platform-item attachments in here;
-   * Phase 4's `/`/`@` menu will do the same for multi-attach. Only ever
-   * populated with at most one FILE at a time (backend limit, see above)
-   * but any number of platform-item entries.
+   * the `/`/`@` menu does the same for multi-attach. Can hold up to
+   * MAX_PENDING_ATTACHMENTS entries total (files + platform items
+   * combined) — FILE entries are additionally gated by
+   * MAX_TOTAL_FILE_ATTACHMENT_BYTES (see handlePickedFile), platform-item
+   * entries aren't subject to any byte budget since they never carry
+   * binary data.
    * @type {Array<{kind: "file", mimeType: string, base64: string, name: string} | {kind: "quiz"|"lesson"|"course"|"folder", id: string, title: string, source: "platform"|"local"}>}
    */
   let pendingAttachments = [];
@@ -770,26 +789,45 @@ export function createChatPanel(options = {}) {
   let moreBtn = null;
 
   /**
-   * Shared by both the "more" menu's "إرفاق ملف" item and drag-and-drop
-   * (see the panel-level drop listener below) — validates and reads a
-   * single File into a `kind:"file"` pendingAttachments entry. The backend
-   * still enforces one FILE per message (see MAX_ATTACHMENTS_PER_MESSAGE
-   * in api/ai-agent/chat.js), so a second file pick/drop replaces any
-   * existing FILE entry — but does NOT touch platform-item entries
-   * (quiz/course/folder, see Phase 2a), which aren't subject to that limit.
+   * Shared by the "more" menu's "إرفاق ملف" item, drag-and-drop, and
+   * clipboard paste — validates and reads a single File into a
+   * `kind:"file"` pendingAttachments entry, APPENDING it alongside any
+   * existing file/platform attachments rather than replacing them. The
+   * backend now allows up to MAX_PENDING_ATTACHMENTS files per message
+   * (see MAX_ATTACHMENTS_PER_MESSAGE in api/ai-agent/chat.js), gated by a
+   * COMBINED size budget rather than an equal per-file split — so this
+   * checks the running total of every FILE attachment's decoded size
+   * against MAX_TOTAL_FILE_ATTACHMENT_BYTES, not just this file's own size
+   * against MAX_ATTACHMENT_BYTES. A file that would push the total over
+   * budget is rejected with a message naming how much room is actually
+   * left, since "over budget" isn't the same failure as "this one file is
+   * too big" and the two need different, specific guidance.
    * @param {File} file
    */
   async function handlePickedFile(file) {
     if (!file) return;
 
+    if (pendingAttachments.filter((a) => a.kind === "file").length >= MAX_PENDING_ATTACHMENTS) {
+      appendError(`تم الوصول للحد الأقصى (${MAX_PENDING_ATTACHMENTS} مرفقات). أزل مرفقًا قبل إضافة آخر.`);
+      return;
+    }
+
     if (file.size > MAX_ATTACHMENT_BYTES) {
-      appendError("حجم الملف كبير جدًا (الحد الأقصى 4 ميجابايت).");
+      appendError("حجم الملف كبير جدًا (الحد الأقصى 4 ميجابايت لكل ملف).");
+      return;
+    }
+
+    const currentFileBytes = pendingAttachments
+      .filter((a) => a.kind === "file" && a.base64)
+      .reduce((sum, a) => sum + base64ByteLength(a.base64), 0);
+    if (currentFileBytes + file.size > MAX_TOTAL_FILE_ATTACHMENT_BYTES) {
+      const remainingMb = Math.max(0, (MAX_TOTAL_FILE_ATTACHMENT_BYTES - currentFileBytes) / (1024 * 1024));
+      appendError(`الحجم الإجمالي للملفات سيتجاوز الحد الأقصى (متبقٍ ~${remainingMb.toFixed(1)} ميجابايت من إجمالي ${(MAX_TOTAL_FILE_ATTACHMENT_BYTES / (1024 * 1024)).toFixed(1)} ميجابايت). أزل مرفقًا أو اختر ملفًا أصغر.`);
       return;
     }
 
     try {
       const base64 = await fileToBase64(file);
-      pendingAttachments = pendingAttachments.filter((a) => a.kind !== "file");
       pendingAttachments.push({
         kind: "file",
         mimeType: file.type || "application/octet-stream",
@@ -807,6 +845,7 @@ export function createChatPanel(options = {}) {
     fileInput = document.createElement("input");
     fileInput.type = "file";
     fileInput.accept = ACCEPTED_ATTACHMENT_TYPES;
+    fileInput.multiple = true;
     fileInput.hidden = true;
 
     // PHASE 3c: "more" menu — a generic {icon,label,onClick} popover so
@@ -886,9 +925,16 @@ export function createChatPanel(options = {}) {
     });
 
     fileInput.addEventListener("change", async () => {
-      const file = fileInput.files?.[0];
-      fileInput.value = ""; // allow re-picking the same file later
-      await handlePickedFile(file);
+      // Multiple files can be picked at once now (fileInput.multiple), but
+      // each still goes through handlePickedFile() one at a time, in
+      // order, so the count/total-size checks inside it see an accurate
+      // running total and can reject a later file in the batch without
+      // having already accepted an earlier one it shouldn't have.
+      const files = Array.from(fileInput.files || []);
+      fileInput.value = ""; // allow re-picking the same file(s) later
+      for (const file of files) {
+        await handlePickedFile(file);
+      }
     });
 
     // Drag-and-drop onto the whole panel — mirrors the drag-active-class
@@ -925,12 +971,14 @@ export function createChatPanel(options = {}) {
       if (!isFileDrag(e)) return;
       e.preventDefault();
       e.stopPropagation();
-      // Still one FILE at a time (backend limit — see handlePickedFile's
-      // own comment) — if multiple files are dropped, only the first is
-      // used, same as the file-input which has no `multiple` attribute.
-      const file = e.dataTransfer?.files?.[0];
-      if (!file) return;
-      await handlePickedFile(file);
+      // Multiple dropped files are all attempted, in order, through the
+      // same one-at-a-time handlePickedFile() the file-input change
+      // handler uses — see that handler's comment on why order matters
+      // for the running-total check.
+      const files = Array.from(e.dataTransfer?.files || []);
+      for (const file of files) {
+        await handlePickedFile(file);
+      }
     });
   }
 

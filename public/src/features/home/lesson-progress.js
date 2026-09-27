@@ -18,9 +18,18 @@ function collectLessons(category, collected = []) {
   return collected;
 }
 
-/** A lesson is complete once every authored section has been visited. */
+/**
+ * A lesson is complete once every ALWAYS-VISIBLE section has been visited.
+ * Adaptive `defaultHidden` sections are excluded (see getRequiredSectionIds in
+ * lesson-schema.js). Falls back to the full `sectionIds` list for catalog
+ * entries cached before `requiredSectionIds` existed.
+ */
 export function isLessonComplete(lesson) {
-  const sectionIds = Array.isArray(lesson?.sectionIds) ? lesson.sectionIds : [];
+  const sectionIds = Array.isArray(lesson?.requiredSectionIds)
+    ? lesson.requiredSectionIds
+    : Array.isArray(lesson?.sectionIds)
+      ? lesson.sectionIds
+      : [];
   if (!lesson?.id || sectionIds.length === 0) return false;
   const visited = new Set(getLessonProgress(lesson.id).visitedSections);
   return sectionIds.every((id) => visited.has(id));

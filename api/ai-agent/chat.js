@@ -96,8 +96,20 @@ import { createClient } from "@supabase/supabase-js";
 // Gemini's own ~20MB inline-file limit, so *that* is the real binding
 // constraint — enforce a conservative cap here so oversized uploads fail
 // with a clear message instead of an opaque 413 from the platform.
-const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024; // 4MB, base64-decoded size
-const MAX_ATTACHMENTS_PER_MESSAGE = 1; // v1: one file at a time, see plan
+//
+// MAX_ATTACHMENT_BYTES is a per-file ceiling (still needed so one runaway
+// file can't dominate the budget on its own), but the real gate for
+// "how many files can ride in one message" is MAX_TOTAL_ATTACHMENT_BYTES,
+// checked against the SUM of every attachment's decoded size — files don't
+// each get an equal slice of the budget, one attachment can be 4MB and
+// another can be 50KB, as long as the total fits. Budget math: base64
+// inflates decoded bytes by ~4/3 on the wire, and the JSON envelope
+// (message text, conversation history, system prompt) needs its own room
+// under the 4.5MB body cap, so the total decoded-attachment budget is set
+// well below what 4.5MB / (4/3) alone would suggest.
+const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024; // per-file ceiling, base64-decoded size
+const MAX_TOTAL_ATTACHMENT_BYTES = 3 * 1024 * 1024; // combined ceiling across all attachments on one message, base64-decoded
+const MAX_ATTACHMENTS_PER_MESSAGE = 10; // v2: multiple files, gated by MAX_TOTAL_ATTACHMENT_BYTES above, not an equal per-file split
 
 // Gemini and Claude both take these natively (see _providerClients.js);
 // anything else goes through extractAttachmentText() below instead.
@@ -161,7 +173,24 @@ async function processAttachments(messages) {
     if (message.attachments.length > MAX_ATTACHMENTS_PER_MESSAGE) {
       const err = new Error("Too many attachments on one message");
       err.userFacing = true;
-      err.userMessage = "يمكن إرفاق ملف واحد فقط في كل رسالة حاليًا.";
+      err.userMessage = `يمكن إرفاق ${MAX_ATTACHMENTS_PER_MESSAGE} ملفات كحد أقصى في كل رسالة.`;
+      throw err;
+    }
+
+    // Sum first, across every attachment on this message, before doing any
+    // per-file work below — a message that's already over budget should
+    // fail with one clear "too much total" error rather than an unrelated
+    // "this specific file is too big" error for whichever file happens to
+    // be last in the array.
+    let totalBytes = 0;
+    for (const att of message.attachments) {
+      if (!att?.base64) continue;
+      totalBytes += base64ByteLength(att.base64);
+    }
+    if (totalBytes > MAX_TOTAL_ATTACHMENT_BYTES) {
+      const err = new Error(`Total attachment size too large: ${totalBytes} bytes`);
+      err.userFacing = true;
+      err.userMessage = `الحجم الإجمالي للملفات المرفقة كبير جدًا (الحد الأقصى ${(MAX_TOTAL_ATTACHMENT_BYTES / (1024 * 1024)).toFixed(1)} ميجابايت لكل الملفات معًا).`;
       throw err;
     }
 
@@ -173,7 +202,7 @@ async function processAttachments(messages) {
       if (byteLength > MAX_ATTACHMENT_BYTES) {
         const err = new Error(`Attachment too large: ${byteLength} bytes`);
         err.userFacing = true;
-        err.userMessage = "حجم الملف كبير جدًا (الحد الأقصى 4 ميجابايت).";
+        err.userMessage = "حجم أحد الملفات كبير جدًا (الحد الأقصى 4 ميجابايت لكل ملف).";
         throw err;
       }
 
