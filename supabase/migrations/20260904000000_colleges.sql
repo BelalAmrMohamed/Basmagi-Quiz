@@ -24,10 +24,8 @@ CREATE TABLE public.colleges (
     REFERENCES public.admin_users (id) ON DELETE SET NULL,
   CONSTRAINT colleges_unique_name UNIQUE (education_type, normalized_name)
 );
-
 CREATE INDEX colleges_active_idx
   ON public.colleges (education_type, is_active, name);
-
 -- Normalize the legacy values without changing their displayed spelling.
 DO $$
 BEGIN
@@ -42,7 +40,6 @@ BEGIN
   END IF;
 END;
 $$;
-
 INSERT INTO public.colleges (education_type, name, normalized_name, year_count, terms)
 SELECT
   'University',
@@ -60,9 +57,7 @@ FROM (
   GROUP BY college
 ) AS legacy
 ON CONFLICT (education_type, normalized_name) DO NOTHING;
-
 ALTER TABLE public.courses ADD COLUMN college_id uuid NULL;
-
 UPDATE public.courses AS course
 SET college_id = college.id
 FROM public.colleges AS college
@@ -70,22 +65,17 @@ WHERE course.education_type = 'University'
   AND course.college IS NOT NULL
   AND college.education_type = 'University'
   AND college.normalized_name = lower(regexp_replace(trim(course.college), '\s+', ' ', 'g'));
-
 ALTER TABLE public.courses
   ADD CONSTRAINT courses_college_id_fkey FOREIGN KEY (college_id)
   REFERENCES public.colleges (id) ON DELETE RESTRICT;
-
 CREATE INDEX courses_college_id_idx ON public.courses (college_id);
-
 -- Keep the old uniqueness constraint until all readers have moved to college_id.
 -- This new constraint prevents two canonical colleges from sharing a slot.
 ALTER TABLE public.courses
   ADD CONSTRAINT courses_canonical_unique_slot
   UNIQUE (education_type, college_id, year, term, name);
-
 COMMENT ON TABLE public.colleges IS
   'Admin-managed education metadata. University rows represent colleges; the '
   'terms array allows programs with or without a summer term.';
-
 COMMENT ON COLUMN public.courses.college_id IS
   'Canonical college reference. The legacy college text remains for compatibility.';

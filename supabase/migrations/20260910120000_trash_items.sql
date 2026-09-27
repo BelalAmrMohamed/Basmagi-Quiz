@@ -57,12 +57,10 @@ CREATE TABLE public.trash_items (
   -- where a restore should land (falling back to root if the original
   -- parent no longer exists, including because it too was purged).
 );
-
 CREATE INDEX trash_items_batch_id_idx ON public.trash_items (batch_id);
 CREATE INDEX trash_items_expires_at_idx ON public.trash_items (expires_at);
 CREATE INDEX trash_items_education_type_idx ON public.trash_items (education_type);
 CREATE INDEX trash_items_item_type_idx ON public.trash_items (item_type);
-
 COMMENT ON TABLE public.trash_items IS
   'Soft-deleted quizzes/folders/courses for the shared (Supabase-backed) '
   'area. One row per item; cascaded deletes (course/folder) share a '
@@ -105,19 +103,16 @@ COMMENT ON COLUMN public.trash_items.expires_at IS
   'Enforced by a lazy sweep on access (see admin_settings comment) rather '
   'than a database-level scheduled job, since this project has no cron '
   'runner today.';
-
 -- Trash is never publicly readable — mirrors admin_users' "Deny all for
 -- public" policy. All access goes through api/admin.js using the
 -- service-role client, gated by requireAdmin() same as every other admin
 -- action.
 ALTER TABLE public.trash_items ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Deny all for public on trash_items" ON public.trash_items;
 CREATE POLICY "Deny all for public on trash_items"
   ON public.trash_items FOR ALL
   TO public
   USING (false);
-
 -- =============================================================================
 -- admin_settings — small singleton table for admin-configurable knobs.
 -- Currently holds only trash_retention_days; deliberately a key/value-ish
@@ -136,7 +131,6 @@ CREATE TABLE public.admin_settings (
   CONSTRAINT admin_settings_updated_by_fkey FOREIGN KEY (updated_by)
     REFERENCES public.admin_users (id) ON DELETE SET NULL
 );
-
 COMMENT ON TABLE public.admin_settings IS
   'Singleton row (id is always true) of admin-editable global settings. '
   'Currently just trash_retention_days. Read/written exclusively through '
@@ -145,12 +139,9 @@ COMMENT ON COLUMN public.admin_settings.trash_retention_days IS
   'Days a trash_items row survives before it is eligible for automatic '
   'purge. Applies to the shared (Supabase) trash only — the localStorage '
   '"/#my-quizzes" trash keeps its own, client-side retention setting.';
-
 INSERT INTO public.admin_settings (id) VALUES (true)
 ON CONFLICT (id) DO NOTHING;
-
 ALTER TABLE public.admin_settings ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Deny all for public on admin_settings" ON public.admin_settings;
 CREATE POLICY "Deny all for public on admin_settings"
   ON public.admin_settings FOR ALL

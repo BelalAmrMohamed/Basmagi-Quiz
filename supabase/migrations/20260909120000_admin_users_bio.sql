@@ -14,6 +14,5 @@
 -- JWT email, same as every other self-service profile field on this table.
 ALTER TABLE public.admin_users
   ADD COLUMN bio text;
-
 COMMENT ON COLUMN public.admin_users.bio IS
   'User-authored profile description/bio, shown on the profile page and public /@handle view. NULL = not set.';

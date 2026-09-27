@@ -18,7 +18,6 @@
 ALTER TABLE public.user_profiles
   ADD COLUMN ai_agent_usage_count integer NOT NULL DEFAULT 0,
   ADD COLUMN ai_agent_usage_date date NOT NULL DEFAULT (timezone('utc'::text, now()))::date;
-
 -- Atomically checks-and-increments a profile's daily counter, rolling it
 -- over to 0 first if the stored date isn't today (UTC). Done as a single
 -- RPC (rather than chat.js's usual read-then-write pattern, see

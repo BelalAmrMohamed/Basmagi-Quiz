@@ -24,10 +24,10 @@
 -- ── Author identity + replies + soft delete on the existing table ──────────
 
 ALTER TABLE public.lesson_comments
-  ADD COLUMN user_profile_id uuid REFERENCES public.user_profiles(id) ON DELETE SET NULL,
-  ADD COLUMN parent_id uuid REFERENCES public.lesson_comments(id) ON DELETE CASCADE,
-  ADD COLUMN edited_at timestamptz,
-  ADD COLUMN deleted_at timestamptz;
+  ADD COLUMN IF NOT EXISTS user_profile_id uuid REFERENCES public.user_profiles(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS parent_id uuid REFERENCES public.lesson_comments(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS edited_at timestamptz,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 
 -- Existing pre-Phase-4 rows have no author — leave user_profile_id NULL
 -- rather than backfilling a fake owner; they simply can't be edited/deleted

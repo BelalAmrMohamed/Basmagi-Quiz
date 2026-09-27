@@ -31,10 +31,8 @@ CREATE TABLE public.lessons (
   created_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
   updated_at timestamptz NOT NULL DEFAULT timezone('utc', now())
 );
-
 CREATE INDEX lessons_course_id_idx ON public.lessons (course_id);
 CREATE INDEX lessons_folder_id_idx ON public.lessons (folder_id);
-
 -- Same cross-column consistency requirement as quizzes/folders: if a lesson
 -- has a folder_id, that folder's course_id must equal the lesson's own
 -- course_id (see quizzes_enforce_course_consistency in
@@ -59,11 +57,9 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER lessons_course_consistency_trigger
   BEFORE INSERT OR UPDATE ON public.lessons
   FOR EACH ROW EXECUTE FUNCTION public.lessons_enforce_course_consistency();
-
 -- No updated_at trigger: courses/folders don't use one either (see
 -- 20260901195646_courses_and_folders.sql) — updated_at is set explicitly by
 -- writers on update, same convention, not a moddatetime-style auto-trigger.
@@ -84,10 +80,8 @@ COMMENT ON COLUMN public.lessons.slug IS
 COMMENT ON COLUMN public.lessons.content IS
   'jsonb sections/blocks. Phase 1 only renders a single plain markdown '
   'body from this; Phase 2 defines the full sections/blocks shape here.';
-
 -- ─── RLS ─────────────────────────────────────────────────────────────────────
 ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "public_read" ON public.lessons;
 CREATE POLICY "public_read"
   ON public.lessons FOR SELECT

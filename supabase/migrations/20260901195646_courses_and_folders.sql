@@ -71,14 +71,11 @@ CREATE TABLE public.courses (
   -- behavior where Featured courses had no college/year/term segments at all.
   CONSTRAINT courses_unique_slot UNIQUE (education_type, college, year, term, name)
 );
-
 CREATE INDEX courses_education_type_idx ON public.courses (education_type);
-
 COMMENT ON TABLE public.courses IS
   'Top-level quiz groupings (formerly the implicit "subject" path segment). '
   'No parent column by design — courses cannot be nested, matching the rule '
   'that courses only exist at the root.';
-
 -- ─── folders ────────────────────────────────────────────────────────────────
 -- Nested under a course, optionally under another folder. Unlimited depth
 -- via the self-referencing parent_folder_id.
@@ -103,17 +100,14 @@ CREATE TABLE public.folders (
   -- client already applies for the local userQuizzes folder tree.
   CONSTRAINT folders_unique_name_per_parent UNIQUE (course_id, parent_folder_id, name)
 );
-
 CREATE INDEX folders_course_id_idx ON public.folders (course_id);
 CREATE INDEX folders_parent_folder_id_idx ON public.folders (parent_folder_id);
-
 COMMENT ON TABLE public.folders IS
   'Nested folders under a course. parent_folder_id NULL = direct child of '
   'the course; non-NULL = nested under another folder, to arbitrary depth. '
   'A folder always belongs to exactly one course via course_id, even when '
   'deeply nested, so "everything under this course" never requires walking '
   'the folder tree.';
-
 -- A folder's course_id must actually match its parent folder's course_id
 -- (a folder cannot silently "jump" to a different course than its parent
 -- via a mismatched course_id) — enforced with a trigger since Postgres
@@ -137,11 +131,9 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER folders_course_consistency_trigger
   BEFORE INSERT OR UPDATE ON public.folders
   FOR EACH ROW EXECUTE FUNCTION public.folders_enforce_course_consistency();
-
 -- ─── quizzes: relational placement columns ─────────────────────────────────
 -- Nullable and additive — existing rows are unaffected (they simply have
 -- NULL here and keep resolving their location from the legacy `path`
@@ -149,10 +141,8 @@ CREATE TRIGGER folders_course_consistency_trigger
 ALTER TABLE public.quizzes
   ADD COLUMN course_id uuid NULL REFERENCES public.courses (id) ON DELETE SET NULL,
   ADD COLUMN folder_id uuid NULL REFERENCES public.folders (id) ON DELETE SET NULL;
-
 CREATE INDEX quizzes_course_id_idx ON public.quizzes (course_id);
 CREATE INDEX quizzes_folder_id_idx ON public.quizzes (folder_id);
-
 -- Same cross-column consistency requirement as folders: if a quiz has a
 -- folder_id, that folder's course_id must equal the quiz's own course_id.
 -- A quiz with folder_id set but course_id NULL, or a mismatched pair, would
@@ -177,11 +167,9 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER quizzes_course_consistency_trigger
   BEFORE INSERT OR UPDATE ON public.quizzes
   FOR EACH ROW EXECUTE FUNCTION public.quizzes_enforce_course_consistency();
-
 COMMENT ON COLUMN public.quizzes.course_id IS
   'Relational replacement for the old subject/category path segment. NULL '
   'on rows uploaded before this migration (or not yet backfilled) — those '

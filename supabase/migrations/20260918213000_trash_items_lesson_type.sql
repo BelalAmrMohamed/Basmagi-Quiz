@@ -16,10 +16,8 @@
 
 ALTER TABLE public.trash_items
   DROP CONSTRAINT trash_items_item_type_check;
-
 ALTER TABLE public.trash_items
   ADD CONSTRAINT trash_items_item_type_check
   CHECK (item_type IN ('quiz', 'folder', 'course', 'lesson'));
-
 COMMENT ON COLUMN public.trash_items.item_type IS
   'One of: quiz, folder, course, lesson. Determines how `snapshot` is shaped and how restore/purge handle the row (see api/admin.js''s handleTrashRestore and api/_trash.js).';

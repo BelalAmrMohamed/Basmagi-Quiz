@@ -256,25 +256,37 @@ function currentSectionId(normalized) {
   return normalized.sections?.[0]?.id || null;
 }
 
+/**
+ * Builds the lesson's AI context as a plain string for `contextPrompt` (see
+ * ai-agent-chat.js's doc comment on contextSummary: that option is a
+ * hardcoded {title, questionCount, types} shape for the home page's saved-
+ * quizzes list ONLY — a lesson's {title, sections} shape doesn't fit it and
+ * silently produced an empty summaryText, which is why the agent used to
+ * claim no lesson content was provided. contextPrompt is the correct
+ * channel for a differently-shaped, single page-wide blob of context).
+ */
 function lessonAgentContext(lesson, normalized) {
   const activeId = currentSectionId(normalized);
-  const sections = normalized.sections.map((section, index) => ({
-    title: section.title || `قسم ${index + 1}`,
-    // Read by the /create-quiz-section and /simplify-section directives
-    // above to scope themselves to just this section — sent on every turn
-    // (not just once) since contextSummary is re-invoked per message, so it
-    // always reflects wherever the reader has scrolled to by then.
-    isCurrentSection: section.id === activeId,
-    blocks: section.blocks.map((block) => ({
-      type: block.type,
-      body: block.body,
-      prompt: block.prompt,
-      options: block.options,
-      modelAnswer: block.modelAnswer,
-    })),
-  }));
-  return { title: lesson.title, sections };
+  const lines = [`عنوان الدرس: ${lesson.title}`, ""];
+  normalized.sections.forEach((section, index) => {
+    const isCurrent = section.id === activeId;
+    lines.push(`## قسم ${index + 1}: ${section.title || `قسم ${index + 1}`}${isCurrent ? " (القسم الحالي الذي يقرأه المستخدم الآن)" : ""}`);
+    section.blocks.forEach((block) => {
+      if (block.type === "markdown" && block.body) {
+        lines.push(block.body);
+      } else if (block.prompt) {
+        lines.push(`سؤال: ${block.prompt}`);
+        if (Array.isArray(block.options) && block.options.length) {
+          lines.push(`الخيارات: ${block.options.join(" / ")}`);
+        }
+        if (block.modelAnswer) lines.push(`الإجابة النموذجية: ${block.modelAnswer}`);
+      }
+    });
+    lines.push("");
+  });
+  return lines.join("\n");
 }
+
 
 let rerenderLessonQuiz = null;
 function handleLessonAgentToolCall(toolCall) {
@@ -301,7 +313,7 @@ function lessonAgentOptions(lesson, normalized) {
     placeholder: "اسأل الباشــمبصمج عن هذا الدرس",
     defaultSystemPrompt: LESSON_PAGE_SYSTEM_PROMPT,
     suggestedPrompts: LESSON_PAGE_SUGGESTED_PROMPTS,
-    contextSummary: () => lessonAgentContext(lesson, normalized),
+    contextPrompt: () => lessonAgentContext(lesson, normalized),
     enableTools: true,
     enableFileUpload: true,
     toolNames: ["create_quiz"],

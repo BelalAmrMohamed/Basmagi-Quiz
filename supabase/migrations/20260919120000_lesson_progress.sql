@@ -30,10 +30,8 @@ CREATE TABLE public.lesson_progress (
   completed_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
   PRIMARY KEY (profile_id, lesson_id)
 );
-
 CREATE INDEX lesson_progress_profile_id_idx ON public.lesson_progress (profile_id);
 CREATE INDEX lesson_progress_lesson_id_idx ON public.lesson_progress (lesson_id);
-
 COMMENT ON TABLE public.lesson_progress IS
   'Cross-device completion sync for lessons. One row per (profile, lesson) '
   'once every section has been visited on any device. Never wired into '
@@ -41,7 +39,6 @@ COMMENT ON TABLE public.lesson_progress IS
 COMMENT ON COLUMN public.lesson_progress.profile_id IS
   'Same user_profiles.id used for quiz progress sync (device-identity JWT) '
   '— one cross-device identity for the whole app, not a lesson-specific one.';
-
 -- ─── RLS ─────────────────────────────────────────────────────────────────────
 -- No public policies: this table is only ever read/written by the
 -- lesson-progress Edge Function using the service role key, exactly like

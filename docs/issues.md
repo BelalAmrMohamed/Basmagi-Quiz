@@ -7,6 +7,48 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Lesson Page
+Issues:
+* `لون التظليل` isn't doing anything at all, if it's useless, remove it.
+* `وضع التركيز` isn't synced between the 2 `lesson-prefs__panel`.
+* `.lesson-section` isn't centered in the page. See the second screenshot.
+* Issue when I tried to run the `supabase db push`: 
+
+```bash
+PS D:\Code projects\Websites\منصة إمتحانات بصمجي> supabase db push
+Initialising login role...
+Connecting to remote database...
+Remote migration versions not found in local migrations directory.
+
+Make sure your local git repo is up-to-date. If the error persists, try repairing the migration history table:
+supabase migration repair --status reverted 20260927060207
+
+And update local migrations to match remote database:
+supabase db pull
+
+PS D:\Code projects\Websites\منصة إمتحانات بصمجي> 
+```
+
+* The read-aloud feature for the lesson is broken; it doesn't do anything.
+* Messed up layout at the bottom of `.quiz-info-dialog-inner`, the `.lesson-prefs__panel` doesn't blend in. See ![screenshot](image-1.png).
+* Each question in the lesson has `lesson-question__reset`. Remove it and make one lesson-wide confirmation instead of per question. 
+* `.lesson-tts__btn--stop` always appears even when the dictation (read-aloud) feature is off.
+* The interactive quiz has many UI issues. See ![screenshot 5](image_5.png).
+* When the `.lesson-prefs__panel` is open, clicking out of it doesn't close it. And opening the `.lesson-bookmarks__panel` also doesn't close it.
+
+Console log when testing:
+
+```
+script.js:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+content.js:1 Uncaught (in promise) Error: Timeout exceeded
+    at content.js:1:199968
+esdfdzhtavraczrhxnmp.supabase.co/rest/v1/quizzes?select=data&id=in.%28AHMTTSRO%29:1  Failed to load resource: the server responded with a status of 400 ()
+lesson-view.js:128 [lesson-view] quizRef lookup failed: invalid input syntax for type uuid: "AHMTTSRO"
+fetchQuizRefs @ lesson-view.js:128
+user_lesson_1789827664545?type=user:1  Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+service-worker.js:161 [SW] Service worker script loaded (offline-page only)
+```
+
 ### AI Agent
 Fix Dictation: The dictation feature is so messed up, it doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser.
 
@@ -104,7 +146,8 @@ Think about this suggestion, a new way to download quizzes.
 - Add English translation support.
 
 ### Offline Page
-- Should match the theme mode stored in localStorage.
+Improve
+- It's colors Should match the theme of the platform (see themes.css and theme-controller.js), but it shouldn't import these files, it should be independent. It should also default to the default theme of the platform.
 
 ### `api\og.js`
-- Special courses that get the (مادة مميزة) badge, since there is no info table displayed, the middle of the image becomes emtpy, I need to fill it with something, or make the content bigger.
+- Special courses that get the (مادة مميزة) badge, since there is no info table displayed, the middle of the image becomes emtpy, I need to fill it with something, or ideas to improve it when it has the  (مادة مميزة) badge. 

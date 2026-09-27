@@ -1069,9 +1069,9 @@
 
 .lesson-bookmarks__toggle,
 .lesson-bookmark-btn {
-  border: 1px solid var(--lesson-border, var(--border-color, #d7dce3));
-  background: var(--lesson-surface, var(--card-bg, #fff));
-  color: inherit;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
   border-radius: .65rem;
   padding: .55rem .75rem;
   cursor: pointer;
@@ -1083,8 +1083,8 @@
 }
 
 .lesson-bookmark-btn.is-active {
-  background: color-mix(in srgb, var(--accent-color, #3b82f6) 14%, transparent);
-  border-color: var(--accent-color, #3b82f6);
+  background: var(--color-primary-light, rgba(99, 102, 241, 0.14));
+  border-color: var(--color-primary);
 }
 
 .lesson-bookmarks__panel {
@@ -1096,10 +1096,11 @@
   max-height: 50vh;
   overflow: auto;
   padding: .75rem;
-  border: 1px solid var(--lesson-border, #d7dce3);
+  border: 1px solid var(--color-border);
   border-radius: .85rem;
-  background: var(--lesson-surface, var(--card-bg, #fff));
-  box-shadow: 0 12px 32px #0002;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
 }
 
 .lesson-bookmarks__item {
@@ -1108,7 +1109,7 @@
   gap: .5rem;
   justify-content: space-between;
   padding: .45rem 0;
-  border-bottom: 1px solid var(--lesson-border, #d7dce3);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .lesson-bookmarks__item button {
@@ -1201,12 +1202,26 @@
 }
 
 .lesson-prefs__row select {
-  color: inherit;
-  background: transparent;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: .3rem .5rem;
   font: inherit;
+}
+
+/* Chromium (the OS-native <select> popup listbox, not the closed box) can
+   ignore an ancestor's color-scheme for its own background/text unless the
+   select/option elements themselves carry an explicit color declaration —
+   "color: inherit; background: transparent" above styles the closed box
+   correctly but leaves the opened popup rendered with the OS's light
+   default regardless of the active theme. Setting it directly here (also
+   covers .lesson-tts__speed-select, which had the same transparent-only
+   rule further below) fixes that without touching color-scheme itself. */
+.lesson-prefs__row select option,
+.lesson-tts__speed-select option {
+  color: var(--color-text-primary);
+  background: var(--color-surface);
 }
 
 /* ── Phase 3: TTS toolbar ─────────────────────────────────────────────────
@@ -1254,8 +1269,8 @@
 }
 
 .lesson-tts__speed-select {
-  color: inherit;
-  background: transparent;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 0.25rem 0.4rem;
