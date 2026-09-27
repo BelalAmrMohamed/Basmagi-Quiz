@@ -389,10 +389,33 @@ export async function renderLessonView() {
       renderResumeAction(visibleSections, progress.visitedSections) +
       renderPrefsPopover(getReaderPrefs(lesson.reader_prefs_default)) + renderLessonBookmarks(lesson.id) +
       `</header>` +
-      renderLessonToc(visibleSections, progress.visitedSections) +
-      `<div class="lesson-view__body">` +
-      visibleSections.map((section) => renderSection(section, ctx)).join("") +
-      `</div>` + renderLessonQuiz() + (isUserCreated ? "" : renderLessonComments()) + `</article>`;
+      // Dashboard layout: main content + a sticky-on-desktop ToC sidebar,
+      // sharing one grid so the sidebar can stick to the viewport while the
+      // content column scrolls. Below 760px lesson-toc.js's existing
+      // toggle/is-open mechanism turns the same sidebar into a collapsible
+      // drawer instead (see lesson.css's .lesson-view__layout rules) — no
+      // separate mobile markup needed, and equipLessonToc() below is
+      // unaffected since it queries `.lesson-toc` by class, not position.
+      (() => {
+        const tocHtml = renderLessonToc(visibleSections, progress.visitedSections);
+        const mainHtml =
+          `<div class="lesson-view__main">` +
+          `<div class="lesson-view__body">` +
+          visibleSections.map((section) => renderSection(section, ctx)).join("") +
+          `</div>` + renderLessonQuiz() + (isUserCreated ? "" : renderLessonComments()) +
+          `</div>`;
+        // No sidebar column at all when there's no ToC to show (short
+        // lessons) — an empty sticky <aside> would otherwise still claim
+        // the second grid track and waste space for no reason.
+        if (!tocHtml) return `<div class="lesson-view__layout lesson-view__layout--no-sidebar">${mainHtml}</div>`;
+        return (
+          `<div class="lesson-view__layout">` +
+          mainHtml +
+          `<aside class="lesson-view__sidebar">${tocHtml}</aside>` +
+          `</div>`
+        );
+      })() +
+      `</article>`;
 
     const lessonEl = container.querySelector(".lesson-view");
     lessonEl.querySelector(".lesson-view__info-btn")?.addEventListener("click", () => {

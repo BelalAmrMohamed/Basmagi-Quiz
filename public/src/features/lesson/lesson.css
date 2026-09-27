@@ -6,9 +6,7 @@
    ══════════════════════════════════════════════════════════════════════════════ */
 
 .lesson-view {
-  max-width: 820px;
   margin: 0 auto;
-  padding: 1.5rem 1rem 4rem;
 }
 
 .lesson-view--loading,
@@ -446,6 +444,19 @@
     display: block;
     margin-top: 0.6rem;
   }
+
+  /* Sidebar column collapses into normal document flow — the ToC itself
+     becomes the horizontal drawer toggle above, not a sticky rail. */
+  .lesson-view__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lesson-view__sidebar {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+    order: -1;
+  }
 }
 
 /* Modern lesson dashboard surfaces */
@@ -480,6 +491,38 @@
   margin: .5rem 0 0;
   color: var(--color-text-secondary);
   line-height: 1.7;
+}
+
+/* ── Phase 1: dashboard layout — main content + sticky ToC sidebar ───────────
+   Two columns on desktop (content, then a narrower sidebar column — RTL
+   flow means the sidebar renders on the visual left without any explicit
+   left/right rule, since this is a plain two-track grid). Below 760px this
+   collapses to one column and the sidebar's only child (.lesson-toc)
+   reverts to lesson-toc.js's existing floating-toggle/drawer behavior — see
+   that media query further down. */
+.lesson-view__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 260px);
+  align-items: start;
+  gap: clamp(1rem, 2.5vw, 1.75rem);
+}
+
+.lesson-view__layout--no-sidebar {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lesson-view__main {
+  min-width: 0;
+}
+
+.lesson-view__sidebar {
+  position: sticky;
+  /* Clears the same amount of space .lesson-section's scroll-margin-top
+     already reserves for a sticky header, so the sidebar and a
+     scrolled-to section land at consistent heights. */
+  top: 5rem;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
 }
 
 .lesson-view__body {
@@ -610,6 +653,117 @@
 
 .lesson-ai-quiz .is-incorrect {
   color: #c0392b;
+}
+
+/* ── Phase 2 follow-up: question nav, progress, close, per-option feedback ──
+   The rules above already cover the question card/options/text-input/button
+   shell from the first pass — these fill in the pieces added when
+   lesson-ai-quiz.js gained a question navigator and matched the real
+   create_quiz tool schema (see that file's header comment). */
+
+.lesson-ai-quiz__hint {
+  color: var(--color-text-secondary);
+  margin: .35rem 0 1rem;
+}
+
+.lesson-ai-quiz__close {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  line-height: 1;
+  font-size: 1.1rem;
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
+.lesson-ai-quiz__close:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-primary);
+}
+
+.lesson-ai-quiz__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin: .5rem 0;
+}
+
+.lesson-ai-quiz__nav-dot {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: .82rem;
+  cursor: pointer;
+}
+
+.lesson-ai-quiz__nav-dot.is-answered {
+  border-color: var(--color-primary);
+  color: var(--color-text-primary);
+}
+
+.lesson-ai-quiz__nav-dot.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.lesson-ai-quiz__progress {
+  color: var(--color-text-secondary);
+  font-size: .85rem;
+  margin: 0 0 .5rem;
+}
+
+.lesson-ai-quiz__option.is-correct-option {
+  border: 1px solid #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.lesson-ai-quiz__option.is-wrong-option {
+  border: 1px solid #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.lesson-ai-quiz__feedback {
+  margin-top: .75rem;
+  padding: .65rem .8rem;
+  border-radius: 10px;
+  background: var(--color-surface-hover, rgb(127 127 127 / .08));
+}
+
+.lesson-ai-quiz__feedback.is-correct {
+  color: #16803d;
+}
+
+.lesson-ai-quiz__feedback.is-incorrect {
+  color: #c0392b;
+}
+
+.lesson-ai-quiz__footer {
+  margin-top: 1rem;
+}
+
+.lesson-ai-quiz__steps {
+  display: flex;
+  gap: .5rem;
+}
+
+.lesson-ai-quiz__submit:disabled,
+.lesson-ai-quiz__step:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-ai-quiz__nav-dot {
+    transition: none;
+  }
 }
 
 .lesson-comments {
@@ -988,25 +1142,41 @@
 /* ── Phase 3: reading width / text size ───────────────────────────────────
    Set as CSS vars by applyReaderPrefs() in lesson-reader-prefs.js; default
    to Phase 1/2's fixed values so a lesson rendered before these vars exist
-   (e.g. mid-deploy) still looks correct. */
+   (e.g. mid-deploy) still looks correct.
+   Scoped to .lesson-view__main (the content column), NOT the whole
+   .lesson-view article: the reader's reading-width choice is a preference
+   about paragraph measure, not about how wide the header or the ToC
+   sidebar sit — constraining the whole dashboard here would fight Phase
+   1's layout every time the reader picked anything narrower than 1180px.
+   font-size still applies via .lesson-view so TTS/quiz/comments text below
+   the content column also honors the reader's text-size choice. */
 .lesson-view {
   --lesson-reading-width: 820px;
   --lesson-reading-text-size: 1rem;
-  max-width: var(--lesson-reading-width);
   font-size: var(--lesson-reading-text-size);
+}
+
+.lesson-view__main {
+  max-width: var(--lesson-reading-width);
 }
 
 /* ── Phase 3: focus mode ───────────────────────────────────────────────────
    Hides secondary nav/controls so the reader sees content + the essentials
    only (TTS toolbar, question controls, reset). Does not touch the reading
    width/text-size vars — those are independent reader choices. */
-.lesson-view--focus .lesson-toc,
+.lesson-view--focus .lesson-view__sidebar,
 .lesson-view--focus .lesson-view__info-btn,
 .lesson-view--focus .lesson-view__resume-btn,
 .lesson-view--focus .lesson-bookmarks,
 .lesson-view--focus .lesson-view__eyebrow,
 .lesson-view--focus .lesson-view__subtitle {
   display: none;
+}
+
+/* With the sidebar column gone, let the content column use the full grid
+   width instead of leaving an empty second track behind. */
+.lesson-view--focus .lesson-view__layout {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .lesson-view__resume-btn {
