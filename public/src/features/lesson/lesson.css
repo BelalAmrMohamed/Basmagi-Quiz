@@ -785,8 +785,26 @@
 }
 
 .lesson-bookmark-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
-  padding: .35rem .55rem;
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: .35rem;
+  line-height: 1;
+}
+
+/* The section bookmark button is intentionally smaller than the header
+   actions. Give its inline SVG an explicit viewport so it cannot collapse or
+   inherit an unexpected intrinsic size from another global rule. */
+.lesson-bookmark-btn .lesson-icon {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
 }
 
 .lesson-bookmark-btn.is-active {

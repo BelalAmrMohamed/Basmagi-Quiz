@@ -361,7 +361,14 @@ function startSection(root, section, toolbar) {
   // browsers are stricter about user activation than desktop browsers.
   const voice = prepareArabicVoice(toolbar);
   if (!session || !voice) return;
+
+  // The stop button is part of the active playback state, not of the
+  // browser's eventual `speaking` flag. Set the toolbar state before calling
+  // speakNext() so the control is visible on the very first click. Previously
+  // the first click started the session but left the stop button hidden; the
+  // second click happened to reveal it through the pause/resume path.
   setStatus(toolbar, "");
+  setToolbarSpeaking(toolbar);
   speakNext();
 }
 
