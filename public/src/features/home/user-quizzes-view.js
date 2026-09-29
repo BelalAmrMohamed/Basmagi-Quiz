@@ -607,7 +607,7 @@ export function renderUserQuizzesView() {
     createFolderBtn.onclick = (e) => {
       e.stopPropagation();
       openExamDropdownMenu(createFolderBtn, (menu, closeMenu) => {
-        // "إنشاء امتحان جديد" — opens the same modal previously reachable
+        // "امتحان جديد" — opens the same modal previously reachable
         // via the standalone .user-create-quiz-card in the quiz grid
         // (createInlineCreateQuizCard(), removed per docs/plans/
         // implementation-plan.md testing notes: it duplicated this menu
@@ -615,7 +615,7 @@ export function renderUserQuizzesView() {
         const quizOpt = document.createElement("button");
         quizOpt.type = "button";
         quizOpt.className = "exam-action-btn";
-        quizOpt.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg><span>إنشاء امتحان جديد</span>`;
+        quizOpt.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg><span>امتحان جديد</span>`;
         quizOpt.onclick = (e) => {
           e.stopPropagation();
           closeMenu();
@@ -770,7 +770,7 @@ export function renderUserQuizzesView() {
 
     // Prepend removed (docs/plans/implementation-plan.md testing notes):
     // the standalone create-quiz card used to be prepended here, but is
-    // now redundant with the "إنشاء امتحان جديد" entry in the
+    // now redundant with the "امتحان جديد" entry in the
     // create-folder-btn dropdown above and #userQuizContextMenu — both
     // call openInlineCreateQuizModal() directly, so no in-grid card is
     // needed to reach the same modal.

@@ -9,38 +9,31 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ### Lesson Page (`public\lesson.html`, `public\lesson-comments.html`, & `public\src\features\lesson\`)
 Issues:
-* The `لون التظليل` item isn't doing anything at all, if it's broken fix it, and if it's useless remove it.
-* The `وضع التركيز` isn't synced between the 2 `lesson-prefs__panel`s, the one in the main lesson page, and the other inside the info modal.
-* `.lesson-section` isn't centered in the page. See ![screenshot](image-3.png).
-* The read-aloud (dictation) feature in the lesson page is broken; it doesn't do anything.
-* Messed up layout at the bottom of `.quiz-info-dialog-inner`, the `.lesson-prefs__panel` doesn't blend in or isn't placed correctly. Make `.quiz-info-dialog-inner` it's own design of the preferences panel, instead of reusing `.lesson-prefs__panel`. See ![screenshot](image-1.png).
-* Each question in the lesson has `lesson-question__reset`. Remove it and make one lesson-wide questions reset with confirmation. 
-* `.lesson-tts__btn--stop` is always visible, even when the read-aloud (dictation) feature is off.
-* The interactive quiz has many UI issues. See ![screenshot 5](image_5.png).
-* Panels Behavio:
-  * Clicking outside of a panel (e.g., `.lesson-prefs__panel` or `.lesson-bookmarks__panel`) when it's open doesn't close it. 
-  * Opening a different panel doesn't close the first one that was open.
-* The `.lesson-selection-popup` buttons (e.g., "اشرحها" and "بسّطها") don't work.
-* Improve `.lesson-toc`, make it like the other perfect toc I made before for the document pages `.doc-toc`, see `public\src\features\documents\doc-toc.js`:
-  * `.lesson-toc` should be smaller to match `.doc-toc`'s size.
-  * `.lesson-toc` should be in the same position to match `.doc-toc`.
-  * `.lesson-toc` should be collapsable and expandable just like `.doc-toc` with the same styles for it.
+* Fix: The `.lesson-selection-popup` buttons (e.g., "اشرحها" and "بسّطها") don't work when I select a text then press them, they don't do anything at all.
+* Fix: The loading skeleton doesn't appear at the start of the page, it appears after a long while for a moment right before the content loads, as if it flashes.
+* New: Add `اقرأها` in the `.lesson-selection-popup` so the options become: 
+  * اشرحها
+  * بسّطها
+  * اقرأها
+* New: Redesign the `lesson-view__header`
 
-Console log when testing:
-```console
-script.js:1  Failed to load resource: the server responded with a status of 404 (Not Found)
-esdfdzhtavraczrhxnmp.supabase.co/rest/v1/quizzes?select=data&id=in.%28AHMTTSRO%29:1  Failed to load resource: the server responded with a status of 400 ()
-lesson-view.js:128 [lesson-view] quizRef lookup failed: invalid input syntax for type uuid: "AHMTTSRO"
-fetchQuizRefs @ lesson-view.js:128
-user_lesson_1789827664545?type=user:1  Failed to load resource: the server responded with a status of 503 (Service Unavailable)
-service-worker.js:161 [SW] Service worker script loaded (offline-page only)
-```
 
-* Tested on localhost (URL: `http://localhost:8080/lesson/user_lesson_1789827664545?type=user`).
-* Tested lesson: Created in the "امتحاناتك" section, not an uploaded lesson.
+### Create-lesson Page
+* Fix: Changing the value of `#lessonFontSelect` doesn't change anything, fix it or remove it.
+* Fix (On the create-lesson and create-quiz):
+  * The `gmd-btn gmd-btn-latex gmd-dropdown-toggle` toggle when it opens, it messes up the `global-md-bar`. 
+  * The 2 `gmd-btn gmd-dropdown-toggle` toggles doesn't even work at all, pressing it does nothing.
+* Fix: Background animations (animations.css) are broken on the create-lesson page, probably because it doesn't use the variables in `themes.css` like how the create-quiz does. The variables in `themes.css` get upadted when the animations are on to be slightly opace.
 
-New:
-* Design and implement an advanced loading skeleton and remove the placeholder loading `جاري تحميل الدرس…`.
+New: 
+* Add a new `+ درس مرتبط` feature so users can embed other lessons just like how they embed quizzes `+ امتحان مرتبط`.
+* Redesing how the embedded quizzes/lessons display `+ امتحان مرتبط`, instead of just a start button, it should be full featured: 
+  * Start button: Already exists.
+  * Download button: To download the quiz/lesson (similar to the home page).
+  * Info button: To show the info of the quiz/lesson (similar to the home page)
+  * Ask AI (اسأل الباشـمبصمج): To ask AI about that quiz/lesson (similar to the home page).
+* Add password and description fields just like `create-quiz` does, and update the lesson page accordingly.
+
 
 ### Global Issue
 This issue appears on almost all pages, it's related to this script: `<script defer src="/_vercel/insights/script.js"></script>`
@@ -53,13 +46,6 @@ The issue doesn't affect production.
 
 ### AI Agent
 Fix Dictation: The dictation feature is so messed up, it doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser.
-
-### Create-lesson Page
-* Changing the value of `#lessonFontSelect` doesn't change anything.
-
-New: 
-* Add password field and description field just like `create-quiz` does, and update the lesson page accordingly.
-* Redesign the whole `.entry-screen`, find ideas and generate an ipmlementation plan suggesting any improvements. The plan must be an (implementation plan) that is ready to execute. 
 
 ### Performance (Globally, but specially the main page)
 Performance Improvements: Currently, there are many custom mechanism fucntionalities built in JS that works perfectly, but it may exist natively in HTML, CSS, or as a browser API. In that case we shouldn't reinvent the wheel, specially if it exists natively. Anything that exists natively in HTML, CSS, or as a browser API should be used that way and we should delete any custom JS implementation that has native alternatives. That would improve performance very well. Search for everything, anything that can be implemented in HTML & CSS directly without JS should be done so. You can search the web for modern HTML & CSS, because sometimes they add new things, but watch out for compatibility with different browsers (minimum requirenment: Chrome). But I don't want to miss up any functionality, this is just for performance, not to change any fucntionality.
@@ -101,6 +87,11 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
   * Extend the info in the course info modal, too.
   * Make an info modal for Folders.
   * (Suggestion) Add: Number of Views or people who solved a quiz on each quiz.
+
+#### New 
+* Add `مادة جديدة` In the `class="btn create-folder-btn mobile-only-flex"` button's dropdown.
+* Redesign the `#userQuizContextMenu` Element: 
+  * Move all the button for creating ("إنشاء مادة", "إنشاء مجلد", "إنشاء امتحان",  and the new "انشاء درس") to a submenu dropdown, so you will have to design a submenu for the `#userQuizContextMenu`.
 
 ### `public\control.html` Page
 * Give `#collegeForm` an advanced loading skeleton/animation like the sections/forms.

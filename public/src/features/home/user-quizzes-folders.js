@@ -811,7 +811,7 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   // Item-specific options first (when right-clicking on a quiz/folder/course)
   if (targetType === "item" || targetType === "folder" || targetType === "course") {
     contextMenuEl.appendChild(createMenuItem(SELECT_SVG, "تحديد", () => selectItem(targetId)));
-    contextMenuEl.appendChild(createMenuItem(RENAME_SVG, "إعادة تسمية", () => renameItem(targetId, targetTitle)));
+
     if (targetType === "item") {
       // "item" covers both quizzes and lessons — send each to its own editor.
       // (A lesson id opened in create-quiz would find no quiz and show an
@@ -842,6 +842,8 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
       );
     }
 
+    contextMenuEl.appendChild(createMenuItem(RENAME_SVG, "إعادة تسمية", () => renameItem(targetId, targetTitle)));
+
     contextMenuEl.appendChild(
       createMenuItem(ASK_AI_SVG, "اسأل الباشـمبصمج", async () => {
         const { openAIAgentWithAttachment, resolveUserItemAttachment } = await import(
@@ -851,6 +853,17 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
         if (attachment) openAIAgentWithAttachment(attachment);
       }),
     );
+
+    // Per-item "upload to platform" action — pushes this specific
+    // course/folder (with all of its nested contents) up to the DB via the
+    // dedicated course/folder upload wizards (adminUpload.js). Distinct from
+    // the "استيراد مجلد من جهازك" action below, which imports FROM the local
+    // filesystem INTO user_quizzes rather than uploading an existing local
+    // item OUT to the platform.
+    if (isAdminAuthenticated() && (targetType === "course" || targetType === "folder")) {
+      const label = targetType === "course" ? "رفع المادة إلى المنصة" : "رفع المجلد إلى المنصة";
+      contextMenuEl.appendChild(createMenuItem(UPLOAD_FOLDER_SVG, label, () => uploadItemToPlatform(targetType, targetId)));
+    }
 
     contextMenuEl.appendChild(createMenuItem(DELETE_SVG, "حذف", () => deleteFolder(targetId), true));
 
@@ -862,7 +875,7 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
 
   // Global actions — always visible regardless of what was right-clicked
   //
-  // "إنشاء امتحان جديد" — opens the same paste-text/import-file modal
+  // "إنشاء امتحان" — opens the same paste-text/import-file modal
   // (create-quiz-modal.js). The standalone .user-create-quiz-card that used
   // to sit in the quiz grid was removed per docs/plans/implementation-
   // plan.md testing notes (it duplicated this entry once item 10 added it
@@ -871,7 +884,7 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   // Dynamically imported to avoid a static circular import: create-quiz-
   // modal.js already imports currentFolderId from this module.
   contextMenuEl.appendChild(
-    createMenuItem(CREATE_QUIZ_SVG, "إنشاء امتحان جديد", async () => {
+    createMenuItem(CREATE_QUIZ_SVG, "إنشاء امتحان", async () => {
       const { openInlineCreateQuizModal } = await import("./create-quiz-modal.js");
       openInlineCreateQuizModal();
     }),
@@ -889,16 +902,7 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
       currentFolderId !== null ? "المواد تُنشأ في المستوى الرئيسي فقط." : null,
     ),
   );
-  // Per-item "upload to platform" action — pushes this specific
-  // course/folder (with all of its nested contents) up to the DB via the
-  // dedicated course/folder upload wizards (adminUpload.js). Distinct from
-  // the "استيراد مجلد من جهازك" action below, which imports FROM the local
-  // filesystem INTO user_quizzes rather than uploading an existing local
-  // item OUT to the platform.
-  if (isAdminAuthenticated() && (targetType === "course" || targetType === "folder")) {
-    const label = targetType === "course" ? "رفع المادة إلى المنصة" : "رفع المجلد إلى المنصة";
-    contextMenuEl.appendChild(createMenuItem(UPLOAD_FOLDER_SVG, label, () => uploadItemToPlatform(targetType, targetId)));
-  }
+
   if (isAdminAuthenticated()) {
     contextMenuEl.appendChild(createMenuItem(UPLOAD_FOLDER_SVG, "استيراد مجلد من جهازك", () => uploadFolderForAdmins()));
   }

@@ -391,7 +391,7 @@ function revealEssayAnswer(questionEl, modelAnswer, answerText) {
     feedback.hidden = false;
     const verdict = feedback.querySelector(".lesson-question__verdict");
     if (verdict) {
-      verdict.textContent = `تقدير الإجابة: ${score} من 5${wasClose ? " — إجابتك قريبة من الإجابة النموذجية" : " — راجع الإجابة النموذجية"}`;
+      verdict.textContent = `تقدير الإجابة: ${score} من 5`;
       verdict.classList.toggle("is-correct", wasClose);
       verdict.classList.toggle("is-wrong", !wasClose);
     }
