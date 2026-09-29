@@ -52,6 +52,12 @@ import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { CREATE_LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { CREATE_LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 
+// Matches the canonical published-lesson id shape used across the lesson
+// feature (lesson-view.js, lesson-schema.js): a Supabase UUID. Local-only
+// lessons/drafts use a different id shape, so this also doubles as the
+// local-vs-published discriminator for lesson-reference validation below.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // =============================================================================
 // STATE
 // =============================================================================
@@ -983,7 +989,45 @@ function setupMdField(id, onChange, { minPx = 40, maxPx = 320 } = {}) {
         autoResizeMdSource(source, minPx, maxPx);
         if (onChange) onChange(source.value);
     });
+    // Remembered so the global Markdown toolbar's image/audio/video buttons
+    // (see setupGlobalMdBar's onMedia -> triggerMediaInsertForActiveField)
+    // can replay this exact field's onChange after a picked file uploads.
+    mdFieldOnChangeByTextarea.set(source, onChange);
     setupMarkdownMediaDropzone(source, onChange);
+}
+
+// textarea -> onChange, populated by setupMdField for every markdown field.
+// Used by triggerMediaInsertForActiveField.
+const mdFieldOnChangeByTextarea = new WeakMap();
+
+/**
+ * Opens a native file picker restricted to the given media type and, once a
+ * file is chosen, routes it through the exact same upload/insert pipeline as
+ * drag-and-drop or paste (handleMarkdownMediaFile) on the field that was
+ * focused when the global Markdown toolbar's image/audio/video button was
+ * clicked. Mirrors create-quiz.js's implementation of the same helper.
+ * @param {"image"|"audio"|"video"} mediaType
+ * @param {HTMLTextAreaElement|null} textarea
+ */
+function triggerMediaInsertForActiveField(mediaType, textarea) {
+    if (!textarea || !document.body.contains(textarea)) {
+        showNotification("لا يوجد حقل نشط", "اضغط داخل حقل النص أولاً، ثم أعد المحاولة.", "error");
+        return;
+    }
+    const accept = [...(MEDIA_MIME_MAP[mediaType] || [])].join(",");
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = accept;
+    input.style.display = "none";
+    document.body.appendChild(input);
+    const onChange = mdFieldOnChangeByTextarea.get(textarea) || null;
+    input.addEventListener("change", () => {
+        const file = input.files?.[0];
+        if (file) handleMarkdownMediaFile(textarea, file, onChange);
+        input.remove();
+    });
+    input.addEventListener("cancel", () => input.remove());
+    input.click();
 }
 
 // =============================================================================
@@ -991,11 +1035,11 @@ function setupMdField(id, onChange, { minPx = 40, maxPx = 320 } = {}) {
 // =============================================================================
 
 function setupGlobalMdBar() {
-  return setupGlobalMarkdownToolbar({
-    barId: "globalMdBar",
-    onAction: (payload) => applyMarkdownToolbarAction(payload),
-    onMedia: (mediaType, textarea) => triggerMediaInsertForActiveField(mediaType, textarea),
-  });
+    return setupGlobalMarkdownToolbar({
+        barId: "globalMdBar",
+        onAction: (payload) => applyMarkdownToolbarAction(payload),
+        onMedia: (mediaType, textarea) => triggerMediaInsertForActiveField(mediaType, textarea),
+    });
 }
 
 
@@ -2001,19 +2045,19 @@ function lessonRefSelectedHtml(entry, fallbackTitle, sectionId = "", localId = "
     if (!entry) {
         return fallbackTitle
             ? `<div class="lesson-lessonref-chip">` +
-              `<div class="lesson-lessonref-chip-main"><span class="lesson-lessonref-chip-title">${escapeHtml(fallbackTitle)}</span><span class="lesson-lessonref-chip-status">مرجع غير متاح</span></div>` +
-              `<div class="lesson-lessonref-chip-actions" role="group" aria-label="إجراءات مرجع الدرس">` +
-              `<button type="button" class="lesson-lessonref-chip-btn" onclick="focusLessonRefSearch('${escapeHtml(localId)}')" aria-label="استبدال مرجع الدرس" title="استبدال">استبدال</button>` +
-              `<button type="button" class="lesson-lessonref-chip-btn is-danger" onclick="removeLessonReference('${escapeHtml(sectionId)}','${escapeHtml(localId)}')" aria-label="إزالة مرجع الدرس" title="إزالة">إزالة</button>` +
-              `</div></div>`
+            `<div class="lesson-lessonref-chip-main"><span class="lesson-lessonref-chip-title">${escapeHtml(fallbackTitle)}</span><span class="lesson-lessonref-chip-status">مرجع غير متاح</span></div>` +
+            `<div class="lesson-lessonref-chip-actions" role="group" aria-label="إجراءات مرجع الدرس">` +
+            `<button type="button" class="lesson-lessonref-chip-btn" onclick="focusLessonRefSearch('${escapeHtml(localId)}')" aria-label="استبدال مرجع الدرس" title="استبدال">استبدال</button>` +
+            `<button type="button" class="lesson-lessonref-chip-btn is-danger" onclick="removeLessonReference('${escapeHtml(sectionId)}','${escapeHtml(localId)}')" aria-label="إزالة مرجع الدرس" title="إزالة">إزالة</button>` +
+            `</div></div>`
             : `<p class="lesson-quizref-empty">لم يتم اختيار درس بعد.</p>`;
     }
     return `<div class="lesson-lessonref-chip">` +
-      `<div class="lesson-lessonref-chip-main"><span class="lesson-lessonref-chip-title">${escapeHtml(entry.title)}</span><span class="lesson-lessonref-chip-status">${entry.source === "platform" ? "منشور" : "محلي"}</span></div>` +
-      `<div class="lesson-lessonref-chip-actions" role="group" aria-label="إجراءات مرجع الدرس">` +
-      `<button type="button" class="lesson-lessonref-chip-btn" onclick="focusLessonRefSearch('${escapeHtml(localId)}')" aria-label="استبدال مرجع الدرس" title="استبدال">استبدال</button>` +
-      `<button type="button" class="lesson-lessonref-chip-btn is-danger" onclick="removeLessonReference('${escapeHtml(sectionId)}','${escapeHtml(localId)}')" aria-label="إزالة مرجع الدرس" title="إزالة">إزالة</button>` +
-      `</div></div>`;
+        `<div class="lesson-lessonref-chip-main"><span class="lesson-lessonref-chip-title">${escapeHtml(entry.title)}</span><span class="lesson-lessonref-chip-status">${entry.source === "platform" ? "منشور" : "محلي"}</span></div>` +
+        `<div class="lesson-lessonref-chip-actions" role="group" aria-label="إجراءات مرجع الدرس">` +
+        `<button type="button" class="lesson-lessonref-chip-btn" onclick="focusLessonRefSearch('${escapeHtml(localId)}')" aria-label="استبدال مرجع الدرس" title="استبدال">استبدال</button>` +
+        `<button type="button" class="lesson-lessonref-chip-btn is-danger" onclick="removeLessonReference('${escapeHtml(sectionId)}','${escapeHtml(localId)}')" aria-label="إزالة مرجع الدرس" title="إزالة">إزالة</button>` +
+        `</div></div>`;
 }
 
 function lessonRefBlockInnerHtml(sectionId, block) {
@@ -2655,8 +2699,8 @@ window.publishLesson = async function () {
     try {
         const action = publishedLessonId ? "update-lesson" : "create-lesson";
         const passwordFields = lessonPasswordDraft
-        ? { passwordHash: lessonData.passwordHash }
-        : (lessonData.passwordProtected ? {} : { clearPassword: true });
+            ? { passwordHash: lessonData.passwordHash }
+            : (lessonData.passwordProtected ? {} : { clearPassword: true });
         if (lessonPasswordDraft && !lessonData.passwordHash) {
             throw new Error("تعذّر تجهيز كلمة مرور الدرس للنشر.");
         }

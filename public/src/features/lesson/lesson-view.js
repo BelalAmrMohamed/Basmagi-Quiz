@@ -553,7 +553,7 @@ function renderLessonLoadingSkeleton() {
     `<span class="lesson-skeleton__sr">جاري تجهيز محتوى الدرس…</span>` +
     `<div class="lesson-skeleton__header">` +
     `<div class="lesson-skeleton__header-copy">${lines(["18%", "64%", "42%"])}</div>` +
-    `<div class="lesson-skeleton__header-actions">${lines(["84px", "108px", "128px"] )}</div>` +
+    `<div class="lesson-skeleton__header-actions">${lines(["84px", "108px", "128px"])}</div>` +
     `</div>` +
     `<div class="lesson-skeleton__layout">` +
     `<main class="lesson-skeleton__content">` +
@@ -659,7 +659,7 @@ export async function renderLessonView() {
     normalized = normalizeLessonContent(lesson.content);
     const [quizRefs, lessonRefs] = await Promise.all([
       fetchQuizRefs(collectQuizRefIds(normalized)),
-      fetchLessonRefs(collectLessonRefIds(normalized), lesson.id),
+      fetchLessonRefs(collectLessonReferenceIds(normalized), lesson.id),
     ]);
     quizLookup = quizRefs;
     lessonLookup = lessonRefs;
@@ -747,7 +747,7 @@ export async function renderLessonView() {
       );
     });
     tocCleanupByRoot.get(container)?.();
-    tocCleanupByRoot.set(container, equipLessonToc(container, lesson.id) || (() => {}));
+    tocCleanupByRoot.set(container, equipLessonToc(container, lesson.id) || (() => { }));
     equipTts(container);
     equipLessonQuiz(container, paint);
     equipLessonBookmarks(container, lesson.id, paint);

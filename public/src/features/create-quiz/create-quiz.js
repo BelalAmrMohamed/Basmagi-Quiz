@@ -127,6 +127,26 @@ window.activateMdEditor = function (e, id) {
   }
 };
 
+/** HTML for one markdown field (.md-source textarea + its on-demand preview
+ * pane). `id` must be unique on the page. Shared markup/classes with
+ * create-lesson.js's mdEditorHtml so the one global Markdown toolbar, the
+ * write/preview toggle, and the drag/drop/paste media embedding all work
+ * identically on both pages — see .wp-field/.wp-pane-wrap/.wp-preview-pane
+ * in create-quiz.css. */
+function mdEditorHtml(id, value, placeholder, rows = 2) {
+  const escaped = String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return `
+    <div class="wp-field" id="wrap-${id}">
+      <div class="wp-pane-wrap">
+        <textarea class="md-source wp-textarea" dir="auto" id="${id}" rows="${rows}" placeholder="${escapeHtml(placeholder)}">${escaped}</textarea>
+        <div class="wp-preview-pane ltr md-content" id="preview-${id}" style="display:none;"></div>
+      </div>
+    </div>`;
+}
+
 /**
  * AI-chat-style growing textarea: starts small enough for one line, grows
  * with content up to a max height, then stops growing and scrolls instead.
@@ -192,7 +212,52 @@ function setupMdEditor(id, onChange) {
     if (onChange) onChange(source.value);
   });
 
+  // Remembered so the global Markdown toolbar's image/audio/video buttons
+  // (see setupGlobalMdBar's onMedia -> triggerMediaInsertForActiveField)
+  // can replay this exact field's onChange after a picked file uploads,
+  // without every call site having to thread onChange through the DOM.
+  mdFieldOnChangeByTextarea.set(source, onChange);
+
   setupMarkdownMediaDropzone(source, onChange);
+}
+
+// textarea -> onChange, populated by setupMdEditor for every markdown field
+// (question text, options, explanation). Used by triggerMediaInsertForActiveField.
+const mdFieldOnChangeByTextarea = new WeakMap();
+
+/**
+ * Opens a native file picker restricted to the given media type and, once a
+ * file is chosen, routes it through the exact same upload/insert pipeline as
+ * drag-and-drop or paste (handleMarkdownMediaFile) on the field that was
+ * focused when the global Markdown toolbar's image/audio/video button was
+ * clicked. Mirrors create-lesson.js's implementation of the same helper.
+ * @param {"image"|"audio"|"video"} mediaType
+ * @param {HTMLTextAreaElement|null} textarea
+ */
+function triggerMediaInsertForActiveField(mediaType, textarea) {
+  if (!textarea || !document.body.contains(textarea)) {
+    showNotification("لا يوجد حقل نشط", "اضغط داخل حقل النص أولاً، ثم أعد المحاولة.", "error");
+    return;
+  }
+  const accept = [...(MEDIA_MIME_MAP[mediaType] || [])].join(",");
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = accept;
+  input.style.display = "none";
+  document.body.appendChild(input);
+  const onChange = mdFieldOnChangeByTextarea.get(textarea) || null;
+  input.addEventListener("change", () => {
+    const file = input.files?.[0];
+    if (file) handleMarkdownMediaFile(textarea, file, onChange);
+    input.remove();
+  });
+  // If the user dismisses the OS picker without choosing a file, the
+  // "change" event never fires — clean up the detached input either way.
+  input.addEventListener(
+    "cancel",
+    () => input.remove(),
+  );
+  input.click();
 }
 
 // =============================================================================
@@ -1047,6 +1112,60 @@ window.closeAllMenus = function () {
       _setMenuExpanded(item, false);
     });
 };
+
+/**
+ * Arrow-key navigation inside one open menu dropdown (ArrowDown/ArrowUp move
+ * focus between menuitems, Home/End jump to the first/last, Escape closes
+ * via the supplied callback). Attached fresh each time a dropdown opens and
+ * torn down automatically once it closes, so stale listeners never pile up
+ * across repeated open/close cycles of the same #menuBar dropdown.
+ * @param {HTMLElement} dropdown - the open .menu-dropdown/.menu-submenu-dropdown
+ * @param {() => void} onClose - called on Escape; expected to close the menu and restore focus to its trigger
+ */
+function activateMenuKeyboardNav(dropdown, onClose) {
+  if (!dropdown) return;
+  const items = () =>
+    [...dropdown.querySelectorAll(':scope > .menu-option:not([disabled]), :scope > [role="menuitem"]:not([disabled])')];
+  const focusAt = (index, list) => {
+    if (!list.length) return;
+    const next = ((index % list.length) + list.length) % list.length;
+    list[next].focus();
+  };
+  // Land focus on the first row immediately, matching native menu behavior.
+  focusAt(0, items());
+
+  const onKeydown = (e) => {
+    const list = items();
+    const currentIndex = list.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      focusAt(currentIndex + 1, list);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      focusAt(currentIndex - 1, list);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      focusAt(0, list);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      focusAt(list.length - 1, list);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      cleanup();
+      if (typeof onClose === "function") onClose();
+    } else if (e.key === "Tab") {
+      // Tabbing out of an open menu should close it rather than leave a
+      // stranded floating dropdown behind while focus moves elsewhere.
+      cleanup();
+      if (typeof onClose === "function") onClose();
+    }
+  };
+  function cleanup() {
+    dropdown.removeEventListener("keydown", onKeydown);
+  }
+  dropdown.addEventListener("keydown", onKeydown);
+}
 
 /**
  * Toggle a nested submenu inside an already-open parent dropdown.
