@@ -23,6 +23,7 @@ import {
   normalizeLessonContent,
   getLessonProgress,
   resolveRevealedSections,
+  collectLessonReferenceIds,
 } from "./lesson-schema.js";
 import { renderBlock, equipQuestionBlocks } from "./lesson-blocks.js";
 import { renderLessonToc, equipLessonToc } from "./lesson-toc.js";
@@ -44,6 +45,12 @@ import { createLessonQuiz, renderLessonQuiz, equipLessonQuiz } from "./lesson-ai
 import { isLessonSectionBookmarked, renderLessonBookmarks, equipLessonBookmarks } from "./lesson-bookmarks.js";
 import { equipLessonSelectionActions } from "./lesson-selection-actions.js";
 import { lessonIcon } from "./lesson-icons.js";
+import { isLessonProtected, requestLessonPassword, unlockRemoteLesson, verifyLocalLessonPassword } from "./lesson-access.js";
+import { downloadLesson } from "../home/lesson-download.js";
+import { showLessonInfoModal } from "../home/lesson-info-modal.js";
+import { showQuizInfoModal, showUserQuizInfoModal } from "../home/quiz-info-modal.js";
+import { openAIAgentWithAttachment, buildPlatformQuizAttachment, buildPlatformLessonAttachment, resolveUserItemAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
+import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LESSON_LOAD_TIMEOUT_MS = 10000;
@@ -91,8 +98,11 @@ async function fetchLesson(idOrSlug) {
       if (row) return {
         id: row.id || row.meta?.id,
         title: row.meta?.title || "",
+        description: row.description || row.meta?.description || "",
         content: row.lesson || { sections: [] },
         reader_prefs_default: row.meta?.readerPrefs || {},
+        password_protected: Boolean(row.passwordProtected || row.meta?.passwordProtected || row.passwordHash),
+        localRow: row,
         created_at: row.meta?.createdAt || null,
         updated_at: row.meta?.updatedAt || null,
       };
@@ -105,8 +115,8 @@ async function fetchLesson(idOrSlug) {
   if (!supabase) return null;
 
   const query = supabase
-    .from("lessons")
-    .select("id, slug, title, content, reader_prefs_default, created_at, updated_at");
+    .from("lesson_public")
+    .select("id, slug, title, description, content, section_ids, section_count, reader_prefs_default, created_at, updated_at, password_protected");
   const request = UUID_RE.test(idOrSlug)
     ? query.eq("id", idOrSlug).maybeSingle()
     : query.eq("slug", idOrSlug).maybeSingle();
@@ -117,7 +127,7 @@ async function fetchLesson(idOrSlug) {
   );
 
   if (error) {
-    console.error("[lesson-view] Supabase lesson lookup failed:", error.message);
+    console.error("[lesson-view] public lesson lookup failed:", error.message);
     return null;
   }
   return data || null;
@@ -150,7 +160,7 @@ async function fetchQuizRefs(quizIds) {
     // Postgres' "invalid input syntax for type uuid" error.
     const requests = [];
     if (uuidIds.length) {
-      requests.push(supabase.from("quizzes").select("data").in("id", uuidIds));
+      requests.push(supabase.from("quizzes").select("id, data").in("id", uuidIds));
     }
     if (metaIds.length) {
       // These are public 8-character quiz codes stored in data.meta.id, not
@@ -159,7 +169,7 @@ async function fetchQuizRefs(quizIds) {
       requests.push(
         supabase
           .from("quizzes")
-          .select("data")
+          .select("id, data")
           .in("data->meta->>id", metaIds.map((id) => String(id).trim()).filter(Boolean)),
       );
     }
@@ -177,11 +187,16 @@ async function fetchQuizRefs(quizIds) {
       for (const row of result.data || []) {
         const meta = row?.data?.meta || {};
         const stats = row?.data?.stats || {};
-        if (!meta.id) continue;
-        lookup.set(meta.id, {
+        const entry = {
+          id: meta.id || row?.data?.id || "",
+          dbId: row?.id || null,
           title: meta.title || "",
           questionCount: stats.questionCount ?? null,
-        });
+          source: "platform",
+          meta,
+        };
+        if (entry.id) lookup.set(String(entry.id), entry);
+        if (entry.dbId) lookup.set(String(entry.dbId), entry);
       }
     }
   } catch (err) {
@@ -189,6 +204,56 @@ async function fetchQuizRefs(quizIds) {
   }
   return lookup;
 }
+
+async function fetchLessonRefs(lessonIds, currentLessonId) {
+  const lookup = new Map();
+  if (!lessonIds.length) return lookup;
+  const ids = lessonIds.filter((id) => UUID_RE.test(String(id)) && String(id) !== String(currentLessonId));
+  try {
+    const supabase = await ensureSharedSupabaseClient();
+    if (ids.length && supabase) {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("lesson_public")
+          .select("id, slug, title, description, section_ids, section_count, reader_prefs_default, created_at, updated_at, password_protected")
+          .in("id", ids),
+        QUIZ_REF_TIMEOUT_MS,
+        "انتهت مهلة تحميل الدروس المرتبطة.",
+      );
+      if (error) throw error;
+      for (const row of data || []) lookup.set(String(row.id), row);
+    }
+    // Local references are resolved in one localStorage read, never one query per block.
+    const requestedLocal = lessonIds.filter((id) => !UUID_RE.test(String(id)));
+    if (requestedLocal.length) {
+      try {
+        const rows = JSON.parse(localStorage.getItem("user_quizzes") || "[]");
+        const wanted = new Set(requestedLocal.map(String));
+        for (const row of Array.isArray(rows) ? rows : []) {
+          const id = String(row?.id || row?.meta?.id || "");
+          if (!wanted.has(id) || row?.meta?.type !== "lesson" || id === String(currentLessonId)) continue;
+          lookup.set(id, {
+            id,
+            title: row.meta?.title || "درس بدون عنوان",
+            description: row.description || row.meta?.description || "",
+            section_count: Number(row.stats?.sectionCount ?? row.lesson?.sections?.length ?? 0),
+            reader_prefs_default: row.meta?.readerPrefs || {},
+            created_at: row.meta?.createdAt || null,
+            updated_at: row.meta?.updatedAt || null,
+            password_protected: Boolean(row.passwordProtected || row.meta?.passwordProtected || row.passwordHash),
+            localRow: row,
+          });
+        }
+      } catch (error) {
+        console.warn("[lesson-view] local lesson reference lookup failed:", error);
+      }
+    }
+  } catch (error) {
+    console.warn("[lesson-view] lesson reference lookup unavailable:", error);
+  }
+  return lookup;
+}
+
 
 function collectQuizRefIds(normalized) {
   const ids = [];
@@ -215,6 +280,60 @@ function getLessonTitleDirection(title) {
   if (/^[A-Za-z]$/.test(firstStrong)) return "ltr";
   if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(firstStrong)) return "rtl";
   return "auto";
+}
+
+function equipReferenceCardActions(root, lesson, quizLookup, lessonLookup) {
+  const buttons = root.querySelectorAll("[data-reference-kind][data-reference-action]");
+  buttons.forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (button.disabled) return;
+      const kind = button.dataset.referenceKind;
+      const action = button.dataset.referenceAction;
+      const id = button.dataset.referenceId || "";
+      const target = (kind === "quiz" ? quizLookup?.get(id) : lessonLookup?.get(id)) || null;
+      const fallback = { id, title: button.dataset.referenceTitle || "بدون عنوان" };
+      const entity = target || fallback;
+      try {
+        if (action === "start") {
+          if (kind === "quiz") window.location.href = `/quiz/${encodeURIComponent(id)}`;
+          else window.location.href = entity.localRow ? `/lesson/${encodeURIComponent(id)}?type=user` : `/lesson/${encodeURIComponent(entity.slug || id)}`;
+          return;
+        }
+        if (action === "download") {
+          if (kind === "quiz") await showQuizDownloadPopupForReference(entity, button);
+          else await downloadLesson(entity, button);
+          return;
+        }
+        if (action === "info") {
+          if (kind === "quiz") {
+            if (entity.source === "local" || entity.meta?.type === "quiz") showUserQuizInfoModal(entity);
+            else showQuizInfoModal(entity);
+          } else {
+            showLessonInfoModal(entity.localRow || entity);
+          }
+          return;
+        }
+        if (action === "ask") {
+          const attachment = kind === "quiz"
+            ? (entity.source === "local" ? resolveUserItemAttachment(id) : buildPlatformQuizAttachment(entity, { meta: { title: entity.title, id }, stats: { questionCount: entity.questionCount || 0 } }))
+            : (entity.localRow ? resolveUserItemAttachment(id) : buildPlatformLessonAttachment(entity));
+          openAIAgentWithAttachment(attachment, { defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT });
+        }
+      } catch (error) {
+        console.error("[lesson-view] reference action failed:", error);
+      }
+    });
+  });
+}
+
+async function showQuizDownloadPopupForReference(quiz, triggerBtn) {
+  const { showQuizDownloadPopup, showUserQuizDownloadPopup } = await import("../home/download-modal.js");
+  if (quiz?.source === "local" || quiz?.meta?.type === "quiz" || quiz?.questions) {
+    return showUserQuizDownloadPopup(quiz, triggerBtn);
+  }
+  return showQuizDownloadPopup(quiz, triggerBtn);
 }
 
 function renderSection(section, ctx) {
@@ -505,11 +624,45 @@ export async function renderLessonView() {
     return;
   }
 
+  // The public catalog deliberately returns `content = null` for protected lessons.
+  // Keep the skeleton/lock screen visible until verification succeeds, so protected
+  // markdown/question HTML can never flash on first paint.
+  if (isLessonProtected(lesson)) {
+    let unlockedLesson = null;
+    const protectedContent = lesson.content;
+    lesson.content = null;
+    const isUserCreated = new URLSearchParams(window.location.search).get("type") === "user";
+    const unlock = async (candidate) => {
+      if (isUserCreated) return verifyLocalLessonPassword(lesson.localRow, candidate);
+      unlockedLesson = await unlockRemoteLesson(lesson.id || lesson.slug, candidate);
+      return Boolean(unlockedLesson);
+    };
+    const password = await requestLessonPassword({
+      title: lesson.title || "هذا الدرس",
+      verify: unlock,
+    });
+    if (!password) {
+      renderLessonLoadError("هذا الدرس محمي بكلمة مرور. استخدم زر «إعادة المحاولة» لفتح الدرس.");
+      return;
+    }
+    if (isUserCreated) {
+      lesson.content = protectedContent || lesson.localRow?.lesson || { sections: [] };
+    } else if (unlockedLesson) {
+      lesson = unlockedLesson;
+    }
+  }
+
   let normalized;
   let quizLookup;
+  let lessonLookup;
   try {
     normalized = normalizeLessonContent(lesson.content);
-    quizLookup = await fetchQuizRefs(collectQuizRefIds(normalized));
+    const [quizRefs, lessonRefs] = await Promise.all([
+      fetchQuizRefs(collectQuizRefIds(normalized)),
+      fetchLessonRefs(collectLessonRefIds(normalized), lesson.id),
+    ]);
+    quizLookup = quizRefs;
+    lessonLookup = lessonRefs;
   } catch (error) {
     console.error("[lesson-view] Lesson content preparation failed:", error);
     renderLessonLoadError("تعذّر تجهيز محتوى الدرس. جرّب إعادة المحاولة، وإذا استمر الخطأ افتح الدرس من قسم «امتحاناتك» مرة أخرى.");
@@ -525,7 +678,7 @@ export async function renderLessonView() {
     rerenderLessonQuiz = paint;
     const progress = getLessonProgress(lesson.id);
     const visibleSections = computeVisibleSections(normalized, progress);
-    const ctx = { lessonId: lesson.id, quizLookup };
+    const ctx = { lessonId: lesson.id, quizLookup, lessonLookup };
 
     container.innerHTML =
       `<article class="lesson-view lesson-view--reader" data-lesson-id="${escapeHtml(lesson.id)}">` +
@@ -540,7 +693,7 @@ export async function renderLessonView() {
         : "") +
       `</div>` +
       `</div>` +
-      `<div class="lesson-view__heading"><h1 id="lessonViewTitle" class="lesson-view__title" dir="${getLessonTitleDirection(lesson.title || "")}">${escapeHtml(lesson.title || "")}</h1><p class="lesson-view__subtitle" dir="rtl">تابع القراءة وراجع تقدمك، واسأل الباشــمبصمج عندما تحتاج إلى توضيح.</p></div>` +
+      `<div class="lesson-view__heading"><h1 id="lessonViewTitle" class="lesson-view__title" dir="${getLessonTitleDirection(lesson.title || "")}">${escapeHtml(lesson.title || "")}</h1>${lesson.description?.trim() ? `<p class="lesson-view__description" dir="rtl">${escapeHtml(lesson.description.trim())}</p>` : ""}<p class="lesson-view__subtitle" dir="rtl">تابع القراءة وراجع تقدمك، واسأل الباشــمبصمج عندما تحتاج إلى توضيح.</p></div>` +
       `</div>` +
       `<div class="lesson-view__header-actions" role="group" aria-label="أدوات الدرس">` +
       `<button type="button" class="lesson-header__action lesson-view__info-btn" aria-label="معلومات الدرس" title="معلومات الدرس">${lessonIcon("info")}<span class="lesson-header__action-label">معلومات الدرس</span></button>` +
@@ -581,6 +734,7 @@ export async function renderLessonView() {
         onAiStudyAction: (_actionId, prompt) => openLessonAgentWithPrompt(lesson, normalized, prompt),
       });
     });
+    equipReferenceCardActions(lessonEl, lesson, quizLookup, lessonLookup);
     equipPrefs(container, lessonEl, lesson.reader_prefs_default);
     equipQuestionBlocks(container, lesson.id, paint, (details) => {
       const contentBlock = details.kind === "mcq"

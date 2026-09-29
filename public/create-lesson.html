@@ -885,6 +885,17 @@
          to that copy (see create-quiz.js's setupGlobalMdBar) so the two
          authoring pages share one mental model. -->
     <div class="global-md-bar" id="globalMdBar" style="display: none;" aria-label="شريط تنسيق النص">
+        <div class="gmd-group gmd-group-reader" id="gmdReaderDefaults" aria-label="إعدادات القارئ">
+            <label class="gmd-reader-label" for="lessonFontSelect">خط القراءة</label>
+            <select id="lessonFontSelect" class="gmd-select" title="الخط الافتراضي للقارئ" aria-label="الخط الافتراضي للقارئ">
+                <option value="default">الافتراضي</option>
+                <option value="tajawal">Tajawal</option>
+                <option value="cairo">Cairo</option>
+                <option value="amiri">Amiri (نسخ)</option>
+                <option value="inter">Inter</option>
+            </select>
+            <div class="gmd-separator" aria-hidden="true"></div>
+        </div>
         <div class="gmd-group gmd-group-md">
             <div class="gmd-dropdown">
                 <button type="button" class="gmd-btn gmd-dropdown-toggle" id="gmdHeadingToggle" title="عنوان"
@@ -1214,6 +1225,34 @@
 
         <!-- Lesson Editor Form -->
         <div class="lesson-creator" id="lessonCreatorForm" style="display: none;">
+
+            <section class="lesson-editor-details card" aria-labelledby="lessonDetailsTitle">
+                <div class="lesson-details-header">
+                    <div>
+                        <h2 id="lessonDetailsTitle">تفاصيل الدرس</h2>
+                        <p>الوصف اختياري، وكلمة المرور تُحفظ كقيمة تجزئة ولا تظهر للطلاب.</p>
+                    </div>
+                </div>
+                <div class="lesson-details-grid">
+                    <div class="form-group lesson-description-group">
+                        <label for="lessonDescriptionInput">وصف الدرس <span class="form-optional">(اختياري)</span></label>
+                        <textarea id="lessonDescriptionInput" class="form-input lesson-description-input" rows="3" maxlength="1200" placeholder="اكتب وصفاً مختصراً يظهر للطلاب وفي معلومات الدرس…" oninput="updateLessonDescription(this.value)"></textarea>
+                        <div class="lesson-character-count" id="lessonDescriptionCount" aria-live="polite">0 / 1200</div>
+                    </div>
+                    <div class="form-group lesson-password-group">
+                        <label for="lessonPasswordInput">كلمة مرور الدرس <span class="form-optional">(اختياري)</span></label>
+                        <div class="lesson-password-field">
+                            <input id="lessonPasswordInput" class="form-input" type="password" minlength="4" maxlength="128" autocomplete="new-password" placeholder="اختياري، 4 أحرف على الأقل" oninput="handleLessonPasswordInput(this.value)">
+                            <button type="button" class="lesson-password-action" id="lessonPasswordToggle" onclick="toggleLessonPasswordVisibility()" aria-label="إظهار كلمة مرور الدرس" title="إظهار">عرض</button>
+                            <button type="button" class="lesson-password-action" id="lessonPasswordCopy" onclick="copyLessonPassword()" aria-label="نسخ كلمة مرور الدرس" title="نسخ" disabled>نسخ</button>
+                        </div>
+                        <div class="lesson-password-footer">
+                            <span id="lessonPasswordState">بدون حماية بكلمة مرور.</span>
+                            <button type="button" class="lesson-password-remove" id="lessonPasswordRemove" onclick="removeLessonPassword()" hidden>إزالة كلمة المرور</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <!-- Section list -->
             <div class="lesson-sections card">

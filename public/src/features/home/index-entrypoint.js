@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     showNotification(
       "منصة امتحانات بصمجي",
       `السلام عليكم يا ${escapeHtml(username)}`,
-      "./assets/images/السلام عليكم.png",
+      "./assets/images/salam.png",
     );
   } catch (error) {
     console.error("Error showing welcome notification:", error);

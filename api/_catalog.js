@@ -100,7 +100,7 @@ export async function loadPublicCatalog() {
         // Lessons stay small like courses/folders (curriculum-structure-sized,
         // not upload-volume-sized) — one unbounded SELECT, no pagination
         // needed the way fetchAllQuizzes() needs it.
-        supabase.from("lessons").select("id, slug, title, course_id, folder_id, created_at, updated_at"),
+        supabase.from("lesson_public").select("id, slug, title, description, password_protected, course_id, folder_id, created_at, updated_at"),
         // admin_users has no updated_at column (confirmed live: 42703 "column
         // admin_users.updated_at does not exist") — created_at is the only
         // timestamp available, so profile lastmod is necessarily "when the

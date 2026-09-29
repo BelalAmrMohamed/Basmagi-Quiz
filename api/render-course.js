@@ -39,8 +39,10 @@
 import fs from "fs";
 import path from "path";
 import { createClient } from "@supabase/supabase-js";
+import crypto from "crypto";
 
 let supabase = null;
+let serviceSupabase = null;
 
 function getSupabase() {
     if (supabase) return supabase;
@@ -49,6 +51,15 @@ function getSupabase() {
     if (!url || !key) throw new Error("Supabase environment is not configured.");
     supabase = createClient(url, key);
     return supabase;
+}
+
+function getServiceSupabase() {
+    if (serviceSupabase) return serviceSupabase;
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) throw new Error("Supabase service role is not configured.");
+    serviceSupabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+    return serviceSupabase;
 }
 
 // index.html is the SPA shell — course pages render inside it, not a
@@ -94,12 +105,13 @@ function toSlug(str) {
 // responsibilities easy to read independently instead of accumulating the
 // same kind of scar tissue create-quiz.js has.
 export default async function handler(req, res) {
-    if (req.method !== "GET" && req.method !== "HEAD") {
+    if (req.query.contentType === "lesson") {
+        if (req.method === "POST") return handleLessonUnlockRequest(req, res);
+        if (req.method === "GET" || req.method === "HEAD") return handleLessonRequest(req, res);
         return res.status(405).end();
     }
-
-    if (req.query.contentType === "lesson") {
-        return handleLessonRequest(req, res);
+    if (req.method !== "GET" && req.method !== "HEAD") {
+        return res.status(405).end();
     }
     return handleCourseRequest(req, res);
 }
@@ -118,6 +130,75 @@ export default async function handler(req, res) {
 // excerpt of its first content block — no dedicated OG image variant for
 // v1 (a generic site OG image is an acceptable fallback; og.js is already
 // one of the 12 functions, so a new branch there isn't justified for this).
+
+async function handleLessonUnlockRequest(req, res) {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    const rawId = typeof req.query.id === "string" ? req.query.id : "";
+    if (!rawId) return res.status(400).json({ error: "معرف الدرس مطلوب." });
+    let lessonId;
+    try { lessonId = decodeURIComponent(rawId); } catch { lessonId = rawId; }
+    const passwordHash = typeof req.body?.passwordHash === "string" ? req.body.passwordHash : "";
+    try {
+        const lesson = await fetchLessonMetaWithSecret(lessonId);
+        if (!lesson) return res.status(404).json({ error: "الدرس غير موجود." });
+        if (!lesson.password_hash) {
+            return res.status(200).json({ lesson: stripPublicLesson(lesson) });
+        }
+        if (!/^[0-9a-f]{64}$/i.test(passwordHash)) {
+            return res.status(400).json({ error: "تعذر التحقق من كلمة المرور." });
+        }
+        const digest = hashLessonPasswordDigest(passwordHash);
+        if (!constantTimeEqual(digest, lesson.password_hash)) {
+            return res.status(401).json({ error: "كلمة المرور غير صحيحة." });
+        }
+        return res.status(200).json({ lesson: stripPublicLesson(lesson) });
+    } catch (error) {
+        console.error("[render-course] Lesson unlock failed:", error);
+        return res.status(500).json({ error: "تعذّر فتح الدرس." });
+    }
+}
+
+function stripPublicLesson(lesson) {
+    return {
+        id: lesson.id,
+        slug: lesson.slug || null,
+        title: lesson.title || "",
+        description: lesson.description || "",
+        content: lesson.content || { sections: [] },
+        reader_prefs_default: lesson.reader_prefs_default || null,
+        created_at: lesson.created_at || null,
+        updated_at: lesson.updated_at || null,
+        password_protected: Boolean(lesson.password_hash),
+    };
+}
+
+function hashLessonPasswordDigest(passwordHash) {
+    return crypto.createHash("sha256").update(passwordHash, "utf8").digest("hex");
+}
+
+function constantTimeEqual(a, b) {
+    const left = String(a || "");
+    const right = String(b || "");
+    if (left.length !== right.length) return false;
+    let diff = 0;
+    for (let i = 0; i < left.length; i += 1) diff |= left.charCodeAt(i) ^ right.charCodeAt(i);
+    return diff === 0;
+}
+
+async function fetchLessonMetaWithSecret(idOrSlug) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+    const query = getServiceSupabase().from("lessons").select("id, slug, title, description, content, reader_prefs_default, created_at, updated_at, password_hash");
+    const { data, error } = isUuid
+        ? await query.eq("id", idOrSlug).maybeSingle()
+        : await query.eq("slug", idOrSlug).maybeSingle();
+    if (error) {
+        console.error("[render-course] Supabase lesson secret lookup error:", error.message);
+        return null;
+    }
+    return data || null;
+}
+
 async function handleLessonRequest(req, res) {
     const rawId = typeof req.query.id === "string" ? req.query.id : "";
     if (!rawId) {
@@ -189,7 +270,7 @@ async function handleLessonRequest(req, res) {
     );
 
     // ── OG / title / canonical tags ───────────────────────────────────────────
-    const excerpt = buildLessonExcerpt(lesson.content);
+    const excerpt = lesson.password_protected ? "" : (lesson.description?.trim() || buildLessonExcerpt(lesson.content));
     const canonicalUrl = `${SITE_ORIGIN}/lesson/${encodeURIComponent(lesson.slug || lesson.id)}`;
 
     html = html.replace(
@@ -231,7 +312,7 @@ async function handleLessonRequest(req, res) {
  */
 async function fetchLessonMeta(idOrSlug) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
-    const query = getSupabase().from("lessons").select("id, slug, title, content");
+    const query = getSupabase().from("lesson_public").select("id, slug, title, description, content, password_protected");
     const { data, error } = isUuid
         ? await query.eq("id", idOrSlug).maybeSingle()
         : await query.eq("slug", idOrSlug).maybeSingle();
@@ -246,7 +327,9 @@ async function fetchLessonMeta(idOrSlug) {
         id: data.id,
         slug: data.slug || null,
         title: data.title,
+        description: data.description || "",
         content: data.content,
+        password_protected: Boolean(data.password_protected),
     };
 }
 

@@ -74,6 +74,7 @@
     let time = 0;
     let frameId = 0;
     let particles = [];
+    let pageVisible = document.visibilityState !== "hidden";
 
     function applyBackground() {
       root.style.background = `rgb(${config.bg})`;
@@ -98,7 +99,14 @@
       particles = Array.from({ length: count }, spawnParticle);
     }
 
+    function scheduleRender() {
+      if (!pageVisible || frameId) return;
+      frameId = global.requestAnimationFrame(render);
+    }
+
     function render() {
+      frameId = 0;
+      if (!pageVisible) return;
       time += 1;
       context.fillStyle = `rgba(${config.bg}, ${config.trailAlpha})`;
       context.fillRect(0, 0, width, height);
@@ -120,16 +128,31 @@
         context.fillStyle = `hsla(${hue}, ${config.saturation}%, ${config.lightness}%, ${alpha})`;
         context.fill();
       });
-      frameId = global.requestAnimationFrame(render);
+      scheduleRender();
+    }
+
+    function onVisibilityChange() {
+      pageVisible = document.visibilityState !== "hidden";
+      if (pageVisible) {
+        context.fillStyle = `rgb(${config.bg})`;
+        context.fillRect(0, 0, width, height);
+        scheduleRender();
+      }
     }
 
     applyBackground();
     resize();
     global.addEventListener("resize", resize);
-    render();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    scheduleRender();
 
     return {
-      destroy() { global.cancelAnimationFrame(frameId); global.removeEventListener("resize", resize); root.remove(); },
+      destroy() {
+        global.cancelAnimationFrame(frameId);
+        global.removeEventListener("resize", resize);
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        root.remove();
+      },
       setTheme(nextTheme) { if (THEMES[nextTheme]) { theme = nextTheme; config = THEMES[theme]; applyBackground(); } },
       setDensity(nextDensity) { if (PARTICLE_COUNTS[nextDensity]) { density = nextDensity; count = PARTICLE_COUNTS[density]; particles = Array.from({ length: count }, spawnParticle); } },
     };
@@ -139,21 +162,25 @@
 })(typeof window !== "undefined" ? window : this);
 
 let flowFieldInstance = null;
+let reducedMotionMedia = null;
+
+function animationsAllowed() {
+  const disabledBySetting = document.documentElement.getAttribute("data-animations") === "disabled";
+  if (disabledBySetting) return false;
+  reducedMotionMedia ||= typeof window.matchMedia === "function"
+    ? window.matchMedia("(prefers-reduced-motion: reduce)")
+    : null;
+  return !reducedMotionMedia?.matches;
+}
+
 function initFlowField() {
-  // Any stray leftover node from a previous mount/destroy cycle (e.g. this
-  // ran once already this page load) must be cleared before re-mounting,
-  // otherwise a second canvas gets appended alongside a still-referenced
-  // stale one. `document.getElementById` also matters here because
-  // `flowFieldInstance` is only an in-memory reference — the DOM node it
-  // points at may already have been detached by something else.
-  const enabled = document.documentElement.getAttribute("data-animations") !== "disabled";
+  const enabled = animationsAllowed();
   if (enabled && !flowFieldInstance) {
     document.getElementById("flow-field-bg")?.remove();
     const container = document.createElement("div");
     container.id = "flow-field-bg";
     document.body.insertBefore(container, document.body.firstChild);
-    const currentTheme =
-      document.documentElement.getAttribute("data-theme") || "light";
+    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
     flowFieldInstance = FlowField.mount(container, { theme: currentTheme });
   } else if (!enabled && flowFieldInstance) {
     flowFieldInstance.destroy();
@@ -162,28 +189,21 @@ function initFlowField() {
   }
 }
 
-// Reacting to [data-animations]/[data-theme] purely through a
-// MutationObserver is asynchronous by spec (it batches into a microtask
-// and can coalesce several rapid attribute writes — e.g. quickly toggling
-// the switch off/on/off — into a single callback that only sees the FINAL
-// value, silently swallowing intermediate transitions). That made rapid or
-// repeated toggling appear to "do nothing" until a full reload re-ran the
-// synchronous boot call below. Reacting to the toggle directly via a
-// custom event (dispatched synchronously, same tick, right after the
-// attribute is set) makes every single toggle apply immediately and
-// deterministically; the MutationObserver stays only as a fallback for any
-// other code path that flips the attribute without dispatching the event
-// (e.g. a future integration, or manual devtools edits).
 function reactToAnimationsChange() {
-  if (flowFieldInstance && document.documentElement.getAttribute("data-theme")) {
-    flowFieldInstance.setTheme(document.documentElement.getAttribute("data-theme"));
+  if (flowFieldInstance) {
+    const theme = document.documentElement.getAttribute("data-theme") || "light";
+    flowFieldInstance.setTheme(theme);
   }
   initFlowField();
 }
 
 function bootFlowField() {
+  reducedMotionMedia ||= typeof window.matchMedia === "function"
+    ? window.matchMedia("(prefers-reduced-motion: reduce)")
+    : null;
   initFlowField();
   document.addEventListener("quiz:animations-changed", reactToAnimationsChange);
+  reducedMotionMedia?.addEventListener?.("change", reactToAnimationsChange);
   new MutationObserver((mutations) => {
     if (mutations.some((mutation) => mutation.attributeName === "data-animations" || mutation.attributeName === "data-theme")) {
       reactToAnimationsChange();

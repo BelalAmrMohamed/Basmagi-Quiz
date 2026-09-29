@@ -2724,3 +2724,69 @@
     font-size: .8rem;
   }
 }
+
+
+/* ── Embedded quiz/lesson references ─────────────────────────────────────── */
+.lesson-ref-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  box-shadow: var(--shadow-sm, 0 4px 16px rgba(0,0,0,.06));
+  overflow: hidden;
+}
+.lesson-ref-card__main { display: flex; gap: .8rem; min-width: 0; align-items: flex-start; }
+.lesson-ref-card__icon {
+  width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center;
+  border-radius: 12px; background: var(--color-primary-light); color: var(--color-primary);
+}
+.lesson-ref-card--lesson .lesson-ref-card__icon { background: color-mix(in srgb, var(--color-success) 14%, var(--color-surface)); color: var(--color-success); }
+.lesson-ref-card__icon svg { width: 21px; height: 21px; }
+.lesson-ref-card__copy { min-width: 0; }
+.lesson-ref-card__label, .lesson-ref-card__count { display: block; color: var(--color-text-secondary); font-size: .78rem; }
+.lesson-ref-card__title { margin: .18rem 0; font-size: 1rem; overflow-wrap: anywhere; }
+.lesson-ref-card__description, .lesson-ref-card__unavailable { margin: .2rem 0 0; color: var(--color-text-secondary); font-size: .84rem; line-height: 1.5; }
+.lesson-ref-card__protected { display: inline-flex; align-items: center; gap: .25rem; margin-top: .35rem; color: var(--color-warning, #b45309); font-size: .78rem; }
+.lesson-ref-card__protected svg { width: 14px; height: 14px; }
+.lesson-ref-card__actions { display: grid; grid-template-columns: repeat(4, minmax(72px, auto)); gap: .4rem; align-self: stretch; align-items: center; }
+.lesson-ref-card__action { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: .35rem; padding: .45rem .55rem; border: 1px solid var(--color-border); border-radius: 10px; background: transparent; color: var(--color-text-primary); font: inherit; font-size: .8rem; cursor: pointer; white-space: nowrap; }
+.lesson-ref-card__action:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+.lesson-ref-card__action:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.lesson-ref-card__action svg { width: 16px; height: 16px; flex: 0 0 16px; }
+.lesson-ref-card__action:disabled { opacity: .45; cursor: not-allowed; }
+.lesson-ref-card.is-unavailable .lesson-ref-card__action--start,
+.lesson-ref-card.is-unavailable .lesson-ref-card__action--download,
+.lesson-ref-card.is-unavailable .lesson-ref-card__action--ask { pointer-events: none; }
+
+/* ── Lesson password gate ────────────────────────────────────────────────── */
+.lesson-password-dialog { border: 0; padding: 0; background: transparent; color: var(--color-text-primary); width: min(92vw, 460px); max-width: 460px; }
+.lesson-password-dialog::backdrop { background: rgba(15, 23, 42, .72); backdrop-filter: blur(6px); }
+.lesson-password-dialog__panel { display: grid; gap: .75rem; padding: 1.2rem; border: 1px solid var(--color-border); border-radius: 18px; background: var(--color-surface); box-shadow: var(--shadow-lg, 0 20px 60px rgba(0,0,0,.22)); }
+.lesson-password-dialog__header { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+.lesson-password-dialog__eyebrow { color: var(--color-warning, #b45309); font-size: .75rem; font-weight: 700; }
+.lesson-password-dialog__header h2 { margin: .2rem 0 0; font-size: 1.1rem; }
+.lesson-password-dialog__close { width: 40px; height: 40px; border: 1px solid var(--color-border); border-radius: 10px; background: transparent; color: inherit; cursor: pointer; font-size: 1.25rem; }
+.lesson-password-dialog__message, .lesson-password-dialog__error { margin: 0; color: var(--color-text-secondary); font-size: .86rem; }
+.lesson-password-dialog__error { color: var(--color-error, #dc2626); }
+.lesson-password-dialog__label { font-weight: 700; font-size: .84rem; }
+.lesson-password-dialog__field { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: .45rem; }
+.lesson-password-dialog__field input { min-height: 42px; width: 100%; min-width: 0; padding: .55rem .65rem; border: 1px solid var(--color-border); border-radius: 10px; background: transparent; color: inherit; font: inherit; }
+.lesson-password-dialog__toggle { min-width: 52px; min-height: 42px; border: 1px solid var(--color-border); border-radius: 10px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.lesson-password-dialog__actions { display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; margin-top: .2rem; }
+
+@media (max-width: 760px) {
+  .lesson-ref-card { grid-template-columns: 1fr; }
+  .lesson-ref-card__actions { grid-template-columns: repeat(2, minmax(0,1fr)); width: 100%; }
+  .lesson-ref-card__action { min-width: 0; }
+}
+@media (max-width: 420px) {
+  .lesson-ref-card__main { gap: .55rem; }
+  .lesson-ref-card { padding: .8rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lesson-ref-card, .lesson-password-dialog__panel { scroll-behavior: auto; }
+}

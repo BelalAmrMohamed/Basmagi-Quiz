@@ -19,12 +19,16 @@ const MAX_BLOCKS_PER_SECTION = 40;
 const MAX_TITLE_LENGTH = 200;
 const MAX_MARKDOWN_LENGTH = 20_000;
 const MAX_OPTIONS = 8;
+const MAX_DESCRIPTION_LENGTH = 1200;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const ALLOWED_SECTION_KEYS = new Set(["id", "title", "defaultHidden", "blocks"]);
 const ALLOWED_BLOCK_KEYS_BY_TYPE = {
     markdown: new Set(["type", "body"]),
     media: new Set(["type", "url", "kind", "alt"]),
     quizRef: new Set(["type", "quizId", "title"]),
+    "lesson-reference": new Set(["type", "lessonId", "title", "slug"]),
     question: new Set([
         "type",
         "id",
@@ -102,6 +106,18 @@ function validateBlock(block, index, sectionIds) {
         if (!quizId) throw new Error(`معرف الامتحان المرتبط مفقود في العنصر رقم ${index + 1}.`);
         const clean = { type: "quizRef", quizId };
         if (typeof block.title === "string" && block.title) clean.title = block.title.slice(0, MAX_TITLE_LENGTH);
+        return clean;
+    }
+
+    if (type === "lesson-reference") {
+        const lessonId = typeof block.lessonId === "string" ? block.lessonId.trim() : "";
+        if (!lessonId) throw new Error(`معرف الدرس المرتبط مفقود في العنصر رقم ${index + 1}.`);
+        if (!UUID_RE.test(lessonId)) {
+            throw new Error(`معرف الدرس المرتبط يجب أن يكون UUID عند نشر الدرس (العنصر رقم ${index + 1}).`);
+        }
+        const clean = { type: "lesson-reference", lessonId };
+        if (typeof block.title === "string" && block.title) clean.title = block.title.slice(0, MAX_TITLE_LENGTH);
+        if (typeof block.slug === "string" && block.slug) clean.slug = block.slug.slice(0, MAX_TITLE_LENGTH);
         return clean;
     }
 
@@ -189,6 +205,36 @@ function validateBlock(block, index, sectionIds) {
     const onCorrect = validateRevealRule(block.onCorrect, sectionIds, `العنصر رقم ${index + 1}.onCorrect`);
     if (onCorrect) clean.onCorrect = onCorrect;
     return clean;
+}
+
+
+export function validateLessonDescription(description) {
+    if (description === undefined || description === null || description === "") return "";
+    if (typeof description !== "string") throw new Error("وصف الدرس يجب أن يكون نصاً.");
+    const clean = description.trim();
+    if (clean.length > MAX_DESCRIPTION_LENGTH) {
+        throw new Error(`وصف الدرس طويل جداً (الحد الأقصى ${MAX_DESCRIPTION_LENGTH} حرف).`);
+    }
+    return clean;
+}
+
+
+export function validateLessonPasswordHash(passwordHash) {
+    if (passwordHash === undefined || passwordHash === null || passwordHash === "") return "";
+    if (typeof passwordHash !== "string" || !/^[0-9a-f]{64}$/i.test(passwordHash)) {
+        throw new Error("كلمة مرور الدرس غير صالحة.");
+    }
+    return passwordHash.toLowerCase();
+}
+
+export function collectLessonReferenceIds(content) {
+    const ids = new Set();
+    for (const section of content?.sections || []) {
+        for (const block of section?.blocks || []) {
+            if (block?.type === "lesson-reference" && block.lessonId) ids.add(String(block.lessonId));
+        }
+    }
+    return [...ids];
 }
 
 /**

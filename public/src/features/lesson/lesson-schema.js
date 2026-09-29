@@ -34,6 +34,12 @@ export function ls(lesson, field) {
       return lesson?.slug || "";
     case "title":
       return lesson?.title || "";
+    case "description":
+      return lesson?.description ?? lesson?.meta?.description ?? "";
+    case "passwordProtected":
+      return Boolean(lesson?.password_protected || lesson?.passwordProtected || lesson?.meta?.passwordProtected || lesson?.passwordHash || lesson?.password_hash);
+    case "passwordHash":
+      return lesson?.passwordHash || lesson?.password_hash || null;
     case "courseId":
       return lesson?.course_id || null;
     case "folderId":
@@ -67,6 +73,22 @@ export function ls(lesson, field) {
  * @param {unknown} content
  * @returns {{sections: Array<{id:string,title:string,defaultHidden:boolean,blocks:Array}>}}
  */
+/** Canonical lesson metadata access for editor, reader, catalog and local rows.
+ * Older local rows may still carry duplicated top-level description/passwordProtected
+ * fields; the accessor accepts them for backward compatibility while new rows use meta.*. */
+export function normalizeLessonRecord(row) {
+  if (!row || typeof row !== "object") return null;
+  return {
+    ...row,
+    id: row.id || row.meta?.id || "",
+    title: row.title || row.meta?.title || "",
+    description: row.description ?? row.meta?.description ?? "",
+    passwordProtected: Boolean(row.password_protected || row.passwordProtected || row.meta?.passwordProtected || row.passwordHash || row.password_hash),
+    passwordHash: row.passwordHash || row.password_hash || null,
+    content: row.content ?? row.lesson ?? { sections: [] },
+  };
+}
+
 export function normalizeLessonContent(content) {
   if (typeof content === "string") {
     return { sections: [makeSection("s1", "", false, [{ type: "markdown", body: content }])] };
@@ -80,7 +102,10 @@ export function normalizeLessonContent(content) {
           section?.id || `s${i + 1}`,
           section?.title || "",
           Boolean(section?.defaultHidden),
-          Array.isArray(section?.blocks) ? section.blocks.filter(Boolean) : [],
+          Array.isArray(section?.blocks) ? section.blocks.filter(Boolean).map((block) => {
+            const reference = normalizeLessonReferenceBlock(block);
+            return reference || block;
+          }) : [],
         ),
       ),
     };
@@ -94,6 +119,49 @@ export function normalizeLessonContent(content) {
 
 function makeSection(id, title, defaultHidden, blocks) {
   return { id: String(id), title: String(title || ""), defaultHidden: Boolean(defaultHidden), blocks };
+}
+
+/** Normalizes a reference block without throwing, so corrupted legacy rows
+ * degrade to a safe fallback instead of breaking the whole lesson render. */
+export function normalizeLessonReferenceBlock(block) {
+  if (!block || typeof block !== "object") return null;
+  if (block.type === "quizRef") {
+    const quizId = String(block.quizId || "").trim();
+    if (!quizId) return null;
+    return { type: "quizRef", quizId, title: String(block.title || "").trim() };
+  }
+  if (block.type === "lesson-reference" || block.type === "lessonRef") {
+    const lessonId = String(block.lessonId || block.lessonRefId || "").trim();
+    if (!lessonId) return null;
+    return {
+      type: "lesson-reference",
+      lessonId,
+      title: String(block.title || "").trim(),
+      ...(block.slug ? { slug: String(block.slug).trim() } : {}),
+    };
+  }
+  return null;
+}
+
+export function collectQuizReferenceIds(normalizedContent) {
+  const ids = new Set();
+  for (const section of normalizedContent?.sections || []) {
+    for (const block of section?.blocks || []) {
+      if (block?.type === "quizRef" && block.quizId) ids.add(String(block.quizId));
+    }
+  }
+  return [...ids];
+}
+
+export function collectLessonReferenceIds(normalizedContent) {
+  const ids = new Set();
+  for (const section of normalizedContent?.sections || []) {
+    for (const block of section?.blocks || []) {
+      const normalized = normalizeLessonReferenceBlock(block);
+      if (normalized?.lessonId) ids.add(normalized.lessonId);
+    }
+  }
+  return [...ids];
 }
 
 /**

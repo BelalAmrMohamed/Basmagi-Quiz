@@ -60,6 +60,7 @@ import {
 // quiz. See ai-agent-attach-launcher.js's own top comment for the fuller
 // rationale.
 import { openAIAgentWithAttachment, resolveUserItemAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
+import { downloadLesson } from "./lesson-download.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { SPARKLE_ICON_SVG } from "./icons.js";
 
@@ -250,6 +251,7 @@ export function createUserQuizCard(quiz, index) {
 export function createUserLessonCard(lesson) {
   const lessonId = lesson.id || lesson.meta?.id;
   const title = lesson.meta?.title || "درس بدون عنوان";
+  const description = lesson.meta?.description || lesson.description || "";
   const sections = lesson.stats?.sectionCount ?? lesson.lesson?.sections?.length ?? 0;
   // Reuses collectLessonInfo (same source the ⋮ menu's info rows and the
   // info modal use) instead of re-deriving the question count here, so the
@@ -309,7 +311,14 @@ export function createUserLessonCard(lesson) {
     questionsLabel.textContent = `الأسئلة المدمجة: ${questionCount}`;
     meta.appendChild(questionsLabel);
   }
-  text.append(heading, meta);
+  text.append(heading);
+  if (description) {
+    const desc = document.createElement("p");
+    desc.className = "lesson-card-description";
+    desc.textContent = description;
+    text.append(desc);
+  }
+  text.append(meta);
 
   const actions = document.createElement("div");
   actions.className = "exam-card-actions-wrap";
@@ -347,8 +356,12 @@ export function createUserLessonCard(lesson) {
   download.style.flex = "1";
   download.style.minWidth = "0";
   download.textContent = "تحميل";
-  download.disabled = true;
-  download.title = "تصدير الدروس سيتوفر قريباً";
+  download.disabled = false;
+  download.setAttribute("aria-label", `تحميل درس ${title}`);
+  download.onclick = (event) => {
+    event.stopPropagation();
+    downloadLesson(lesson, download);
+  };
   actions.append(more, start, download);
   card.append(checkbox, icon, text, actions);
   return card;

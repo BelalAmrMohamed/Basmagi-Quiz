@@ -227,8 +227,8 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
         .select("id, course_id, folder_id, title, data, password")
         .order("created_at", { ascending: true }),
       supabase
-        .from("lessons")
-        .select("id, course_id, folder_id, title, slug, content, created_at")
+        .from("lesson_public")
+        .select("id, course_id, folder_id, title, slug, section_ids, section_count, description, password_protected, created_at, updated_at")
         .order("created_at", { ascending: true }),
       supabase
         .from("courses")
@@ -364,8 +364,8 @@ async function buildSubjects(quizzes, lessons, courses, folders) {
       console.warn(`[quizManifest] ${error.message}`);
       continue;
     }
-    const content = row.content;
-    const sections = Array.isArray(content?.sections) ? content.sections : [{ id: "s1" }];
+    const sectionIds = Array.isArray(row.section_ids) ? row.section_ids.map(String).filter(Boolean) : [];
+    const sections = sectionIds.length ? sectionIds.map((id) => ({ id })) : Array.from({ length: Number(row.section_count) || 0 }, (_, i) => ({ id: `s${i + 1}` }));
     ensureSubject(course).lessons.push({
       id: row.id,
       slug: row.slug || null,
@@ -383,6 +383,9 @@ async function buildSubjects(quizzes, lessons, courses, folders) {
         .filter((section) => !section.hidden)
         .map((section) => section.id),
       createdAt: row.created_at || null,
+      updatedAt: row.updated_at || null,
+      description: row.description || "",
+      passwordProtected: Boolean(row.password_protected),
       courseId: row.course_id || null,
       folderId: row.folder_id || null,
     });

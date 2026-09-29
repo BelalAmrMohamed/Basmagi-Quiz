@@ -58,7 +58,7 @@ try {
   showNotification(
     "الامتحان بدأ",
     "أسأل الله لك التوفيق والسداد",
-    "./assets/images/صلى_على_النبي_2.png",
+    "./assets/images/salah.png",
   );
 } catch (err) {
   console.error("Failed to show 'exam started' notification:", err);

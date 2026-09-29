@@ -11,6 +11,7 @@ import { isRecentlyAdded } from "./date-utils.js";
 import { formatArabicQuestionCount, refreshUserQuizzesCard } from "./course-count.js";
 import { qz } from "./quiz-schema.js";
 import { ensureDownloadAllowed } from "./download-password.js";
+import { showQuizDownloadPopup } from "./download-modal.js";
 import {
   showDownloadModal,
   withDownloadLoading,

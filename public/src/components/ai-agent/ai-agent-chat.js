@@ -2002,6 +2002,7 @@ export function createChatPanel(options = {}) {
     move_item: "نقل عنصر",
     reset_quiz_page: "إعادة تعيين الصفحة",
     fetch_attached_quiz: "استرجاع بيانات الامتحان",
+    fetch_attached_lesson: "استرجاع بيانات الدرس",
   };
 
   function describeToolCall(toolCall) {
@@ -2438,7 +2439,7 @@ export function createChatPanel(options = {}) {
           });
 
           try {
-            const handler = toolCall?.name === "fetch_attached_quiz" && attachmentToolHandler
+            const handler = ["fetch_attached_quiz", "fetch_attached_lesson"].includes(toolCall?.name) && attachmentToolHandler
               ? attachmentToolHandler
               : onToolCall;
             const resultText = await handler(toolCall);

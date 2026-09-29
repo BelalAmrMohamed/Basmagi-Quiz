@@ -111,8 +111,8 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   ├── screenshot-mobile.png
 │   │   │   ├── white-icon.png
 │   │   │   ├── word_icon.png
-│   │   │   ├── السلام عليكم.png
-│   │   │   └── صلى_على_النبي_2.png
+│   │   │   ├── salam.png
+│   │   │   └── salah.png
 │   │   │
 │   │   ├── profile-featured/ [7.06 MB, 0 LOC]
 │   │   │   ├── pictures/ [545.56 KB, 0 LOC]

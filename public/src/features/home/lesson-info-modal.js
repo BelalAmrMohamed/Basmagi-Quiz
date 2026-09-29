@@ -27,6 +27,7 @@ const BLOCK_LABELS = {
     markdown: "نص",
     media: "وسائط",
     quizRef: "امتحان مرتبط",
+    "lesson-reference": "درس مرتبط",
     question: "سؤال مدمج",
 };
 
@@ -45,7 +46,12 @@ const BLOCK_LABELS = {
  * }}
  */
 export function collectLessonInfo(row) {
-    const { sections } = normalizeLessonContent(row?.lesson);
+    const hasContent = row?.lesson != null || row?.content != null;
+    const content = row?.lesson ?? row?.content ?? { sections: [] };
+    const { sections } = normalizeLessonContent(content);
+    const resolvedSectionCount = hasContent
+        ? sections.length
+        : Number(row?.section_count ?? row?.sectionCount ?? 0);
 
     const blockCounts = {};
     let blockCount = 0;
@@ -72,10 +78,12 @@ export function collectLessonInfo(row) {
 
     return {
         id: row?.id || row?.meta?.id || "",
-        title: row?.meta?.title || "درس بدون عنوان",
-        createdAt: row?.meta?.createdAt || null,
-        updatedAt: row?.meta?.updatedAt || null,
-        sectionCount: sections.length,
+        title: row?.meta?.title || row?.title || "درس بدون عنوان",
+        description: row?.description || row?.meta?.description || "",
+        passwordProtected: Boolean(row?.passwordProtected || row?.password_protected || row?.meta?.passwordProtected || row?.passwordHash || row?.password_hash),
+        createdAt: row?.meta?.createdAt || row?.created_at || null,
+        updatedAt: row?.meta?.updatedAt || row?.updated_at || null,
+        sectionCount: Number.isFinite(resolvedSectionCount) ? resolvedSectionCount : 0,
         hiddenSectionCount,
         blockCount,
         blockCounts,
@@ -146,6 +154,8 @@ export function buildLessonInfoHtml(info) {
         addRow("المحتوى", "فارغ");
     }
     if (info.essayCount) addRow("أسئلة مقالية", escapeHtml(String(info.essayCount)));
+    if (info.description) addRow("الوصف", escapeHtml(info.description));
+    if (info.passwordProtected) addRow("الحماية", "محمي بكلمة مرور");
     if (info.fontLabel) addRow("خط القراءة", escapeHtml(info.fontLabel));
     const created = formatDateForInfo(info.createdAt);
     if (created) addRow("تاريخ الإنشاء", `<span dir="ltr">${escapeHtml(created)}</span>`);
@@ -203,4 +213,8 @@ export function showUserLessonInfoModal(row) {
 
     dialog.showModal();
     return dialog;
+}
+
+export function showLessonInfoModal(row) {
+    return showUserLessonInfoModal(row);
 }

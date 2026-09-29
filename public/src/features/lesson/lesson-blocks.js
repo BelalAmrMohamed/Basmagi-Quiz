@@ -3,7 +3,7 @@
 // BLOCK RENDERERS — one function per block type in `lessons.content`.
 // ============================================================================
 // Block types (see the lessons plan's Phase 2 step 1):
-//   markdown | media | quizRef | question
+//   markdown | media | quizRef | lesson-reference | question
 //
 // Each renderer returns an HTML string; interactive wiring (the embedded
 // question's click handling) is attached afterwards by equipQuestionBlocks()
@@ -16,6 +16,7 @@ import { escapeHtml } from "../home/escape-html.js";
 import { recordQuestionAnswer, appendEssayAnswerText, resetLessonQuestionAnswers, getLessonProgress } from "./lesson-schema.js";
 import { _confirm } from "../../components/notifications/notifications.js";
 import { gradeEssay, isAnswerCorrect } from "../../shared/rate-answers.js";
+import { lessonIcon } from "./lesson-icons.js";
 
 const questionRootCleanup = new WeakMap();
 
@@ -37,6 +38,9 @@ export function renderBlock(block, ctx) {
       return renderMediaBlock(block);
     case "quizRef":
       return renderQuizRefBlock(block, ctx);
+    case "lesson-reference":
+    case "lessonRef":
+      return renderLessonReferenceBlock(block, ctx);
     case "question":
       return renderQuestionBlock(block, ctx);
     default:
@@ -74,24 +78,62 @@ function renderMediaBlock(block) {
  * in a second page, and it keeps scoring unambiguously confined to the real
  * quiz page, which matters because lessons are never scored.
  */
+function referenceActionButton(kind, action, id, title, label, icon) {
+  return `<button type="button" class="lesson-ref-card__action lesson-ref-card__action--${action}" data-reference-kind="${kind}" data-reference-action="${action}" data-reference-id="${escapeHtml(id)}" data-reference-title="${escapeHtml(title)}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">${lessonIcon(icon)}<span>${escapeHtml(label)}</span></button>`;
+}
+
+function renderReferenceCard({ kind, id, title, description, countLabel, available, protectedContent }) {
+  const labels = kind === "quiz"
+    ? { start: "ابدأ الامتحان", open: "ابدأ الامتحان" }
+    : { start: "فتح الدرس", open: "فتح الدرس" };
+  const bodyTitle = title || (kind === "quiz" ? "امتحان غير متاح" : "درس غير متاح");
+  return (
+    `<article class="lesson-ref-card lesson-ref-card--${kind}${available ? "" : " is-unavailable"}" data-reference-card data-reference-kind="${kind}">` +
+    `<div class="lesson-ref-card__main">` +
+    `<div class="lesson-ref-card__icon" aria-hidden="true">${lessonIcon(kind === "quiz" ? "exam" : "book")}</div>` +
+    `<div class="lesson-ref-card__copy">` +
+    `<span class="lesson-ref-card__label">${kind === "quiz" ? "امتحان مرتبط" : "درس مرتبط"}</span>` +
+    `<h3 class="lesson-ref-card__title">${escapeHtml(bodyTitle)}</h3>` +
+    (description ? `<p class="lesson-ref-card__description">${escapeHtml(description)}</p>` : "") +
+    (countLabel ? `<span class="lesson-ref-card__count">${escapeHtml(countLabel)}</span>` : "") +
+    (!available ? `<p class="lesson-ref-card__unavailable">العنصر المرجعي لم يعد متاحًا.</p>` : "") +
+    (protectedContent ? `<span class="lesson-ref-card__protected">${lessonIcon("lock")} محمي بكلمة مرور</span>` : "") +
+    `</div></div>` +
+    `<div class="lesson-ref-card__actions" role="group" aria-label="إجراءات العنصر المرتبط">` +
+    referenceActionButton(kind, "start", id, bodyTitle, labels.start, kind === "quiz" ? "play" : "book") +
+    referenceActionButton(kind, "download", id, bodyTitle, "تنزيل", "download") +
+    referenceActionButton(kind, "info", id, bodyTitle, "معلومات", "info") +
+    referenceActionButton(kind, "ask", id, bodyTitle, "اسأل الباشـمبصمج", "sparkle") +
+    `</div></article>`
+  );
+}
+
 function renderQuizRefBlock(block, ctx) {
-  const quizId = block.quizId || "";
-  if (!quizId) return "";
+  const quizId = String(block.quizId || "").trim();
+  if (!quizId) return `<div class="lesson-ref-card lesson-ref-card--quiz is-unavailable"><div class="lesson-ref-card__unavailable">مرجع الامتحان غير صالح.</div></div>`;
   const quiz = ctx?.quizLookup?.get(quizId) || null;
   const title = quiz?.title || block.title || "امتحان";
-  const countLabel =
-    typeof quiz?.questionCount === "number" ? `${quiz.questionCount} سؤال` : "";
+  const count = typeof quiz?.questionCount === "number" ? `${quiz.questionCount} سؤال` : "";
+  return renderReferenceCard({ kind: "quiz", id: quizId, title, description: quiz?.description || "", countLabel: count, available: Boolean(quiz), protectedContent: Boolean(quiz?.passwordProtected) });
+}
 
-  return (
-    `<div class="lesson-block lesson-block--quiz-ref">` +
-    `<div class="lesson-quiz-ref__info">` +
-    `<span class="lesson-quiz-ref__label">امتحان مرتبط</span>` +
-    `<h4 class="lesson-quiz-ref__title">${escapeHtml(title)}</h4>` +
-    (countLabel ? `<span class="lesson-quiz-ref__count">${escapeHtml(countLabel)}</span>` : "") +
-    `</div>` +
-    `<a class="lesson-quiz-ref__link" href="/quiz/${encodeURIComponent(quizId)}">ابدأ الامتحان</a>` +
-    `</div>`
-  );
+function renderLessonReferenceBlock(block, ctx) {
+  const lessonId = String(block.lessonId || "").trim();
+  if (!lessonId) return `<div class="lesson-ref-card lesson-ref-card--lesson is-unavailable"><div class="lesson-ref-card__unavailable">مرجع الدرس غير صالح.</div></div>`;
+  if (String(lessonId) === String(ctx?.lessonId || "")) {
+    return `<div class="lesson-ref-card lesson-ref-card--lesson is-unavailable"><div class="lesson-ref-card__unavailable">لا يمكن للدرس أن يربط نفسه.</div></div>`;
+  }
+  const target = ctx?.lessonLookup?.get(lessonId) || null;
+  const title = target?.title || block.title || "درس";
+  return renderReferenceCard({
+    kind: "lesson",
+    id: lessonId,
+    title,
+    description: target?.description || "",
+    countLabel: Number.isFinite(Number(target?.section_count)) ? `${Number(target.section_count)} أقسام` : "",
+    available: Boolean(target),
+    protectedContent: Boolean(target?.password_protected || target?.passwordProtected),
+  });
 }
 
 /**

@@ -4912,10 +4912,22 @@ kbd {
   color: #fff;
 }
 
-.exam-card.user-lesson-card .desktop-download-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.48;
-  filter: grayscale(1);
+ .exam-card.user-lesson-card .desktop-download-btn {
+  background: var(--color-primary);
+  color: #fff;
+}
+.lesson-card-description {
+  margin: .25rem 0 .45rem;
+  color: var(--color-text-secondary);
+  font-size: .84rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@media (max-width: 600px) {
+  .lesson-card-description { font-size: .8rem; }
 }
 
 /* Phase 4a: local-only completion summary shown at a course's root. */

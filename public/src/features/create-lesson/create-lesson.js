@@ -44,8 +44,10 @@ import {
     _prompt,
 } from "../../components/notifications/notifications.js";
 import { normalizeLessonContent, hasLessonLevelCollision } from "../lesson/lesson-schema.js";
-import { FONT_CHOICES } from "../lesson/lesson-reader-prefs.js";
-import { mountColorPicker } from "../../shared/color-picker.js";
+import { FONT_CHOICES, applyReaderPrefs } from "../lesson/lesson-reader-prefs.js";
+import { sha256Hex, validateLessonPasswordInput } from "../lesson/lesson-access.js";
+import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar.js";
+import { applyMarkdownToolbarAction } from "../../shared/markdown-toolbar-actions.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { CREATE_LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { CREATE_LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
@@ -79,6 +81,9 @@ let quizExamList = [];
 let isAdmin = false;
 
 let autosaveTimeout = null;
+let lessonPasswordDraft = "";
+let lessonPasswordHashJob = 0;
+let lessonPasswordHashPromise = Promise.resolve(null);
 
 function newLocalId(prefix) {
     return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
@@ -87,7 +92,10 @@ function newLocalId(prefix) {
 function emptyLessonData() {
     return {
         title: "",
+        description: "",
         fontId: "default",
+        passwordHash: null,
+        passwordProtected: false,
         sections: [{ id: newLocalId("s"), title: "", defaultHidden: false, blocks: [] }],
     };
 }
@@ -187,9 +195,12 @@ function buildRow(id, type, existing) {
             createdAt: existing?.meta?.createdAt || new Date().toLocaleString("en-US"),
             updatedAt: now,
             readerPrefs: readerPrefsFromData(),
+            description: lessonData.description || "",
+            passwordProtected: Boolean(lessonData.passwordProtected || lessonData.passwordHash),
         },
         stats: { questionCount: countQuestions(), sectionCount: lessonData.sections.length },
         lesson: content,
+        passwordHash: lessonData.passwordHash || null,
         // `questions` stays an (empty) array so any workspace code that reads
         // `quiz.questions.length` on every row never throws on a lesson row.
         questions: [],
@@ -441,7 +452,7 @@ window.lessonMenuAction = function (action) {
     if (action === "section") return window.addSection();
     if (action === "help") return showNotification("اختصارات", "Ctrl+S للحفظ، Ctrl+Z للتراجع، Ctrl+Y للإعادة.", "info");
     const section = lessonData.sections[lessonData.sections.length - 1];
-    if (["markdown", "media", "question"].includes(action) && section) return window.addBlock(section.id, action);
+    if (["markdown", "media", "question", "quizRef", "lesson-reference"].includes(action) && section) return window.addBlock(section.id, action);
     if (action === "expand" || action === "collapse") {
         document.querySelectorAll(".lesson-section-card").forEach((card) => card.classList.toggle("collapsed", action === "collapse"));
     }
@@ -619,8 +630,9 @@ function renderEntryItemsGrid() {
             kind: "published",
             id: row.id,
             title: row.title || "درس بدون عنوان",
-            count: row.content?.sections?.flatMap((section) => section.blocks || []).filter((block) => block.type === "question").length || 0,
-            sections: row.content?.sections?.length || 0,
+            count: 0,
+            sections: 0,
+            description: row.description || "",
             updatedAt: row.updated_at || row.created_at || null,
         }))
         .sort(_byNewest);
@@ -768,6 +780,7 @@ function startNewLesson() {
     currentDraftId = null;
     editingLessonId = null;
     publishedLessonId = null;
+    lessonPasswordDraft = "";
     resetHistory();
     renderLessonForm();
     showLessonForm();
@@ -795,7 +808,10 @@ function openLessonById(id) {
     const prefs = row.meta?.readerPrefs || {};
     lessonData = {
         title: row.meta?.title || "",
+        description: row.description ?? row.meta?.description ?? "",
         fontId: prefs.fontId || "default",
+        passwordHash: row.passwordHash || null,
+        passwordProtected: Boolean(row.passwordProtected || row.meta?.passwordProtected || row.passwordHash),
         sections: normalized.sections.length
             ? normalized.sections.map((s) => ({
                 id: s.id,
@@ -814,6 +830,7 @@ function openLessonById(id) {
         currentDraftId = null;
     }
 
+    lessonPasswordDraft = "";
     resetHistory();
     renderLessonForm();
     showLessonForm();
@@ -823,6 +840,7 @@ function openLessonById(id) {
 /** Give a stored block its editor-only _localId (and fill defaults). */
 function hydrateBlock(block) {
     const b = { ...block, _localId: newLocalId("b") };
+    if (b.type === "lessonRef") b.type = "lesson-reference";
     if (b.type === "question") {
         if (b.questionKind === "essay") {
             b.questionKind = "essay";
@@ -969,343 +987,17 @@ function setupMdField(id, onChange, { minPx = 40, maxPx = 320 } = {}) {
 }
 
 // =============================================================================
-// GLOBAL MARKDOWN + LATEX BAR (#globalMdBar) — one bar for every .md-source
+// SHARED GLOBAL MARKDOWN + LATEX BAR
 // =============================================================================
 
-let _activeMdSource = null;
-// Highlight picker state — see setupGlobalMdBar().
-let _highlightPicker = null;
-let _highlightSavedSelection = null;
-
-function _trackMdSourceFocus() {
-    document.addEventListener(
-        "focusin",
-        (e) => {
-            if (e.target.classList?.contains("md-source")) _activeMdSource = e.target;
-        },
-        true,
-    );
-}
-
-let _gmdTipEl = null;
-let _gmdTipTimer = null;
-function _showNoFieldTip() {
-    if (!_gmdTipEl) {
-        _gmdTipEl = document.createElement("div");
-        _gmdTipEl.className = "gmd-no-field-tip";
-        _gmdTipEl.textContent = "انقر على حقل نصي أولاً";
-        document.body.appendChild(_gmdTipEl);
-    }
-    clearTimeout(_gmdTipTimer);
-    _gmdTipEl.classList.add("visible");
-    _gmdTipTimer = setTimeout(() => _gmdTipEl?.classList.remove("visible"), 2000);
-}
-
-/**
- * Apply a markdown command or insert a LaTeX snippet into the active field.
- * @param {string|null} cmd
- * @param {string|null} latex  raw LaTeX (when cmd is null)
- * @param {string|null} extra  heading level, or a highlight color for cmd "highlight"
- */
-function applyGlobalMdAction(cmd, latex = null, extra = null) {
-    const ta = _activeMdSource;
-    if (!ta || !document.body.contains(ta)) {
-        _showNoFieldTip();
-        return;
-    }
-
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const value = ta.value;
-    const selected = value.slice(start, end);
-
-    const wrap = (prefix, suffix = prefix, placeholder = "") => {
-        const text = selected || placeholder;
-        replaceTextareaRange(ta, start, end, prefix + text + suffix);
-        const cs = start + prefix.length;
-        ta.setSelectionRange(cs, cs + text.length);
-    };
-
-    const linePrefix = (prefix) => {
-        const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-        const lineEnd = end || lineStart;
-        const affected = value.slice(lineStart, lineEnd);
-        const newLines = (affected || "")
-            .split("\n")
-            .map((line) => (line.startsWith(prefix) ? line : prefix + line))
-            .join("\n");
-        replaceTextareaRange(ta, lineStart, lineEnd, newLines);
-        ta.setSelectionRange(lineStart, lineStart + newLines.length);
-    };
-
-    if (latex !== null) {
-        // Raw LaTeX must be wrapped in $…$ or the KaTeX auto-render pass has no
-        // delimiter to find and leaves the source showing as plain text.
-        const snippet = selected ? selected + latex : latex;
-        const inserted = `$${snippet}$`;
-        replaceTextareaRange(ta, start, end, inserted);
-        const braceIdx = inserted.indexOf("{}");
-        const pos = braceIdx !== -1 ? start + braceIdx + 1 : start + inserted.length - 1;
-        ta.setSelectionRange(pos, pos);
-    } else {
-        switch (cmd) {
-            case "bold": wrap("**", "**", "نص غامق"); break;
-            case "italic": wrap("*", "*", "نص مائل"); break;
-            case "strike": wrap("~~", "~~", "نص مشطوب"); break;
-            case "code": wrap("`", "`", "كود"); break;
-            case "codeblock": {
-                const text = selected || "كود";
-                replaceTextareaRange(ta, start, end, "```\n" + text + "\n```");
-                const cs = start + 4;
-                ta.setSelectionRange(cs, cs + text.length);
-                break;
-            }
-            case "heading": {
-                const level = Math.min(Math.max(Number(extra) || 3, 1), 6);
-                linePrefix("#".repeat(level) + " ");
-                break;
-            }
-            case "blockquote": linePrefix("> "); break;
-            case "hr": {
-                const ins = "\n---\n";
-                replaceTextareaRange(ta, start, end, ins);
-                const pos = start + ins.length;
-                ta.setSelectionRange(pos, pos);
-                break;
-            }
-            case "ul": linePrefix("- "); break;
-            case "ol": linePrefix("1. "); break;
-            case "link": {
-                const text = selected || "نص الرابط";
-                replaceTextareaRange(ta, start, end, `[${text}](https://)`);
-                const urlStart = start + text.length + 3;
-                ta.setSelectionRange(urlStart, urlStart + "https://".length);
-                break;
-            }
-            case "table": {
-                const rows = "| العمود 1 | العمود 2 |\n| --- | --- |\n| قيمة | قيمة |";
-                const needsNl = start > 0 && value[start - 1] !== "\n";
-                const ins = (needsNl ? "\n" : "") + rows;
-                replaceTextareaRange(ta, start, end, ins);
-                const pos = start + ins.length;
-                ta.setSelectionRange(pos, pos);
-                break;
-            }
-            case "inlinemath": wrap("$", "$", "math"); break;
-            case "blockmath": wrap("$$", "$$", "math"); break;
-            case "highlight": {
-                // DYNAMIC PER-SPAN COLOR. Emits `==text==(color)`, which
-                // markdown.js's applyInline() turns into a span carrying its
-                // OWN --md-highlight-color — so different words in the SAME
-                // lesson can each get a different color. Only the swatch the
-                // author picks decides the color; nothing here is page-wide.
-                const text = selected || "نص مظلل";
-                const color = typeof extra === "string" ? extra : "";
-                const suffix = color ? `(${color})` : "";
-                replaceTextareaRange(ta, start, end, `==${text}==${suffix}`);
-                const cs = start + 2;
-                ta.setSelectionRange(cs, cs + text.length);
-                break;
-            }
-        }
-    }
-
-    ta.focus();
-    autoResizeMdSource(ta);
-    ta.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-/** Drops an empty <img>/<video>/<audio> tag at the cursor for the author to paste a link into. */
-function triggerMediaInsertForActiveField(mediaType) {
-    const ta = _activeMdSource;
-    if (!ta || !document.body.contains(ta)) {
-        _showNoFieldTip();
-        return;
-    }
-    const tag =
-        mediaType === "image"
-            ? `<img width="400" height="400" alt="" src="" />`
-            : `<${mediaType} src=""></${mediaType}>`;
-    const start = ta.selectionStart ?? ta.value.length;
-    const end = ta.selectionEnd ?? ta.value.length;
-    replaceTextareaRange(ta, start, end, tag);
-    autoResizeMdSource(ta);
-    ta.dispatchEvent(new Event("input", { bubbles: true }));
-    const srcIdx = tag.indexOf('src=""') + 5;
-    ta.setSelectionRange(start + srcIdx, start + srcIdx);
-    ta.focus();
-}
-
-// ── Roving-tabindex keyboard nav for the bar's role="menu" dropdowns ─────────
-
-function _gmdMenuItems(menuEl) {
-    return Array.from(menuEl.querySelectorAll(":scope > button"));
-}
-
-function _focusRovingItem(items, index) {
-    if (!items.length) return;
-    const clamped = (index + items.length) % items.length;
-    items.forEach((item, i) => item.setAttribute("tabindex", i === clamped ? "0" : "-1"));
-    items[clamped].focus();
-}
-
-function activateMenuKeyboardNav(menuEl, onClose) {
-    if (!menuEl) return;
-    if (!menuEl.dataset.rovingNavReady) {
-        menuEl.dataset.rovingNavReady = "1";
-        menuEl.addEventListener("keydown", (e) => {
-            const items = _gmdMenuItems(menuEl);
-            if (!items.length) return;
-            const cur = items.indexOf(document.activeElement);
-            if (e.key === "ArrowDown") { e.preventDefault(); _focusRovingItem(items, cur === -1 ? 0 : cur + 1); }
-            else if (e.key === "ArrowUp") { e.preventDefault(); _focusRovingItem(items, cur === -1 ? items.length - 1 : cur - 1); }
-            else if (e.key === "Home") { e.preventDefault(); _focusRovingItem(items, 0); }
-            else if (e.key === "End") { e.preventDefault(); _focusRovingItem(items, items.length - 1); }
-            else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); onClose?.(); }
-            else if (e.key === "Tab") { onClose?.(); }
-        });
-    }
-    const items = _gmdMenuItems(menuEl);
-    items.forEach((item, i) => item.setAttribute("tabindex", i === 0 ? "0" : "-1"));
-    items[0]?.focus();
-}
-
-function positionGmdDropdown(toggle, menu) {
-    const rect = toggle.getBoundingClientRect();
-    menu.style.visibility = "hidden";
-    menu.style.display = "flex";
-    menu.style.top = `${rect.bottom + 4}px`;
-    menu.style.left = "0px";
-    const menuWidth = menu.offsetWidth;
-    let left = rect.right - menuWidth; // RTL: align the menu's right edge to the toggle's
-    left = Math.max(8, Math.min(left, window.innerWidth - menuWidth - 8));
-    menu.style.left = `${left}px`;
-    menu.style.display = "";
-    menu.style.visibility = "";
-}
-
-function closeAllGmdDropdowns() {
-    document.querySelectorAll("#globalMdBar .gmd-dropdown-menu.open").forEach((m) => {
-        m.classList.remove("open");
-        const toggle = m.previousElementSibling;
-        if (toggle?.classList.contains("gmd-dropdown-toggle")) toggle.setAttribute("aria-expanded", "false");
-    });
-}
-
 function setupGlobalMdBar() {
-    _trackMdSourceFocus();
-
-    const bar = document.getElementById("globalMdBar");
-    if (!bar) return;
-
-    // Keep the textarea focused (and its selection intact) while a bar button
-    // is pressed — a mousedown on a button would otherwise blur the field and
-    // collapse the selection before the click handler reads it.
-    bar.addEventListener("mousedown", (e) => {
-        if (e.target.closest(".gmd-btn")) e.preventDefault();
-    });
-
-    bar.querySelectorAll(".gmd-btn:not(.gmd-dropdown-toggle)").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-            e.preventDefault();
-            const cmd = btn.dataset.gmdCmd || null;
-            if (cmd === "image" || cmd === "video" || cmd === "audio") {
-                triggerMediaInsertForActiveField(cmd);
-                closeAllGmdDropdowns();
-                return;
-            }
-            const latex = btn.dataset.gmdLatex !== undefined ? btn.dataset.gmdLatex : null;
-            // `extra` doubles as the heading level OR the highlight swatch color.
-            const extra = btn.dataset.gmdHeading || btn.dataset.gmdColor || null;
-            applyGlobalMdAction(cmd, latex, extra);
-            closeAllGmdDropdowns();
-        });
-    });
-
-    // Highlight color picker (Google-Docs-style palette + custom + eyedropper).
-    // The picker's own controls are .cp-* elements, deliberately NOT .gmd-btn,
-    // so the generic command-button handler above never sees them.
-    //
-    // Selection safety: bar-level mousedown preventDefault (above) keeps the
-    // textarea focused for palette clicks, but the picker also contains a
-    // text field (#RRGGBB) and a native color input, which MUST be allowed to
-    // take focus/opening. Taking focus blurs the textarea, and although a
-    // textarea keeps its selectionStart/End after blur, the picker's own
-    // interactions could still move it in some browsers — so the range is
-    // captured when the menu opens and restored right before applying.
-    const highlightMenu = document.getElementById("gmdHighlightMenu");
-    if (highlightMenu) {
-        highlightMenu.addEventListener("mousedown", (e) => e.stopPropagation());
-        _highlightPicker = mountColorPicker(
-            highlightMenu,
-            (hex) => {
-                const ta = _highlightSavedSelection?.ta;
-                if (ta && document.body.contains(ta)) {
-                    _activeMdSource = ta;
-                    ta.focus();
-                    ta.setSelectionRange(_highlightSavedSelection.start, _highlightSavedSelection.end);
-                }
-                applyGlobalMdAction("highlight", null, hex);
-            },
-            closeAllGmdDropdowns,
-            () => {
-                closeAllGmdDropdowns();
-                document.getElementById("gmdHighlightToggle")?.focus();
-            },
-        );
-    }
-
-    bar.querySelectorAll(".gmd-dropdown-toggle").forEach((toggle) => {
-        toggle.setAttribute("aria-haspopup", "true");
-        toggle.setAttribute("aria-expanded", "false");
-        const menu = toggle.nextElementSibling;
-        menu?.querySelectorAll(".gmd-btn").forEach((b) => b.setAttribute("role", "menuitem"));
-        toggle.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const m = toggle.nextElementSibling;
-            if (!m) return;
-            const isOpen = m.classList.contains("open");
-            closeAllGmdDropdowns();
-            if (!isOpen) {
-                if (m.id === "gmdHighlightMenu") {
-                    const ta = _activeMdSource;
-                    _highlightSavedSelection =
-                        ta && document.body.contains(ta)
-                            ? { ta, start: ta.selectionStart, end: ta.selectionEnd }
-                            : null;
-                    _highlightPicker?.refresh();
-                }
-                positionGmdDropdown(toggle, m);
-                m.classList.add("open");
-                toggle.setAttribute("aria-expanded", "true");
-                if (m.id === "gmdHighlightMenu") {
-                    // The picker owns its keyboard handling (2D grid nav, free
-                    // Tab to the hex field). Only move focus in when the menu
-                    // was opened from the keyboard (Enter/Space fire a click
-                    // with detail === 0); a mouse click must leave the focus —
-                    // and the caret — in the textarea.
-                    if (e.detail === 0) _highlightPicker?.focusFirst();
-                } else {
-                    activateMenuKeyboardNav(m, () => {
-                        closeAllGmdDropdowns();
-                        toggle.focus();
-                    });
-                }
-                _armMenuOpenGuard();
-            }
-        });
-    });
-
-    bar.addEventListener("scroll", () => {
-        if (Date.now() - _lastMenuOpenAt < 350) return;
-        closeAllGmdDropdowns();
-    });
-    window.addEventListener("resize", closeAllGmdDropdowns);
-    document.addEventListener("click", (e) => {
-        if (!e.target.closest(".gmd-dropdown")) closeAllGmdDropdowns();
-    });
+  return setupGlobalMarkdownToolbar({
+    barId: "globalMdBar",
+    onAction: (payload) => applyMarkdownToolbarAction(payload),
+    onMedia: (mediaType, textarea) => triggerMediaInsertForActiveField(mediaType, textarea),
+  });
 }
+
 
 // =============================================================================
 // READER DEFAULTS — font + highlight, now living in the Markdown bar
@@ -1318,33 +1010,44 @@ function setupGlobalMdBar() {
 
 function setupReaderDefaultsBar() {
     const bar = document.getElementById("globalMdBar");
-    if (!bar || document.getElementById("gmdReaderDefaults")) return;
-
-    const group = document.createElement("div");
-    group.className = "gmd-group gmd-group-reader";
-    group.id = "gmdReaderDefaults";
-
-    const sep = document.createElement("div");
-    sep.className = "gmd-separator";
-    sep.setAttribute("aria-hidden", "true");
-
-    const fontSelect = document.createElement("select");
-    fontSelect.id = "lessonFontSelect";
-    fontSelect.className = "gmd-select";
+    if (!bar) return;
+    let fontSelect = document.getElementById("lessonFontSelect");
+    if (!fontSelect) {
+        const group = document.createElement("div");
+        group.className = "gmd-group gmd-group-reader";
+        group.id = "gmdReaderDefaults";
+        const sep = document.createElement("div");
+        sep.className = "gmd-separator";
+        sep.setAttribute("aria-hidden", "true");
+        fontSelect = document.createElement("select");
+        fontSelect.id = "lessonFontSelect";
+        fontSelect.className = "gmd-select";
+        group.appendChild(fontSelect);
+        bar.append(sep, group);
+    }
     fontSelect.title = "الخط الافتراضي للقارئ";
     fontSelect.setAttribute("aria-label", "الخط الافتراضي للقارئ");
-    fontSelect.innerHTML = FONT_CHOICES.map(
-        (f) => `<option value="${escapeHtml(f.id)}">${escapeHtml(f.label)}</option>`,
-    ).join("");
-
+    if (!fontSelect.options.length) {
+        fontSelect.innerHTML = FONT_CHOICES.map((f) => `<option value="${escapeHtml(f.id)}">${escapeHtml(f.label)}</option>`).join("");
+    }
+    if (fontSelect.dataset.lessonFontBound === "1") return;
+    fontSelect.dataset.lessonFontBound = "1";
     fontSelect.addEventListener("change", () => {
+        const nextFont = fontSelect.value || "default";
+        if (nextFont === lessonData.fontId) return;
         pushHistorySnapshot();
-        lessonData.fontId = fontSelect.value || "default";
+        lessonData.fontId = nextFont;
+        applyLessonFontToEditor();
         autosave();
     });
+}
 
-    group.append(fontSelect);
-    bar.append(sep, group);
+function applyLessonFontToEditor() {
+    const prefs = { fontId: lessonData.fontId || "default" };
+    const creator = document.getElementById("lessonCreatorForm");
+    if (creator) applyReaderPrefs(creator, prefs);
+    const editorPreviews = document.querySelectorAll(".lesson-md-preview, .lesson-preview-article");
+    editorPreviews.forEach((el) => applyReaderPrefs(el, prefs));
 }
 
 function syncReaderDefaultsBar() {
@@ -1352,6 +1055,7 @@ function syncReaderDefaultsBar() {
     // comes from the ==text==(color) picker, not a reader-default control).
     const f = document.getElementById("lessonFontSelect");
     if (f) f.value = lessonData.fontId || "default";
+    applyLessonFontToEditor();
 }
 
 // =============================================================================
@@ -1633,8 +1337,113 @@ function setupKeyboardShortcuts() {
 // RENDERING THE LESSON FORM
 // =============================================================================
 
+function syncLessonMetadataForm() {
+    const description = document.getElementById("lessonDescriptionInput");
+    const count = document.getElementById("lessonDescriptionCount");
+    if (description) description.value = lessonData.description || "";
+    if (count) count.textContent = `${(lessonData.description || "").length} / 1200`;
+
+    const password = document.getElementById("lessonPasswordInput");
+    const state = document.getElementById("lessonPasswordState");
+    const remove = document.getElementById("lessonPasswordRemove");
+    const copy = document.getElementById("lessonPasswordCopy");
+    if (password) {
+        password.value = lessonPasswordDraft;
+        password.placeholder = lessonData.passwordProtected ? "كلمة المرور الحالية محفوظة — اكتب الجديدة لتغييرها" : "اختياري، 4 أحرف على الأقل";
+    }
+    if (state) state.textContent = lessonData.passwordProtected ? "هذا الدرس محمي بكلمة مرور." : "بدون حماية بكلمة مرور.";
+    if (remove) {
+        remove.hidden = !lessonData.passwordProtected;
+        remove.disabled = !lessonData.passwordProtected;
+    }
+    if (copy) copy.disabled = !lessonPasswordDraft;
+}
+
+window.updateLessonDescription = function (value) {
+    lessonData.description = String(value || "").slice(0, 1200);
+    const count = document.getElementById("lessonDescriptionCount");
+    if (count) count.textContent = `${lessonData.description.length} / 1200`;
+    autosave();
+};
+
+window.toggleLessonPasswordVisibility = function () {
+    const input = document.getElementById("lessonPasswordInput");
+    const button = document.getElementById("lessonPasswordToggle");
+    if (!input || !button) return;
+    const visible = input.type === "text";
+    input.type = visible ? "password" : "text";
+    button.setAttribute("aria-label", visible ? "إظهار كلمة مرور الدرس" : "إخفاء كلمة مرور الدرس");
+    button.title = visible ? "إظهار" : "إخفاء";
+};
+
+window.copyLessonPassword = async function () {
+    const input = document.getElementById("lessonPasswordInput");
+    const value = lessonPasswordDraft || input?.value || "";
+    if (!value) return;
+    try {
+        await navigator.clipboard.writeText(value);
+        showNotification("تم النسخ", "تم نسخ كلمة مرور الدرس.", "success");
+    } catch {
+        showNotification("تعذّر النسخ", "لم يتمكن المتصفح من نسخ كلمة المرور تلقائيًا.", "error");
+    }
+};
+
+window.removeLessonPassword = function () {
+    if (!lessonData.passwordProtected && !lessonPasswordDraft) return;
+    pushHistorySnapshot();
+    lessonPasswordDraft = "";
+    lessonData.passwordHash = null;
+    lessonData.passwordProtected = false;
+    syncLessonMetadataForm();
+    autosave();
+};
+
+window.handleLessonPasswordInput = function (value) {
+    const job = ++lessonPasswordHashJob;
+    const next = String(value || "");
+    lessonPasswordDraft = next;
+    if (!next) {
+        lessonPasswordHashPromise = Promise.resolve(null);
+        lessonData.passwordHash = null;
+        // An already-published password remains protected until explicitly removed.
+        syncLessonMetadataForm();
+        autosave();
+        return;
+    }
+    try {
+        validateLessonPasswordInput(next);
+    } catch (error) {
+        syncLessonMetadataForm();
+        showNotification("كلمة المرور غير صالحة", error.message, "warning");
+        return;
+    }
+    lessonPasswordHashPromise = sha256Hex(next).then((hash) => {
+        if (job !== lessonPasswordHashJob) return null;
+        lessonData.passwordHash = hash;
+        lessonData.passwordProtected = true;
+        syncLessonMetadataForm();
+        autosave();
+        return hash;
+    }).catch((error) => {
+        console.error("[create-lesson] lesson password hashing failed:", error);
+        showNotification("خطأ", "تعذّر إعداد حماية الدرس.", "error");
+        return null;
+    });
+};
+
+async function ensureLessonPasswordHashReady() {
+    if (!lessonPasswordDraft) return true;
+    try {
+        await lessonPasswordHashPromise;
+        return Boolean(lessonData.passwordHash);
+    } catch {
+        return false;
+    }
+}
+
 function renderLessonForm() {
     updateAppTitleBar();
+    syncLessonMetadataForm();
     syncReaderDefaultsBar();
     renderSections();
     updateSectionNavigator();
@@ -1688,6 +1497,7 @@ function sectionCardHtml(section, index) {
         <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'markdown')">+ نص</button>
         <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'media')">+ وسائط</button>
         <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'quizRef')">+ امتحان مرتبط</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'lesson-reference')">+ درس مرتبط</button>
         <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'question')">+ سؤال مدمج</button>
       </div>
     </div>`;
@@ -1834,6 +1644,7 @@ function makeBlock(type) {
     if (type === "markdown") return { type: "markdown", body: "", _localId };
     if (type === "media") return { type: "media", url: "", kind: "image", alt: "", _localId };
     if (type === "quizRef") return { type: "quizRef", quizId: "", title: "", _localId };
+    if (type === "lesson-reference") return { type: "lesson-reference", lessonId: "", title: "", _localId };
     return {
         type: "question",
         id: newLocalId("q"),
@@ -1905,6 +1716,7 @@ const BLOCK_LABELS = {
     markdown: "نص (Markdown)",
     media: "وسائط",
     quizRef: "امتحان مرتبط",
+    "lesson-reference": "درس مرتبط",
     question: "سؤال مدمج",
 };
 
@@ -1920,6 +1732,7 @@ function blockCardHtml(sectionId, block, index, total) {
     if (block.type === "markdown") inner = markdownBlockInnerHtml(block);
     else if (block.type === "media") inner = mediaBlockInnerHtml(sectionId, block);
     else if (block.type === "quizRef") inner = quizRefBlockInnerHtml(sectionId, block);
+    else if (block.type === "lesson-reference") inner = lessonRefBlockInnerHtml(sectionId, block);
     else inner = questionBlockInnerHtml(sectionId, block);
 
     return `
@@ -2162,6 +1975,131 @@ window.selectQuizRef = function (sectionId, localId, metaId) {
     autosave();
 };
 
+// ── Lesson-reference block ─────────────────────────────────────────────────
+
+function lessonReferenceOptions(currentLessonId) {
+    const localRows = _readUserItems().filter((row) => row?.meta?.type === LESSON_TYPE && (row.id || row.meta?.id) !== currentLessonId);
+    const local = localRows.map((row) => ({
+        id: row.id || row.meta?.id,
+        title: row.meta?.title || "درس بدون عنوان",
+        source: "local",
+        lesson: row,
+    }));
+    const published = sharedLessons
+        .filter((row) => String(row.id) !== String(currentLessonId))
+        .map((row) => ({ id: row.id, title: row.title || "درس بدون عنوان", slug: row.slug || null, source: "platform", lesson: row }));
+    const seen = new Set();
+    return [...published, ...local].filter((entry) => {
+        const key = `${entry.source}:${entry.id}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+function lessonRefSelectedHtml(entry, fallbackTitle, sectionId = "", localId = "") {
+    if (!entry) {
+        return fallbackTitle
+            ? `<div class="lesson-lessonref-chip">` +
+              `<div class="lesson-lessonref-chip-main"><span class="lesson-lessonref-chip-title">${escapeHtml(fallbackTitle)}</span><span class="lesson-lessonref-chip-status">مرجع غير متاح</span></div>` +
+              `<div class="lesson-lessonref-chip-actions" role="group" aria-label="إجراءات مرجع الدرس">` +
+              `<button type="button" class="lesson-lessonref-chip-btn" onclick="focusLessonRefSearch('${escapeHtml(localId)}')" aria-label="استبدال مرجع الدرس" title="استبدال">استبدال</button>` +
+              `<button type="button" class="lesson-lessonref-chip-btn is-danger" onclick="removeLessonReference('${escapeHtml(sectionId)}','${escapeHtml(localId)}')" aria-label="إزالة مرجع الدرس" title="إزالة">إزالة</button>` +
+              `</div></div>`
+            : `<p class="lesson-quizref-empty">لم يتم اختيار درس بعد.</p>`;
+    }
+    return `<div class="lesson-lessonref-chip">` +
+      `<div class="lesson-lessonref-chip-main"><span class="lesson-lessonref-chip-title">${escapeHtml(entry.title)}</span><span class="lesson-lessonref-chip-status">${entry.source === "platform" ? "منشور" : "محلي"}</span></div>` +
+      `<div class="lesson-lessonref-chip-actions" role="group" aria-label="إجراءات مرجع الدرس">` +
+      `<button type="button" class="lesson-lessonref-chip-btn" onclick="focusLessonRefSearch('${escapeHtml(localId)}')" aria-label="استبدال مرجع الدرس" title="استبدال">استبدال</button>` +
+      `<button type="button" class="lesson-lessonref-chip-btn is-danger" onclick="removeLessonReference('${escapeHtml(sectionId)}','${escapeHtml(localId)}')" aria-label="إزالة مرجع الدرس" title="إزالة">إزالة</button>` +
+      `</div></div>`;
+}
+
+function lessonRefBlockInnerHtml(sectionId, block) {
+    const sid = escapeHtml(sectionId);
+    const bid = escapeHtml(block._localId);
+    const options = lessonReferenceOptions(publishedLessonId || editingLessonId || currentDraftId);
+    const matched = block.lessonId ? options.find((item) => String(item.id) === String(block.lessonId)) : null;
+    return `
+    <div class="lesson-lessonref-editor">
+      <div class="form-group">
+        <label for="lessonref-search-${bid}">ابحث عن درس</label>
+        <input id="lessonref-search-${bid}" type="search" class="form-input lesson-lessonref-search" placeholder="اكتب جزءاً من عنوان الدرس…"
+          data-section-id="${sid}" data-local-id="${bid}" oninput="handleLessonRefSearch(this)" autocomplete="off">
+        <div class="lesson-lessonref-results" id="lessonref-results-${bid}" role="listbox" aria-label="نتائج الدروس"></div>
+      </div>
+      <div class="lesson-lessonref-selected" id="lessonref-selected-${bid}">
+        ${matched ? lessonRefSelectedHtml(matched, "", sectionId, block._localId) : block.lessonId ? lessonRefSelectedHtml(null, block.title || block.lessonId, sectionId, block._localId) : lessonRefSelectedHtml(null)}
+      </div>
+    </div>`;
+}
+
+window.handleLessonRefSearch = function (input) {
+    const term = input.value.trim().toLowerCase();
+    const resultsEl = document.getElementById(`lessonref-results-${input.dataset.localId}`);
+    if (!resultsEl) return;
+    if (!term) { resultsEl.innerHTML = ""; return; }
+    const matches = lessonReferenceOptions(publishedLessonId || editingLessonId || currentDraftId)
+        .filter((item) => item.title.toLowerCase().includes(term))
+        .slice(0, 10);
+    if (!matches.length) {
+        resultsEl.innerHTML = `<p class="lesson-quizref-no-results">لا توجد نتائج.</p>`;
+        return;
+    }
+    resultsEl.innerHTML = matches.map((item) =>
+        `<button type="button" class="lesson-quizref-result" role="option" onclick="selectLessonReference('${escapeHtml(input.dataset.sectionId)}','${escapeHtml(input.dataset.localId)}','${escapeHtml(item.id)}','${escapeHtml(item.source)}')"><span>${escapeHtml(item.title)}</span><span class="lesson-quizref-result-count">${item.source === "platform" ? "منشور" : "محلي"}</span></button>`
+    ).join("");
+};
+
+window.focusLessonRefSearch = function (localId) {
+    const input = document.querySelector(`.lesson-lessonref-search[data-local-id="${CSS.escape(String(localId))}"]`);
+    if (!input) return;
+    input.focus({ preventScroll: true });
+    input.select();
+};
+
+window.removeLessonReference = function (sectionId, localId) {
+    const block = findBlock(sectionId, localId);
+    if (!block) return;
+    pushHistorySnapshot();
+    delete block.lessonId;
+    delete block.title;
+    delete block.slug;
+    const selected = document.getElementById(`lessonref-selected-${localId}`);
+    if (selected) selected.innerHTML = lessonRefSelectedHtml(null);
+    const results = document.getElementById(`lessonref-results-${localId}`);
+    if (results) results.innerHTML = "";
+    const input = document.querySelector(`.lesson-lessonref-search[data-local-id="${CSS.escape(String(localId))}"]`);
+    if (input) input.value = "";
+    autosave();
+};
+
+window.selectLessonReference = function (sectionId, localId, lessonId, source) {
+    const block = findBlock(sectionId, localId);
+    if (!block) return;
+    const currentId = String(publishedLessonId || editingLessonId || currentDraftId || "");
+    if (String(lessonId) === currentId) {
+        showNotification("غير مسموح", "لا يمكن للدرس أن يربط نفسه.", "warning");
+        return;
+    }
+    const entry = lessonReferenceOptions(currentId).find((item) => String(item.id) === String(lessonId) && item.source === source) || lessonReferenceOptions(currentId).find((item) => String(item.id) === String(lessonId));
+    if (!entry) {
+        showNotification("مرجع غير متاح", "تعذّر العثور على الدرس المختار.", "error");
+        return;
+    }
+    pushHistorySnapshot();
+    block.lessonId = String(entry.id);
+    block.title = entry.title;
+    if (entry.slug) block.slug = entry.slug;
+    else delete block.slug;
+    document.getElementById(`lessonref-selected-${localId}`).innerHTML = lessonRefSelectedHtml(entry, "", sectionId, localId);
+    document.getElementById(`lessonref-results-${localId}`).innerHTML = "";
+    const search = document.querySelector(`.lesson-lessonref-search[data-local-id="${localId}"]`);
+    if (search) search.value = "";
+    autosave();
+};
+
 // ── Embedded question block — MCQ or ESSAY ───────────────────────────────────
 // Mirrors create-quiz's question editor: prompt / options / explanation are
 // `.md-source` fields (so the global bar works on them), and a question can be
@@ -2318,35 +2256,41 @@ async function loadSharedLessons() {
     const client = await ensureSharedSupabaseClient();
     if (!client) return;
     const { data, error } = await client
-        .from("lessons")
-        .select("id, title, content, reader_prefs_default, course_id, folder_id, created_at, updated_at")
+        .from("lesson_public")
+        .select("id, slug, title, description, course_id, folder_id, created_at, updated_at, password_protected")
         .order("updated_at", { ascending: false });
     if (error) {
-        console.warn("[create-lesson] failed to load published lessons:", error.message);
+        console.warn("[create-lesson] failed to load published lesson metadata:", error.message);
         return;
     }
     sharedLessons = Array.isArray(data) ? data : [];
 }
 
 async function openPublishedLessonById(id) {
-    const client = await ensureSharedSupabaseClient();
-    if (!client) return false;
-    let row = sharedLessons.find((lesson) => lesson.id === id);
-    if (!row) {
-        const { data, error } = await client
-            .from("lessons")
-            .select("id, title, content, reader_prefs_default, course_id, folder_id, created_at, updated_at")
-            .eq("id", id)
-            .maybeSingle();
-        if (error || !data) return false;
-        row = data;
-        sharedLessons = [row, ...sharedLessons.filter((lesson) => lesson.id !== row.id)];
+    if (!isAdmin || !getToken()) return false;
+    let row;
+    try {
+        const response = await fetch("/api/admin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+            body: JSON.stringify({ action: "get-lesson", id }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.lesson) return false;
+        row = result.lesson;
+    } catch (error) {
+        console.warn("[create-lesson] failed to load published lesson:", error);
+        return false;
     }
+
     const normalized = normalizeLessonContent(row.content);
     const prefs = row.reader_prefs_default || {};
     lessonData = {
         title: row.title || "",
+        description: row.description || "",
         fontId: prefs.fontId || "default",
+        passwordHash: null,
+        passwordProtected: Boolean(row.password_protected ?? row.passwordProtected),
         sections: normalized.sections.length ? normalized.sections.map((section) => ({
             id: section.id,
             title: section.title,
@@ -2355,6 +2299,7 @@ async function openPublishedLessonById(id) {
         })) : [{ id: newLocalId("s"), title: "", defaultHidden: false, blocks: [] }],
     };
     publishedLessonId = row.id;
+    lessonPasswordDraft = "";
     editingLessonId = null;
     currentDraftId = null;
     resetHistory();
@@ -2540,6 +2485,20 @@ function validateLesson() {
     if (lessonData.sections.length === 0) {
         errors.push("الدرس يحتاج قسماً واحداً على الأقل");
     }
+    if ((lessonData.description || "").length > 1200) errors.push("وصف الدرس طويل جداً (الحد الأقصى 1200 حرف)");
+    if (publishedLessonId || isAdmin) {
+        lessonData.sections.forEach((section, sIdx) => {
+            section.blocks.forEach((block, bIdx) => {
+                if (block.type === "lesson-reference" && block.lessonId && !UUID_RE.test(String(block.lessonId))) {
+                    errors.push(`القسم ${sIdx + 1} · العنصر ${bIdx + 1}: يجب أن يكون مرجع الدرس المنشور درساً منشوراً وليس درساً محلياً.`);
+                }
+            });
+        });
+    }
+    if (lessonData.passwordProtected && !lessonData.passwordHash) {
+        // Existing published passwords are represented by protection metadata without a client-side hash.
+        if (!publishedLessonId) errors.push("تعذّر التحقق من إعدادات كلمة مرور الدرس");
+    }
 
     lessonData.sections.forEach((section, sIdx) => {
         const sLabel = `القسم ${sIdx + 1}`;
@@ -2549,6 +2508,12 @@ function validateLesson() {
                 if (!block.url?.trim()) errors.push(`${label}: رابط الوسائط مطلوب`);
             } else if (block.type === "quizRef") {
                 if (!block.quizId?.trim()) errors.push(`${label}: اختر الامتحان المرتبط`);
+            } else if (block.type === "lesson-reference") {
+                if (!block.lessonId?.trim()) errors.push(`${label}: اختر الدرس المرتبط`);
+                else {
+                    const currentIds = [editingLessonId, publishedLessonId].filter(Boolean).map(String);
+                    if (currentIds.includes(String(block.lessonId))) errors.push(`${label}: لا يمكن ربط الدرس بنفسه`);
+                }
             } else if (block.type === "question") {
                 if (!block.prompt?.trim()) errors.push(`${label}: نص السؤال مطلوب`);
                 if (block.questionKind === "essay") {
@@ -2579,8 +2544,9 @@ function validateLesson() {
 //     workspace's normal organize/move UI) and the draft row is removed;
 //   * an already-saved lesson is updated in place, keeping its parentId.
 
-window.saveLesson = function () {
+window.saveLesson = async function () {
     if (publishedLessonId) return window.publishLesson();
+    await ensureLessonPasswordHashReady();
     const errors = validateLesson();
     if (errors.length > 0) {
         showNotification("خطأ في التحقق", "الرجاء إصلاح الأخطاء التالية:\n\n" + errors.join("\n"), "error");
@@ -2657,6 +2623,7 @@ window.saveLesson = function () {
  * server-authorized publishing path required for the shared catalog.
  */
 window.publishLesson = async function () {
+    await ensureLessonPasswordHashReady();
     if (!isAdmin || !getToken()) {
         showNotification("تسجيل الدخول مطلوب", "انضم كمشرف لنشر الدرس في مكتبة المنصة.", "error");
         return;
@@ -2687,9 +2654,15 @@ window.publishLesson = async function () {
     showLoading(publishedLessonId ? "يُحدّث الدرس المنشور…" : "يُنشر الدرس…");
     try {
         const action = publishedLessonId ? "update-lesson" : "create-lesson";
+        const passwordFields = lessonPasswordDraft
+        ? { passwordHash: lessonData.passwordHash }
+        : (lessonData.passwordProtected ? {} : { clearPassword: true });
+        if (lessonPasswordDraft && !lessonData.passwordHash) {
+            throw new Error("تعذّر تجهيز كلمة مرور الدرس للنشر.");
+        }
         const body = publishedLessonId
-            ? { id: publishedLessonId, title: lessonData.title.trim(), content: serializeContent(), readerPrefsDefault: readerPrefsFromData() }
-            : { title: lessonData.title.trim(), content: serializeContent(), courseId, readerPrefsDefault: readerPrefsFromData() };
+            ? { id: publishedLessonId, title: lessonData.title.trim(), description: lessonData.description.trim(), content: serializeContent(), readerPrefsDefault: readerPrefsFromData(), ...passwordFields }
+            : { title: lessonData.title.trim(), description: lessonData.description.trim(), content: serializeContent(), courseId, readerPrefsDefault: readerPrefsFromData(), ...passwordFields };
         const response = await fetch("/api/admin", {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },

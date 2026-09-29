@@ -17,11 +17,19 @@ export function createLessonCard(lesson) {
   text.className = "card-text";
   const heading = document.createElement("h3");
   heading.textContent = lesson.title || "درس بدون عنوان";
+  const description = String(lesson.description || "").trim();
   const meta = document.createElement("p");
   meta.className = "exam-question-count";
-  const sectionCount = Array.isArray(lesson.sectionIds) ? lesson.sectionIds.length : 0;
-  meta.textContent = sectionCount === 1 ? "قسم واحد" : `${sectionCount} أقسام`;
-  text.append(heading, meta);
+  const sectionCount = Number(lesson.sectionIds?.length ?? lesson.sectionCount ?? 0);
+  meta.textContent = [sectionCount === 1 ? "قسم واحد" : `${sectionCount} أقسام`, lesson.passwordProtected ? "محمي" : ""].filter(Boolean).join(" · ");
+  text.append(heading);
+  if (description) {
+    const desc = document.createElement("p");
+    desc.className = "lesson-card-description";
+    desc.textContent = description;
+    text.append(desc);
+  }
+  text.append(meta);
 
   const actions = document.createElement("div");
   actions.className = "exam-card-actions-wrap";

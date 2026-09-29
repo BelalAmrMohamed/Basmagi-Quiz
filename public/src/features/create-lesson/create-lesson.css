@@ -74,9 +74,14 @@ body {
     transition: padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow-x: hidden;
-    background: var(--color-background);
+    background: transparent;
     color: var(--color-text-primary);
 }
+
+html[data-animations="disabled"] body {
+    background: var(--color-background);
+}
+
 
 body.sidebar-expanded {
     padding-right: calc(var(--sidebar-expanded-width) + 16px);
@@ -1103,6 +1108,85 @@ select.form-input {
 .lesson-quizref-unresolved {
     color: var(--color-text-tertiary);
     font-size: 0.85rem;
+}
+
+
+.lesson-lessonref-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-primary-light);
+    color: var(--color-text-primary);
+}
+
+.lesson-lessonref-chip-main {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.lesson-lessonref-chip-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.lesson-lessonref-chip-status {
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+}
+
+.lesson-lessonref-chip-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.lesson-lessonref-chip-btn {
+    min-height: 36px;
+    padding: 6px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 7px;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    font: inherit;
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+
+.lesson-lessonref-chip-btn:hover,
+.lesson-lessonref-chip-btn:focus-visible {
+    border-color: var(--color-primary);
+    outline: none;
+}
+
+.lesson-lessonref-chip-btn.is-danger:hover,
+.lesson-lessonref-chip-btn.is-danger:focus-visible {
+    border-color: var(--color-error);
+    color: var(--color-error);
+}
+
+@media (max-width: 600px) {
+    .lesson-lessonref-chip {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .lesson-lessonref-chip-actions {
+        width: 100%;
+    }
+
+    .lesson-lessonref-chip-btn {
+        flex: 1 1 0;
+    }
 }
 
 /* ── Embedded question block ──────────────────────────────────────────────── */
@@ -2170,4 +2254,35 @@ body.lesson-preview-open {
     .cp-recent {
         gap: 3px;
     }
+}
+
+/* Lesson details */
+.lesson-editor-details {
+    margin-bottom: 1rem;
+    padding: 1rem 1.1rem;
+}
+.lesson-details-header h2 { margin: 0; font-size: 1.05rem; }
+.lesson-details-header p { margin: .2rem 0 0; color: var(--color-text-secondary); font-size: .86rem; }
+.lesson-details-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); gap: 1rem; margin-top: .9rem; }
+.lesson-description-input { min-height: 96px; resize: vertical; }
+.lesson-character-count { margin-top: .35rem; text-align: end; color: var(--color-text-secondary); font-size: .76rem; }
+.lesson-password-field { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .45rem; align-items: stretch; }
+.lesson-password-action, .lesson-password-remove { min-height: 40px; min-width: 40px; border: 1px solid var(--color-border); border-radius: 9px; background: transparent; color: var(--color-text-primary); font: inherit; cursor: pointer; padding: .45rem .65rem; }
+.lesson-password-action:hover, .lesson-password-remove:hover { border-color: var(--color-primary); }
+.lesson-password-action:focus-visible, .lesson-password-remove:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.lesson-password-footer { display: flex; gap: .65rem; align-items: center; justify-content: space-between; margin-top: .45rem; color: var(--color-text-secondary); font-size: .8rem; flex-wrap: wrap; }
+.lesson-password-remove { color: var(--color-error, #dc2626); border-color: color-mix(in srgb, var(--color-error, #dc2626) 35%, var(--color-border)); }
+
+@media (max-width: 720px) {
+    .lesson-details-grid { grid-template-columns: 1fr; }
+    .lesson-password-field { grid-template-columns: minmax(0, 1fr) auto; }
+    .lesson-password-action:last-child { grid-column: 2; }
+}
+
+/* Dropdowns are detached to <body> by global-markdown-toolbar.js. */
+.gmd-dropdown-menu {
+    position: fixed;
+    z-index: 10050;
+    max-width: calc(100vw - 16px);
+    box-sizing: border-box;
 }

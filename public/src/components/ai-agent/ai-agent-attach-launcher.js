@@ -34,6 +34,7 @@ import {
   buildUserRootAttachment,
 } from "./ai-agent-item-lookup.js";
 import { loadFullQuizData } from "../../features/home/quiz-data-loader.js";
+import { unlockRemoteLesson } from "../../features/lesson/lesson-access.js";
 import {
   handleReadOnlyLibraryToolCall,
   READONLY_LIBRARY_TOOL_NAMES,
@@ -114,6 +115,22 @@ export function buildPlatformQuizAttachment(exam, payload) {
   };
 }
 
+export function buildPlatformLessonAttachment(lesson) {
+  const protectedContent = Boolean(lesson?.passwordProtected || lesson?.password_protected);
+  return {
+    kind: "lesson",
+    id: lesson?.id,
+    title: lesson?.title || lesson?.id || "درس",
+    source: "platform",
+    summary: lesson?.description || (protectedContent ? "هذا الدرس محمي بكلمة مرور." : ""),
+    payload: {
+      description: lesson?.description || "",
+      ...(lesson?.content ? { content: lesson.content } : {}),
+      passwordProtected: protectedContent,
+    },
+  };
+}
+
 export function buildUserRootAttachmentForAskAi() {
   return buildUserRootAttachment(readUserQuizzes());
 }
@@ -165,10 +182,30 @@ export function openAIAgentWithAttachment(attachment, pageOptions = {}) {
     // into this launcher, so it needs to actually be able to answer them,
     // not just fetch_attached_quiz. See ai-agent-readonly-tools.js for the
     // shared handlers (same ones the home-page panel uses).
-    toolNames: ["fetch_attached_quiz", ...READONLY_LIBRARY_TOOL_NAMES],
+    toolNames: [attachment.kind === "lesson" ? "fetch_attached_lesson" : "fetch_attached_quiz", ...READONLY_LIBRARY_TOOL_NAMES],
     onToolCall: async (toolCall) => {
       if (READONLY_LIBRARY_TOOL_NAMES.includes(toolCall?.name)) {
         return handleReadOnlyLibraryToolCall(toolCall);
+      }
+      if (attachment.kind === "lesson") {
+        if (toolCall?.name !== "fetch_attached_lesson") throw new Error("Unknown attachment tool");
+        const requestedId = String(toolCall.input?.lessonId || "");
+        if (![attachment.id].some((id) => String(id || "") === requestedId)) {
+          const local = resolveUserItemById(requestedId, readUserQuizzes());
+          if (!local || local.kind !== "lesson") throw new Error("الدرس المطلوب غير موجود في المرفق الحالي.");
+          return `بيانات الدرس ${local.title} (المعرّف ${requestedId}):\n${JSON.stringify(local.payload || {})}`;
+        }
+        if (attachment.payload?.content) {
+          return `بيانات الدرس ${attachment.title} (المعرّف ${requestedId}):\n${JSON.stringify(attachment.payload)}`;
+        }
+        if (attachment.payload?.passwordProtected) {
+          return `الدرس ${attachment.title} محمي بكلمة مرور. لا يمكن لأداة المرفق تجاوز الحماية أو طلب كلمة المرور. افتح الدرس وأدخِل كلمة المرور أولاً، ثم أعد المحاولة.`;
+        }
+        const remote = await unlockRemoteLesson(requestedId, "");
+        if (remote?.content) {
+          return `بيانات الدرس ${attachment.title} (المعرّف ${requestedId}):\n${JSON.stringify({ description: remote.description || "", content: remote.content })}`;
+        }
+        return `معلومات الدرس ${attachment.title} (المعرّف ${requestedId}): لا يتوفر محتوى الدرس في المرفق الحالي.`;
       }
       if (toolCall?.name !== "fetch_attached_quiz") {
         throw new Error("Unknown attachment tool");

@@ -1,4 +1,3 @@
-import { lessonIcon } from "./lesson-icons.js";
 // ============================================================================
 // READER PREFERENCES — one shared state source for every lesson preference UI.
 // ============================================================================

@@ -231,6 +231,17 @@ export const FETCH_ATTACHED_QUIZ_TOOL = {
   },
 };
 
+export const FETCH_ATTACHED_LESSON_TOOL = {
+  name: "fetch_attached_lesson",
+  description:
+    "Fetch the full readable content and metadata for one lesson attached to the conversation. Use the exact lesson ID from the attached lesson reference, and only when the user asks about details not already included in the attachment summary. Protected lessons cannot be unlocked by this tool; ask the user to open/unlock the lesson first.",
+  input_schema: {
+    type: "object",
+    properties: { lessonId: { type: "string" } },
+    required: ["lessonId"],
+  },
+};
+
 // ── Conversational discovery tools (home page) ──────────────────────────
 // All three below are read-only and resolved entirely CLIENT-SIDE (see
 // ai-agent-attach-launcher.js / user-quizzes-view.js's onToolCall dispatch

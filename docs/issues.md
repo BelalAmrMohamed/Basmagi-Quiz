@@ -8,21 +8,246 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Patches
 
 ### Create-lesson Page
-* Fix: Changing the value of `#lessonFontSelect` doesn't change anything, fix it or remove it.
-* Fix (On the create-lesson and create-quiz):
-  * The `gmd-btn gmd-btn-latex gmd-dropdown-toggle` toggle when it opens, it messes up the `global-md-bar`. 
-  * The 2 `gmd-btn gmd-dropdown-toggle` toggles doesn't even work at all, pressing it does nothing.
-* Fix: Background animations (animations.css) are broken on the create-lesson page, probably because it doesn't use the variables in `themes.css` like how the create-quiz does. The variables in `themes.css` get upadted when the animations are on to be slightly opace.
+* Fix (On the create-lesson and create-quiz): The `gmd-btn gmd-btn-latex gmd-dropdown-toggle` toggle and the 2 `gmd-btn gmd-dropdown-toggle` toggles, pressing once opens, but pressing again doesn't close. And opening one of them, then opening a different one, doesn't close the original. 
+* Fix: The functionality and form of the `#menuBar` element in create-lesson page doesn't match that of the create-quiz page, make sure opening and closing items inside of it matches the design and function of that element on the create-quiz page.
+* Fix: The `quiz-metadata card` for ( معلومات عن الامتحان) in create-quiz.html is perfect in design and function. The `lesson-editor-details card` in create-lesson.html isn't perfect, and it doesn't include the source, redesign it to match that of the create-quiz.html.
+* These are issues when trying to run a lesson after the last update ![screenshot](image-1.png).
+```
+service-worker.js:161 [SW] Service worker script loaded (offline-page only)
+inpage.js:1 [23:07:10] ERROR Unable to obtain channel secret for broadcast system
+(anonymous) @ inpage.js:1
+import_loglevel.default.error @ inpage.js:1
+acquireSecret @ inpage.js:1
+await in acquireSecret
+ExtendedBroadcastMessage @ inpage.js:1
+ProvidersManager @ inpage.js:1
+init @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+Promise.then
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+inpage.js:1 [23:07:11] ERROR Unable to find node id to create broadcast system Error: Channel secret not available yet
+    at ExtendedBroadcastMessage.initBroadcastMessage (inpage.js:1:85369)
+    at ExtendedBroadcastMessage.loadBroadcastMessage (inpage.js:1:84189)
+(anonymous) @ inpage.js:1
+import_loglevel.default.error @ inpage.js:1
+loadBroadcastMessage @ inpage.js:1
+await in loadBroadcastMessage
+getBroadcastMessage @ inpage.js:1
+ExtendedBroadcastMessage @ inpage.js:1
+ProvidersManager @ inpage.js:1
+init @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+Promise.then
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+inpage.js:1 [23:07:11] ERROR Error: Broadcast channel unavailable
+    at ExtendedBroadcastMessage.emit (inpage.js:1:85649)
+    at async TonAdapter.start (inpage.js:1:2197273)
+(anonymous) @ inpage.js:1
+import_loglevel.default.error @ inpage.js:1
+start @ inpage.js:1
+await in start
+(anonymous) @ inpage.js:1
+start @ inpage.js:1
+init @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+Promise.then
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+inpage.js:1 [23:07:11] ERROR Error: Broadcast channel unavailable
+    at ExtendedBroadcastMessage.emit (inpage.js:1:85649)
+    at async SolanaAdapter.setDefaultWallet (inpage.js:1:1692857)
+    at async SolanaAdapter.start (inpage.js:1:1691623)
+(anonymous) @ inpage.js:1
+import_loglevel.default.error @ inpage.js:1
+start @ inpage.js:1
+await in start
+(anonymous) @ inpage.js:1
+start @ inpage.js:1
+init @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+Promise.then
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+inpage.js:1 [23:07:11] ERROR Error: Broadcast channel unavailable
+    at ExtendedBroadcastMessage.emit (inpage.js:1:85649)
+    at async TronAdapter.setConnectionUrl (inpage.js:1:3178817)
+    at async TronAdapter.start (inpage.js:1:3178943)
+(anonymous) @ inpage.js:1
+import_loglevel.default.error @ inpage.js:1
+start @ inpage.js:1
+await in start
+(anonymous) @ inpage.js:1
+start @ inpage.js:1
+init @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+Promise.then
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+inpage.js:1 [23:07:11] ERROR Error: Broadcast channel unavailable
+    at ExtendedBroadcastMessage.emit (inpage.js:1:85649)
+    at async BitcoinAdapter.setDefaultWallet (inpage.js:1:148297)
+    at async BitcoinAdapter.start (inpage.js:1:147239)
+(anonymous) @ inpage.js:1
+import_loglevel.default.error @ inpage.js:1
+start @ inpage.js:1
+await in start
+(anonymous) @ inpage.js:1
+start @ inpage.js:1
+init @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+Promise.then
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+inpage.js:1 [23:07:11] ERROR Error: Broadcast channel unavailable
+    at ExtendedBroadcastMessage.emit (inpage.js:1:85649)
+    at async EthereumAdapter.setChainId (inpage.js:1:1296881)
+    at async Promise.all (index 0)
+(anonymous) @ inpage.js:1
+import_loglevel.default.error @ inpage.js:1
+Promise.catch
+start @ inpage.js:1
+(anonymous) @ inpage.js:1
+start @ inpage.js:1
+init @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+Promise.then
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+inpage.js:1 [23:07:11] ERROR Error: Broadcast channel unavailable
+    at ExtendedBroadcastMessage.emit (inpage.js:1:85649)
+    at async EthereumAdapter.setDefaultEthereumWallet (inpage.js:1:1296770)
+(anonymous) @ inpage.js:1
+import_loglevel.default.error @ inpage.js:1
+Promise.catch
+start @ inpage.js:1
+(anonymous) @ inpage.js:1
+start @ inpage.js:1
+init @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+Promise.then
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+inpage.js:1 [23:07:11] ERROR Error: Broadcast channel unavailable
+    at ExtendedBroadcastMessage.emit (inpage.js:1:85649)
+    at async Web3RpcProvider.call (inpage.js:1:92061)
+    at async BinanceInjectedProvider.boot (inpage.js:1:93836)
+(anonymous) @ inpage.js:1
+import_loglevel.default.error @ inpage.js:1
+Promise.catch
+(anonymous) @ inpage.js:1
+setTimeout
+start @ inpage.js:1
+(anonymous) @ inpage.js:1
+start @ inpage.js:1
+init @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+Promise.then
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+content.js:1 Uncaught (in promise) Error: Timeout exceeded
+    at content.js:1:199968
+(anonymous) @ content.js:1
+setTimeout
+(anonymous) @ content.js:1
+(anonymous) @ content.js:1
+d @ content.js:1
+l.value @ content.js:1
+(anonymous) @ content.js:1
+asyncGeneratorStep @ content.js:1
+i @ content.js:1
+(anonymous) @ content.js:1
+(anonymous) @ content.js:1
+_waitLoaded @ content.js:1
+waitLoaded @ content.js:1
+(anonymous) @ content.js:1
+d @ content.js:1
+l.value @ content.js:1
+(anonymous) @ content.js:1
+asyncGeneratorStep @ content.js:1
+i @ content.js:1
+Promise.then
+asyncGeneratorStep @ content.js:1
+i @ content.js:1
+(anonymous) @ content.js:1
+(anonymous) @ content.js:1
+_createClass.value @ content.js:1
+e @ content.js:1
+(anonymous) @ content.js:1
+inpage.js:1 [23:07:16] ERROR Unable to find node id to create broadcast system Error: Channel secret not available yet
+    at ExtendedBroadcastMessage.initBroadcastMessage (inpage.js:1:85369)
+    at ExtendedBroadcastMessage.loadBroadcastMessage (inpage.js:1:84189)
+(anonymous) @ inpage.js:1
+import_loglevel.default.error @ inpage.js:1
+loadBroadcastMessage @ inpage.js:1
+await in loadBroadcastMessage
+getBroadcastMessage @ inpage.js:1
+emit @ inpage.js:1
+(anonymous) @ inpage.js:1
+forwardErrorToBackground @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+setTimeout
+(anonymous) @ inpage.js:1
+loadBroadcastMessage @ inpage.js:1
+await in loadBroadcastMessage
+getBroadcastMessage @ inpage.js:1
+ExtendedBroadcastMessage @ inpage.js:1
+ProvidersManager @ inpage.js:1
+init @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+Promise.then
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+(anonymous) @ inpage.js:1
+lesson-view.js:667 [lesson-view] Lesson content preparation failed: ReferenceError: collectLessonRefIds is not defined
+    at renderLessonView (lesson-view.js:662:7)
+renderLessonView @ lesson-view.js:667
+await in renderLessonView
+(anonymous) @ lesson-page.js:9
 
-New: 
-* Add a new `+ درس مرتبط` feature so users can embed other lessons just like how they embed quizzes `+ امتحان مرتبط`.
-* Redesing how the embedded quizzes/lessons display `+ امتحان مرتبط`, instead of just a start button, it should be full featured: 
-  * Start button: Already exists.
-  * Download button: To download the quiz/lesson (similar to the home page).
-  * Info button: To show the info of the quiz/lesson (similar to the home page)
-  * Ask AI (اسأل الباشـمبصمج): To ask AI about that quiz/lesson (similar to the home page).
-* Add password and description fields just like `create-quiz` does, and update the lesson page accordingly.
 
+```
 
 ### Global Issue
 This issue appears on almost all pages, it's related to this script: `<script defer src="/_vercel/insights/script.js"></script>`
