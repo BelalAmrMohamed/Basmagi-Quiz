@@ -7,17 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Lesson Page (`public\lesson.html`, `public\lesson-comments.html`, & `public\src\features\lesson\`)
-Issues:
-* Fix: The `.lesson-selection-popup` buttons (e.g., "اشرحها" and "بسّطها") don't work when I select a text then press them, they don't do anything at all.
-* Fix: The loading skeleton doesn't appear at the start of the page, it appears after a long while for a moment right before the content loads, as if it flashes.
-* New: Add `اقرأها` in the `.lesson-selection-popup` so the options become: 
-  * اشرحها
-  * بسّطها
-  * اقرأها
-* New: Redesign the `lesson-view__header`
-
-
 ### Create-lesson Page
 * Fix: Changing the value of `#lessonFontSelect` doesn't change anything, fix it or remove it.
 * Fix (On the create-lesson and create-quiz):
