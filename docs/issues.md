@@ -7,7 +7,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Lesson Page
+### Lesson Page (`public\lesson.html`, `public\lesson-comments.html`, & `public\src\features\lesson\`)
 Issues:
 * The `لون التظليل` item isn't doing anything at all, if it's broken fix it, and if it's useless remove it.
 * The `وضع التركيز` isn't synced between the 2 `lesson-prefs__panel`s, the one in the main lesson page, and the other inside the info modal.
@@ -36,9 +36,8 @@ user_lesson_1789827664545?type=user:1  Failed to load resource: the server respo
 service-worker.js:161 [SW] Service worker script loaded (offline-page only)
 ```
 
-* Tested on localhost (localhost:8080).
-* A lesson created in the "امتحاناتك" section, not an uploaded lesson.
-* URL: `http://localhost:8080/lesson/user_lesson_1789827664545?type=user`
+* Tested on localhost (URL: `http://localhost:8080/lesson/user_lesson_1789827664545?type=user`).
+* Tested lesson: Created in the "امتحاناتك" section, not an uploaded lesson.
 
 New:
 * Design and implement an advanced loading skeleton and remove the placeholder loading `جاري تحميل الدرس…`.

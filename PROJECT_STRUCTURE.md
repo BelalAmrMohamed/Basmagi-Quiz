@@ -583,7 +583,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .toml | 1 | 415 | 15.61 KB |
 | .ts | 1 | 231 | 10.06 KB |
 | .yml | 1 | 41 | 1.02 KB |
-| **Total** | **274** | **138159** | **5.41 MB** |
+| **Total** | **274** | **138,159** | **5.41 MB** |
 
 ### Binary / Media Files (Physical Size)
 
