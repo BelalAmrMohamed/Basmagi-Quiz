@@ -26,9 +26,9 @@ import { FONT_CHOICES } from "../lesson/lesson-reader-prefs.js";
 const BLOCK_LABELS = {
     markdown: "نص",
     media: "وسائط",
-    quizRef: "امتحان مرتبط",
-    "lesson-reference": "درس مرتبط",
-    question: "سؤال مدمج",
+    quizRef: "امتحان",
+    "lesson-reference": "درس",
+    question: "سؤال",
 };
 
 /**

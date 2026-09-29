@@ -92,7 +92,7 @@ function renderReferenceCard({ kind, id, title, description, countLabel, availab
     `<div class="lesson-ref-card__main">` +
     `<div class="lesson-ref-card__icon" aria-hidden="true">${lessonIcon(kind === "quiz" ? "exam" : "book")}</div>` +
     `<div class="lesson-ref-card__copy">` +
-    `<span class="lesson-ref-card__label">${kind === "quiz" ? "امتحان مرتبط" : "درس مرتبط"}</span>` +
+    `<span class="lesson-ref-card__label">${kind === "quiz" ? "امتحان" : "درس"}</span>` +
     `<h3 class="lesson-ref-card__title">${escapeHtml(bodyTitle)}</h3>` +
     (description ? `<p class="lesson-ref-card__description">${escapeHtml(description)}</p>` : "") +
     (countLabel ? `<span class="lesson-ref-card__count">${escapeHtml(countLabel)}</span>` : "") +

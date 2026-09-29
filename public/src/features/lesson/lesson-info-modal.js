@@ -37,8 +37,8 @@ import {
 const BLOCK_LABELS = {
     markdown: "نص",
     media: "وسائط",
-    quizRef: "امتحان مرتبط",
-    question: "سؤال مدمج",
+    quizRef: "امتحان",
+    question: "سؤال",
 };
 
 function collectLiveLessonInfo(lesson, normalized) {
@@ -192,7 +192,7 @@ export function showLessonControlModal(options) {
     const lessonEl = document.querySelector(`.lesson-view[data-lesson-id="${CSS.escape(lesson.id)}"]`);
     const prefsCleanup = lessonEl
         ? equipReaderPrefs(dialog, lessonEl, lesson.reader_prefs_default)
-        : () => {};
+        : () => { };
     const bookmarksSection = dialog.querySelector(".lesson-info-modal__bookmarks-section");
     let closed = false;
     const close = () => {

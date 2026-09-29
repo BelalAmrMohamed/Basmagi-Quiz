@@ -282,7 +282,19 @@ function getLessonTitleDirection(title) {
   return "auto";
 }
 
-function equipReferenceCardActions(root, lesson, quizLookup, lessonLookup) {
+/**
+ * Wires the Start/Download/Info/Ask buttons on every embedded quiz- and
+ * lesson-reference card inside `root`. Exported so create-lesson.js's
+ * preview overlay (which renders lesson content through this same module's
+ * renderBlock/renderSection output) can give its reference cards identical,
+ * fully-working actions instead of a second, divergent implementation —
+ * see create-lesson.js's previewLesson() for the call site.
+ * @param {HTMLElement} root - container holding the rendered reference cards
+ * @param {object} lesson - the (preview or real) lesson the cards live in, only used for future context; may be a lightweight stand-in
+ * @param {Map} quizLookup - reference id -> quiz metadata (id/dbId/title/source/password/...)
+ * @param {Map} lessonLookup - reference id -> lesson metadata (id/title/slug/localRow/...)
+ */
+export function equipReferenceCardActions(root, lesson, quizLookup, lessonLookup) {
   const buttons = root.querySelectorAll("[data-reference-kind][data-reference-action]");
   buttons.forEach((button) => {
     button.addEventListener("click", async (event) => {
