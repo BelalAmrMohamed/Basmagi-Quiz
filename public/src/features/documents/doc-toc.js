@@ -38,6 +38,8 @@
 // crossings can.
 // ============================================================================
 
+import { createGeometryTocScrollSpy } from "../../shared/toc-scroll-spy.js";
+
 function buildToc() {
   // Reference-style docs (privacy/terms/ai-agent) use `.page-wrapper >
   // .section > h2[id]`; about.html's bespoke storytelling layout uses
@@ -51,19 +53,6 @@ function buildToc() {
     ),
   );
   if (headings.length < 2) return; // not worth a ToC for a single section
-
-  // A heading flush against the very top edge of the viewport reads as
-  // "just barely visible, technically" rather than "the section I'm
-  // reading" — giving every heading some breathing room above it (and
-  // telling the browser's native anchor-jump the same thing via
-  // scroll-margin-top) means the active link changes right around when a
-  // section's content actually starts filling the screen, and a clicked
-  // link lands the heading at that same reference line instead of flush
-  // against the very top edge.
-  const REFERENCE_OFFSET = Math.max(96, Math.round(window.innerHeight * 0.18));
-  headings.forEach((h2) => {
-    h2.style.scrollMarginTop = `${REFERENCE_OFFSET}px`;
-  });
 
   const nav = document.createElement("nav");
   nav.className = "doc-toc";
@@ -178,12 +167,6 @@ function buildToc() {
 
   // Close the mobile panel after choosing a section, and after any outside
   // click/tap — otherwise it stays pinned open over the content.
-  list.addEventListener("click", (e) => {
-    if (e.target.closest("a")) {
-      nav.classList.remove("doc-toc-open");
-      toggle.setAttribute("aria-expanded", "false");
-    }
-  });
   document.addEventListener("click", (e) => {
     if (!nav.classList.contains("doc-toc-open")) return;
     if (nav.contains(e.target) || toggle.contains(e.target)) return;
@@ -191,97 +174,31 @@ function buildToc() {
     toggle.setAttribute("aria-expanded", "false");
   });
 
-  function setActive(id) {
-    linkByHeadingId.forEach((link, linkId) => {
-      link.classList.toggle("doc-toc-link--active", linkId === id);
-    });
-  }
+  const spy = createGeometryTocScrollSpy({
+    targets: headings,
+    onActive: (id) => {
+      linkByHeadingId.forEach((link, linkId) => {
+        link.classList.toggle("doc-toc-link--active", linkId === id);
+      });
+    },
+    onNavigate: (id, event) => {
+      const link = linkByHeadingId.get(id);
+      if (!link) return;
+      // Preserve native hash navigation; the spy only locks the active item.
+      // `event.preventDefault()` is deliberately not used here.
+      void event;
+    },
+  });
 
-  // The single source of truth for "which section is active": whichever
-  // heading's top edge is the closest one at-or-above the reference line,
-  // falling back to the first heading if we're above all of them (top of
-  // the document) and to the last heading if we've scrolled past all of
-  // them (bottom of the document — common when the last section's own
-  // content is shorter than the viewport). Pure geometry, computed fresh
-  // every time it's called — nothing here can go "stale" the way tracking
-  // discrete enter/exit events can.
-  function computeActiveId() {
-    let activeId = headings[0].id;
-    for (const h2 of headings) {
-      if (h2.getBoundingClientRect().top - REFERENCE_OFFSET <= 0) {
-        activeId = h2.id;
-      } else {
-        break; // headings are in document order, so nothing after this can qualify either
-      }
-    }
-    // Reached (or overscrolled past) the bottom of the page: the last
-    // section should read as active even if its own heading scrolled far
-    // above the reference line long ago.
-    const doc = document.documentElement;
-    if (window.innerHeight + window.scrollY >= doc.scrollHeight - 2) {
-      activeId = headings[headings.length - 1].id;
-    }
-    return activeId;
-  }
-
-  // While a click-triggered smooth scroll is still animating toward its
-  // target, the scroll listener below keeps firing on every intermediate
-  // frame and recomputing "closest heading to the reference line" against
-  // geometry that hasn't settled yet — which very often names the heading
-  // one-above the clicked link as active mid-flight, stomping the class
-  // `setActive` just applied. The listener's *next* fire after the scroll
-  // finally lands recomputes correctly, but by then the visible symptom is
-  // "the right section only highlights after a second click." Locking the
-  // active id to the clicked target for the duration of that scroll (instead
-  // of letting geometry recompute override it) removes the race outright.
-  let lockedId = null;
-  let unlockTimer = null;
-
-  function clearLock() {
-    lockedId = null;
-    if (unlockTimer) {
-      clearTimeout(unlockTimer);
-      unlockTimer = null;
-    }
-  }
-
-  let ticking = false;
-  function scheduleUpdate() {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(() => {
-      if (!lockedId) setActive(computeActiveId());
-      ticking = false;
-    });
-  }
-
-  window.addEventListener("scroll", scheduleUpdate, { passive: true });
-  window.addEventListener("resize", scheduleUpdate);
-
-  // Clicking a link jumps immediately via the native `#hash` navigation —
-  // no need to intercept it — but recompute right away too (rather than
-  // waiting for the scroll event, which can lag a frame or two behind a
-  // smooth-scroll's start) so the correct link highlights the instant the
-  // click happens, not a moment later. The lock keeps it stuck through the
-  // ensuing smooth-scroll animation; a manual scroll/resize after that
-  // (or a 1s safety timeout, in case the browser's smooth-scroll never
-  // reports "settled") releases it back to normal geometry tracking.
   list.addEventListener("click", (e) => {
     const link = e.target.closest("a");
     if (!link) return;
     const id = link.getAttribute("href").slice(1);
-    lockedId = id;
-    setActive(id);
-    clearTimeout(unlockTimer);
-    unlockTimer = setTimeout(clearLock, 1000);
+    spy.handleNavigate(id, e);
+    nav.classList.remove("doc-toc-open");
+    toggle.setAttribute("aria-expanded", "false");
   });
 
-  // Any scroll/resize the user initiates themselves after the lock should
-  // resume normal tracking rather than staying pinned to a stale click.
-  window.addEventListener("wheel", clearLock, { passive: true });
-  window.addEventListener("touchmove", clearLock, { passive: true });
-
-  scheduleUpdate();
 }
 
 buildToc();

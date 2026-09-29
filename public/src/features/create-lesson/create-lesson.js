@@ -44,7 +44,7 @@ import {
     _prompt,
 } from "../../components/notifications/notifications.js";
 import { normalizeLessonContent, hasLessonLevelCollision } from "../lesson/lesson-schema.js";
-import { FONT_CHOICES, HIGHLIGHT_CHOICES } from "../lesson/lesson-reader-prefs.js";
+import { FONT_CHOICES } from "../lesson/lesson-reader-prefs.js";
 import { mountColorPicker } from "../../shared/color-picker.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { CREATE_LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
@@ -55,8 +55,8 @@ import { CREATE_LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/
 // =============================================================================
 
 /**
- * The lesson being authored. `fontId` / `highlightId` are the author's
- * OPTIONAL reader defaults (saved as reader_prefs_default); they are edited
+ * The lesson being authored. `fontId` is the author's optional reader
+ * default (saved as reader_prefs_default); it is edited
  * from the Markdown bar, not from a form card.
  */
 let lessonData = emptyLessonData();
@@ -88,7 +88,6 @@ function emptyLessonData() {
     return {
         title: "",
         fontId: "default",
-        highlightId: "yellow",
         sections: [{ id: newLocalId("s"), title: "", defaultHidden: false, blocks: [] }],
     };
 }
@@ -122,7 +121,19 @@ const LESSON_DRAFT_TYPE = "draft-lesson";
 function _readUserItems() {
     try {
         const parsed = JSON.parse(localStorage.getItem(USER_ITEMS_KEY) || "[]");
-        return Array.isArray(parsed) ? parsed : [];
+        if (!Array.isArray(parsed)) return [];
+        let changed = false;
+        const cleaned = parsed.map((row) => {
+            if (!row || (row.meta?.type !== LESSON_TYPE && row.meta?.type !== LESSON_DRAFT_TYPE) || row.meta?.readerPrefs?.highlightId == null) {
+                return row;
+            }
+            const meta = { ...row.meta, readerPrefs: { ...row.meta.readerPrefs } };
+            delete meta.readerPrefs.highlightId;
+            changed = true;
+            return { ...row, meta };
+        });
+        if (changed) localStorage.setItem(USER_ITEMS_KEY, JSON.stringify(cleaned));
+        return cleaned;
     } catch {
         return [];
     }
@@ -152,7 +163,7 @@ function serializeContent(data = lessonData) {
 }
 
 function readerPrefsFromData(data = lessonData) {
-    return { fontId: data.fontId || "default", highlightId: data.highlightId || "yellow" };
+    return { fontId: data.fontId || "default" };
 }
 
 /** Number of embedded questions — shown on the workspace tile like a question count. */
@@ -785,7 +796,6 @@ function openLessonById(id) {
     lessonData = {
         title: row.meta?.title || "",
         fontId: prefs.fontId || "default",
-        highlightId: prefs.highlightId || "yellow",
         sections: normalized.sections.length
             ? normalized.sections.map((s) => ({
                 id: s.id,
@@ -2337,7 +2347,6 @@ async function openPublishedLessonById(id) {
     lessonData = {
         title: row.title || "",
         fontId: prefs.fontId || "default",
-        highlightId: prefs.highlightId || "yellow",
         sections: normalized.sections.length ? normalized.sections.map((section) => ({
             id: section.id,
             title: section.title,

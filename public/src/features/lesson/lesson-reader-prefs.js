@@ -1,24 +1,15 @@
 // ============================================================================
-// public/src/features/lesson/lesson-reader-prefs.js
-// READER PREFERENCES — font family, highlight color, and TTS voice/rate.
+// READER PREFERENCES — one shared state source for every lesson preference UI.
 // ============================================================================
-// ONE combined localStorage key for all of it (deliberately not three
-// separate keys — see the lessons plan's Phase 2 step 9), so the whole
-// reader-prefs object is read and written atomically and Phase 4 has a
-// single place to look.
-//
-// These are reader choices, not author choices: `lessons.reader_prefs_default`
-// supplies the author's optional starting point, and anything the reader
-// picks here overrides it for that reader only, on this device only.
-// ============================================================================
+// The lesson page and its information modal both bind to this module. The
+// persisted localStorage object is the source of truth; same-tab writes also
+// dispatch a dedicated event so every mounted control updates immediately.
 
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 
 const READER_PREFS_KEY = "lesson_reader_prefs";
+const PREFS_EVENT = "lesson-reader-prefs-change";
 
-// Font choices are intentionally a small curated set rather than a free-text
-// family, so a stored value can never inject arbitrary CSS into the inline
-// style attribute the viewer sets (see applyReaderPrefs below).
 export const FONT_CHOICES = [
   { id: "default", label: "الخط الافتراضي", value: "" },
   { id: "tajawal", label: "Tajawal", value: '"Tajawal", sans-serif' },
@@ -27,16 +18,6 @@ export const FONT_CHOICES = [
   { id: "inter", label: "Inter", value: '"Inter", sans-serif' },
 ];
 
-export const HIGHLIGHT_CHOICES = [
-  { id: "yellow", label: "أصفر", value: "rgba(250, 204, 21, 0.38)" },
-  { id: "green", label: "أخضر", value: "rgba(34, 197, 94, 0.30)" },
-  { id: "blue", label: "أزرق", value: "rgba(59, 130, 246, 0.30)" },
-  { id: "pink", label: "وردي", value: "rgba(236, 72, 153, 0.30)" },
-];
-
-// Reading-width and text-size are curated scales (not free px input) for the
-// same reason FONT_CHOICES/HIGHLIGHT_CHOICES are curated: a stored value is
-// used to look up a CSS value, never injected directly.
 export const WIDTH_CHOICES = [
   { id: "comfortable", label: "مريح", value: "820px" },
   { id: "wide", label: "عريض", value: "1080px" },
@@ -52,7 +33,6 @@ export const TEXT_SIZE_CHOICES = [
 export function buildDefaultReaderPrefs() {
   return {
     fontId: "default",
-    highlightId: "yellow",
     ttsVoiceURI: "",
     ttsRate: 1,
     widthId: "comfortable",
@@ -61,69 +41,114 @@ export function buildDefaultReaderPrefs() {
   };
 }
 
+function sanitizeReaderPrefs(value) {
+  const raw = value && typeof value === "object" ? value : {};
+  const result = { ...buildDefaultReaderPrefs() };
+
+  if (FONT_CHOICES.some((item) => item.id === raw.fontId)) result.fontId = raw.fontId;
+  if (WIDTH_CHOICES.some((item) => item.id === raw.widthId)) result.widthId = raw.widthId;
+  if (TEXT_SIZE_CHOICES.some((item) => item.id === raw.textSizeId)) result.textSizeId = raw.textSizeId;
+  if (typeof raw.ttsVoiceURI === "string") result.ttsVoiceURI = raw.ttsVoiceURI;
+  if (Number.isFinite(Number(raw.ttsRate))) result.ttsRate = Math.min(2, Math.max(0.5, Number(raw.ttsRate)));
+  if (typeof raw.focusMode === "boolean") result.focusMode = raw.focusMode;
+
+  return result;
+}
+
 /**
- * Reads the combined prefs object, falling back to the author-set default
- * from `lessons.reader_prefs_default` for any field the reader hasn't
- * explicitly chosen yet.
- *
- * @param {object|null} authorDefaults - lesson.reader_prefs_default
+ * Reads the global reader preferences. Author defaults only seed a field when
+ * there is no reader-level choice stored for that field.
  */
 export function getReaderPrefs(authorDefaults = null) {
-  const base = { ...buildDefaultReaderPrefs(), ...(authorDefaults || {}) };
+  const base = sanitizeReaderPrefs({ ...buildDefaultReaderPrefs(), ...(authorDefaults || {}) });
   try {
     const raw = getFromStorage(READER_PREFS_KEY, null);
     if (!raw) return base;
     const parsed = JSON.parse(raw);
-    return { ...base, ...(parsed && typeof parsed === "object" ? parsed : {}) };
+    const sanitized = sanitizeReaderPrefs({ ...base, ...(parsed && typeof parsed === "object" ? parsed : {}) });
+    if (parsed && typeof parsed === "object" && Object.prototype.hasOwnProperty.call(parsed, "highlightId")) {
+      setInStorage(READER_PREFS_KEY, JSON.stringify(sanitized));
+    }
+    return sanitized;
   } catch (err) {
     console.error("[lesson-reader-prefs] Could not read prefs:", err);
     return base;
   }
 }
 
-/** Merges a partial update into the stored prefs object and persists it. */
-export function setReaderPrefs(patch) {
-  const next = { ...getReaderPrefs(), ...(patch || {}) };
+/** Persists a partial update and immediately notifies every mounted control. */
+export function setReaderPrefs(patch, authorDefaults = null) {
+  const next = sanitizeReaderPrefs({ ...getReaderPrefs(authorDefaults), ...(patch || {}) });
   try {
     setInStorage(READER_PREFS_KEY, JSON.stringify(next));
   } catch (err) {
     console.error("[lesson-reader-prefs] Could not save prefs:", err);
   }
+  window.dispatchEvent(new CustomEvent(PREFS_EVENT, { detail: next }));
   return next;
 }
 
 /**
- * Applies font/highlight prefs to a container as inline CSS variables.
+ * Binds any reader-preference control set to the shared source of truth.
+ * Controls use data-reader-pref values so the modal can have completely
+ * different markup/classes without duplicating preference logic.
  *
- * Scoped to the lesson container on purpose: --md-font-family and
- * --md-highlight-color are the shared markdown engine's hooks (see
- * markdown-css.js), so setting them here changes only this subtree and
- * leaves every other renderMarkdown() call site on the platform untouched.
- *
- * Values come from the curated maps above rather than from storage
- * directly, so a hand-edited localStorage value can't inject CSS.
- *
- * @param {HTMLElement} container
- * @param {object} prefs
+ * @param {HTMLElement} root
+ * @param {HTMLElement} lessonEl
+ * @param {object|null} authorDefaults
+ * @returns {()=>void}
  */
+export function equipReaderPrefs(root, lessonEl, authorDefaults = null) {
+  if (!root || !lessonEl) return () => {};
+
+  const sync = (prefs) => {
+    root.querySelectorAll('[data-reader-pref="font"]').forEach((el) => { el.value = prefs.fontId; });
+    root.querySelectorAll('[data-reader-pref="width"]').forEach((el) => { el.value = prefs.widthId; });
+    root.querySelectorAll('[data-reader-pref="text-size"]').forEach((el) => { el.value = prefs.textSizeId; });
+    root.querySelectorAll('[data-reader-pref="focus"]').forEach((el) => { el.checked = Boolean(prefs.focusMode); });
+    applyReaderPrefs(lessonEl, prefs);
+  };
+
+  const onPrefEvent = (event) => sync(event.detail || getReaderPrefs(authorDefaults));
+  const onStorage = (event) => {
+    if (event.key === READER_PREFS_KEY) sync(getReaderPrefs(authorDefaults));
+  };
+
+  root.querySelectorAll('[data-reader-pref="font"]').forEach((el) => {
+    el.addEventListener("change", (event) => setReaderPrefs({ fontId: event.target.value }, authorDefaults));
+  });
+  root.querySelectorAll('[data-reader-pref="width"]').forEach((el) => {
+    el.addEventListener("change", (event) => setReaderPrefs({ widthId: event.target.value }, authorDefaults));
+  });
+  root.querySelectorAll('[data-reader-pref="text-size"]').forEach((el) => {
+    el.addEventListener("change", (event) => setReaderPrefs({ textSizeId: event.target.value }, authorDefaults));
+  });
+  root.querySelectorAll('[data-reader-pref="focus"]').forEach((el) => {
+    el.addEventListener("change", (event) => setReaderPrefs({ focusMode: Boolean(event.target.checked) }, authorDefaults));
+  });
+
+  window.addEventListener(PREFS_EVENT, onPrefEvent);
+  window.addEventListener("storage", onStorage);
+  sync(getReaderPrefs(authorDefaults));
+
+  return () => {
+    window.removeEventListener(PREFS_EVENT, onPrefEvent);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
 export function applyReaderPrefs(container, prefs) {
   if (!container) return;
-  const font = FONT_CHOICES.find((f) => f.id === prefs?.fontId);
-  const highlight = HIGHLIGHT_CHOICES.find((h) => h.id === prefs?.highlightId);
-  const width = WIDTH_CHOICES.find((w) => w.id === prefs?.widthId) || WIDTH_CHOICES[0];
-  const textSize = TEXT_SIZE_CHOICES.find((t) => t.id === prefs?.textSizeId) || TEXT_SIZE_CHOICES[0];
+  const font = FONT_CHOICES.find((item) => item.id === prefs?.fontId);
+  const width = WIDTH_CHOICES.find((item) => item.id === prefs?.widthId) || WIDTH_CHOICES[0];
+  const textSize = TEXT_SIZE_CHOICES.find((item) => item.id === prefs?.textSizeId) || TEXT_SIZE_CHOICES[0];
 
-  if (font && font.value) container.style.setProperty("--md-font-family", font.value);
+  if (font?.value) container.style.setProperty("--md-font-family", font.value);
   else container.style.removeProperty("--md-font-family");
 
-  if (highlight) container.style.setProperty("--md-highlight-color", highlight.value);
-  else container.style.removeProperty("--md-highlight-color");
-
+  // Manual markdown highlights are author-defined and retain their authored
+  // colors; there is no reader-level highlight preference anymore.
   container.style.setProperty("--lesson-reading-width", width.value);
   container.style.setProperty("--lesson-reading-text-size", textSize.value);
-
-  // Reading mode (focus mode) is a class, not a var, since it toggles whole
-  // regions (secondary nav/controls) rather than a single CSS value — see
-  // lesson.css's `.lesson-view--focus` rules.
   container.classList.toggle("lesson-view--focus", Boolean(prefs?.focusMode));
 }

@@ -132,66 +132,6 @@
   border-radius: 10px;
 }
 
-/* ── Table of contents ─────────────────────────────────────────────────────── */
-
-.lesson-toc {
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 0.85rem 1rem;
-  margin-bottom: 2rem;
-  background: var(--color-surface, transparent);
-}
-
-.lesson-toc__toggle {
-  display: none;
-  background: none;
-  border: none;
-  font: inherit;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  padding: 0;
-}
-
-.lesson-toc__list {
-  margin: 0;
-  padding-inline-start: 1.2rem;
-}
-
-.lesson-toc__item {
-  margin: 0.3rem 0;
-}
-
-.lesson-toc__link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-}
-
-.lesson-toc__link:hover {
-  color: var(--color-primary);
-}
-
-.lesson-toc__item.is-active>.lesson-toc__link {
-  color: var(--color-primary);
-  font-weight: 600;
-}
-
-.lesson-toc__check {
-  width: 1em;
-  height: 1em;
-  flex: none;
-  border-radius: 50%;
-  border: 1.5px solid currentColor;
-  opacity: 0.45;
-}
-
-.lesson-toc__item.is-visited .lesson-toc__check {
-  opacity: 1;
-  background: currentColor;
-}
-
 /* ── Embedded question ─────────────────────────────────────────────────────── */
 
 .lesson-question {
@@ -414,39 +354,9 @@
   margin-bottom: 0;
 }
 
-.lesson-prefs__swatches {
-  display: flex;
-  gap: 0.35rem;
-}
-
-.lesson-prefs__swatch {
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-}
-
-.lesson-prefs__swatch.is-active {
-  border-color: var(--color-text-primary);
-}
-
 @media (max-width: 760px) {
-  .lesson-toc__toggle {
-    display: block;
-  }
-
-  .lesson-toc__list {
-    display: none;
-  }
-
-  .lesson-toc.is-open .lesson-toc__list {
-    display: block;
-    margin-top: 0.6rem;
-  }
-
-  /* Sidebar column collapses into normal document flow — the ToC itself
-     becomes the horizontal drawer toggle above, not a sticky rail. */
+  /* Sidebar column collapses into normal document flow — the shared
+     .doc-toc mobile drawer owns the actual ToC presentation. */
   .lesson-view__layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -561,209 +471,6 @@
   border-radius: 14px;
   background: var(--color-surface, Canvas);
   box-shadow: 0 12px 32px rgb(0 0 0 / .12);
-}
-
-.lesson-ai-quiz {
-  margin: 2rem 0;
-  padding: clamp(1rem, 3vw, 1.5rem);
-  border: 1px solid var(--color-primary);
-  border-radius: 18px;
-  background: var(--color-surface, transparent);
-}
-
-.lesson-ai-quiz header,
-.lesson-ai-quiz footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.lesson-ai-quiz h2 {
-  margin: 0;
-}
-
-.lesson-ai-quiz header p {
-  color: var(--color-text-secondary);
-  margin: .35rem 0 1rem;
-}
-
-.lesson-ai-quiz__question {
-  min-width: 0;
-  margin: 1rem 0;
-  padding: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-}
-
-.lesson-ai-quiz__question legend {
-  padding-inline: .35rem;
-  font-weight: 650;
-}
-
-.lesson-ai-quiz__options {
-  display: grid;
-  gap: .65rem;
-}
-
-.lesson-ai-quiz__options label {
-  display: flex;
-  gap: .6rem;
-  align-items: flex-start;
-  padding: .65rem;
-  border-radius: 9px;
-  cursor: pointer;
-}
-
-.lesson-ai-quiz__options label:hover {
-  background: var(--color-surface-hover, rgb(127 127 127 / .08));
-}
-
-.lesson-ai-quiz__text {
-  width: 100%;
-  box-sizing: border-box;
-  padding: .75rem;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  color: inherit;
-  background: transparent;
-  font: inherit;
-}
-
-.lesson-ai-quiz button {
-  padding: .65rem 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  color: inherit;
-  background: var(--color-surface, transparent);
-  font: inherit;
-  cursor: pointer;
-}
-
-.lesson-ai-quiz [data-quiz-grade] {
-  background: var(--color-primary);
-  color: white;
-  border-color: transparent;
-}
-
-.lesson-ai-quiz .is-correct {
-  color: #16803d;
-}
-
-.lesson-ai-quiz .is-incorrect {
-  color: #c0392b;
-}
-
-/* ── Phase 2 follow-up: question nav, progress, close, per-option feedback ──
-   The rules above already cover the question card/options/text-input/button
-   shell from the first pass — these fill in the pieces added when
-   lesson-ai-quiz.js gained a question navigator and matched the real
-   create_quiz tool schema (see that file's header comment). */
-
-.lesson-ai-quiz__hint {
-  color: var(--color-text-secondary);
-  margin: .35rem 0 1rem;
-}
-
-.lesson-ai-quiz__close {
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  line-height: 1;
-  font-size: 1.1rem;
-  background: transparent;
-  color: var(--color-text-secondary);
-}
-
-.lesson-ai-quiz__close:hover {
-  color: var(--color-text-primary);
-  border-color: var(--color-primary);
-}
-
-.lesson-ai-quiz__nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .4rem;
-  margin: .5rem 0;
-}
-
-.lesson-ai-quiz__nav-dot {
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font: inherit;
-  font-size: .82rem;
-  cursor: pointer;
-}
-
-.lesson-ai-quiz__nav-dot.is-answered {
-  border-color: var(--color-primary);
-  color: var(--color-text-primary);
-}
-
-.lesson-ai-quiz__nav-dot.is-active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: #fff;
-}
-
-.lesson-ai-quiz__progress {
-  color: var(--color-text-secondary);
-  font-size: .85rem;
-  margin: 0 0 .5rem;
-}
-
-.lesson-ai-quiz__option.is-correct-option {
-  border: 1px solid #22c55e;
-  background: rgba(34, 197, 94, 0.12);
-}
-
-.lesson-ai-quiz__option.is-wrong-option {
-  border: 1px solid #ef4444;
-  background: rgba(239, 68, 68, 0.12);
-}
-
-.lesson-ai-quiz__feedback {
-  margin-top: .75rem;
-  padding: .65rem .8rem;
-  border-radius: 10px;
-  background: var(--color-surface-hover, rgb(127 127 127 / .08));
-}
-
-.lesson-ai-quiz__feedback.is-correct {
-  color: #16803d;
-}
-
-.lesson-ai-quiz__feedback.is-incorrect {
-  color: #c0392b;
-}
-
-.lesson-ai-quiz__footer {
-  margin-top: 1rem;
-}
-
-.lesson-ai-quiz__steps {
-  display: flex;
-  gap: .5rem;
-}
-
-.lesson-ai-quiz__submit:disabled,
-.lesson-ai-quiz__step:disabled {
-  opacity: .5;
-  cursor: default;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lesson-ai-quiz__nav-dot {
-    transition: none;
-  }
 }
 
 .lesson-comments {
@@ -1166,18 +873,13 @@
    only (TTS toolbar, question controls, reset). Does not touch the reading
    width/text-size vars — those are independent reader choices. */
 .lesson-view--focus .lesson-view__sidebar,
+.lesson-view--focus .lesson-toc,
 .lesson-view--focus .lesson-view__info-btn,
 .lesson-view--focus .lesson-view__resume-btn,
 .lesson-view--focus .lesson-bookmarks,
 .lesson-view--focus .lesson-view__eyebrow,
 .lesson-view--focus .lesson-view__subtitle {
   display: none;
-}
-
-/* With the sidebar column gone, let the content column use the full grid
-   width instead of leaving an empty second track behind. */
-.lesson-view--focus .lesson-view__layout {
-  grid-template-columns: minmax(0, 1fr);
 }
 
 .lesson-view__resume-btn {
@@ -1279,24 +981,7 @@
   cursor: pointer;
 }
 
-/* ── Phase 3: active-paragraph highlight during TTS playback ─────────────
-   A dedicated class rather than injected markup into stored lesson
-   content — see lesson-tts.js's tagging comment. Uses the same highlight
-   color token the reader-prefs highlighter uses, for visual consistency
-   with the rest of the reading experience, but keeps its own class so it
-   never collides with a manual text highlight. */
-.lesson-tts-block--active {
-  background: var(--md-highlight-color, rgba(250, 204, 21, 0.38));
-  border-radius: 4px;
-  transition: background .25s ease;
-  scroll-margin-top: 6rem;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lesson-tts-block--active {
-    transition: none;
-  }
-}
+/* ── Phase 3: active-paragraph state is fully owned by TTS controls. */
 
 /* ── Phase 5: text-selection AI popup ("اشرح ده / بسّطها") ────────────────
    Fixed-position, JS-placed above (or, if clipped, below) the selection —
@@ -1517,50 +1202,6 @@
 
 /* Retry button: same secondary-action language as .lesson-question__explain-wrong-btn,
    shown only after a graded attempt (toggled via the `hidden` attribute in JS). */
-.lesson-question__reset {
-  display: inline-flex;
-  align-items: center;
-  margin-top: 0.6rem;
-  margin-inline-start: 0.5rem;
-  padding: 0.45rem 0.9rem;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-.lesson-question__reset[hidden] {
-  display: none;
-}
-
-.lesson-question__reset:hover {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-  background: var(--color-primary-light, rgba(99, 102, 241, 0.06));
-}
-
-.lesson-question__reset:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lesson-question__reset {
-    transition: none;
-  }
-}
-
-.lesson-toc__text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .lesson-section__body {
   display: flex;
   flex-direction: column;
@@ -1597,4 +1238,1141 @@
 
 .lesson-info-modal__bookmarks-section {
   margin-top: 0.75rem;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Lesson final interaction/layout pass
+   These selectors intentionally live at the end of this feature stylesheet
+   so the lesson-specific surfaces win over the earlier phase rules without
+   changing shared document/quiz styles elsewhere.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.lesson-view__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem 1.25rem;
+}
+
+.lesson-view__heading {
+  min-width: 0;
+  grid-column: 1;
+}
+
+.lesson-view__header-actions {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: .55rem;
+  min-width: 0;
+}
+
+.lesson-view__header-actions > * {
+  flex: 0 0 auto;
+}
+
+.lesson-reset-all {
+  min-height: 42px;
+  padding: .4rem .8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: .85rem;
+  cursor: pointer;
+}
+
+.lesson-reset-all:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: var(--color-surface-hover, var(--color-surface));
+}
+
+.lesson-reset-all:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.lesson-view__layout {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+.lesson-view__main {
+  width: min(100%, var(--lesson-reading-width, 820px));
+  max-width: var(--lesson-reading-width, 820px);
+  margin-inline: auto;
+  min-width: 0;
+}
+
+.lesson-view__body {
+  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.lesson-section {
+  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+
+.lesson-section__header {
+  min-width: 0;
+}
+
+.lesson-section__title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lesson-block--markdown,
+.lesson-question,
+.lesson-block--quiz-ref,
+.lesson-block--media {
+  min-width: 0;
+}
+
+.lesson-block--media img,
+.lesson-block--media video,
+.lesson-block--media audio,
+.lesson-block--media iframe {
+  max-width: 100%;
+}
+
+/* Shared reader panel: no reader-level highlight row remains. */
+.lesson-prefs__panel {
+  min-width: min(240px, calc(100vw - 2rem));
+  max-width: min(320px, calc(100vw - 2rem));
+  box-sizing: border-box;
+}
+
+.lesson-prefs__row {
+  min-width: 0;
+}
+
+.lesson-prefs__row select {
+  min-width: 0;
+  max-width: 11rem;
+}
+
+.lesson-prefs__focus-mode {
+  flex: 0 0 auto;
+}
+
+/* The old question reset is intentionally gone; this is the only global
+   reset action rendered by the lesson viewer. */
+
+/* ── Dedicated settings section in the information dialog ──────────────── */
+.lesson-info-modal__prefs {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .025);
+}
+
+.lesson-info-modal__prefs-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .8rem;
+  margin-bottom: .9rem;
+}
+
+.lesson-info-modal__prefs-head h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.lesson-info-modal__prefs-head p {
+  margin: .3rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: .8rem;
+  line-height: 1.6;
+}
+
+.lesson-info-modal__prefs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .7rem;
+}
+
+.lesson-info-modal__prefs-grid > label {
+  display: grid;
+  gap: .35rem;
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: .82rem;
+}
+
+.lesson-info-modal__prefs-grid select,
+.lesson-info-modal__prefs-grid input:not([type="checkbox"]) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: .55rem .65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-surface, transparent);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.lesson-info-modal__prefs-grid select option {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.lesson-info-modal__prefs-switch {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center;
+  min-height: 2.35rem;
+  padding: .45rem .65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+}
+
+.lesson-info-modal__prefs-switch input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+/* ── Robust read-aloud toolbar ─────────────────────────────────────────── */
+.lesson-tts {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  flex-wrap: wrap;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.lesson-tts__btn {
+  min-height: 36px;
+}
+
+.lesson-tts__btn--stop[hidden] {
+  display: none !important;
+}
+
+.lesson-tts__speed {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-height: 36px;
+  color: var(--color-text-secondary);
+  font-size: .8rem;
+}
+
+.lesson-tts__speed-select {
+  min-width: 4.1rem;
+  padding: .35rem .45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.lesson-tts__status {
+  min-width: 0;
+  max-width: 20rem;
+  color: var(--color-text-secondary);
+  font-size: .76rem;
+  line-height: 1.45;
+}
+
+.lesson-tts__status.is-loading {
+  color: var(--color-primary);
+}
+
+.lesson-tts__status.is-error {
+  color: var(--color-danger, #dc2626);
+}
+
+.lesson-tts--unsupported .lesson-tts__status {
+  color: var(--color-text-secondary);
+}
+
+.lesson-tts-block--active {
+  border-radius: 6px;
+  background: var(--color-primary-light, rgb(99 102 241 / .13));
+  box-shadow: 0 0 0 3px var(--color-primary-light, rgb(99 102 241 / .08));
+  transition: background-color .18s ease, box-shadow .18s ease;
+}
+
+/* ── Interactive embedded questions ───────────────────────────────────── */
+.lesson-question {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface, transparent);
+}
+
+.lesson-question__options {
+  display: grid;
+  gap: .55rem;
+  margin-top: .8rem;
+}
+
+.lesson-question__option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .7rem;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 3rem;
+  padding: .65rem .75rem;
+  text-align: start;
+  overflow: hidden;
+}
+
+.lesson-question__option-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+}
+
+.lesson-question__option.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light, rgb(99 102 241 / .1));
+}
+
+.lesson-question__option.is-correct {
+  border-color: var(--color-success, #22c55e);
+  background: color-mix(in srgb, var(--color-success, #22c55e) 12%, transparent);
+}
+
+.lesson-question__option.is-wrong {
+  border-color: var(--color-danger, #ef4444);
+  background: color-mix(in srgb, var(--color-danger, #ef4444) 12%, transparent);
+}
+
+.lesson-question__check-btn,
+.lesson-question__essay-check-btn {
+  margin-top: .75rem;
+}
+
+/* ── Advanced ephemeral AI quiz ────────────────────────────────────────── */
+.lesson-ai-quiz {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 2rem 0 0;
+  padding: clamp(1rem, 2.5vw, 1.35rem);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 70%, var(--color-border));
+  border-radius: 18px;
+  background: var(--color-surface, transparent);
+  box-shadow: 0 10px 30px rgb(0 0 0 / .045);
+  overflow: hidden;
+}
+
+.lesson-ai-quiz__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: .8rem;
+  margin: 0;
+}
+
+.lesson-ai-quiz__heading {
+  min-width: 0;
+}
+
+.lesson-ai-quiz__badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: .15rem .55rem;
+  border-radius: 999px;
+  background: var(--color-primary-light, rgb(99 102 241 / .12));
+  color: var(--color-primary);
+  font-size: .74rem;
+  font-weight: 700;
+}
+
+.lesson-ai-quiz__header h2 {
+  margin: .4rem 0 0;
+  color: var(--color-text-primary);
+  font-size: clamp(1.05rem, 2.4vw, 1.35rem);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.lesson-ai-quiz__header p {
+  margin: .25rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: .8rem;
+}
+
+.lesson-ai-quiz__close {
+  display: inline-flex;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--color-text-secondary) !important;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.lesson-ai-quiz__close:hover {
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.lesson-ai-quiz__meta {
+  display: grid;
+  gap: .55rem;
+  margin-top: 1rem;
+  padding: .8rem .9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-surface-hover, transparent) 70%, transparent);
+}
+
+.lesson-ai-quiz__progress-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .7rem;
+  flex-wrap: wrap;
+  color: var(--color-text-secondary);
+  font-size: .8rem;
+}
+
+.lesson-ai-quiz__progress-track {
+  height: 7px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-border);
+}
+
+.lesson-ai-quiz__progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+  transition: width .2s ease;
+}
+
+.lesson-ai-quiz__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  direction: rtl;
+}
+
+.lesson-ai-quiz__nav-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: .65rem;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: .78rem;
+  cursor: pointer;
+}
+
+.lesson-ai-quiz__nav-dot:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.lesson-ai-quiz__nav-dot.is-answered {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  color: var(--color-text-primary);
+}
+
+.lesson-ai-quiz__nav-dot.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.lesson-ai-quiz__question {
+  min-width: 0;
+  margin-top: 1rem;
+  padding: clamp(.95rem, 2vw, 1.2rem);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.lesson-ai-quiz__question-kicker {
+  margin-bottom: .45rem;
+  color: var(--color-primary);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.lesson-ai-quiz__question h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: clamp(1rem, 2.25vw, 1.25rem);
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.lesson-ai-quiz__options {
+  display: grid;
+  gap: .55rem;
+  margin-top: 1rem;
+}
+
+.lesson-ai-quiz__option {
+  display: grid;
+  grid-template-columns: 2rem auto minmax(0, 1fr);
+  align-items: center;
+  gap: .65rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: .7rem .75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  background: transparent;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: start;
+  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+
+.lesson-ai-quiz__option:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-hover, rgb(127 127 127 / .06));
+}
+
+.lesson-ai-quiz__option input {
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.lesson-ai-quiz__option-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: .55rem;
+  color: var(--color-text-secondary);
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+.lesson-ai-quiz__option-text {
+  min-width: 0;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.lesson-ai-quiz__option.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light, rgb(99 102 241 / .1));
+  box-shadow: 0 0 0 2px var(--color-primary-light, rgb(99 102 241 / .08));
+}
+
+.lesson-ai-quiz__option.is-correct-option {
+  border-color: var(--color-success, #22c55e);
+  background: color-mix(in srgb, var(--color-success, #22c55e) 12%, transparent);
+}
+
+.lesson-ai-quiz__option.is-wrong-option {
+  border-color: var(--color-danger, #ef4444);
+  background: color-mix(in srgb, var(--color-danger, #ef4444) 12%, transparent);
+}
+
+.lesson-ai-quiz__text-wrap {
+  display: grid;
+  gap: .45rem;
+  margin-top: 1rem;
+}
+
+.lesson-ai-quiz__text-label {
+  color: var(--color-text-secondary);
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.lesson-ai-quiz__text {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: .8rem .85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  font: inherit;
+  line-height: 1.6;
+}
+
+.lesson-ai-quiz__text:focus-visible,
+.lesson-ai-quiz__option:focus-within {
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: 2px;
+}
+
+.lesson-ai-quiz__feedback {
+  margin-top: .9rem;
+  padding: .75rem .85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  background: var(--color-surface-hover, rgb(127 127 127 / .07));
+}
+
+.lesson-ai-quiz__feedback-title {
+  font-weight: 750;
+}
+
+.lesson-ai-quiz__feedback p {
+  margin: .35rem 0 0;
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.lesson-ai-quiz__feedback.is-correct {
+  border-color: color-mix(in srgb, var(--color-success, #22c55e) 45%, var(--color-border));
+  color: var(--color-success, #16803d);
+}
+
+.lesson-ai-quiz__feedback.is-incorrect {
+  border-color: color-mix(in srgb, var(--color-danger, #ef4444) 45%, var(--color-border));
+  color: var(--color-danger, #c0392b);
+}
+
+.lesson-ai-quiz__feedback-note {
+  font-size: .78rem;
+}
+
+.lesson-ai-quiz__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.lesson-ai-quiz__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.lesson-ai-quiz__step,
+.lesson-ai-quiz__submit {
+  min-height: 42px;
+  padding: .55rem .9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.lesson-ai-quiz__submit {
+  border-color: transparent;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.lesson-ai-quiz__step:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.lesson-ai-quiz__submit:hover:not(:disabled) {
+  background: var(--color-primary-hover, var(--color-primary));
+}
+
+.lesson-ai-quiz__step:disabled,
+.lesson-ai-quiz__submit:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.lesson-ai-quiz__close:focus-visible,
+.lesson-ai-quiz__nav-dot:focus-visible,
+.lesson-ai-quiz__step:focus-visible,
+.lesson-ai-quiz__submit:focus-visible {
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: 2px;
+}
+
+/* ── Selection-popup loading/error state ───────────────────────────────── */
+.lesson-selection-popup {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex-wrap: wrap;
+  max-width: min(90vw, 32rem);
+  box-sizing: border-box;
+}
+
+.lesson-selection-popup__btn:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.lesson-selection-popup__status {
+  flex: 1 1 100%;
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: .74rem;
+  line-height: 1.45;
+}
+
+.lesson-selection-popup__status.is-error {
+  color: var(--color-danger, #dc2626);
+}
+
+/* ── Loading skeleton ──────────────────────────────────────────────────── */
+.lesson-view--loading {
+  width: min(100%, 1180px);
+  margin-inline: auto;
+  padding: clamp(1rem, 3vw, 2.5rem) clamp(.75rem, 2vw, 1.5rem) 5rem;
+  box-sizing: border-box;
+  text-align: start;
+}
+
+.lesson-skeleton__header,
+.lesson-skeleton__layout,
+.lesson-skeleton__section,
+.lesson-skeleton__question {
+  min-width: 0;
+}
+
+.lesson-skeleton__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
+  align-items: center;
+  gap: 1.25rem;
+  padding: clamp(1rem, 2.5vw, 1.75rem);
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface, transparent);
+}
+
+.lesson-skeleton__header-copy,
+.lesson-skeleton__header-actions,
+.lesson-skeleton__section,
+.lesson-skeleton__question,
+.lesson-skeleton__options {
+  display: grid;
+  align-content: start;
+  gap: .65rem;
+}
+
+.lesson-skeleton__header-actions {
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(64px, 1fr);
+}
+
+.lesson-skeleton__layout {
+  display: block;
+  width: 100%;
+}
+
+.lesson-skeleton__content {
+  width: min(100%, 820px);
+  margin-inline: auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.lesson-skeleton__section {
+  padding: clamp(1rem, 2.5vw, 1.75rem);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface, transparent);
+}
+
+.lesson-skeleton__question {
+  margin-top: .15rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.lesson-skeleton__toc {
+  position: fixed;
+  inset: 50% auto auto 28px;
+  width: 200px;
+  padding: 14px 10px;
+  transform: translateY(-50%);
+  display: grid;
+  gap: .55rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface, transparent);
+}
+
+.lesson-skeleton__line {
+  display: block;
+  width: var(--skeleton-width, 70%);
+  max-width: 100%;
+  height: .85rem;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--color-surface-hover, rgb(127 127 127 / .1)) 0%, var(--color-border) 50%, var(--color-surface-hover, rgb(127 127 127 / .1)) 100%);
+  background-size: 220% 100%;
+  animation: lesson-shimmer 1.45s ease-in-out infinite;
+}
+
+.lesson-skeleton__line--2 { height: 1.35rem; }
+.lesson-skeleton__line--3 { opacity: .88; }
+.lesson-skeleton__line--4 { opacity: .72; }
+.lesson-skeleton__media {
+  min-height: 9rem;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--color-surface-hover, rgb(127 127 127 / .1)) 0%, var(--color-border) 50%, var(--color-surface-hover, rgb(127 127 127 / .1)) 100%);
+  background-size: 220% 100%;
+  animation: lesson-shimmer 1.45s ease-in-out infinite;
+}
+
+@keyframes lesson-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -120% 0; }
+}
+
+.lesson-load-error {
+  width: min(100%, 720px);
+  margin: clamp(2rem, 8vh, 5rem) auto;
+  padding: 2rem 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface, transparent);
+  box-sizing: border-box;
+}
+
+.lesson-load-error__icon {
+  display: grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  margin: 0 auto 1rem;
+  border-radius: 999px;
+  background: var(--color-primary-light, rgb(99 102 241 / .1));
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
+.lesson-load-error h1 {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.lesson-load-error p {
+  margin: .6rem auto 0;
+  max-width: 32rem;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.lesson-load-error__actions {
+  display: flex;
+  justify-content: center;
+  gap: .6rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.lesson-view__retry-btn,
+.lesson-view__back-btn {
+  min-height: 42px;
+  padding: .55rem .9rem;
+  border-radius: 9px;
+  font: inherit;
+  text-decoration: none;
+}
+
+.lesson-view__retry-btn {
+  border: 0;
+  background: var(--color-primary);
+  color: #fff;
+  cursor: pointer;
+}
+
+.lesson-view__back-btn {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 760px) {
+  .lesson-view__header {
+    grid-template-columns: 1fr;
+  }
+  .lesson-view__heading,
+  .lesson-view__header-actions {
+    grid-column: 1;
+  }
+  .lesson-view__header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .lesson-view__header-actions > .lesson-prefs,
+  .lesson-view__header-actions > .lesson-bookmarks {
+    max-width: 100%;
+  }
+  .lesson-skeleton__header {
+    grid-template-columns: 1fr;
+  }
+  .lesson-skeleton__header-actions {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .lesson-skeleton__toc {
+    display: none;
+  }
+  .lesson-ai-quiz__footer {
+    align-items: stretch;
+  }
+  .lesson-ai-quiz__steps,
+  .lesson-ai-quiz__submit {
+    width: 100%;
+  }
+  .lesson-ai-quiz__steps > * {
+    flex: 1 1 0;
+  }
+  .lesson-info-modal__prefs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-view--loading * {
+    animation: none !important;
+  }
+  .lesson-tts-block--active,
+  .lesson-ai-quiz__progress-track > span {
+    transition: none !important;
+  }
+}
+/* ── Final AI quiz layout pass ─────────────────────────────────────────── */
+.lesson-ai-quiz {
+  margin: 1.25rem 0 0;
+  padding: clamp(.9rem, 2vw, 1.25rem);
+}
+
+.lesson-ai-quiz__header {
+  position: relative;
+  display: block;
+  min-width: 0;
+  padding-inline-end: 3rem;
+}
+
+.lesson-ai-quiz__heading {
+  min-width: 0;
+  text-align: start;
+}
+
+.lesson-ai-quiz__header p {
+  max-width: 52rem;
+}
+
+.lesson-ai-quiz__close {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-start: 0;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 10px !important;
+  font-size: 1.35rem;
+}
+
+.lesson-ai-quiz__meta {
+  margin-top: .8rem;
+  padding: .7rem .8rem;
+  gap: .45rem;
+}
+
+.lesson-ai-quiz__progress-line {
+  font-size: .78rem;
+}
+
+.lesson-ai-quiz__nav {
+  justify-content: flex-start;
+  gap: .3rem;
+}
+
+.lesson-ai-quiz__nav-dot {
+  width: 1.9rem;
+  height: 1.9rem;
+}
+
+.lesson-ai-quiz__question {
+  margin-top: .8rem;
+  padding: clamp(.85rem, 2vw, 1.1rem);
+}
+
+.lesson-ai-quiz__question h3 {
+  max-width: 70ch;
+}
+
+.lesson-ai-quiz__options {
+  gap: .5rem;
+  margin-top: .85rem;
+}
+
+.lesson-ai-quiz__option {
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  gap: .6rem;
+  min-height: 2.9rem;
+  padding: .62rem .7rem;
+}
+
+.lesson-ai-quiz__option-text {
+  text-align: start;
+}
+
+.lesson-ai-quiz__option input {
+  width: 1.05rem;
+  height: 1.05rem;
+  justify-self: end;
+}
+
+.lesson-ai-quiz__text-wrap {
+  margin-top: .85rem;
+}
+
+.lesson-ai-quiz__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-top: .85rem;
+  min-width: 0;
+}
+
+.lesson-ai-quiz__submit {
+  order: 2;
+  margin: 0;
+  min-width: 10.5rem;
+}
+
+.lesson-ai-quiz__steps {
+  order: 1;
+  direction: rtl;
+}
+
+.lesson-ai-quiz__step {
+  min-width: 5.7rem;
+}
+
+@media (max-width: 760px) {
+  .lesson-ai-quiz__header {
+    padding-inline-end: 2.8rem;
+  }
+
+  .lesson-ai-quiz__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lesson-ai-quiz__submit,
+  .lesson-ai-quiz__steps {
+    width: 100%;
+  }
+
+  .lesson-ai-quiz__submit {
+    min-width: 0;
+  }
+
+  .lesson-ai-quiz__steps > * {
+    flex: 1 1 0;
+  }
+}
+
+.lesson-skeleton__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skeleton geometry mirrors the real .doc-toc rail on desktop and the
+   same compact flow on phones; the actual ToC stylesheet takes over once
+   lesson data is painted. */
+.lesson-skeleton__toc {
+  box-sizing: border-box;
+  max-height: 70vh;
+  overflow: hidden;
+}
+
+.lesson-skeleton__toc-toggle {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .lesson-view--loading {
+    padding-bottom: calc(5rem + var(--bottom-nav-height, 54px));
+  }
+  .lesson-skeleton__content {
+    width: 100%;
+  }
+
+  .lesson-skeleton__toc {
+    display: none;
+  }
+
+  .lesson-skeleton__toc-toggle {
+    position: fixed;
+    inset-inline-start: 1rem;
+    inset-block-end: calc(1rem + var(--bottom-nav-height, 54px));
+    z-index: 40;
+    display: grid;
+    width: 2.9rem;
+    height: 2.9rem;
+    place-items: center;
+    border: 1px solid var(--border-color, rgba(127, 127, 127, .25));
+    border-radius: 50%;
+    background: var(--color-surface, var(--color-bg, #fff));
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .18);
+  }
+
+  .lesson-skeleton__toc-toggle::before,
+  .lesson-skeleton__toc-toggle::after,
+  .lesson-skeleton__toc-toggle i {
+    content: "";
+    display: block;
+    width: 1rem;
+    height: .11rem;
+    border-radius: 999px;
+    background: var(--color-text-secondary, #8a8f98);
+    box-shadow: 0 .28rem 0 var(--color-text-secondary, #8a8f98), 0 -.28rem 0 var(--color-text-secondary, #8a8f98);
+  }
 }

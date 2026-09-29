@@ -40,10 +40,16 @@ import fs from "fs";
 import path from "path";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY,
-);
+let supabase = null;
+
+function getSupabase() {
+    if (supabase) return supabase;
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_ANON_KEY;
+    if (!url || !key) throw new Error("Supabase environment is not configured.");
+    supabase = createClient(url, key);
+    return supabase;
+}
 
 // index.html is the SPA shell — course pages render inside it, not a
 // separate template (see quiz.html for contrast with render-quiz.js).
@@ -124,6 +130,29 @@ async function handleLessonRequest(req, res) {
         lessonId = rawId;
     }
 
+    // User-created lessons live in the browser workspace (`user_quizzes`)
+    // and are intentionally not in the public `lessons` table. The browser
+    // reader loads those rows from session/local storage, so sending their
+    // short local id through this server renderer only creates an unnecessary
+    // Supabase miss (and, in some deployments, a 503 fallback). Return the
+    // normal lesson shell directly for browser-owned lessons; the client will hydrate it.
+    if (req.query.type === "user" || /^user_lesson_/i.test(lessonId)) {
+        let html;
+        try {
+            html = fs.readFileSync(LESSON_TEMPLATE_PATH, "utf8");
+        } catch (err) {
+            console.error("[render-course] Could not read lesson.html for user lesson:", err);
+            return res.status(500).send("Internal Server Error");
+        }
+        html = html.replace(
+            "</head>",
+            `  <meta name="lesson:id" content="${escapeHtml(lessonId)}">\n</head>`,
+        );
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+        return res.status(200).send(html);
+    }
+
     let lesson = null;
     try {
         lesson = await fetchLessonMeta(lessonId);
@@ -202,7 +231,7 @@ async function handleLessonRequest(req, res) {
  */
 async function fetchLessonMeta(idOrSlug) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
-    const query = supabase.from("lessons").select("id, slug, title, content");
+    const query = getSupabase().from("lessons").select("id, slug, title, content");
     const { data, error } = isUuid
         ? await query.eq("id", idOrSlug).maybeSingle()
         : await query.eq("slug", idOrSlug).maybeSingle();
@@ -544,7 +573,7 @@ async function handleCourseRequest(req, res) {
  * @returns {Promise<{id:string, name:string, folderCount:number, quizCount:number}|null>}
  */
 async function fetchCourseMeta(courseSlug, educationType) {
-    const { data: courses, error: coursesErr } = await supabase
+    const { data: courses, error: coursesErr } = await getSupabase()
         .from("courses")
         .select("id, name, education_type");
 
@@ -563,11 +592,11 @@ async function fetchCourseMeta(courseSlug, educationType) {
 
     const [{ count: folderCount, error: folderErr }, { count: quizCount, error: quizErr }] =
         await Promise.all([
-            supabase
+            getSupabase()
                 .from("folders")
                 .select("id", { count: "exact", head: true })
                 .eq("course_id", course.id),
-            supabase
+            getSupabase()
                 .from("quizzes")
                 .select("id", { count: "exact", head: true })
                 .eq("course_id", course.id),
@@ -607,7 +636,7 @@ async function fetchFolderPath(courseId, pathSlugs) {
     const resolvedNames = [];
 
     for (const slug of pathSlugs) {
-        const query = supabase
+        const query = getSupabase()
             .from("folders")
             .select("id, name")
             .eq("course_id", courseId);
@@ -633,11 +662,11 @@ async function fetchFolderPath(courseId, pathSlugs) {
 
     const [{ count: folderCount, error: folderErr }, { count: quizCount, error: quizErr }] =
         await Promise.all([
-            supabase
+            getSupabase()
                 .from("folders")
                 .select("id", { count: "exact", head: true })
                 .eq("parent_folder_id", folder.id),
-            supabase
+            getSupabase()
                 .from("quizzes")
                 .select("id", { count: "exact", head: true })
                 .eq("folder_id", folder.id),
@@ -670,11 +699,11 @@ async function fetchFolderPath(courseId, pathSlugs) {
  */
 async function fetchImmediateChildren(parentId, isFolder) {
     const folderQuery = isFolder
-        ? supabase.from("folders").select("id, name").eq("parent_folder_id", parentId)
-        : supabase.from("folders").select("id, name").eq("course_id", parentId).is("parent_folder_id", null);
+        ? getSupabase().from("folders").select("id, name").eq("parent_folder_id", parentId)
+        : getSupabase().from("folders").select("id, name").eq("course_id", parentId).is("parent_folder_id", null);
     const quizQuery = isFolder
-        ? supabase.from("quizzes").select("data, password").eq("folder_id", parentId)
-        : supabase.from("quizzes").select("data, password").eq("course_id", parentId).is("folder_id", null);
+        ? getSupabase().from("quizzes").select("data, password").eq("folder_id", parentId)
+        : getSupabase().from("quizzes").select("data, password").eq("course_id", parentId).is("folder_id", null);
 
     const [{ data: folderRows, error: folderErr }, { data: quizRows, error: quizErr }] = await Promise.all([
         folderQuery,

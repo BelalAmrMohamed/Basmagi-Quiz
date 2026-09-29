@@ -177,6 +177,11 @@ function saveLessonProgress(lessonId, entry) {
   }
 }
 
+/** Clears only embedded-question answers. Reading/section progress stays intact. */
+export function resetLessonQuestionAnswers(lessonId) {
+  resetQuestionAnswers(lessonId);
+}
+
 /** Marks a section as visited (idempotent). Drives the ToC checkmarks. */
 export function markSectionVisited(lessonId, sectionId) {
   if (!lessonId || !sectionId) return;
@@ -219,10 +224,10 @@ export function recordQuestionAnswer(lessonId, questionId, wasCorrect, selectedI
  * @param {string} questionId
  * @param {string} answerText
  */
-export function resetQuestionAnswer(lessonId, questionId) {
-  if (!lessonId || !questionId) return;
+export function resetQuestionAnswers(lessonId) {
+  if (!lessonId) return;
   const entry = getLessonProgress(lessonId);
-  delete entry.questions[questionId];
+  entry.questions = {};
   saveLessonProgress(lessonId, entry);
 }
 

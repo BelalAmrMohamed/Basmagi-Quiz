@@ -2819,9 +2819,29 @@ export function createChatPanel(options = {}) {
    */
   panel.submitText = function submitText(text) {
     const value = String(text || "").trim();
-    if (!value || sendBtn.disabled) return;
+    if (!value || textarea.disabled) return false;
+
+    // Treat programmatic submissions exactly like typed input: put the value
+    // into the composer first so the availability/visibility gates are
+    // recalculated before we ask sendMessage() to dispatch it. This matters
+    // for the lesson selection-popup path, which can open the modal and call
+    // submitText in the same frame that the panel is being mounted.
     textarea.value = value;
-    sendMessage();
+    resizeChatInput();
+    updateSendBtnVisibility();
+    if (sendBtn.disabled) return false;
+
+    try {
+      // sendMessage() owns the full async network lifecycle. The bridge only
+      // needs to report that the message was accepted and dispatched so
+      // callers can close their transient UI immediately while the chat
+      // own thinking/error states remain visible.
+      void sendMessage();
+      return true;
+    } catch (error) {
+      console.error("[ai-agent-chat] submitText failed:", error);
+      return false;
+    }
   };
 
   panel.loadConversation = function loadConversation(conversation) {

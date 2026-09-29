@@ -108,6 +108,7 @@
   <link rel="stylesheet" href="/src/styles/markdown.css">
   <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
   <link rel="stylesheet" href="/src/features/lesson/lesson.css">
+  <link rel="stylesheet" href="/src/shared/doc-toc.css">
   <link rel="stylesheet" href="/src/components/quiz-info-modal/quiz-info-modal.css">
   <link rel="stylesheet" href="/src/components/ai-agent/ai-agent.css">
   <link rel="stylesheet" href="src/components/notifications/notifications.css">
@@ -614,9 +615,6 @@
 
 
   <main id="contentArea" class="lesson-page-shell container" aria-live="polite" aria-busy="true"></main>
-  <!-- ensureSharedSupabaseClient() only builds a client if window.supabase exists.
-       Without this tag fetchLesson() returns null and every lesson shows "not found". -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module" src="/src/features/lesson/lesson-page.js"></script>
   <script type="module" src="src/components/side-menu/side-menu.js"></script>
 
@@ -634,7 +632,6 @@
     });
   </script>
 
-  <script defer src="/_vercel/insights/script.js"></script>
 </body>
 
 </html>

@@ -13,8 +13,11 @@
 
 import { renderMarkdown, renderInlineMediaTag } from "../../shared/markdown.js";
 import { escapeHtml } from "../home/escape-html.js";
-import { recordQuestionAnswer, appendEssayAnswerText, resetQuestionAnswer, getLessonProgress } from "./lesson-schema.js";
+import { recordQuestionAnswer, appendEssayAnswerText, resetLessonQuestionAnswers, getLessonProgress } from "./lesson-schema.js";
+import { _confirm } from "../../components/notifications/notifications.js";
 import { gradeEssay, isAnswerCorrect } from "../../shared/rate-answers.js";
+
+const questionRootCleanup = new WeakMap();
 
 /**
  * Math is rendered by shared markdown.js as each markdown block is built.
@@ -154,7 +157,6 @@ function renderMcqQuestionBody(block, questionId, options, prior) {
       ? `<div class="lesson-question__explanation md-content">${renderMarkdown(block.explanation)}</div>`
       : "") +
     `</div>` +
-    `<button type="button" class="lesson-question__reset" data-question-reset hidden>إعادة المحاولة</button>` +
     `</div>`
   );
 }
@@ -191,7 +193,6 @@ function renderEssayQuestionBody(block, questionId, prior) {
       ? `<div class="lesson-question__explanation md-content">${renderMarkdown(block.explanation)}</div>`
       : "") +
     `</div>` +
-    `<button type="button" class="lesson-question__reset" data-question-reset hidden>إعادة المحاولة</button>` +
     `</div>`
   );
 }
@@ -207,10 +208,28 @@ function renderEssayQuestionBody(block, questionId, prior) {
 export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) {
   if (!root) return;
 
-  // Delegated (not per-button) so it keeps working after revealMcqAnswer/
-  // revealEssayAnswer insert the button dynamically post-grading, without
-  // needing a matching addEventListener at each insertion site.
-  root.addEventListener("click", (e) => {
+  questionRootCleanup.get(root)?.();
+
+  // The lesson-wide reset lives in the viewer header, but the question block
+  // module owns the actual progress mutation so every question source is
+  // cleared, including adaptive questions that are currently hidden.
+  const handleRootClick = async (e) => {
+    const resetAll = e.target.closest("[data-reset-all-questions]");
+    if (resetAll) {
+      if (resetAll.disabled) return;
+      resetAll.disabled = true;
+      try {
+        const accepted = await _confirm(
+          "سيتم مسح جميع إجابات أسئلة هذا الدرس، مع الإبقاء على تقدّم القراءة والعلامات المرجعية. هل تريد المتابعة؟",
+        );
+        if (!accepted) return;
+        resetLessonQuestionAnswers(lessonId);
+        onAnswered?.();
+      } finally {
+        resetAll.disabled = false;
+      }
+      return;
+    }
     const btn = e.target.closest("[data-explain-wrong]");
     if (!btn || typeof onExplainWrong !== "function") return;
     const questionEl = btn.closest(".lesson-question");
@@ -234,35 +253,11 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
       const myAnswer = questionEl.querySelector(".lesson-question__essay-input")?.value || "";
       onExplainWrong({ kind: "essay", question: questionText, modelAnswer, myAnswer });
     }
-  });
+  };
 
-  root.querySelectorAll("[data-question-reset]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const questionEl = button.closest(".lesson-question");
-      if (!questionEl) return;
-      resetQuestionAnswer(lessonId, questionEl.dataset.questionId);
-      questionEl.dataset.answered = "false";
-      questionEl.querySelectorAll(".lesson-question__option").forEach((option) => {
-        option.disabled = false;
-        option.classList.remove("is-selected", "is-correct", "is-wrong");
-      });
-      const textarea = questionEl.querySelector(".lesson-question__essay-input");
-      if (textarea) { textarea.disabled = false; textarea.value = ""; }
-      const check = questionEl.querySelector(".lesson-question__essay-check-btn, .lesson-question__check-btn");
-      if (check) check.disabled = false;
-      const feedback = questionEl.querySelector(".lesson-question__feedback");
-      if (feedback) {
-        feedback.hidden = true;
-        // Clear any stale "explain my wrong answer" trigger from the prior
-        // attempt -- renderExplainWrongButton() only skips re-adding one if
-        // it finds an existing [data-explain-wrong] node, so without this
-        // a retry that becomes correct would still show the old button.
-        feedback.querySelector("[data-explain-wrong]")?.remove();
-      }
-      button.hidden = true;
-      if (typeof onAnswered === "function") onAnswered();
-    });
-  });
+  root.addEventListener("click", handleRootClick);
+  questionRootCleanup.set(root, () => root.removeEventListener("click", handleRootClick));
+
   root.querySelectorAll('.lesson-question[data-question-kind="mcq"]').forEach((questionEl) => {
     const questionId = questionEl.dataset.questionId;
     let correctIndexes = [0];
@@ -351,9 +346,6 @@ function renderExplainWrongButton(feedback) {
 
 function revealMcqAnswer(questionEl, correctIndexes, wasCorrect, chosenIndexes) {
   questionEl.dataset.answered = "true";
-  const resetButton = questionEl.querySelector("[data-question-reset]");
-  if (resetButton) resetButton.hidden = false;
-
   questionEl.querySelectorAll(".lesson-question__option").forEach((btn) => {
     const idx = Number(btn.dataset.optionIndex);
     btn.disabled = true;
@@ -383,9 +375,6 @@ function revealMcqAnswer(questionEl, correctIndexes, wasCorrect, chosenIndexes) 
  */
 function revealEssayAnswer(questionEl, modelAnswer, answerText) {
   questionEl.dataset.answered = "true";
-  const resetButton = questionEl.querySelector("[data-question-reset]");
-  if (resetButton) resetButton.hidden = false;
-
   const textarea = questionEl.querySelector(".lesson-question__essay-input");
   if (textarea) {
     textarea.value = answerText;

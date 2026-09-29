@@ -1,135 +1,128 @@
 // ============================================================================
-// public/src/features/lesson/lesson-toc.js
-// LESSON TABLE OF CONTENTS — section jump-nav with visited checkmarks.
-// ============================================================================
-// ── Why this isn't features/documents/doc-toc.js ────────────────────────────
-// That module was the starting point (per the lessons plan's Phase 2 step 4)
-// but it can't be imported: it exports nothing at all — it's a side-effect
-// script that, on load, scans the DOM for `.page-wrapper .section h2[id]`
-// and builds a ToC from whatever static markup it finds. Lessons are the
-// opposite case: sections come from jsonb, are rendered dynamically, can be
-// hidden/revealed after an answer, and carry visited state. So this is a
-// lesson-specific variant that keeps doc-toc.js's two good ideas — a
-// scroll-spy active link, and a collapsed floating toggle on narrow screens
-// — without inheriting its static-markup coupling.
+// LESSON TABLE OF CONTENTS — same interaction model as documents/.doc-toc.
 // ============================================================================
 
 import { escapeHtml } from "../home/escape-html.js";
 import { markSectionVisited } from "./lesson-schema.js";
+import { registerLessonPanel } from "./lesson-panel-manager.js";
+import { createGeometryTocScrollSpy } from "../../shared/toc-scroll-spy.js";
 
-/**
- * Builds the ToC markup for the currently-visible sections.
- *
- * @param {Array<{id:string,title:string}>} visibleSections
- * @param {string[]} visitedSectionIds
- * @returns {string}
- */
+const MINIMIZED_KEY = "lesson_toc_minimized";
+
 export function renderLessonToc(visibleSections, visitedSectionIds) {
-  const titled = visibleSections.filter((s) => s.title);
-  // Below two entries a jump-nav is just noise — same "don't render for a
-  // single heading" judgement doc-toc.js makes.
+  const titled = (visibleSections || []).filter((section) => section?.title);
   if (titled.length < 2) return "";
 
-  const visited = new Set(visitedSectionIds || []);
-  const items = titled
-    .map(
-      (section) =>
-        `<li class="lesson-toc__item${visited.has(section.id) ? " is-visited" : ""}">` +
-        `<a class="lesson-toc__link" href="#lesson-section-${escapeHtml(section.id)}" ` +
-        `data-section-id="${escapeHtml(section.id)}">` +
-        `<span class="lesson-toc__check" aria-hidden="true"></span>` +
-        `<span class="lesson-toc__text">${escapeHtml(section.title)}</span>` +
-        `</a></li>`,
-    )
-    .join("");
+  const items = titled.map((section) => (
+    `<li><a class="doc-toc-link" href="#lesson-section-${escapeHtml(section.id)}" data-section-id="${escapeHtml(section.id)}">${escapeHtml(section.title)}</a></li>`
+  )).join("");
 
   return (
-    `<nav class="lesson-toc" aria-label="محتويات الدرس">` +
-    `<button type="button" class="lesson-toc__toggle" aria-expanded="false">المحتويات</button>` +
-    `<ol class="lesson-toc__list">${items}</ol>` +
-    `</nav>`
+    `<nav class="doc-toc lesson-toc" id="lessonTocPanel" aria-label="محتويات الدرس">` +
+    `<div class="doc-toc-heading">` +
+    `<span class="doc-toc-heading-label">محتويات الدرس</span>` +
+    `<button type="button" class="doc-toc-minimize-btn" data-lesson-toc-minimize aria-controls="lessonTocPanel" aria-expanded="true" aria-label="طي محتويات الدرس" title="طي المحتويات">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>` +
+    `</button></div>` +
+    `<ul class="doc-toc-list">${items}</ul>` +
+    `</nav>` +
+    `<button type="button" class="doc-toc-toggle" data-lesson-toc-mobile-toggle aria-expanded="false" aria-controls="lessonTocPanel">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>` +
+    `<span>المحتويات</span></button>`
   );
 }
 
-/**
- * Wires the ToC: smooth-scroll on click, the narrow-screen collapse toggle,
- * and a scroll-spy that marks sections visited as the reader reaches them.
- *
- * Scroll-spy uses IntersectionObserver here (unlike doc-toc.js, which
- * deliberately avoids IO-only tracking for its active-link highlight). The
- * difference is what's being tracked: "has the reader reached this section
- * at all" is a one-way latch, so a fast scroll that skips an observer band
- * only delays a checkmark until the next scroll — it can't leave the wrong
- * section permanently marked the way a bidirectional active-link highlight
- * could. The active-link highlight below is driven off the same entries and
- * is purely cosmetic.
- *
- * @param {HTMLElement} root - the lesson container
- * @param {string} lessonId
- */
 export function equipLessonToc(root, lessonId) {
-  if (!root) return;
-  const toc = root.querySelector(".lesson-toc");
+  const toc = root?.querySelector(".lesson-toc");
+  if (!toc) return;
 
-  if (toc) {
-    const toggle = toc.querySelector(".lesson-toc__toggle");
-    if (toggle) {
-      toggle.addEventListener("click", () => {
-        const open = toc.classList.toggle("is-open");
-        toggle.setAttribute("aria-expanded", String(open));
-      });
+  const list = toc.querySelector(".doc-toc-list");
+  const mobileToggle = root?.querySelector("[data-lesson-toc-mobile-toggle]");
+  const minimizeBtn = toc.querySelector("[data-lesson-toc-minimize]");
+  if (!list || !mobileToggle) return;
+
+  const closeMobile = () => {
+    toc.classList.remove("doc-toc-open");
+    mobileToggle.setAttribute("aria-expanded", "false");
+  };
+  const setMobileOpen = (open) => {
+    toc.classList.toggle("doc-toc-open", open);
+    mobileToggle.setAttribute("aria-expanded", String(open));
+  };
+
+  const unregisterPanel = registerLessonPanel({
+    toggle: mobileToggle,
+    panel: toc,
+    isOpen: () => toc.classList.contains("doc-toc-open"),
+    setOpen: setMobileOpen,
+  });
+
+  let minimized = false;
+  try { minimized = localStorage.getItem(MINIMIZED_KEY) === "true"; } catch (_) {}
+  const setMinimized = (value) => {
+    toc.classList.toggle("doc-toc-minimized", value);
+    minimizeBtn?.setAttribute("aria-expanded", value ? "false" : "true");
+    if (minimizeBtn) {
+      minimizeBtn.setAttribute("aria-label", value ? "إظهار محتويات الدرس" : "طي محتويات الدرس");
+      minimizeBtn.title = value ? "إظهار المحتويات" : "طي المحتويات";
     }
+    try { localStorage.setItem(MINIMIZED_KEY, value ? "true" : "false"); } catch (_) {}
+  };
+  setMinimized(minimized);
 
-    toc.querySelectorAll(".lesson-toc__link").forEach((link) => {
-      link.addEventListener("click", (e) => {
-        e.preventDefault();
-        const sectionId = link.dataset.sectionId;
-        const target = root.querySelector(`#lesson-section-${CSS.escape(sectionId)}`);
-        if (!target) return;
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
-        markSectionVisited(lessonId, sectionId);
-        markTocVisited(root, sectionId);
-        toc.classList.remove("is-open");
-        if (toggle) toggle.setAttribute("aria-expanded", "false");
-      });
-    });
-  }
+  minimizeBtn?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setMinimized(!toc.classList.contains("doc-toc-minimized"));
+  });
+  toc.addEventListener("click", (event) => {
+    if (!toc.classList.contains("doc-toc-minimized")) return;
+    if (event.target.closest("a")) return;
+    setMinimized(false);
+  });
 
-  const sections = Array.from(root.querySelectorAll(".lesson-section"));
-  if (sections.length === 0) return;
-
-  if (typeof IntersectionObserver !== "function") {
-    // No IO support — mark everything currently rendered as visited rather
-    // than leaving the ToC permanently unchecked.
-    sections.forEach((s) => {
-      if (s.dataset.sectionId) markSectionVisited(lessonId, s.dataset.sectionId);
-    });
+  const links = [...toc.querySelectorAll(".doc-toc-link")];
+  const sections = links
+    .map((link) => root.querySelector(`#lesson-section-${CSS.escape(link.dataset.sectionId)}`))
+    .filter(Boolean);
+  if (!sections.length) {
+    unregisterPanel();
     return;
   }
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
-        const sectionId = entry.target.dataset.sectionId;
-        if (!sectionId) continue;
-        markSectionVisited(lessonId, sectionId);
-        markTocVisited(root, sectionId);
-        setActiveTocLink(root, sectionId);
-      }
+  const linkById = new Map(links.map((link) => [link.dataset.sectionId, link]));
+  const setActive = (id) => {
+    links.forEach((link) => link.classList.toggle("doc-toc-link--active", link.dataset.sectionId === id));
+  };
+  const markVisited = (id) => {
+    markSectionVisited(lessonId, id);
+    linkById.get(id)?.classList.add("doc-toc-link--visited");
+  };
+  const spy = createGeometryTocScrollSpy({
+    targets: sections,
+    onActive: setActive,
+    markVisited,
+    onNavigate: (id, event) => {
+      event?.preventDefault();
+      const target = root.querySelector(`#lesson-section-${CSS.escape(id)}`);
+      if (!target) return;
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      closeMobile();
     },
-    { rootMargin: "-20% 0px -60% 0px", threshold: 0 },
-  );
-  sections.forEach((section) => observer.observe(section));
-}
+  });
 
-function markTocVisited(root, sectionId) {
-  const link = root.querySelector(`.lesson-toc__link[data-section-id="${CSS.escape(sectionId)}"]`);
-  if (link) link.closest(".lesson-toc__item")?.classList.add("is-visited");
-}
+  list.addEventListener("click", (event) => {
+    const link = event.target.closest("a");
+    if (!link) return;
+    const id = link.dataset.sectionId;
+    if (!linkById.has(id)) return;
+    spy.handleNavigate(id, event);
+  });
 
-function setActiveTocLink(root, sectionId) {
-  root.querySelectorAll(".lesson-toc__item").forEach((item) => item.classList.remove("is-active"));
-  const link = root.querySelector(`.lesson-toc__link[data-section-id="${CSS.escape(sectionId)}"]`);
-  if (link) link.closest(".lesson-toc__item")?.classList.add("is-active");
+  // Keep the lifecycle explicit because paint() replaces innerHTML. Old
+  // scroll listeners must be removed, otherwise every answered question
+  // would add another scroll-spy to the document.
+  return () => {
+    unregisterPanel();
+    spy.cleanup();
+  };
 }

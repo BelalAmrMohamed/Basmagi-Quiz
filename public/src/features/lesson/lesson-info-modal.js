@@ -20,12 +20,19 @@
 // ============================================================================
 
 import { escapeHtml } from "../home/escape-html.js";
-import { renderLessonBookmarks, equipLessonBookmarks } from "./lesson-bookmarks.js";
+import { renderLessonBookmarks, equipLessonBookmarks, cleanupLessonBookmarks } from "./lesson-bookmarks.js";
 import {
     computeLessonProgressSummary,
     renderLessonProgressSummary,
     equipLessonProgressSummary,
 } from "./lesson-progress-summary.js";
+import {
+    getReaderPrefs,
+    equipReaderPrefs,
+    FONT_CHOICES,
+    WIDTH_CHOICES,
+    TEXT_SIZE_CHOICES,
+} from "./lesson-reader-prefs.js";
 
 const BLOCK_LABELS = {
     markdown: "نص",
@@ -112,19 +119,39 @@ function renderAiActionsSection() {
     );
 }
 
+
+function renderInfoPrefs(prefs) {
+    const fontOptions = FONT_CHOICES.map((item) =>
+        `<option value="${escapeHtml(item.id)}"${item.id === prefs.fontId ? " selected" : ""}>${escapeHtml(item.label)}</option>`
+    ).join("");
+    const widthOptions = WIDTH_CHOICES.map((item) =>
+        `<option value="${escapeHtml(item.id)}"${item.id === prefs.widthId ? " selected" : ""}>${escapeHtml(item.label)}</option>`
+    ).join("");
+    const textSizeOptions = TEXT_SIZE_CHOICES.map((item) =>
+        `<option value="${escapeHtml(item.id)}"${item.id === prefs.textSizeId ? " selected" : ""}>${escapeHtml(item.label)}</option>`
+    ).join("");
+    return (
+        `<section class="lesson-info-modal__prefs" aria-labelledby="lessonInfoPrefsTitle">` +
+        `<div class="lesson-info-modal__prefs-head"><div><h3 id="lessonInfoPrefsTitle">إعدادات القراءة</h3>` +
+        `<p>تُطبّق هذه الإعدادات على صفحة الدرس وتحفظ على هذا الجهاز.</p></div></div>` +
+        `<div class="lesson-info-modal__prefs-grid">` +
+        `<label><span>الخط</span><select data-reader-pref="font">${fontOptions}</select></label>` +
+        `<label><span>عرض القراءة</span><select data-reader-pref="width">${widthOptions}</select></label>` +
+        `<label><span>حجم النص</span><select data-reader-pref="text-size">${textSizeOptions}</select></label>` +
+        `<label class="lesson-info-modal__prefs-switch"><span>وضع التركيز</span><input type="checkbox" data-reader-pref="focus"${prefs.focusMode ? " checked" : ""}></label>` +
+        `</div></section>`
+    );
+}
+
 /**
  * Opens the live lesson page's control modal.
  *
  * @param {object} options
  * @param {object} options.lesson - the fetched lesson row (id, title, created_at, reader_prefs_default)
  * @param {object} options.normalized - normalizeLessonContent(lesson.content)
- * @param {(prefs:object)=>void} [options.onPrefsChange] - called after a reading-pref change so the caller can re-apply
- * @param {(sectionId:string)=>void} options.onJumpToSection - scrolls to / focuses a section, used by bookmarks + resume
+ * @param {(sectionId:string)=>void} options.onJumpToSection - scrolls to a section
  * @param {(sectionId:string)=>void} [options.onBookmarksChange] - called after a bookmark add/remove
  * @param {(actionId:string, prompt:string)=>void} options.onAiStudyAction - opens the AI agent with the given prompt
- * @param {Function} renderPrefsPopover - imported from lesson-view.js (avoids a circular static import at module load time)
- * @param {Function} equipPrefsFn - imported from lesson-view.js
- * @param {Function} getReaderPrefsFn
  * @returns {HTMLDialogElement}
  */
 export function showLessonControlModal(options) {
@@ -134,9 +161,6 @@ export function showLessonControlModal(options) {
         onJumpToSection,
         onBookmarksChange,
         onAiStudyAction,
-        renderPrefsPopoverFn,
-        equipPrefsFn,
-        getReaderPrefsFn,
     } = options;
 
     const info = collectLiveLessonInfo(lesson, normalized);
@@ -159,40 +183,32 @@ export function showLessonControlModal(options) {
         renderInfoSection(info) +
         `<div class="quiz-info-section"><div class="quiz-info-section-title">التقدّم</div>${renderLessonProgressSummary(progressSummary, sectionTitleById)}</div>` +
         `<div class="quiz-info-section lesson-info-modal__bookmarks-section"><div class="quiz-info-section-title">العلامات المرجعية</div>${renderLessonBookmarks(lesson.id)}</div>` +
-        `<div class="quiz-info-section"><div class="quiz-info-section-title">إعدادات القراءة</div>${renderPrefsPopoverFn(getReaderPrefsFn(lesson.reader_prefs_default))}</div>` +
+        renderInfoPrefs(getReaderPrefs(lesson.reader_prefs_default)) +
         renderAiActionsSection() +
         `</div>` +
         `</div>`;
     document.body.appendChild(dialog);
 
+    const lessonEl = document.querySelector(`.lesson-view[data-lesson-id="${CSS.escape(lesson.id)}"]`);
+    const prefsCleanup = lessonEl
+        ? equipReaderPrefs(dialog, lessonEl, lesson.reader_prefs_default)
+        : () => {};
+    const bookmarksSection = dialog.querySelector(".lesson-info-modal__bookmarks-section");
+    let closed = false;
     const close = () => {
-        dialog.close();
+        if (closed) return;
+        closed = true;
+        prefsCleanup();
+        cleanupLessonBookmarks(bookmarksSection);
+        if (dialog.open) dialog.close();
         dialog.remove();
     };
     dialog.querySelector(".quiz-info-dialog-close").onclick = close;
     dialog.addEventListener("click", (e) => {
         if (e.target === dialog) close();
     });
-    dialog.addEventListener("close", () => dialog.remove());
-
-    // Reading prefs: the popover's own toggle/panel markup opens inline by
-    // default (see renderPrefsPopover) — inside a modal that's already
-    // focused content, the extra collapse/expand step just adds friction, so
-    // it's forced open here without changing the shared function itself.
-    const prefsToggle = dialog.querySelector(".lesson-prefs__toggle");
-    const prefsPanel = dialog.querySelector(".lesson-prefs__panel");
-    if (prefsToggle && prefsPanel) {
-        prefsPanel.hidden = false;
-        prefsToggle.setAttribute("aria-expanded", "true");
-        prefsToggle.style.display = "none";
-    }
-    // equipPrefsFn expects (root, lessonEl, authorDefaults) and applies
-    // prefs to `lessonEl` — the modal itself isn't the lesson article, so
-    // pass the real lesson article element (still in the DOM behind the
-    // modal) as the apply target while wiring listeners against the modal's
-    // own controls.
-    const lessonEl = document.querySelector(`.lesson-view[data-lesson-id="${CSS.escape(lesson.id)}"]`);
-    if (lessonEl) equipPrefsFn(dialog, lessonEl, lesson.reader_prefs_default);
+    dialog.addEventListener("cancel", (e) => { e.preventDefault(); close(); });
+    dialog.addEventListener("close", close);
 
     // Bookmarks: rerender just this modal's bookmarks block in place, then
     // let the caller know so the page's own header bookmarks widget (and
@@ -211,7 +227,7 @@ export function showLessonControlModal(options) {
         }
         onBookmarksChange?.();
     };
-    equipLessonBookmarks(dialog, lesson.id, rerenderBookmarks);
+    if (bookmarksSection) equipLessonBookmarks(bookmarksSection, lesson.id, rerenderBookmarks);
     dialog.querySelectorAll("[data-bookmark-jump]").forEach((btn) => {
         btn.addEventListener("click", () => {
             close();
