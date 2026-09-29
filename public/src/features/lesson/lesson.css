@@ -875,28 +875,10 @@
 .lesson-view--focus .lesson-view__sidebar,
 .lesson-view--focus .lesson-toc,
 .lesson-view--focus .lesson-view__info-btn,
-.lesson-view--focus .lesson-view__resume-btn,
 .lesson-view--focus .lesson-bookmarks,
 .lesson-view--focus .lesson-view__eyebrow,
 .lesson-view--focus .lesson-view__subtitle {
   display: none;
-}
-
-.lesson-view__resume-btn {
-  padding: 0.4rem 0.9rem;
-  border: 1px solid var(--color-primary);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-primary);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  min-height: 42px;
-  transition: background .18s ease;
-}
-
-.lesson-view__resume-btn:hover {
-  background: var(--color-primary-light, rgba(99, 102, 241, 0.1));
 }
 
 .lesson-prefs__row--switch {
@@ -2374,5 +2356,353 @@
     border-radius: 999px;
     background: var(--color-text-secondary, #8a8f98);
     box-shadow: 0 .28rem 0 var(--color-text-secondary, #8a8f98), 0 -.28rem 0 var(--color-text-secondary, #8a8f98);
+  }
+}
+
+
+/* ── Lesson reader header — compact two-row control bar ───────────────────── */
+.lesson-view--reader .lesson-view__header {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .8rem;
+  min-height: 0;
+  margin: 0 0 1rem;
+  padding: .9rem 1rem 1rem;
+  overflow: visible;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface, Canvas);
+  box-shadow: 0 8px 24px rgb(0 0 0 / .045);
+  isolation: isolate;
+  z-index: 30;
+}
+
+.lesson-view--reader .lesson-view__header::before {
+  content: "";
+  position: absolute;
+  inset-block: 12px;
+  inset-inline-start: 0;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+/* Row 1: lesson identity + title/description. */
+.lesson-view--reader .lesson-view__header-main {
+  min-width: 0;
+  display: grid;
+  gap: .35rem;
+}
+
+.lesson-view--reader .lesson-view__header-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  min-width: 0;
+}
+
+.lesson-view--reader .lesson-view__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--color-primary);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.lesson-view--reader .lesson-view__eyebrow-icon {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
+  border-radius: .55rem;
+  background: var(--color-primary-light, rgba(99, 102, 241, .10));
+}
+
+.lesson-view--reader .lesson-view__eyebrow-icon .lesson-icon {
+  width: .95rem;
+  height: .95rem;
+}
+
+.lesson-view--reader .lesson-view__meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: .35rem;
+  min-width: 0;
+}
+
+.lesson-view--reader .lesson-view__meta-item {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: .14rem .5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-background-secondary, var(--color-surface));
+  color: var(--color-text-secondary);
+  font-size: .7rem;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.lesson-view--reader .lesson-view__heading {
+  min-width: 0;
+  margin: 0;
+  text-align: start;
+}
+
+.lesson-view--reader .lesson-view__title {
+  max-width: 100%;
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: clamp(1.35rem, 2.7vw, 1.85rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -.018em;
+  text-wrap: balance;
+}
+
+.lesson-view--reader .lesson-view__subtitle {
+  max-width: 65rem;
+  margin: .18rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: .82rem;
+  line-height: 1.6;
+}
+
+/* Row 2: a single no-wrap toolbar. It deliberately has no overflow clipping
+   so its preference/bookmark panels can escape the card. */
+.lesson-view--reader .lesson-view__header-actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: .45rem;
+  min-width: 0;
+  padding-top: .65rem;
+  border-top: 1px solid var(--color-border);
+  overflow: visible;
+}
+
+.lesson-view--reader .lesson-header__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .42rem;
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 38px;
+  padding: .45rem .72rem;
+  border: 1px solid var(--color-border);
+  border-radius: .65rem;
+  background: var(--color-surface, Canvas);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease, color .16s ease, transform .16s ease;
+}
+
+.lesson-view--reader .lesson-header__action:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border));
+  background: var(--color-primary-light, rgba(99, 102, 241, .10));
+  color: var(--color-primary);
+}
+
+.lesson-view--reader .lesson-header__action:active {
+  transform: translateY(1px);
+}
+
+.lesson-view--reader .lesson-header__action:focus-visible {
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: 2px;
+}
+
+.lesson-view--reader .lesson-header__action .lesson-icon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+.lesson-view--reader .lesson-view__info-btn {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+.lesson-view--reader .lesson-view__info-btn:hover {
+  border-color: var(--color-primary-hover, var(--color-primary));
+  background: var(--color-primary-hover, var(--color-primary));
+  color: #fff;
+}
+
+.lesson-view--reader .lesson-reset-all {
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
+.lesson-view--reader .lesson-prefs,
+.lesson-view--reader .lesson-bookmarks {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.lesson-view--reader .lesson-prefs__toggle,
+.lesson-view--reader .lesson-bookmarks__toggle {
+  border-color: var(--color-border);
+  background: var(--color-surface, Canvas);
+  color: var(--color-text-primary);
+}
+
+.lesson-view--reader .lesson-prefs__toggle[aria-expanded="true"],
+.lesson-view--reader .lesson-bookmarks__toggle[aria-expanded="true"] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light, rgba(99, 102, 241, .10));
+  color: var(--color-primary);
+}
+
+/* Existing preference/bookmark content is unchanged; only the shell is
+   restyled here. The menus intentionally sit above the following lesson
+   section rather than being clipped by the compact header. */
+.lesson-view--reader .lesson-prefs__panel,
+.lesson-view--reader .lesson-bookmarks__panel {
+  z-index: 1000;
+  max-width: min(340px, calc(100vw - 1rem));
+  border-color: var(--color-border);
+  border-radius: .8rem;
+  background: var(--color-surface, Canvas);
+  box-shadow: 0 18px 44px rgb(0 0 0 / .16);
+}
+
+.lesson-view--reader .lesson-prefs__panel {
+  min-width: 250px;
+}
+
+.lesson-view--reader .lesson-bookmarks__panel {
+  width: min(22rem, calc(100vw - 1rem));
+}
+
+/* Dynamic title direction: `dir` is assigned by lesson-view.js from the first
+   strong character, so Arabic titles are right-aligned and English titles are
+   left-aligned without hard-coding one direction into the component. */
+.lesson-view--reader .lesson-view__title[dir="rtl"] {
+  text-align: right;
+}
+
+.lesson-view--reader .lesson-view__title[dir="ltr"] {
+  text-align: left;
+}
+
+.lesson-view--reader .lesson-view__title[dir="auto"] {
+  text-align: start;
+}
+
+@media (max-width: 760px) {
+  .lesson-view--reader .lesson-view__header {
+    gap: .65rem;
+    padding: .8rem .85rem .9rem;
+    border-radius: 14px;
+  }
+
+  .lesson-view--reader .lesson-view__header-topline {
+    align-items: flex-start;
+  }
+
+  .lesson-view--reader .lesson-view__eyebrow-icon {
+    width: 1.55rem;
+    height: 1.55rem;
+  }
+
+  .lesson-view--reader .lesson-view__title {
+    font-size: clamp(1.22rem, 5.7vw, 1.55rem);
+  }
+
+  .lesson-view--reader .lesson-view__subtitle {
+    font-size: .78rem;
+  }
+
+  .lesson-view--reader .lesson-view__header-actions {
+    justify-content: flex-start;
+  }
+
+  .lesson-view--reader .lesson-header__action {
+    width: 38px;
+    min-width: 38px;
+    padding-inline: 0;
+  }
+
+  .lesson-view--reader .lesson-header__action-label {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .lesson-view--reader .lesson-view__header {
+    padding-inline: .7rem;
+  }
+
+  .lesson-view--reader .lesson-view__header-actions {
+    gap: .35rem;
+  }
+
+  .lesson-view--reader .lesson-view__meta-item {
+    font-size: .66rem;
+  }
+
+  .lesson-view--reader .lesson-view__eyebrow {
+    font-size: .72rem;
+  }
+}
+
+/* The inline first-paint skeleton should occupy the same geometry as the
+   JavaScript-rendered loading skeleton, with no delayed "flash" transition. */
+.lesson-view--initial-skeleton {
+  min-height: min(72vh, 760px);
+}
+
+.lesson-view--initial-skeleton .lesson-skeleton__header {
+  min-height: 86px;
+}
+
+.lesson-view--initial-skeleton .lesson-skeleton__layout {
+  min-height: 480px;
+}
+
+@media (max-width: 760px) {
+  .lesson-view--initial-skeleton .lesson-skeleton__layout {
+    min-height: 360px;
+  }
+}
+
+/* Keep the three selection actions comfortably tappable on narrow screens. */
+.lesson-selection-popup__btn {
+  min-height: 38px;
+}
+
+@media (max-width: 520px) {
+  .lesson-selection-popup {
+    gap: .3rem;
+    max-width: calc(100vw - 16px);
+  }
+
+  .lesson-selection-popup__btn {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-inline: .6rem;
+    font-size: .8rem;
   }
 }

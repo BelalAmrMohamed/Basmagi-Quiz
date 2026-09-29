@@ -1,9 +1,9 @@
 // ============================================================================
 // public/src/features/lesson/lesson-selection-actions.js
-// TEXT-SELECTION AI ACTIONS (Phase 5 step 4) — a small floating popup that
+// TEXT-SELECTION ACTIONS (Phase 5 step 4) — a small floating popup that
 // appears over a text selection inside `.lesson-view__body` and offers
-// "اشرح ده" (explain this) / "بسّطها" (simplify it), each handing the
-// selected text to the lesson AI Agent via lesson-view.js's
+// "اشرحها" (explain this) / "بسّطها" (simplify it) / "اقرأها" (read aloud).
+// The AI actions hand selected text to lesson-view.js's
 // openLessonAgentWithPrompt() (passed in as onExplain/onSimplify below —
 // this module never talks to the AI Agent directly, keeping exactly one
 // place that knows how to open it).
@@ -30,14 +30,27 @@ const POPUP_CLASS = "lesson-selection-popup";
  * @param {HTMLElement} root
  * @param {(selectedText: string) => (void|boolean|Promise<void|boolean>)} onExplain
  * @param {(selectedText: string) => (void|boolean|Promise<void|boolean>)} onSimplify
+ * @param {(selectedText: string) => (void|boolean|Promise<void|boolean>)} onRead
  * @returns {() => void} teardown - removes all listeners/DOM this call added
  */
-export function equipLessonSelectionActions(root, onExplain, onSimplify) {
+export function equipLessonSelectionActions(root, onExplain, onSimplify, onRead) {
   const body = root.querySelector(".lesson-view__body");
   if (!body) return () => { };
 
   let popupEl = null;
   let capturedText = "";
+  let popupInteraction = false;
+  let popupInteractionTimer = 0;
+
+  function markPopupInteraction() {
+    popupInteraction = true;
+    window.clearTimeout(popupInteractionTimer);
+    // Give selectionchange/mouseup enough time to settle without dismissing
+    // the popup that the user is actively interacting with.
+    popupInteractionTimer = window.setTimeout(() => {
+      popupInteraction = false;
+    }, 250);
+  }
 
   function removePopup() {
     popupEl?.remove();
@@ -51,35 +64,64 @@ export function equipLessonSelectionActions(root, onExplain, onSimplify) {
     const popup = document.createElement("div");
     popup.className = POPUP_CLASS;
     popup.setAttribute("role", "toolbar");
-    popup.setAttribute("aria-label", "إجراءات الذكاء الاصطناعي على النص المحدد");
+    popup.setAttribute("aria-label", "إجراءات النص المحدد");
+
+    function bindActionButton(button, action) {
+      let handledByPointer = false;
+
+      // Some browsers fire selectionchange between mousedown and click. If
+      // that collapses the selection, the document-level selection listener
+      // used to remove the popup before click could run. Handle pointerdown
+      // directly on the button, prevent its default selection-changing
+      // behavior, and keep click as the keyboard-accessible fallback.
+      button.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        handledByPointer = true;
+        markPopupInteraction();
+        void runAction(button, capturedText, action);
+      });
+
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (handledByPointer) {
+          handledByPointer = false;
+          return;
+        }
+        markPopupInteraction();
+        void runAction(button, capturedText, action);
+      });
+    }
 
     const explainBtn = document.createElement("button");
     explainBtn.type = "button";
     explainBtn.className = `${POPUP_CLASS}__btn`;
     explainBtn.textContent = "اشرحها";
-    // Capture-time text, not a live selection read — see module doc above.
-    explainBtn.addEventListener("mousedown", (e) => e.preventDefault()); // don't let the button steal/collapse selection on mousedown either
-    explainBtn.addEventListener("click", async () => {
-      const text = capturedText;
-      await runAction(explainBtn, text, onExplain);
-    });
+    bindActionButton(explainBtn, onExplain);
 
     const simplifyBtn = document.createElement("button");
     simplifyBtn.type = "button";
     simplifyBtn.className = `${POPUP_CLASS}__btn`;
     simplifyBtn.textContent = "بسّطها";
-    simplifyBtn.addEventListener("mousedown", (e) => e.preventDefault());
-    simplifyBtn.addEventListener("click", async () => {
-      const text = capturedText;
-      await runAction(simplifyBtn, text, onSimplify);
-    });
+    bindActionButton(simplifyBtn, onSimplify);
+
+    const readBtn = document.createElement("button");
+    readBtn.type = "button";
+    readBtn.className = `${POPUP_CLASS}__btn`;
+    readBtn.textContent = "اقرأها";
+    bindActionButton(readBtn, onRead);
 
     async function runAction(button, text, action) {
       if (!text || typeof action !== "function") return;
       popup.querySelectorAll("button").forEach((item) => { item.disabled = true; });
       const original = button.textContent;
-      button.textContent = button === explainBtn ? "جارٍ فتح المساعد…" : "جارٍ فتح المساعد…";
-      setPopupStatus("جارٍ تجهيز الطلب…", false);
+      button.textContent = button === readBtn ? "جارٍ القراءة…" : "جارٍ فتح المساعد…";
+      setPopupStatus(
+        button === readBtn ? "جارٍ بدء القراءة…" : "جارٍ تجهيز الطلب…",
+        false,
+      );
       try {
         const result = await action(text);
         if (result === false) throw new Error("action_failed");
@@ -88,7 +130,12 @@ export function equipLessonSelectionActions(root, onExplain, onSimplify) {
         console.error("[lesson-selection-actions] AI action failed:", error);
         popup.querySelectorAll("button").forEach((item) => { item.disabled = false; });
         button.textContent = original;
-        setPopupStatus("تعذر تشغيل المساعد. تحقق من الاتصال ثم حاول مرة أخرى.", true);
+        setPopupStatus(
+          button === readBtn
+            ? "تعذر بدء القراءة الصوتية. تحقق من إعدادات الصوت ثم حاول مرة أخرى."
+            : "تعذر تشغيل المساعد. تحقق من الاتصال ثم حاول مرة أخرى.",
+          true,
+        );
       }
     }
 
@@ -114,6 +161,7 @@ export function equipLessonSelectionActions(root, onExplain, onSimplify) {
 
     popup.appendChild(explainBtn);
     popup.appendChild(simplifyBtn);
+    popup.appendChild(readBtn);
     document.body.appendChild(popup);
     popupEl = popup;
 
@@ -134,6 +182,7 @@ export function equipLessonSelectionActions(root, onExplain, onSimplify) {
   }
 
   function handleSelectionChange() {
+    if (popupInteraction) return;
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
       removePopup();
@@ -182,6 +231,8 @@ export function equipLessonSelectionActions(root, onExplain, onSimplify) {
   document.addEventListener("keydown", handleKeydown);
 
   return function teardown() {
+    window.clearTimeout(popupInteractionTimer);
+    popupInteraction = false;
     document.removeEventListener("selectionchange", handleSelectionChange);
     document.removeEventListener("mouseup", handleSelectionChange);
     document.removeEventListener("touchend", handleSelectionChange);

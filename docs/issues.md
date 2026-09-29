@@ -8,15 +8,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Patches
 
 ### Lesson Page (`public\lesson.html`, `public\lesson-comments.html`, & `public\src\features\lesson\`)
-Issues:
-* Fix: The `.lesson-selection-popup` buttons (e.g., "اشرحها" and "بسّطها") don't work when I select a text then press them, they don't do anything at all.
-* Fix: The loading skeleton doesn't appear at the start of the page, it appears after a long while for a moment right before the content loads, as if it flashes.
-* New: Add `اقرأها` in the `.lesson-selection-popup` so the options become: 
-  * اشرحها
-  * بسّطها
-  * اقرأها
-* New: Redesign the `lesson-view__header`
-
+* Fix: The icon of the `.lesson-bookmark-btn` button doesn't appear for some reason.
+* Fix: The `lesson-tts__btn lesson-tts__btn--stop` button doesn't appear except after the second click.
 
 ### Create-lesson Page
 * Fix: Changing the value of `#lessonFontSelect` doesn't change anything, fix it or remove it.
@@ -92,6 +85,9 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 * Add `مادة جديدة` In the `class="btn create-folder-btn mobile-only-flex"` button's dropdown.
 * Redesign the `#userQuizContextMenu` Element: 
   * Move all the button for creating ("إنشاء مادة", "إنشاء مجلد", "إنشاء امتحان",  and the new "انشاء درس") to a submenu dropdown, so you will have to design a submenu for the `#userQuizContextMenu`.
+
+#### Fix
+- Make sure all menus and modals don't any opacity   
 
 ### `public\control.html` Page
 * Give `#collegeForm` an advanced loading skeleton/animation like the sections/forms.

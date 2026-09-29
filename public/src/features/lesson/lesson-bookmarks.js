@@ -1,3 +1,4 @@
+import { lessonIcon } from "./lesson-icons.js";
 import { registerLessonPanel } from "./lesson-panel-manager.js";
 
 const KEY = "basmagi:lesson-bookmarks:v1";
@@ -17,7 +18,7 @@ export function toggleLessonBookmark(lessonId, sectionId, title = "") {
 }
 export function renderLessonBookmarks(lessonId) {
   const items = getLessonBookmarks(lessonId);
-  return `<div class="lesson-bookmarks"><button type="button" class="lesson-bookmarks__toggle" aria-expanded="false">🔖 العلامات المرجعية (${items.length})</button><div class="lesson-bookmarks__panel" hidden>${items.length ? items.map((item) => `<div class="lesson-bookmarks__item"><button type="button" data-bookmark-jump="${escapeAttr(item.sectionId)}">${escapeText(item.title || "قسم من الدرس")}</button><button type="button" data-bookmark-remove="${escapeAttr(item.sectionId)}" aria-label="إزالة العلامة">×</button></div>`).join("") : `<p>لم تحفظ أي قسم بعد.</p>`}</div></div>`;
+  return `<div class="lesson-bookmarks"><button type="button" class="lesson-header__action lesson-bookmarks__toggle" aria-expanded="false" aria-label="العلامات المرجعية" title="العلامات المرجعية">${lessonIcon("bookmark")}<span class="lesson-header__action-label">العلامات المرجعية (${items.length})</span></button><div class="lesson-bookmarks__panel" hidden>${items.length ? items.map((item) => `<div class="lesson-bookmarks__item"><button type="button" data-bookmark-jump="${escapeAttr(item.sectionId)}">${escapeText(item.title || "قسم من الدرس")}</button><button type="button" data-bookmark-remove="${escapeAttr(item.sectionId)}" aria-label="إزالة العلامة">×</button></div>`).join("") : `<p>لم تحفظ أي قسم بعد.</p>`}</div></div>`;
 }
 function escapeText(value) { return String(value).replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c]); }
 function escapeAttr(value) { return escapeText(value); }

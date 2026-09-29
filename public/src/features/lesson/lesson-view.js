@@ -34,7 +34,7 @@ import {
   TEXT_SIZE_CHOICES,
 } from "./lesson-reader-prefs.js";
 import { registerLessonPanel } from "./lesson-panel-manager.js";
-import { renderTtsControl, equipTts } from "./lesson-tts.js";
+import { renderTtsControl, equipTts, readText } from "./lesson-tts.js";
 import { showLessonControlModal } from "./lesson-info-modal.js";
 import { createAIAgentFab, openAIAgentModal, getChatPanelForPageKey } from "../../components/ai-agent/ai-agent.js";
 import { LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
@@ -43,6 +43,7 @@ import { LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agen
 import { createLessonQuiz, renderLessonQuiz, equipLessonQuiz } from "./lesson-ai-quiz.js";
 import { isLessonSectionBookmarked, renderLessonBookmarks, equipLessonBookmarks } from "./lesson-bookmarks.js";
 import { equipLessonSelectionActions } from "./lesson-selection-actions.js";
+import { lessonIcon } from "./lesson-icons.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LESSON_LOAD_TIMEOUT_MS = 10000;
@@ -208,6 +209,14 @@ function computeVisibleSections(normalized, progress) {
   return normalized.sections.filter((s) => !s.defaultHidden || revealed.has(s.id));
 }
 
+function getLessonTitleDirection(title) {
+  const text = String(title || "").trim();
+  const firstStrong = text.match(/[A-Za-z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/)?.[0] || "";
+  if (/^[A-Za-z]$/.test(firstStrong)) return "ltr";
+  if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(firstStrong)) return "rtl";
+  return "auto";
+}
+
 function renderSection(section, ctx) {
   const blocksHtml = section.blocks.map((block) => renderBlock(block, ctx)).join("");
   return (
@@ -217,7 +226,7 @@ function renderSection(section, ctx) {
       ? `<div class="lesson-section__header">` +
       `<h2 class="lesson-section__title">${escapeHtml(section.title)}</h2>` +
       renderTtsControl(escapeHtml(section.id)) +
-      `<button type="button" class="lesson-bookmark-btn${isLessonSectionBookmarked(ctx.lessonId, section.id) ? " is-active" : ""}" data-bookmark-toggle="${escapeHtml(section.id)}" aria-label="حفظ القسم كعلامة مرجعية" title="حفظ القسم">🔖</button>` +
+      `<button type="button" class="lesson-bookmark-btn${isLessonSectionBookmarked(ctx.lessonId, section.id) ? " is-active" : ""}" data-bookmark-toggle="${escapeHtml(section.id)}" aria-label="حفظ القسم كعلامة مرجعية" title="حفظ القسم">${lessonIcon("bookmark")}</button>` +
       `</div>`
       : "") +
     `<div class="lesson-section__body">${blocksHtml}</div>` +
@@ -246,7 +255,7 @@ export function renderPrefsPopover(prefs) {
 
   return (
     `<div class="lesson-prefs">` +
-    `<button type="button" class="lesson-prefs__toggle" data-lesson-panel-toggle aria-expanded="false">إعدادات القراءة</button>` +
+    `<button type="button" class="lesson-header__action lesson-prefs__toggle" data-lesson-panel-toggle aria-expanded="false" aria-label="إعدادات القراءة" title="إعدادات القراءة">${lessonIcon("settings")}<span class="lesson-header__action-label">إعدادات القراءة</span></button>` +
     `<div class="lesson-prefs__panel" data-lesson-panel hidden>` +
     `<label class="lesson-prefs__row"><span>الخط</span>` +
     `<select class="lesson-prefs__font" data-reader-pref="font">${fontOptions}</select></label>` +
@@ -257,23 +266,6 @@ export function renderPrefsPopover(prefs) {
     `<label class="lesson-prefs__row lesson-prefs__row--switch"><span>وضع التركيز</span>` +
     `<input type="checkbox" class="lesson-prefs__focus-mode" data-reader-pref="focus"${prefs.focusMode ? " checked" : ""}></label>` +
     `</div></div>`
-  );
-}
-
-/** The header's "resume last section" action — only rendered when the
- * reader has visited at least one section on a previous visit, and only
- * points at a section still visible under the current adaptive-reveal
- * state (a hidden/no-longer-revealed section id is simply skipped). */
-function renderResumeAction(visibleSections, visitedSectionIds) {
-  const visited = new Set(visitedSectionIds || []);
-  // Last-visited-that-still-exists, not simply the last id in the array,
-  // since a section can vanish from `visibleSections` if reveal rules
-  // change (not expected in v1, but cheap to guard).
-  const target = [...visited].reverse().find((id) => visibleSections.some((s) => s.id === id));
-  if (!target) return "";
-  return (
-    `<button type="button" class="lesson-view__resume-btn" data-resume-section="${escapeHtml(target)}">` +
-    `متابعة القراءة</button>`
   );
 }
 
@@ -434,15 +426,6 @@ function equipPrefs(root, lessonEl, authorDefaults) {
   );
 }
 
-function equipResumeAction(root, lessonId) {
-  root.querySelector("[data-resume-section]")?.addEventListener("click", (e) => {
-    const sectionId = e.currentTarget.dataset.resumeSection;
-    const target = root.querySelector(`#lesson-section-${CSS.escape(sectionId)}`);
-    if (!target) return;
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-}
-
 function renderLessonLoadingSkeleton() {
   const lines = (widths) => widths.map((width, index) => `<i class="lesson-skeleton__line lesson-skeleton__line--${index + 1}" style="--skeleton-width:${width}"></i>`).join("");
   const question = `<div class="lesson-skeleton__question">${lines(["24%", "82%", "94%", "58%"])}<div class="lesson-skeleton__options">${lines(["90%", "76%", "84%", "62%"])} </div></div>`;
@@ -545,18 +528,29 @@ export async function renderLessonView() {
     const ctx = { lessonId: lesson.id, quizLookup };
 
     container.innerHTML =
-      `<article class="lesson-view" data-lesson-id="${escapeHtml(lesson.id)}">` +
-      `<header class="lesson-view__header">` +
-      `<div class="lesson-view__heading"><p class="lesson-view__eyebrow">مساحة التعلّم</p><h1 class="lesson-view__title">${escapeHtml(lesson.title || "")}</h1><p class="lesson-view__subtitle">تابع القراءة، راجع تقدمك، واسأل الباشــمبصمج.</p></div>` +
-      `<div class="lesson-view__header-actions" role="group" aria-label="أدوات الدرس">` +
-      `<button type="button" class="lesson-view__info-btn">معلومات الدرس</button>` +
+      `<article class="lesson-view lesson-view--reader" data-lesson-id="${escapeHtml(lesson.id)}">` +
+      `<header class="lesson-view__header" aria-labelledby="lessonViewTitle">` +
+      `<div class="lesson-view__header-main">` +
+      `<div class="lesson-view__header-topline">` +
+      `<div class="lesson-view__eyebrow"><span class="lesson-view__eyebrow-icon">${lessonIcon("book")}</span><span>درس</span></div>` +
+      `<div class="lesson-view__meta" aria-label="معلومات سريعة عن الدرس">` +
+      `<span class="lesson-view__meta-item">عدد الأقسام: ${visibleSections.length}</span>` +
       (normalized.sections.some((section) => section.blocks.some((block) => block?.type === "question"))
-        ? `<button type="button" class="lesson-reset-all" data-reset-all-questions>إعادة ضبط كل الأسئلة</button>`
+        ? `<span class="lesson-view__meta-item">أسئلة تفاعلية</span>`
         : "") +
-      renderResumeAction(visibleSections, progress.visitedSections) +
+      `</div>` +
+      `</div>` +
+      `<div class="lesson-view__heading"><h1 id="lessonViewTitle" class="lesson-view__title" dir="${getLessonTitleDirection(lesson.title || "")}">${escapeHtml(lesson.title || "")}</h1><p class="lesson-view__subtitle" dir="rtl">تابع القراءة وراجع تقدمك، واسأل الباشــمبصمج عندما تحتاج إلى توضيح.</p></div>` +
+      `</div>` +
+      `<div class="lesson-view__header-actions" role="group" aria-label="أدوات الدرس">` +
+      `<button type="button" class="lesson-header__action lesson-view__info-btn" aria-label="معلومات الدرس" title="معلومات الدرس">${lessonIcon("info")}<span class="lesson-header__action-label">معلومات الدرس</span></button>` +
       renderPrefsPopover(getReaderPrefs(lesson.reader_prefs_default)) +
       renderLessonBookmarks(lesson.id) +
-      `</div></header>` +
+      (normalized.sections.some((section) => section.blocks.some((block) => block?.type === "question"))
+        ? `<button type="button" class="lesson-header__action lesson-reset-all" data-reset-all-questions aria-label="إعادة ضبط كل الأسئلة" title="إعادة ضبط كل الأسئلة">${lessonIcon("reset")}<span class="lesson-header__action-label">إعادة ضبط الأسئلة</span></button>`
+        : "") +
+      `</div>` +
+      `</header>` +
       (() => {
         const tocHtml = renderLessonToc(visibleSections, progress.visitedSections);
         const mainHtml =
@@ -588,7 +582,6 @@ export async function renderLessonView() {
       });
     });
     equipPrefs(container, lessonEl, lesson.reader_prefs_default);
-    equipResumeAction(container, lesson.id);
     equipQuestionBlocks(container, lesson.id, paint, (details) => {
       const contentBlock = details.kind === "mcq"
         ? `السؤال: ${details.question}\nالخيارات: ${details.options.join(" | ")}\nإجابتي: ${details.chosenAnswers.join(", ") || "بدون اختيار واضح"}\nالإجابة الصحيحة: ${details.correctAnswers.join(", ")}`
@@ -616,6 +609,15 @@ export async function renderLessonView() {
       container,
       (text) => openLessonAgentWithPrompt(lesson, normalized, `اشرح لي هذا المقطع من الدرس:\n\n"${text}"`),
       (text) => openLessonAgentWithPrompt(lesson, normalized, `بسّط لي هذا المقطع من الدرس بأسلوب أسهل:\n\n"${text}"`),
+      async (text) => {
+        try {
+          await readText(text);
+          return true;
+        } catch (error) {
+          console.error("[lesson-view] Selection read-aloud failed:", error);
+          return false;
+        }
+      },
     );
   };
 

@@ -614,7 +614,58 @@
   <!-- End of Bottom Navigation Bar -->
 
 
-  <main id="contentArea" class="lesson-page-shell container" aria-live="polite" aria-busy="true"></main>
+  <main id="contentArea" class="lesson-page-shell container" aria-live="polite" aria-busy="true">
+    <!-- First-paint skeleton: keep loading UI in the HTML so it is visible
+         before the lesson module graph finishes loading. renderLessonView()
+         replaces this with the full skeleton and then the real lesson. -->
+    <div class="lesson-view lesson-view--loading lesson-view--initial-skeleton" role="status"
+      aria-label="جاري تجهيز الدرس">
+      <span class="lesson-skeleton__sr">جاري تجهيز محتوى الدرس…</span>
+      <div class="lesson-skeleton__header">
+        <div class="lesson-skeleton__header-copy">
+          <i class="lesson-skeleton__line lesson-skeleton__line--2" style="--skeleton-width: 28%"></i>
+          <i class="lesson-skeleton__line" style="--skeleton-width: 72%"></i>
+          <i class="lesson-skeleton__line lesson-skeleton__line--3" style="--skeleton-width: 48%"></i>
+        </div>
+        <div class="lesson-skeleton__header-actions">
+          <i class="lesson-skeleton__line" style="--skeleton-width: 84px"></i>
+          <i class="lesson-skeleton__line" style="--skeleton-width: 108px"></i>
+          <i class="lesson-skeleton__line" style="--skeleton-width: 128px"></i>
+        </div>
+      </div>
+      <div class="lesson-skeleton__layout">
+        <div class="lesson-skeleton__content">
+          <div class="lesson-skeleton__section">
+            <i class="lesson-skeleton__line" style="--skeleton-width: 32%"></i>
+            <i class="lesson-skeleton__line" style="--skeleton-width: 92%"></i>
+            <i class="lesson-skeleton__line" style="--skeleton-width: 82%"></i>
+            <i class="lesson-skeleton__line" style="--skeleton-width: 66%"></i>
+            <div class="lesson-skeleton__media"></div>
+            <i class="lesson-skeleton__line" style="--skeleton-width: 88%"></i>
+            <i class="lesson-skeleton__line" style="--skeleton-width: 74%"></i>
+          </div>
+          <div class="lesson-skeleton__section">
+            <i class="lesson-skeleton__line" style="--skeleton-width: 36%"></i>
+            <i class="lesson-skeleton__line" style="--skeleton-width: 90%"></i>
+            <i class="lesson-skeleton__line" style="--skeleton-width: 78%"></i>
+            <i class="lesson-skeleton__line" style="--skeleton-width: 61%"></i>
+            <div class="lesson-skeleton__question">
+              <i class="lesson-skeleton__line" style="--skeleton-width: 82%"></i>
+              <i class="lesson-skeleton__line" style="--skeleton-width: 68%"></i>
+              <i class="lesson-skeleton__line" style="--skeleton-width: 75%"></i>
+            </div>
+          </div>
+        </div>
+        <aside class="lesson-skeleton__toc" aria-hidden="true">
+          <i class="lesson-skeleton__line" style="--skeleton-width: 42%"></i>
+          <i class="lesson-skeleton__line" style="--skeleton-width: 88%"></i>
+          <i class="lesson-skeleton__line" style="--skeleton-width: 76%"></i>
+          <i class="lesson-skeleton__line" style="--skeleton-width: 91%"></i>
+          <i class="lesson-skeleton__line" style="--skeleton-width: 68%"></i>
+        </aside>
+      </div>
+    </div>
+  </main>
   <script type="module" src="/src/features/lesson/lesson-page.js"></script>
   <script type="module" src="src/components/side-menu/side-menu.js"></script>
 

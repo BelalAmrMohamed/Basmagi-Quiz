@@ -15,6 +15,82 @@ export function isTtsSupported() {
     typeof window.SpeechSynthesisUtterance !== "undefined";
 }
 
+/**
+ * Reads an arbitrary selected text fragment without creating a lesson-section
+ * session. Starting it cancels any active section playback so the user never
+ * has two speech streams competing with each other.
+ *
+ * @param {string} text
+ * @returns {Promise<boolean>} true once the browser has accepted the utterance
+ */
+export async function readText(text) {
+  if (!isTtsSupported()) {
+    throw new Error("tts_unsupported");
+  }
+
+  const cleanText = String(text || "").replace(/\s+/g, " ").trim();
+  if (!cleanText) {
+    throw new Error("empty_text");
+  }
+
+  stopSession();
+
+  const prefs = getReaderPrefs();
+  let voices = loadVoices();
+  let voice = chooseArabicVoice(prefs, voices);
+
+  if (!voice) {
+    installVoicesChangedListener();
+    await new Promise((resolve) => window.setTimeout(resolve, VOICE_WAIT_MS));
+    voices = loadVoices();
+    voice = chooseArabicVoice(prefs, voices);
+  }
+
+  const utterance = new window.SpeechSynthesisUtterance(cleanText);
+  utterance.rate = Number(prefs.ttsRate) || 1;
+  utterance.lang = voice?.lang || "ar-EG";
+  if (voice) utterance.voice = voice;
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (ok, error) => {
+      if (settled) return;
+      settled = true;
+      if (ok) resolve(true);
+      else reject(error || new Error("tts_failed"));
+    };
+
+    utterance.onstart = () => finish(true);
+    utterance.onend = () => {
+      if (!settled) {
+        // A few browsers omit onstart when speech is accepted immediately.
+        finish(true);
+      }
+    };
+    utterance.onerror = (event) => {
+      if (event?.error === "interrupted" || event?.error === "canceled") {
+        return;
+      }
+      finish(false, new Error(event?.error || "tts_failed"));
+    };
+
+    try {
+      window.speechSynthesis.speak(utterance);
+
+      // Chrome can report a queued utterance without firing onstart until a
+      // later turn. Treat an actively speaking/queued synthesis request as
+      // success rather than making the popup appear stuck.
+      window.setTimeout(() => {
+        if (!settled && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) {
+          finish(true);
+        }
+      }, 80);
+    } catch (error) {
+      finish(false, error);
+    }
+  });
+}
+
 export function renderTtsControl(sectionId) {
   if (!isTtsSupported()) {
     return (
