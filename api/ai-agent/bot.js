@@ -42,7 +42,8 @@ function getGoogleKey() {
  * @returns {Promise<string>} AI reply text
  */
 async function generateGeminiReply(userText) {
-  const model = "gemini-2.0-flash-lite";
+  // Use current dynamic alias or active version
+  const model = "gemini-flash-lite-latest";
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const key = getGoogleKey();
