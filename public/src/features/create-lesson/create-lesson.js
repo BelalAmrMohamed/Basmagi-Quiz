@@ -99,6 +99,7 @@ function emptyLessonData() {
     return {
         title: "",
         description: "",
+        source: "",
         fontId: "default",
         passwordHash: null,
         passwordProtected: false,
@@ -202,6 +203,7 @@ function buildRow(id, type, existing) {
             updatedAt: now,
             readerPrefs: readerPrefsFromData(),
             description: lessonData.description || "",
+            source: lessonData.source || "",
             passwordProtected: Boolean(lessonData.passwordProtected || lessonData.passwordHash),
         },
         stats: { questionCount: countQuestions(), sectionCount: lessonData.sections.length },
@@ -953,6 +955,7 @@ function openLessonById(id) {
     lessonData = {
         title: row.meta?.title || "",
         description: row.description ?? row.meta?.description ?? "",
+        source: row.source ?? row.meta?.source ?? "",
         fontId: prefs.fontId || "default",
         passwordHash: row.passwordHash || null,
         passwordProtected: Boolean(row.passwordProtected || row.meta?.passwordProtected || row.passwordHash),
@@ -1525,6 +1528,9 @@ function syncLessonMetadataForm() {
     if (description) description.value = lessonData.description || "";
     if (count) count.textContent = `${(lessonData.description || "").length} / 1200`;
 
+    const source = document.getElementById("lessonSource");
+    if (source) source.value = lessonData.source || "";
+
     const password = document.getElementById("lessonPasswordInput");
     const state = document.getElementById("lessonPasswordState");
     const remove = document.getElementById("lessonPasswordRemove");
@@ -1545,6 +1551,11 @@ window.updateLessonDescription = function (value) {
     lessonData.description = String(value || "").slice(0, 1200);
     const count = document.getElementById("lessonDescriptionCount");
     if (count) count.textContent = `${lessonData.description.length} / 1200`;
+    autosave();
+};
+
+window.updateLessonSource = function (value) {
+    lessonData.source = String(value || "").slice(0, 500);
     autosave();
 };
 
@@ -2470,6 +2481,7 @@ async function openPublishedLessonById(id) {
     lessonData = {
         title: row.title || "",
         description: row.description || "",
+        source: row.source || "",
         fontId: prefs.fontId || "default",
         passwordHash: null,
         passwordProtected: Boolean(row.password_protected ?? row.passwordProtected),
