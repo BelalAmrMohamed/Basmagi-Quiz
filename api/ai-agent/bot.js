@@ -219,12 +219,12 @@ export default async function handler(req, ctx) {
     const text    = message?.text;
 
     if (chatId && text) {
-      // waitUntil keeps the edge function alive until the promise resolves
-      ctx.waitUntil(
-        processTelegramMessage(chatId, text).catch((err) =>
-          console.error("[bot] Telegram async error:", err)
-        )
+      const task = processTelegramMessage(chatId, text).catch((err) =>
+        console.error("[bot] Telegram async error:", err)
       );
+      if (ctx && typeof ctx.waitUntil === "function") {
+        ctx.waitUntil(task);
+      }
     }
 
     return new Response(JSON.stringify({ ok: true }), {
@@ -236,17 +236,27 @@ export default async function handler(req, ctx) {
   // ── WhatsApp (default) ────────────────────────────────────────────────────
   const body = await req.json().catch(() => ({}));
 
-  if (body.object === "whatsapp_business_account") {
-    const msg      = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
-    const from     = msg?.from;
-    const text     = msg?.text?.body;
-
-    if (msg?.type === "text" && from && text) {
-      ctx.waitUntil(
-        processWhatsAppMessage(from, text).catch((err) =>
-          console.error("[bot] WhatsApp async error:", err)
-        )
-      );
+  if (body?.object === "whatsapp_business_account" && Array.isArray(body?.entry)) {
+    for (const entry of body.entry) {
+      const changes = entry?.changes || [];
+      for (const change of changes) {
+        const val = change?.value;
+        const messages = val?.messages || [];
+        for (const msg of messages) {
+          if (msg?.type === "text") {
+            const from = msg.from;
+            const text = msg.text?.body;
+            if (from && text) {
+              const task = processWhatsAppMessage(from, text).catch((err) =>
+                console.error("[bot] WhatsApp async error:", err)
+              );
+              if (ctx && typeof ctx.waitUntil === "function") {
+                ctx.waitUntil(task);
+              }
+            }
+          }
+        }
+      }
     }
   }
 
