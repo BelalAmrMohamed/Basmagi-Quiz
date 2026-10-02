@@ -407,6 +407,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const editId = urlParams.get("edit");
 
     setupGlobalMdBar();
+    setupMenuBarListeners();
     setupKeyboardShortcuts();
     setupEntryItemMenuListeners();
     setupSectionNavigatorToggle();
@@ -442,33 +443,170 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.dispatchEvent(new Event("app:ready"));
 });
 
-window.toggleLessonMenu = function (event, id) {
-    event.preventDefault();
-    event.stopPropagation();
-    const menu = document.getElementById(id);
-    const open = menu?.classList.contains("open");
-    document.querySelectorAll("#menuBar .menu-dropdown.open").forEach((item) => item.classList.remove("open"));
-    if (menu && !open) menu.classList.add("open");
-};
+// ============================================================================
+// MENU BAR (Docs-style dropdowns — mirrors create-quiz.js exactly)
+// ============================================================================
 
-window.lessonMenuAction = function (action) {
-    document.querySelectorAll("#menuBar .menu-dropdown.open").forEach((item) => item.classList.remove("open"));
-    if (action === "save") return window.saveLesson();
-    if (action === "preview") return window.previewLesson();
-    if (action === "section") return window.addSection();
-    if (action === "help") return showNotification("اختصارات", "Ctrl+S للحفظ، Ctrl+Z للتراجع، Ctrl+Y للإعادة.", "info");
-    const section = lessonData.sections[lessonData.sections.length - 1];
-    if (["markdown", "media", "question", "quizRef", "lesson-reference"].includes(action) && section) return window.addBlock(section.id, action);
-    if (action === "expand" || action === "collapse") {
-        document.querySelectorAll(".lesson-section-card").forEach((card) => card.classList.toggle("collapsed", action === "collapse"));
+/**
+ * Position a .menu-dropdown (position: fixed) directly beneath its trigger,
+ * using the trigger's live bounding rect, then clamp to the viewport.
+ */
+function positionMenuDropdown(trigger, dropdown) {
+    const rect = trigger.getBoundingClientRect();
+    dropdown.style.visibility = "hidden";
+    dropdown.style.display = "block";
+    dropdown.style.top = `${rect.bottom + 4}px`;
+    dropdown.style.left = "0px";
+
+    const menuWidth = dropdown.offsetWidth;
+    let left = rect.right - menuWidth; // align right edge (RTL)
+    left = Math.max(8, Math.min(left, window.innerWidth - menuWidth - 8));
+
+    let top = rect.bottom + 4;
+    const menuHeight = dropdown.offsetHeight;
+    if (top + menuHeight > window.innerHeight - 8) {
+        top = Math.max(8, rect.top - menuHeight - 4);
+    }
+
+    dropdown.style.left = `${left}px`;
+    dropdown.style.top = `${top}px`;
+    dropdown.style.display = "";
+    dropdown.style.visibility = "";
+}
+
+/**
+ * One-time ARIA wiring for the menu bar: adds aria-haspopup, aria-expanded
+ * to triggers and role="menuitem"/"separator" to dropdown rows.
+ */
+function _wireMenuBarAria() {
+    document.querySelectorAll("#menuBar .menu-bar-item").forEach((item) => {
+        const trigger = item.querySelector(":scope > .menu-trigger");
+        const dropdown = item.querySelector(":scope > .menu-dropdown");
+        if (trigger && dropdown) {
+            trigger.setAttribute("aria-haspopup", "true");
+            trigger.setAttribute("aria-expanded", "false");
+            if (dropdown.id) trigger.setAttribute("aria-controls", dropdown.id);
+        }
+    });
+    document
+        .querySelectorAll("#menuBar .menu-dropdown .menu-option, #menuBar .menu-dropdown .menu-separator")
+        .forEach((el) => {
+            el.setAttribute(
+                "role",
+                el.classList.contains("menu-separator") ? "separator" : "menuitem"
+            );
+        });
+}
+
+function _setMenuExpanded(item, expanded) {
+    if (!item) return;
+    const trigger = item.querySelector(":scope > .menu-trigger");
+    trigger?.setAttribute("aria-expanded", expanded ? "true" : "false");
+}
+
+/** Open the named dropdown, closing any other open one first. */
+window.toggleMenu = function (name) {
+    const dropdown = document.getElementById(`menu-${name}`);
+    const item = dropdown?.closest(".menu-bar-item");
+    const trigger = item?.querySelector(":scope > .menu-trigger");
+    if (!dropdown || !item || !trigger) return;
+
+    const isOpen = item.classList.contains("menu-item-open");
+    window.closeAllMenus();
+    if (!isOpen) {
+        item.classList.add("menu-item-open");
+        _setMenuExpanded(item, true);
+        positionMenuDropdown(trigger, dropdown);
+        activateMenuKeyboardNav(dropdown, () => {
+            window.closeAllMenus();
+            trigger.focus();
+        });
+        _lastMenuOpenAt = Date.now();
     }
 };
 
-document.addEventListener("click", (event) => {
-    if (!event.target.closest("#menuBar")) {
-        document.querySelectorAll("#menuBar .menu-dropdown.open").forEach((item) => item.classList.remove("open"));
-    }
-});
+/** Close every open menu dropdown. */
+window.closeAllMenus = function () {
+    document.querySelectorAll(".menu-bar-item.menu-item-open").forEach((item) => {
+        item.classList.remove("menu-item-open");
+        _setMenuExpanded(item, false);
+    });
+};
+
+/**
+ * Arrow-key / Escape navigation inside an open menu dropdown.
+ */
+function activateMenuKeyboardNav(dropdown, onClose) {
+    if (!dropdown) return;
+    const items = () => [
+        ...dropdown.querySelectorAll(':scope > .menu-option:not([disabled]), :scope > [role="menuitem"]:not([disabled])')
+    ];
+    const focusAt = (index, list) => {
+        if (!list.length) return;
+        const next = ((index % list.length) + list.length) % list.length;
+        list[next].focus();
+    };
+    focusAt(0, items());
+
+    const onKeydown = (e) => {
+        const list = items();
+        const currentIndex = list.indexOf(document.activeElement);
+        if (e.key === "ArrowDown") { e.preventDefault(); focusAt(currentIndex + 1, list); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); focusAt(currentIndex - 1, list); }
+        else if (e.key === "Home") { e.preventDefault(); focusAt(0, list); }
+        else if (e.key === "End") { e.preventDefault(); focusAt(list.length - 1, list); }
+        else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cleanup(); if (typeof onClose === "function") onClose(); }
+        else if (e.key === "Tab") { cleanup(); if (typeof onClose === "function") onClose(); }
+    };
+    function cleanup() { dropdown.removeEventListener("keydown", onKeydown); }
+    dropdown.addEventListener("keydown", onKeydown);
+}
+
+/**
+ * Click-outside / Escape / hover-switch wiring for the lesson menu bar.
+ * Mirrors create-quiz.js's setupMenuBarListeners.
+ */
+function setupMenuBarListeners() {
+    const appTitleBar = document.getElementById("appTitleBar");
+    if (!appTitleBar) return;
+    _wireMenuBarAria();
+
+    document.addEventListener("click", (e) => {
+        if (!appTitleBar.contains(e.target) && !e.target.closest(".menu-dropdown")) {
+            window.closeAllMenus();
+        }
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") window.closeAllMenus();
+    });
+
+    appTitleBar.addEventListener("scroll", () => {
+        if (Date.now() - _lastMenuOpenAt < 350) return;
+        window.closeAllMenus();
+    });
+    window.addEventListener("resize", window.closeAllMenus);
+
+    // Hover-to-switch (desktop/pointer only)
+    const menuBarInner = appTitleBar.querySelector(".menu-bar-inner");
+    if (!menuBarInner) return;
+    const supportsHover =
+        window.matchMedia &&
+        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    if (!supportsHover) return;
+    menuBarInner.querySelectorAll(":scope > .menu-bar-item").forEach((item) => {
+        item.addEventListener("mouseenter", () => {
+            const anyOpen = menuBarInner.querySelector(".menu-item-open");
+            if (anyOpen && anyOpen !== item) {
+                anyOpen.classList.remove("menu-item-open");
+                item.classList.add("menu-item-open");
+                const trigger = item.querySelector(":scope > .menu-trigger");
+                const dropdown = item.querySelector(":scope > .menu-dropdown");
+                if (trigger && dropdown) positionMenuDropdown(trigger, dropdown);
+            }
+        });
+    });
+}
 
 async function loadQuizExamList() {
     try {
