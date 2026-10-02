@@ -11,7 +11,7 @@
     "map": "node scripts/map.js",
     "commit": "node scripts/commit.js",
     "release": "node scripts/release.js",
-    "zip": "npm run commit && git archive --format=zip --output=basmagi-quiz.zip HEAD && echo \"basmagi-quiz.zip is ready\"",
+    "zip": "npm run commit && git archive --format=zip --output=basmagi-quiz.zip HEAD && echo basmagi-quiz.zip is ready",
     "seo:check": "node scripts/seo-check.mjs"
   },
   "keywords": [
