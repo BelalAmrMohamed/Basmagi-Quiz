@@ -1,23 +1,16 @@
 // =============================================================================
-// api/ai-agent/bot.js
-// WhatsApp Cloud API + Telegram bot webhook handler.
+// api/ai-agent/bot.js — WhatsApp Cloud API + Telegram bot webhook handler.
+//
+// Runs on Vercel Edge Runtime (does NOT count toward the 12 Node.js serverless
+// function limit). Pure fetch + JSON — no Node.js built-ins required.
 //
 // Routes:
-//   GET  /api/ai-agent/bot  — Meta webhook verification handshake
-//   POST /api/ai-agent/bot  — Incoming WhatsApp messages from Meta
+//   GET  /api/ai-agent/bot               — Meta webhook verification handshake
+//   POST /api/ai-agent/bot               — Incoming WhatsApp messages
 //   POST /api/ai-agent/bot?platform=telegram — Incoming Telegram updates
-//
-// Design notes:
-//   • The POST handler acknowledges Meta's webhook with 200 immediately, then
-//     processes the AI reply asynchronously (fire-and-forget) so we never
-//     time-out the webhook even on slow Gemini calls.
-//   • Gemini keys are pulled from the existing round-robin pool in _keyPool.js.
-//     If a key returns 429 / quota-exhausted we rotate to the next one and
-//     retry once before falling back to an Arabic error message.
-//   • No CORS or JWT needed — Meta/Telegram hit the endpoint directly.
 // =============================================================================
 
-import { getNextKey } from "./_keyPool.js";
+export const config = { runtime: "edge" };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -29,6 +22,17 @@ const SYSTEM_PROMPT = `أنت مساعد ذكاء اصطناعي ودود لمن
 const FALLBACK_MESSAGE =
   "عذراً، حدث خطأ مؤقت. يرجى المحاولة مرة أخرى بعد قليل. 🙏";
 
+// ── Key pool (inline — edge modules share no state across requests) ──────────
+
+/** Returns the next Google API key via time-sliced round-robin. */
+function getGoogleKey() {
+  const raw = process.env.AI_AGENT_GOOGLE_KEYS || "";
+  const pool = raw.split(",").map((k) => k.trim()).filter(Boolean);
+  if (!pool.length) return null;
+  const idx = Math.floor(Date.now() / 3000) % pool.length;
+  return pool[idx];
+}
+
 // ── Gemini ───────────────────────────────────────────────────────────────────
 
 /**
@@ -38,13 +42,13 @@ const FALLBACK_MESSAGE =
  * @returns {Promise<string>} AI reply text
  */
 async function generateGeminiReply(userText) {
-  const model = "gemini-2.0-flash-lite"; // lightest/cheapest model for chat
+  const model = "gemini-2.0-flash-lite";
 
   for (let attempt = 0; attempt < 2; attempt++) {
-    const keyInfo = getNextKey("google");
-    if (!keyInfo) throw new Error("No Google API keys configured");
+    const key = getGoogleKey();
+    if (!key) throw new Error("No Google API keys configured");
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyInfo.key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
 
     const body = {
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
@@ -180,81 +184,72 @@ async function processTelegramMessage(chatId, msgText) {
   }
 }
 
-// ── Vercel handler ────────────────────────────────────────────────────────────
+// ── Edge handler (Web Request → Response) ────────────────────────────────────
 
-export default async function handler(req, res) {
+export default async function handler(req, ctx) {
+  const { method } = req;
+  const url = new URL(req.url);
+
   // ── GET — Meta webhook verification ──────────────────────────────────────
-  if (req.method === "GET") {
-    const mode = req.query["hub.mode"];
-    const token = req.query["hub.verify_token"];
-    const challenge = req.query["hub.challenge"];
+  if (method === "GET") {
+    const mode      = url.searchParams.get("hub.mode");
+    const token     = url.searchParams.get("hub.verify_token");
+    const challenge = url.searchParams.get("hub.challenge");
 
     if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
       console.log("[bot] WhatsApp webhook verified ✓");
-      res.status(200).send(challenge);
-      return;
+      return new Response(challenge, { status: 200 });
     }
 
-    console.warn("[bot] Webhook verify token mismatch or wrong mode");
-    res.status(403).send("Forbidden");
-    return;
+    console.warn("[bot] Webhook verify token mismatch");
+    return new Response("Forbidden", { status: 403 });
   }
 
-  // ── POST — Incoming message ───────────────────────────────────────────────
-  if (req.method !== "POST") {
-    res.status(405).send("Method Not Allowed");
-    return;
+  if (method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
   }
 
-  const platform = req.query["platform"] || "whatsapp";
+  const platform = url.searchParams.get("platform") || "whatsapp";
 
-  // ── Telegram ────────────────────────────────────────────────────────────
+  // ── Telegram ──────────────────────────────────────────────────────────────
   if (platform === "telegram") {
-    // Telegram expects 200 within 60 s — send it immediately
-    res.status(200).json({ ok: true });
-
-    const update = req.body || {};
+    const update  = await req.json().catch(() => ({}));
     const message = update.message || update.edited_message;
-    if (!message) return;
+    const chatId  = message?.chat?.id;
+    const text    = message?.text;
 
-    const chatId = message?.chat?.id;
-    const text = message?.text;
-    if (!chatId || !text) return;
+    if (chatId && text) {
+      // waitUntil keeps the edge function alive until the promise resolves
+      ctx.waitUntil(
+        processTelegramMessage(chatId, text).catch((err) =>
+          console.error("[bot] Telegram async error:", err)
+        )
+      );
+    }
 
-    processTelegramMessage(chatId, text).catch((err) =>
-      console.error("[bot] Telegram async error:", err)
-    );
-    return;
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  // ── WhatsApp (default) ───────────────────────────────────────────────────
+  // ── WhatsApp (default) ────────────────────────────────────────────────────
+  const body = await req.json().catch(() => ({}));
 
-  // Meta retries aggressively if we don't ack with 200 fast
-  res.status(200).send("EVENT_RECEIVED");
+  if (body.object === "whatsapp_business_account") {
+    const msg      = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    const from     = msg?.from;
+    const text     = msg?.text?.body;
 
-  const body = req.body || {};
+    if (msg?.type === "text" && from && text) {
+      ctx.waitUntil(
+        processWhatsAppMessage(from, text).catch((err) =>
+          console.error("[bot] WhatsApp async error:", err)
+        )
+      );
+    }
+  }
 
-  // Only handle whatsapp_business_account events
-  if (body.object !== "whatsapp_business_account") return;
-
-  const entry = body.entry?.[0];
-  const changes = entry?.changes?.[0];
-  const value = changes?.value;
-  const messages = value?.messages;
-
-  if (!Array.isArray(messages) || messages.length === 0) return;
-
-  const msg = messages[0];
-
-  // Only handle incoming text messages — ignore status receipts, images, etc.
-  if (msg.type !== "text") return;
-
-  const from = msg.from; // E.164 phone number string
-  const text = msg.text?.body;
-  if (!from || !text) return;
-
-  // Process asynchronously — 200 already sent
-  processWhatsAppMessage(from, text).catch((err) =>
-    console.error("[bot] WhatsApp async error:", err)
-  );
+  // Always ack Meta immediately
+  return new Response("EVENT_RECEIVED", { status: 200 });
 }
