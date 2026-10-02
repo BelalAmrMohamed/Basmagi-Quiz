@@ -191,6 +191,14 @@ export function mountColorPicker(menu, onPick, onDone = () => { }, onEscape = on
         onDone();
     };
 
+    // Prevent focus loss from active editor when clicking swatches/controls
+    menu.addEventListener("mousedown", (e) => {
+        const interactive = e.target.closest(".cp-swatch, .cp-reset, .cp-apply, [data-cp-eyedropper]");
+        if (interactive) {
+            e.preventDefault();
+        }
+    });
+
     // One delegated listener covers the palette, recents, and "default color".
     menu.addEventListener("click", (e) => {
         const swatch = e.target.closest("[data-cp-color]");

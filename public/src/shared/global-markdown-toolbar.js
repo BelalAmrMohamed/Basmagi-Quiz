@@ -9,6 +9,7 @@
 import { mountColorPicker } from "./color-picker.js";
 
 let activeTextarea = null;
+let lastCapturedSelection = null;
 const initializedBars = new WeakSet();
 const barStates = new WeakMap();
 let tipEl = null;
@@ -33,15 +34,36 @@ function showNoFieldTip() {
   tipTimer = window.setTimeout(() => tipEl?.classList.remove("visible"), 1800);
 }
 
+function updateActiveFromTarget(target) {
+  if (!target || !(target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement)) return;
+  if (
+    target.classList.contains("md-source") ||
+    target.classList.contains("wp-textarea") ||
+    target.id === "quiz-title" ||
+    target.id === "lessonTitle" ||
+    target.id === "lessonDescription"
+  ) {
+    activeTextarea = target;
+    if (typeof target.selectionStart === "number") {
+      lastCapturedSelection = {
+        textarea: target,
+        start: target.selectionStart,
+        end: typeof target.selectionEnd === "number" ? target.selectionEnd : target.selectionStart,
+      };
+    }
+  }
+}
+
 function trackTextareaFocus() {
   if (trackTextareaFocus.installed) return;
   trackTextareaFocus.installed = true;
-  document.addEventListener("focusin", (event) => {
-    const target = event.target;
-    if (target instanceof HTMLTextAreaElement && target.classList.contains("md-source")) {
-      activeTextarea = target;
-    }
-  }, true);
+
+  // Track both focus and caret/selection changes across the document
+  document.addEventListener("focusin", (event) => updateActiveFromTarget(event.target), true);
+  document.addEventListener("keyup", (event) => updateActiveFromTarget(event.target), true);
+  document.addEventListener("mouseup", (event) => updateActiveFromTarget(event.target), true);
+  document.addEventListener("select", (event) => updateActiveFromTarget(event.target), true);
+  document.addEventListener("input", (event) => updateActiveFromTarget(event.target), true);
 }
 
 function allMenus() {
@@ -51,36 +73,61 @@ function allMenus() {
 function findToggle(menu) {
   const id = menu?.id;
   if (!id) return null;
-  return document.querySelector(`[data-gmd-menu-id="${escapeCss(id)}"]`);
+  return document.querySelector(`[data-gmd-menu-id="${escapeCss(id)}"], [aria-controls="${escapeCss(id)}"]`);
 }
 
 export function closeAllGmdDropdowns() {
   for (const menu of allMenus()) {
-    menu.classList.remove("open");
-    menu.removeAttribute("data-gmd-open");
-    menu.setAttribute("aria-hidden", "true");
-    const toggle = findToggle(menu);
-    toggle?.setAttribute("aria-expanded", "false");
+    if (menu.classList.contains("open") || menu.hasAttribute("data-gmd-open")) {
+      menu.classList.remove("open");
+      menu.removeAttribute("data-gmd-open");
+      menu.setAttribute("aria-hidden", "true");
+      menu.style.display = "none";
+      const toggle = findToggle(menu);
+      if (toggle) {
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.classList.remove("active", "gmd-btn-active");
+      }
+    }
   }
 }
 
 function captureSelection() {
-  const textarea = activeTextarea;
-  if (!(textarea instanceof HTMLTextAreaElement) || !document.body.contains(textarea)) return null;
-  return {
-    textarea,
-    start: textarea.selectionStart ?? 0,
-    end: textarea.selectionEnd ?? 0,
-  };
+  if (activeTextarea && document.body.contains(activeTextarea)) {
+    return {
+      textarea: activeTextarea,
+      start: typeof activeTextarea.selectionStart === "number" ? activeTextarea.selectionStart : (lastCapturedSelection?.start ?? 0),
+      end: typeof activeTextarea.selectionEnd === "number" ? activeTextarea.selectionEnd : (lastCapturedSelection?.end ?? 0),
+    };
+  }
+  if (lastCapturedSelection && document.body.contains(lastCapturedSelection.textarea)) {
+    return { ...lastCapturedSelection };
+  }
+  const ae = document.activeElement;
+  if ((ae instanceof HTMLTextAreaElement || ae instanceof HTMLInputElement) && ae.classList.contains("md-source")) {
+    activeTextarea = ae;
+    return {
+      textarea: ae,
+      start: ae.selectionStart ?? 0,
+      end: ae.selectionEnd ?? 0,
+    };
+  }
+  return null;
 }
 
 function restoreSelection(selection) {
-  const textarea = selection?.textarea;
-  if (!(textarea instanceof HTMLTextAreaElement) || !document.body.contains(textarea)) return null;
-  activeTextarea = textarea;
-  textarea.focus({ preventScroll: true });
-  textarea.setSelectionRange(selection.start, selection.end);
-  return textarea;
+  const target = selection?.textarea || activeTextarea || lastCapturedSelection?.textarea;
+  if (!target || !document.body.contains(target)) return null;
+  activeTextarea = target;
+  target.focus({ preventScroll: true });
+  const start = typeof selection?.start === "number" ? selection.start : (target.selectionStart ?? 0);
+  const end = typeof selection?.end === "number" ? selection.end : (target.selectionEnd ?? start);
+  try {
+    target.setSelectionRange(start, end);
+  } catch {
+    // Non-text input types can throw on setSelectionRange
+  }
+  return target;
 }
 
 function directItems(menu) {
@@ -93,6 +140,19 @@ function setRoving(menu, index) {
   const safe = (index + items.length) % items.length;
   items.forEach((item, i) => item.setAttribute("tabindex", i === safe ? "0" : "-1"));
   items[safe].focus({ preventScroll: true });
+}
+
+function focusFirstMenuItem(menu) {
+  if (menu.id === "gmdHighlightMenu") {
+    const swatch = menu.querySelector(".cp-swatch");
+    if (swatch) swatch.focus({ preventScroll: true });
+  } else {
+    const items = directItems(menu);
+    if (items.length) {
+      items[0].setAttribute("tabindex", "0");
+      items[0].focus({ preventScroll: true });
+    }
+  }
 }
 
 function setupMenuKeyboard(menu, toggle) {
@@ -130,30 +190,71 @@ function setupMenuKeyboard(menu, toggle) {
 }
 
 function positionMenu(toggle, menu) {
-  const rect = toggle.getBoundingClientRect();
+  if (!toggle || !menu) return;
+
+  const toggleRect = toggle.getBoundingClientRect();
+  if (toggleRect.width === 0 && toggleRect.height === 0) {
+    closeAllGmdDropdowns();
+    return;
+  }
+
+  const bar = toggle.closest(".global-md-bar") || document.getElementById("globalMdBar");
+  if (bar) {
+    const barRect = bar.getBoundingClientRect();
+    // If toggle is scrolled outside visible horizontal or vertical bounds of the toolbar
+    if (
+      toggleRect.right < barRect.left - 12 ||
+      toggleRect.left > barRect.right + 12 ||
+      toggleRect.bottom < barRect.top - 12 ||
+      toggleRect.top > barRect.bottom + 12
+    ) {
+      closeAllGmdDropdowns();
+      return;
+    }
+  }
+
   const pad = 8;
+  const viewportW = window.innerWidth;
+  const viewportH = window.innerHeight;
+
+  // Clear previous inline dimensions so natural content sizing can be computed
   menu.style.visibility = "hidden";
-  menu.style.position = "fixed";
   menu.style.display = "flex";
+  menu.style.position = "fixed";
   menu.style.left = "0px";
   menu.style.top = "0px";
-  menu.style.maxHeight = `${Math.max(140, window.innerHeight - pad * 2)}px`;
+  menu.style.width = "";
+  menu.style.maxWidth = "";
+  menu.style.maxHeight = "";
 
-  const measuredWidth = menu.scrollWidth || menu.offsetWidth || 240;
-  const width = Math.min(measuredWidth, Math.max(160, window.innerWidth - pad * 2));
-  const measuredHeight = Math.min(menu.scrollHeight || menu.offsetHeight || 260, window.innerHeight - pad * 2);
-  let left = rect.right - width;
-  left = Math.max(pad, Math.min(left, window.innerWidth - width - pad));
+  const maxAvailableW = Math.max(140, viewportW - pad * 2);
+  const measuredW = menu.scrollWidth || menu.offsetWidth || 240;
+  const menuW = Math.min(measuredW, maxAvailableW);
 
-  const below = rect.bottom + 4;
-  const above = rect.top - measuredHeight - 4;
-  const top = below + measuredHeight <= window.innerHeight - pad
-    ? below
-    : (above >= pad ? above : window.innerHeight - measuredHeight - pad);
+  // Vertical placement: place directly below the toolbar button
+  const below = toggleRect.bottom + 4;
+  const maxAvailableH = Math.max(100, viewportH - below - pad);
 
-  menu.style.width = `${width}px`;
-  menu.style.top = `${Math.max(pad, top)}px`;
+  // Horizontal placement: in RTL, align the menu's right edge to the toggle's right edge
+  const isRtl = document.documentElement.dir === "rtl" || getComputedStyle(document.documentElement).direction === "rtl";
+  let left;
+  if (isRtl) {
+    left = toggleRect.right - menuW;
+    if (left < pad) left = pad;
+    if (left + menuW > viewportW - pad) left = Math.max(pad, viewportW - menuW - pad);
+  } else {
+    left = toggleRect.left;
+    if (left + menuW > viewportW - pad) left = Math.max(pad, viewportW - menuW - pad);
+    if (left < pad) left = pad;
+  }
+
+  menu.style.boxSizing = "border-box";
+  menu.style.width = `${menuW}px`;
+  menu.style.maxWidth = `${maxAvailableW}px`;
+  menu.style.top = `${Math.max(pad, below)}px`;
   menu.style.left = `${left}px`;
+  menu.style.maxHeight = `${maxAvailableH}px`;
+  menu.style.overflowY = "auto";
   menu.style.visibility = "";
 }
 
@@ -164,6 +265,7 @@ function detachMenus(bar, toggles) {
     menu.dataset.gmdDetached = "true";
     toggle.dataset.gmdMenuId = menu.id;
     menu.setAttribute("aria-hidden", "true");
+    menu.style.display = "none";
   }
 }
 
@@ -172,7 +274,8 @@ function setupHighlightPicker(menu, state, onAction) {
   state.picker = mountColorPicker(
     menu,
     (hex) => {
-      const restored = restoreSelection(state.highlightSelection);
+      const targetSelection = state.activeSelection || state.highlightSelection;
+      const restored = restoreSelection(targetSelection);
       if (!restored) {
         showNoFieldTip();
         return;
@@ -182,14 +285,15 @@ function setupHighlightPicker(menu, state, onAction) {
         latex: null,
         extra: hex,
         textarea: restored,
-        selection: { start: state.highlightSelection.start, end: state.highlightSelection.end },
+        selection: targetSelection ? { start: targetSelection.start, end: targetSelection.end } : null,
       });
       closeAllGmdDropdowns();
     },
     closeAllGmdDropdowns,
     () => {
       closeAllGmdDropdowns();
-      document.getElementById("gmdHighlightToggle")?.focus({ preventScroll: true });
+      const toggle = document.getElementById("gmdHighlightToggle");
+      toggle?.focus({ preventScroll: true });
     },
   );
 }
@@ -229,8 +333,7 @@ export function setupGlobalMarkdownToolbar({ barId = "globalMdBar", onAction, on
   detachMenus(bar, state.toggles);
 
   // Menus are detached into <body>, so bind action buttons from both the
-  // toolbar and the detached popovers. Binding after detachment also prevents
-  // selector changes in either page from silently losing menu behavior.
+  // toolbar and the detached popovers.
   const actionButtons = [
     ...bar.querySelectorAll(".gmd-btn:not(.gmd-dropdown-toggle)"),
     ...state.toggles.flatMap(({ menu }) => [...menu.querySelectorAll(".gmd-btn:not(.gmd-dropdown-toggle)")]),
@@ -272,15 +375,29 @@ export function setupGlobalMarkdownToolbar({ barId = "globalMdBar", onAction, on
 
   for (const { toggle, menu } of state.toggles) {
     setupMenuKeyboard(menu, toggle);
+
+    // Prevent mousedown on toggle from blurring the currently active textarea
     toggle.addEventListener("mousedown", (event) => event.preventDefault());
+
+    // Keyboard support: Enter, Space, and ArrowDown
     toggle.addEventListener("keydown", (event) => {
-      if ((event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") && !menu.classList.contains("open")) {
+      if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
+        event.stopPropagation();
         toggle.click();
+      } else if (event.key === "ArrowDown") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!menu.classList.contains("open")) {
+          toggle.click();
+        }
+        focusFirstMenuItem(menu);
       } else if (event.key === "Escape") {
+        event.preventDefault();
         closeAllGmdDropdowns();
       }
     });
+
     toggle.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -291,26 +408,29 @@ export function setupGlobalMarkdownToolbar({ barId = "globalMdBar", onAction, on
         return;
       }
 
-      // Capture the editor range before focus can move into the detached
-      // viewport popover. This range is restored when a dropdown item is
-      // chosen, so formatting never jumps to the wrong cursor position.
+      // Capture the editor range before focus can move into a menu
       state.activeSelection = captureSelection();
       closeAllGmdDropdowns();
+
       if (menu.id === "gmdHighlightMenu") {
         state.highlightSelection = state.activeSelection;
         state.picker?.refresh();
       }
+
       positionMenu(toggle, menu);
       menu.classList.add("open");
       menu.setAttribute("data-gmd-open", "true");
       menu.setAttribute("aria-hidden", "false");
+      menu.style.display = "flex";
       toggle.setAttribute("aria-expanded", "true");
+      toggle.classList.add("active", "gmd-btn-active");
 
       const items = directItems(menu);
       items.forEach((item, i) => item.setAttribute("tabindex", i === 0 ? "0" : "-1"));
+
+      // If triggered via keyboard (detail === 0), move focus to first item
       if (event.detail === 0) {
-        if (menu.id === "gmdHighlightMenu") state.picker?.focusFirst();
-        else items[0]?.focus({ preventScroll: true });
+        focusFirstMenuItem(menu);
       }
     });
   }
@@ -321,11 +441,13 @@ export function setupGlobalMarkdownToolbar({ barId = "globalMdBar", onAction, on
     const toggle = findToggle(open);
     if (toggle) positionMenu(toggle, open);
   };
+
+  // Immediate repositioning on scroll (both toolbar scroll and window scroll) and resize
+  bar.addEventListener("scroll", reposition, { passive: true });
   window.addEventListener("resize", reposition, { passive: true });
   window.addEventListener("scroll", reposition, { passive: true, capture: true });
 
-  // A single document-level Escape handler makes keyboard dismissal reliable
-  // even when focus is inside a detached menu item or the color picker.
+  // Escape closes any open dropdown and properly handles focus restoration
   if (!setupGlobalMarkdownToolbar.escapeInstalled) {
     setupGlobalMarkdownToolbar.escapeInstalled = true;
     document.addEventListener("keydown", (event) => {
@@ -335,22 +457,37 @@ export function setupGlobalMarkdownToolbar({ barId = "globalMdBar", onAction, on
       event.preventDefault();
       event.stopPropagation();
       const toggle = findToggle(open);
+      const wasFocusInMenu = open.contains(document.activeElement) || document.activeElement === toggle;
       closeAllGmdDropdowns();
-      toggle?.focus({ preventScroll: true });
+      if (wasFocusInMenu) {
+        toggle?.focus({ preventScroll: true });
+      } else if (activeTextarea && document.body.contains(activeTextarea)) {
+        activeTextarea.focus({ preventScroll: true });
+      }
     }, true);
   }
 
-  // Close only when the pointer starts outside the bar and all detached menus.
-  document.addEventListener("pointerdown", (event) => {
-    const target = event.target instanceof Element ? event.target : null;
-    if (!target) return;
-    if (target.closest(`#${escapeCss(bar.id)}`) || target.closest(".gmd-dropdown-menu")) return;
-    state.activeSelection = null;
-    closeAllGmdDropdowns();
-  });
+  // Pointerdown outside active menu & toggle closes the dropdown
+  if (!setupGlobalMarkdownToolbar.pointerdownInstalled) {
+    setupGlobalMarkdownToolbar.pointerdownInstalled = true;
+    document.addEventListener("pointerdown", (event) => {
+      const openMenu = document.querySelector(".gmd-dropdown-menu.open[data-gmd-open]");
+      if (!openMenu) return;
+
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+
+      const toggle = findToggle(openMenu);
+      if (openMenu.contains(target) || (toggle && toggle.contains(target))) {
+        return;
+      }
+      state.activeSelection = null;
+      closeAllGmdDropdowns();
+    }, true);
+  }
 
   state.api = {
-    getActiveTextarea: () => activeTextarea && document.body.contains(activeTextarea) ? activeTextarea : null,
+    getActiveTextarea: () => (activeTextarea && document.body.contains(activeTextarea) ? activeTextarea : null),
     captureSelection,
     restoreSelection,
     closeAll: closeAllGmdDropdowns,

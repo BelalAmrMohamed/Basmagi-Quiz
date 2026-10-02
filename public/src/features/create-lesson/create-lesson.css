@@ -1502,7 +1502,9 @@ body.sidebar-expanded .global-md-bar {
 }
 
 .gmd-btn:hover,
-.gmd-btn:focus-visible {
+.gmd-btn:focus-visible,
+.gmd-btn[aria-expanded="true"],
+.gmd-btn.gmd-btn-active {
     background: var(--color-primary-light);
     color: var(--color-primary);
     outline: none;
@@ -1526,7 +1528,9 @@ body.sidebar-expanded .global-md-bar {
 }
 
 .gmd-btn-latex:hover,
-.gmd-btn-latex:focus-visible {
+.gmd-btn-latex:focus-visible,
+.gmd-btn-latex[aria-expanded="true"],
+.gmd-btn-latex.gmd-btn-active {
     background: color-mix(in srgb, var(--color-primary) 12%, transparent);
     color: var(--color-primary);
 }
@@ -1609,6 +1613,8 @@ body.sidebar-expanded .global-md-bar {
     border-radius: 8px;
     box-shadow: var(--shadow-lg);
     padding: 4px;
+    box-sizing: border-box;
+    max-width: calc(100vw - 16px);
 }
 
 .gmd-dropdown-menu.open {
