@@ -18,6 +18,10 @@ export const FONT_CHOICES = [
   { id: "inter", label: "Inter", value: '"Inter", sans-serif' },
 ];
 
+export function normalizeFontId(fontId) {
+  return FONT_CHOICES.some((item) => item.id === fontId) ? fontId : "default";
+}
+
 export const WIDTH_CHOICES = [
   { id: "comfortable", label: "مريح", value: "820px" },
   { id: "wide", label: "عريض", value: "1080px" },
@@ -45,7 +49,7 @@ function sanitizeReaderPrefs(value) {
   const raw = value && typeof value === "object" ? value : {};
   const result = { ...buildDefaultReaderPrefs() };
 
-  if (FONT_CHOICES.some((item) => item.id === raw.fontId)) result.fontId = raw.fontId;
+  result.fontId = normalizeFontId(raw.fontId);
   if (WIDTH_CHOICES.some((item) => item.id === raw.widthId)) result.widthId = raw.widthId;
   if (TEXT_SIZE_CHOICES.some((item) => item.id === raw.textSizeId)) result.textSizeId = raw.textSizeId;
   if (typeof raw.ttsVoiceURI === "string") result.ttsVoiceURI = raw.ttsVoiceURI;
@@ -139,7 +143,7 @@ export function equipReaderPrefs(root, lessonEl, authorDefaults = null) {
 
 export function applyReaderPrefs(container, prefs) {
   if (!container) return;
-  const font = FONT_CHOICES.find((item) => item.id === prefs?.fontId);
+  const font = FONT_CHOICES.find((item) => item.id === normalizeFontId(prefs?.fontId));
   const width = WIDTH_CHOICES.find((item) => item.id === prefs?.widthId) || WIDTH_CHOICES[0];
   const textSize = TEXT_SIZE_CHOICES.find((item) => item.id === prefs?.textSizeId) || TEXT_SIZE_CHOICES[0];
 

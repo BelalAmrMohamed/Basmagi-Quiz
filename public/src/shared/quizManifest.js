@@ -228,7 +228,7 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
         .order("created_at", { ascending: true }),
       supabase
         .from("lesson_public")
-        .select("id, course_id, folder_id, title, slug, section_ids, section_count, description, password_protected, created_at, updated_at")
+        .select("id, course_id, folder_id, title, slug, section_ids, section_count, description, source, password_protected, created_at, updated_at")
         .order("created_at", { ascending: true }),
       supabase
         .from("courses")
@@ -385,6 +385,7 @@ async function buildSubjects(quizzes, lessons, courses, folders) {
       createdAt: row.created_at || null,
       updatedAt: row.updated_at || null,
       description: row.description || "",
+      source: row.source || "",
       passwordProtected: Boolean(row.password_protected),
       courseId: row.course_id || null,
       folderId: row.folder_id || null,

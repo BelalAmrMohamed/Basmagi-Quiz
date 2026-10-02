@@ -97,6 +97,7 @@ export function requestLessonPassword({
     const nativeDialog = dialog.firstElementChild;
     document.body.appendChild(nativeDialog);
 
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const input = nativeDialog.querySelector("#lessonPasswordDialogInput");
     const error = nativeDialog.querySelector("[data-password-error], .lesson-password-dialog__error");
     const submit = nativeDialog.querySelector("[data-password-submit]");
@@ -107,6 +108,9 @@ export function requestLessonPassword({
       settled = true;
       try { nativeDialog.close(); } catch { /* no-op */ }
       nativeDialog.remove();
+      if (previousFocus && document.body.contains(previousFocus)) {
+        previousFocus.focus({ preventScroll: true });
+      }
       resolve(value);
     };
 

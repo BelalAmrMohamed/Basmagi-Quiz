@@ -30,3 +30,4 @@ public/src/shared/global-markdown-toolbar.js
 public/src/shared/markdown-toolbar-actions.js
 public/src/shared/quizManifest.js
 supabase/migrations/20260929210000_lesson_security_description_references.sql
+supabase/migrations/20261002160600_lesson_source_metadata.sql

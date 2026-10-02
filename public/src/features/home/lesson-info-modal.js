@@ -80,6 +80,7 @@ export function collectLessonInfo(row) {
         id: row?.id || row?.meta?.id || "",
         title: row?.meta?.title || row?.title || "درس بدون عنوان",
         description: row?.description || row?.meta?.description || "",
+        source: row?.source || row?.meta?.source || "",
         passwordProtected: Boolean(row?.passwordProtected || row?.password_protected || row?.meta?.passwordProtected || row?.passwordHash || row?.password_hash),
         createdAt: row?.meta?.createdAt || row?.created_at || null,
         updatedAt: row?.meta?.updatedAt || row?.updated_at || null,
@@ -155,6 +156,12 @@ export function buildLessonInfoHtml(info) {
     }
     if (info.essayCount) addRow("أسئلة مقالية", escapeHtml(String(info.essayCount)));
     if (info.description) addRow("الوصف", escapeHtml(info.description));
+    if (info.source) {
+        const safeSource = /^(https?:\/\/)/i.test(info.source)
+            ? `<a href="${escapeHtml(info.source)}" target="_blank" rel="noopener noreferrer" dir="ltr">${escapeHtml(info.source)}</a>`
+            : `<span dir="ltr">${escapeHtml(info.source)}</span>`;
+        addRow("المصدر", safeSource);
+    }
     if (info.passwordProtected) addRow("الحماية", "محمي بكلمة مرور");
     if (info.fontLabel) addRow("خط القراءة", escapeHtml(info.fontLabel));
     const created = formatDateForInfo(info.createdAt);
@@ -192,6 +199,7 @@ export function buildLessonInfoHtml(info) {
  * @returns {HTMLDialogElement}
  */
 export function showUserLessonInfoModal(row) {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const dialog = document.createElement("dialog");
     dialog.className = "quiz-info-dialog lesson-info-dialog";
     dialog.setAttribute("aria-labelledby", "lessonInfoDialogTitle");
@@ -199,8 +207,9 @@ export function showUserLessonInfoModal(row) {
     document.body.appendChild(dialog);
 
     const close = () => {
-        dialog.close();
+        if (dialog.open) dialog.close();
         dialog.remove();
+        if (previousFocus && document.body.contains(previousFocus)) previousFocus.focus({ preventScroll: true });
     };
     dialog.querySelector(".quiz-info-dialog-close").onclick = close;
     // Click on the backdrop (the <dialog> element itself, outside its inner box).

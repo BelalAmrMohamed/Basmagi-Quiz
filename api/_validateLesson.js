@@ -20,6 +20,7 @@ const MAX_TITLE_LENGTH = 200;
 const MAX_MARKDOWN_LENGTH = 20_000;
 const MAX_OPTIONS = 8;
 const MAX_DESCRIPTION_LENGTH = 1200;
+const MAX_SOURCE_LENGTH = 500;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -218,6 +219,16 @@ export function validateLessonDescription(description) {
     return clean;
 }
 
+
+export function validateLessonSource(source) {
+    if (source === undefined || source === null || source === "") return "";
+    if (typeof source !== "string") throw new Error("مصدر الدرس يجب أن يكون نصاً.");
+    const clean = source.trim();
+    if (clean.length > MAX_SOURCE_LENGTH) {
+        throw new Error(`مصدر الدرس طويل جداً (الحد الأقصى ${MAX_SOURCE_LENGTH} حرف).`);
+    }
+    return clean;
+}
 
 export function validateLessonPasswordHash(passwordHash) {
     if (passwordHash === undefined || passwordHash === null || passwordHash === "") return "";

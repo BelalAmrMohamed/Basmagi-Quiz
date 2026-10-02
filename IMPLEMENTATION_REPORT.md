@@ -7,10 +7,14 @@
 - Added canonical `lesson-reference` blocks with local/published picker, self-reference protection, normalization, safe fallbacks, and server-side cycle validation.
 - Redesigned referenced quiz/lesson cards around Start/Open, Download, Info, and AI attachment actions with SVG icons, bubbling prevention, and responsive action grids.
 - Added optional lesson descriptions with live counter and persistence through local storage, catalog, reader, info views, server validation, and admin publishing.
+- Added canonical lesson `source` metadata end-to-end, including the editor field, local/published models, catalog/manifest/reader metadata, info/download surfaces, admin validation, and a safe database view migration.
 - Added lesson password protection with server-side hashing of a client-derived digest; plaintext lesson passwords are not sent in editor/unlock HTTP payloads and password hashes are never exposed in public lesson payloads.
 - Added protected-reader gating before content rendering and password-gated lesson exports, plus explicit password replacement/removal paths while editing.
 - Added batched reference lookups and non-breaking stale/missing reference rendering.
 - Added responsive/accessibility treatment for the updated controls and cards.
+- Hardened both create-page menu systems with synchronized ARIA state, single-open behavior, repeat-safe keyboard listeners, submenu close/reopen semantics, and trigger keyboard navigation.
+- Wired create-lesson reference previews to the same reader-side Start/Download/Info/AI action architecture; stale references expose Info while disabling unavailable actions.
+- Added focus restoration for the lesson preview, metadata info modal, reader controls, and password gate.
 
 ## Changed / Created Files
 
@@ -46,11 +50,13 @@
 - `public/src/shared/markdown-toolbar-actions.js`
 - `public/src/shared/quizManifest.js`
 - `supabase/migrations/20260929210000_lesson_security_description_references.sql`
+- `supabase/migrations/20261002160600_lesson_source_metadata.sql`
 
 ## Database Migration
 
 `supabase/migrations/20260929210000_lesson_security_description_references.sql` adds:
 - `lessons.description` (optional author description).
+- `lessons.source` (optional author source/reference, maximum 500 characters).
 - `lessons.password_hash` (server-side digest derived from the browser password digest).
 - `public.lesson_public` safe-reader view that returns `content = NULL` for protected lessons and never exposes `password_hash`.
 - Column-level browser grants that prevent `anon`/`authenticated` roles from selecting protected lesson content directly from `lessons`.
@@ -73,3 +79,4 @@
 - admin lesson responses strip `password_hash` before returning data to the editor.
 - protected lesson HTML is rendered only after successful unlock content retrieval; the public fetch path provides metadata + a null content field for protected lessons.
 - stale references degrade to an unavailable card instead of aborting the lesson render.
+- lesson source metadata remains available through the safe `lesson_public` view without exposing password hashes or protected content.

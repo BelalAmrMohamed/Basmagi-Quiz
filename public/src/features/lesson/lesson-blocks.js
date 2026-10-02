@@ -78,8 +78,8 @@ function renderMediaBlock(block) {
  * in a second page, and it keeps scoring unambiguously confined to the real
  * quiz page, which matters because lessons are never scored.
  */
-function referenceActionButton(kind, action, id, title, label, icon) {
-  return `<button type="button" class="lesson-ref-card__action lesson-ref-card__action--${action}" data-reference-kind="${kind}" data-reference-action="${action}" data-reference-id="${escapeHtml(id)}" data-reference-title="${escapeHtml(title)}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">${lessonIcon(icon)}<span>${escapeHtml(label)}</span></button>`;
+function referenceActionButton(kind, action, id, title, label, icon, disabled = false) {
+  return `<button type="button" class="lesson-ref-card__action lesson-ref-card__action--${action}" data-reference-kind="${kind}" data-reference-action="${action}" data-reference-id="${escapeHtml(id)}" data-reference-title="${escapeHtml(title)}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"${disabled ? " disabled aria-disabled=\"true\"" : ""}>${lessonIcon(icon)}<span>${escapeHtml(label)}</span></button>`;
 }
 
 function renderReferenceCard({ kind, id, title, description, countLabel, available, protectedContent }) {
@@ -100,10 +100,10 @@ function renderReferenceCard({ kind, id, title, description, countLabel, availab
     (protectedContent ? `<span class="lesson-ref-card__protected">${lessonIcon("lock")} محمي بكلمة مرور</span>` : "") +
     `</div></div>` +
     `<div class="lesson-ref-card__actions" role="group" aria-label="إجراءات العنصر المرتبط">` +
-    referenceActionButton(kind, "start", id, bodyTitle, labels.start, kind === "quiz" ? "play" : "book") +
-    referenceActionButton(kind, "download", id, bodyTitle, "تنزيل", "download") +
-    referenceActionButton(kind, "info", id, bodyTitle, "معلومات", "info") +
-    referenceActionButton(kind, "ask", id, bodyTitle, "اسأل الباشـمبصمج", "sparkle") +
+    referenceActionButton(kind, "start", id, bodyTitle, labels.start, kind === "quiz" ? "play" : "book", !available) +
+    referenceActionButton(kind, "download", id, bodyTitle, "تنزيل", "download", !available) +
+    referenceActionButton(kind, "info", id, bodyTitle, "معلومات", "info", false) +
+    referenceActionButton(kind, "ask", id, bodyTitle, "اسأل الباشـمبصمج", "sparkle", !available) +
     `</div></article>`
   );
 }

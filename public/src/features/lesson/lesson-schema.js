@@ -36,6 +36,8 @@ export function ls(lesson, field) {
       return lesson?.title || "";
     case "description":
       return lesson?.description ?? lesson?.meta?.description ?? "";
+    case "source":
+      return lesson?.source ?? lesson?.meta?.source ?? "";
     case "passwordProtected":
       return Boolean(lesson?.password_protected || lesson?.passwordProtected || lesson?.meta?.passwordProtected || lesson?.passwordHash || lesson?.password_hash);
     case "passwordHash":
@@ -83,6 +85,7 @@ export function normalizeLessonRecord(row) {
     id: row.id || row.meta?.id || "",
     title: row.title || row.meta?.title || "",
     description: row.description ?? row.meta?.description ?? "",
+    source: row.source ?? row.meta?.source ?? "",
     passwordProtected: Boolean(row.password_protected || row.passwordProtected || row.meta?.passwordProtected || row.passwordHash || row.password_hash),
     passwordHash: row.passwordHash || row.password_hash || null,
     content: row.content ?? row.lesson ?? { sections: [] },

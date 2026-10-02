@@ -39,6 +39,7 @@ import { validateQuizPayload, computeStats } from "./_validateQuiz.js";
 import {
   validateLessonContent,
   validateLessonDescription,
+  validateLessonSource,
   validateLessonPasswordHash,
   collectLessonReferenceIds,
 } from "./_validateLesson.js";
@@ -1310,12 +1311,12 @@ async function validateLessonSlug(supabase, rawSlug, excludeId = null) {
 }
 
 // ── action=create-lesson ────────────────────────────────────────────────────
-// Body: { title, content, description?, courseId, folderId?, slug?, readerPrefsDefault?, passwordHash? }
+// Body: { title, content, description?, source?, courseId, folderId?, slug?, readerPrefsDefault?, passwordHash? }
 // courseId is required (a lesson can go directly under a course or under
 // any folder, never top-level-only — see canPlaceItemServer); folderId null
 // means "directly under the course."
 async function handleCreateLesson(req, res, adminPayload, adminId, supabase) {
-  const { title, content, description = "", courseId, folderId = null, slug = null, readerPrefsDefault = null, passwordHash = "" } = req.body || {};
+  const { title, content, description = "", source = "", courseId, folderId = null, slug = null, readerPrefsDefault = null, passwordHash = "" } = req.body || {};
 
   const nameCheck = validateItemName(title);
   if (!nameCheck.ok) return res.status(400).json({ error: nameCheck.error });
@@ -1335,9 +1336,11 @@ async function handleCreateLesson(req, res, adminPayload, adminId, supabase) {
   }
 
   let cleanDescription = "";
+  let cleanSource = "";
   let cleanPassword = "";
   try {
     cleanDescription = validateLessonDescription(description);
+    cleanSource = validateLessonSource(source);
     cleanPassword = validateLessonPasswordHash(passwordHash);
   } catch (e) {
     return res.status(400).json({ error: e.message });
@@ -1358,6 +1361,7 @@ async function handleCreateLesson(req, res, adminPayload, adminId, supabase) {
   const insertRow = {
     title: nameCheck.clean,
     description: cleanDescription || null,
+    source: cleanSource || null,
     content: cleanContent,
     password_hash: cleanPassword ? hashLessonPasswordDigest(cleanPassword) : null,
     course_id: courseId,
@@ -1387,12 +1391,12 @@ async function handleCreateLesson(req, res, adminPayload, adminId, supabase) {
 }
 
 // ── action=update-lesson ────────────────────────────────────────────────────
-// Body: { id, title, content, description?, slug?, readerPrefsDefault?, passwordHash?, clearPassword? }
+// Body: { id, title, content, description?, source?, slug?, readerPrefsDefault?, passwordHash?, clearPassword? }
 // Placement (courseId/folderId) is changed only via action=move-item, never
 // as a side effect of an editing save — same convention as
 // handleUpdateQuiz's header comment on this exact point for quizzes.
 async function handleUpdateLesson(req, res, adminPayload, adminId, supabase) {
-  const { id, title, content, description, slug, readerPrefsDefault, passwordHash, clearPassword = false } = req.body || {};
+  const { id, title, content, description, source, slug, readerPrefsDefault, passwordHash, clearPassword = false } = req.body || {};
   if (!id) return res.status(400).json({ error: "معرف الدرس مطلوب." });
 
   const nameCheck = validateItemName(title);
@@ -1413,9 +1417,11 @@ async function handleUpdateLesson(req, res, adminPayload, adminId, supabase) {
   }
 
   let cleanDescription;
+  let cleanSource;
   let cleanPassword = "";
   try {
     if (description !== undefined) cleanDescription = validateLessonDescription(description);
+    if (source !== undefined) cleanSource = validateLessonSource(source);
     if (passwordHash !== undefined && passwordHash !== "") cleanPassword = validateLessonPasswordHash(passwordHash);
     if (clearPassword && passwordHash === undefined) cleanPassword = "";
   } catch (e) {
@@ -1444,6 +1450,7 @@ async function handleUpdateLesson(req, res, adminPayload, adminId, supabase) {
     updated_at: new Date().toISOString(),
   };
   if (cleanDescription !== undefined) updates.description = cleanDescription || null;
+  if (cleanSource !== undefined) updates.source = cleanSource || null;
   if (cleanPassword) updates.password_hash = hashLessonPasswordDigest(cleanPassword);
   else if (clearPassword && passwordHash === undefined) updates.password_hash = null;
   if (typeof slug === "string") {
@@ -1585,7 +1592,7 @@ async function validateLessonReferenceGraph(supabase, rootId, rootContent) {
 async function handleListLessons(req, res, adminPayload, adminId, supabase) {
   const { data, error } = await supabase
     .from("lessons")
-    .select("id, slug, title, description, content, reader_prefs_default, course_id, folder_id, created_at, updated_at, password_hash, created_by")
+    .select("id, slug, title, description, source, content, reader_prefs_default, course_id, folder_id, created_at, updated_at, password_hash, created_by")
     .order("updated_at", { ascending: false });
   if (error) {
     console.error("[admin:list-lessons] failed:", error.message);

@@ -231,9 +231,18 @@ function positionMenu(toggle, menu) {
   const measuredW = menu.scrollWidth || menu.offsetWidth || 240;
   const menuW = Math.min(measuredW, maxAvailableW);
 
-  // Vertical placement: place directly below the toolbar button
-  const below = toggleRect.bottom + 4;
-  const maxAvailableH = Math.max(100, viewportH - below - pad);
+  // Vertical placement: prefer below, but flip above when the menu does not
+  // fit and there is more usable space above the trigger. This keeps long
+  // LaTeX/highlight menus usable near the bottom edge of the viewport.
+  const belowTop = toggleRect.bottom + 4;
+  const belowSpace = viewportH - belowTop - pad;
+  const aboveSpace = toggleRect.top - 4 - pad;
+  const naturalMenuH = menu.offsetHeight || 160;
+  const placeAbove = naturalMenuH > belowSpace && aboveSpace > belowSpace;
+  const top = placeAbove
+    ? Math.max(pad, toggleRect.top - 4 - Math.min(naturalMenuH, Math.max(100, aboveSpace)))
+    : Math.max(pad, belowTop);
+  const maxAvailableH = Math.max(100, placeAbove ? aboveSpace : belowSpace);
 
   // Horizontal placement: in RTL, align the menu's right edge to the toggle's right edge
   const isRtl = document.documentElement.dir === "rtl" || getComputedStyle(document.documentElement).direction === "rtl";
@@ -251,7 +260,7 @@ function positionMenu(toggle, menu) {
   menu.style.boxSizing = "border-box";
   menu.style.width = `${menuW}px`;
   menu.style.maxWidth = `${maxAvailableW}px`;
-  menu.style.top = `${Math.max(pad, below)}px`;
+  menu.style.top = `${top}px`;
   menu.style.left = `${left}px`;
   menu.style.maxHeight = `${maxAvailableH}px`;
   menu.style.overflowY = "auto";

@@ -167,6 +167,7 @@ export function showLessonControlModal(options) {
     const sectionTitleById = new Map((normalized.sections || []).map((s) => [s.id, s.title || "قسم من الدرس"]));
     const progressSummary = computeLessonProgressSummary(normalized, lesson.id);
 
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const dialog = document.createElement("dialog");
     dialog.className = "quiz-info-dialog lesson-info-dialog lesson-control-dialog";
     dialog.setAttribute("aria-labelledby", "lessonControlDialogTitle");
@@ -202,6 +203,7 @@ export function showLessonControlModal(options) {
         cleanupLessonBookmarks(bookmarksSection);
         if (dialog.open) dialog.close();
         dialog.remove();
+        if (previousFocus && document.body.contains(previousFocus)) previousFocus.focus({ preventScroll: true });
     };
     dialog.querySelector(".quiz-info-dialog-close").onclick = close;
     dialog.addEventListener("click", (e) => {

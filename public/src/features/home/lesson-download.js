@@ -27,6 +27,7 @@ export async function downloadLesson(lesson, triggerBtn = null) {
       id: lesson.id || lesson.dbId || "",
       title: lesson.title || "درس بدون عنوان",
       description: lesson.description || "",
+      source: lesson.source || lesson.meta?.source || "",
       reader_prefs_default: lesson.reader_prefs_default || lesson.readerPrefsDefault || {},
       content: lesson.content || lesson.lesson || { sections: [] },
     };
@@ -56,6 +57,7 @@ export async function downloadLesson(lesson, triggerBtn = null) {
           id: unlocked.id || payload.id,
           title: unlocked.title || payload.title,
           description: unlocked.description || payload.description,
+          source: unlocked.source || payload.source,
           reader_prefs_default: unlocked.reader_prefs_default || payload.reader_prefs_default,
           content: unlocked.content || { sections: [] },
         };

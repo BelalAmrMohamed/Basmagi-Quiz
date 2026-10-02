@@ -165,6 +165,7 @@ function stripPublicLesson(lesson) {
         slug: lesson.slug || null,
         title: lesson.title || "",
         description: lesson.description || "",
+        source: lesson.source || "",
         content: lesson.content || { sections: [] },
         reader_prefs_default: lesson.reader_prefs_default || null,
         created_at: lesson.created_at || null,
@@ -188,7 +189,7 @@ function constantTimeEqual(a, b) {
 
 async function fetchLessonMetaWithSecret(idOrSlug) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
-    const query = getServiceSupabase().from("lessons").select("id, slug, title, description, content, reader_prefs_default, created_at, updated_at, password_hash");
+    const query = getServiceSupabase().from("lessons").select("id, slug, title, description, source, content, reader_prefs_default, created_at, updated_at, password_hash");
     const { data, error } = isUuid
         ? await query.eq("id", idOrSlug).maybeSingle()
         : await query.eq("slug", idOrSlug).maybeSingle();
@@ -312,7 +313,7 @@ async function handleLessonRequest(req, res) {
  */
 async function fetchLessonMeta(idOrSlug) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
-    const query = getSupabase().from("lesson_public").select("id, slug, title, description, content, password_protected");
+    const query = getSupabase().from("lesson_public").select("id, slug, title, description, source, content, password_protected");
     const { data, error } = isUuid
         ? await query.eq("id", idOrSlug).maybeSingle()
         : await query.eq("slug", idOrSlug).maybeSingle();
@@ -328,6 +329,7 @@ async function fetchLessonMeta(idOrSlug) {
         slug: data.slug || null,
         title: data.title,
         description: data.description || "",
+        source: data.source || "",
         content: data.content,
         password_protected: Boolean(data.password_protected),
     };

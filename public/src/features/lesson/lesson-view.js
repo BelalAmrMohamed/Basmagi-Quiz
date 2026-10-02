@@ -99,6 +99,7 @@ async function fetchLesson(idOrSlug) {
         id: row.id || row.meta?.id,
         title: row.meta?.title || "",
         description: row.description || row.meta?.description || "",
+        source: row.source || row.meta?.source || "",
         content: row.lesson || { sections: [] },
         reader_prefs_default: row.meta?.readerPrefs || {},
         password_protected: Boolean(row.passwordProtected || row.meta?.passwordProtected || row.passwordHash),
@@ -116,7 +117,7 @@ async function fetchLesson(idOrSlug) {
 
   const query = supabase
     .from("lesson_public")
-    .select("id, slug, title, description, content, section_ids, section_count, reader_prefs_default, created_at, updated_at, password_protected");
+    .select("id, slug, title, description, source, content, section_ids, section_count, reader_prefs_default, created_at, updated_at, password_protected");
   const request = UUID_RE.test(idOrSlug)
     ? query.eq("id", idOrSlug).maybeSingle()
     : query.eq("slug", idOrSlug).maybeSingle();
@@ -215,7 +216,7 @@ async function fetchLessonRefs(lessonIds, currentLessonId) {
       const { data, error } = await withTimeout(
         supabase
           .from("lesson_public")
-          .select("id, slug, title, description, section_ids, section_count, reader_prefs_default, created_at, updated_at, password_protected")
+          .select("id, slug, title, description, source, section_ids, section_count, reader_prefs_default, created_at, updated_at, password_protected")
           .in("id", ids),
         QUIZ_REF_TIMEOUT_MS,
         "انتهت مهلة تحميل الدروس المرتبطة.",
@@ -236,6 +237,7 @@ async function fetchLessonRefs(lessonIds, currentLessonId) {
             id,
             title: row.meta?.title || "درس بدون عنوان",
             description: row.description || row.meta?.description || "",
+            source: row.source || row.meta?.source || "",
             section_count: Number(row.stats?.sectionCount ?? row.lesson?.sections?.length ?? 0),
             reader_prefs_default: row.meta?.readerPrefs || {},
             created_at: row.meta?.createdAt || null,

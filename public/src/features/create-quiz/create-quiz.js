@@ -62,6 +62,10 @@ let _lastMenuOpenAt = 0;
 function _armMenuOpenGuard() {
   _lastMenuOpenAt = Date.now();
 }
+const _menuKeyboardCleanup = new WeakMap();
+function _cleanupMenuKeyboard(dropdown) {
+  _menuKeyboardCleanup.get(dropdown)?.();
+}
 // ID of the current draft entry in user_quizzes (meta.type = "draft").
 // null when editing an already-published quiz via ?edit=<id>.
 let currentDraftId = null;
@@ -1037,6 +1041,8 @@ function _wireMenuBarAria() {
       trigger.setAttribute("aria-haspopup", "true");
       trigger.setAttribute("aria-expanded", "false");
       if (dropdown.id) trigger.setAttribute("aria-controls", dropdown.id);
+      dropdown.setAttribute("role", "menu");
+      dropdown.setAttribute("aria-hidden", "true");
     }
   });
   document
@@ -1077,6 +1083,7 @@ window.toggleMenu = function (name) {
   if (!isOpen) {
     item.classList.add("menu-item-open");
     _setMenuExpanded(item, true);
+    dropdown.setAttribute("aria-hidden", "false");
     positionMenuDropdown(trigger, dropdown);
     activateMenuKeyboardNav(dropdown, () => {
       closeAllMenus();
@@ -1098,19 +1105,20 @@ window.toggleMenu = function (name) {
 
 /** Close every open menu dropdown. Safe to call even if none are open. */
 window.closeAllMenus = function () {
-  document
-    .querySelectorAll(".menu-bar-item.menu-item-open")
-    .forEach((item) => {
-      item.classList.remove("menu-item-open");
-      _setMenuExpanded(item, false);
-    });
-  // Also collapse any open submenus
-  document
-    .querySelectorAll(".menu-item-submenu.menu-item-open")
-    .forEach((item) => {
-      item.classList.remove("menu-item-open");
-      _setMenuExpanded(item, false);
-    });
+  document.querySelectorAll(".menu-bar-item.menu-item-open").forEach((item) => {
+    const dropdown = item.querySelector(":scope > .menu-dropdown");
+    _cleanupMenuKeyboard(dropdown);
+    if (dropdown) dropdown.setAttribute("aria-hidden", "true");
+    item.classList.remove("menu-item-open");
+    _setMenuExpanded(item, false);
+  });
+  document.querySelectorAll(".menu-item-submenu.menu-item-open").forEach((item) => {
+    const dropdown = item.querySelector(":scope > .menu-submenu-dropdown");
+    _cleanupMenuKeyboard(dropdown);
+    if (dropdown) dropdown.setAttribute("aria-hidden", "true");
+    item.classList.remove("menu-item-open");
+    _setMenuExpanded(item, false);
+  });
 };
 
 /**
@@ -1122,52 +1130,50 @@ window.closeAllMenus = function () {
  * @param {HTMLElement} dropdown - the open .menu-dropdown/.menu-submenu-dropdown
  * @param {() => void} onClose - called on Escape; expected to close the menu and restore focus to its trigger
  */
-function activateMenuKeyboardNav(dropdown, onClose) {
+function activateMenuKeyboardNav(dropdown, onClose, { focusFirst = true } = {}) {
   if (!dropdown) return;
-  const items = () =>
-    [...dropdown.querySelectorAll(':scope > .menu-option:not([disabled]), :scope > [role="menuitem"]:not([disabled])')];
+  _cleanupMenuKeyboard(dropdown);
+  const items = () => [
+    ...dropdown.querySelectorAll(':scope > .menu-option:not([disabled]), :scope > [role="menuitem"]:not([disabled])'),
+  ];
   const focusAt = (index, list) => {
     if (!list.length) return;
     const next = ((index % list.length) + list.length) % list.length;
-    list[next].focus();
+    list[next].focus({ preventScroll: true });
   };
-  // Land focus on the first row immediately, matching native menu behavior.
-  focusAt(0, items());
-
   const onKeydown = (e) => {
     const list = items();
     const currentIndex = list.indexOf(document.activeElement);
-    if (e.key === "ArrowDown") {
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") {
       e.preventDefault();
-      focusAt(currentIndex + 1, list);
-    } else if (e.key === "ArrowUp") {
+      focusAt(currentIndex < 0 ? 0 : currentIndex + 1, list);
+    } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
       e.preventDefault();
-      focusAt(currentIndex - 1, list);
+      focusAt(currentIndex < 0 ? list.length - 1 : currentIndex - 1, list);
     } else if (e.key === "Home") {
       e.preventDefault();
       focusAt(0, list);
     } else if (e.key === "End") {
       e.preventDefault();
       focusAt(list.length - 1, list);
-    } else if (e.key === "Escape") {
+    } else if (e.key === "Escape" || e.key === "Tab") {
       e.preventDefault();
       e.stopPropagation();
-      cleanup();
-      if (typeof onClose === "function") onClose();
-    } else if (e.key === "Tab") {
-      // Tabbing out of an open menu should close it rather than leave a
-      // stranded floating dropdown behind while focus moves elsewhere.
       cleanup();
       if (typeof onClose === "function") onClose();
     }
   };
   function cleanup() {
     dropdown.removeEventListener("keydown", onKeydown);
+    if (_menuKeyboardCleanup.get(dropdown) === cleanup) _menuKeyboardCleanup.delete(dropdown);
   }
   dropdown.addEventListener("keydown", onKeydown);
+  _menuKeyboardCleanup.set(dropdown, cleanup);
+  if (focusFirst) focusAt(0, items());
 }
 
 /**
+ * Toggle a nested submenu inside an already-open parent dropdown./**
  * Toggle a nested submenu inside an already-open parent dropdown.
  * Stops event propagation so the parent dropdown doesn't close.
  * Now click-driven (not hover) since the submenu is position:fixed and
@@ -1192,6 +1198,7 @@ window.toggleSubmenu = function (event, submenuId) {
   if (!isOpen) {
     submenuItem.classList.add("menu-item-open");
     _setMenuExpanded(submenuItem, true);
+    dropdown.setAttribute("aria-hidden", "false");
     positionSubmenuDropdown(trigger, dropdown);
     activateMenuKeyboardNav(dropdown, () => {
       submenuItem.classList.remove("menu-item-open");
@@ -1199,6 +1206,11 @@ window.toggleSubmenu = function (event, submenuId) {
       trigger.focus();
     });
     _armMenuOpenGuard();
+  } else {
+    _cleanupMenuKeyboard(dropdown);
+    dropdown.setAttribute("aria-hidden", "true");
+    submenuItem.classList.remove("menu-item-open");
+    _setMenuExpanded(submenuItem, false);
   }
 };
 
@@ -1215,6 +1227,7 @@ window.openTemplatesMenu = function () {
   const insertDropdown = insertItem.querySelector(":scope > .menu-dropdown");
   insertItem.classList.add("menu-item-open");
   _setMenuExpanded(insertItem, true);
+  insertDropdown?.setAttribute("aria-hidden", "false");
   if (insertTrigger && insertDropdown) positionMenuDropdown(insertTrigger, insertDropdown);
   // Pre-expand the templates submenu inside it
   const templatesItem = insertItem.querySelector(".menu-item-submenu[data-menu='insert-templates']");
@@ -1223,6 +1236,7 @@ window.openTemplatesMenu = function () {
   if (templatesItem) {
     templatesItem.classList.add("menu-item-open");
     _setMenuExpanded(templatesItem, true);
+    templatesDropdown?.setAttribute("aria-hidden", "false");
     if (templatesTrigger && templatesDropdown) positionSubmenuDropdown(templatesTrigger, templatesDropdown);
   }
 };
@@ -1257,6 +1271,18 @@ function setupMenuBarListeners() {
   if (!appTitleBar) return;
 
   _wireMenuBarAria();
+
+  appTitleBar.querySelectorAll("#menuBar .menu-trigger").forEach((trigger) => {
+    if (trigger.dataset.menuArrowNavBound === "1") return;
+    trigger.dataset.menuArrowNavBound = "1";
+    trigger.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowDown") return;
+      e.preventDefault();
+      const name = trigger.closest(".menu-bar-item")?.dataset.menu;
+      if (!name) return;
+      toggleMenu(name);
+    });
+  });
 
   // Click outside the entire top bar AND outside any open dropdown → close.
   // Dropdowns are position:fixed now, so they're no longer DOM-nested
@@ -1311,11 +1337,20 @@ function setupMenuBarListeners() {
     item.addEventListener("mouseenter", () => {
       const anyOpen = menuBarInner.querySelector(".menu-item-open");
       if (anyOpen && anyOpen !== item) {
+        const oldDropdown = anyOpen.querySelector(":scope > .menu-dropdown");
+        _cleanupMenuKeyboard(oldDropdown);
+        oldDropdown?.setAttribute("aria-hidden", "true");
+        _setMenuExpanded(anyOpen, false);
         anyOpen.classList.remove("menu-item-open");
         item.classList.add("menu-item-open");
         const trigger = item.querySelector(":scope > .menu-trigger");
         const dropdown = item.querySelector(":scope > .menu-dropdown");
-        if (trigger && dropdown) positionMenuDropdown(trigger, dropdown);
+        if (trigger && dropdown) {
+          _setMenuExpanded(item, true);
+          dropdown.setAttribute("aria-hidden", "false");
+          positionMenuDropdown(trigger, dropdown);
+          activateMenuKeyboardNav(dropdown, () => { closeAllMenus(); trigger.focus({ preventScroll: true }); }, { focusFirst: false });
+        }
       }
     });
   });

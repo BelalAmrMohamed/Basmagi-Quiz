@@ -44,7 +44,7 @@ import {
     _prompt,
 } from "../../components/notifications/notifications.js";
 import { normalizeLessonContent, hasLessonLevelCollision } from "../lesson/lesson-schema.js";
-import { FONT_CHOICES, applyReaderPrefs } from "../lesson/lesson-reader-prefs.js";
+import { FONT_CHOICES, normalizeFontId, applyReaderPrefs } from "../lesson/lesson-reader-prefs.js";
 import { sha256Hex, validateLessonPasswordInput } from "../lesson/lesson-access.js";
 import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar.js";
 import { applyMarkdownToolbarAction } from "../../shared/markdown-toolbar-actions.js";
@@ -114,6 +114,10 @@ let _lastMenuOpenAt = 0;
 function _armMenuOpenGuard() {
     _lastMenuOpenAt = Date.now();
 }
+const _menuKeyboardCleanup = new WeakMap();
+function _cleanupMenuKeyboard(dropdown) {
+    _menuKeyboardCleanup.get(dropdown)?.();
+}
 
 // =============================================================================
 // LOCAL STORAGE MODEL — the "امتحاناتك" workspace
@@ -178,7 +182,7 @@ function serializeContent(data = lessonData) {
 }
 
 function readerPrefsFromData(data = lessonData) {
-    return { fontId: data.fontId || "default" };
+    return { fontId: normalizeFontId(data.fontId) };
 }
 
 /** Number of embedded questions — shown on the workspace tile like a question count. */
@@ -488,6 +492,8 @@ function _wireMenuBarAria() {
             trigger.setAttribute("aria-haspopup", "true");
             trigger.setAttribute("aria-expanded", "false");
             if (dropdown.id) trigger.setAttribute("aria-controls", dropdown.id);
+            dropdown.setAttribute("role", "menu");
+            dropdown.setAttribute("aria-hidden", "true");
         }
     });
     document
@@ -518,18 +524,22 @@ window.toggleMenu = function (name) {
     if (!isOpen) {
         item.classList.add("menu-item-open");
         _setMenuExpanded(item, true);
+        dropdown.setAttribute("aria-hidden", "false");
         positionMenuDropdown(trigger, dropdown);
         activateMenuKeyboardNav(dropdown, () => {
             window.closeAllMenus();
             trigger.focus();
         });
-        _lastMenuOpenAt = Date.now();
+        _armMenuOpenGuard();
     }
 };
 
 /** Close every open menu dropdown. */
 window.closeAllMenus = function () {
     document.querySelectorAll(".menu-bar-item.menu-item-open").forEach((item) => {
+        const dropdown = item.querySelector(":scope > .menu-dropdown");
+        _cleanupMenuKeyboard(dropdown);
+        if (dropdown) dropdown.setAttribute("aria-hidden", "true");
         item.classList.remove("menu-item-open");
         _setMenuExpanded(item, false);
     });
@@ -538,30 +548,36 @@ window.closeAllMenus = function () {
 /**
  * Arrow-key / Escape navigation inside an open menu dropdown.
  */
-function activateMenuKeyboardNav(dropdown, onClose) {
+function activateMenuKeyboardNav(dropdown, onClose, { focusFirst = true } = {}) {
     if (!dropdown) return;
+    _cleanupMenuKeyboard(dropdown);
     const items = () => [
-        ...dropdown.querySelectorAll(':scope > .menu-option:not([disabled]), :scope > [role="menuitem"]:not([disabled])')
+        ...dropdown.querySelectorAll(':scope > .menu-option:not([disabled]), :scope > [role="menuitem"]:not([disabled])'),
     ];
     const focusAt = (index, list) => {
         if (!list.length) return;
         const next = ((index % list.length) + list.length) % list.length;
-        list[next].focus();
+        list[next].focus({ preventScroll: true });
     };
-    focusAt(0, items());
-
     const onKeydown = (e) => {
         const list = items();
         const currentIndex = list.indexOf(document.activeElement);
-        if (e.key === "ArrowDown") { e.preventDefault(); focusAt(currentIndex + 1, list); }
-        else if (e.key === "ArrowUp") { e.preventDefault(); focusAt(currentIndex - 1, list); }
+        if (e.key === "ArrowDown" || e.key === "ArrowRight") { e.preventDefault(); focusAt(currentIndex < 0 ? 0 : currentIndex + 1, list); }
+        else if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); focusAt(currentIndex < 0 ? list.length - 1 : currentIndex - 1, list); }
         else if (e.key === "Home") { e.preventDefault(); focusAt(0, list); }
         else if (e.key === "End") { e.preventDefault(); focusAt(list.length - 1, list); }
-        else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cleanup(); if (typeof onClose === "function") onClose(); }
-        else if (e.key === "Tab") { cleanup(); if (typeof onClose === "function") onClose(); }
+        else if (e.key === "Escape" || e.key === "Tab") {
+            e.preventDefault(); e.stopPropagation(); cleanup();
+            if (typeof onClose === "function") onClose();
+        }
     };
-    function cleanup() { dropdown.removeEventListener("keydown", onKeydown); }
+    function cleanup() {
+        dropdown.removeEventListener("keydown", onKeydown);
+        if (_menuKeyboardCleanup.get(dropdown) === cleanup) _menuKeyboardCleanup.delete(dropdown);
+    }
     dropdown.addEventListener("keydown", onKeydown);
+    _menuKeyboardCleanup.set(dropdown, cleanup);
+    if (focusFirst) focusAt(0, items());
 }
 
 /**
@@ -572,6 +588,18 @@ function setupMenuBarListeners() {
     const appTitleBar = document.getElementById("appTitleBar");
     if (!appTitleBar) return;
     _wireMenuBarAria();
+
+    appTitleBar.querySelectorAll("#menuBar .menu-trigger").forEach((trigger) => {
+        if (trigger.dataset.menuArrowNavBound === "1") return;
+        trigger.dataset.menuArrowNavBound = "1";
+        trigger.addEventListener("keydown", (e) => {
+            if (e.key !== "ArrowDown") return;
+            e.preventDefault();
+            const name = trigger.closest(".menu-bar-item")?.dataset.menu;
+            if (!name) return;
+            window.toggleMenu(name);
+        });
+    });
 
     document.addEventListener("click", (e) => {
         if (!appTitleBar.contains(e.target) && !e.target.closest(".menu-dropdown")) {
@@ -600,11 +628,20 @@ function setupMenuBarListeners() {
         item.addEventListener("mouseenter", () => {
             const anyOpen = menuBarInner.querySelector(".menu-item-open");
             if (anyOpen && anyOpen !== item) {
+                const oldDropdown = anyOpen.querySelector(":scope > .menu-dropdown");
+                _cleanupMenuKeyboard(oldDropdown);
+                oldDropdown?.setAttribute("aria-hidden", "true");
+                _setMenuExpanded(anyOpen, false);
                 anyOpen.classList.remove("menu-item-open");
                 item.classList.add("menu-item-open");
                 const trigger = item.querySelector(":scope > .menu-trigger");
                 const dropdown = item.querySelector(":scope > .menu-dropdown");
-                if (trigger && dropdown) positionMenuDropdown(trigger, dropdown);
+                if (trigger && dropdown) {
+                    _setMenuExpanded(item, true);
+                    dropdown.setAttribute("aria-hidden", "false");
+                    positionMenuDropdown(trigger, dropdown);
+                    activateMenuKeyboardNav(dropdown, () => { window.closeAllMenus(); trigger.focus({ preventScroll: true }); }, { focusFirst: false });
+                }
             }
         });
     });
@@ -956,7 +993,7 @@ function openLessonById(id) {
         title: row.meta?.title || "",
         description: row.description ?? row.meta?.description ?? "",
         source: row.source ?? row.meta?.source ?? "",
-        fontId: prefs.fontId || "default",
+        fontId: normalizeFontId(prefs.fontId),
         passwordHash: row.passwordHash || null,
         passwordProtected: Boolean(row.passwordProtected || row.meta?.passwordProtected || row.passwordHash),
         sections: normalized.sections.length
@@ -1218,7 +1255,7 @@ function setupReaderDefaultsBar() {
     if (fontSelect.dataset.lessonFontBound === "1") return;
     fontSelect.dataset.lessonFontBound = "1";
     fontSelect.addEventListener("change", () => {
-        const nextFont = fontSelect.value || "default";
+        const nextFont = normalizeFontId(fontSelect.value);
         if (nextFont === lessonData.fontId) return;
         pushHistorySnapshot();
         lessonData.fontId = nextFont;
@@ -1228,7 +1265,7 @@ function setupReaderDefaultsBar() {
 }
 
 function applyLessonFontToEditor() {
-    const prefs = { fontId: lessonData.fontId || "default" };
+    const prefs = { fontId: normalizeFontId(lessonData.fontId) };
     const creator = document.getElementById("lessonCreatorForm");
     if (creator) applyReaderPrefs(creator, prefs);
     const editorPreviews = document.querySelectorAll(".lesson-md-preview, .lesson-preview-article");
@@ -1239,7 +1276,7 @@ function syncReaderDefaultsBar() {
     // Only the font <select> exists in the bar (the per-word highlight color
     // comes from the ==text==(color) picker, not a reader-default control).
     const f = document.getElementById("lessonFontSelect");
-    if (f) f.value = lessonData.fontId || "default";
+    if (f) f.value = normalizeFontId(lessonData.fontId);
     applyLessonFontToEditor();
 }
 
@@ -2177,6 +2214,7 @@ function lessonReferenceOptions(currentLessonId) {
         title: row.meta?.title || "درس بدون عنوان",
         source: "local",
         lesson: row,
+        localRow: row,
     }));
     const published = sharedLessons
         .filter((row) => String(row.id) !== String(currentLessonId))
@@ -2450,7 +2488,7 @@ async function loadSharedLessons() {
     if (!client) return;
     const { data, error } = await client
         .from("lesson_public")
-        .select("id, slug, title, description, course_id, folder_id, created_at, updated_at, password_protected")
+        .select("id, slug, title, description, source, course_id, folder_id, created_at, updated_at, password_protected")
         .order("updated_at", { ascending: false });
     if (error) {
         console.warn("[create-lesson] failed to load published lesson metadata:", error.message);
@@ -2482,7 +2520,7 @@ async function openPublishedLessonById(id) {
         title: row.title || "",
         description: row.description || "",
         source: row.source || "",
-        fontId: prefs.fontId || "default",
+        fontId: normalizeFontId(prefs.fontId),
         passwordHash: null,
         passwordProtected: Boolean(row.password_protected ?? row.passwordProtected),
         sections: normalized.sections.length ? normalized.sections.map((section) => ({
@@ -2583,11 +2621,12 @@ window.convertQuestionKind = async function (sectionId, localId, kind) {
 // statically here (their choices are visible but not interactive).
 
 async function loadReaderModules() {
-    const [{ renderBlock }, prefs] = await Promise.all([
+    const [{ renderBlock }, view, prefs] = await Promise.all([
         import("../lesson/lesson-blocks.js"),
+        import("../lesson/lesson-view.js"),
         import("../lesson/lesson-reader-prefs.js"),
     ]);
-    return { renderBlock, applyReaderPrefs: prefs.applyReaderPrefs };
+    return { renderBlock, equipReferenceCardActions: view.equipReferenceCardActions, applyReaderPrefs: prefs.applyReaderPrefs };
 }
 
 window.previewLesson = async function () {
@@ -2606,8 +2645,24 @@ window.previewLesson = async function () {
         return;
     }
 
+    lessonPreviewReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeLessonPreview();
-    const ctx = { lessonId: "__preview__", quizLookup: new Map() };
+    const currentPreviewId = publishedLessonId || editingLessonId || currentDraftId || "__preview__";
+    const quizLookup = new Map();
+    for (const quiz of Array.isArray(quizExamList) ? quizExamList : []) {
+        const id = String(quiz?.id || quiz?.dbId || "").trim();
+        if (!id) continue;
+        const entry = { ...quiz, id, source: quiz.source || "platform", dbId: quiz.dbId || null };
+        quizLookup.set(id, entry);
+        if (entry.dbId) quizLookup.set(String(entry.dbId), entry);
+    }
+    const lessonLookup = new Map();
+    for (const lesson of lessonReferenceOptions(currentPreviewId)) {
+        const id = String(lesson?.id || "").trim();
+        if (!id) continue;
+        lessonLookup.set(id, lesson);
+    }
+    const ctx = { lessonId: currentPreviewId, quizLookup, lessonLookup };
     const content = serializeContent();
 
     const sectionsHtml = content.sections
@@ -2629,6 +2684,7 @@ window.previewLesson = async function () {
     overlay.id = "lessonPreviewOverlay";
     overlay.setAttribute("role", "dialog");
     overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "lessonPreviewTitle");
     overlay.innerHTML = `
     <div class="lesson-preview-panel">
       <div class="lesson-preview-topbar">
@@ -2638,7 +2694,7 @@ window.previewLesson = async function () {
         </button>
       </div>
       <article class="lesson-view lesson-preview-article">
-        <header class="lesson-view__header"><h1 class="lesson-view__title">${escapeHtml(lessonData.title || "درس بدون عنوان")}</h1></header>
+        <header class="lesson-view__header"><h1 id="lessonPreviewTitle" class="lesson-view__title">${escapeHtml(lessonData.title || "درس بدون عنوان")}</h1></header>
         <div class="lesson-view__body">${sectionsHtml}</div>
       </article>
     </div>`;
@@ -2647,8 +2703,11 @@ window.previewLesson = async function () {
 
     const article = overlay.querySelector(".lesson-view");
     mods.applyReaderPrefs(article, readerPrefsFromData());
+    mods.equipReferenceCardActions(article, { id: currentPreviewId, title: lessonData.title || "درس بدون عنوان", description: lessonData.description || "", reader_prefs_default: readerPrefsFromData(), content }, quizLookup, lessonLookup);
 
-    overlay.querySelector("#lessonPreviewClose").addEventListener("click", closeLessonPreview);
+    const previewCloseButton = overlay.querySelector("#lessonPreviewClose");
+    previewCloseButton?.addEventListener("click", closeLessonPreview);
+    requestAnimationFrame(() => previewCloseButton?.focus({ preventScroll: true }));
     overlay.addEventListener("click", (e) => {
         if (e.target === overlay) closeLessonPreview();
     });
@@ -2659,10 +2718,16 @@ function _previewEscHandler(e) {
     if (e.key === "Escape") closeLessonPreview();
 }
 
+let lessonPreviewReturnFocus = null;
+
 function closeLessonPreview() {
     document.getElementById("lessonPreviewOverlay")?.remove();
     document.body.classList.remove("lesson-preview-open");
     document.removeEventListener("keydown", _previewEscHandler);
+    if (lessonPreviewReturnFocus && document.body.contains(lessonPreviewReturnFocus)) {
+        lessonPreviewReturnFocus.focus({ preventScroll: true });
+    }
+    lessonPreviewReturnFocus = null;
 }
 
 // =============================================================================
@@ -2855,8 +2920,8 @@ window.publishLesson = async function () {
             throw new Error("تعذّر تجهيز كلمة مرور الدرس للنشر.");
         }
         const body = publishedLessonId
-            ? { id: publishedLessonId, title: lessonData.title.trim(), description: lessonData.description.trim(), content: serializeContent(), readerPrefsDefault: readerPrefsFromData(), ...passwordFields }
-            : { title: lessonData.title.trim(), description: lessonData.description.trim(), content: serializeContent(), courseId, readerPrefsDefault: readerPrefsFromData(), ...passwordFields };
+            ? { id: publishedLessonId, title: lessonData.title.trim(), description: lessonData.description.trim(), source: lessonData.source.trim(), content: serializeContent(), readerPrefsDefault: readerPrefsFromData(), ...passwordFields }
+            : { title: lessonData.title.trim(), description: lessonData.description.trim(), source: lessonData.source.trim(), content: serializeContent(), courseId, readerPrefsDefault: readerPrefsFromData(), ...passwordFields };
         const response = await fetch("/api/admin", {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },

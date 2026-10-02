@@ -1334,7 +1334,8 @@
 
                 <div class="form-group">
                     <label for="lessonSource">المصدر (اختياري)</label>
-                    <input type="text" id="lessonSource" placeholder="https://drive.google.com/lecture-file.pdf"
+                    <input type="url" id="lessonSource" dir="ltr" inputmode="url" autocomplete="url" maxlength="500"
+                        placeholder="https://drive.google.com/lecture-file.pdf"
                         oninput="updateLessonSource(this.value)">
                 </div>
 

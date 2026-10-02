@@ -100,7 +100,7 @@ export async function loadPublicCatalog() {
         // Lessons stay small like courses/folders (curriculum-structure-sized,
         // not upload-volume-sized) — one unbounded SELECT, no pagination
         // needed the way fetchAllQuizzes() needs it.
-        supabase.from("lesson_public").select("id, slug, title, description, password_protected, course_id, folder_id, created_at, updated_at"),
+        supabase.from("lesson_public").select("id, slug, title, description, source, password_protected, course_id, folder_id, created_at, updated_at"),
         // admin_users has no updated_at column (confirmed live: 42703 "column
         // admin_users.updated_at does not exist") — created_at is the only
         // timestamp available, so profile lastmod is necessarily "when the
@@ -185,6 +185,7 @@ export async function loadPublicCatalog() {
             url: quizUrl(metaId),
             title: meta.title,
             description: meta.description || null,
+            source: meta.source || null,
             questionCount: stats.questionCount ?? null,
             questionTypes: stats.questionTypes || null,
             lastmod: q.synced_at || q.created_at || null,
@@ -197,9 +198,9 @@ export async function loadPublicCatalog() {
     }
 
     // ── Lessons ────────────────────────────────────────────────────────────
-    // Same guard shape as quizzes above (plan §Phase 1 step 2): skip empty
-    // title, skip missing id. No password guard — lessons have no password
-    // concept (see the lessons migration's comment on this).
+    // Same guard shape as quizzes above: skip empty title/missing id.
+    // Password-protected lessons remain safely metadata-only in lesson_public;
+    // their protected content is not exposed by this catalog query.
     const lessons = [];
     for (const l of rawLessons) {
         if (!l.id) continue; // guard: missing id
