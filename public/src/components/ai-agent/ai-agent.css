@@ -2912,7 +2912,7 @@ body.sidebar-expanded .ai-agent-fab {
 
 /* Telegram invite banner (empty chat) */
 .ai-agent-telegram-banner { margin: 0 12px 8px; position: relative; }
-.ai-agent-telegram-banner-dismiss {
+.ai-agent-telegram-banner-dismiss { display: inline-flex; align-items: center; justify-content: center;
   position: absolute; top: 6px; inset-inline-start: 6px; z-index: 3; width: 24px; height: 24px; border: 0;
   border-radius: 50%; background: transparent; color: inherit; cursor: pointer; opacity: 0.6; font-size: 0.8rem;
 }

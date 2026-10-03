@@ -18,10 +18,10 @@ const ARROW_ICON = `<svg class="tg-arrow-icon" xmlns="http://www.w3.org/2000/svg
 const VERIFIED_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#24A1DE"/><path d="m7.5 12.3 3 3 6-6.3" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 const FEATURES = [
-  "⚡ إنشاء امتحانات فورية",
-  "📚 تصفح المقررات والملفات",
-  "📄 قراءة PDF ومستندات Word",
-  "📥 تصدير بـ 6 صيغ تفاعلية",
+  { title: "إنشاء امتحانات ودروس", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>` },
+  { title: "تصفح المقررات والملفات", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>` },
+  { title: "قراءة PDF ومستندات Word", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>` },
+  { title: "تصدير بـ 6 صيغ مختلفة", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>` },
 ];
 const DEFAULT_TITLE = "الباشــمبصمج على تيليجرام";
 const DEFAULT_DESC =
@@ -206,7 +206,7 @@ export function createTelegramBotCard(options = {}) {
       </div>
     </div>
     <p class="tg-bot-description">${esc(description)}</p>
-    ${showFeatures ? `<div class="tg-bot-features" role="list">${FEATURES.map((f) => `<span class="tg-bot-feature-pill" role="listitem">${f}</span>`).join("")}</div>` : ""}
+    ${showFeatures ? `<ul class="tg-bot-features">${FEATURES.map((f) => `<li class="tg-bot-feature"><span class="tg-bot-feature-icon">${f.icon}</span><span class="tg-bot-feature-text">${f.title}</span></li>`).join("")}</ul>` : ""}
     ${showQr ? `
     <div class="tg-bot-qr-section">
       <button type="button" class="tg-bot-qr-box" id="tgQrContainer-${id}" aria-label="تكبير رمز QR" title="انقر لتكبير الرمز">
@@ -214,7 +214,7 @@ export function createTelegramBotCard(options = {}) {
         <span class="tg-bot-qr-overlay-hint">${ZOOM_ICON}<span>انقر للتكبير</span></span>
       </button>
       <div class="tg-bot-qr-meta">
-        <span class="tg-bot-qr-tip">امسح الكاميرا بهاتفك لبدء المحادثة فوراً</span>
+        <span class="tg-bot-qr-tip">امسح الكاميرا بهاتفك للتحدث مع الباشــمبصمج الآن!</span>
         ${showDownload ? `<button type="button" class="tg-bot-btn-text tg-bot-download-qr-btn" aria-label="حفظ رمز QR كصورة">${DOWNLOAD_ICON}<span>حفظ رمز QR</span></button>` : ""}
       </div>
     </div>` : ""}
@@ -272,7 +272,7 @@ export function openTelegramBotModal() {
   closeBtn.type = "button";
   closeBtn.className = "tg-bot-modal-close";
   closeBtn.setAttribute("aria-label", "إغلاق");
-  closeBtn.textContent = "✕";
+  closeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
   shell.append(closeBtn, createTelegramBotCard({ variant: "modal" }));
   overlay.appendChild(shell);
 

@@ -466,7 +466,7 @@ export function createChatPanel(options = {}) {
     dismiss.type = "button";
     dismiss.className = "ai-agent-telegram-banner-dismiss";
     dismiss.setAttribute("aria-label", "إخفاء دعوة تيليجرام");
-    dismiss.textContent = "✕";
+    dismiss.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
     dismiss.addEventListener("click", () => {
       try { sessionStorage.setItem("ai_agent_tg_banner_dismissed", "1"); } catch (_) {}
       removeTelegramBanner();
