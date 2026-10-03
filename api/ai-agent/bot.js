@@ -12,7 +12,7 @@
 //   POST /api/ai-agent/bot               — Incoming WhatsApp messages
 //   POST /api/ai-agent/bot?platform=telegram — Incoming Telegram updates
 //
-// Telegram capabilities (this file's main focus):
+// Telegram capabilities:
 //   1. Multi-turn conversation memory backed by Supabase (last 12 messages)
 //   2. File attachments: images (vision), PDFs, Word .docx, plain text
 //   3. Read-only platform DB search (courses, folders, quizzes, lessons)
@@ -25,6 +25,9 @@ import { getNextKey } from "./_keyPool.js";
 import { processTelegramInbound } from "./_telegramFiles.js";
 import { BOT_TOOLS, executeBotTool } from "./_botTools.js";
 import { sendTelegramChatAction } from "./_telegramFiles.js";
+
+// Vercel serverless function max duration (up to 60s for tool loops & file generation)
+export const maxDuration = 60;
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -71,7 +74,8 @@ const FALLBACK_MESSAGE =
 const HISTORY_FETCH_LIMIT = 12; // last N messages for context window
 const HISTORY_PRUNE_LIMIT = 30; // max messages to keep per chat
 const MAX_TOOL_LOOPS = 5; // max function-calling round-trips per request
-const GEMINI_MODEL = "gemini-2.5-flash"; // or "gemini-flash-lite-latest"
+const PRIMARY_GEMINI_MODEL = "gemini-3.8-flash";
+const FALLBACK_GEMINI_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest"];
 
 // ── Supabase client (service_role — server-side only) ────────────────────────
 
@@ -97,18 +101,19 @@ function getGoogleKey() {
 
 async function fetchChatHistory(chatId) {
   const supabase = getSupabase();
+  // Fetch most recent messages descending, then reverse for chronological order
   const { data, error } = await supabase
     .from("telegram_chat_history")
     .select("role, content")
     .eq("chat_id", String(chatId))
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(HISTORY_FETCH_LIMIT);
 
   if (error) {
     console.error("[bot] fetchChatHistory error:", error.message);
     return [];
   }
-  return data || [];
+  return (data || []).reverse();
 }
 
 async function saveChatMessage(chatId, role, content) {
@@ -116,7 +121,7 @@ async function saveChatMessage(chatId, role, content) {
   const { error } = await supabase.from("telegram_chat_history").insert({
     chat_id: String(chatId),
     role,
-    content: content.slice(0, 8000), // cap storage per message
+    content: (content || "").slice(0, 8000), // cap storage per message
   });
   if (error) {
     console.error("[bot] saveChatMessage error:", error.message);
@@ -152,13 +157,58 @@ async function pruneOldHistory(chatId) {
   }
 }
 
+// ── Normalization: Strict Alternating Gemini Turns ───────────────────────────
+
+/**
+ * Builds a strictly alternating contents array for Gemini:
+ * - Drops any leading model messages (Gemini requires first turn to be 'user')
+ * - Merges consecutive turns of the same role
+ * - Appends currentParts to the final user turn
+ */
+function buildAlternatingContents(history, currentParts) {
+  const turns = [];
+
+  for (const msg of history) {
+    if (!msg.content?.trim()) continue;
+    const role = msg.role === "model" ? "model" : "user";
+    const lastTurn = turns[turns.length - 1];
+
+    if (lastTurn && lastTurn.role === role) {
+      lastTurn.parts.push({ text: msg.content });
+    } else {
+      turns.push({
+        role,
+        parts: [{ text: msg.content }],
+      });
+    }
+  }
+
+  // Ensure first turn is from "user"
+  while (turns.length > 0 && turns[0].role !== "user") {
+    turns.shift();
+  }
+
+  // Append current turn (always "user")
+  const lastTurn = turns[turns.length - 1];
+  if (lastTurn && lastTurn.role === "user") {
+    lastTurn.parts.push(...currentParts);
+  } else {
+    turns.push({
+      role: "user",
+      parts: currentParts,
+    });
+  }
+
+  return turns;
+}
+
 // ── Gemini with function calling ─────────────────────────────────────────────
 
 /**
  * Calls Gemini with multi-turn history and optional tool calling.
  * Implements the tool-calling loop: if Gemini returns functionCalls, execute
- * them via _botTools.js, append results, and call Gemini again until a final
- * text response is produced.
+ * them via _botTools.js, append results as a single user turn, and call Gemini
+ * again until a final text response is produced.
  *
  * @param {Array} contents - Gemini-format contents array
  * @param {number|string} chatId - for tool execution (sending files)
@@ -176,43 +226,62 @@ async function generateGeminiReplyWithTools(contents, chatId) {
     return decl;
   });
 
+  const modelsToTry = [PRIMARY_GEMINI_MODEL, ...FALLBACK_GEMINI_MODELS];
+
   for (let loop = 0; loop < MAX_TOOL_LOOPS; loop++) {
-    const key = getGoogleKey();
-    if (!key) throw new Error("No Google API keys configured");
+    let res = null;
+    let data = null;
+    let lastError = null;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+    for (const model of modelsToTry) {
+      const key = getGoogleKey();
+      if (!key) throw new Error("No Google API keys configured");
 
-    const body = {
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      contents,
-      tools: [{ functionDeclarations: toolDeclarations }],
-      generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
-    };
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+      const body = {
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents,
+        tools: [{ functionDeclarations: toolDeclarations }],
+        generationConfig: { maxOutputTokens: 4096, temperature: 0.7 },
+      };
 
-    let res;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      try {
+        res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
 
-      if (res.status === 429 && attempt === 0) {
-        await new Promise((r) => setTimeout(r, 500));
-        continue;
+        if (res.status === 429) {
+          // Rate limited on this key, rotate key and retry once
+          const retryKey = getGoogleKey();
+          const retryUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${retryKey}`;
+          res = await fetch(retryUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+        }
+
+        if (res.ok) {
+          data = await res.json();
+          break; // successfully got response from this model
+        } else {
+          const errText = await res.text().catch(() => "");
+          lastError = new Error(`Gemini ${model} error (${res.status}): ${errText}`);
+          console.warn(`[bot] Model ${model} failed (${res.status}), trying fallback...`);
+        }
+      } catch (networkErr) {
+        lastError = networkErr;
+        console.warn(`[bot] Network error on ${model}:`, networkErr.message);
       }
-      break;
     }
 
-    if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      throw new Error(`Gemini error (${res.status}): ${errText}`);
+    if (!data) {
+      throw lastError || new Error("All Gemini models failed");
     }
 
-    const data = await res.json();
     const parts = data?.candidates?.[0]?.content?.parts || [];
-
-    // Check for function calls
     const funcCalls = parts.filter((p) => p.functionCall);
     const textParts = parts.filter((p) => p.text);
 
@@ -223,14 +292,14 @@ async function generateGeminiReplyWithTools(contents, chatId) {
         parts: parts,
       });
 
-      // Execute each function call and append results
+      // Execute all function calls and collect results
+      const responseParts = [];
       for (const part of funcCalls) {
         const { name, args } = part.functionCall;
         console.log(`[bot] Tool call: ${name}`, JSON.stringify(args).slice(0, 200));
 
         let result;
         try {
-          // Send typing indicator while processing tools
           await sendTelegramChatAction(chatId, "typing");
           result = await executeBotTool(name, args || {}, chatId, supabase);
         } catch (err) {
@@ -238,19 +307,19 @@ async function generateGeminiReplyWithTools(contents, chatId) {
           result = { error: err.message };
         }
 
-        // Append the function response
-        contents.push({
-          role: "user",
-          parts: [
-            {
-              functionResponse: {
-                name,
-                response: result,
-              },
-            },
-          ],
+        responseParts.push({
+          functionResponse: {
+            name,
+            response: result,
+          },
         });
       }
+
+      // Append ALL tool results in a SINGLE user turn to preserve alternation
+      contents.push({
+        role: "user",
+        parts: responseParts,
+      });
 
       // Loop back to let Gemini process the tool results
       continue;
@@ -305,7 +374,6 @@ async function sendWhatsAppMessage(to, text) {
 
 async function processWhatsAppMessage(from, msgText) {
   try {
-    // WhatsApp: no multi-turn memory or tools (stateless, simple replies)
     const key = getGoogleKey();
     if (!key) throw new Error("No Google API keys configured");
 
@@ -347,7 +415,7 @@ async function sendTelegramMessage(chatId, text) {
     return;
   }
 
-  // Telegram has a 4096 character limit per message; split if needed
+  // Telegram has a 4096 character limit per message; split safely
   const chunks = splitText(text, 4000);
 
   for (const chunk of chunks) {
@@ -361,7 +429,10 @@ async function sendTelegramMessage(chatId, text) {
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
       // If Markdown parsing fails, retry without parse_mode
-      if (res.status === 400 && errText.includes("parse")) {
+      if (
+        res.status === 400 &&
+        (errText.toLowerCase().includes("parse") || errText.includes("entities"))
+      ) {
         await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -379,7 +450,7 @@ async function sendTelegramMessage(chatId, text) {
  * 1. Send typing indicator
  * 2. Extract text + attachments from the message
  * 3. Fetch conversation history from Supabase
- * 4. Assemble Gemini contents array with history + current message
+ * 4. Assemble strict alternating Gemini contents array with history + current message
  * 5. Run Gemini with tool-calling loop
  * 6. Send reply + persist to history
  * 7. Prune old messages
@@ -400,9 +471,11 @@ async function processTelegramMessage(chatId, message) {
     } catch (extractErr) {
       console.error("[bot] File extraction error:", extractErr.message);
       userText = message.text || message.caption || "";
-      // If extraction failed but there's no text either, inform user
       if (!userText) {
-        await sendTelegramMessage(chatId, "عذراً، لم أستطع معالجة هذا الملف. الأنواع المدعومة: صور، PDF، Word (.docx)، نصوص. 📎");
+        await sendTelegramMessage(
+          chatId,
+          "عذراً، لم أستطع معالجة هذا الملف. الأنواع المدعومة: صور، PDF، Word (.docx)، نصوص. 📎"
+        );
         return;
       }
     }
@@ -414,24 +487,15 @@ async function processTelegramMessage(chatId, message) {
     // 3. Fetch conversation history
     const history = await fetchChatHistory(chatId);
 
-    // 4. Assemble contents array
-    const contents = [];
-
-    // Add history (text-only, no inline parts for old messages)
-    for (const msg of history) {
-      contents.push({
-        role: msg.role === "model" ? "model" : "user",
-        parts: [{ text: msg.content }],
-      });
-    }
-
-    // Add current user message (text + inline file parts)
+    // 4. Assemble current parts
     const currentParts = [];
     if (userText) {
       currentParts.push({ text: userText });
     }
     currentParts.push(...inlineParts);
-    contents.push({ role: "user", parts: currentParts });
+
+    // Build strict alternating contents for Gemini
+    const contents = buildAlternatingContents(history, currentParts);
 
     // 5. Generate reply with tool-calling loop
     const reply = await generateGeminiReplyWithTools(contents, chatId);
@@ -439,7 +503,7 @@ async function processTelegramMessage(chatId, message) {
     // 6. Send reply
     await sendTelegramMessage(chatId, reply);
 
-    // 7. Persist to history (fire-and-forget)
+    // 7. Persist to history
     await saveChatMessage(chatId, "user", userText || "[file attachment]");
     await saveChatMessage(chatId, "model", reply);
 
@@ -462,7 +526,7 @@ function splitText(text, maxLen) {
   let remaining = text;
   while (remaining.length > maxLen) {
     let breakAt = remaining.lastIndexOf("\n", maxLen);
-    if (breakAt < maxLen * 0.5) breakAt = maxLen; // no good newline found
+    if (breakAt < maxLen * 0.5) breakAt = maxLen;
     chunks.push(remaining.slice(0, breakAt));
     remaining = remaining.slice(breakAt).trimStart();
   }
@@ -478,8 +542,8 @@ export default async function handler(req, res) {
 
   // ── GET — Meta webhook verification ──────────────────────────────────────
   if (method === "GET") {
-    const mode      = url.searchParams.get("hub.mode");
-    const token     = url.searchParams.get("hub.verify_token");
+    const mode = url.searchParams.get("hub.mode");
+    const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
     if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
@@ -497,16 +561,23 @@ export default async function handler(req, res) {
 
   const platform = url.searchParams.get("platform") || "whatsapp";
 
+  // Safe body parsing
+  let body = req.body;
+  if (typeof body === "string") {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      body = {};
+    }
+  }
+  body = body || {};
+
   // ── Telegram ──────────────────────────────────────────────────────────────
   if (platform === "telegram") {
-    // Acknowledge immediately — processing happens after the response
-    res.status(200).json({ ok: true });
-
-    const update = req.body || {};
+    const update = body;
     const message = update.message || update.edited_message;
     const chatId = message?.chat?.id;
 
-    // Accept text messages, photos, and documents
     const hasContent =
       message?.text ||
       message?.caption ||
@@ -514,17 +585,18 @@ export default async function handler(req, res) {
       message?.document;
 
     if (chatId && hasContent) {
-      processTelegramMessage(chatId, message).catch((err) =>
-        console.error("[bot] Telegram async error:", err)
-      );
+      try {
+        // Await execution so Vercel Serverless environment does NOT freeze prematurely!
+        await processTelegramMessage(chatId, message);
+      } catch (err) {
+        console.error("[bot] Telegram handler error:", err);
+      }
     }
 
-    return;
+    return res.status(200).json({ ok: true });
   }
 
   // ── WhatsApp (default) ────────────────────────────────────────────────────
-  const body = req.body || {};
-
   if (body?.object === "whatsapp_business_account" && Array.isArray(body?.entry)) {
     for (const entry of body.entry) {
       const changes = entry?.changes || [];
@@ -536,9 +608,11 @@ export default async function handler(req, res) {
             const from = msg.from;
             const text = msg.text?.body;
             if (from && text) {
-              processWhatsAppMessage(from, text).catch((err) =>
-                console.error("[bot] WhatsApp async error:", err)
-              );
+              try {
+                await processWhatsAppMessage(from, text);
+              } catch (err) {
+                console.error("[bot] WhatsApp async error:", err);
+              }
             }
           }
         }

@@ -334,14 +334,14 @@ async function handleFetchQuiz(args, supabase) {
 async function handleFetchLesson(args, supabase) {
   const { data, error } = await supabase
     .from("lesson_public")
-    .select("id, title, slug, description, data, is_protected")
+    .select("id, title, slug, description, content, password_protected")
     .eq("id", args.lesson_id)
     .maybeSingle();
 
   if (error) return { error: error.message };
   if (!data) return { error: "Lesson not found." };
 
-  if (data.is_protected) {
+  if (data.password_protected) {
     return {
       id: data.id,
       title: data.title,
@@ -351,7 +351,7 @@ async function handleFetchLesson(args, supabase) {
     };
   }
 
-  const lesson = data.data || {};
+  const lesson = data.content || {};
   return {
     id: data.id,
     title: data.title,
@@ -372,9 +372,9 @@ async function handleGenerateQuizFile(args, chatId) {
   await sendTelegramChatAction(chatId, "upload_document");
 
   const safeName = (title || "quiz")
-    .replace(/[^\\u0600-\\u06FF\\w\\s-]/gu, "")
+    .replace(/[^\u0600-\u06FF\w\s-]/gu, "")
     .trim()
-    .replace(/\\s+/g, "_")
+    .replace(/\s+/g, "_")
     || "quiz";
 
   let buffer, filename;
@@ -421,9 +421,9 @@ async function handleGenerateLessonFile(args, chatId) {
   await sendTelegramChatAction(chatId, "upload_document");
 
   const safeName = (title || "lesson")
-    .replace(/[^\\u0600-\\u06FF\\w\\s-]/gu, "")
+    .replace(/[^\u0600-\u06FF\w\s-]/gu, "")
     .trim()
-    .replace(/\\s+/g, "_")
+    .replace(/\s+/g, "_")
     || "lesson";
 
   let buffer, filename;
