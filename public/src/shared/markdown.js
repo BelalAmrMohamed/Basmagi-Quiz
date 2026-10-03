@@ -356,36 +356,38 @@ export const COPY_LABEL =
 // Buttons use inline onclick="window.copyCodeBlock(this)" so this must be
 // on window.  Registering here on module import means whichever page loads
 // markdown.js first gets the handler for free.
-window.copyCodeBlock = (btn) => {
-  const wrapper = btn.closest(".code-block-wrapper");
-  if (!wrapper) return;
-  const codeEl = wrapper.querySelector("code");
-  if (!codeEl) return;
+if (typeof window !== "undefined") {
+  window.copyCodeBlock = (btn) => {
+    const wrapper = btn.closest(".code-block-wrapper");
+    if (!wrapper) return;
+    const codeEl = wrapper.querySelector("code");
+    if (!codeEl) return;
 
-  navigator.clipboard
-    .writeText(codeEl.innerText)
-    .then(() => {
-      const original = btn.innerHTML;
-      btn.innerHTML = `${ICON_CHECK}`;
-      btn.classList.add("copied");
-      btn.setAttribute("aria-label", "Copied!");
-      setTimeout(() => {
-        btn.innerHTML = original;
-        btn.classList.remove("copied");
-        btn.setAttribute("aria-label", "Copy code");
-      }, 2000);
-    })
-    .catch(() => {
-      // Fallback: select the text so the user can Ctrl+C manually
-      const range = document.createRange();
-      range.selectNodeContents(codeEl);
-      const sel = window.getSelection();
-      if (sel) {
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
-    });
-};
+    navigator.clipboard
+      .writeText(codeEl.innerText)
+      .then(() => {
+        const original = btn.innerHTML;
+        btn.innerHTML = `${ICON_CHECK}`;
+        btn.classList.add("copied");
+        btn.setAttribute("aria-label", "Copied!");
+        setTimeout(() => {
+          btn.innerHTML = original;
+          btn.classList.remove("copied");
+          btn.setAttribute("aria-label", "Copy code");
+        }, 2000);
+      })
+      .catch(() => {
+        // Fallback: select the text so the user can Ctrl+C manually
+        const range = document.createRange();
+        range.selectNodeContents(codeEl);
+        const sel = window.getSelection();
+        if (sel) {
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      });
+  };
+}
 
 // ─── 5b. Feature: User-Resizable Media ─────────────────────────────────────
 // Restores drag-resizing of inline media (previously only available for the

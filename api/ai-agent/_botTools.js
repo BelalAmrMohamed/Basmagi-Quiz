@@ -87,10 +87,31 @@ export const BOT_TOOLS = [
       properties: {
         quiz_id: {
           type: "string",
-          description: "The quiz identifier (path-based hash ID).",
+          description: "The quiz identifier (8-character ID or database UUID).",
         },
       },
       required: ["quiz_id"],
+    },
+  },
+
+  {
+    name: "export_quiz",
+    description:
+      "Export and send an existing quiz from the platform to the user as an interactive HTML (.html), PDF (.pdf), Markdown (.md), or JSON (.json) file. Call this tool immediately whenever the user asks for a quiz file, asks to send an exam, or says 'ابعتها لي PDF' / 'ابعت الامتحان ده HTML' etc.",
+    parameters: {
+      type: "object",
+      properties: {
+        quiz_id: {
+          type: "string",
+          description: "The quiz ID (either the 8-character ID like 'N6QFXNCX' or the database UUID).",
+        },
+        format: {
+          type: "string",
+          enum: ["html", "pdf", "markdown", "json"],
+          description: "Desired export format.",
+        },
+      },
+      required: ["quiz_id", "format"],
     },
   },
 
@@ -113,7 +134,7 @@ export const BOT_TOOLS = [
   {
     name: "generate_quiz_file",
     description:
-      "Generate and send a quiz file to the user in the requested format. Use AFTER showing a preview of the questions in chat and the user has confirmed (e.g. 'تمام', 'أنشئ'). Supported formats: 'html' (standalone interactive), 'pdf', 'markdown', 'json' (platform-importable).",
+      "Generate and send a brand new quiz file to the user from questions created by AI or extracted from user notes. Supported formats: 'html' (standalone interactive), 'pdf', 'markdown', 'json' (platform-importable).",
     parameters: {
       type: "object",
       properties: {
@@ -205,6 +226,8 @@ export async function executeBotTool(toolName, args, chatId, supabase) {
       return await handleGetCourseContents(args, supabase);
     case "fetch_quiz":
       return await handleFetchQuiz(args, supabase);
+    case "export_quiz":
+      return await handleExportQuiz(args, chatId, supabase);
     case "fetch_lesson":
       return await handleFetchLesson(args, supabase);
     case "generate_quiz_file":
@@ -286,12 +309,16 @@ async function handleGetCourseContents(args, supabase) {
       name: f.name,
       parent_folder_id: f.parent_folder_id,
     })),
-    quizzes: (quizzes || []).map((q) => ({
-      id: q.id,
-      title: q.title,
-      questionCount: q.data?.questions?.length || 0,
-      url: `https://basmagi-quiz.vercel.app/q/${q.id}`,
-    })),
+    quizzes: (quizzes || []).map((q) => {
+      const metaId = q.data?.meta?.id || q.id;
+      return {
+        id: metaId,
+        db_id: q.id,
+        title: q.title,
+        questionCount: q.data?.questions?.length || 0,
+        url: `https://basmagi-quiz.vercel.app/quiz/${metaId}`,
+      };
+    }),
     lessons: (lessons || []).map((l) => ({
       id: l.id,
       title: l.title,
@@ -304,18 +331,34 @@ async function handleGetCourseContents(args, supabase) {
 }
 
 async function handleFetchQuiz(args, supabase) {
-  const { data, error } = await supabase
+  // Allow lookup by either 8-char base32 ID or UUID
+  let { data, error } = await supabase
     .from("quizzes")
     .select("id, title, data, path")
-    .eq("id", args.quiz_id)
+    .filter("data->meta->>id", "eq", args.quiz_id)
+    .limit(1)
     .maybeSingle();
+
+  if (!data) {
+    const res = await supabase
+      .from("quizzes")
+      .select("id, title, data, path")
+      .eq("id", args.quiz_id)
+      .limit(1)
+      .maybeSingle();
+    data = res.data;
+    error = res.error;
+  }
 
   if (error) return { error: error.message };
   if (!data) return { error: "Quiz not found." };
 
   const quiz = data.data || {};
+  const metaId = quiz.meta?.id || data.id;
+
   return {
-    id: data.id,
+    id: metaId,
+    db_id: data.id,
     title: data.title || quiz.meta?.title || "",
     description: quiz.meta?.description || "",
     questionCount: quiz.questions?.length || 0,
@@ -327,8 +370,52 @@ async function handleFetchQuiz(args, supabase) {
       answer: q.answer,
       explanation: q.explanation,
     })),
-    url: `https://basmagi-quiz.vercel.app/q/${data.id}`,
+    url: `https://basmagi-quiz.vercel.app/quiz/${metaId}`,
   };
+}
+
+async function handleExportQuiz(args, chatId, supabase) {
+  const { quiz_id, format } = args;
+
+  // Look up quiz by 8-char meta ID first, then fallback to row UUID
+  let { data: quizRow, error } = await supabase
+    .from("quizzes")
+    .select("id, title, data")
+    .filter("data->meta->>id", "eq", quiz_id)
+    .limit(1)
+    .maybeSingle();
+
+  if (!quizRow) {
+    const res = await supabase
+      .from("quizzes")
+      .select("id, title, data")
+      .eq("id", quiz_id)
+      .limit(1)
+      .maybeSingle();
+    quizRow = res.data;
+    error = res.error;
+  }
+
+  if (error) return { error: error.message };
+  if (!quizRow) return { error: `Quiz not found with ID: ${quiz_id}` };
+
+  const quizData = quizRow.data || {};
+  const title = quizRow.title || quizData.meta?.title || "Quiz";
+  const questions = quizData.questions || [];
+
+  if (!questions.length) {
+    return { error: `Quiz "${title}" has no questions to export.` };
+  }
+
+  return await handleGenerateQuizFile(
+    {
+      title,
+      format,
+      questions,
+      quizId: quizData.meta?.id || quizRow.id,
+    },
+    chatId
+  );
 }
 
 async function handleFetchLesson(args, supabase) {
@@ -367,21 +454,21 @@ async function handleFetchLesson(args, supabase) {
 }
 
 async function handleGenerateQuizFile(args, chatId) {
-  const { title, format, questions } = args;
+  const { title, format, questions, quizId } = args;
 
   await sendTelegramChatAction(chatId, "upload_document");
 
-  const safeName = (title || "quiz")
-    .replace(/[^\u0600-\u06FF\w\s-]/gu, "")
-    .trim()
-    .replace(/\s+/g, "_")
-    || "quiz";
+  const safeName =
+    (title || "quiz")
+      .replace(/[^\u0600-\u06FF\w\s-]/gu, "")
+      .trim()
+      .replace(/\s+/g, "_") || "quiz";
 
   let buffer, filename;
 
   switch (format) {
     case "html":
-      buffer = generateStandaloneQuizHtml(title, questions);
+      buffer = await generateStandaloneQuizHtml(title, questions, { id: quizId });
       filename = `${safeName}.html`;
       break;
     case "pdf":
@@ -389,7 +476,7 @@ async function handleGenerateQuizFile(args, chatId) {
       filename = `${safeName}.pdf`;
       break;
     case "markdown":
-      buffer = generateQuizMarkdown(title, questions);
+      buffer = generateQuizMarkdown(title, questions, { id: quizId });
       filename = `${safeName}.md`;
       break;
     case "json":
@@ -420,11 +507,11 @@ async function handleGenerateLessonFile(args, chatId) {
 
   await sendTelegramChatAction(chatId, "upload_document");
 
-  const safeName = (title || "lesson")
-    .replace(/[^\u0600-\u06FF\w\s-]/gu, "")
-    .trim()
-    .replace(/\s+/g, "_")
-    || "lesson";
+  const safeName =
+    (title || "lesson")
+      .replace(/[^\u0600-\u06FF\w\s-]/gu, "")
+      .trim()
+      .replace(/\s+/g, "_") || "lesson";
 
   let buffer, filename;
 

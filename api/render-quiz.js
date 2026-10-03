@@ -237,8 +237,8 @@ export default async function handler(req, res) {
  * @returns {Promise<{title:string, description:string|null, questionCount:number|null, questionTypes:string|null}|null>}
  */
 async function fetchQuizMeta(quizId) {
-  // The quiz ID is stored inside the JSONB column: data->meta->>'id'
-  const { data, error } = await supabase
+  // The quiz ID is usually the 8-char base32 ID in data->meta->>'id'
+  let { data, error } = await supabase
     .from("quizzes")
     .select("id, data, title")
     .filter("data->meta->>id", "eq", quizId)
@@ -248,6 +248,19 @@ async function fetchQuizMeta(quizId) {
   if (error) {
     console.error("[render-quiz] Supabase error:", error.message);
     return null;
+  }
+
+  // Fallback: match by row UUID if quizId was a database UUID
+  if (!data) {
+    const fallback = await supabase
+      .from("quizzes")
+      .select("id, data, title")
+      .eq("id", quizId)
+      .limit(1)
+      .maybeSingle();
+    if (!fallback.error && fallback.data) {
+      data = fallback.data;
+    }
   }
 
   if (!data) return null;
