@@ -1143,34 +1143,3 @@ if (document.readyState === "loading") {
 } else {
   injectMobileAdminAndReportsMenuItems();
 }
-// ── Telegram bot entry (opens the bot QR/link modal from any page) ──────────
-function injectTelegramMenuItem() {
-  if (document.getElementById("sideMenuTelegramBtn")) return;
-  const nav = document.querySelector(".sidebar nav, #sidebar nav, nav[aria-label=\"روابط التنقل\"]");
-  if (!nav) return;
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.id = "sideMenuTelegramBtn";
-  btn.className = "menu-item";
-  btn.title = "بوت تيليجرام";
-  btn.setAttribute("data-tooltip", "بوت تيليجرام");
-  btn.setAttribute("aria-label", "بوت تيليجرام — فتح ومسح رمز QR");
-  btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg><span class="menu-label">بوت تيليجرام</span>`;
-  btn.addEventListener("click", async () => {
-    if (window.innerWidth <= 768 && typeof window.__closeMobileSidebar === "function") {
-      window.__closeMobileSidebar();
-    }
-    const { openTelegramBotModal } = await import("../telegram-bot-card/telegram-bot-card.js");
-    openTelegramBotModal();
-  });
-  const profileWrap = nav.querySelector(".menu-item-dropdown-wrap");
-  const lastLink = [...nav.querySelectorAll(":scope > a.menu-item")].pop();
-  if (profileWrap) nav.insertBefore(btn, profileWrap);
-  else if (lastLink) lastLink.after(btn);
-  else nav.appendChild(btn);
-}
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", injectTelegramMenuItem);
-} else {
-  injectTelegramMenuItem();
-}

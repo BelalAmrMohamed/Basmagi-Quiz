@@ -18,10 +18,10 @@ const ARROW_ICON = `<svg class="tg-arrow-icon" xmlns="http://www.w3.org/2000/svg
 const VERIFIED_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#24A1DE"/><path d="m7.5 12.3 3 3 6-6.3" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 const FEATURES = [
-  { title: "إنشاء امتحانات ودروس", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>` },
+  { title: "إنشاء امتحانات فورية", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>` },
   { title: "تصفح المقررات والملفات", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>` },
   { title: "قراءة PDF ومستندات Word", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>` },
-  { title: "تصدير بـ 6 صيغ مختلفة", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>` },
+  { title: "تصدير بـ 6 صيغ تفاعلية", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>` },
 ];
 const DEFAULT_TITLE = "الباشــمبصمج على تيليجرام";
 const DEFAULT_DESC =
@@ -214,7 +214,7 @@ export function createTelegramBotCard(options = {}) {
         <span class="tg-bot-qr-overlay-hint">${ZOOM_ICON}<span>انقر للتكبير</span></span>
       </button>
       <div class="tg-bot-qr-meta">
-        <span class="tg-bot-qr-tip">امسح الكاميرا بهاتفك للتحدث مع الباشــمبصمج الآن!</span>
+        <span class="tg-bot-qr-tip">امسح الكاميرا بهاتفك لبدء المحادثة فوراً</span>
         ${showDownload ? `<button type="button" class="tg-bot-btn-text tg-bot-download-qr-btn" aria-label="حفظ رمز QR كصورة">${DOWNLOAD_ICON}<span>حفظ رمز QR</span></button>` : ""}
       </div>
     </div>` : ""}
