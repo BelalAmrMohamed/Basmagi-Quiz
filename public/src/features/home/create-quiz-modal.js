@@ -258,7 +258,7 @@ export function openInlineCreateQuizModal() {
 
         showNotification(
           "نجاح",
-          "تم تحميل ملف JSON، يمكنك تعديله أو إنشاء الكويز الآن.",
+          "تم تحميل ملف JSON، يمكنك تعديله أو إنشاء الامتحان الآن.",
           "success",
         );
       } catch (err) {
@@ -307,7 +307,7 @@ export function openInlineCreateQuizModal() {
 
       showNotification(
         "نجاح",
-        "تم تحميل ملف JSON، يمكنك تعديله أو إنشاء الكويز الآن.",
+        "تم تحميل ملف JSON، يمكنك تعديله أو إنشاء الالامتحان الآن.",
         "success",
       );
     } catch (err) {
