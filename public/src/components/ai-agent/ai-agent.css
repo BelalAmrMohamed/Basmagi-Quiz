@@ -2905,3 +2905,17 @@ body.sidebar-expanded .ai-agent-fab {
   font-size: 0.85rem;
   color: var(--color-text-secondary);
 }
+/* Telegram bot sidebar button */
+.ai-agent-sidebar-btn--telegram { color: #24A1DE; }
+.ai-agent-sidebar-btn--telegram:hover { background: rgba(36, 161, 222, 0.12); border-color: rgba(36, 161, 222, 0.4); }
+.ai-agent-sidebar-btn--telegram:focus-visible { outline: 2px solid #24A1DE; outline-offset: 2px; }
+
+/* Telegram invite banner (empty chat) */
+.ai-agent-telegram-banner { margin: 0 12px 8px; position: relative; }
+.ai-agent-telegram-banner-dismiss {
+  position: absolute; top: 6px; inset-inline-start: 6px; z-index: 3; width: 24px; height: 24px; border: 0;
+  border-radius: 50%; background: transparent; color: inherit; cursor: pointer; opacity: 0.6; font-size: 0.8rem;
+}
+.ai-agent-telegram-banner-dismiss:hover { opacity: 1; }
+.ai-agent-telegram-settings-section { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+.ai-agent-telegram-settings-section h4 { margin: 0; font-size: 0.95rem; }

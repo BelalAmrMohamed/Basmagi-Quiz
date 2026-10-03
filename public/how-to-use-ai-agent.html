@@ -36,6 +36,7 @@
     <link rel="stylesheet" href="src/styles/themes.css">
     <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
     <link rel="stylesheet" href="src/features/documents/documents.css">
+    <link rel="stylesheet" href="src/components/telegram-bot-card/telegram-bot-card.css">
 </head>
 
 <body>
@@ -158,11 +159,42 @@
                 <p>بدون مفتاح خاص، تُستخدم إمكانية المنصة العامة إن كانت متاحة لحسابك (مخصصة حالياً للمشرفين ولمستخدمي
                     المستوى العاشر فأعلى)؛ خلاف ذلك يمكنك حفظ مفتاحك الخاص أعلاه لاستخدام المساعد بدون قيود.</p>
             </section>
+
+            <section class="section" aria-labelledby="s7">
+                <h2 id="s7">
+                    ٧. الباشــمبصمج على تطبيق تيليجرام
+                    <span class="section-badge">المساعد المتنقل</span>
+                </h2>
+                <p>بالإضافة إلى وجود المساعد داخل صفحات الموقع، يمكنك الآن التحدث معه مباشرة عبر <strong>تطبيق تيليجرام</strong> بنفس الذكاء والقدرات، مما يمنحك تجربة مذاكرة سريعة في المواصلات أو أثناء تصفح هاتفك دون الحاجة لفتح المتصفح.</p>
+
+                <h3>ما الذي يستطيع فعله البوت على تيليجرام؟</h3>
+                <ul>
+                    <li><strong>إنشاء الامتحانات من الملفات:</strong> أرسل له ملف المحاضرة (PDF، مستند Word، أو صورة) وسيستخرج الأسئلة ويولد امتحاناً جاهزاً.</li>
+                    <li><strong>تصدير بـ 6 صيغ مختلفة:</strong> اطلب منه الامتحان كملف تفاعلي HTML للحل أوفلاين، مستند PDF منسق للطباعة، ملف Word، أو ملفات Markdown و JSON.</li>
+                    <li><strong>البحث في المقررات:</strong> اسأله عن المواد والمجلدات والامتحانات المنشورة على المنصة، وسيجلب لك محتوياتها فوراً.</li>
+                    <li><strong>مساعد دراسي ذكي:</strong> اشرح له أي مسألة أو اطلب منه اختبارك في أي موضوع بصورة تفاعلية خطوة بخطوة.</li>
+                </ul>
+
+                <h3>كيف تبدأ في ٣ خطوات بسيطة:</h3>
+                <ol>
+                    <li>امسح رمز الاستجابة السريعة (QR Code) أدناه بكاميرا هاتفك أو اضغط على زر "فتح في تيليجرام".</li>
+                    <li>اضغط على زر <strong>Start</strong> (ابدأ) داخل محادثة البوت.</li>
+                    <li>ابدأ فوراً بكتابة سؤالك، طلب امتحانك، أو إرفاق ملف محاضرتك!</li>
+                </ol>
+
+                <div class="how-to-telegram-container" id="howToTelegramMount">
+                    <!-- Interactive bot card -->
+                </div>
+            </section>
         </div>
     </main>
 </body>
 
 <script type="module" src="src/features/documents/documents-shell.js"></script>
 <script type="module" src="src/features/documents/doc-toc.js"></script>
+<script type="module">
+  import { mountTelegramBotCard } from "./src/components/telegram-bot-card/telegram-bot-card.js";
+  mountTelegramBotCard(document.getElementById("howToTelegramMount"), { variant: "showcase" });
+</script>
 
 </html>

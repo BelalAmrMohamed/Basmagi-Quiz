@@ -19,6 +19,7 @@ import { saveConversation, deriveConversationTitle } from "./ai-agent-history-id
 // whole widget rather than a bespoke one per popover.
 import { openAgentDropdown, closeAllAgentDropdowns, positionAgentDropdown } from "./ai-agent-dropdown.js";
 import { createMentionMenu } from "./ai-agent-mention-menu.js";
+import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js";
 import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
 
 
@@ -442,10 +443,42 @@ export function createChatPanel(options = {}) {
       suggestionsEl.remove();
       suggestionsEl = null;
     }
+    if (typeof removeTelegramBanner === "function") removeTelegramBanner();
+  }
+
+  // Dismissible "study on your phone" Telegram invite shown above the
+  // suggestions in an empty chat. Dismissal is remembered for the session.
+  let telegramBannerEl = null;
+  function removeTelegramBanner() {
+    if (telegramBannerEl) { telegramBannerEl.remove(); telegramBannerEl = null; }
+  }
+  function renderTelegramBanner() {
+    removeTelegramBanner();
+    try { if (sessionStorage.getItem("ai_agent_tg_banner_dismissed") === "1") return; } catch (_) {}
+    telegramBannerEl = document.createElement("div");
+    telegramBannerEl.className = "ai-agent-telegram-banner";
+    const card = createTelegramBotCard({
+      variant: "banner",
+      title: "الباشــمبصمج على تيليجرام",
+      description: "تفضّل المذاكرة من هاتفك المحمول؟ تواصل مع الباشــمبصمج مباشرة عبر تيليجرام",
+    });
+    const dismiss = document.createElement("button");
+    dismiss.type = "button";
+    dismiss.className = "ai-agent-telegram-banner-dismiss";
+    dismiss.setAttribute("aria-label", "إخفاء دعوة تيليجرام");
+    dismiss.textContent = "✕";
+    dismiss.addEventListener("click", () => {
+      try { sessionStorage.setItem("ai_agent_tg_banner_dismissed", "1"); } catch (_) {}
+      removeTelegramBanner();
+    });
+    telegramBannerEl.append(card, dismiss);
+    panel.insertBefore(telegramBannerEl, suggestionsEl || inputRow);
   }
 
   function renderSuggestions() {
     removeSuggestions();
+    removeTelegramBanner();
+    renderTelegramBanner();
     if (!Array.isArray(suggestedPrompts) || !suggestedPrompts.length) return;
 
     suggestionsEl = document.createElement("div");

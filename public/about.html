@@ -35,6 +35,7 @@
     <link rel="stylesheet" href="src/components/side-menu/side-menu.css" />
     <link rel="stylesheet" href="src/features/documents/documents.css" />
     <link rel="stylesheet" href="src/features/documents/about.css" />
+    <link rel="stylesheet" href="src/components/telegram-bot-card/telegram-bot-card.css" />
 </head>
 
 <body class="about-page">
@@ -251,6 +252,18 @@
                 </ul>
             </section>
 
+            <section class="about-section telegram-showcase-section" aria-labelledby="telegram-showcase-heading">
+                <div class="about-section-heading">
+                    <div class="hero-kicker telegram-kicker">المذاكرة المتنقلة</div>
+                    <h2 id="telegram-showcase-heading">الباشــمبصمج معك أينما ذهبت — متوفر الآن على تيليجرام</h2>
+                    <p>لا تحتاج لفتح المتصفح في كل مرة. يمكنك الآن مناقشة أسئلتك، رفع محاضراتك، وتوليد امتحانات كاملة مباشرة من تطبيق تيليجرام على هاتفك أو حاسوبك.</p>
+                </div>
+
+                <div class="about-telegram-container" id="aboutTelegramCardMount">
+                    <!-- The bot card is activated automatically by the component script -->
+                </div>
+            </section>
+
             <section id="creator" class="about-section creator" aria-labelledby="creator-heading">
                 <div class="creator-stamp">
                     <img src="/assets/images/developer.jpg" alt="بلال عمرو محمد" class="creator-photo" width="120"
@@ -440,6 +453,10 @@
     <script type="module" src="src/features/documents/documents-shell.js"></script>
     <script type="module" src="src/features/documents/doc-toc.js"></script>
     <script type="module" src="src/features/documents/about-stats.js"></script>
+<script type="module">
+    import { mountTelegramBotCard } from "./src/components/telegram-bot-card/telegram-bot-card.js";
+    mountTelegramBotCard(document.getElementById("aboutTelegramCardMount"), { variant: "showcase" });
+</script>
 </body>
 
 </html>

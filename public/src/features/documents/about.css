@@ -932,3 +932,7 @@ html[data-motion="reduced"] {
     transform: none;
   }
 }
+/* Telegram showcase section */
+.telegram-showcase-section .about-telegram-container { display: flex; justify-content: center; padding-block: 8px; }
+.telegram-kicker { color: #24A1DE; }
+@media (max-width: 480px) { .telegram-showcase-section .about-telegram-container { padding-inline: 0; } }

@@ -6,6 +6,7 @@
 // body to /api/ai-agent/chat, which does not persist them server-side.
 // =============================================================================
 
+import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { isAdminAuthenticated } from "../../shared/adminAuth.js";
 
@@ -406,6 +407,14 @@ export function createSettingsPanel(options = {}) {
   const promptStatus = document.createElement("div");
   promptStatus.className = "ai-agent-settings-status";
   panel.appendChild(promptStatus);
+
+  // ── Access from phone and external apps ──
+  const tgSection = document.createElement("div");
+  tgSection.className = "ai-agent-telegram-settings-section";
+  const tgHeading = document.createElement("h4");
+  tgHeading.textContent = "الوصول من الهاتف والتطبيقات الخارجية";
+  tgSection.append(tgHeading, createTelegramBotCard({ variant: "compact", showFeatures: false }));
+  panel.appendChild(tgSection);
 
   savePromptBtn.addEventListener("click", () => {
     setSystemPrompt(pageKey, promptTextarea.value.trim());

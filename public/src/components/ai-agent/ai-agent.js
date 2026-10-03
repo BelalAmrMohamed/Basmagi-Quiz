@@ -52,6 +52,7 @@ import { createChatPanel } from "./ai-agent-chat.js";
 import { createSettingsPanel } from "./ai-agent-settings.js";
 import { createHistoryPanel } from "./ai-agent-history.js";
 import { openAgentDropdown } from "./ai-agent-dropdown.js";
+import { openTelegramBotModal, TELEGRAM_PLANE_ICON_SVG } from "../telegram-bot-card/telegram-bot-card.js";
 
 const CLOSE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
 const SPARKLE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>`;
@@ -459,6 +460,19 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
     });
   });
   sidebar.appendChild(sidebarSettingsBtn);
+
+  // ── Telegram bot button (opens QR/link modal) ──
+  const sidebarTelegramBtn = document.createElement("button");
+  sidebarTelegramBtn.type = "button";
+  sidebarTelegramBtn.className = "ai-agent-sidebar-btn ai-agent-sidebar-btn--telegram";
+  sidebarTelegramBtn.innerHTML = `${TELEGRAM_PLANE_ICON_SVG}<span>بوت تيليجرام</span>`;
+  sidebarTelegramBtn.title = "فتح ومسح رمز بوت تيليجرام";
+  sidebarTelegramBtn.setAttribute("aria-label", "بوت تيليجرام — فتح ومسح رمز QR");
+  sidebarTelegramBtn.addEventListener("click", () => {
+    openTelegramBotModal();
+    closeMobileSidebarSheet();
+  });
+  sidebar.appendChild(sidebarTelegramBtn);
 
   // ── Model selector slot ──
   // Holds whichever chat panel's own `.modelBarEl` (see createChatPanel
