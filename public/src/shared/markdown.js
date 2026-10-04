@@ -517,7 +517,22 @@ export function _equipMediaSkeleton(container) {
 
   const media = container.querySelector("img, audio, video");
   const skeleton = container.querySelector(".media-skeleton");
-  if (!media || !skeleton) return;
+  if (!media) return;
+
+  // Plain images have no loading skeleton, but quiz.css keeps
+  // `.question-image` at opacity:0 until `.media-loaded` is set — so reveal
+  // them directly on load (or on error, so the broken-image state is visible).
+  if (!skeleton) {
+    if (media.tagName === "IMG") {
+      const show = () => media.classList.add("media-loaded");
+      if (media.complete && media.naturalWidth > 0) show();
+      else {
+        media.addEventListener("load", show, { once: true });
+        media.addEventListener("error", show, { once: true });
+      }
+    }
+    return;
+  }
 
   let candidates = [];
   try {

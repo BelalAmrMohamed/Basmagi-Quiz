@@ -35,7 +35,6 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 ### `public/src/shared/markdown.js`
 * Images Don'g appear at all now ![screenshot](image.png). I can drag an image and know it exists, but it's not visible.
 * `resize-handle resize-handle--ne` element get cut off, it doesn't appear, either an overflow issue, or a z-index issue.
-* See `docs\plans\md-engine-prompt.md` and execute its remaining parts.
 * Then implement [live render plan](plans/live-render-md-prompt.md)
 
 *Tested on localhost*

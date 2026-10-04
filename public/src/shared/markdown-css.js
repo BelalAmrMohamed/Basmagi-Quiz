@@ -407,6 +407,9 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   max-width: 100%;
   width: fit-content;
   touch-action: none;
+  /* Corner handles sit half outside the box (-10px); overflow:hidden on the
+     base .media-container would clip them. Media elements round themselves. */
+  overflow: visible;
 }
 
 .media-container.resizable-media > img,
