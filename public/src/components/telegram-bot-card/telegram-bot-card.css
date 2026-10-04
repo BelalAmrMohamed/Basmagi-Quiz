@@ -142,9 +142,32 @@
 .tg-bot-lightbox { z-index: 100001; }
 .tg-bot-modal-shell { position: relative; width: min(100%, 560px); }
 .tg-bot-modal .tg-bot-header { padding-inline-end: 0; padding-inline-start: 0; }
-.tg-bot-modal .tg-bot-card { padding-top: 28px; }
+.tg-bot-modal .tg-bot-card {
+  padding-top: 28px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
 .tg-bot-modal .tg-bot-identity { padding-inline-end: 0; }
-.tg-bot-modal .tg-bot-header { padding-inline-end: 0; }
+/* Sticky header so the title/handle never scroll away */
+.tg-bot-modal .tg-bot-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: inherit;
+  padding-block: 4px;
+  margin-block-start: -4px;
+}
+/* Redirect button full-width in modal */
+.tg-bot-modal .tg-bot-redirect-btn {
+  flex: 1 1 100% !important;
+  width: 100%;
+}
+/* QR text button centered in modal */
+.tg-bot-modal .tg-bot-show-qr-btn,
+.tg-bot-modal .tg-bot-download-qr-btn {
+  align-self: center;
+}
 .tg-bot-modal-close:hover { background: rgba(36, 161, 222, 0.25); }
 .tg-bot-modal-close {
   position: absolute; top: 12px; inset-inline-end: 12px; z-index: 3; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; backdrop-filter: blur(6px); border-radius: 50%;
