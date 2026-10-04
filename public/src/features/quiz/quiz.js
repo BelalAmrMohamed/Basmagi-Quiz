@@ -3252,39 +3252,75 @@ init();
   // Bug 5 Fix — Mobile draggability. quiz.html already renders a
   // #sidebarDragHandle element, but nothing in this file ever wired it up,
   // so the mobile bottom-sheet couldn't be dragged/swiped. Ported verbatim
-  // from side-menu.js: grab-and-drag the sheet up/down by its handle,
-  // YouTube-comments-style. Dragging up snaps back open; dragging down past
-  // a distance/velocity threshold and releasing dismisses the sheet.
+  // from side-menu.js: grab-and-drag the sheet up/down by either its drag-handle
+  // OR the whole header, YouTube/iOS-sheet-style. Dragging up applies elastic
+  // rubber-band resistance; dragging down past a distance or with downward flick
+  // velocity dismisses it.
 
   const dragHandle = document.getElementById("sidebarDragHandle");
+  const sidebarHeader = sidebar ? sidebar.querySelector(".sidebar-header") : null;
 
-  if (dragHandle && sidebar) {
+  if (sidebar && (dragHandle || sidebarHeader)) {
     const DISMISS_DISTANCE_RATIO = 0.28; // fraction of sheet height
-    const DISMISS_VELOCITY = 0.5; // px/ms, fast downward flick dismisses early
+    const DISMISS_VELOCITY = 0.45; // px/ms, downward flick threshold
 
     let dragging = false;
     let startY = 0;
     let currentY = 0;
-    let startTime = 0;
+    let lastY = 0;
+    let lastTime = 0;
+    let velocityY = 0;
     let sheetHeight = 0;
     let pointerId = null;
+    let rafId = null;
+
+    const renderDragFrame = () => {
+      rafId = null;
+      if (!dragging) return;
+
+      const rawDelta = currentY - startY;
+      // Downward drag tracks 1:1; upward drag applies smooth elastic resistance
+      const visualDelta = rawDelta >= 0
+        ? rawDelta
+        : -Math.pow(Math.abs(rawDelta), 0.72);
+
+      sidebar.style.transform = `translateY(${visualDelta.toFixed(2)}px)`;
+
+      // Smoothly fade backdrop in sync with drag distance
+      if (backdrop && sheetHeight > 0) {
+        if (rawDelta > 0) {
+          const progress = Math.max(0, 1 - (rawDelta / (sheetHeight * 0.9)));
+          backdrop.style.opacity = progress.toFixed(3);
+        } else {
+          backdrop.style.opacity = "1";
+        }
+      }
+    };
 
     const onPointerDown = (e) => {
       if (!isMobile()) return;
       if (!sidebar.classList.contains("expanded")) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      if (e.target.closest("button, a, input, select, textarea")) return;
 
       dragging = true;
       pointerId = e.pointerId;
       startY = e.clientY;
       currentY = e.clientY;
-      startTime = performance.now();
+      lastY = e.clientY;
+      lastTime = performance.now();
+      velocityY = 0;
       sheetHeight = sidebar.getBoundingClientRect().height || 1;
 
       sidebar.classList.add("dragging");
-      dragHandle.classList.add("dragging");
+      if (dragHandle) dragHandle.classList.add("dragging");
+
+      if (backdrop) {
+        backdrop.style.transition = "none";
+      }
 
       try {
-        dragHandle.setPointerCapture(pointerId);
+        (e.currentTarget || e.target).setPointerCapture(pointerId);
       } catch (_) { }
 
       window.addEventListener("pointermove", onPointerMove);
@@ -3295,39 +3331,105 @@ init();
     const onPointerMove = (e) => {
       if (!dragging) return;
       currentY = e.clientY;
-      const deltaY = Math.max(0, currentY - startY); // only allow downward drag
-      sidebar.style.transform = `translateY(${deltaY}px)`;
+
+      const now = performance.now();
+      const dt = now - lastTime;
+      if (dt >= 8) {
+        velocityY = (currentY - lastY) / dt;
+        lastY = currentY;
+        lastTime = now;
+      }
+
+      if (!rafId) {
+        rafId = requestAnimationFrame(renderDragFrame);
+      }
     };
 
-    const onPointerUp = () => {
+    const onPointerUp = (e) => {
       if (!dragging) return;
       dragging = false;
 
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+
       sidebar.classList.remove("dragging");
-      dragHandle.classList.remove("dragging");
+      if (dragHandle) dragHandle.classList.remove("dragging");
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("pointercancel", onPointerUp);
 
-      const deltaY = Math.max(0, currentY - startY);
-      const elapsed = Math.max(1, performance.now() - startTime);
-      const velocity = deltaY / elapsed; // px per ms
+      try {
+        if (pointerId !== null && e.target && e.target.releasePointerCapture) {
+          e.target.releasePointerCapture(pointerId);
+        }
+      } catch (_) { }
 
-      // Clear the inline transform either way — closing uses the sheet's
-      // own CSS transition (translateY(100%)); staying open just resets
-      // back to the sheet's normal expanded position (translateY(0)).
-      sidebar.style.transform = "";
+      const rawDelta = currentY - startY;
+      const now = performance.now();
+      if (now - lastTime > 60) {
+        velocityY = 0;
+      }
 
       const shouldDismiss =
-        deltaY > sheetHeight * DISMISS_DISTANCE_RATIO ||
-        velocity > DISMISS_VELOCITY;
+        (rawDelta > sheetHeight * DISMISS_DISTANCE_RATIO && velocityY >= -0.1) ||
+        (velocityY > DISMISS_VELOCITY && rawDelta > 20);
 
       if (shouldDismiss) {
+        // Animate off-screen smoothly from current dragged offset
+        sidebar.style.transition = "transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1)";
+        sidebar.style.transform = "translateY(100%)";
+
+        if (backdrop) {
+          backdrop.style.transition = "opacity 220ms ease";
+          backdrop.style.opacity = "0";
+        }
+
         closeMobileSidebar();
+
+        const cleanupDismiss = (evt) => {
+          if (evt && evt.propertyName && evt.propertyName !== "transform") return;
+          sidebar.removeEventListener("transitionend", cleanupDismiss);
+          sidebar.style.transform = "";
+          sidebar.style.transition = "";
+          if (backdrop) {
+            backdrop.style.transition = "";
+            backdrop.style.opacity = "";
+          }
+        };
+
+        sidebar.addEventListener("transitionend", cleanupDismiss);
+        setTimeout(cleanupDismiss, 260);
+      } else {
+        // Spring back smoothly to open position
+        sidebar.style.transition = "transform 240ms cubic-bezier(0.25, 1, 0.5, 1)";
+        sidebar.style.transform = "translateY(0px)";
+
+        if (backdrop) {
+          backdrop.style.transition = "opacity 240ms ease";
+          backdrop.style.opacity = "1";
+        }
+
+        const cleanupSnap = (evt) => {
+          if (evt && evt.propertyName && evt.propertyName !== "transform") return;
+          sidebar.removeEventListener("transitionend", cleanupSnap);
+          sidebar.style.transform = "";
+          sidebar.style.transition = "";
+          if (backdrop) {
+            backdrop.style.transition = "";
+            backdrop.style.opacity = "";
+          }
+        };
+
+        sidebar.addEventListener("transitionend", cleanupSnap);
+        setTimeout(cleanupSnap, 280);
       }
     };
 
-    dragHandle.addEventListener("pointerdown", onPointerDown);
+    [dragHandle, sidebarHeader].filter(Boolean).forEach((el) => {
+      el.addEventListener("pointerdown", onPointerDown);
+    });
   }
 
   // ── Resize: reset state on breakpoint cross ─────────────────────────────────

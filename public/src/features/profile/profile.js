@@ -292,9 +292,12 @@ async function renderAdminGallery(myToken = refreshToken) {
         badgeHtml = `<span class="admin-gallery-badge role-badge admin-badge" title="مشرف" aria-label="مشرف"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>`;
       }
 
+      const hasBadge = !!(entry.isOwner || entry.role === "admin");
+      const avatarClass = hasBadge ? "admin-gallery-avatar has-badge" : "admin-gallery-avatar";
+
       const cardInner = `
         <span class="admin-gallery-avatar-wrap">
-          <img class="admin-gallery-avatar" src="${avatar}" alt="الصورة الشخصية لـ ${displayName}" loading="lazy" width="96" height="96">
+          <img class="${avatarClass}" src="${avatar}" alt="الصورة الشخصية لـ ${displayName}" loading="lazy" width="96" height="96">
           ${badgeHtml}
         </span>
         <span class="admin-gallery-handle" dir="ltr">@${handle}</span>
@@ -1057,6 +1060,33 @@ document.addEventListener("click", (event) => {
   }
 });
 
+// Delegate badge flip toggles for phones and click/touch interaction
+document.addEventListener("click", (event) => {
+  const badge = event.target.closest(".dash-badge");
+  if (badge) {
+    const isRevealed = badge.classList.contains("is-revealed");
+    document.querySelectorAll(".dash-badge.is-revealed").forEach((b) => {
+      if (b !== badge) b.classList.remove("is-revealed");
+    });
+    badge.classList.toggle("is-revealed", !isRevealed);
+    return;
+  }
+  // Clicked outside badges: reset all flipped badges
+  document.querySelectorAll(".dash-badge.is-revealed").forEach((b) => {
+    b.classList.remove("is-revealed");
+  });
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    const badge = event.target.closest(".dash-badge");
+    if (badge) {
+      event.preventDefault();
+      badge.classList.toggle("is-revealed");
+    }
+  }
+});
+
 // ============================================================
 // SKELETON / FIRST-PAINT HANDSHAKE
 // ------------------------------------------------------------
@@ -1564,14 +1594,13 @@ function renderBadges(user) {
       .map((id) => {
         const b = badgeById.get(id);
         if (!b) return "";
-        // tabindex + title keep this reachable/readable for keyboard and
-        // screen-reader users; the visible description is revealed via
-        // CSS on :hover/:focus so it never has to wrap inside the tile
-        // itself (that's what was overflowing before).
-        return `<div class="dash-badge" tabindex="0" title="${b.desc}" aria-label="${b.title}: ${b.desc}">
+        const descLen = (b.desc || "").length;
+        const sizeClass =
+          descLen > 28 ? "desc-long" : descLen > 18 ? "desc-medium" : "desc-short";
+        return `<div class="dash-badge" tabindex="0" role="button" title="${b.desc}" aria-label="${b.title}: ${b.desc}">
           <div class="badge-icon" aria-hidden="true">${b.icon}</div>
           <div class="badge-title">${b.title}</div>
-          <div class="badge-desc-overlay" aria-hidden="true">${b.desc}</div>
+          <div class="badge-desc-overlay ${sizeClass}" aria-hidden="true">${b.desc}</div>
         </div>`;
       })
       .join("") || "اكسب الشارات بإكمال الامتحانات!";

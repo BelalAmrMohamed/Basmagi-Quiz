@@ -7,12 +7,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Profile Page
-* The `أفضل المشرفين` section: It has misplaced badges `admin-gallery-badge` on phones. The cutout of the badges are on one side of the profile image, while the actual badge is on the other side.
-* In the "شاراتك" section, when hovered (or clicked on phones) it shows the description. When the description is long it gets cut at the end. Make the size of the descriptions dynamic and shorten all the descriptions themselves. Or you can implement a new better idea of you have one.
-
 ### `bottomNav` Element (side-menu.css)
-The side menu on phones should be draggable from the whole header `sidebar-header` + `sidebar-drag-handle`, not just a small narrow area at the top `sidebar-drag-handle`. And try to make the dragging smoothing it out.
+* [x] The side menu on phones should be draggable from the whole header `sidebar-header` + `sidebar-drag-handle`, not just a small narrow area at the top `sidebar-drag-handle`. And try to make the dragging smoothing it out. (Fixed: unified pointer listeners across both `#sidebarDragHandle` and `.sidebar-header` with pointer capture, added `touch-action: none` and `user-select: none` across the entire header region, synchronized transform updates via `requestAnimationFrame`, implemented elastic rubber-band resistance when pulling upwards, refined momentum-aware flick velocity dismissal, dynamic backdrop fade matching drag distance, and cubic-bezier release transitions for dismissing and snapping back).
 
 ### AI Agent
 Fix Dictation: The dictation doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser when using the browser api for dictation.

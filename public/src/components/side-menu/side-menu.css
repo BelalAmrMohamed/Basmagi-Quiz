@@ -1470,9 +1470,13 @@
     flex-shrink: 0;
     touch-action: none;
     cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  .sidebar-drag-handle:active {
+  .sidebar-drag-handle:active,
+  .sidebar.dragging .sidebar-drag-handle {
     cursor: grabbing;
   }
 
@@ -1486,7 +1490,8 @@
   }
 
   .sidebar-drag-handle:hover .sidebar-drag-handle-bar,
-  .sidebar-drag-handle.dragging .sidebar-drag-handle-bar {
+  .sidebar-drag-handle.dragging .sidebar-drag-handle-bar,
+  .sidebar.dragging .sidebar-drag-handle-bar {
     background: var(--color-text-tertiary);
     width: 48px;
   }
@@ -1496,12 +1501,14 @@
      gesture ends (side-menu.js removes this class on pointerup). */
   .sidebar.dragging {
     transition: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    will-change: transform;
   }
 
   /* Sidebar header on mobile: sits above the nav, full-width, sticky with
-     separator, and always visible — the desktop collapsed/expanded fade
-     (max-width/opacity, see the base .sidebar-header rule) doesn't apply
-     here since mobile has no collapsed rail state. */
+     separator, and always visible — grabbable and draggable along with
+     .sidebar-drag-handle for an expanded drag zone. */
   .sidebar .sidebar-header,
   .sidebar-header {
     display: flex !important;
@@ -1519,6 +1526,23 @@
     top: 0;
     z-index: 3;
     flex-shrink: 0;
+    touch-action: none;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .sidebar .sidebar-header:active,
+  .sidebar.dragging .sidebar-header {
+    cursor: grabbing;
+  }
+
+  .sidebar .sidebar-header * {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
 
   /* Always show logo in mobile sheet (expanded-only override already covers this) */

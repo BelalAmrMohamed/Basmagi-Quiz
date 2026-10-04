@@ -1363,9 +1363,13 @@ body.sidebar-expanded {
     flex-shrink: 0;
     touch-action: none;
     cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  .sidebar-drag-handle:active {
+  .sidebar-drag-handle:active,
+  .sidebar.dragging .sidebar-drag-handle {
     cursor: grabbing;
   }
 
@@ -1380,7 +1384,8 @@ body.sidebar-expanded {
   }
 
   .sidebar-drag-handle:hover .sidebar-drag-handle-bar,
-  .sidebar-drag-handle.dragging .sidebar-drag-handle-bar {
+  .sidebar-drag-handle.dragging .sidebar-drag-handle-bar,
+  .sidebar.dragging .sidebar-drag-handle-bar {
     background: var(--color-text-tertiary);
     width: 48px;
   }
@@ -1390,6 +1395,9 @@ body.sidebar-expanded {
      gesture ends (quiz.js removes this class on pointerup). */
   .sidebar.dragging {
     transition: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    will-change: transform;
   }
 
   /* No body padding shift on mobile — sidebar is an overlay */
@@ -1412,9 +1420,8 @@ body.sidebar-expanded {
   }
 
   /* Sidebar header on mobile: sits above the nav, full-width, sticky with
-     separator, and always visible — the desktop collapsed/expanded fade
-     (max-width/opacity/min-height, see the base .sidebar-header rule)
-     doesn't apply here since mobile has no collapsed rail state. */
+     separator, and always visible — grabbable and draggable along with
+     .sidebar-drag-handle for an expanded drag zone. */
   .sidebar .sidebar-header,
   .sidebar-header {
     display: flex !important;
@@ -1434,6 +1441,23 @@ body.sidebar-expanded {
     top: 0;
     z-index: 3;
     flex-shrink: 0;
+    touch-action: none;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .sidebar .sidebar-header:active,
+  .sidebar.dragging .sidebar-header {
+    cursor: grabbing;
+  }
+
+  .sidebar .sidebar-header * {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
 
   /* Full labels always visible on mobile */

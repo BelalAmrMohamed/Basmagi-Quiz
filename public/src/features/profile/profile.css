@@ -1020,12 +1020,26 @@ a.admin-gallery-item:focus-visible {
   object-fit: cover;
   display: block;
   box-shadow: var(--shadow-sm);
+  -webkit-mask-image: radial-gradient(circle 17px at 12px calc(100% - 12px),
+      transparent 98%,
+      #000 100%);
+  mask-image: radial-gradient(circle 17px at 12px calc(100% - 12px),
+      transparent 98%,
+      #000 100%);
+}
+
+html[dir="ltr"] .admin-gallery-avatar {
   -webkit-mask-image: radial-gradient(circle 17px at calc(100% - 12px) calc(100% - 12px),
       transparent 98%,
       #000 100%);
   mask-image: radial-gradient(circle 17px at calc(100% - 12px) calc(100% - 12px),
       transparent 98%,
       #000 100%);
+}
+
+.admin-gallery-avatar:not(.has-badge) {
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 .admin-gallery-badge.role-badge {
@@ -1413,7 +1427,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   position: relative;
   text-align: center;
   height: 112px;
-  padding: 10px 6px;
+  padding: 8px 6px;
   border-radius: 12px;
   transition: all 0.2s ease;
   cursor: pointer;
@@ -1423,10 +1437,13 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .dash-badge:hover,
-.dash-badge:focus-visible {
+.dash-badge:focus-visible,
+.dash-badge.is-revealed {
   transform: translateY(-4px);
   box-shadow: var(--shadow-md);
   outline: none;
@@ -1439,7 +1456,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 .dash-badge .badge-title {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 600;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1452,40 +1469,64 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* Description face: absolutely positioned over the tile, fades in on
-     hover/focus in place of the icon+title. Small enough font + clamp so
-     longer descriptions still fit the fixed tile height without leaking
-     outside it. */
+   hover/focus/tap in place of the icon+title. Dynamic sizing ensures descriptions
+   fit cleanly without overflowing or getting cut off. */
 .badge-desc-overlay {
   position: absolute;
   inset: 0;
-  padding: 10px;
-  font-size: 0.85rem;
+  padding: 8px 6px;
+  font-size: 0.74rem;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.35;
   color: var(--color-text);
   background: var(--color-surface, var(--color-background-secondary));
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.18s ease;
   pointer-events: none;
-  display: -webkit-box;
-  -webkit-line-clamp: 5;
-  line-clamp: 5;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+  overflow-y: auto;
+  scrollbar-width: none;
+  word-break: break-word;
+}
+
+.badge-desc-overlay::-webkit-scrollbar {
+  display: none;
+}
+
+.badge-desc-overlay.desc-long {
+  font-size: 0.67rem;
+  line-height: 1.25;
+}
+
+.badge-desc-overlay.desc-medium {
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.badge-desc-overlay.desc-short {
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 .dash-badge:hover .badge-icon,
 .dash-badge:hover .badge-title,
+.dash-badge:focus .badge-icon,
+.dash-badge:focus .badge-title,
 .dash-badge:focus-visible .badge-icon,
-.dash-badge:focus-visible .badge-title {
+.dash-badge:focus-visible .badge-title,
+.dash-badge.is-revealed .badge-icon,
+.dash-badge.is-revealed .badge-title {
   opacity: 0;
 }
 
 .dash-badge:hover .badge-desc-overlay,
-.dash-badge:focus-visible .badge-desc-overlay {
+.dash-badge:focus .badge-desc-overlay,
+.dash-badge:focus-visible .badge-desc-overlay,
+.dash-badge.is-revealed .badge-desc-overlay {
   opacity: 1;
 }
 
@@ -2373,11 +2414,32 @@ html[data-motion="reduced"] {
   }
 
   .badge-display-grid {
-    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
   }
 
   .dash-badge {
-    height: 100px;
+    height: 106px;
+    padding: 6px 4px;
+  }
+
+  .badge-desc-overlay {
+    padding: 6px 4px;
+  }
+
+  .badge-desc-overlay.desc-long {
+    font-size: 0.65rem;
+    line-height: 1.22;
+  }
+
+  .badge-desc-overlay.desc-medium {
+    font-size: 0.7rem;
+    line-height: 1.26;
+  }
+
+  .badge-desc-overlay.desc-short {
+    font-size: 0.76rem;
+    line-height: 1.3;
   }
 }
 
