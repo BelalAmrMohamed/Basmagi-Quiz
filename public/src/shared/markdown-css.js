@@ -1260,7 +1260,12 @@ body.is-resizing-media .media-container.resizable-media {
   color: #b2ccd6; /* matches properties — calm body text */
 }
 
-/* Dynamic Direction Utilities */
+/* Dynamic Direction Utilities (native dir="auto"; start follows resolved direction) */
+/* :where() keeps specificity at 0 so component rules still win */
+:where([dir="auto"]) {
+  text-align: start;
+}
+
 .text-ltr {
   direction: ltr;
   text-align: left;

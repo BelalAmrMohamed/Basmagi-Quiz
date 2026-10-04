@@ -1366,7 +1366,15 @@ body.is-resizing-media .media-container.resizable-media {
   /* matches properties — calm body text */
 }
 
-/* Dynamic Direction Utilities */
+/* Dynamic Direction Utilities.
+   Blocks use native dir="auto" (set by scanDirections); text-align: start
+   follows the resolved direction. .text-ltr/.text-rtl remain as explicit
+   overrides. */
+/* :where() keeps specificity at 0 so component rules still win */
+:where([dir="auto"]) {
+  text-align: start;
+}
+
 .text-ltr {
   direction: ltr;
   text-align: left;

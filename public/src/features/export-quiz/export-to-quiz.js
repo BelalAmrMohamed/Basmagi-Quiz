@@ -40,13 +40,13 @@ import {
   _processElement,
   _processByLine,
   _applyDirectionClass,
+  _setAutoDir,
   _HL_KEYWORDS,
   _HL_BUILTINS_JS,
   _CSS_VALUE_KEYWORDS,
   _SKIP_TAGS,
   _LTR_ONLY_SELECTOR,
   _BLOCK_CHILD_SELECTOR,
-  _LABEL_PREFIX_REGEX,
   _FIRST_STRONG_CHAR_REGEX,
   _ARABIC_REGEX,
   unescapeHtmlEntities,
@@ -2711,7 +2711,6 @@ ${quizInfoModalHtml}
   const _LTR_ONLY_SELECTOR = ${JSON.stringify(_LTR_ONLY_SELECTOR)};
   const _ARABIC_REGEX = ${_ARABIC_REGEX.toString()};
   const _FIRST_STRONG_CHAR_REGEX = ${_FIRST_STRONG_CHAR_REGEX.toString()};
-  const _LABEL_PREFIX_REGEX = ${_LABEL_PREFIX_REGEX.toString()};
   const _SKIP_TAGS = new Set(${JSON.stringify(Array.from(_SKIP_TAGS))});
 
   ${detectDirection.toString()}
@@ -2727,6 +2726,8 @@ ${quizInfoModalHtml}
   ${_processByLine.toString()}
 
   ${_applyDirectionClass.toString()}
+
+  ${_setAutoDir.toString()}
  
   const isEssayQuestion = (question) => {
     return question.answer;
@@ -3047,8 +3048,10 @@ ${quizInfoModalHtml}
       // we call scanDirections once to apply the direction class, then
       // mirror it synchronously onto the row wrapper.
       scanDirections(titleEl);
+      // Native: dir="auto" resolves the title's direction; :dir() reads it.
+      titleEl.setAttribute('dir', 'auto');
 
-      const isRtl = titleEl.classList.contains('text-rtl');
+      const isRtl = titleEl.matches(':dir(rtl)');
       titleRow.classList.toggle('text-rtl', isRtl);
       titleRow.classList.toggle('text-ltr', !isRtl);
     },

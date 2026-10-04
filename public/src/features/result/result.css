@@ -1575,15 +1575,15 @@ html[data-motion="normal"] {
   flex-shrink: 0;
 }
 
-.title-container:has(#quiz-title.text-ltr),
-.title-date-container:has(#quiz-title.text-ltr),
-.title-date-container:has(h1.text-ltr) {
+.title-container:has(#quiz-title:dir(ltr)),
+.title-date-container:has(#quiz-title:dir(ltr)),
+.title-date-container:has(h1:dir(ltr)) {
   direction: ltr;
 }
 
-.title-container:has(#quiz-title.text-rtl),
-.title-date-container:has(#quiz-title.text-rtl),
-.title-date-container:has(h1.text-rtl) {
+.title-container:has(#quiz-title:dir(rtl)),
+.title-date-container:has(#quiz-title:dir(rtl)),
+.title-date-container:has(h1:dir(rtl)) {
   direction: rtl;
 }
 

@@ -2113,14 +2113,9 @@ export const _ARABIC_REGEX =
 export const _FIRST_STRONG_CHAR_REGEX =
   /[A-Za-z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
-// Static label prefixes that must not skew direction detection of the content
-// that follows them (e.g. "Explanation:" before an Arabic answer).
-export const _LABEL_PREFIX_REGEX =
-  /^\s*(?:Score:\s*\d+\/\d+:[^]*?)?(?:Explanation:|Formal answer)\s*/i;
-
 // Block-level child selector — each of these gets its own direction verdict.
 export const _BLOCK_CHILD_SELECTOR =
-  "p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, dt, dd, div.katex-display";
+  "p, div.md-p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, dt, dd, div.katex-display";
 
 // Selectors whose subtrees the engine must NEVER touch (always LTR by nature).
 export const _LTR_ONLY_SELECTOR = "pre, code, .code-block, .code-block-wrapper, .math-block, .katex";
@@ -2150,9 +2145,7 @@ export const _SKIP_TAGS = new Set(["INPUT", "TEXTAREA", "AUDIO", "VIDEO", "SOURC
  */
 export function detectDirection(text) {
   if (!text || typeof text !== "string") return "ltr";
-  const contentOnly = text.replace(_LABEL_PREFIX_REGEX, "");
-  const searchText = contentOnly.trim() ? contentOnly : text;
-  const match = searchText.match(_FIRST_STRONG_CHAR_REGEX);
+  const match = text.match(_FIRST_STRONG_CHAR_REGEX);
   if (match) return _ARABIC_REGEX.test(match[0]) ? "rtl" : "ltr";
   return "ltr";
 }
@@ -2177,29 +2170,35 @@ export function _applyDirectionClass(node, direction) {
 }
 
 /**
- * Handles plain-text elements (no block children) by splitting on newlines
- * and wrapping each line in a direction-classed <span class="text-line">.
- * On subsequent calls it re-evaluates the existing spans without rebuilding.
+ * Marks an element with the native `dir="auto"` so the browser resolves its
+ * direction from its first strong character (no JS detection needed).
+ * `[dir="auto"] { text-align: start }` (markdown.css) keeps alignment in sync.
+ * @param {HTMLElement} node
+ */
+export function _setAutoDir(node) {
+  if (node.getAttribute("dir") !== "auto") node.setAttribute("dir", "auto");
+}
+
+/**
+ * Handles plain-text elements (no block children). Multi-line text is split
+ * into `display:block` spans, each `dir="auto"`, so every line resolves its
+ * own direction natively. On subsequent calls existing spans are left as is.
  * @param {HTMLElement} element
  */
 export function _processByLine(element) {
   const existingLines = element.querySelectorAll(":scope > .text-line");
   if (existingLines.length) {
-    existingLines.forEach((line) => {
-      _applyDirectionClass(line, detectDirection(line.textContent));
-    });
-    _applyDirectionClass(element, detectDirection(existingLines[0]?.textContent));
+    existingLines.forEach(_setAutoDir);
+    // A container whose only text lives in dir-attributed spans can't
+    // auto-resolve (spans are skipped), so follow the first line explicitly.
+    element.setAttribute("dir", detectDirection(existingLines[0].textContent));
     return;
   }
 
-  // If the element has any element children (e.g. a wrapper div around a
-  // <video>, <audio>, or <img>), it is not a pure text leaf. Reading
-  // textContent would concatenate all descendant text (including media
-  // fallback strings), and setting textContent="" would destroy those
-  // child elements entirely. Only apply a direction class on the container
-  // itself and leave its children untouched.
+  // Elements with element children (e.g. a wrapper around <video>/<audio>/
+  // <img>) are not text leaves: never touch their children.
   if (element.childElementCount > 0) {
-    _applyDirectionClass(element, detectDirection(element.textContent));
+    _setAutoDir(element);
     return;
   }
 
@@ -2207,7 +2206,7 @@ export function _processByLine(element) {
   const lines = rawText.split(/\n+/).filter((l) => l.trim() !== "");
 
   if (lines.length <= 1) {
-    _applyDirectionClass(element, detectDirection(rawText));
+    _setAutoDir(element);
     return;
   }
 
@@ -2216,24 +2215,19 @@ export function _processByLine(element) {
     const span = document.createElement("span");
     span.className = "text-line";
     span.style.display = "block";
+    span.setAttribute("dir", "auto");
     span.textContent = line;
-    _applyDirectionClass(span, detectDirection(line));
     frag.appendChild(span);
   });
   element.textContent = "";
   element.appendChild(frag);
-  _applyDirectionClass(element, detectDirection(lines[0]));
+  element.setAttribute("dir", detectDirection(lines[0]));
 }
 
 /**
- * Direct-text direction for a block-level element (li, p, etc.) — i.e. the
- * element's own text, ignoring any nested block descendants (a nested
- * <ul>/<ol> inside an <li>, a nested <blockquote>, etc.). Without this, an
- * <li> whose own text is plain English but which contains a nested
- * sub-list of Arabic options would have its direction computed from the
- * concatenated text of itself PLUS every nested item — occasionally
- * flipping the outer item's direction to match its sub-list instead of
- * its own sentence.
+ * Direct-text of a block-level element, ignoring nested block descendants
+ * (a sub-list inside an <li>, a nested <blockquote>, ...). Used to decide the
+ * direction of CONTAINERS (ul/ol/wrappers) from their first block child.
  * @param {HTMLElement} element
  * @returns {string}
  */
@@ -2241,14 +2235,8 @@ export function _ownText(element) {
   let text = "";
   element.childNodes.forEach((node) => {
     if (node.nodeType === 3) {
-      // Text node — always part of this element's own content.
       text += node.textContent;
     } else if (node.nodeType === 1 && !node.matches(_BLOCK_CHILD_SELECTOR)) {
-      // Inline element (strong, em, a, span, ...) — its text is still
-      // visually part of this element's own line, so include it. Only
-      // nested block-level children (matched by _BLOCK_CHILD_SELECTOR,
-      // e.g. a <ul>/<ol>'s <li>) are excluded, since those get their own
-      // independent direction verdict.
       text += node.textContent;
     }
   });
@@ -2256,94 +2244,58 @@ export function _ownText(element) {
 }
 
 /**
- * Evaluates and applies direction classes to a single element — per block
- * child if the element contains block-level markdown output, or per visual
- * line for plain-text leaves.  Never touches LTR-only subtrees.
+ * Applies direction handling to a single element:
+ *  - block-level elements (p, li, h1-h6, td, ...) get native `dir="auto"`.
+ *    Nested blocks carry their own `dir`, which the browser skips when
+ *    resolving the parent, matching the old "own text only" behavior.
+ *  - containers (ul/ol/wrappers) follow their first real block child, via an
+ *    explicit dir, so list padding/markers land on the correct side.
+ *  - plain-text leaves are handled per line (_processByLine).
  * @param {HTMLElement} element
  */
 export function _processElement(element) {
-  if (!element) return;
+  if (!element || _SKIP_TAGS.has(element.tagName)) return;
 
-  // INPUT / TEXTAREA: direction is handled by CSS `unicode-bidi: plaintext`.
-  // No JS involvement needed or wanted — touching it fights the browser's
-  // native caret placement on focused / partially-typed fields.
-  if (_SKIP_TAGS.has(element.tagName)) return;
-
-  // Pin every always-LTR zone nested inside this element first.
-  element.querySelectorAll(_LTR_ONLY_SELECTOR).forEach((zone) => {
-    _applyDirectionClass(zone, "ltr");
-  });
-
-  // An element that is itself a block-child type (li, p, td, ...) gets its
-  // direction from its OWN text only, never from a nested block descendant
-  // (e.g. a <ul> of lettered options inside an <li>). This is evaluated
-  // before the "does it contain block children" branch below because such
-  // an element commonly does contain further block children (a nested
-  // list) — those still get their own independent direction verdicts via
-  // the tree walker visiting them directly, but they must never leak back
-  // up and override their own parent's direction.
   if (element.matches(_BLOCK_CHILD_SELECTOR)) {
-    _applyDirectionClass(element, detectDirection(_ownText(element)));
+    _setAutoDir(element);
     return;
   }
 
-  // Containers with block-level markdown children get per-child evaluation.
-  const blockChildren = element.querySelectorAll(_BLOCK_CHILD_SELECTOR);
-  if (blockChildren.length) {
-    // Only DIRECT block children — a nested list's items are reached (and
-    // classed) independently when the tree walker visits them, and must
-    // not be double-counted here as if they belonged to this container.
-    const directBlockChildren = Array.from(blockChildren).filter(
-      (c) => c.parentElement === element,
-    );
-    directBlockChildren.forEach((child) => {
-      if (child.closest(_LTR_ONLY_SELECTOR)) return; // already pinned LTR
-      _applyDirectionClass(child, detectDirection(_ownText(child)));
-    });
-    // Container itself follows its first real (non-LTR-only) block so that
-    // CSS logical properties (list padding, etc.) have a sane base direction.
-    const firstReal = directBlockChildren.find(
-      (c) => !c.closest(_LTR_ONLY_SELECTOR),
-    );
-    _applyDirectionClass(element, detectDirection(firstReal ? _ownText(firstReal) : ""));
-    return;
+  for (const child of element.children) {
+    if (child.matches(_BLOCK_CHILD_SELECTOR) && !child.closest(_LTR_ONLY_SELECTOR)) {
+      element.setAttribute("dir", detectDirection(_ownText(child)));
+      return;
+    }
   }
 
-  // No block children — plain text leaf.  Process per visual line.
   _processByLine(element);
 }
 
 /**
- * Scans `container` and applies direction classes to every direct child
- * element that carries rendered markdown content.  Call this after setting
- * innerHTML on any element that may contain renderMarkdown output.
- *
- * Exported so quiz.js can call it for special-case containers (e.g. #quizTitle)
- * that are populated outside the renderMarkdown pipeline.
+ * Scans `container` (descendants only) and applies direction handling.
+ * Call after setting innerHTML on any element holding renderMarkdown output.
+ * Exported so quiz.js/result.js can call it for non-markdown elements
+ * (e.g. the quiz title).
  * @param {HTMLElement} [container=document]
  */
 export function scanDirections(container = document) {
-  // Walk every element inside the container and process those that are
-  // themselves renderable leaf/block containers, skipping always-LTR zones.
-  const walker = document.createTreeWalker(
-    container,
-    NodeFilter.SHOW_ELEMENT,
-    {
-      acceptNode(node) {
-        // Never descend into LTR-only subtrees or media elements.
-        if (node.matches(_LTR_ONLY_SELECTOR)) return NodeFilter.FILTER_REJECT;
-        if (_SKIP_TAGS.has(node.tagName)) return NodeFilter.FILTER_REJECT;
-        return NodeFilter.FILTER_ACCEPT;
-      },
+  // Pin every always-LTR zone once (single native query instead of one per
+  // visited element).
+  container.querySelectorAll(_LTR_ONLY_SELECTOR).forEach((zone) => {
+    _applyDirectionClass(zone, "ltr");
+  });
+
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, {
+    acceptNode(node) {
+      if (node.matches(_LTR_ONLY_SELECTOR)) return NodeFilter.FILTER_REJECT;
+      if (_SKIP_TAGS.has(node.tagName)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
     },
-  );
+  });
 
   const candidates = [];
   let node;
-  while ((node = walker.nextNode())) {
-    candidates.push(node);
-  }
-
+  while ((node = walker.nextNode())) candidates.push(node);
   candidates.forEach(_processElement);
 }
 

@@ -1926,7 +1926,7 @@ html[data-motion="reduced"] {
   min-width: 0;
 }
 
-.title-date-container:has(h1.text-ltr) {
+.title-date-container:has(h1:dir(ltr)) {
   direction: ltr;
 }
 

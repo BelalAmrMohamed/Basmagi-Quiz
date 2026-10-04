@@ -33,10 +33,8 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 * The result page displays the score increase, but doesn't display the updated score. Bring the `#identityLevel` from the profile page to the result page.
 
 ### `public/src/shared/markdown.js`
-* Resize Handle Issues:
-  * Images don't get the resize handles, 
-  * Images appear aligned to the left instead of the middle. ![screenshot](image.png).
-
+* Images Don'g appear at all now ![screenshot](image.png). I can drag an image and know it exists, but it's not visible.
+* `resize-handle resize-handle--ne` element get cut off, it doesn't appear, either an overflow issue, or a z-index issue.
 * See `docs\plans\md-engine-prompt.md` and execute its remaining parts.
 * Then implement [live render plan](plans/live-render-md-prompt.md)
 
