@@ -130,7 +130,11 @@
 .tg-bot-card--banner .tg-bot-avatar { width: 36px; height: 36px; }
 .tg-bot-card--banner .tg-bot-description { font-size: 0.9rem; line-height: 1.6; }
 .tg-bot-card--banner .tg-bot-btn { min-height: 38px; padding: 0 14px; }
-.tg-bot-card--banner .tg-bot-btn--primary { flex: 0 1 auto; }
+.tg-bot-card--banner .tg-bot-actions { justify-content: center; }
+/* Primary + copy buttons stack full-width; the QR text button is centered below */
+.tg-bot-card--banner .tg-bot-btn { flex: 1 1 100%; width: 100%; }
+.tg-bot-card--banner .tg-bot-btn--primary { flex: 1 1 100%; }
+.tg-bot-card--banner .tg-bot-show-qr-btn { align-self: center; margin-inline: auto; flex: 0 0 auto; }
 .tg-bot-card--showcase { max-width: 640px; }
 
 /* modal + lightbox */
@@ -149,12 +153,17 @@
   overflow-x: hidden;
 }
 .tg-bot-modal .tg-bot-identity { padding-inline-end: 0; }
+/* The card is a flex column with a max-height: without this, children that
+   have overflow:hidden (features grid, QR box) get shrunk/clipped when the
+   content gets taller on narrow screens, instead of the card scrolling. */
+.tg-bot-modal .tg-bot-card > * { flex-shrink: 0; }
+.tg-bot-modal .tg-bot-qr-box { flex: none; min-height: 168px; }
 /* Sticky header so the title/handle never scroll away */
 .tg-bot-modal .tg-bot-header {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: inherit;
+  /* background: inherit; */
   padding-block: 4px;
   margin-block-start: -4px;
 }
@@ -182,6 +191,8 @@
 
 @media (max-width: 480px) {
   .tg-bot-card { padding: 16px; }
+  .tg-bot-modal { padding: 8px; }
+  .tg-bot-modal .tg-bot-card { max-height: calc(100dvh - 16px); }
   .tg-bot-qr-section { justify-content: center; }
   .tg-bot-qr-meta { align-items: center; text-align: center; }
   .tg-bot-qr-meta .tg-bot-btn-text { align-self: center; }

@@ -624,7 +624,10 @@
   text-align: center;
 }
 
+/* When the empty hint is the only child, never show a scrollbar for it */
+.ai-agent-chat-messages:has(> .ai-agent-msg--empty:only-child) { overflow-y: hidden; }
 .ai-agent-msg--empty {
+  flex-shrink: 0;
   align-self: center;
   color: var(--color-text-tertiary);
   font-size: 0.85rem;
