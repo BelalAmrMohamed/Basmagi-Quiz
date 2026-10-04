@@ -770,6 +770,14 @@ const CREATE_QUIZ_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" heig
 // see docs/plans/implementation-plan.md items 9/10.
 const TRASH_CAN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
 
+// "إنشاء درس" — same book-plus glyph the sidebar's "إنشاء دروس" link uses,
+// redrawn at this menu's 15x15 scale.
+const CREATE_LESSON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M9 10h6"/><path d="M12 7v6"/></svg>`;
+// Trigger icon for the "إنشاء" submenu row.
+const CREATE_PLUS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>`;
+// Points toward the side the submenu opens on (left in this RTL UI).
+const SUBMENU_CARET_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>`;
+
 export function initContextMenu() {
   if (contextMenuEl) return;
   contextMenuEl = document.createElement("div");
@@ -883,24 +891,41 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   // and that dropdown's are now the only two entry points to this flow.
   // Dynamically imported to avoid a static circular import: create-quiz-
   // modal.js already imports currentFolderId from this module.
+  // All four creation actions live in one "إنشاء" submenu so the root menu
+  // stays short. Course creation is top-level only — inside a folder/course
+  // it stays visible-but-disabled (not hidden) so the submenu's shape doesn't
+  // shift depending on location.
   contextMenuEl.appendChild(
-    createMenuItem(CREATE_QUIZ_SVG, "إنشاء امتحان", async () => {
-      const { openInlineCreateQuizModal } = await import("./create-quiz-modal.js");
-      openInlineCreateQuizModal();
-    }),
-  );
-  contextMenuEl.appendChild(createMenuItem(CREATE_FOLDER_SVG, "إنشاء مجلد", () => createNewFolderOrCourse("folder")));
-  // Courses are top-level only — inside a folder/course this option can't
-  // do anything, but it stays visible-but-disabled (not hidden) so the
-  // menu's shape doesn't shift depending on location.
-  contextMenuEl.appendChild(
-    createMenuItem(
-      CREATE_COURSE_SVG,
-      "إنشاء مادة",
-      () => createNewFolderOrCourse("course"),
-      false,
-      currentFolderId !== null ? "المواد تُنشأ في المستوى الرئيسي فقط." : null,
-    ),
+    createSubmenuItem(CREATE_PLUS_SVG, "إنشاء", [
+      {
+        icon: CREATE_QUIZ_SVG,
+        label: "إنشاء امتحان",
+        onClick: async () => {
+          const { openInlineCreateQuizModal } = await import("./create-quiz-modal.js");
+          openInlineCreateQuizModal();
+        },
+      },
+      {
+        // Lessons have no folder picker — create-lesson.js files a new
+        // lesson at the "امتحاناتك" root regardless of where this was opened.
+        icon: CREATE_LESSON_SVG,
+        label: "إنشاء درس",
+        onClick: () => {
+          window.location.href = "/create-lesson";
+        },
+      },
+      {
+        icon: CREATE_FOLDER_SVG,
+        label: "إنشاء مجلد",
+        onClick: () => createNewFolderOrCourse("folder"),
+      },
+      {
+        icon: CREATE_COURSE_SVG,
+        label: "إنشاء مادة",
+        onClick: () => createNewFolderOrCourse("course"),
+        disabledReason: currentFolderId !== null ? "المواد تُنشأ في المستوى الرئيسي فقط." : null,
+      },
+    ]),
   );
 
   if (isAdminAuthenticated()) {
@@ -993,6 +1018,104 @@ function positionContextMenu(e) {
 
   contextMenuEl.style.left = `${left + window.scrollX}px`;
   contextMenuEl.style.top = `${top + window.scrollY}px`;
+}
+
+/**
+ * A context-menu row that opens a nested submenu of `items`
+ * (`{ icon, label, onClick, isDanger?, disabledReason? }`, same shape
+ * createMenuItem takes). Opens on hover for real pointer devices and toggles
+ * on click/tap/Enter/Space everywhere else. The submenu sits beside the row
+ * (left of it in this RTL UI) and flips to the other side / shifts up when it
+ * would run off-screen. Leaf rows are plain createMenuItem rows, so choosing
+ * one closes the whole context menu exactly like any other action.
+ */
+function createSubmenuItem(iconSvg, label, items) {
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "position: relative;";
+
+  const trigger = document.createElement("div");
+  trigger.setAttribute("role", "menuitem");
+  trigger.setAttribute("aria-haspopup", "menu");
+  trigger.setAttribute("aria-expanded", "false");
+  trigger.tabIndex = 0;
+  trigger.style.cssText = `
+    padding: 5px 14px; cursor: pointer; color: var(--color-text-primary);
+    font-size: 0.88rem; display: flex; align-items: center; gap: 10px;
+  `;
+  trigger.innerHTML = `<span style="flex-shrink:0;display:flex;align-items:center;opacity:0.75">${iconSvg}</span><span style="flex:1">${label}</span><span class="uqcm-submenu-caret" style="flex-shrink:0;display:flex;align-items:center;opacity:0.6;transition:transform 0.15s ease">${SUBMENU_CARET_SVG}</span>`;
+
+  const sub = document.createElement("div");
+  sub.setAttribute("role", "menu");
+  sub.style.cssText = `
+    display: none; position: absolute; top: -6px; right: calc(100% - 2px);
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: 8px; box-shadow: var(--shadow-lg); padding: 5px 0;
+    min-width: 160px; flex-direction: column; z-index: 1;
+  `;
+  items.forEach((it) => {
+    const row = createMenuItem(it.icon, it.label, it.onClick, !!it.isDanger, it.disabledReason || null);
+    row.setAttribute("role", "menuitem");
+    row.tabIndex = -1; // focusable from the trigger's ArrowLeft/Enter handler
+    sub.appendChild(row);
+  });
+  // Clicks on the submenu's padding/dividers must not reach the document
+  // handler that closes the whole menu.
+  sub.onclick = (e) => e.stopPropagation();
+
+  const caret = trigger.querySelector(".uqcm-submenu-caret");
+
+  function place() {
+    // Reset, then measure with the submenu visible.
+    sub.style.right = "calc(100% - 2px)";
+    sub.style.left = "auto";
+    sub.style.top = "-6px";
+    const margin = 8;
+    const r = sub.getBoundingClientRect();
+    if (r.left < margin) {
+      // No room on the left — open on the right of the row instead.
+      sub.style.right = "auto";
+      sub.style.left = "calc(100% - 2px)";
+    }
+    const r2 = sub.getBoundingClientRect();
+    if (r2.bottom > document.documentElement.clientHeight - margin) {
+      const shift = r2.bottom - (document.documentElement.clientHeight - margin);
+      sub.style.top = `${-6 - shift}px`;
+    }
+  }
+
+  function setOpen(open) {
+    sub.style.display = open ? "flex" : "none";
+    trigger.setAttribute("aria-expanded", String(open));
+    trigger.style.background = open ? "var(--color-bg-hover, rgba(0,0,0,0.05))" : "transparent";
+    if (caret) caret.style.transform = open ? "rotate(-90deg)" : "";
+    if (open) place();
+  }
+  const isOpen = () => sub.style.display !== "none";
+
+  const hoverCapable =
+    window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (hoverCapable) {
+    wrap.addEventListener("mouseenter", () => setOpen(true));
+    wrap.addEventListener("mouseleave", () => setOpen(false));
+  }
+
+  trigger.onclick = (e) => {
+    e.stopPropagation(); // keep the menu open (the document handler would close it)
+    setOpen(!isOpen());
+  };
+  trigger.onkeydown = (e) => {
+    if (e.key === "Enter" || e.key === " " || e.key === "ArrowLeft") {
+      e.preventDefault();
+      setOpen(true);
+      sub.firstElementChild?.focus?.();
+    } else if (e.key === "Escape" || e.key === "ArrowRight") {
+      setOpen(false);
+    }
+  };
+
+  wrap.appendChild(trigger);
+  wrap.appendChild(sub);
+  return wrap;
 }
 
 function createMenuItem(iconSvg, label, onClick, isDanger = false, disabledReason = null) {

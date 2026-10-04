@@ -623,6 +623,23 @@ export function renderUserQuizzesView() {
         };
         menu.appendChild(quizOpt);
 
+        // "درس جديد" — opens the lesson authoring page. Lessons have no
+        // folder picker (create-lesson.js files every new lesson at the
+        // "امتحاناتك" root; the user moves it afterwards), so this is a plain
+        // navigation and, unlike "مادة جديدة" below, needs no
+        // currentFolderId gating. Same destination as the "إنشاء درس" entry
+        // in the #userQuizContextMenu "إنشاء" submenu.
+        const lessonOpt = document.createElement("button");
+        lessonOpt.type = "button";
+        lessonOpt.className = "exam-action-btn";
+        lessonOpt.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M9 10h6"/><path d="M12 7v6"/></svg><span>درس جديد</span>`;
+        lessonOpt.onclick = (e) => {
+          e.stopPropagation();
+          closeMenu();
+          window.location.href = "/create-lesson";
+        };
+        menu.appendChild(lessonOpt);
+
         const folderOpt = document.createElement("button");
         folderOpt.type = "button";
         folderOpt.className = "exam-action-btn";
