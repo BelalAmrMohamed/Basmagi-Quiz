@@ -2300,6 +2300,7 @@ body.lesson-preview-open {
    horizontally-scrolling title bar and JS controls the open state.
    ========================================================================== */
 .menu-bar-inner {
+    display: flex;
     flex-direction: row-reverse;
     align-items: center;
     gap: 2px;
@@ -2336,6 +2337,7 @@ body.lesson-preview-open {
 #menuBar .menu-dropdown {
     display: none;
     position: fixed;
+    right: auto; /* older .menu-dropdown rule sets right:0, which beats JS-set left in RTL */
     min-width: 240px;
     max-width: min(92vw, 360px);
     background: var(--color-surface);
@@ -2346,7 +2348,7 @@ body.lesson-preview-open {
     z-index: 60;
     box-sizing: border-box;
 }
-.menu-bar-item.menu-item-open > .menu-dropdown { display: block; }
+#menuBar .menu-bar-item.menu-item-open > .menu-dropdown { display: block; }
 
 #menuBar .menu-option {
     display: flex;
@@ -2384,4 +2386,82 @@ body.lesson-preview-open {
         max-width: calc(100vw - 16px);
     }
     #menuBar .menu-option { min-height: 42px; }
+}
+
+/* ============================================================================
+   LESSON INFO CARD — form fields (ported from create-quiz.css so
+   "معلومات عن الدرس" matches the quiz metadata card)
+   ============================================================================ */
+.form-group input[type="text"],
+.form-group input[type="url"],
+.form-group input[type="search"],
+.form-group input[type="password"],
+.form-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 14px;
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-background);
+    color: var(--color-text-primary);
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color .2s, box-shadow .2s;
+}
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+.form-group textarea { resize: vertical; min-height: 60px; }
+.form-group textarea.autosize-textarea,
+.autosize-textarea { resize: none; overflow-y: hidden; min-height: 0; transition: height .08s ease-out; }
+#lessonSource { direction: ltr; }
+#lessonPasswordInput { direction: rtl; }
+
+.char-count { float: left; font-size: .875rem; color: var(--color-text-tertiary); font-weight: 400; }
+.char-count.warning { color: var(--color-warning); }
+.char-count.error { color: var(--color-error); }
+
+.password-field { position: relative; }
+.password-field input[type="password"],
+.password-field input[type="text"] { padding-inline-end: 72px; }
+.password-field-actions {
+    position: absolute;
+    inset-inline-end: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+.password-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background-color .15s ease, color .15s ease;
+}
+.password-action-btn:hover:not(:disabled),
+.password-action-btn:focus-visible { background: var(--color-background); color: var(--color-primary); outline: none; }
+.password-action-btn:disabled { opacity: .45; cursor: not-allowed; }
+.password-action-btn svg { width: 18px; height: 18px; }
+.password-action-btn.copied { color: var(--color-success); }
+.password-field-state {
+    display: flex;
+    gap: .65rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: .45rem;
+    color: var(--color-text-secondary);
+    font-size: .8rem;
+    flex-wrap: wrap;
 }

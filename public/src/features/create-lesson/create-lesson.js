@@ -246,12 +246,46 @@ function pushHistorySnapshot() {
     updateUndoRedoButtons();
 }
 
+// Text-level history: the browser keeps a native undo stack per text field
+// (toolbar formatting goes through execCommand, so it is in that stack too).
+// The header buttons drive that stack for the last focused field and fall back
+// to the structural stack above when the field has nothing to undo.
+let lastTextField = null;
+
+function isHistoryTextField(el) {
+    return el instanceof HTMLTextAreaElement ||
+        (el instanceof HTMLInputElement && /^(text|search|url|)$/.test(el.type));
+}
+
+function textHistoryAvailable(kind) {
+    if (!lastTextField || !document.body.contains(lastTextField)) return false;
+    try {
+        if (document.activeElement !== lastTextField) lastTextField.focus({ preventScroll: true });
+        return document.queryCommandEnabled(kind);
+    } catch (_) {
+        return false;
+    }
+}
+
 function updateUndoRedoButtons() {
     const undoBtn = document.getElementById("undoBtn");
     const redoBtn = document.getElementById("redoBtn");
-    if (undoBtn) undoBtn.disabled = undoStack.length === 0;
-    if (redoBtn) redoBtn.disabled = redoStack.length === 0;
+    if (undoBtn) undoBtn.disabled = undoStack.length === 0 && !textHistoryAvailable("undo");
+    if (redoBtn) redoBtn.disabled = redoStack.length === 0 && !textHistoryAvailable("redo");
 }
+
+document.addEventListener("focusin", (e) => {
+    if (isHistoryTextField(e.target)) lastTextField = e.target;
+    updateUndoRedoButtons();
+});
+document.addEventListener("input", (e) => {
+    if (isHistoryTextField(e.target)) { lastTextField = e.target; updateUndoRedoButtons(); }
+});
+// Keep focus in the field when a history button is pressed so execCommand
+// targets it.
+document.addEventListener("mousedown", (e) => {
+    if (e.target.closest?.("#undoBtn, #redoBtn")) e.preventDefault();
+});
 
 function resetHistory() {
     undoStack = [];
@@ -270,6 +304,12 @@ function refreshEditorAfterHistoryChange() {
 }
 
 window.performUndo = function () {
+    if (textHistoryAvailable("undo")) {
+        lastTextField.focus({ preventScroll: true });
+        document.execCommand("undo");
+        updateUndoRedoButtons();
+        return;
+    }
     if (undoStack.length === 0) return;
     const previous = undoStack.pop();
     redoStack.push(cloneLessonData());
@@ -285,6 +325,12 @@ window.performUndo = function () {
 };
 
 window.performRedo = function () {
+    if (textHistoryAvailable("redo")) {
+        lastTextField.focus({ preventScroll: true });
+        document.execCommand("redo");
+        updateUndoRedoButtons();
+        return;
+    }
     if (redoStack.length === 0) return;
     const next = redoStack.pop();
     undoStack.push(cloneLessonData());
@@ -1559,10 +1605,25 @@ function setupKeyboardShortcuts() {
 // RENDERING THE LESSON FORM
 // =============================================================================
 
+function autosizeLessonDescription() {
+    const el = document.getElementById("lessonDescriptionInput");
+    if (!el || !el.offsetParent) return; // hidden → scrollHeight is 0
+    el.style.height = "auto";
+    const next = Math.min(Math.max(el.scrollHeight, 44), 240);
+    el.style.height = `${next}px`;
+    el.style.overflowY = el.scrollHeight > 240 ? "auto" : "hidden";
+}
+
 function syncLessonMetadataForm() {
     const description = document.getElementById("lessonDescriptionInput");
     const count = document.getElementById("lessonDescriptionCount");
-    if (description) description.value = lessonData.description || "";
+    if (description) {
+        description.value = lessonData.description || "";
+        autosizeLessonDescription();
+        // The form may still be hidden here; re-measure once it is shown.
+        requestAnimationFrame(autosizeLessonDescription);
+        setTimeout(autosizeLessonDescription, 300);
+    }
     if (count) count.textContent = `${(lessonData.description || "").length} / 1200`;
 
     const source = document.getElementById("lessonSource");
@@ -1586,6 +1647,7 @@ function syncLessonMetadataForm() {
 
 window.updateLessonDescription = function (value) {
     lessonData.description = String(value || "").slice(0, 1200);
+    autosizeLessonDescription();
     const count = document.getElementById("lessonDescriptionCount");
     if (count) count.textContent = `${lessonData.description.length} / 1200`;
     autosave();
@@ -1900,6 +1962,18 @@ window.addBlock = function (sectionId, type) {
     section.blocks.push(makeBlock(type));
     renderSections();
     autosave();
+};
+
+// Insert-menu helper: the inline handlers can't see the module-scoped
+// lessonData, so they call this instead.
+window.addBlockToLastSection = function (type) {
+    if (!lessonData.sections.length) window.addSection();
+    const last = lessonData.sections[lessonData.sections.length - 1];
+    if (last) window.addBlock(last.id, type);
+};
+
+window.showEditorShortcuts = function () {
+    showNotification("اختصارات لوحة المفاتيح", "Ctrl+S للحفظ، Ctrl+Z للتراجع، Ctrl+Y للإعادة.", "info");
 };
 
 window.removeBlock = async function (sectionId, localId) {

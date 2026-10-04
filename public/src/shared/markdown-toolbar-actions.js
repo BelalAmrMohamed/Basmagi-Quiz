@@ -38,9 +38,18 @@ function resizeTextarea(textarea) {
 export function applyMarkdownToolbarAction({ cmd = null, latex = null, extra = null, textarea = null } = {}) {
   if (!(textarea instanceof HTMLTextAreaElement) || !document.body.contains(textarea)) return false;
 
-  const start = textarea.selectionStart ?? 0;
-  const end = textarea.selectionEnd ?? start;
   const value = textarea.value || "";
+  let start = textarea.selectionStart ?? 0;
+  let end = textarea.selectionEnd ?? start;
+  // Double-click selects "word " (trailing space). Trim surrounding whitespace
+  // so wrapping commands produce **word** rather than **word **.
+  while (start < end && /\s/.test(value[start])) start++;
+  while (end > start && /\s/.test(value[end - 1])) end--;
+  if (start === end) {
+    start = textarea.selectionStart ?? 0;
+    end = textarea.selectionEnd ?? start;
+    if (end > start && /^\s*$/.test(value.slice(start, end))) { start = end; }
+  }
   const selected = value.slice(start, end);
 
   const wrap = (prefix, suffix = prefix, placeholder = "") => {
@@ -103,8 +112,8 @@ export function applyMarkdownToolbarAction({ cmd = null, latex = null, extra = n
         break;
       case "hr": {
         const inserted = "\n---\n";
-        replaceTextareaRange(textarea, start, end, inserted);
-        const cursor = start + inserted.length;
+        replaceTextareaRange(textarea, end, end, inserted);
+        const cursor = end + inserted.length;
         textarea.setSelectionRange(cursor, cursor);
         break;
       }
@@ -123,10 +132,10 @@ export function applyMarkdownToolbarAction({ cmd = null, latex = null, extra = n
       }
       case "table": {
         const table = "| العمود 1 | العمود 2 |\n| --- | --- |\n| قيمة | قيمة |";
-        const needsLeadingNewline = start > 0 && value[start - 1] !== "\n";
+        const needsLeadingNewline = end > 0 && value[end - 1] !== "\n";
         const inserted = (needsLeadingNewline ? "\n" : "") + table;
-        replaceTextareaRange(textarea, start, end, inserted);
-        const cursor = start + inserted.length;
+        replaceTextareaRange(textarea, end, end, inserted);
+        const cursor = end + inserted.length;
         textarea.setSelectionRange(cursor, cursor);
         break;
       }

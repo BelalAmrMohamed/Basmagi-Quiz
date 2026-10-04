@@ -326,12 +326,46 @@ function pushHistorySnapshot() {
   updateUndoRedoButtons();
 }
 
+// Text-level history: the browser keeps a native undo stack per text field
+// (toolbar formatting goes through execCommand, so it is in that stack too).
+// The header buttons drive that stack for the last focused field and fall back
+// to the structural stack when the field has nothing to undo.
+let lastTextField = null;
+
+function isHistoryTextField(el) {
+  return el instanceof HTMLTextAreaElement ||
+    (el instanceof HTMLInputElement && /^(text|search|url|)$/.test(el.type));
+}
+
+function textHistoryAvailable(kind) {
+  if (!lastTextField || !document.body.contains(lastTextField)) return false;
+  try {
+    if (document.activeElement !== lastTextField) lastTextField.focus({ preventScroll: true });
+    return document.queryCommandEnabled(kind);
+  } catch (_) {
+    return false;
+  }
+}
+
 function updateUndoRedoButtons() {
   const undoBtn = document.getElementById("undoBtn");
   const redoBtn = document.getElementById("redoBtn");
-  if (undoBtn) undoBtn.disabled = undoStack.length === 0;
-  if (redoBtn) redoBtn.disabled = redoStack.length === 0;
+  if (undoBtn) undoBtn.disabled = undoStack.length === 0 && !textHistoryAvailable("undo");
+  if (redoBtn) redoBtn.disabled = redoStack.length === 0 && !textHistoryAvailable("redo");
 }
+
+document.addEventListener("focusin", (e) => {
+  if (isHistoryTextField(e.target)) lastTextField = e.target;
+  updateUndoRedoButtons();
+});
+document.addEventListener("input", (e) => {
+  if (isHistoryTextField(e.target)) { lastTextField = e.target; updateUndoRedoButtons(); }
+});
+// Keep focus in the field when a history button is pressed so execCommand
+// targets it.
+document.addEventListener("mousedown", (e) => {
+  if (e.target.closest?.("#undoBtn, #redoBtn")) e.preventDefault();
+});
 
 /** Fully re-render the editor from the current quizData after a snapshot
  * restore — mirrors what every structural mutator already does after
@@ -361,6 +395,12 @@ function refreshEditorAfterHistoryChange() {
 }
 
 window.performUndo = function () {
+  if (textHistoryAvailable("undo")) {
+    lastTextField.focus({ preventScroll: true });
+    document.execCommand("undo");
+    updateUndoRedoButtons();
+    return;
+  }
   if (undoStack.length === 0) return;
   const previous = undoStack.pop();
   redoStack.push(cloneQuizData());
@@ -376,6 +416,12 @@ window.performUndo = function () {
 };
 
 window.performRedo = function () {
+  if (textHistoryAvailable("redo")) {
+    lastTextField.focus({ preventScroll: true });
+    document.execCommand("redo");
+    updateUndoRedoButtons();
+    return;
+  }
   if (redoStack.length === 0) return;
   const next = redoStack.pop();
   undoStack.push(cloneQuizData());
