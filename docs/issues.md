@@ -7,8 +7,18 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Profile Page
+* The `أفضل المشرفين` section: It has misplaced badges `admin-gallery-badge` on phones. The cutout of the badges are on one side of the profile image, while the actual badge is on the other side.
+* In the "شاراتك" section, when hovered (or clicked on phones) it shows the description. When the description is long it gets cut at the end. Make the size of the descriptions dynamic and shorten all the descriptions themselves. Or you can implement a new better idea of you have one.
+
+### `bottomNav` Element (side-menu.css)
+The side menu on phones should be draggable from the whole header `sidebar-header` + `sidebar-drag-handle`, not just a small narrow area at the top `sidebar-drag-handle`. And try to make the dragging smoothing it out.
+
 ### AI Agent
-Fix Dictation: The dictation feature is so messed up, it doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser.
+Fix Dictation: The dictation doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser when using the browser api for dictation.
+
+### Telegram AI 
+Critical Issue: The first user to use the AI on Telegram opened a new chat and started asking. But the AI remembered the conversations with me in testing in the user chat, meaning the storing chat logic/DB on Supabase is probably the issue, it doesn't save each chat independentantly. Or I might be wrong.
 
 ### Performance (Globally, but specially the main page)
 Performance Improvements: Currently, there are many custom mechanism fucntionalities built in JS that works perfectly, but it may exist natively in HTML, CSS, or as a browser API. In that case we shouldn't reinvent the wheel, specially if it exists natively. Anything that exists natively in HTML, CSS, or as a browser API should be used that way and we should delete any custom JS implementation that has native alternatives. That would improve performance very well. Search for everything, anything that can be implemented in HTML & CSS directly without JS should be done so. You can search the web for modern HTML & CSS, because sometimes they add new things, but watch out for compatibility with different browsers (minimum requirenment: Chrome). But I don't want to miss up any functionality, this is just for performance, not to change any fucntionality.
