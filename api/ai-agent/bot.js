@@ -485,8 +485,18 @@ async function processTelegramMessage(chatId, message) {
       return; // Nothing to process
     }
 
-    // 3. Fetch conversation history
-    const history = await fetchChatHistory(chatId);
+    // 3. Fetch conversation history (skip and clear on /start so users always
+    //    get a genuinely fresh session — /start is a Telegram-standard signal
+    //    for "begin again" and loading old history contradicts that expectation).
+    const isStartCommand = (userText || "").trim() === "/start";
+    if (isStartCommand) {
+      const supabase = getSupabase();
+      await supabase
+        .from("telegram_chat_history")
+        .delete()
+        .eq("chat_id", String(chatId));
+    }
+    const history = isStartCommand ? [] : await fetchChatHistory(chatId);
 
     // 4. Assemble current parts
     const currentParts = [];

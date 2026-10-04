@@ -7,9 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### `bottomNav` Element (side-menu.css)
-* [x] The side menu on phones should be draggable from the whole header `sidebar-header` + `sidebar-drag-handle`, not just a small narrow area at the top `sidebar-drag-handle`. And try to make the dragging smoothing it out. (Fixed: unified pointer listeners across both `#sidebarDragHandle` and `.sidebar-header` with pointer capture, added `touch-action: none` and `user-select: none` across the entire header region, synchronized transform updates via `requestAnimationFrame`, implemented elastic rubber-band resistance when pulling upwards, refined momentum-aware flick velocity dismissal, dynamic backdrop fade matching drag distance, and cubic-bezier release transitions for dismissing and snapping back).
-
 ### AI Agent
 Fix Dictation: The dictation doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser when using the browser api for dictation.
 

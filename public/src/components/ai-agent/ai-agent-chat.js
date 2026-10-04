@@ -1137,6 +1137,13 @@ export function createChatPanel(options = {}) {
    */
   async function startMicMetering() {
     if (!navigator.mediaDevices?.getUserMedia) return;
+    // Brave can run SpeechRecognition internally, but calling getUserMedia
+    // concurrently (for the wave animation) creates a second mic-access
+    // request that conflicts with SpeechRecognition's own internal stream
+    // in Brave — causing the recognition to fail. The CSS bounce animation
+    // (.ai-agent-wave-bounce keyframe) is an adequate fallback, so skip the
+    // live-metering path entirely on Brave to keep the feature working.
+    if (isBraveBrowser) return;
     try {
       micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
@@ -1223,11 +1230,15 @@ export function createChatPanel(options = {}) {
   // deliberate, permanent Brave setting, not a transient network hiccup,
   // so a "network" error here should skip the auto-retry (below) and go
   // straight to a Brave-specific explanation instead of a generic one.
-  // navigator.brave.isBrave() is the official, Brave-exposed feature
-  // detect (see brave.com/docs) — resolved once up front since it's
-  // async and dictation errors need the answer synchronously by the time
-  // they happen.
-  let isBraveBrowser = false;
+  //
+  // navigator.brave.isBrave() is the OFFICIAL Brave-exposed feature detect
+  // (see brave.com/docs), but it's async — resolved once up front so the
+  // flag is ready before any error handler needs it.
+  // As a faster synchronous fallback, we also check for "Brave" in the UA
+  // string (present in many Brave versions). The async promise then
+  // overwrites with the authoritative value once it resolves, which matters
+  // for edge cases where the UA string doesn't carry the word "Brave".
+  let isBraveBrowser = /brave/i.test(navigator.userAgent || "");
   if (navigator.brave && typeof navigator.brave.isBrave === "function") {
     navigator.brave
       .isBrave()
