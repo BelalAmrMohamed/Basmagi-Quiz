@@ -313,7 +313,15 @@ export function applyInline(s, options = {}) {
       if (normalizedKind === "audio" || normalizedKind === "video") {
         return renderInlineMediaTag(normalizedKind, url, mediaBaseUrl);
       }
-      return `<img src="${safeUrl(url)}" alt="${safeUrl(kind)}" class="md-img" loading="lazy">`;
+      // Plain images get the same resizable .media-container wrapper as
+      // audio/video/raw <img> tags (data-resize-key + data-resize-kind), so
+      // _scanResizableMedia equips them with drag handles and the container's
+      // `margin: auto` centers them. Only uses helpers export-to-quiz.js
+      // already serializes (_makeResizeKey, getMediaUrlCandidates).
+      const resizeKey = _makeResizeKey("image", url, mediaBaseUrl);
+      const candidates = getMediaUrlCandidates(url, mediaBaseUrl);
+      const resolvedSrc = (candidates && candidates[0]) || url;
+      return `<div class="media-container question-media-container question-image-container md-inline-media" data-resize-key="${safeUrl(resizeKey)}" data-resize-kind="image"><img src="${safeUrl(resolvedSrc)}" alt="${safeUrl(kind)}" class="md-img question-image" loading="lazy" data-media-raw="${safeUrl(url)}"></div>`;
     },
   );
   // ── Links ───────────────────────────────────────────────────────────────
@@ -1951,9 +1959,14 @@ export function _renderMarkdownCore(str, options = {}) {
         lines.push(applyInline(escHtml(lineTokens[ti].content), { mediaBaseUrl }));
         ti++;
       }
+      // A block-level .media-container inside <p> is invalid HTML: the parser
+      // closes the <p> early and leaves a stray empty one. Use a <div> for
+      // paragraphs that contain inline media (same .md-p styling).
+      const paraHtml = lines.join(" ");
+      const paraTag = paraHtml.includes("md-inline-media") ? "div" : "p";
       segments.push({
         type: "block",
-        html: `<p class="md-p">${lines.join(" ")}</p>`,
+        html: `<${paraTag} class="md-p">${paraHtml}</${paraTag}>`,
       });
       continue;
     }
