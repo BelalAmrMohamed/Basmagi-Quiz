@@ -163,7 +163,6 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  /* background: inherit; */
   padding-block: 4px;
   margin-block-start: -4px;
 }
