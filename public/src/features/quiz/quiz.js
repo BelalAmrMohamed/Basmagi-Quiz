@@ -365,6 +365,73 @@ const escapeHtml = (unsafe) => {
 // === Helper: Get the model answer for an essay question ===
 const getEssayAnswer = (q) => q.answer ?? "";
 
+const convertModernColorFunctions = (value, context) => {
+  const functionPattern = /\b(?:oklch|oklab|lab|lch|color|hwb)\(/gi;
+  let normalized = "";
+  let lastIndex = 0;
+  let match;
+  while ((match = functionPattern.exec(value))) {
+    const openParen = match.index + match[0].length - 1;
+    let depth = 0;
+    let closeParen = openParen;
+    for (; closeParen < value.length; closeParen++) {
+      if (value[closeParen] === "(") depth++;
+      else if (value[closeParen] === ")" && --depth === 0) break;
+    }
+    if (depth !== 0) continue;
+
+    const color = value.slice(match.index, closeParen + 1);
+    const css = context.canvas.ownerDocument.defaultView.CSS;
+    if (!css?.supports || !css.supports("color", color)) {
+      throw new Error(`Unable to convert CSS color for quiz image: ${color}`);
+    }
+    context.fillStyle = color;
+    context.clearRect(0, 0, 1, 1);
+    context.fillRect(0, 0, 1, 1);
+    const [red, green, blue, alpha] = context.getImageData(0, 0, 1, 1).data;
+    const rgba =
+      alpha === 255
+        ? `rgb(${red}, ${green}, ${blue})`
+        : `rgba(${red}, ${green}, ${blue}, ${alpha / 255})`;
+    normalized += value.slice(lastIndex, match.index) + rgba;
+    lastIndex = closeParen + 1;
+    functionPattern.lastIndex = lastIndex;
+  }
+  return normalized + value.slice(lastIndex);
+};
+
+const normalizeModernCssColor = (value, doc = document) => {
+  const canvas = doc.createElement("canvas");
+  canvas.width = canvas.height = 1;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas color conversion is unavailable.");
+  return convertModernColorFunctions(value, context);
+};
+
+const normalizeModernCssColors = (element) => {
+  const root = element.ownerDocument;
+  const canvas = root.createElement("canvas");
+  canvas.width = canvas.height = 1;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas color conversion is unavailable.");
+  const modernColorFunction = /\b(?:oklch|oklab|lab|lch|color|hwb)\(/i;
+
+  const nodes = [element, ...element.querySelectorAll("*")];
+  for (const node of nodes) {
+    const computedStyle = root.defaultView.getComputedStyle(node);
+    for (let i = 0; i < computedStyle.length; i++) {
+      const property = computedStyle[i];
+      const value = computedStyle.getPropertyValue(property);
+      if (!modernColorFunction.test(value)) continue;
+      node.style.setProperty(
+        property,
+        convertModernColorFunctions(value, context),
+        computedStyle.getPropertyPriority(property),
+      );
+    }
+  }
+};
+
 // Fix 2: Removed the automatic >400-char heuristic that previously
 // promoted long questions into a passage/large-card layout.
 // Large format now only applies when the question has an explicit
@@ -1381,45 +1448,59 @@ async function init() {
           });
         }
 
-        // hide buttons temporarily for the screenshot
+        // html2canvas 1.4.x cannot parse modern CSS color functions such as
+        // oklch(). Normalize computed colors in its clone; the live page is
+        // left untouched.
         const actions = questionCard.querySelector(".question-actions");
+        const originalActionsDisplay = actions?.style.display;
         if (actions) actions.style.display = "none";
         const checkBtn = questionCard.querySelector(".check-answer-btn");
+        const originalCheckBtnDisplay = checkBtn?.style.display;
         if (checkBtn) checkBtn.style.display = "none";
 
-        const canvas = await html2canvas(questionCard, {
-          backgroundColor: getComputedStyle(document.body).backgroundColor,
-          scale: 2,
-        });
-
-        // restore buttons
-        if (actions) actions.style.display = "";
-        if (checkBtn) checkBtn.style.display = "";
-
-        canvas.toBlob(async (blob) => {
-          const file = new File([blob], "question-share.png", {
-            type: "image/png",
+        let blob;
+        try {
+          const canvas = await window.html2canvas(questionCard, {
+            backgroundColor: normalizeModernCssColor(
+              getComputedStyle(document.body).backgroundColor,
+            ),
+            scale: 2,
+            onclone: (_clonedDocument, clonedElement) =>
+              normalizeModernCssColors(clonedElement),
           });
-          if (
-            navigator.share &&
-            navigator.canShare &&
-            navigator.canShare({ files: [file] })
-          ) {
-            await navigator.share({
-              files: [file],
-              title: "سؤال من الامتحان",
-            });
-          } else {
-            // fallback download
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "Basmagi Quiz Question.png";
-            a.click();
-            URL.revokeObjectURL(url);
-            showNotification("تم", "تم تحميل صورة السؤال", "success");
-          }
+          blob = await new Promise((resolve, reject) => {
+            canvas.toBlob((result) => {
+              if (result) resolve(result);
+              else reject(new Error("Could not encode the question image."));
+            }, "image/png");
+          });
+        } finally {
+          if (actions) actions.style.display = originalActionsDisplay;
+          if (checkBtn) checkBtn.style.display = originalCheckBtnDisplay;
+        }
+
+        const file = new File([blob], "question-share.png", {
+          type: "image/png",
         });
+        if (
+          navigator.share &&
+          navigator.canShare &&
+          navigator.canShare({ files: [file] })
+        ) {
+          await navigator.share({
+            files: [file],
+            title: "سؤال من الامتحان",
+          });
+        } else {
+          // fallback download
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "Basmagi Quiz Question.png";
+          a.click();
+          URL.revokeObjectURL(url);
+          showNotification("تم", "تم تحميل صورة السؤال", "success");
+        }
       } catch (e) {
         console.error("Error sharing question", e);
         showNotification("خطأ", "حدث خطأ أثناء محاولة مشاركة السؤال", "error");
@@ -1840,7 +1921,6 @@ function buildVerticalQuestionBodyHTML(q, idx) {
   const explanationText =
     q.explanation || q.desc || q.info || "No explanation provided.";
   if (isEssay) {
-    const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
     feedbackCorrectClass = "essay-feedback";
     feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
   } else {
@@ -1978,10 +2058,11 @@ function patchQuestionAnswerState(cardEl, q, idx) {
             <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q), { mediaBaseUrl: quizBaseUrl })}</div>`;
       if (!formalAnswerEl) {
         formalAnswerEl = document.createElement("div");
-        formalAnswerEl.className = "formal-answer";
+        formalAnswerEl.className = "formal-answer show";
         essayContainer?.insertAdjacentElement("afterend", formalAnswerEl);
       }
       formalAnswerEl.innerHTML = formalHtml;
+      formalAnswerEl.classList.add("show");
     } else if (formalAnswerEl) {
       formalAnswerEl.remove();
     }
@@ -2035,7 +2116,6 @@ function patchQuestionAnswerState(cardEl, q, idx) {
       q.explanation || q.desc || q.info || "No explanation provided.";
     if (isLocked) {
       if (isEssay) {
-        const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
         feedbackClass += " essay-feedback show";
         feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
       } else {

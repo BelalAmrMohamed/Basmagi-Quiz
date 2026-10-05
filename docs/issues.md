@@ -7,27 +7,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Critical Error (Quiz Page)
-See ![screenshot](image.png).
-* I created a quiz in my library (امتحاناتك). 
-* I started taking the quiz myself.
-* When I got to the question that was created with this json:
-```json
-    {
-      "q": "Read the following passage and answer the question below:\n\n```passage\nUniversity Life\n\nUniversity life is an important part of a student's education. Most university students attend lectures, study different subjects, and complete assignments every week. They usually have a busy schedule, so they need to organize their time carefully.\n\nMany students go to the university in the morning. They attend their lectures and take notes while their teachers explain new topics. After lectures, some students go to the library to read books or prepare their assignments. Others study with their friends or participate in university activities.\n\nUniversity students also use technology in their studies. They search for information online, watch educational videos, and communicate with their teachers and classmates through educational platforms. However, students sometimes spend too much time on social media, so they need to control how they use their phones.\n\nSuccessful students usually set clear goals. They study regularly, review their lessons, and ask questions when they do not understand something. They also make time for their families, friends, and hobbies. In this way, they maintain a healthy balance between studying and their personal lives.\n```\n\nFind in the passage a word that means \"homework or academic task\".",
-      "answer": "assignment (assignments)",
-      "explanation": "Assignment /əˈsaɪn.mənt/. Collocations: complete / prepare / hand in an assignment."
-    },
-```
-* I wrote this answer in the answer field/input: `assignment`.
-* I didn't get any indication, my answer wasn't rated using the `public\src\shared\rate-answers.js` engine. No Indication on the accuracy of my answer. Even though that existed before.
-
-Issue is already solved somewhere else:
-* When I downloaded the exact same quiz as .html (public\src\features\export-quiz\export-to-quiz.js).
-* I went to the exact same question, and wrote the exact same answer.
-* My answer was rated, and the input field turned green. See ![screenshot](image-1.png)
-
-* Also, the Quiz.html page shows errors when I try to use the `#shareQuestionBtn`. See ![screenshot](image.png).
+### Admin Issue
+This issue is preventing admins from uploading some content ![screenshot](image.png)
 
 ### AI Agent
 
