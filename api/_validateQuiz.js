@@ -40,8 +40,8 @@ const ID_REGEX = /^[A-Z2-7]{8}$/;
 // Basic URL validation
 const URL_REGEX = /^https?:\/\/.{3,}/;
 
-// Only allow Arabic letters, Latin letters, digits, spaces, hyphens, slashes, dots
-const SAFE_PATH_REGEX = /^[\u0600-\u06FF\w\s\-\/\.]+$/u;
+// Only allow Arabic letters, Latin letters, digits, spaces, hyphens, slashes, dots, and parentheses.
+const SAFE_PATH_REGEX = /^[\u0600-\u06FF\w\s\-\/\.()]+$/u;
 
 // ─── Question type inference ──────────────────────────────────────────────────
 /**
