@@ -4,7 +4,7 @@
 // All validation is whitelist-based (unknown keys are REJECTED, not stripped).
 // =============================================================================
 
-const MAX_SIZE_BYTES = 50_000; // 50 KB hard cap per quiz file
+const MAX_SIZE_BYTES = 1_000_000; // 1 MB per quiz, below the serverless request-body limit
 
 const ALLOWED_TOP_KEYS = new Set(["meta", "stats", "questions"]);
 
@@ -87,7 +87,7 @@ export function validateQuizPayload(raw) {
   // 1. Size check
   const serialized = JSON.stringify(raw);
   if (Buffer.byteLength(serialized, "utf8") > MAX_SIZE_BYTES) {
-    throw new Error("PAYLOAD_TOO_LARGE");
+    throw new Error("حجم بيانات الامتحان كبير جدًا (الحد الأقصى 1 ميجابايت).");
   }
 
   // 2. Re-parse to kill prototype pollution & non-serializable values
