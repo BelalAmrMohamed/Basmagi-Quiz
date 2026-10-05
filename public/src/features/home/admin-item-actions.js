@@ -59,7 +59,11 @@ function resolveItemType(item) {
   // Category-tree folder nodes carry a string `parent` path key; course nodes
   // have parent: null. A folder node is also identifiable by its DB
   // `course_id`/`parent_folder_id` threading (added in quizManifest.js).
-  if (item.parent_folder_id !== undefined || (typeof item.parent === "string" && item.parent)) {
+  if (
+    item.course_id !== undefined ||
+    item.parent_folder_id !== undefined ||
+    (typeof item.parent === "string" && item.parent)
+  ) {
     return "folder";
   }
   if (item.parent === null || item.parent === undefined) {
@@ -228,7 +232,10 @@ export async function refreshSharedArea() {
 export async function renameSharedItem(item) {
   const itemType = resolveItemType(item);
   const itemId = resolveItemId(item);
-  if (!itemType || !itemId) return false;
+  if (!itemType || !itemId) {
+    showNotification("تعذّرت إعادة التسمية", "تعذّر تحديد المجلد أو العنصر المطلوب. حدّث الصفحة وحاول مرة أخرى.", "error");
+    return false;
+  }
 
   const currentTitle = item.title || item.name || "";
   const newName = await _prompt("أدخل الاسم الجديد:", currentTitle);
@@ -266,7 +273,10 @@ export async function renameSharedItem(item) {
 export async function deleteSharedItem(item) {
   const itemType = resolveItemType(item);
   const itemId = resolveItemId(item);
-  if (!itemType || !itemId) return false;
+  if (!itemType || !itemId) {
+    showNotification("تعذّر الحذف", "تعذّر تحديد المجلد أو العنصر المطلوب. حدّث الصفحة وحاول مرة أخرى.", "error");
+    return false;
+  }
 
   const label = item.title || item.name || "العنصر";
   const copyByType = {
@@ -392,7 +402,10 @@ function isFolderDescendant(nodesByPrefix, ancestorPrefix, nodePrefix) {
 export async function openSharedMoveToDialog(item) {
   const itemType = resolveItemType(item);
   const itemId = resolveItemId(item);
-  if (!itemType || itemId === null) return;
+  if (!itemType || !itemId) {
+    showNotification("تعذّر النقل", "تعذّر تحديد المجلد أو العنصر المطلوب. حدّث الصفحة وحاول مرة أخرى.", "error");
+    return;
+  }
 
   if (itemType === "course") {
     // Courses are top-level only — nowhere to move them to (mirrors the
@@ -415,20 +428,22 @@ export async function openSharedMoveToDialog(item) {
     return;
   }
 
-  const destinationNodes = itemType === "folder"
-    ? nodes.filter((node) =>
-      node.prefix === "course"
-        ? node.raw.id === item.course_id
-        : node.raw.course_id === item.course_id)
-    : nodes;
-  if (itemType === "folder" && !item.course_id) {
+  const destinationCourseId = itemType === "folder" ? item.course_id : item.courseId;
+  if (["folder", "quiz", "lesson"].includes(itemType) && !destinationCourseId) {
     showNotification(
-      "تعذّر نقل المجلد",
-      "لم يتم العثور على المادة التي ينتمي إليها هذا المجلد. حدّث الصفحة وحاول مرة أخرى.",
+      "تعذّر النقل",
+      "لم يتم العثور على المادة التي ينتمي إليها هذا العنصر. حدّث الصفحة وحاول مرة أخرى.",
       "error",
     );
     return;
   }
+
+  const destinationNodes = ["folder", "quiz", "lesson"].includes(itemType)
+    ? nodes.filter((node) =>
+      node.prefix === "course"
+        ? node.raw.id === destinationCourseId
+        : node.raw.course_id === destinationCourseId)
+    : nodes;
 
   const nodesByPrefix = new Map(destinationNodes.map((n) => [n.id, n]));
   const itemLabel = item.title || item.name

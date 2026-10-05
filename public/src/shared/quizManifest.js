@@ -473,6 +473,7 @@ function buildCompatStructures(subjects, folders) {
   const categoryTree = {};
   const examList = [];
 
+  const folderById = new Map((folders || []).map((folder) => [folder.id, folder]));
   const courseNameById = new Map(
     subjects.map((s) => [s.id, { name: s.name }]),
   );
@@ -596,6 +597,55 @@ function buildCompatStructures(subjects, folders) {
         lessonCategoryKey = currentParentKey;
       }
       categoryTree[lessonCategoryKey].lessons.push({ ...lesson, category: lessonCategoryKey });
+    }
+  }
+
+  // Build folder nodes from the folder table as well as from quiz/lesson
+  // paths. This keeps empty folders navigable and gives every folder card the
+  // database identity required by admin manage actions.
+  for (const folder of folders || []) {
+    const courseName = courseNameById.get(folder.course_id)?.name;
+    if (!courseName || !categoryTree[courseName]) continue;
+
+    const chain = [];
+    const visited = new Set();
+    let current = folder;
+    while (current && !visited.has(current.id)) {
+      visited.add(current.id);
+      chain.unshift(current);
+      current = current.parent_folder_id
+        ? folderById.get(current.parent_folder_id)
+        : null;
+    }
+
+    let parentKey = courseName;
+    let parentPath = [...categoryTree[courseName].path];
+    for (const folderRow of chain) {
+      const subKey = `${parentKey}/${folderRow.name}`;
+      parentPath = [...parentPath, folderRow.name];
+      if (!categoryTree[subKey]) {
+        categoryTree[subKey] = {
+          key: subKey,
+          name: folderRow.name,
+          path: parentPath,
+          parent: parentKey,
+          subcategories: [],
+          exams: [],
+          lessons: [],
+          education_type: categoryTree[courseName].education_type,
+        };
+        categoryTree[parentKey].subcategories.push(subKey);
+      }
+
+      Object.assign(categoryTree[subKey], {
+        id: folderRow.id,
+        course_id: folderRow.course_id,
+        parent_folder_id: folderRow.parent_folder_id,
+        ...(folderRow.created_by && { created_by: folderRow.created_by }),
+        ...(folderRow.created_at && { created_at: folderRow.created_at }),
+        ...(folderRow.icon && { icon: folderRow.icon }),
+      });
+      parentKey = subKey;
     }
   }
 
