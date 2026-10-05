@@ -161,8 +161,8 @@
            edge instead so the sliver that's actually visible still reads
            as "part of a panel, click to pull it back" rather than a bare
            unmarked sliver. */
-        border-left: 1px solid var(--rule-heavy);
-        border-right: 3px solid var(--accent);
+        border-left: 1px solid var(--rule-heavy, var(--color-border, #e5e7eb));
+        border-right: 3px solid var(--accent, var(--color-primary, #6366f1));
     }
 
     .doc-toc.doc-toc-minimized:hover {
