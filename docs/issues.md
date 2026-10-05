@@ -8,7 +8,22 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Patches
 
 ### AI Agent
+
+#### Lessons Support
+The AI Agent should be able to create lessons from the home page.
+
+#### Dictation
 Fix Dictation: The dictation doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser when using the browser api for dictation.
+
+#### Action Menu
+* Add a button in the `.ai-agent-dropdown-menu` to summon the `الأوامر المتاحة` "ai-agent-slash-menu".
+* Add "/create-lesson" to the `ai-agent-slash-menu`, since it should be able to create lessons now.
+
+### Create-Lesson Page
+*![screenshot](image-1.png)*
+* It doesn't support YouTube Videos, and it should automatically detect the type of content instead of the user typing it manually, and it shouldn't.
+* I already can paste YouTube Links and video/image/audio links and it wouldn identify it, so the media section is useless, delete it and delete its button `btn btn-secondary btn-sm0` "+ وسائط"
+* The AI Agent doesn't support creating lessons, or sections. 
 
 ### Performance (Globally, but specially the main page)
 Performance Improvements: Currently, there are many custom mechanism fucntionalities built in JS that works perfectly, but it may exist natively in HTML, CSS, or as a browser API. In that case we shouldn't reinvent the wheel, specially if it exists natively. Anything that exists natively in HTML, CSS, or as a browser API should be used that way and we should delete any custom JS implementation that has native alternatives. That would improve performance very well. Search for everything, anything that can be implemented in HTML & CSS directly without JS should be done so. You can search the web for modern HTML & CSS, because sometimes they add new things, but watch out for compatibility with different browsers (minimum requirenment: Chrome). But I don't want to miss up any functionality, this is just for performance, not to change any fucntionality.
@@ -45,9 +60,7 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
   * (Suggestion) Add: Number of Views or people who solved a quiz on each quiz.
 
 #### New 
-* Add `مادة جديدة` In the `class="btn create-folder-btn mobile-only-flex"` button's dropdown.
-* Redesign the `#userQuizContextMenu` Element: 
-  * Move all the button for creating ("إنشاء مادة", "إنشاء مجلد", "إنشاء امتحان",  and the new "انشاء درس") to a submenu dropdown, so you will have to design a submenu for the `#userQuizContextMenu`.
+* Implement an inline create modal for `مادة جديدة` In the `class="btn create-folder-btn mobile-only-flex"` button's dropdown And the "إنشاء مادة" in the `#userQuizContextMenu`. See the inline create modal for quizzes.
 
 ### `public\control.html` Page
 * Give `#collegeForm` an advanced loading skeleton/animation like the sections/forms.

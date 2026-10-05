@@ -760,7 +760,7 @@ export function renderUserQuizzesView() {
         title: currentFolderId
           ? "هذا المجلد فارغ"
           : "لم تقم بإنشاء أي امتحانات أو مجلدات حتى الآن",
-        subtitle: "انقر على الزر الذي في الأعلى للبدء",
+        subtitle: "قم بإنشاء مادة ، أو مجلد ، أو امتحان ، أو درس",
       });
       quizzesContainer.appendChild(emptyState);
     } else {
