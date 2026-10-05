@@ -2523,6 +2523,44 @@ Container
   overflow-y: auto;
 }
 
+.move-to-dialog-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding: 10px 16px 4px;
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.move-to-dialog-status[hidden] {
+  display: none;
+}
+
+.move-to-dialog-status::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: move-to-dialog-spin 0.7s linear infinite;
+}
+
+.move-to-dialog-status--error {
+  color: var(--color-error);
+}
+
+.move-to-dialog-status--error::before {
+  display: none;
+}
+
+@keyframes move-to-dialog-spin {
+  to { transform: rotate(360deg); }
+}
+
 .move-to-dialog-node {
   display: flex;
   align-items: center;
@@ -2601,6 +2639,15 @@ Container
 
 .move-to-dialog-node--disabled .move-to-dialog-node-icon {
   opacity: 0.7;
+}
+
+.move-to-dialog-node:disabled:not(.move-to-dialog-node--disabled) {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.move-to-dialog-node--loading {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.06));
 }
 
 /* Rows need extra right padding per ancestor level so the label doesn't

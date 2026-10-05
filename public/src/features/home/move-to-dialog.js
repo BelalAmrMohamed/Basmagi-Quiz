@@ -90,7 +90,11 @@ export function openMoveToDialogWithSource(source) {
     const card = document.createElement("div");
     card.className = "modal-card move-to-dialog-card";
 
-    const closeDialog = () => overlay.remove();
+    let isMoving = false;
+    const closeDialog = (force = false) => {
+        if (isMoving && !force) return;
+        overlay.remove();
+    };
 
     card.innerHTML = `
     <div class="move-to-dialog-header">
@@ -102,11 +106,29 @@ export function openMoveToDialogWithSource(source) {
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
     </div>
+    <p class="move-to-dialog-status" role="status" aria-live="polite" hidden></p>
     <div class="move-to-dialog-tree" role="tree" aria-label="اختر وجهة النقل"></div>
   `;
 
     const treeEl = card.querySelector(".move-to-dialog-tree");
+    const statusEl = card.querySelector(".move-to-dialog-status");
+    const closeButtonEl = card.querySelector(".move-to-dialog-close");
     const allNodes = source.getNodes();
+    const destinationButtons = [];
+
+    function setMoving(moving, selectedButton = null) {
+        isMoving = moving;
+        treeEl.setAttribute("aria-busy", String(moving));
+        closeButtonEl.disabled = moving;
+        closeButtonEl.setAttribute("aria-disabled", String(moving));
+        destinationButtons.forEach((button) => {
+            button.disabled = moving || button.dataset.disabled === "true";
+            button.classList.toggle("move-to-dialog-node--loading", moving && button === selectedButton);
+        });
+        statusEl.hidden = !moving;
+        statusEl.classList.toggle("move-to-dialog-status--error", false);
+        statusEl.textContent = moving ? "جارٍ النقل… يرجى الانتظار." : "";
+    }
 
     /**
      * One row = one button styled as a real tree node: an icon, a label, and
@@ -133,6 +155,7 @@ export function openMoveToDialogWithSource(source) {
         if (disabledReason) {
             row.classList.add("move-to-dialog-node--disabled");
             row.disabled = true;
+            row.dataset.disabled = "true";
             row.title = disabledReason;
         }
 
@@ -169,38 +192,51 @@ export function openMoveToDialogWithSource(source) {
 
         if (!disabledReason) {
             row.onclick = async () => {
-                const { moved, blocked, saveFailed } = await source.moveTo(id);
-                closeDialog();
-                if (moved > 0) {
+                if (isMoving) return;
+                setMoving(true, row);
+                try {
+                    const { moved, blocked, saveFailed } = await source.moveTo(id);
+                    if (moved > 0) {
+                        closeDialog(true);
+                        source.showNotification(
+                            "تم النقل",
+                            moved > 1 ? `تم نقل ${moved} عنصر بنجاح.` : "تم نقل العنصر بنجاح.",
+                            "success",
+                        );
+                        if (blocked > 0) {
+                            source.showNotification(
+                                "تعذر نقل بعض العناصر",
+                                "لا يمكن نقل بعض العناصر إلى هذه الوجهة (تعارض في الاسم، أو قيود على نقل المجلدات/المواد).",
+                                "warning",
+                            );
+                        }
+                    } else if (saveFailed) {
+                        setMoving(false);
+                    } else if (blocked > 0) {
+                        setMoving(false);
+                        source.showNotification(
+                            "تعذر نقل بعض العناصر",
+                            "لا يمكن نقل بعض العناصر إلى هذه الوجهة (تعارض في الاسم، أو قيود على نقل المجلدات/المواد).",
+                            "warning",
+                        );
+                    } else {
+                        throw new Error("لم يتم نقل أي عنصر. حاول مرة أخرى.");
+                    }
+                    if (moved > 0) source.onMoved();
+                } catch (error) {
+                    setMoving(false);
+                    statusEl.hidden = false;
+                    statusEl.classList.add("move-to-dialog-status--error");
+                    statusEl.textContent = "تعذّر إكمال النقل. يمكنك اختيار الوجهة والمحاولة مرة أخرى.";
+                    console.error("[move-to-dialog] Move failed:", error);
                     source.showNotification(
-                        "تم النقل",
-                        moved > 1 ? `تم نقل ${moved} عنصر بنجاح.` : "تم نقل العنصر بنجاح.",
-                        "success",
+                        "تعذّر النقل",
+                        error?.message || "حدث خطأ أثناء النقل. حاول مرة أخرى.",
+                        "error",
                     );
                 }
-                // saveFailed (moveItemsToFolder couldn't persist the write —
-                // see saveUserQuizzes in user-quizzes-folders.js) is checked
-                // first: it's mutually exclusive with a real placement-rule
-                // block (blocked === 0 in that case), and needs its own
-                // message so a storage-quota failure isn't misattributed to
-                // a name collision or move restriction the user didn't
-                // actually hit.
-                if (saveFailed) {
-                    // saveUserQuizzes already showed its own storage-specific
-                    // notification — nothing further needed here.
-                } else if (blocked > 0) {
-                    // Worded generically enough to cover either cause a blocked move
-                    // can have (self/descendant cycle, course-top-level rule, or a
-                    // same-level name collision at the destination) instead of
-                    // misattributing it to just one of them.
-                    source.showNotification(
-                        "تعذر نقل بعض العناصر",
-                        "لا يمكن نقل بعض العناصر إلى هذه الوجهة (تعارض في الاسم، أو قيود على نقل المجلدات/المواد).",
-                        "warning",
-                    );
-                }
-                if (moved > 0) source.onMoved();
             };
+            destinationButtons.push(row);
         }
         container.appendChild(row);
     }
@@ -252,7 +288,7 @@ export function openMoveToDialogWithSource(source) {
     overlay.appendChild(card);
     document.body.appendChild(overlay);
 
-    card.querySelector(".move-to-dialog-close").onclick = closeDialog;
+    closeButtonEl.onclick = () => closeDialog();
     overlay.onclick = (e) => {
         if (e.target === overlay) closeDialog();
     };
