@@ -910,8 +910,9 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
         // lesson at the "امتحاناتك" root regardless of where this was opened.
         icon: CREATE_LESSON_SVG,
         label: "إنشاء درس",
-        onClick: () => {
-          window.location.href = "/create-lesson";
+        onClick: async () => {
+          const { openInlineCreateLessonModal } = await import("./create-lesson-modal.js");
+          openInlineCreateLessonModal();
         },
       },
       {

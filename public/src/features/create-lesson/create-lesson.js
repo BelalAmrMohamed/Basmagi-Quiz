@@ -52,6 +52,7 @@ import { applyMarkdownToolbarAction } from "../../shared/markdown-toolbar-action
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { CREATE_LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { CREATE_LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
+import { downloadLesson } from "../home/lesson-download.js";
 
 // Matches the canonical published-lesson id shape used across the lesson
 // feature (lesson-view.js, lesson-schema.js): a Supabase UUID. Local-only
@@ -3041,6 +3042,20 @@ window.saveLesson = async function () {
             showNotification("خطأ", errorMessage || "فشل حفظ الدرس", "error");
         }
     }, 400);
+};
+
+window.downloadLessonFile = function (format) {
+    if (!["html", "pdf"].includes(format)) {
+        showNotification("صيغة غير مدعومة", "يمكن تنزيل الدرس بصيغة HTML أو PDF.", "error");
+        return;
+    }
+    void downloadLesson({
+        id: publishedLessonId || editingLessonId || currentDraftId || "lesson-draft",
+        title: lessonData.title || "درس بدون عنوان",
+        description: lessonData.description || "",
+        reader_prefs_default: readerPrefsFromData(),
+        content: serializeContent(),
+    }, null, { format, skipProtection: true });
 };
 
 /**

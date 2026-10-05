@@ -713,7 +713,9 @@ export function renderUserQuizzesView() {
         lessonOpt.onclick = (e) => {
           e.stopPropagation();
           closeMenu();
-          window.location.href = "/create-lesson";
+          import("./create-lesson-modal.js").then(({ openInlineCreateLessonModal }) => {
+            openInlineCreateLessonModal();
+          });
         };
         menu.appendChild(lessonOpt);
 

@@ -55,7 +55,7 @@ Quiz creation workflow (for NEW quizzes created by AI):
 
 Lesson creation workflow:
 1. When asked to create lesson notes/summaries, organize into clear sections.
-2. Show a preview and ask for confirmation and format choice (Markdown or JSON).
+2. Show a preview and ask for confirmation and format choice (interactive HTML, PDF, Markdown, or JSON).
 3. Upon confirmation, use generate_lesson_file to send the document.
 
 File handling:

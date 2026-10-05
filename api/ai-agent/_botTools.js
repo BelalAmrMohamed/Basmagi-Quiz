@@ -19,6 +19,8 @@ import {
   generateQuizPdf,
   generateLessonMarkdown,
   generateLessonJson,
+  generateLessonHtml,
+  generateLessonPdf,
 } from "./_botGenerators.js";
 
 import {
@@ -168,14 +170,14 @@ export const BOT_TOOLS = [
   {
     name: "generate_lesson_file",
     description:
-      "Generate and send a lesson file to the user. Supported formats: 'markdown', 'json'.",
+      "Generate and send a lesson file to the user. Supported formats: interactive 'html', 'pdf', 'markdown', and 'json'.",
     parameters: {
       type: "object",
       properties: {
         title: { type: "string", description: "Lesson title." },
         format: {
           type: "string",
-          enum: ["markdown", "json"],
+          enum: ["html", "pdf", "markdown", "json"],
           description: "Output file format.",
         },
         sections: {
@@ -193,7 +195,11 @@ export const BOT_TOOLS = [
                   properties: {
                     q: { type: "string" },
                     options: { type: "array", items: { type: "string" } },
+                    correct: { type: "array", items: { type: "integer" }, description: "Correct option indexes, starting at 0." },
+                    multiSelect: { type: "boolean" },
                     answer: { type: "string" },
+                    modelAnswer: { type: "string" },
+                    explanation: { type: "string" },
                   },
                 },
               },
@@ -516,6 +522,14 @@ async function handleGenerateLessonFile(args, chatId) {
   let buffer, filename;
 
   switch (format) {
+    case "html":
+      buffer = generateLessonHtml(title, sections);
+      filename = `${safeName}.html`;
+      break;
+    case "pdf":
+      buffer = await generateLessonPdf(title, sections);
+      filename = `${safeName}.pdf`;
+      break;
     case "markdown":
       buffer = generateLessonMarkdown(title, sections);
       filename = `${safeName}.md`;

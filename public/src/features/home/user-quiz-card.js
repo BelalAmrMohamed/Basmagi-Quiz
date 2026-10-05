@@ -381,7 +381,7 @@ export function createUserLessonCard(lesson) {
  *     admin create-lesson endpoint has no caller), and the bulk bar already
  *     tells the user lessons "don't upload yet" — a dead button here would
  *     contradict that.
- *   - Mobile-only download row: lesson export doesn't exist yet either.
+ *   - Download formats are available from the lesson card's download button.
  */
 export function showUserLessonActionsOverlay(lesson, triggerBtn) {
   const lessonId = lesson.id || lesson.meta?.id;

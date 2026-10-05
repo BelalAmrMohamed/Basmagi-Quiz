@@ -1767,6 +1767,37 @@ Container
   box-shadow: 0 0 0 1px var(--color-primary-light);
 }
 
+.lesson-download-options {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.lesson-download-options button {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.lesson-download-options button:hover,
+.lesson-download-options button:focus-visible {
+  border-color: var(--color-primary);
+  outline-color: var(--color-primary);
+}
+
+.lesson-download-options small {
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+}
+
 /*
  * The create-quiz card now lives inside .user-quizzes-container (same grid
  * as user quiz cards) so the old margin-bottom spacer is no longer needed.
