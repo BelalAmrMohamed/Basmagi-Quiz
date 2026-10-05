@@ -415,7 +415,22 @@ export async function openSharedMoveToDialog(item) {
     return;
   }
 
-  const nodesByPrefix = new Map(nodes.map((n) => [n.id, n]));
+  const destinationNodes = itemType === "folder"
+    ? nodes.filter((node) =>
+      node.prefix === "course"
+        ? node.raw.id === item.course_id
+        : node.raw.course_id === item.course_id)
+    : nodes;
+  if (itemType === "folder" && !item.course_id) {
+    showNotification(
+      "تعذّر نقل المجلد",
+      "لم يتم العثور على المادة التي ينتمي إليها هذا المجلد. حدّث الصفحة وحاول مرة أخرى.",
+      "error",
+    );
+    return;
+  }
+
+  const nodesByPrefix = new Map(destinationNodes.map((n) => [n.id, n]));
   const itemLabel = item.title || item.name
     ? `"${item.title || item.name}"`
     : "العنصر";
@@ -447,7 +462,7 @@ export async function openSharedMoveToDialog(item) {
     },
 
     getNodes() {
-      return nodes.map((n) => ({
+      return destinationNodes.map((n) => ({
         id: n.id,
         parentId: n.parentId,
         title: n.title,

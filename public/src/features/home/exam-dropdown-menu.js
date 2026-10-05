@@ -287,8 +287,11 @@ export function createActionGroupSubmenu(actions, closeDropdown, reposition, tri
     btn.innerHTML = `${icon || ""}<span>${escapeHtml(label)}</span>`;
     btn.onclick = (e) => {
       e.stopPropagation();
-      closeDropdown();
-      onClick();
+      try {
+        onClick();
+      } finally {
+        closeDropdown();
+      }
     };
     content.appendChild(btn);
   });

@@ -295,6 +295,7 @@ async function buildSubjects(quizzes, lessons, courses, folders) {
       created_at: course.created_at || null,
       quizzes: [],
       lessons: [],
+      folderPaths: [],
     };
     if (course.education_type === "University" && course.college) subject.faculty = course.college;
     if (course.year != null) subject.year = course.year;
@@ -390,6 +391,24 @@ async function buildSubjects(quizzes, lessons, courses, folders) {
       courseId: row.course_id || null,
       folderId: row.folder_id || null,
     });
+  }
+
+  // Preserve folders that have no quizzes or lessons so admin placement
+  // pickers can still target them. Courses with folders must also be present
+  // in the subject list even when those folders are currently empty.
+  for (const folder of folders || []) {
+    const course = courseById.get(folder.course_id);
+    if (!course) continue;
+    const subject = ensureSubject(course);
+    try {
+      const segments = getFolderSegments(folder.id, folder.course_id);
+      if (segments.length && !subject.folderPaths.some((path) =>
+        path.length === segments.length && path.every((segment, index) => segment === segments[index]))) {
+        subject.folderPaths.push(segments);
+      }
+    } catch (error) {
+      console.warn(`[quizManifest] ${error.message}`);
+    }
   }
 
   return { subjects: Array.from(subjectsMap.values()) };

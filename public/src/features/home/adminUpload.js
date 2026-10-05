@@ -70,20 +70,25 @@ function buildManifestTree(subjects) {
       if (year && term && !entry.yearterm.some(([y, t]) => y === year && t === term))
         entry.yearterm.push([year, term]);
       tree[type][college][name] = entry;
-      _extractSubfolders(subject.quizzes ?? [], entry);
+      _extractSubfolders(subject.quizzes ?? [], entry, subject.folderPaths ?? []);
     } else {
       const entry = tree[type][name] || { yearterm: [], subfolders: [] };
       if (year && term && !entry.yearterm.some(([y, t]) => y === year && t === term))
         entry.yearterm.push([year, term]);
       tree[type][name] = entry;
-      _extractSubfolders(subject.quizzes ?? [], entry);
+      _extractSubfolders(subject.quizzes ?? [], entry, subject.folderPaths ?? []);
     }
   }
   return tree;
 }
 
-function _extractSubfolders(quizzes, entry) {
+function _extractSubfolders(quizzes, entry, folderPaths = []) {
   const seen = new Set(entry.subfolders);
+  for (const folderSegments of folderPaths) {
+    if (!Array.isArray(folderSegments) || folderSegments.length === 0) continue;
+    const path = folderSegments.join("/");
+    if (!seen.has(path)) { seen.add(path); entry.subfolders.push(path); }
+  }
   for (const quiz of quizzes) {
     const folderSegments = Array.isArray(quiz.folderSegments)
       ? quiz.folderSegments
