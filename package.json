@@ -12,7 +12,7 @@
     "commit": "node scripts/commit.js",
     "release": "node scripts/release.js",
     "zip": "node scripts/commit.js && git archive --format=zip --output=basmagi-quiz.zip HEAD && echo basmagi-quiz.zip is ready",
-    "push": "git switch production; if ($?) { git merge main }; if ($?) { git push }; if ($?) { git switch main }",
+    "push": "git switch production && git merge main && git push && git switch main",
     "seo:check": "node scripts/seo-check.mjs"
   },
   "keywords": [
