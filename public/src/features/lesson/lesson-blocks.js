@@ -176,7 +176,7 @@ function renderMcqQuestionBody(block, questionId, options, prior) {
   const optionsHtml = options
     .map(
       (opt, i) =>
-        `<button type="button" class="lesson-question__option" data-option-index="${i}">` +
+        `<button type="button" class="lesson-question__option" dir="auto" data-option-index="${i}">` +
         `<span class="lesson-question__option-text md-content">${renderMarkdown(String(opt))}</span>` +
         `</button>`,
     )

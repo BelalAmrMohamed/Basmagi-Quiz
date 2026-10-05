@@ -333,7 +333,7 @@ export const ADD_LESSON_QUESTION_TOOL = {
 
 export const CREATE_LESSON_TOOL = {
   name: "create_lesson",
-  description: "Create a lesson with an ordered set of sections. Each section's content is Markdown. On the home page, only call after the user confirms the proposed lesson; on the lesson editor, only call after confirmation before replacing existing lesson content. An explicit /create-lesson command is confirmation.",
+  description: "Create a lesson with ordered sections containing a blocks array. Use {type:'markdown',body} for lesson content and {type:'question',questionKind:'mcq'|'essay',prompt,...} for embedded questions. MCQs require 2-8 options, a zero-based correctIndex (single answer) or correctIndexes (multiple answers), multiSelect:true for multiple answers, and an explanation. Essays require a complete modelAnswer. Keep title, description, section titles, Markdown, and question data in this structured JSON shape. On the home page, only call after the user confirms the proposed lesson; on the lesson editor, only call after confirmation before replacing existing lesson content. An explicit /create-lesson command is confirmation.",
   input_schema: {
     type: "object",
     properties: {
@@ -346,8 +346,27 @@ export const CREATE_LESSON_TOOL = {
           properties: {
             title: { type: "string" },
             content: { type: "string" },
+            defaultHidden: { type: "boolean" },
+            blocks: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  type: { type: "string", enum: ["markdown", "question"] },
+                  body: { type: "string" },
+                  questionKind: { type: "string", enum: ["mcq", "essay"] },
+                  prompt: { type: "string" },
+                  options: { type: "array", items: { type: "string" } },
+                  correctIndex: { type: "integer", description: "Zero-based index of the correct option for a single-answer MCQ." },
+                  correctIndexes: { type: "array", items: { type: "integer" }, description: "Zero-based indexes of all correct options for a multi-select MCQ." },
+                  multiSelect: { type: "boolean" },
+                  modelAnswer: { type: "string" },
+                  explanation: { type: "string" },
+                },
+              },
+            },
           },
-          required: ["title", "content"],
+          required: ["title", "blocks"],
         },
       },
     },

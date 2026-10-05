@@ -126,23 +126,35 @@ export function generateLessonMarkdown(title, sections) {
 
   sections.forEach((sec) => {
     md += `## ${sec.title}\n\n`;
-    md += `${sec.content}\n\n`;
-
-    if (Array.isArray(sec.questions) && sec.questions.length) {
-      md += `### أسئلة على هذا القسم\n\n`;
-      sec.questions.forEach((q, qi) => {
-        md += `${qi + 1}. ${q.q || q.prompt || ""}\n`;
+    let questionIndex = 0;
+    lessonSectionBlocks(sec).forEach((block) => {
+      if (block.type === "markdown") {
+        md += `${block.body}\n\n`;
+      } else {
+        md += `### ${++questionIndex}. ${block.q || ""}\n\n`;
+        const q = block;
         if (Array.isArray(q.options)) {
           q.options.forEach((opt, oi) => {
             md += `   ${String.fromCharCode(65 + oi)}. ${opt}\n`;
           });
         }
+        const correct = Array.isArray(q.correct)
+          ? q.correct
+          : Number.isInteger(q.correctIndex)
+            ? [q.correctIndex]
+            : Array.isArray(q.correctIndexes)
+              ? q.correctIndexes
+              : [];
+        if (correct.length && Array.isArray(q.options)) {
+          md += `   **Correct answer:** ${correct.map((index) => q.options[index]).filter(Boolean).join(", ")}\n`;
+        }
         if (q.answer || q.modelAnswer) {
           md += `   **الإجابة:** ${q.answer || q.modelAnswer}\n`;
         }
+        if (q.explanation) md += `   **Explanation:** ${q.explanation}\n`;
         md += "\n";
-      });
-    }
+      }
+    });
 
     md += `---\n\n`;
   });
@@ -169,31 +181,42 @@ export function generateLessonJson(title, sections) {
 export function generateLessonHtml(title, sections) {
   const safeTitle = escapeHtml(title || "درس بدون عنوان");
   const sectionHtml = (Array.isArray(sections) ? sections : []).map((section, sectionIndex) => {
-    const questions = (Array.isArray(section.questions) ? section.questions : []).map((question, questionIndex) => {
+    let questionIndex = 0;
+    const blocksHtml = lessonSectionBlocks(section).map((block) => {
+      if (block.type === "markdown") {
+        return `<div class="content">${escapeHtml(block.body).replace(/\r?\n/g, "<br>")}</div>`;
+      }
+      const question = block;
+      questionIndex += 1;
       const options = Array.isArray(question.options) ? question.options : [];
       let correct = Array.isArray(question.correct)
         ? question.correct.map(Number)
-        : Number.isInteger(Number(question.correct))
-          ? [Number(question.correct)]
-          : [];
+        : Array.isArray(question.correctIndexes)
+          ? question.correctIndexes.map(Number)
+          : Number.isInteger(question.correctIndex)
+            ? [question.correctIndex]
+            : Number.isInteger(Number(question.correct))
+              ? [Number(question.correct)]
+              : [];
       if (!correct.length && question.answer && options.length) {
-          const answer = String(question.answer).trim().toLocaleLowerCase();
+        const answer = String(question.answer).trim().toLocaleLowerCase();
         correct = options.flatMap((option, optionIndex) =>
           String(option).trim().toLocaleLowerCase() === answer ? [optionIndex] : [],
         );
       }
-      const questionTitle = escapeHtml(question.q || question.prompt || `سؤال ${questionIndex + 1}`);
+      const questionTitle = escapeHtml(question.q || `سؤال ${questionIndex}`);
       const optionsHtml = options.map((option, optionIndex) =>
         `<button type="button" class="option" data-index="${optionIndex}">${escapeHtml(option)}</button>`,
       ).join("");
       const modelAnswer = escapeHtml(question.modelAnswer || question.answer || "");
-      const essay = options.length === 0;
+      const essay = question.questionKind === "essay" || options.length === 0;
+      const explanation = question.explanation ? `<p class="explanation" hidden>${escapeHtml(question.explanation)}</p>` : "";
       return `<article class="question" data-correct="${escapeHtml(JSON.stringify(correct))}" data-multi="${question.multiSelect === true}" data-model="${modelAnswer}" data-essay="${essay}"><h3>${questionTitle}</h3>${essay
         ? `<textarea rows="4" placeholder="اكتب إجابتك هنا"></textarea><button type="button" class="check">تحقق من إجابتي</button>`
         : `<div class="options">${optionsHtml}</div>${question.multiSelect ? '<button type="button" class="check">تحقق من الإجابات</button>' : ""}`
-      }<p class="feedback" hidden></p>${question.explanation ? `<p class="explanation" hidden>${escapeHtml(question.explanation)}</p>` : ""}</article>`;
+      }<p class="feedback" hidden></p>${explanation}</article>`;
     }).join("");
-    return `<section><h2>${escapeHtml(section.title || `قسم ${sectionIndex + 1}`)}</h2><div class="content">${escapeHtml(section.content || "").replace(/\r?\n/g, "<br>")}</div>${questions}</section>`;
+    return `<section><h2>${escapeHtml(section.title || `قسم ${sectionIndex + 1}`)}</h2>${blocksHtml}</section>`;
   }).join("");
   const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle}</title><style>
     *{box-sizing:border-box}body{max-width:850px;margin:0 auto;padding:24px;font:16px/1.8 Tahoma,Arial,sans-serif;color:#18181b}h1{color:#1d4ed8}section{margin:2rem 0}section>h2{border-bottom:1px solid #ddd;padding-bottom:.5rem}.question{margin:1rem 0;padding:1rem;border:1px solid #ddd;border-radius:12px}.options{display:grid;gap:.5rem}.option,textarea{font:inherit;padding:.65rem;border:1px solid #ccc;border-radius:8px;background:white;text-align:start}.option{cursor:pointer}.option.selected{border-color:#2563eb;background:#eff6ff}.option.correct{border-color:#16a34a;background:#dcfce7}.option.wrong{border-color:#dc2626;background:#fee2e2}.check{margin-top:.7rem;padding:.55rem 1rem;border:0;border-radius:8px;background:#2563eb;color:white;font:inherit;cursor:pointer}.feedback{font-weight:bold}.explanation{color:#52525b}textarea{display:block;width:100%;margin-top:.7rem}.content{white-space:normal}@media(max-width:600px){body{padding:14px}}
@@ -232,12 +255,24 @@ export async function generateLessonPdf(title, sections) {
     (Array.isArray(sections) ? sections : []).forEach((section, index) => {
       doc.fontSize(15).font("Helvetica-Bold").text(section.title || `Section ${index + 1}`);
       doc.moveDown(0.3);
-      if (section.content) doc.fontSize(11).font("Helvetica").text(section.content);
-      for (const [questionIndex, question] of (Array.isArray(section.questions) ? section.questions : []).entries()) {
+      let questionIndex = 0;
+      for (const block of lessonSectionBlocks(section)) {
+        if (block.type === "markdown") {
+          if (block.body) doc.fontSize(11).font("Helvetica").text(block.body);
+          continue;
+        }
+        const question = block;
+        questionIndex += 1;
         doc.moveDown(0.5);
-        doc.fontSize(12).font("Helvetica-Bold").text(`${questionIndex + 1}. ${question.q || question.prompt || ""}`);
+        doc.fontSize(12).font("Helvetica-Bold").text(`${questionIndex}. ${question.q || question.prompt || ""}`);
         const options = Array.isArray(question.options) ? question.options : [];
-        let correctIndexes = Array.isArray(question.correct) ? question.correct.map(Number) : [];
+        let correctIndexes = Array.isArray(question.correct)
+          ? question.correct.map(Number)
+          : Array.isArray(question.correctIndexes)
+            ? question.correctIndexes.map(Number)
+            : Number.isInteger(question.correctIndex)
+              ? [question.correctIndex]
+              : [];
         if (!correctIndexes.length && question.answer) {
           const answer = String(question.answer).trim().toLocaleLowerCase();
           correctIndexes = options.flatMap((option, optionIndex) =>
@@ -251,11 +286,31 @@ export async function generateLessonPdf(title, sections) {
         if (question.answer || question.modelAnswer) {
           doc.moveDown(0.2).fontSize(10).font("Helvetica-Oblique").text(`Answer: ${question.answer || question.modelAnswer}`);
         }
+        if (question.explanation) {
+          doc.moveDown(0.2).fontSize(9).font("Helvetica-Oblique").text(`Explanation: ${question.explanation}`);
+        }
       }
       doc.moveDown();
     });
     doc.end();
   });
+}
+
+function lessonSectionBlocks(section) {
+  const blocks = [];
+  if (section?.content) blocks.push({ type: "markdown", body: String(section.content) });
+  if (Array.isArray(section?.blocks)) blocks.push(...section.blocks);
+  if (Array.isArray(section?.questions)) {
+    blocks.push(...section.questions.map((question) => ({ type: "question", ...question })));
+  }
+  return blocks.map((block) => block?.type === "question"
+    ? {
+        ...block,
+        q: block.prompt || block.q || "",
+        correct: block.correctIndexes || (Number.isInteger(block.correctIndex) ? [block.correctIndex] : block.correct),
+        answer: block.modelAnswer || block.answer || "",
+      }
+    : { type: "markdown", body: String(block?.body || "") });
 }
 
 function escapeHtml(value) {

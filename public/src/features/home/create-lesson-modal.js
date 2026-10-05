@@ -3,8 +3,42 @@ import { showNotification } from "../../components/notifications/notifications.j
 import { hasSameLevelCollision } from "./user-quizzes-folders.js";
 import { renderUserQuizzesView } from "./user-quizzes-view.js";
 import { wireModalDismiss, fadeOutAndRemove } from "./modal-utils.js";
+import { normalizeLessonJson } from "../lesson/lesson-json.js";
 
-const LESSON_CREATION_PROMPT = `اكتب درسًا تعليميًا واضحًا ومنظمًا بصيغة Markdown فقط، دون مقدمة خارج الدرس أو أسوار كود. استخدم عناوين الأقسام (##)، وشرحًا مفصلًا مناسبًا للمذاكرة، وأمثلة عند الحاجة، ونقاطًا مختصرة للمراجعة في النهاية. لا تخترع مراجع أو معلومات غير مؤكدة.`;
+const LESSON_CREATION_PROMPT = `Create a complete lesson as valid JSON. Write the lesson in the language requested by the user or the language of the requested lesson; if no language is specified, use the language of the request.
+
+Use this exact structure:
+\`\`\`json
+{
+  "title": "Lesson title",
+  "description": "Short optional description",
+  "sections": [
+    {
+      "title": "Section title",
+      "blocks": [
+        { "type": "markdown", "body": "Lesson content in Markdown..." },
+        {
+          "type": "question",
+          "questionKind": "mcq",
+          "prompt": "Question text",
+          "options": ["Option A", "Option B", "Option C"],
+          "correctIndex": 1,
+          "multiSelect": false,
+          "explanation": "Why the answer is correct"
+        },
+        {
+          "type": "question",
+          "questionKind": "essay",
+          "prompt": "Essay question",
+          "modelAnswer": "A complete model answer",
+          "explanation": "Optional guidance"
+        }
+      ]
+    }
+  ]
+}
+\`\`\`
+Create multiple logically ordered sections as needed. Each section may contain multiple Markdown blocks and embedded interactive questions. For single-answer MCQs use one zero-based correctIndex; for multiple-answer MCQs use "multiSelect": true and a zero-based "correctIndexes" array instead. Every MCQ must have 2-8 options, a correct answer, and a useful explanation. Every essay question must include a complete modelAnswer (Students Answers will be rated based on it using keyword matching). Keep the lesson accurate, clear, appropriately detailed, and useful for studying. Return valid JSON.`;
 
 export function openInlineCreateLessonModal() {
   if (!document.getElementById("modal-pop-in-style")) {
@@ -42,14 +76,10 @@ export function openInlineCreateLessonModal() {
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
     </div>
-    <p class="create-quiz-modal__subtitle">أدخل عنوان الدرس ومحتواه. يمكنك كتابة المحتوى بتنسيق Markdown.</p>
-    <div class="create-quiz-modal__form-group">
-      <label for="inlineLessonTitle" class="create-quiz-modal__label">عنوان الدرس</label>
-      <input type="text" id="inlineLessonTitle" class="create-quiz-modal__input" maxlength="120" placeholder="مثال: مقدمة في علم التشريح" autocomplete="off">
-    </div>
+    <p class="create-quiz-modal__subtitle">الصق JSON للدرس كاملاً، بما يشمل العنوان والأقسام والأسئلة المدمجة.</p>
     <div class="create-quiz-modal__form-group create-quiz-modal__form-group--content">
-      <label for="inlineLessonContent" class="create-quiz-modal__label">محتوى الدرس</label>
-      <textarea id="inlineLessonContent" class="create-quiz-modal__textarea" rows="7" placeholder="اكتب محتوى الدرس هنا…"></textarea>
+      <label for="inlineLessonJson" class="create-quiz-modal__label">JSON الدرس</label>
+      <textarea id="inlineLessonJson" class="create-quiz-modal__textarea" rows="11" spellcheck="false" dir="ltr" placeholder='{"title":"...","description":"...","sections":[{"title":"...","blocks":[{"type":"markdown","body":"..."}]}]}'></textarea>
     </div>
     <div class="create-quiz-modal__actions">
       <div class="create-quiz-modal__main-actions">
@@ -60,8 +90,7 @@ export function openInlineCreateLessonModal() {
   overlay.appendChild(modalCard);
   document.body.appendChild(overlay);
 
-  const titleInput = modalCard.querySelector("#inlineLessonTitle");
-  const contentInput = modalCard.querySelector("#inlineLessonContent");
+  const lessonJsonInput = modalCard.querySelector("#inlineLessonJson");
   const close = wireModalDismiss(overlay, () => fadeOutAndRemove(overlay, modalCard));
   modalCard.querySelector("#inlineLessonClose").addEventListener("click", close);
 
@@ -76,18 +105,21 @@ export function openInlineCreateLessonModal() {
   });
 
   const createLesson = () => {
-    const title = titleInput.value.trim();
-    const body = contentInput.value.trim();
-    if (!title) {
-      showNotification("عنوان الدرس مطلوب", "اكتب عنوان الدرس أولاً.", "warning");
-      titleInput.focus();
+    let lesson;
+    try {
+      lesson = normalizeLessonJson(JSON.parse(lessonJsonInput.value));
+    } catch (error) {
+      const isJsonError = error instanceof SyntaxError;
+      if (!isJsonError) console.error("[create-lesson-modal] invalid lesson JSON:", error);
+      showNotification(
+        isJsonError ? "JSON غير صالح" : "بيانات الدرس غير صالحة",
+        isJsonError ? "تحقق من صياغة JSON ثم حاول مرة أخرى." : error.userMessage || error.message,
+        "warning",
+      );
+      lessonJsonInput.focus();
       return;
     }
-    if (!body) {
-      showNotification("محتوى الدرس مطلوب", "أضف محتوى الدرس قبل إنشائه.", "warning");
-      contentInput.focus();
-      return;
-    }
+    const { title, description, sections, questionCount } = lesson;
 
     let userItems;
     try {
@@ -120,15 +152,8 @@ export function openInlineCreateLessonModal() {
         source: "",
         passwordProtected: false,
       },
-      stats: { questionCount: 0, sectionCount: 1 },
-      lesson: {
-        sections: [{
-          id: `s${Date.now().toString(36)}`,
-          title: "",
-          defaultHidden: false,
-          blocks: [{ type: "markdown", body }],
-        }],
-      },
+      stats: { questionCount, sectionCount: sections.length },
+      lesson: { sections },
       passwordHash: null,
       questions: [],
     });
@@ -143,11 +168,5 @@ export function openInlineCreateLessonModal() {
   };
 
   modalCard.querySelector("#inlineLessonCreate").addEventListener("click", createLesson);
-  titleInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      createLesson();
-    }
-  });
-  setTimeout(() => titleInput.focus(), 50);
+  setTimeout(() => lessonJsonInput.focus(), 50);
 }

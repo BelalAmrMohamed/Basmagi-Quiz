@@ -182,12 +182,30 @@ export const BOT_TOOLS = [
         },
         sections: {
           type: "array",
-          description: "Array of lesson sections.",
+          description: "Ordered lesson sections. Each section uses a blocks array: Markdown blocks use {type:'markdown',body}; embedded questions use {type:'question',questionKind,prompt,...}. Legacy content/questions fields are also accepted.",
           items: {
             type: "object",
             properties: {
               title: { type: "string" },
               content: { type: "string" },
+              blocks: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    type: { type: "string", enum: ["markdown", "question"] },
+                    body: { type: "string" },
+                    questionKind: { type: "string", enum: ["mcq", "essay"] },
+                    prompt: { type: "string" },
+                    options: { type: "array", items: { type: "string" } },
+                    correctIndex: { type: "integer", description: "Zero-based correct option index for a single-answer MCQ." },
+                    correctIndexes: { type: "array", items: { type: "integer" }, description: "Zero-based correct option indexes for a multi-select MCQ." },
+                    multiSelect: { type: "boolean" },
+                    modelAnswer: { type: "string" },
+                    explanation: { type: "string" },
+                  },
+                },
+              },
               questions: {
                 type: "array",
                 items: {
@@ -204,7 +222,7 @@ export const BOT_TOOLS = [
                 },
               },
             },
-            required: ["title", "content"],
+            required: ["title", "blocks"],
           },
         },
       },

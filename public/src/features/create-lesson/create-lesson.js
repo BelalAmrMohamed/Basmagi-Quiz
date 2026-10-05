@@ -45,6 +45,7 @@ import {
     _prompt,
 } from "../../components/notifications/notifications.js";
 import { normalizeLessonContent, hasLessonLevelCollision } from "../lesson/lesson-schema.js";
+import { normalizeLessonJson } from "../lesson/lesson-json.js";
 import { FONT_CHOICES, normalizeFontId, applyReaderPrefs } from "../lesson/lesson-reader-prefs.js";
 import { sha256Hex, validateLessonPasswordInput } from "../lesson/lesson-access.js";
 import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar.js";
@@ -761,37 +762,19 @@ function lessonEditorContext() {
 
 function createLessonFromAgent(toolCall) {
     const input = toolCall?.input || {};
-    const title = String(input.title || "").trim();
-    const description = String(input.description || "").trim();
-    const sections = Array.isArray(input.sections) ? input.sections : [];
-    if (!title || title.length > 200 || description.length > 1200 || !sections.length || sections.length > 60) {
-        const error = new Error("Invalid lesson content");
-        error.userMessage = "تعذر إنشاء الدرس: تحقق من العنوان والوصف ووجود قسم واحد على الأقل.";
+    let lesson;
+    try {
+        lesson = normalizeLessonJson(input);
+    } catch (error) {
+        error.userMessage = `تعذر إنشاء الدرس: ${error.userMessage || error.message}`;
         throw error;
     }
-    if (new TextEncoder().encode(JSON.stringify({ title, description, sections })).length > 200000) {
-        const error = new Error("Lesson content exceeds the size limit");
-        error.userMessage = "محتوى الدرس أكبر من الحد المسموح به. قلّل التفاصيل وحاول مرة أخرى.";
-        throw error;
-    }
-
-    const normalizedSections = sections.map((section, index) => {
-        const sectionTitle = String(section?.title || "").trim();
-        const content = String(section?.content || "");
-        if (!sectionTitle || sectionTitle.length > 200 || content.length > 20000) {
-            const error = new Error(`Invalid lesson section ${index + 1}`);
-            error.userMessage = `تعذر إنشاء الدرس: بيانات القسم رقم ${index + 1} غير صالحة.`;
-            throw error;
-        }
-        return {
-            id: newLocalId("s"),
-            title: sectionTitle,
-            defaultHidden: false,
-            blocks: content.trim()
-                ? [{ type: "markdown", body: content, _localId: newLocalId("b") }]
-                : [],
-        };
-    });
+    const { title, description } = lesson;
+    const normalizedSections = lesson.sections.map((section) => ({
+        ...section,
+        id: newLocalId("s"),
+        blocks: section.blocks.map((block) => ({ ...block, id: block.id || newLocalId("q"), _localId: newLocalId("b") })),
+    }));
 
     pushHistorySnapshot();
     lessonData.title = title;

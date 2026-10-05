@@ -27,6 +27,8 @@ Issue is already solved somewhere else:
 * I went to the exact same question, and wrote the exact same answer.
 * My answer was rated, and the input field turned green. See ![screenshot](image-1.png)
 
+* Also, the Quiz.html page shows errors when I try to use the `#shareQuestionBtn`. See ![screenshot](image.png).
+
 ### AI Agent
 
 #### Dictation

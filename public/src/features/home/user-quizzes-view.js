@@ -76,6 +76,7 @@ import {
 import { moveToTrash, getTrashItemCount } from "./user-quizzes-trash.js";
 import { openLocalTrashPanel } from "./user-quizzes-trash-panel.js";
 import { refreshUserQuizzesCard } from "./course-count.js";
+import { normalizeLessonJson } from "../lesson/lesson-json.js";
 
 /**
  * Handles the AI Helper's `create_quiz` tool call: validates the payload,
@@ -140,8 +141,6 @@ function handleCreateQuizToolCall(toolCall) {
 
 function handleCreateLessonToolCall(toolCall) {
   const input = toolCall?.input || {};
-  const title = String(input.title || "").trim();
-  const description = String(input.description || "").trim();
   const sectionsInput = Array.isArray(input.sections) ? input.sections : [];
 
   const fail = (message) => {
@@ -151,32 +150,13 @@ function handleCreateLessonToolCall(toolCall) {
     throw error;
   };
 
-  if (!title || title.length > 200) {
-    fail("عنوان الدرس مطلوب ويجب ألا يتجاوز 200 حرف.");
+  let lesson;
+  try {
+    lesson = normalizeLessonJson({ ...input, sections: sectionsInput });
+  } catch (error) {
+    fail(error.userMessage || error.message || "تحقق من بيانات الدرس والأقسام والأسئلة.");
   }
-  if (description.length > 1200) {
-    fail("وصف الدرس طويل جداً.");
-  }
-  if (!sectionsInput.length || sectionsInput.length > 60) {
-    fail("يجب أن يحتوي الدرس على قسم واحد على الأقل، وبحد أقصى 60 قسماً.");
-  }
-  if (new TextEncoder().encode(JSON.stringify({ title, description, sections: sectionsInput })).length > 200000) {
-    fail("محتوى الدرس أكبر من الحد المسموح به. قلّل التفاصيل وحاول مرة أخرى.");
-  }
-
-  const sections = sectionsInput.map((section, index) => {
-    const sectionTitle = String(section?.title || "").trim();
-    const content = String(section?.content || "");
-    if (!sectionTitle || sectionTitle.length > 200 || content.length > 20000) {
-      fail(`بيانات القسم رقم ${index + 1} غير صالحة.`);
-    }
-    return {
-      id: crypto.randomUUID(),
-      title: sectionTitle,
-      defaultHidden: false,
-      blocks: content.trim() ? [{ type: "markdown", body: content }] : [],
-    };
-  });
+  const { title, description, sections, questionCount } = lesson;
 
   const quizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
   if (hasSameLevelCollision(quizzes, { type: "lesson", title, parentId: null })) {
@@ -198,7 +178,7 @@ function handleCreateLessonToolCall(toolCall) {
       readerPrefs: { fontId: "default" },
       passwordProtected: false,
     },
-    stats: { questionCount: 0, sectionCount: sections.length },
+    stats: { questionCount, sectionCount: sections.length },
     lesson: { sections },
     questions: [],
   };

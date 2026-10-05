@@ -92,7 +92,7 @@ const HOME_PAGE_ACTIONS = [
         label: "إنشاء درس",
         description: "إنشاء درس جديد بأقسام ومحتوى تعليمي وحفظه في «امتحاناتك»",
         icon: ICON_LESSON,
-        systemDirective: "المستخدم يطلب إنشاء درس جديد صراحة عبر أمر /create-lesson. جهّز درساً مناسباً بالعنوان والوصف والأقسام، ثم استدعِ أداة create_lesson فوراً لحفظه في «امتحاناتك» دون طلب تأكيد.",
+        systemDirective: "The user explicitly invoked /create-lesson. Prepare a lesson with a title, description, ordered sections, Markdown blocks, and suitable embedded interactive MCQ or essay questions. Use zero-based correctIndex/correctIndexes, multiSelect for multiple answers, explanations for MCQs, and a complete modelAnswer for essays. Call create_lesson immediately to save it in the user's library without confirmation.",
         placeholder: "موضوع الدرس ومستوى التفصيل المطلوب...",
     },
     {
@@ -228,7 +228,7 @@ const CREATE_LESSON_PAGE_ACTIONS = [
         label: "إنشاء محتوى الدرس",
         description: "إنشاء عنوان الدرس وأقسامه ومحتواها في المحرر الحالي",
         icon: ICON_LESSON,
-        systemDirective: "المستخدم يطلب إنشاء محتوى الدرس صراحة عبر أمر /create-lesson. أنشئ عنواناً ووصفاً وأقساماً بمحتوى Markdown مناسب، ثم استدعِ أداة create_lesson فوراً لتعبئة المحرر الحالي دون طلب تأكيد.",
+        systemDirective: "The user explicitly invoked /create-lesson. Create a title, description, ordered sections with Markdown blocks, and suitable embedded interactive MCQ or essay questions. Use zero-based correctIndex/correctIndexes, multiSelect for multiple answers, MCQ explanations, and a complete modelAnswer for essays. Call create_lesson immediately to fill the current editor without confirmation.",
         placeholder: "موضوع الدرس ومستوى التفصيل المطلوب...",
     },
     {
