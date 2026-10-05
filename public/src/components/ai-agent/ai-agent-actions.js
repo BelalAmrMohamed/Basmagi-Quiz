@@ -24,6 +24,7 @@ const ICON_SPARKLE = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height=
 const ICON_TRASH = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`;
 const ICON_ANALYZE = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>`;
 const ICON_LESSON = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`;
+const ICON_SECTION = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16"/><path d="M4 12h10"/><path d="M4 19h7"/><path d="M19 14v6"/><path d="M16 17h6"/></svg>`;
 
 // Registry maps
 const pageActionsRegistry = new Map();
@@ -85,6 +86,15 @@ export function getPageActions(pageKey, instanceActions = null) {
 
 // Home page actions ("امتحاناتك")
 const HOME_PAGE_ACTIONS = [
+    {
+        id: "create-lesson",
+        command: "create-lesson",
+        label: "إنشاء درس",
+        description: "إنشاء درس جديد بأقسام ومحتوى تعليمي وحفظه في «امتحاناتك»",
+        icon: ICON_LESSON,
+        systemDirective: "المستخدم يطلب إنشاء درس جديد صراحة عبر أمر /create-lesson. جهّز درساً مناسباً بالعنوان والوصف والأقسام، ثم استدعِ أداة create_lesson فوراً لحفظه في «امتحاناتك» دون طلب تأكيد.",
+        placeholder: "موضوع الدرس ومستوى التفصيل المطلوب...",
+    },
     {
         id: "create-quiz",
         command: "create-quiz",
@@ -212,6 +222,24 @@ const LESSON_PAGE_ACTIONS = [
 
 // Create Lesson page actions ("محرر الدروس")
 const CREATE_LESSON_PAGE_ACTIONS = [
+    {
+        id: "create-lesson",
+        command: "create-lesson",
+        label: "إنشاء محتوى الدرس",
+        description: "إنشاء عنوان الدرس وأقسامه ومحتواها في المحرر الحالي",
+        icon: ICON_LESSON,
+        systemDirective: "المستخدم يطلب إنشاء محتوى الدرس صراحة عبر أمر /create-lesson. أنشئ عنواناً ووصفاً وأقساماً بمحتوى Markdown مناسب، ثم استدعِ أداة create_lesson فوراً لتعبئة المحرر الحالي دون طلب تأكيد.",
+        placeholder: "موضوع الدرس ومستوى التفصيل المطلوب...",
+    },
+    {
+        id: "add-section",
+        command: "add-section",
+        label: "إضافة قسم",
+        description: "إضافة قسم جديد ومحتوى تعليمي إلى الدرس الحالي",
+        icon: ICON_SECTION,
+        systemDirective: "المستخدم يطلب إضافة قسم صراحة عبر أمر /add-section. أنشئ عنوان القسم ومحتواه، ثم استدعِ أداة add_lesson_section فوراً دون طلب تأكيد.",
+        placeholder: "عنوان القسم ومحتواه...",
+    },
     {
         id: "add-question",
         command: "add-question",

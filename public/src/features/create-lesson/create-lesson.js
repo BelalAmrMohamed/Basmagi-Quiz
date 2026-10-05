@@ -36,6 +36,7 @@ import { getToken, isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.js";
 import { renderMarkdown } from "../../shared/markdown.js";
+import { isYouTubeUrl } from "../../shared/media-resolve.js";
 import { readEditorDrafts, upsertEditorDraft, removeEditorDraft, migrateWorkspaceDrafts } from "../../shared/editor-drafts.js";
 import { escapeHtml } from "../home/escape-html.js";
 import {
@@ -757,6 +758,83 @@ function lessonEditorContext() {
     };
 }
 
+function createLessonFromAgent(toolCall) {
+    const input = toolCall?.input || {};
+    const title = String(input.title || "").trim();
+    const description = String(input.description || "").trim();
+    const sections = Array.isArray(input.sections) ? input.sections : [];
+    if (!title || title.length > 200 || description.length > 1200 || !sections.length || sections.length > 60) {
+        const error = new Error("Invalid lesson content");
+        error.userMessage = "تعذر إنشاء الدرس: تحقق من العنوان والوصف ووجود قسم واحد على الأقل.";
+        throw error;
+    }
+    if (new TextEncoder().encode(JSON.stringify({ title, description, sections })).length > 200000) {
+        const error = new Error("Lesson content exceeds the size limit");
+        error.userMessage = "محتوى الدرس أكبر من الحد المسموح به. قلّل التفاصيل وحاول مرة أخرى.";
+        throw error;
+    }
+
+    const normalizedSections = sections.map((section, index) => {
+        const sectionTitle = String(section?.title || "").trim();
+        const content = String(section?.content || "");
+        if (!sectionTitle || sectionTitle.length > 200 || content.length > 20000) {
+            const error = new Error(`Invalid lesson section ${index + 1}`);
+            error.userMessage = `تعذر إنشاء الدرس: بيانات القسم رقم ${index + 1} غير صالحة.`;
+            throw error;
+        }
+        return {
+            id: newLocalId("s"),
+            title: sectionTitle,
+            defaultHidden: false,
+            blocks: content.trim()
+                ? [{ type: "markdown", body: content, _localId: newLocalId("b") }]
+                : [],
+        };
+    });
+
+    pushHistorySnapshot();
+    lessonData.title = title;
+    lessonData.description = description;
+    lessonData.sections = normalizedSections;
+    renderLessonForm();
+    autosave();
+    showNotification("تم إنشاء محتوى الدرس", "أُضيفت الأقسام إلى المحرر ويمكنك مراجعتها وتعديلها.", "success");
+    return `✅ تمت تعبئة الدرس «${title}» بـ ${normalizedSections.length} قسم/أقسام.`;
+}
+
+function addLessonSectionFromAgent(toolCall) {
+    const input = toolCall?.input || {};
+    const title = String(input.title || "").trim();
+    const content = String(input.content || "");
+    if (!title || title.length > 200 || content.length > 20000) {
+        const error = new Error("Invalid lesson section");
+        error.userMessage = "تعذر إضافة القسم: العنوان مطلوب ويجب ألا يتجاوز 200 حرف.";
+        throw error;
+    }
+    if (lessonData.sections.length >= 60) {
+        const error = new Error("Lesson section limit reached");
+        error.userMessage = "لا يمكن إضافة أكثر من 60 قسماً إلى الدرس.";
+        throw error;
+    }
+
+    pushHistorySnapshot();
+    const section = {
+        id: newLocalId("s"),
+        title,
+        defaultHidden: false,
+        blocks: content.trim()
+            ? [{ type: "markdown", body: content, _localId: newLocalId("b") }]
+            : [],
+    };
+    lessonData.sections.push(section);
+    renderSections();
+    updateSectionNavigator();
+    autosave();
+    document.getElementById(`section-${section.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    showNotification("تمت إضافة القسم", `أُضيف «${title}» إلى الدرس.`, "success");
+    return `✅ تمت إضافة القسم «${title}» إلى الدرس.`;
+}
+
 function addLessonQuestionFromAgent(toolCall) {
     if (toolCall?.name !== "add_lesson_question") throw new Error("Unknown lesson editor tool");
     const input = toolCall.input || {};
@@ -793,6 +871,19 @@ function addLessonQuestionFromAgent(toolCall) {
     return `✅ تمت إضافة السؤال إلى ${target.title || "القسم الأول"}.`;
 }
 
+function handleLessonEditorToolCall(toolCall) {
+    switch (toolCall?.name) {
+        case "create_lesson":
+            return createLessonFromAgent(toolCall);
+        case "add_lesson_section":
+            return addLessonSectionFromAgent(toolCall);
+        case "add_lesson_question":
+            return addLessonQuestionFromAgent(toolCall);
+        default:
+            throw new Error(`Unknown lesson editor tool: ${toolCall?.name}`);
+    }
+}
+
 function mountCreatorAgent() {
     if (document.querySelector(".create-lesson-agent-fab")) return;
     const fab = createAIAgentFab({
@@ -803,8 +894,8 @@ function mountCreatorAgent() {
         contextSummary: lessonEditorContext,
         enableTools: true,
         enableFileUpload: true,
-        toolNames: ["add_lesson_question"],
-        onToolCall: addLessonQuestionFromAgent,
+        toolNames: ["create_lesson", "add_lesson_section", "add_lesson_question"],
+        onToolCall: handleLessonEditorToolCall,
     });
     fab.classList.add("create-lesson-agent-fab");
     document.body.appendChild(fab);
@@ -1354,7 +1445,7 @@ function detectMediaTypeFromFile(file) {
 
 function detectMediaTypeFromUrl(url) {
     if (!url || !/^https?:\/\//i.test(url)) return null;
-    if (/(?:youtube\.com|youtu\.be)/i.test(url)) return "video";
+    if (isYouTubeUrl(url)) return "video";
     const path = url.split(/[?#]/)[0].toLowerCase();
     if (/\.(jpe?g|png|gif|webp|svg)$/.test(path)) return "image";
     if (/\.(mp3|ogg|wav|aac|m4a)$/.test(path)) return "audio";
@@ -1400,6 +1491,9 @@ function buildMediaHtmlTag(mediaType, url, opts = {}) {
     if (mediaType === "image") {
         const dims = (opts.width ? ` width="${opts.width}"` : "") + (opts.height ? ` height="${opts.height}"` : "");
         return `<img${dims} alt="${esc(opts.alt ?? "صورة توضيحية")}" src="${esc(url)}" />`;
+    }
+    if (mediaType === "video" && isYouTubeUrl(url)) {
+        return `![video](${url})`;
     }
     return `<${mediaType} src="${esc(url)}"></${mediaType}>`;
 }
@@ -1787,7 +1881,6 @@ function sectionCardHtml(section, index) {
 
       <div class="lesson-add-block-row">
         <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'markdown')">+ نص</button>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'media')">+ وسائط</button>
         <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'quizRef')">+ امتحان مرتبط</button>
         <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'lesson-reference')">+ درس مرتبط</button>
         <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'question')">+ سؤال مدمج</button>

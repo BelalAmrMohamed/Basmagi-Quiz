@@ -330,3 +330,40 @@ export const ADD_LESSON_QUESTION_TOOL = {
     required: ["prompt"],
   },
 };
+
+export const CREATE_LESSON_TOOL = {
+  name: "create_lesson",
+  description: "Create a lesson with an ordered set of sections. Each section's content is Markdown. On the home page, only call after the user confirms the proposed lesson; on the lesson editor, only call after confirmation before replacing existing lesson content. An explicit /create-lesson command is confirmation.",
+  input_schema: {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      description: { type: "string" },
+      sections: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            content: { type: "string" },
+          },
+          required: ["title", "content"],
+        },
+      },
+    },
+    required: ["title", "sections"],
+  },
+};
+
+export const ADD_LESSON_SECTION_TOOL = {
+  name: "add_lesson_section",
+  description: "Append one section to the lesson currently open in the lesson editor. The section content is Markdown. Only call after the creator confirms the proposed section; an explicit /add-section command is confirmation.",
+  input_schema: {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      content: { type: "string" },
+    },
+    required: ["title", "content"],
+  },
+};

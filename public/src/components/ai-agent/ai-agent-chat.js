@@ -937,6 +937,18 @@ export function createChatPanel(options = {}) {
           mentionMenu.open(newCaret - 1);
         },
       },
+      {
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h7"/><path d="m17 16 3 3 3-3"/></svg>',
+        label: "الأوامر المتاحة",
+        onClick: () => {
+          textarea.focus();
+          if (!textarea.value.startsWith("/")) textarea.value = `/${textarea.value}`;
+          textarea.setSelectionRange(1, 1);
+          resizeChatInput();
+          updateSendBtnVisibility();
+          slashMenu.open(0);
+        },
+      },
     ];
 
     moreBtn.addEventListener("click", (e) => {
@@ -1137,13 +1149,8 @@ export function createChatPanel(options = {}) {
    */
   async function startMicMetering() {
     if (!navigator.mediaDevices?.getUserMedia) return;
-    // Brave can run SpeechRecognition internally, but calling getUserMedia
-    // concurrently (for the wave animation) creates a second mic-access
-    // request that conflicts with SpeechRecognition's own internal stream
-    // in Brave — causing the recognition to fail. The CSS bounce animation
-    // (.ai-agent-wave-bounce keyframe) is an adequate fallback, so skip the
-    // live-metering path entirely on Brave to keep the feature working.
-    if (isBraveBrowser) return;
+    await braveDetection;
+    if (isBraveBrowser || !isDictating) return;
     try {
       micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
@@ -1224,29 +1231,23 @@ export function createChatPanel(options = {}) {
   // is "if Firefox, warn", not "if the API is missing, warn silently".
   const isFirefox = /firefox/i.test(navigator.userAgent || "");
 
-  // Brave ships webkitSpeechRecognition (it's Chromium-based) but its
-  // own "Google Services" privacy shield blocks the network request the
-  // API makes to Google's speech servers by default — this is a
-  // deliberate, permanent Brave setting, not a transient network hiccup,
-  // so a "network" error here should skip the auto-retry (below) and go
-  // straight to a Brave-specific explanation instead of a generic one.
-  //
-  // navigator.brave.isBrave() is the OFFICIAL Brave-exposed feature detect
-  // (see brave.com/docs), but it's async — resolved once up front so the
-  // flag is ready before any error handler needs it.
-  // As a faster synchronous fallback, we also check for "Brave" in the UA
-  // string (present in many Brave versions). The async promise then
-  // overwrites with the authoritative value once it resolves, which matters
-  // for edge cases where the UA string doesn't carry the word "Brave".
+  // navigator.brave.isBrave() is asynchronous. Wait for it before opening
+  // the separate metering stream; otherwise an early mic click can race
+  // detection and request the microphone twice in Brave while its native
+  // SpeechRecognition session is starting.
   let isBraveBrowser = /brave/i.test(navigator.userAgent || "");
-  if (navigator.brave && typeof navigator.brave.isBrave === "function") {
-    navigator.brave
+  const braveDetection = navigator.brave && typeof navigator.brave.isBrave === "function"
+    ? navigator.brave
       .isBrave()
       .then((result) => {
         isBraveBrowser = !!result;
+        return isBraveBrowser;
       })
-      .catch(() => { });
-  }
+      .catch((error) => {
+        console.warn("[ai-agent-chat] Brave browser detection failed:", error);
+        return isBraveBrowser;
+      })
+    : Promise.resolve(isBraveBrowser);
 
   let micBtn = null;
   let firefoxWarningEl = null;
@@ -1356,12 +1357,13 @@ export function createChatPanel(options = {}) {
     // below) keeps the flag it already set just before calling.
     if (!isRetry) hasRetriedAfterNetworkError = false;
 
-    recognition = new SpeechRecognitionCtor();
-    recognition.lang = document.documentElement?.lang === "en" ? "en-US" : "ar-EG";
-    recognition.continuous = true;
-    recognition.interimResults = true;
+    const recognitionSession = new SpeechRecognitionCtor();
+    recognition = recognitionSession;
+    recognitionSession.lang = document.documentElement?.lang === "en" ? "en-US" : "ar-EG";
+    recognitionSession.continuous = true;
+    recognitionSession.interimResults = true;
 
-    recognition.onresult = (event) => {
+    recognitionSession.onresult = (event) => {
       let interim = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
@@ -1377,7 +1379,8 @@ export function createChatPanel(options = {}) {
       resizeChatInput();
     };
 
-    recognition.onerror = (event) => {
+    recognitionSession.onerror = (event) => {
+      if (recognition !== recognitionSession) return;
       console.error("[ai-agent-chat] SpeechRecognition error:", event.error);
       // "no-speech"/"aborted" are routine (silence timeout, or the user's
       // own Cancel click racing the browser's own stop event) — only
@@ -1388,17 +1391,10 @@ export function createChatPanel(options = {}) {
         setDictationUiState(false);
         return;
       }
-      // Chrome/Brave's SpeechRecognition implementation proxies audio to
-      // Google's own speech servers rather than doing recognition
-      // on-device — "network" here means THAT round trip failed, not the
-      // page's own connection. On most Chromium browsers this is usually
-      // a one-off transient hiccup, so retry silently once before
-      // bothering the user with an error. On Brave specifically, though,
-      // this is Brave's own "Google Services" privacy shield deliberately
-      // blocking that request every time — a permanent setting, not a
-      // hiccup — so retrying there would just fail identically and delay
-      // a message that could instead point straight at the actual cause.
-      if (event.error === "network" && !hasRetriedAfterNetworkError && !isBraveBrowser) {
+      // Recognition network errors can be transient on Chromium-based
+      // browsers too, so give every browser one clean retry before
+      // reporting the failure.
+      if (event.error === "network" && !hasRetriedAfterNetworkError) {
         hasRetriedAfterNetworkError = true;
         stopMicMetering();
         setDictationUiState(false);
@@ -1412,7 +1408,7 @@ export function createChatPanel(options = {}) {
       let message = "تعذر استخدام الإملاء الصوتي. حاول مرة أخرى.";
       if (event.error === "network") {
         message = isBraveBrowser
-          ? "الإملاء الصوتي لا يعمل على متصفح Brave افتراضيًا لأن إعداد \"خدمات جوجل\" فيه يحجب الاتصال بخدمة التعرف الصوتي. جرّب متصفحًا آخر (مثل Edge أو Chrome)، أو اكتب رسالتك يدويًا."
+          ? "تعذّر الاتصال بخدمة التعرف الصوتي بعد إعادة المحاولة. تحقق من اتصالك وإعدادات Shields في Brave، ثم حاول مجدداً."
           : "تعذر الوصول إلى خدمة التعرف الصوتي (قد يكون بسبب مانع إعلانات أو مشكلة في الاتصال). حاول مرة أخرى أو اكتب رسالتك.";
       }
       appendError(message);
@@ -1420,7 +1416,8 @@ export function createChatPanel(options = {}) {
       setDictationUiState(false);
     };
 
-    recognition.onend = () => {
+    recognitionSession.onend = () => {
+      if (recognition !== recognitionSession) return;
       // The browser can end the session on its own (silence timeout)
       // without the user clicking anything — make sure the UI still
       // falls back to the idle mic-icon state either way, so the mic

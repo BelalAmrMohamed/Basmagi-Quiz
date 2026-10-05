@@ -24,11 +24,12 @@
 //   useOwnKey?: boolean,
 //   ownKey?: string,           // required if useOwnKey is true
 //   systemPrompt?: string,     // optional system-role instructions
-//   enableTools?: boolean,     // if true, offers quiz tools (see _tools.js)
+//   enableTools?: boolean,     // if true, offers page-selected tools (see _tools.js)
 //   toolNames?: string[],      // which tools to offer when enableTools is true —
-//                              // subset of ["create_quiz","edit_quiz","edit_current_quiz",
-//                              // "delete_quiz","reset_quiz_page","create_folder",
-//                              // "create_course","move_item"] (see TOOLS_BY_NAME
+//                              // subset of ["create_lesson","add_lesson_section",
+//                              // "add_lesson_question","create_quiz","edit_quiz",
+//                              // "edit_current_quiz","delete_quiz","reset_quiz_page",
+//                              // "create_folder","create_course","move_item"] (see TOOLS_BY_NAME
 //                              // below — "edit_quiz" and "edit_current_quiz" are two
 //                              // different SCHEMAS for the same action, pick one not
 //                              // both). Defaults to the original three (create/edit/
@@ -81,7 +82,7 @@
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { callProvider, isSupportedProvider } from "./_providerClients.js";
-import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL } from "./_tools.js";
+import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, CREATE_LESSON_TOOL, ADD_LESSON_SECTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
 import { createClient } from "@supabase/supabase-js";
@@ -356,6 +357,8 @@ async function checkAndIncrementDailyUsage(profileId) {
 const TOOLS_BY_NAME = {
   create_quiz: CREATE_QUIZ_TOOL,
   add_lesson_question: ADD_LESSON_QUESTION_TOOL,
+  create_lesson: CREATE_LESSON_TOOL,
+  add_lesson_section: ADD_LESSON_SECTION_TOOL,
   edit_quiz: EDIT_QUIZ_TOOL,
   edit_current_quiz: EDIT_CURRENT_QUIZ_TOOL,
   delete_quiz: DELETE_QUIZ_TOOL,

@@ -138,6 +138,81 @@ function handleCreateQuizToolCall(toolCall) {
   return `✅ تم إنشاء الامتحان: ${title}`;
 }
 
+function handleCreateLessonToolCall(toolCall) {
+  const input = toolCall?.input || {};
+  const title = String(input.title || "").trim();
+  const description = String(input.description || "").trim();
+  const sectionsInput = Array.isArray(input.sections) ? input.sections : [];
+
+  const fail = (message) => {
+    showNotification("تعذر إنشاء الدرس", message, "warning", 10);
+    const error = new Error(message);
+    error.userMessage = message;
+    throw error;
+  };
+
+  if (!title || title.length > 200) {
+    fail("عنوان الدرس مطلوب ويجب ألا يتجاوز 200 حرف.");
+  }
+  if (description.length > 1200) {
+    fail("وصف الدرس طويل جداً.");
+  }
+  if (!sectionsInput.length || sectionsInput.length > 60) {
+    fail("يجب أن يحتوي الدرس على قسم واحد على الأقل، وبحد أقصى 60 قسماً.");
+  }
+  if (new TextEncoder().encode(JSON.stringify({ title, description, sections: sectionsInput })).length > 200000) {
+    fail("محتوى الدرس أكبر من الحد المسموح به. قلّل التفاصيل وحاول مرة أخرى.");
+  }
+
+  const sections = sectionsInput.map((section, index) => {
+    const sectionTitle = String(section?.title || "").trim();
+    const content = String(section?.content || "");
+    if (!sectionTitle || sectionTitle.length > 200 || content.length > 20000) {
+      fail(`بيانات القسم رقم ${index + 1} غير صالحة.`);
+    }
+    return {
+      id: crypto.randomUUID(),
+      title: sectionTitle,
+      defaultHidden: false,
+      blocks: content.trim() ? [{ type: "markdown", body: content }] : [],
+    };
+  });
+
+  const quizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  if (hasSameLevelCollision(quizzes, { type: "lesson", title, parentId: null })) {
+    fail("يوجد درس بنفس الاسم في «امتحاناتك». اختر عنواناً مختلفاً.");
+  }
+
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const entry = {
+    id,
+    meta: {
+      id,
+      type: "lesson",
+      title,
+      description,
+      parentId: null,
+      createdAt: new Date().toLocaleString("en-US"),
+      updatedAt: now,
+      readerPrefs: { fontId: "default" },
+      passwordProtected: false,
+    },
+    stats: { questionCount: 0, sectionCount: sections.length },
+    lesson: { sections },
+    questions: [],
+  };
+  const updated = [...quizzes, entry];
+  if (!setInStorage("user_quizzes", JSON.stringify(updated))) {
+    fail("تعذّر حفظ الدرس محلياً. تحقق من مساحة التخزين وحاول مرة أخرى.");
+  }
+
+  showNotification("تم إنشاء الدرس", 'تم إنشاء الدرس وإضافته إلى "امتحاناتك".', "success");
+  renderRootCategories();
+  renderUserQuizzesView();
+  return `✅ تم إنشاء الدرس «${title}» وحفظه في «امتحاناتك» مع ${sections.length} قسم/أقسام.`;
+}
+
 /**
  * Handles the AI Helper's `edit_quiz` tool call. Finds the quiz by its
  * exact current title (matched against user_quizzes, the same source the
@@ -408,6 +483,8 @@ function buildFolderTreeContextPrompt(userQuizzes) {
  */
 async function handleQuizToolCall(toolCall) {
   switch (toolCall?.name) {
+    case "create_lesson":
+      return handleCreateLessonToolCall(toolCall);
     case "create_quiz":
       return handleCreateQuizToolCall(toolCall);
     case "edit_quiz":
@@ -810,7 +887,9 @@ export function renderUserQuizzesView() {
       const liveQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
       return liveQuizzes.map((quiz) => ({
         title: qz(quiz, "title"),
+        itemType: quiz.meta?.type || "quiz",
         questionCount: qz(quiz, "count"),
+        sectionCount: quiz.stats?.sectionCount || quiz.lesson?.sections?.length || 0,
         types: qz(quiz, "type"),
       }));
     };
@@ -830,7 +909,7 @@ export function renderUserQuizzesView() {
         contextSummary: getLiveContextSummary,
         contextPrompt: getLiveFolderTreePrompt,
         enableTools: true,
-        toolNames: ["create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item", "fetch_attached_quiz", ...READONLY_LIBRARY_TOOL_NAMES],
+        toolNames: ["create_lesson", "create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item", "fetch_attached_quiz", ...READONLY_LIBRARY_TOOL_NAMES],
         onToolCall: handleQuizToolCall,
       }),
     );
