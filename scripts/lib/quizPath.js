@@ -104,39 +104,39 @@ export function validateTrackPath(education_type, fields) {
   const { college, year, term, subject } = fields;
   
   if (!subject || typeof subject !== "string" || !subject.trim()) {
-    throw new Error("MISSING_PATH: subject is required");
+    throw new Error("اسم المادة مطلوب. اختر مادة قبل الرفع.");
   }
 
   if (education_type === "University") {
     if (!college || typeof college !== "string" || !college.trim()) {
-      throw new Error("MISSING_PATH: college is required for University track");
+      throw new Error("اختر الكلية التي سيتم رفع المادة إليها.");
     }
     if (year === undefined || year === null || year === "") {
-      throw new Error("MISSING_PATH: year is required for University track");
+      throw new Error("اختر السنة الدراسية التي سيتم رفع المادة إليها.");
     }
-    if (!["1", "2"].includes(String(year))) {
-      throw new Error("INVALID_PATH: year must be 1 or 2 for University");
+    if (!/^\d+$/.test(String(year)) || Number(year) < 1 || Number(year) > 12) {
+      throw new Error("السنة الدراسية غير صالحة. اختر رقمًا صحيحًا من 1 إلى 12.");
     }
     if (term === undefined || term === null || term === "") {
-      throw new Error("MISSING_PATH: term is required for University track");
+      throw new Error("اختر الترم الدراسي الذي سيتم رفع المادة إليه.");
     }
-    if (!["1", "2"].includes(String(term))) {
-      throw new Error("INVALID_PATH: term must be 1 or 2");
+    if (!/^\d+$/.test(String(term)) || Number(term) < 1 || Number(term) > 4) {
+      throw new Error("الترم الدراسي غير صالح. اختر رقمًا من 1 إلى 4 حسب إعدادات الكلية.");
     }
   } else if (["Primary", "Middle", "High"].includes(education_type)) {
     if (year === undefined || year === null || year === "") {
-      throw new Error("MISSING_PATH: year is required for school tracks");
+      throw new Error("اختر السنة الدراسية التي سيتم رفع المادة إليها.");
     }
     if (term === undefined || term === null || term === "") {
-      throw new Error("MISSING_PATH: term is required for school tracks");
+      throw new Error("اختر الترم الدراسي الذي سيتم رفع المادة إليه.");
     }
     if (!["1", "2"].includes(String(term))) {
-      throw new Error("INVALID_PATH: term must be 1 or 2");
+      throw new Error("الترم الدراسي غير صالح. اختر الترم الأول أو الترم الثاني.");
     }
   } else if (education_type === "Featured") {
     // only subject is required
   } else {
-    throw new Error("INVALID_PATH: invalid education_type");
+    throw new Error("نوع المسار التعليمي غير صالح. اختر مسارًا تعليميًا من القائمة.");
   }
 }
 
