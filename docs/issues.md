@@ -7,9 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Admin Issue
-This issue is preventing admins from uploading some content ![screenshot](image.png)
-
 ### AI Agent
 
 #### Dictation
@@ -24,7 +21,7 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 
 ### Result Pages
 
-#### Videos (Easy to make, but very important)
+#### Videos (Easy to make and intersting idea)
 * Add a result-page feature that displays themed meme videos based on the user’s degree or score.
 * Suggested themes include:
   * دعوية
@@ -48,9 +45,6 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
   * Extend the info in the course info modal, too.
   * Make an info modal for Folders.
   * (Suggestion) Add: Number of Views or people who solved a quiz on each quiz.
-
-#### New 
-* Implement an inline create modal for `مادة جديدة` In the `class="btn create-folder-btn mobile-only-flex"` button's dropdown And the "إنشاء مادة" in the `#userQuizContextMenu`. See the inline create modal for quizzes `create-quiz-inline-modal` and implement a similar one (with its submenu for the prompts).
 
 ### `public\control.html` Page
 * Give `#collegeForm` an advanced loading skeleton/animation like the sections/forms.
