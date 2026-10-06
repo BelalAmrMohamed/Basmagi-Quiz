@@ -24,7 +24,7 @@ export function renderLessonToc(visibleSections, visitedSectionIds) {
     `<button type="button" class="doc-toc-minimize-btn" data-lesson-toc-minimize aria-controls="lessonTocPanel" aria-expanded="true" aria-label="طي محتويات الدرس" title="طي المحتويات">` +
     `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>` +
     `</button></div>` +
-    `<ul class="doc-toc-list">${items}</ul>` +
+    `<ul dir="auto" class="doc-toc-list">${items}</ul>` +
     `</nav>` +
     `<button type="button" class="doc-toc-toggle" data-lesson-toc-mobile-toggle aria-expanded="false" aria-controls="lessonTocPanel">` +
     `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>` +
@@ -58,7 +58,7 @@ export function equipLessonToc(root, lessonId) {
   });
 
   let minimized = false;
-  try { minimized = localStorage.getItem(MINIMIZED_KEY) === "true"; } catch (_) {}
+  try { minimized = localStorage.getItem(MINIMIZED_KEY) === "true"; } catch (_) { }
   const setMinimized = (value) => {
     toc.classList.toggle("doc-toc-minimized", value);
     minimizeBtn?.setAttribute("aria-expanded", value ? "false" : "true");
@@ -66,7 +66,7 @@ export function equipLessonToc(root, lessonId) {
       minimizeBtn.setAttribute("aria-label", value ? "إظهار محتويات الدرس" : "طي محتويات الدرس");
       minimizeBtn.title = value ? "إظهار المحتويات" : "طي المحتويات";
     }
-    try { localStorage.setItem(MINIMIZED_KEY, value ? "true" : "false"); } catch (_) {}
+    try { localStorage.setItem(MINIMIZED_KEY, value ? "true" : "false"); } catch (_) { }
   };
   setMinimized(minimized);
 
