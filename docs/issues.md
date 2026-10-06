@@ -53,14 +53,11 @@ Related Files:
   * Make an info modal for Folders.
   * (Suggestion) Add: Number of Views or people who solved a quiz on each quiz.
 
-### `public\control.html` Page
-* Give `#collegeForm` an advanced loading skeleton/animation like the other sections/forms.
-* The `سلة المهملات`'s loading skeleton, when it's emtpy, keeps loading forever, until I press `#refreshTrashBtn`, then it displays the emtpy message: `سلة المهملات فارغة` 
-
 ### `public\about.html` Page
 * Suggestion: Add an open-source Angle (Since the repo is currently open source).
 * Suggestion: Add a short testimonial or review.
 * Add the number of views of the whole platform (try to integrate vercel insights if possible) to the `المنصة بالأرقام` section.
+* Extend the `كيف بُنيت المنصة؟` section to include `SEO (Search Engine Optimization)` and `GEO (Generative Engine Optimization)`
 
 ### Create Quiz Page
 `create-quiz.js` is 5000+ lines in one file — It's the right time to split it into modules.

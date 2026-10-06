@@ -27,14 +27,10 @@ let _token = getToken();
 
 // Resolves once init()'s async session reconciliation (step 2 below) has
 // settled and _token reflects its result. Every action that reads _token
-// (via getHeaders(), below) awaits this first — see its declaration site
-// for why: trashNavBtn's onclick is live in the DOM (and callable) from
-// first paint, well before init() finishes, so without this a click in
-// that window could read this module's _token (captured synchronously at
-// line 26, above) or adminAuth.js's own copy before syncAdminSession() has
-// had a chance to replace a stale/soon-to-be-invalidated token with a
-// fresh one — or, if reconciliation determines the session is dead, before
-// onSignedOut's redirect has fired. Resolves immediately (already-resolved
+// (via getHeaders(), below) awaits this first so it cannot run before
+// syncAdminSession() has had a chance to replace a stale/soon-to-be-invalidated
+// token with a fresh one — or, if reconciliation determines the session is
+// dead, before onSignedOut's redirect has fired. Resolves immediately (already-resolved
 // microtask) on any run after the first, so this costs nothing once
 // startup has completed.
 let _resolveInitReady;
@@ -43,12 +39,9 @@ const _initReady = new Promise((resolve) => {
 });
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
-// trashNavBtn is disabled at parse time (see control.html) since its
-// onclick is live from first paint but _initReady hasn't resolved yet —
-// clicking it before that point used to just silently wait on
-// postAdminItemAction's internal `await _initReady` with no visible
-// feedback, which is itself confusable with the stuck-spinner symptom item
-// 12 is meant to close out. Re-enabled here once _initReady resolves.
+// trashNavBtn is disabled at parse time (see control.html) and re-enabled
+// here once _initReady resolves, so navigation cannot begin before session
+// reconciliation completes.
 async function init() {
   // 1. Redirect immediately if no local admin JWT exists
   if (!isAdminAuthenticated()) {
@@ -79,8 +72,10 @@ async function init() {
   document.getElementById("trashNavBtn").disabled = false;
   document.getElementById("trashNavBtn").classList.remove("btn-loading");
 
-  // 3. Load admin-control data (admins + platform stats)
+  // 3. Load admin-control data and prime the trash view through its normal
+  // refresh-button handler once the session is ready.
   loadData();
+  document.getElementById("refreshTrashBtn").click();
 }
 
 function getHeaders() {
@@ -500,19 +495,9 @@ document.getElementById("scopeModal").addEventListener("click", function (e) {
 // entirely by /api/admin's trash-list / trash-restore / trash-empty /
 // trash-settings actions (already implemented server-side).
 //
-// Fix-round note (docs/plans/implementation-plan.md item 8): the
-// pre-init()-ready click race on trashNavBtn (see _initReady's comment,
-// above) is fixed — postAdminItemAction() now can't fire with a token
-// that's about to be replaced or invalidated by syncAdminSession(). That
-// was a confirmed real bug, but not confirmed to be *the* cause of the
-// originally-reported "stuck on جاري التحميل... until manual refresh"
-// symptom: loadTrash()'s own error handling (below) already surfaces a
-// thrown error as visible text rather than silently swallowing it, so a
-// genuine stall (as opposed to a visible-but-unwanted error message) would
-// require the request to never settle at all — nothing found by reading
-// through handleTrashList/handleItemActions suggests why that would
-// happen. If this still reproduces after this fix, it needs a live
-// console/network trace to pin down further (per the plan's own note).
+// The trash list is primed after initialization by activating the same
+// refresh button used for manual reloads. Navigation then displays its
+// loaded result instead of starting a second request.
 
 let trashItemsCache = [];
 let trashFilter = "all";
@@ -523,9 +508,7 @@ function showTrashView() {
   document.getElementById("trashSection").hidden = false;
   document.getElementById("trashNavBtn").hidden = true;
   document.getElementById("overviewNavBtn").hidden = false;
-  loadTrash();
 }
-window.showTrashView = showTrashView;
 
 function showOverviewView() {
   document.getElementById("trashSection").hidden = true;
@@ -533,7 +516,6 @@ function showOverviewView() {
   document.getElementById("overviewNavBtn").hidden = true;
   document.getElementById("trashNavBtn").hidden = false;
 }
-window.showOverviewView = showOverviewView;
 
 const TRASH_TYPE_LABELS = { quiz: "امتحان", folder: "مجلد", course: "مادة" };
 
@@ -765,6 +747,8 @@ async function saveTrashRetention() {
   });
 }
 
+document.getElementById("trashNavBtn").addEventListener("click", showTrashView);
+document.getElementById("overviewNavBtn").addEventListener("click", showOverviewView);
 document.getElementById("refreshTrashBtn").addEventListener("click", loadTrash);
 document.getElementById("emptyTrashBtn").addEventListener("click", openEmptyTrashConfirm);
 document.getElementById("saveRetentionBtn").addEventListener("click", saveTrashRetention);

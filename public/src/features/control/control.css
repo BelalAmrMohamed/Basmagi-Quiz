@@ -254,11 +254,6 @@ body {
     margin: 0 auto;
 }
 
-#overviewView[hidden],
-#trashSection[hidden] {
-    display: none !important;
-}
-
 /* CARD */
 .panel {
     background: var(--bg-card);
