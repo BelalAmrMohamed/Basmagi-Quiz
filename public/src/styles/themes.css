@@ -59,8 +59,8 @@
   --z-higher: 100;
   --z-header: 1000;
   --z-overlay: 4000;
-  --z-modal: 5000;
-  --z-tooltip: 6000;
+  --z-tooltip: 5000;
+  --z-modal: 6000;
   --z-toast: 7000;
   --z-notification: 10000;
   --z-modal-top: 11000;

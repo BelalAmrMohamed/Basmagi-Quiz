@@ -2705,7 +2705,7 @@ body.reorder-mode-active .question-card {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-modal, 5000);
+  z-index: var(--z-modal, 6000);
 }
 
 .modal-card {
@@ -2721,6 +2721,7 @@ body.reorder-mode-active .question-card {
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   overflow: hidden;
+  z-index: var(--z-modal, 6000);
 }
 
 .modal-card p {
@@ -4951,5 +4952,13 @@ html[data-animations="enabled"] .search-bar-fixed {
 }
 
 /* Shared toolbar popovers are detached to <body> and positioned against the viewport. */
-.gmd-dropdown-menu { position: fixed; z-index: 10050; max-width: calc(100vw - 16px); box-sizing: border-box; }
-html[data-animations="disabled"] body { background: var(--color-background); }
+.gmd-dropdown-menu {
+  position: fixed;
+  z-index: 10050;
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
+}
+
+html[data-animations="disabled"] body {
+  background: var(--color-background);
+}

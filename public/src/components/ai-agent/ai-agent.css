@@ -40,7 +40,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-modal, 5000);
+  z-index: var(--z-modal, 6000);
 }
 
 /* Same phone bottom-nav reservation as .modal-overlay's own rule — see that
@@ -342,7 +342,7 @@
   text-align: start;
 }
 
-.ai-agent-msg .md-list > li {
+.ai-agent-msg .md-list>li {
   text-align: start;
 }
 
@@ -642,7 +642,10 @@
 }
 
 /* When the empty hint is the only child, never show a scrollbar for it */
-.ai-agent-chat-messages:has(> .ai-agent-msg--empty:only-child) { overflow-y: hidden; }
+.ai-agent-chat-messages:has(> .ai-agent-msg--empty:only-child) {
+  overflow-y: hidden;
+}
+
 .ai-agent-msg--empty {
   flex-shrink: 0;
   align-self: center;
@@ -1644,7 +1647,7 @@ body.sidebar-expanded .ai-agent-fab {
 /* Keep this component-specific overlay aligned with the shared modal tier so
    it covers the persistent side menu whenever it is active. */
 .ai-agent-modal-overlay {
-  z-index: var(--z-modal, 5000);
+  z-index: var(--z-modal, 6000);
 }
 
 .ai-agent-modal-card {
@@ -2914,17 +2917,59 @@ body.sidebar-expanded .ai-agent-fab {
   font-size: 0.85rem;
   color: var(--color-text-secondary);
 }
+
 /* Telegram bot sidebar button */
-.ai-agent-sidebar-btn--telegram { color: #24A1DE; }
-.ai-agent-sidebar-btn--telegram:hover { background: rgba(36, 161, 222, 0.12); border-color: rgba(36, 161, 222, 0.4); }
-.ai-agent-sidebar-btn--telegram:focus-visible { outline: 2px solid #24A1DE; outline-offset: 2px; }
+.ai-agent-sidebar-btn--telegram {
+  color: #24A1DE;
+}
+
+.ai-agent-sidebar-btn--telegram:hover {
+  background: rgba(36, 161, 222, 0.12);
+  border-color: rgba(36, 161, 222, 0.4);
+}
+
+.ai-agent-sidebar-btn--telegram:focus-visible {
+  outline: 2px solid #24A1DE;
+  outline-offset: 2px;
+}
 
 /* Telegram invite banner (empty chat) */
-.ai-agent-telegram-banner { margin: 0 12px 8px; position: relative; }
-.ai-agent-telegram-banner-dismiss { display: inline-flex; align-items: center; justify-content: center;
-  position: absolute; top: 6px; inset-inline-start: 6px; z-index: 3; width: 24px; height: 24px; border: 0;
-  border-radius: 50%; background: transparent; color: inherit; cursor: pointer; opacity: 0.6; font-size: 0.8rem;
+.ai-agent-telegram-banner {
+  margin: 0 12px 8px;
+  position: relative;
 }
-.ai-agent-telegram-banner-dismiss:hover { opacity: 1; }
-.ai-agent-telegram-settings-section { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
-.ai-agent-telegram-settings-section h4 { margin: 0; font-size: 0.95rem; }
+
+.ai-agent-telegram-banner-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 6px;
+  inset-inline-start: 6px;
+  z-index: 3;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.6;
+  font-size: 0.8rem;
+}
+
+.ai-agent-telegram-banner-dismiss:hover {
+  opacity: 1;
+}
+
+.ai-agent-telegram-settings-section {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-agent-telegram-settings-section h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}

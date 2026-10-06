@@ -2396,7 +2396,7 @@ Container
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-modal, 5000);
+  z-index: var(--z-modal, 6000);
 }
 
 /* Phones show a fixed bottom-nav bar over the page. Reserve its height (plus
@@ -2558,7 +2558,9 @@ Container
 }
 
 @keyframes move-to-dialog-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .move-to-dialog-node {
@@ -4990,10 +4992,11 @@ kbd {
   color: #fff;
 }
 
- .exam-card.user-lesson-card .desktop-download-btn {
+.exam-card.user-lesson-card .desktop-download-btn {
   background: var(--color-primary);
   color: #fff;
 }
+
 .lesson-card-description {
   margin: .25rem 0 .45rem;
   color: var(--color-text-secondary);
@@ -5004,8 +5007,11 @@ kbd {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
 @media (max-width: 600px) {
-  .lesson-card-description { font-size: .8rem; }
+  .lesson-card-description {
+    font-size: .8rem;
+  }
 }
 
 /* Phase 4a: local-only completion summary shown at a course's root. */

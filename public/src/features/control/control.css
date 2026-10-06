@@ -569,7 +569,7 @@ input::placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: var(--z-modal, 5000);
+    z-index: var(--z-modal, 6000);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s;
