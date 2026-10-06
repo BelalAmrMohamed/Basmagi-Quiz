@@ -333,9 +333,15 @@
   position: relative;
 }
 
-.ai-agent-msg ol,
-.ai-agent-msg ul {
-  padding-inline: 2em;
+.ai-agent-msg .md-list {
+  box-sizing: border-box;
+  margin-inline: 0;
+  padding-inline: 1.5em 0;
+  text-align: start;
+}
+
+.ai-agent-msg .md-list .md-list {
+  margin-inline-start: 1.25em;
 }
 
 /* Wraps a bubble + its controls row (copy/edit) as one column, so the

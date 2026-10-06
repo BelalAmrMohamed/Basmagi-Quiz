@@ -60,7 +60,7 @@ Lesson creation workflow:
 
 File handling:
 - When a user sends an image, analyze it with your vision capabilities and help with whatever they ask.
-- When a user sends a voice message, its transcript is included in their message — respond to the spoken request normally.
+- When a user sends a voice message, understand the spoken request in its original language and respond normally.
 - When a user sends a PDF, read and analyze its contents.
 - When a user sends a Word document (.docx), the text is automatically extracted — help with the content.
 - When a user sends a text/markdown/json file, its content is included in the message.
@@ -90,6 +90,18 @@ function getSupabase() {
     );
   }
   return _supabase;
+}
+
+async function claimTelegramUpdate(updateId) {
+  const { error } = await getSupabase()
+    .from("telegram_bot_updates")
+    .insert({ update_id: updateId });
+
+  if (error?.code === "23505") return false;
+  if (error) {
+    throw new Error(`Could not claim Telegram update ${updateId}: ${error.message}`);
+  }
+  return true;
 }
 
 // ── Key pool ─────────────────────────────────────────────────────────────────
@@ -485,17 +497,13 @@ async function processTelegramMessage(chatId, message) {
     // 2. Extract text + file parts from the Telegram message
     let userText = "";
     let inlineParts = [];
+    let audioPart = null;
 
     try {
       const inbound = await processTelegramInbound(message);
       userText = inbound.text;
       inlineParts = inbound.parts;
-      if (inbound.audio) {
-        const transcript = await transcribeTelegramAudio(inbound.audio);
-        userText = [userText, `[Voice message transcript]: ${transcript}`]
-          .filter(Boolean)
-          .join("\n\n");
-      }
+      audioPart = inbound.audio;
     } catch (extractErr) {
       console.error("[bot] File extraction error:", extractErr.message);
       if (message.voice || message.audio) {
@@ -515,7 +523,7 @@ async function processTelegramMessage(chatId, message) {
       }
     }
 
-    if (!userText && inlineParts.length === 0) {
+    if (!userText && inlineParts.length === 0 && !audioPart) {
       return; // Nothing to process
     }
 
@@ -541,6 +549,12 @@ async function processTelegramMessage(chatId, message) {
     if (userText) {
       currentParts.push({ text: userText });
     }
+    if (audioPart) {
+      currentParts.push({
+        text: "The user sent a voice message. Understand and respond to the spoken request in its original language.",
+      });
+      currentParts.push({ inlineData: audioPart });
+    }
     currentParts.push(...inlineParts);
 
     // Build strict alternating contents for Gemini
@@ -559,7 +573,12 @@ async function processTelegramMessage(chatId, message) {
     await saveChatMessage(
       chatId,
       "user",
-      savedUserText || (inlineParts.length ? "[file attachment]" : "[message]")
+      savedUserText ||
+        (audioPart
+          ? "[voice message]"
+          : inlineParts.length
+            ? "[file attachment]"
+            : "[message]")
     );
     await saveChatMessage(chatId, "model", reply);
 
@@ -571,68 +590,6 @@ async function processTelegramMessage(chatId, message) {
     console.error("[bot] processTelegramMessage error:", err);
     await sendTelegramMessage(chatId, FALLBACK_MESSAGE).catch(() => {});
   }
-}
-
-async function transcribeTelegramAudio(audio) {
-  const modelsToTry = [PRIMARY_GEMINI_MODEL, ...FALLBACK_GEMINI_MODELS];
-  let lastError = null;
-
-  for (const model of modelsToTry) {
-    const key = getGoogleKey();
-    if (!key) throw new Error("No Google API keys configured");
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text: "Transcribe this audio faithfully in its original language. Return only the words that were spoken; do not answer or summarize.",
-                },
-                { inlineData: audio },
-              ],
-            },
-          ],
-          generationConfig: { maxOutputTokens: 2048, temperature: 0 },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "");
-        lastError = new Error(
-          `Gemini audio transcription failed (${response.status}): ${errorText}`
-        );
-        console.warn(`[bot] ${lastError.message}; trying fallback...`);
-        continue;
-      }
-
-      const data = await response.json();
-      const transcript = (data?.candidates?.[0]?.content?.parts || [])
-        .filter((part) => typeof part.text === "string")
-        .map((part) => part.text)
-        .join("")
-        .trim();
-      if (transcript) return transcript;
-
-      lastError = new Error(
-        `Gemini ${model} returned an empty audio transcription`
-      );
-      console.warn(`[bot] ${lastError.message}; trying fallback...`);
-    } catch (error) {
-      lastError = error;
-      console.warn(
-        `[bot] Audio transcription request failed on ${model}:`,
-        error.message
-      );
-    }
-  }
-
-  throw lastError || new Error("All Gemini audio transcription models failed");
 }
 
 function getTelegramReplyContext(replyToMessage) {
@@ -727,10 +684,19 @@ export default async function handler(req, res) {
 
     if (chatId && hasContent) {
       try {
+        if (Number.isSafeInteger(update.update_id)) {
+          const claimed = await claimTelegramUpdate(update.update_id);
+          if (!claimed) {
+            return res.status(200).json({ ok: true, duplicate: true });
+          }
+        } else {
+          console.warn("[bot] Telegram update is missing a valid update_id");
+        }
         // Await execution so Vercel Serverless environment does NOT freeze prematurely!
         await processTelegramMessage(chatId, message);
       } catch (err) {
         console.error("[bot] Telegram handler error:", err);
+        return res.status(500).json({ ok: false });
       }
     }
 
