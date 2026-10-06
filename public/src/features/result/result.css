@@ -101,6 +101,35 @@ body.sidebar-expanded {
   flex-direction: column;
 }
 
+#resultLevelCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  padding: 24px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 20px;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-xl);
+}
+
+#resultLevelCard h2 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+#resultTotalPoints {
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+#resultLevelCard .identity-level {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 .stats-text {
   text-align: right;
   /* direction: rtl; */
@@ -259,31 +288,6 @@ body.sidebar-expanded {
 .points-pill svg {
   width: 15px;
   height: 15px;
-}
-
-/* ─── Score Details Card ──────────────────────────────────────────────────── */
-.question-card {
-  border-radius: 20px;
-  padding: 40px;
-  box-shadow: var(--shadow-xl);
-  border: 1px solid var(--color-border-light);
-  margin-top: 0;
-  margin-bottom: 32px;
-  text-align: center;
-  background-color: var(--color-surface);
-}
-
-#scoreDisplay {
-  font-size: 4rem;
-  font-weight: 800;
-  background: var(--gradient-accent);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0 0 24px;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  transition: opacity 300ms ease;
 }
 
 /* ─── Navigation Button ───────────────────────────────────────────────────── */

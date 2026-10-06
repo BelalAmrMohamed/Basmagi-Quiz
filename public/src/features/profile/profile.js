@@ -22,7 +22,7 @@ import {
 } from "../../components/notifications/notifications.js";
 import { getAdminRoleInfo, getToken } from "../../shared/adminAuth.js";
 import { userProfile, MAX_BIO_LENGTH } from "../../shared/userProfile.js";
-import { renderLevelGauge } from "./levelGauge.js";
+import { renderLevelGauge } from "../../shared/levelGauge.js";
 import {
   generateBotAvatarDataUrl,
   loreForBot,

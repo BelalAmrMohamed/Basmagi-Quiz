@@ -147,6 +147,7 @@
 
     <!-- CSS Files in correct order -->
     <link rel="stylesheet" href="src/styles/themes.css">
+    <link rel="stylesheet" href="src/shared/levelGauge.css">
     <link rel="stylesheet" href="src/features/result/result.css">
     <link rel="stylesheet" href="src/components/quiz-info-modal/quiz-info-modal.css">
     <link rel="stylesheet" href="src/components/download-quiz-modal/download-quiz-modal.css">
@@ -825,13 +826,11 @@
         </div>
         <div id="scoreHeader"></div>
 
-        <!-- Score / Back Button Card -->
-        <div class="question-card">
-            <div id="scoreDisplay">0/0</div>
-            <button class="nav-btn primary" id="backHomeBtn">
-                الرجوع إلى الصفحة الرئيسية ←
-            </button>
-        </div>
+        <section id="resultLevelCard" aria-labelledby="resultLevelTitle">
+            <h2 id="resultLevelTitle">مستواك بعد هذا الاختبار</h2>
+            <div class="identity-level" id="identityLevel" aria-label="مستوى المستخدم"></div>
+            <p id="resultTotalPoints"></p>
+        </section>
     </div>
 
     <!-- Filter Bar — sits between the score panel and the review cards -->

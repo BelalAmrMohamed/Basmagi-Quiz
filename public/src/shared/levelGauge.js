@@ -1,4 +1,4 @@
-// public/src/features/profile/levelGauge.js
+// public/src/shared/levelGauge.js
 // Renders the level progress as a radial SVG gauge instead of a flat bar.
 // Visual tier (color + label) is derived from gameEngine's existing
 // LEVEL_CONFIG.getTitles() buckets, so this file owns zero level math —
@@ -25,6 +25,12 @@ const TIER_BY_TITLE = {
   "Expert": { key: "expert", label: "خبير", from: "#fb923c", to: "#ea580c" },
   "Master": { key: "master", label: "محترف", from: "#f472b6", to: "#db2777" },
   "Grandmaster": { key: "grandmaster", label: "أسطورة", from: "#fbbf24", to: "#b45309" },
+  "مبتدئ": { key: "beginner", label: "مبتدئ", from: "#60a5fa", to: "#3b82f6" },
+  "متوسط": { key: "intermediate", label: "متوسط", from: "#34d399", to: "#059669" },
+  "متقدم": { key: "advanced", label: "متقدّم", from: "#a78bfa", to: "#7c3aed" },
+  "خبير": { key: "expert", label: "خبير", from: "#fb923c", to: "#ea580c" },
+  "أسطورة": { key: "master", label: "أسطورة", from: "#f472b6", to: "#db2777" },
+  "معلم": { key: "grandmaster", label: "معلم", from: "#fbbf24", to: "#b45309" },
 };
 const DEFAULT_TIER = { key: "beginner", label: "مبتدئ", from: "#60a5fa", to: "#3b82f6" };
 

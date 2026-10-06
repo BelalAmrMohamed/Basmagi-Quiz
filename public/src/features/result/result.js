@@ -4,6 +4,8 @@
 console.log("result.js loaded successfully");
 
 import { getManifest } from "../../shared/quizManifest.js";
+import { gameEngine } from "../../shared/gameEngine.js";
+import { renderLevelGauge } from "../../shared/levelGauge.js";
 import { loadFullQuizData } from "../home/quiz-data-loader.js";
 
 // Download modal (shared component)
@@ -119,10 +121,14 @@ const formatQuestionTypes = (stats) => {
 
 document.addEventListener("DOMContentLoaded", async () => {
   const scoreHeader = document.getElementById("scoreHeader");
-  const scoreDisplay = document.getElementById("scoreDisplay");
   const container = document.getElementById("reviewContainer");
-  const backBtn = document.getElementById("backHomeBtn");
   const openDownloadModalBtn = document.getElementById("openDownloadModalBtn");
+  const totalPoints = gameEngine.getUserData().totalPoints;
+  renderLevelGauge(gameEngine.calculateLevel(totalPoints));
+  const resultTotalPoints = document.getElementById("resultTotalPoints");
+  if (resultTotalPoints) {
+    resultTotalPoints.textContent = `إجمالي نقاطك: ${totalPoints.toLocaleString()}`;
+  }
 
   const els = {
     breadcrumb: document.getElementById("quizBreadcrumb"),
@@ -279,15 +285,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     actualPercentage,
   } = calculateQuizMetrics(questions, result.userAnswers);
 
-  // displayScore / displayTotal are kept for the legacy scoreDisplay element
-  // and the countUp animation — they are NOT used in the score-circle percentage.
-  const displayScore =
-    result.score !== undefined ? result.score : mcqCorrect + essayScoreTotal;
-  const displayTotal =
-    result.total !== undefined ? result.total : mcqTotal + essayMaxTotal;
-
-  backBtn && (backBtn.onclick = goHome);
-
   openDownloadModalBtn &&
     (openDownloadModalBtn.onclick = () => {
       showDownloadModal({
@@ -354,7 +351,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   renderHeader(
     scoreHeader,
-    scoreDisplay,
     result,
     percentage,
     actualPercentage,
@@ -367,17 +363,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     essayScoreTotal,
     essayMaxTotal,
   );
-
-  // Kick off the count-up animation on #scoreDisplay.
   // Fade out the static fraction text that renderHeader just wrote, then let
   // countUp rewrite textContent from 0→displayScore while fading back in.
-  if (scoreDisplay) {
-    scoreDisplay.style.opacity = "0";
-    requestAnimationFrame(() => {
-      scoreDisplay.style.opacity = "1"; // CSS transition: opacity 300ms ease
-      countUp(scoreDisplay, displayScore);
-    });
-  }
 
   renderReview(container, questions, result.userAnswers);
 
@@ -591,7 +578,6 @@ function countUp(el, target, duration = 1200) {
  * renderHeader — builds the score-circle + stats panel inside #scoreHeader.
  *
  * `actualPercentage` is the holistic combined score (MCQ + essay) from
- * calculateQuizMetrics. `percentage` is preserved for the legacy scoreDisplay
  * count-up animation (MCQ-only view).
  *
  * Layout:
@@ -605,7 +591,6 @@ function countUp(el, target, duration = 1200) {
  */
 function renderHeader(
   scoreHeader,
-  scoreDisplay,
   data,
   percentage,
   actualPercentage,
@@ -800,8 +785,6 @@ function renderHeader(
     </div>
 
   `;
-
-  if (scoreDisplay) scoreDisplay.textContent = `${mcqCorrect} / ${mcqTotal}`;
 }
 
 function renderReview(container, questions, userAnswers) {
