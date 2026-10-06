@@ -121,7 +121,22 @@
                     <div class="panel-title">إدارة الكليات</div>
                 </div>
                 <div class="panel-body">
-                    <form id="collegeForm" class="college-form">
+                    <div id="collegeFormSkeleton" class="college-form-skeleton" aria-hidden="true">
+                        <div class="control-skeleton-block college-skeleton-control"></div>
+                        <div class="control-skeleton-block college-skeleton-control"></div>
+                        <div class="control-skeleton-block college-skeleton-control"></div>
+                        <div class="college-skeleton-terms">
+                            <div class="control-skeleton-block"></div>
+                            <div class="control-skeleton-block"></div>
+                            <div class="control-skeleton-block"></div>
+                            <div class="control-skeleton-block"></div>
+                        </div>
+                        <div class="college-form-actions">
+                            <div class="control-skeleton-block college-skeleton-button"></div>
+                            <div class="control-skeleton-block college-skeleton-button college-skeleton-button--secondary"></div>
+                        </div>
+                    </div>
+                    <form id="collegeForm" class="college-form is-loading" aria-busy="true">
                         <input type="hidden" id="collegeId">
                         <input type="text" id="collegeName" placeholder="اسم الكلية" required>
                         <select id="collegeEducationType">

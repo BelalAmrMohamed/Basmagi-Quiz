@@ -15,7 +15,9 @@ Fix Dictation: The dictation doesn't work on Brave browser, even though other we
 ### Performance (Globally, but specially the main page)
 Performance Improvements: Currently, there are many custom mechanism fucntionalities built in JS that works perfectly, but it may exist natively in HTML, CSS, or as a browser API. In that case we shouldn't reinvent the wheel, specially if it exists natively. Anything that exists natively in HTML, CSS, or as a browser API should be used that way and we should delete any custom JS implementation that has native alternatives. That would improve performance very well. Search for everything, anything that can be implemented in HTML & CSS directly without JS should be done so. You can search the web for modern HTML & CSS, because sometimes they add new things, but watch out for compatibility with different browsers (minimum requirenment: Chrome). But I don't want to miss up any functionality, this is just for performance, not to change any fucntionality.
 
-Example: I lately found out that the `/quiz` page was rendering questions through the JS once, then when the user submits their answer, the JS renders the question again to inject the explanation & formal answer, I removed it and depended fully on CSS & HTML, the whole question including explanation & formal answer is now injected all at the first render, then I make things visible when the user submits the answer using CSS classes. That approach to get away from JS improved performance alot.  
+Example 1: I lately found out that the `/quiz` page was rendering questions through the JS once, then when the user submits their answer, the JS renders the question again to inject the explanation & formal answer, I removed it and depended fully on CSS & HTML, the whole question including explanation & formal answer is now injected all at the first render, then I make things visible when the user submits the answer using CSS classes. That approach to get away from JS improved performance alot.
+
+Example 2: The markdown engine was manually detecting the direction of sentences to determine their `direction`. A previous performance update deleted all of the related code and forced it to use the native attribute `dir="auto"`. 
 
 ## New Features
 
@@ -32,7 +34,12 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 * Some vidoes will be displayed based on the percentage of the result.
 
 #### Score Guage
-* The result page displays the score increase, but doesn't display the updated score. Bring the `#identityLevel` from the profile page to the result page.
+* The result page displays the score increase, but doesn't display the updated score. Copy the `#identityLevel` from the profile page to the result page to display the user's level after calculating that last result.
+
+Related Files: 
+* `public\result.html`
+* `public\src\features\result\result.js`
+* `public\src\features\profile\levelGauge.js` (If you are going to use this exact files, then move it to the `shared` folder, then update all of its paths)
 
 ### `public/src/shared/markdown.js`
 * Implement [live render plan](plans/live-render-md-prompt.md)
@@ -47,7 +54,8 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
   * (Suggestion) Add: Number of Views or people who solved a quiz on each quiz.
 
 ### `public\control.html` Page
-* Give `#collegeForm` an advanced loading skeleton/animation like the sections/forms.
+* Give `#collegeForm` an advanced loading skeleton/animation like the other sections/forms.
+* The `سلة المهملات`'s loading skeleton, when it's emtpy, keeps loading forever, until I press `#refreshTrashBtn`, then it displays the emtpy message: `سلة المهملات فارغة` 
 
 ### `public\about.html` Page
 * Suggestion: Add an open-source Angle (Since the repo is currently open source).

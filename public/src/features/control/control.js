@@ -166,6 +166,13 @@ function renderPlatformStats(stats) {
 
 let loadedColleges = [];
 
+function finishCollegeFormLoading() {
+  document.getElementById("collegeFormSkeleton")?.remove();
+  const form = document.getElementById("collegeForm");
+  form?.classList.remove("is-loading");
+  form?.setAttribute("aria-busy", "false");
+}
+
 function resetCollegeForm() {
   document.getElementById("collegeForm").reset();
   document.getElementById("collegeId").value = "";
@@ -315,6 +322,8 @@ async function loadData() {
     }
   } catch (err) {
     showMessage(err.message, true);
+  } finally {
+    finishCollegeFormLoading();
   }
 }
 
@@ -507,6 +516,7 @@ document.getElementById("scopeModal").addEventListener("click", function (e) {
 
 let trashItemsCache = [];
 let trashFilter = "all";
+let trashLoadId = 0;
 
 function showTrashView() {
   document.getElementById("overviewView").hidden = true;
@@ -555,12 +565,15 @@ function renderTrashList() {
       ? trashItemsCache
       : trashItemsCache.filter((item) => item.itemType === trashFilter);
 
+  list.replaceChildren();
   if (!filtered.length) {
-    list.innerHTML = '<div class="admin-empty">سلة المهملات فارغة</div>';
+    const emptyState = document.createElement("div");
+    emptyState.className = "admin-empty";
+    emptyState.textContent = "سلة المهملات فارغة";
+    list.appendChild(emptyState);
     return;
   }
 
-  list.replaceChildren();
   filtered.forEach((item) => {
     const daysLeft = daysUntil(item.expiresAt);
     const urgent = daysLeft !== null && daysLeft <= 3;
@@ -607,15 +620,26 @@ const TRASH_SKELETON_HTML = Array.from(
 ).join("");
 
 async function loadTrash() {
+  const currentLoadId = ++trashLoadId;
   const list = document.getElementById("trashList");
   list.innerHTML = TRASH_SKELETON_HTML;
   try {
     const data = await postAdminItemAction("trash-list");
-    trashItemsCache = data.items || [];
+    if (currentLoadId !== trashLoadId) return;
+    if (!Array.isArray(data.items)) throw new Error("فشل تحميل سلة المهملات.");
+    trashItemsCache = data.items;
     renderTrashList();
   } catch (err) {
-    list.innerHTML = `<div class="admin-empty">${err.message}</div>`;
+    if (currentLoadId === trashLoadId) {
+      list.textContent = "";
+      const errorState = document.createElement("div");
+      errorState.className = "admin-empty";
+      errorState.textContent = err.message;
+      list.appendChild(errorState);
+    }
   }
+
+  if (currentLoadId !== trashLoadId) return;
 
   // Retention setting box — owner-only (server also enforces this on write;
   // this just avoids showing a control that would 403 for anyone else).
@@ -624,10 +648,11 @@ async function loadTrash() {
   if (roleInfo?.isOwner) {
     try {
       const settings = await postAdminItemAction("trash-settings");
+      if (currentLoadId !== trashLoadId) return;
       document.getElementById("trashRetentionInput").value = settings.retentionDays ?? 30;
       retentionBox.hidden = false;
     } catch (_) {
-      retentionBox.hidden = true;
+      if (currentLoadId === trashLoadId) retentionBox.hidden = true;
     }
   } else {
     retentionBox.hidden = true;

@@ -95,6 +95,45 @@ body {
     margin-bottom: 18px;
 }
 
+.college-form.is-loading {
+    display: none;
+}
+
+.college-form-skeleton {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.college-skeleton-control {
+    height: 46px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.college-skeleton-terms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    padding: 3px 0;
+}
+
+.college-skeleton-terms .control-skeleton-block {
+    width: 76px;
+    height: 22px;
+    border-radius: 6px;
+}
+
+.college-skeleton-button {
+    width: 120px;
+    height: 40px;
+    border-radius: 6px;
+}
+
+.college-skeleton-button--secondary {
+    width: 110px;
+}
+
 .college-form select,
 .college-form input[type="number"] {
     width: 100%;
