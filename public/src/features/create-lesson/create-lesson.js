@@ -2813,8 +2813,15 @@ window.previewLesson = async function () {
         if (!id) continue;
         lessonLookup.set(id, lesson);
     }
-    const ctx = { lessonId: currentPreviewId, quizLookup, lessonLookup };
     const content = serializeContent();
+    const questionLabels = new Map();
+    const allQuestions = content.sections.flatMap((section) =>
+        section.blocks.filter((block) => block?.type === "question" && block.id),
+    );
+    allQuestions.forEach((question, index) => {
+        questionLabels.set(question.id, { index: index + 1, total: allQuestions.length });
+    });
+    const ctx = { lessonId: currentPreviewId, quizLookup, lessonLookup, questionLabels };
 
     const sectionsHtml = content.sections
         .map((section, i) => {

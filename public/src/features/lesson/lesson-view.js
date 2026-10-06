@@ -682,6 +682,13 @@ export async function renderLessonView() {
     renderLessonLoadError("تعذّر تجهيز محتوى الدرس. جرّب إعادة المحاولة، وإذا استمر الخطأ افتح الدرس من قسم «امتحاناتك» مرة أخرى.");
     return;
   }
+  const questionLabels = new Map();
+  const allQuestions = normalized.sections.flatMap((section) =>
+    section.blocks.filter((block) => block?.type === "question" && block.id),
+  );
+  allQuestions.forEach((question, index) => {
+    questionLabels.set(question.id, { index: index + 1, total: allQuestions.length });
+  });
 
   // paint() is re-run after an answer, because revealing an adaptive
   // section changes both the section list and the ToC. Progress is re-read
@@ -692,7 +699,7 @@ export async function renderLessonView() {
     rerenderLessonQuiz = paint;
     const progress = getLessonProgress(lesson.id);
     const visibleSections = computeVisibleSections(normalized, progress);
-    const ctx = { lessonId: lesson.id, quizLookup, lessonLookup };
+    const ctx = { lessonId: lesson.id, quizLookup, lessonLookup, questionLabels };
 
     container.innerHTML =
       `<article class="lesson-view lesson-view--reader" data-lesson-id="${escapeHtml(lesson.id)}">` +

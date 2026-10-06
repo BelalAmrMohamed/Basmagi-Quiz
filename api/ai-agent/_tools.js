@@ -314,7 +314,7 @@ export const GET_USER_ACTIVITY_TOOL = {
 // is atomic, undoable, and never replaces the rest of the lesson.
 export const ADD_LESSON_QUESTION_TOOL = {
   name: "add_lesson_question",
-  description: "Insert one embedded question into the current lesson. Only call after the creator explicitly confirms the proposed question. Use questionKind 'essay' with modelAnswer for an essay. For MCQ, provide options and 0-based correctIndexes; set multiSelect true when more than one option is correct. sectionTitle must exactly match a section supplied in the current lesson summary, or omit it to use the first section.",
+  description: "Insert one embedded question into the current lesson. Only call after the creator explicitly confirms the proposed question. Use questionKind 'essay' with a complete modelAnswer and an explanation; the reader sees an approximate 0-5 self-check rating. For MCQ, provide 2-8 options, an explanation, and a zero-based correctIndexes array; use one index for a single-answer question and set multiSelect true when there is more than one correct option. Represent true/false as two options. sectionTitle must exactly match a section supplied in the current lesson summary, or omit it to use the first section.",
   input_schema: {
     type: "object",
     properties: {
@@ -333,7 +333,7 @@ export const ADD_LESSON_QUESTION_TOOL = {
 
 export const CREATE_LESSON_TOOL = {
   name: "create_lesson",
-  description: "Create a lesson with ordered sections containing a blocks array. Use {type:'markdown',body} for lesson content and {type:'question',questionKind:'mcq'|'essay',prompt,...} for embedded questions. MCQs require 2-8 options, a zero-based correctIndex (single answer) or correctIndexes (multiple answers), multiSelect:true for multiple answers, and an explanation. Essays require a complete modelAnswer. Keep title, description, section titles, Markdown, and question data in this structured JSON shape. On the home page, only call after the user confirms the proposed lesson; on the lesson editor, only call after confirmation before replacing existing lesson content. An explicit /create-lesson command is confirmation.",
+  description: "Create a lesson with ordered sections containing a blocks array. Use {type:'markdown',body} for lesson content and {type:'question',questionKind:'mcq'|'essay',prompt,...} for embedded questions. MCQs require 2-8 options, an explanation, a zero-based correctIndex (single answer) or correctIndexes (multiple answers), and multiSelect:true for multiple answers; represent true/false as a two-option MCQ. Essays require a complete modelAnswer and explanation; readers see an approximate 0-5 self-check rating, not an overall lesson grade. Keep title, description, section titles, Markdown, and question data in this structured JSON shape. On the home page, only call after the user confirms the proposed lesson; on the lesson editor, only call after confirmation before replacing existing lesson content. An explicit /create-lesson command is confirmation.",
   input_schema: {
     type: "object",
     properties: {

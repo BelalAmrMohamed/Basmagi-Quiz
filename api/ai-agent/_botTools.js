@@ -204,7 +204,7 @@ export const BOT_TOOLS = [
   {
     name: "generate_lesson_file",
     description:
-      "Generate and send a lesson file to the user. Supported formats: interactive 'html', 'pdf', 'markdown', and 'json'.",
+      "Generate and send a lesson file to the user. Supported formats: interactive 'html', 'pdf', 'markdown', and 'json'. For HTML, embedded questions show numbered question/type labels, answer selection and check controls, answer feedback, and explanations; essay self-checks display an approximate 0-5 rating.",
     parameters: {
       type: "object",
       properties: {
@@ -216,7 +216,7 @@ export const BOT_TOOLS = [
         },
         sections: {
           type: "array",
-          description: "Ordered lesson sections. Each section uses a blocks array: Markdown blocks use {type:'markdown',body}; embedded questions use {type:'question',questionKind,prompt,...}. Legacy content/questions fields are also accepted.",
+          description: "Ordered lesson sections. Each section uses a blocks array: Markdown blocks use {type:'markdown',body}; embedded MCQs use {type:'question',questionKind:'mcq',prompt,options,correctIndex or correctIndexes,multiSelect,explanation}; essays use {type:'question',questionKind:'essay',prompt,modelAnswer,explanation} and get an approximate 0-5 self-check rating. True/false is a two-option MCQ. Legacy content/questions fields are also accepted.",
           items: {
             type: "object",
             properties: {
@@ -229,14 +229,14 @@ export const BOT_TOOLS = [
                   properties: {
                     type: { type: "string", enum: ["markdown", "question"] },
                     body: { type: "string" },
-                    questionKind: { type: "string", enum: ["mcq", "essay"] },
+                    questionKind: { type: "string", enum: ["mcq", "essay"], description: "Use mcq for single/multiple choice and true/false; use essay for free-text answers." },
                     prompt: { type: "string" },
                     options: { type: "array", items: { type: "string" } },
                     correctIndex: { type: "integer", description: "Zero-based correct option index for a single-answer MCQ." },
                     correctIndexes: { type: "array", items: { type: "integer" }, description: "Zero-based correct option indexes for a multi-select MCQ." },
                     multiSelect: { type: "boolean" },
                     modelAnswer: { type: "string" },
-                    explanation: { type: "string" },
+                    explanation: { type: "string", description: "Explain the correct answer; used in the reader's answer feedback." },
                   },
                 },
               },

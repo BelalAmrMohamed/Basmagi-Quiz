@@ -7,18 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Lessons Embedded Questions
-* The experience of the embedded questions is really bad, the UI/UX is not refined, which crushes, because I already built the `quiz.html` page, which is extremely refined in every way possible. In the types of questions, the questions rating, questoins feedback, labels, etc... 
-* Objectives: 
-  * Rebuilt the lessons embedded questions to behave exactly like the quiz page itself.
-  * Update the AI Agent and Telegram Chat lesson creation tool accordingly.
-  * Update the lesson export accordingly, and see how quiz export behaves 
- 
-Files: 
-* `public\src\features\export-quiz\export-to-quiz.js`
-* `public\src\features\lesson\` (the files in it)
-* `public\quiz.html`
-
 ### AI Agent
 
 #### Dictation

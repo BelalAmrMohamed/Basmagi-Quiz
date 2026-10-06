@@ -3,8 +3,10 @@ import { isLessonProtected, requestLessonPassword, verifyLocalLessonPassword, un
 import { renderBlock } from "../lesson/lesson-blocks.js";
 import { normalizeLessonContent } from "../lesson/lesson-schema.js";
 import { escapeHtml } from "./escape-html.js";
+import { gradeEssay } from "../../shared/rate-answers.js";
 
 const LESSON_INTERACTION_SCRIPT = `
+const gradeEssay = (${gradeEssay.toString()});
 const revealAdaptiveSection = (question, wasCorrect) => {
   const rules = JSON.parse(question.dataset.revealRule || "{}");
   const target = rules[wasCorrect ? "onCorrect" : "onWrong"]?.revealSection;
@@ -19,6 +21,8 @@ document.querySelectorAll(".lesson-question[data-question-kind='mcq']").forEach(
     question.querySelectorAll(".lesson-question__option").forEach((button) => {
       const index = Number(button.dataset.optionIndex);
       button.disabled = true;
+      button.classList.toggle("is-selected", chosen.includes(index));
+      button.setAttribute("aria-pressed", String(chosen.includes(index)));
       if (correct.includes(index)) button.classList.add("is-correct");
       if (chosen.includes(index) && !correct.includes(index)) button.classList.add("is-wrong");
     });
@@ -26,20 +30,28 @@ document.querySelectorAll(".lesson-question[data-question-kind='mcq']").forEach(
     const feedback = question.querySelector(".lesson-question__feedback");
     feedback.hidden = false;
     const verdict = feedback.querySelector(".lesson-question__verdict");
-    verdict.textContent = right ? "إجابة صحيحة" : "إجابة غير صحيحة — راجع الخيارات الصحيحة";
-    verdict.classList.add(right ? "is-correct" : "is-wrong");
+    verdict.textContent = right ? "إجابة صحيحة" : "إجابة غير صحيحة — راجع الإجابة الصحيحة والشرح";
+    verdict.classList.toggle("is-correct", right);
+    verdict.classList.toggle("is-wrong", !right);
+    question.querySelector("[data-question-check]").disabled = true;
     revealAdaptiveSection(question, right);
   };
   question.querySelectorAll(".lesson-question__option").forEach((button) => button.addEventListener("click", () => {
     if (question.dataset.answered === "true") return;
-    const index = Number(button.dataset.optionIndex);
     if (multi) {
       button.classList.toggle("is-selected");
-      return;
+    } else {
+      question.querySelectorAll(".lesson-question__option").forEach((option) => {
+        const selected = option === button;
+        option.classList.toggle("is-selected", selected);
+        option.setAttribute("aria-pressed", String(selected));
+      });
     }
-    reveal([index]);
+    button.setAttribute("aria-pressed", String(button.classList.contains("is-selected")));
+    question.querySelector("[data-question-check]").disabled =
+      !question.querySelector(".lesson-question__option.is-selected");
   }));
-  question.querySelector(".lesson-question__check-btn")?.addEventListener("click", () => {
+  question.querySelector("[data-question-check]")?.addEventListener("click", () => {
     if (question.dataset.answered === "true") return;
     const selected = [...question.querySelectorAll(".lesson-question__option.is-selected")].map((button) => Number(button.dataset.optionIndex));
     if (selected.length) reveal(selected);
@@ -47,24 +59,30 @@ document.querySelectorAll(".lesson-question[data-question-kind='mcq']").forEach(
 });
 document.querySelectorAll(".lesson-question[data-question-kind='essay']").forEach((question) => {
   const button = question.querySelector(".lesson-question__essay-check-btn");
+  const input = question.querySelector(".lesson-question__essay-input");
+  input?.addEventListener("input", () => {
+    if (question.dataset.answered !== "true") button.disabled = !input.value.trim();
+  });
   button?.addEventListener("click", () => {
-    const answer = question.querySelector(".lesson-question__essay-input")?.value.trim() || "";
+    const answer = input?.value.trim() || "";
     if (!answer || question.dataset.answered === "true") return;
     question.dataset.answered = "true";
-    question.querySelector(".lesson-question__essay-input").disabled = true;
+    input.disabled = true;
     button.disabled = true;
     const feedback = question.querySelector(".lesson-question__feedback");
     feedback.hidden = false;
     const modelAnswer = question.dataset.modelAnswer || "";
-    const keywords = modelAnswer.toLocaleLowerCase().split(/\\s+/).filter((word) => word.length > 2);
-    const answerText = answer.toLocaleLowerCase();
-    const overlap = keywords.length ? keywords.filter((word) => answerText.includes(word)).length / keywords.length : 0;
-    const wasClose = overlap >= 0.5;
+    const score = gradeEssay(answer, modelAnswer);
+    const wasClose = score >= 3;
     const verdict = feedback.querySelector(".lesson-question__verdict");
     verdict.textContent = wasClose ? "إجابتك قريبة من الإجابة النموذجية" : "راجع الإجابة النموذجية";
-    verdict.classList.add(wasClose ? "is-correct" : "is-wrong");
-    const model = feedback.querySelector(".lesson-question__model-answer");
-    if (model) model.textContent = "الإجابة النموذجية: " + modelAnswer;
+    verdict.classList.toggle("is-correct", wasClose);
+    verdict.classList.toggle("is-wrong", !wasClose);
+    const rating = feedback.querySelector(".lesson-question__essay-rating");
+    if (rating) {
+      rating.textContent = score + " من 5 · " + "★".repeat(score) + "☆".repeat(5 - score);
+      rating.setAttribute("aria-label", "التقييم التقريبي: " + score + " من 5");
+    }
     revealAdaptiveSection(question, wasClose);
   });
 });
@@ -168,11 +186,18 @@ export function lessonPayload(lesson) {
 
 export async function buildStandaloneLessonHtml(payload) {
   const normalized = normalizeLessonContent(payload.content);
+  const questionLabels = new Map();
+  const allQuestions = normalized.sections.flatMap((section) =>
+    section.blocks.filter((block) => block?.type === "question" && block.id),
+  );
+  allQuestions.forEach((question, index) => {
+    questionLabels.set(question.id, { index: index + 1, total: allQuestions.length });
+  });
   const [lessonCss, markdownCss] = await Promise.all([
     fetch(new URL("../lesson/lesson.css", import.meta.url)).then(readStylesheet),
     fetch(new URL("../../styles/markdown.css", import.meta.url)).then(readStylesheet),
   ]);
-  const ctx = { lessonId: "__lesson_export__", quizLookup: new Map(), lessonLookup: new Map() };
+  const ctx = { lessonId: "__lesson_export__", quizLookup: new Map(), lessonLookup: new Map(), questionLabels };
   const sections = normalized.sections.map((section, sectionIndex) => {
     const blocks = section.blocks.map((block) => {
       let markup = renderBlock(block, ctx);
@@ -197,7 +222,7 @@ body{max-width:900px;margin:0 auto;padding:24px;font-family:Tahoma,Arial,sans-se
 .lesson-view__title{margin:0 0 1.5rem}.lesson-section[hidden]{display:none}
 .lesson-question__essay-check-btn,.lesson-question__check-btn{margin-top:.75rem;padding:.5rem 1rem;border:0;border-radius:8px;background:#2563eb;color:#fff;font:inherit;cursor:pointer}
 @media(max-width:600px){body{padding:14px}}
-@media print{body{max-width:none;padding:0}.lesson-section[hidden]{display:block!important}.lesson-question__option{color:#111}.lesson-question__check-btn,.lesson-question__essay-check-btn{display:none}}</style>
+@media print{body{max-width:none;padding:0}.lesson-section[hidden]{display:block!important}.lesson-question__option{color:#111}.lesson-question__check-btn,.lesson-question__essay-check-btn{display:none}.lesson-question__feedback[hidden]{display:grid!important}.lesson-question__verdict:empty{display:none}}</style>
 </head><body><main class="lesson-view"><header class="lesson-view__header"><h1 class="lesson-view__title">${title}</h1></header><div class="lesson-view__body">${sections}</div></main>
 <script>${LESSON_INTERACTION_SCRIPT}</script></body></html>`;
 }
@@ -250,7 +275,7 @@ function openLessonDownloadOptions(lesson, triggerBtn) {
 
 async function printLessonAsPdf(payload) {
   const html = await buildStandaloneLessonHtml(payload);
-  const printable = html.replace("</head>", `<style>@media print{ @page{size:A4;margin:16mm} body{max-width:none;padding:0} .lesson-section[hidden]{display:block!important} .lesson-question__check-btn,.lesson-question__essay-check-btn{display:none!important} .lesson-section,.lesson-question{break-inside:avoid-page} }</style></head>`);
+  const printable = html.replace("</head>", `<style>@media print{ @page{size:A4;margin:16mm} body{max-width:none;padding:0} .lesson-section[hidden]{display:block!important} .lesson-question__check-btn,.lesson-question__essay-check-btn{display:none!important} .lesson-question__feedback[hidden]{display:grid!important} .lesson-question__verdict:empty{display:none} .lesson-section,.lesson-question{break-inside:avoid-page} }</style></head>`);
   await new Promise((resolve, reject) => {
     const iframe = document.createElement("iframe");
     iframe.setAttribute("aria-hidden", "true");
