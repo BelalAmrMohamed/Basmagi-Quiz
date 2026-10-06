@@ -2271,17 +2271,12 @@ export function _ownText(element) {
 export function _processElement(element) {
   if (!element || _SKIP_TAGS.has(element.tagName)) return;
 
-  if (element.matches("ol.md-list, ul.md-list")) {
-    const firstItem = element.querySelector(":scope > li");
-    if (firstItem) {
-      element.setAttribute("dir", detectDirection(_ownText(firstItem)));
-    } else {
-      _setAutoDir(element);
-    }
+  if (element.matches(_BLOCK_CHILD_SELECTOR)) {
+    _setAutoDir(element);
     return;
   }
 
-  if (element.matches(_BLOCK_CHILD_SELECTOR)) {
+  if (element.matches("ol.md-list, ul.md-list")) {
     _setAutoDir(element);
     return;
   }

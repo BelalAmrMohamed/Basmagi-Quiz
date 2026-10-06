@@ -98,6 +98,19 @@ async function claimTelegramUpdate(updateId) {
     .insert({ update_id: updateId });
 
   if (error?.code === "23505") return false;
+  const missingDedupTable =
+    error?.code === "42P01" ||
+    error?.code === "PGRST205" ||
+    (typeof error?.message === "string" &&
+      error.message.includes(
+        "Could not find the table 'public.telegram_bot_updates' in the schema cache"
+      ));
+  if (missingDedupTable) {
+    console.error(
+      "[bot] telegram_bot_updates table is missing; processing without webhook deduplication. Apply the Telegram update deduplication Supabase migration."
+    );
+    return true;
+  }
   if (error) {
     throw new Error(`Could not claim Telegram update ${updateId}: ${error.message}`);
   }

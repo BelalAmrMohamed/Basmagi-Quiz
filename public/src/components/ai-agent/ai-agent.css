@@ -336,7 +336,13 @@
 .ai-agent-msg .md-list {
   box-sizing: border-box;
   margin-inline: 0;
-  padding-inline: 1.5em 0;
+  padding-inline-start: 1.5em;
+  padding-inline-end: 0;
+  list-style-position: inside;
+  text-align: start;
+}
+
+.ai-agent-msg .md-list > li {
   text-align: start;
 }
 
