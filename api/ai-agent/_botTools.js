@@ -99,7 +99,7 @@ export const BOT_TOOLS = [
   {
     name: "export_quiz",
     description:
-      "Export and send an existing quiz from the platform to the user as an interactive HTML (.html), PDF (.pdf), Markdown (.md), or JSON (.json) file. Call this tool immediately whenever the user asks for a quiz file, asks to send an exam, or says 'ابعتها لي PDF' / 'ابعت الامتحان ده HTML' etc.",
+      "Export and send an existing quiz from the platform to the user as an interactive HTML (.html), PDF (.pdf), Markdown (.md), or JSON (.json) file. If the user does not specify a format or extension, default to HTML. For PDF, honor the user's requested PDF options.",
     parameters: {
       type: "object",
       properties: {
@@ -110,10 +110,34 @@ export const BOT_TOOLS = [
         format: {
           type: "string",
           enum: ["html", "pdf", "markdown", "json"],
-          description: "Desired export format.",
+          description: "Desired export format. Defaults to html when omitted or unspecified.",
+        },
+        pdf_options: {
+          type: "object",
+          description: "PDF-only options. Defaults match the platform export settings: omit answers and explanations, place answers inline if included, and use a light background.",
+          properties: {
+            backgroundColor: {
+              type: "string",
+              enum: ["light", "dark"],
+              description: "PDF page background; defaults to light.",
+            },
+            includeAnswers: {
+              type: "boolean",
+              description: "Whether to include correct answers; defaults to false.",
+            },
+            includeExplanations: {
+              type: "boolean",
+              description: "Whether to include explanations; defaults to false.",
+            },
+            answerPlacement: {
+              type: "string",
+              enum: ["inline", "final-page"],
+              description: "Place included answers below each question or together in a final answer key; defaults to inline.",
+            },
+          },
         },
       },
-      required: ["quiz_id", "format"],
+      required: ["quiz_id"],
     },
   },
 
@@ -136,7 +160,7 @@ export const BOT_TOOLS = [
   {
     name: "generate_quiz_file",
     description:
-      "Generate and send a brand new quiz file to the user from questions created by AI or extracted from user notes. Supported formats: 'html' (standalone interactive), 'pdf', 'markdown', 'json' (platform-importable).",
+      "Generate and send a brand new quiz file to the user from questions created by AI or extracted from user notes. Supported formats: 'html' (standalone interactive), 'pdf', 'markdown', 'json' (platform-importable). Defaults to HTML when the user does not choose a format.",
     parameters: {
       type: "object",
       properties: {
@@ -144,7 +168,17 @@ export const BOT_TOOLS = [
         format: {
           type: "string",
           enum: ["html", "pdf", "markdown", "json"],
-          description: "Output file format.",
+          description: "Output file format. Defaults to html if the user does not choose one.",
+        },
+        pdf_options: {
+          type: "object",
+          description: "PDF-only options, matching the platform PDF export settings.",
+          properties: {
+            backgroundColor: { type: "string", enum: ["light", "dark"] },
+            includeAnswers: { type: "boolean" },
+            includeExplanations: { type: "boolean" },
+            answerPlacement: { type: "string", enum: ["inline", "final-page"] },
+          },
         },
         questions: {
           type: "array",
@@ -163,7 +197,7 @@ export const BOT_TOOLS = [
           },
         },
       },
-      required: ["title", "format", "questions"],
+      required: ["title", "questions"],
     },
   },
 
@@ -178,7 +212,7 @@ export const BOT_TOOLS = [
         format: {
           type: "string",
           enum: ["html", "pdf", "markdown", "json"],
-          description: "Output file format.",
+          description: "Output file format. Defaults to html if the user does not choose one.",
         },
         sections: {
           type: "array",
@@ -226,7 +260,7 @@ export const BOT_TOOLS = [
           },
         },
       },
-      required: ["title", "format", "sections"],
+      required: ["title", "sections"],
     },
   },
 ];
@@ -399,7 +433,8 @@ async function handleFetchQuiz(args, supabase) {
 }
 
 async function handleExportQuiz(args, chatId, supabase) {
-  const { quiz_id, format } = args;
+  const { quiz_id } = args;
+  const format = normalizeExportFormat(args.format);
 
   // Look up quiz by 8-char meta ID first, then fallback to row UUID
   let { data: quizRow, error } = await supabase
@@ -437,6 +472,7 @@ async function handleExportQuiz(args, chatId, supabase) {
       format,
       questions,
       quizId: quizData.meta?.id || quizRow.id,
+      pdfOptions: args.pdf_options,
     },
     chatId
   );
@@ -478,7 +514,8 @@ async function handleFetchLesson(args, supabase) {
 }
 
 async function handleGenerateQuizFile(args, chatId) {
-  const { title, format, questions, quizId } = args;
+  const { title, questions, quizId } = args;
+  const format = normalizeExportFormat(args.format);
 
   await sendTelegramChatAction(chatId, "upload_document");
 
@@ -496,7 +533,11 @@ async function handleGenerateQuizFile(args, chatId) {
       filename = `${safeName}.html`;
       break;
     case "pdf":
-      buffer = await generateQuizPdf(title, questions);
+      buffer = await generateQuizPdf(
+        title,
+        questions,
+        args.pdf_options || args.pdfOptions || {},
+      );
       filename = `${safeName}.pdf`;
       break;
     case "markdown":
@@ -526,8 +567,16 @@ async function handleGenerateQuizFile(args, chatId) {
   };
 }
 
+function normalizeExportFormat(format) {
+  if (typeof format !== "string" || !format.trim()) return "html";
+
+  const normalized = format.trim().toLowerCase().replace(/^\./, "");
+  return normalized === "md" ? "markdown" : normalized;
+}
+
 async function handleGenerateLessonFile(args, chatId) {
-  const { title, format, sections } = args;
+  const { title, sections } = args;
+  const format = normalizeExportFormat(args.format);
 
   await sendTelegramChatAction(chatId, "upload_document");
 

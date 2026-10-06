@@ -7,6 +7,18 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Lessons Embedded Questions
+* The experience of the embedded questions is really bad, the UI/UX is not refined, which crushes, because I already built the `quiz.html` page, which is extremely refined in every way possible. In the types of questions, the questions rating, questoins feedback, labels, etc... 
+* Objectives: 
+  * Rebuilt the lessons embedded questions to behave exactly like the quiz page itself.
+  * Update the AI Agent and Telegram Chat lesson creation tool accordingly.
+  * Update the lesson export accordingly, and see how quiz export behaves 
+ 
+Files: 
+* `public\src\features\export-quiz\export-to-quiz.js`
+* `public\src\features\lesson\` (the files in it)
+* `public\quiz.html`
+
 ### AI Agent
 
 #### Dictation
@@ -32,14 +44,6 @@ Example 2: The markdown engine was manually detecting the direction of sentences
   * ميمز تشجيع سلبية
   * ميمز تشجيع إيجابية
 * Some vidoes will be displayed based on the percentage of the result.
-
-#### Score Guage
-* The result page displays the score increase, but doesn't display the updated score. Copy the `#identityLevel` from the profile page to the result page to display the user's level after calculating that last result.
-
-Related Files: 
-* `public\result.html`
-* `public\src\features\result\result.js`
-* `public\src\features\profile\levelGauge.js` (If you are going to use this exact files, then move it to the `shared` folder, then update all of its paths)
 
 ### `public/src/shared/markdown.js`
 * Implement [live render plan](plans/live-render-md-prompt.md)

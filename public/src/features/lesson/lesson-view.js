@@ -356,7 +356,7 @@ function renderSection(section, ctx) {
     `<section class="lesson-section" id="lesson-section-${escapeHtml(section.id)}" ` +
     `data-section-id="${escapeHtml(section.id)}">` +
     (section.title
-      ? `<div class="lesson-section__header">` +
+      ? `<div dir="auto" class="lesson-section__header">` +
       `<h2 class="lesson-section__title">${escapeHtml(section.title)}</h2>` +
       renderTtsControl(escapeHtml(section.id)) +
       `<button type="button" class="lesson-bookmark-btn${isLessonSectionBookmarked(ctx.lessonId, section.id) ? " is-active" : ""}" data-bookmark-toggle="${escapeHtml(section.id)}" aria-label="حفظ القسم كعلامة مرجعية" title="حفظ القسم">${lessonIcon("bookmark")}</button>` +

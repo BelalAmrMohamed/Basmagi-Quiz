@@ -4,8 +4,9 @@
 //
 // REUSES the platform's canonical export features from public/src/features/export-quiz/:
 //   - export-to-quiz.js     → buildStandaloneQuizHtml (fully-featured standalone interactive .html)
+//   - export-to-html.js     → buildQuizHtml (shared Markdown/KaTeX-aware content rendering)
 //   - export-to-markdown.js → buildQuizMarkdown (clean GitHub-flavored markdown)
-//   - pdfkit                → generateQuizPdf (paginated .pdf)
+//   - pdfkit                → paginate rendered content into the Telegram .pdf
 //   - json schema           → generateQuizJson (platform-importable .json)
 // =============================================================================
 
@@ -37,6 +38,7 @@ if (typeof globalThis.navigator === "undefined") {
 }
 
 import { buildStandaloneQuizHtml as buildPlatformQuizHtml } from "../../public/src/features/export-quiz/export-to-quiz.js";
+import { buildQuizHtml as buildPlatformQuizDocument } from "../../public/src/features/export-quiz/export-to-html.js";
 import { buildQuizMarkdown as buildPlatformQuizMarkdown } from "../../public/src/features/export-quiz/export-to-markdown.js";
 
 // ── 3.1: Standalone Interactive Quiz HTML ────────────────────────────────────
@@ -319,16 +321,226 @@ function escapeHtml(value) {
   })[char]);
 }
 
-// ── 3.5: Quiz PDF (pdfkit) ─────────────────────────────────────────────────
+// ── 3.5: Quiz PDF ────────────────────────────────────────────────────────────
+
+const PDF_DEFAULT_OPTIONS = {
+  backgroundColor: "light",
+  includeAnswers: false,
+  includeExplanations: false,
+  answerPlacement: "inline",
+};
+
+function decodeHtmlEntities(text) {
+  const decodeCodePoint = (value) => {
+    const codePoint = Number(value);
+    return Number.isInteger(codePoint) &&
+      codePoint > 0 &&
+      codePoint <= 0x10ffff &&
+      (codePoint < 0xd800 || codePoint > 0xdfff)
+      ? String.fromCodePoint(codePoint)
+      : "\uFFFD";
+  };
+
+  return text
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&#(\d+);/g, (_, code) => decodeCodePoint(code))
+    .replace(/&#x([\da-f]+);/gi, (_, code) =>
+      decodeCodePoint(parseInt(code, 16)),
+    );
+}
+
+function pdfBlocksFromHtml(html) {
+  const body = html.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i)?.[1] || html;
+  const source = body.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, "");
+  const tokens = source.match(/<[^>]+>|[^<]+/g) || [];
+  const blocks = [];
+  let runs = [];
+  let style = { fontSize: 10, bold: false, italic: false, code: false, color: null };
+  const styleStack = [];
+  let alignment = "left";
+  let listDepth = 0;
+
+  const flush = () => {
+    while (runs.length && !runs[runs.length - 1].text.trim()) runs.pop();
+    if (runs.length) blocks.push({ runs, alignment, listDepth });
+    runs = [];
+    alignment = "left";
+  };
+  const append = (text) => {
+    const normalized = decodeHtmlEntities(text).replace(/\s+/g, " ");
+    if (!normalized.trim()) {
+      if (runs.length && !runs[runs.length - 1].text.endsWith(" ")) {
+        runs.push({ ...style, text: " " });
+      }
+      return;
+    }
+    runs.push({ ...style, text: normalized });
+  };
+  const isBlock = /^(address|article|blockquote|br|dd|div|dl|dt|fieldset|figcaption|figure|footer|h[1-6]|hr|li|ol|p|pre|section|table|tr|ul)$/;
+  const isVoid = /^(area|base|col|embed|img|input|link|meta|param|source|track|wbr)$/;
+
+  for (const token of tokens) {
+    if (!token.startsWith("<")) {
+      append(token);
+      continue;
+    }
+
+    const match = token.match(/^<\s*(\/)?\s*([a-z0-9-]+)([^>]*)>/i);
+    if (!match) continue;
+    const [, closing, rawTag, attributes] = match;
+    const tag = rawTag.toLowerCase();
+    const classes = attributes.match(/\bclass=["']([^"']*)["']/i)?.[1] || "";
+    const classNames = classes.split(/\s+/);
+
+    if (closing) {
+      if (tag === "ul" || tag === "ol") listDepth = Math.max(0, listDepth - 1);
+      if (styleStack.length) style = styleStack.pop();
+      if (tag === "td" || tag === "th") append("  |  ");
+      if (isBlock.test(tag)) flush();
+      continue;
+    }
+
+    if (tag === "br" || tag === "hr") {
+      flush();
+      continue;
+    }
+    if (tag === "img") {
+      const alt = attributes.match(/\balt=["']([^"']*)["']/i)?.[1];
+      if (alt) append(`[${alt}]`);
+      continue;
+    }
+    if (isVoid.test(tag)) continue;
+    if (isBlock.test(tag)) flush();
+    styleStack.push(style);
+    style = { ...style };
+
+    if (tag === "h1") {
+      style.fontSize = 18;
+      style.bold = true;
+      style.color = "#2563eb";
+      alignment = "center";
+    } else if (tag === "h2") {
+      style.fontSize = 15;
+      style.bold = true;
+      style.color = "#2563eb";
+    } else if (tag === "h3" || tag === "h4") {
+      style.fontSize = 12;
+      style.bold = true;
+    } else if (tag === "strong" || tag === "b") {
+      style.bold = true;
+    } else if (tag === "em" || tag === "i") {
+      style.italic = true;
+    } else if (tag === "code" || tag === "pre") {
+      style.code = true;
+    } else if (tag === "a") {
+      style.color = "#2563eb";
+    }
+
+    if (classNames.includes("q-header") || classNames.includes("meta")) {
+      style.fontSize = 9;
+      style.color = "#6b7280";
+    } else if (classNames.includes("correct-answer")) {
+      style.color = "#15803d";
+      style.bold = true;
+    } else if (classNames.includes("explanation")) {
+      style.color = "#7c3aed";
+    } else if (classNames.includes("option-letter")) {
+      style.color = "#2563eb";
+      style.bold = true;
+    } else if (classNames.includes("md-blockquote")) {
+      style.color = "#52525b";
+      style.italic = true;
+    }
+
+    if (tag === "li") {
+      listDepth = Math.max(1, listDepth);
+      append("• ");
+    } else if (tag === "ul" || tag === "ol") {
+      listDepth += 1;
+    } else if (tag === "th") {
+      style.bold = true;
+    }
+
+    if (/\/\s*>$/.test(token)) {
+      style = styleStack.pop() || style;
+    }
+  }
+
+  flush();
+  return blocks;
+}
+
+function writePdfBlocks(doc, blocks, dark) {
+  const baseColor = dark ? "#f3f4f6" : "#1a1a1a";
+  for (const block of blocks) {
+    const indent = Math.max(0, block.listDepth - 1) * 14;
+    block.runs.forEach((run, index) => {
+      const font = run.code
+        ? "Courier"
+        : run.bold && run.italic
+          ? "Helvetica-BoldOblique"
+          : run.bold
+            ? "Helvetica-Bold"
+            : run.italic
+              ? "Helvetica-Oblique"
+              : "Helvetica";
+      doc
+        .font(font)
+        .fontSize(run.fontSize || 10)
+        .fillColor(run.color || baseColor)
+        .text(run.text, {
+          continued: index < block.runs.length - 1,
+          indent: index === 0 ? indent : 0,
+          align: block.alignment,
+        });
+    });
+    doc.moveDown(block.runs.some((run) => run.fontSize >= 15) ? 0.55 : 0.3);
+  }
+}
 
 /**
- * Generates a paginated PDF with header, questions, options, and answers.
+ * Builds the same Markdown/KaTeX/RTL-aware quiz document as the platform PDF
+ * export, then paginates its rendered content in PDFKit for Telegram delivery.
+ * The platform's browser print CSS is not available in a serverless bot, so
+ * PDFKit carries over its content options, light/dark backgrounds, and core
+ * Markdown styling in a downloadable file.
  *
  * @param {string} title
  * @param {Array} questions
+ * @param {{backgroundColor?: "light"|"dark", includeAnswers?: boolean,
+ *   includeExplanations?: boolean, answerPlacement?: "inline"|"final-page"}} options
  * @returns {Promise<Buffer>}
  */
-export async function generateQuizPdf(title, questions) {
+export async function generateQuizPdf(title, questions, options = {}) {
+  const pdfOptions = { ...PDF_DEFAULT_OPTIONS, ...options };
+  const previousDocument = globalThis.document;
+  let htmlPromise;
+  try {
+    delete globalThis.document;
+    htmlPromise = buildPlatformQuizDocument(
+      { title: title || "امتحان منصة بصمجي" },
+      questions,
+      [],
+      {
+        includeAnswers: Boolean(pdfOptions.includeAnswers),
+        includeUserAnswers: false,
+        includeExplanations: Boolean(pdfOptions.includeExplanations),
+        answerPlacement:
+          pdfOptions.answerPlacement === "final-page" ? "final-page" : "inline",
+      },
+    );
+  } finally {
+    if (previousDocument !== undefined) globalThis.document = previousDocument;
+  }
+
+  const html = await htmlPromise;
+  const dark = pdfOptions.backgroundColor === "dark";
+  const blocks = pdfBlocksFromHtml(html);
   const PDFDocument = (await import("pdfkit")).default;
 
   return new Promise((resolve, reject) => {
@@ -337,85 +549,25 @@ export async function generateQuizPdf(title, questions) {
       size: "A4",
       margin: 50,
       info: {
-        Title: title,
+        Title: title || "Quiz",
         Author: "Basmagi Quiz Platform",
         Creator: "El-Bashmebasamag Bot",
       },
     });
 
+    const paintBackground = () => {
+      if (!dark) return;
+      doc.save();
+      doc.rect(0, 0, doc.page.width, doc.page.height).fill("#121212");
+      doc.restore();
+    };
+    doc.on("pageAdded", paintBackground);
+    paintBackground();
     doc.on("data", (chunk) => chunks.push(chunk));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    // Title header
-    doc.fontSize(20).text(title, { align: "center" });
-    doc.moveDown(0.4);
-    doc
-      .fontSize(10)
-      .fillColor("#666")
-      .text(`${questions.length} Questions — Basmagi Quiz Platform`, { align: "center" });
-    doc.moveDown(1.2);
-    doc.fillColor("#000");
-
-    questions.forEach((q, i) => {
-      if (doc.y > 680) doc.addPage();
-
-      // Question number + text
-      doc
-        .fontSize(12)
-        .font("Helvetica-Bold")
-        .text(`Q${i + 1}. `, { continued: true })
-        .font("Helvetica")
-        .text(q.q || "");
-      doc.moveDown(0.3);
-
-      // Options
-      if (Array.isArray(q.options) && q.options.length) {
-        const correctList = Array.isArray(q.correct)
-          ? q.correct
-          : q.correct != null
-          ? [q.correct]
-          : [];
-        const correctSet = new Set(correctList);
-        q.options.forEach((opt, oi) => {
-          const letter = String.fromCharCode(65 + oi);
-          const mark = correctSet.has(oi) ? " ✓" : "";
-          doc.fontSize(10).text(`    ${letter}. ${opt}${mark}`);
-        });
-        doc.moveDown(0.3);
-      }
-
-      // Essay answer
-      if (q.answer) {
-        doc
-          .fontSize(9.5)
-          .fillColor("#2563eb")
-          .text(`Answer: ${q.answer}`)
-          .fillColor("#000");
-        doc.moveDown(0.2);
-      }
-
-      // Explanation
-      if (q.explanation) {
-        doc
-          .fontSize(9.5)
-          .fillColor("#7c3aed")
-          .text(`Explanation: ${q.explanation}`)
-          .fillColor("#000");
-        doc.moveDown(0.2);
-      }
-
-      doc.moveDown(0.5);
-    });
-
-    // Footer
-    doc
-      .fontSize(8)
-      .fillColor("#999")
-      .text("Generated by Basmagi Quiz Platform — https://basmagi-quiz.vercel.app", {
-        align: "center",
-      });
-
+    writePdfBlocks(doc, blocks, dark);
     doc.end();
   });
 }
