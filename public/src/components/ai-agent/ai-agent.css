@@ -333,6 +333,11 @@
   position: relative;
 }
 
+.ai-agent-msg ol,
+.ai-agent-msg ul {
+  padding-inline: 2em;
+}
+
 /* Wraps a bubble + its controls row (copy/edit) as one column, so the
    controls sit BELOW the bubble as a normal sibling instead of layered
    inside/on top of the message text. Shares the bubble's own alignment
@@ -1698,8 +1703,8 @@ body.sidebar-expanded .ai-agent-fab {
   .ai-agent-modal-card {
     width: 100%;
     max-width: none;
-    height: 100dvh;
     height: 100vh;
+    height: 100dvh;
     max-height: none;
     border-radius: 0;
     border: none;
@@ -1717,6 +1722,7 @@ body.sidebar-expanded .ai-agent-fab {
 @media (max-width: 640px) {
   .ai-agent-settings-modal-card {
     height: min(560px, 80vh);
+    height: min(560px, 80dvh);
     max-height: none;
     border-radius: 20px;
     box-shadow: var(--shadow-xl);
@@ -1751,18 +1757,6 @@ body.sidebar-expanded .ai-agent-fab {
     background: var(--color-surface);
     backdrop-filter: none;
   }
-
-  /* 
-  .ai-agent-modal-card {
-    width: 100%;
-    max-width: none;
-    height: 100dvh;
-    height: 100vh;
-    max-height: none;
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
-  } */
 
   .ai-agent-modal-card .ai-agent-modal-header {
     padding-top: calc(18px + env(safe-area-inset-top, 0px));

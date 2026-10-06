@@ -17,7 +17,8 @@
 //   - Max 10 attachments per message.
 //   - Max 4 MB total attachment size.
 //   - Supported inbound types: images (vision), PDFs (native Gemini),
-//     Word .docx (text extracted via mammoth), plain text/markdown/json.
+//     Word .docx (text extracted via mammoth), plain text/markdown/json,
+//     and audio/voice messages (transcribed by Gemini).
 // =============================================================================
 
 import mammoth from "mammoth";
@@ -25,6 +26,16 @@ import mammoth from "mammoth";
 const TELEGRAM_TOKEN = () => process.env.TELEGRAM_BOT_TOKEN || "";
 const MAX_ATTACHMENTS = 10;
 const MAX_TOTAL_SIZE = 4 * 1024 * 1024; // 4 MB
+const SUPPORTED_AUDIO_MIME_TYPES = new Set([
+  "audio/aac",
+  "audio/flac",
+  "audio/mp3",
+  "audio/mp4",
+  "audio/mpeg",
+  "audio/ogg",
+  "audio/wav",
+  "audio/webm",
+]);
 
 // ── Inbound: download files from Telegram ────────────────────────────────────
 
@@ -81,6 +92,16 @@ const MIME_MAP = {
   txt: "text/plain",
   md: "text/markdown",
   json: "application/json",
+  aac: "audio/aac",
+  flac: "audio/flac",
+  m4a: "audio/mp4",
+  mp4: "audio/mp4",
+  mp3: "audio/mpeg",
+  oga: "audio/ogg",
+  ogg: "audio/ogg",
+  opus: "audio/ogg",
+  wav: "audio/wav",
+  webm: "audio/webm",
 };
 
 // ── Inbound: process a full Telegram message into Gemini-ready parts ─────────
@@ -90,14 +111,16 @@ const MIME_MAP = {
  * them in a shape ready to be assembled into Gemini's `contents` array.
  *
  * @param {object} message - Telegram Update.message object
- * @returns {Promise<{ text: string, parts: Array<object> }>}
+ * @returns {Promise<{ text: string, parts: Array<object>, audio: object|null }>}
  *   `text`  — the final text prompt (message.text/caption + any extracted doc text)
  *   `parts` — inline Gemini parts for images/PDFs (base64 inlineData)
+ *   `audio` — downloaded voice/audio for transcription, if present
  */
 export async function processTelegramInbound(message) {
   const rawText = message.text || message.caption || "";
   let extraText = "";
   const parts = []; // Gemini inline parts (images, PDFs)
+  let audio = null;
   let totalSize = 0;
   let attachmentCount = 0;
 
@@ -124,6 +147,31 @@ export async function processTelegramInbound(message) {
         data: buffer.toString("base64"),
       },
     });
+  }
+
+  // ── Voice/audio messages ────────────────────────────────────────────────
+  const audioAttachment = message.voice || message.audio;
+  if (audioAttachment) {
+    const { buffer, mimeType, size } = await downloadTelegramFile(
+      audioAttachment.file_id
+    );
+    checkLimits(size);
+
+    const resolvedMimeType = (
+      audioAttachment.mime_type ||
+      mimeType ||
+      "audio/ogg"
+    )
+      .split(";")[0]
+      .trim()
+      .toLowerCase();
+    if (!SUPPORTED_AUDIO_MIME_TYPES.has(resolvedMimeType)) {
+      throw new Error(`Unsupported Telegram audio type: ${resolvedMimeType}`);
+    }
+    audio = {
+      mimeType: resolvedMimeType,
+      data: buffer.toString("base64"),
+    };
   }
 
   // ── Documents ───────────────────────────────────────────────────────────
@@ -169,7 +217,7 @@ export async function processTelegramInbound(message) {
   }
 
   const finalText = (rawText + extraText).trim();
-  return { text: finalText, parts };
+  return { text: finalText, parts, audio };
 }
 
 // ── Outbound: send documents back to the user ────────────────────────────────

@@ -60,6 +60,7 @@ Lesson creation workflow:
 
 File handling:
 - When a user sends an image, analyze it with your vision capabilities and help with whatever they ask.
+- When a user sends a voice message, its transcript is included in their message — respond to the spoken request normally.
 - When a user sends a PDF, read and analyze its contents.
 - When a user sends a Word document (.docx), the text is automatically extracted — help with the content.
 - When a user sends a text/markdown/json file, its content is included in the message.
@@ -265,8 +266,25 @@ async function generateGeminiReplyWithTools(contents, chatId) {
         }
 
         if (res.ok) {
-          data = await res.json();
-          break; // successfully got response from this model
+          const responseData = await res.json();
+          const responseParts =
+            responseData?.candidates?.[0]?.content?.parts || [];
+          const hasUsableResponse = responseParts.some(
+            (part) =>
+              part.functionCall ||
+              (typeof part.text === "string" && part.text.trim())
+          );
+          if (!hasUsableResponse) {
+            const finishReason =
+              responseData?.candidates?.[0]?.finishReason || "no candidate";
+            lastError = new Error(
+              `Gemini ${model} returned no text or function calls (${finishReason})`
+            );
+            console.warn(`[bot] ${lastError.message}, trying fallback...`);
+            continue;
+          }
+          data = responseData;
+          break; // successfully got a usable response from this model
         } else {
           const errText = await res.text().catch(() => "");
           lastError = new Error(`Gemini ${model} error (${res.status}): ${errText}`);
@@ -332,7 +350,10 @@ async function generateGeminiReplyWithTools(contents, chatId) {
       .join("")
       .trim();
 
-    return text || FALLBACK_MESSAGE;
+    if (!text) {
+      throw new Error("Gemini returned neither a final reply nor a tool call");
+    }
+    return text;
   }
 
   throw new Error("Max tool-calling loops exceeded");
@@ -469,13 +490,26 @@ async function processTelegramMessage(chatId, message) {
       const inbound = await processTelegramInbound(message);
       userText = inbound.text;
       inlineParts = inbound.parts;
+      if (inbound.audio) {
+        const transcript = await transcribeTelegramAudio(inbound.audio);
+        userText = [userText, `[Voice message transcript]: ${transcript}`]
+          .filter(Boolean)
+          .join("\n\n");
+      }
     } catch (extractErr) {
       console.error("[bot] File extraction error:", extractErr.message);
+      if (message.voice || message.audio) {
+        await sendTelegramMessage(
+          chatId,
+          "عذراً، لم أستطع تفريغ الرسالة الصوتية. يرجى المحاولة مرة أخرى أو إرسالها كنص. 🎙️"
+        );
+        return;
+      }
       userText = message.text || message.caption || "";
       if (!userText) {
         await sendTelegramMessage(
           chatId,
-          "عذراً، لم أستطع معالجة هذا الملف. الأنواع المدعومة: صور، PDF، Word (.docx)، نصوص. 📎"
+          "عذراً، لم أستطع معالجة هذا الملف. الأنواع المدعومة: صور، PDF، Word (.docx)، نصوص، ورسائل صوتية. 📎"
         );
         return;
       }
@@ -500,6 +534,10 @@ async function processTelegramMessage(chatId, message) {
 
     // 4. Assemble current parts
     const currentParts = [];
+    const repliedMessage = getTelegramReplyContext(message.reply_to_message);
+    if (repliedMessage) {
+      currentParts.push({ text: repliedMessage });
+    }
     if (userText) {
       currentParts.push({ text: userText });
     }
@@ -515,7 +553,14 @@ async function processTelegramMessage(chatId, message) {
     await sendTelegramMessage(chatId, reply);
 
     // 7. Persist to history
-    await saveChatMessage(chatId, "user", userText || "[file attachment]");
+    const savedUserText = [repliedMessage, userText]
+      .filter(Boolean)
+      .join("\n\n");
+    await saveChatMessage(
+      chatId,
+      "user",
+      savedUserText || (inlineParts.length ? "[file attachment]" : "[message]")
+    );
     await saveChatMessage(chatId, "model", reply);
 
     // 8. Prune old history (fire-and-forget)
@@ -526,6 +571,89 @@ async function processTelegramMessage(chatId, message) {
     console.error("[bot] processTelegramMessage error:", err);
     await sendTelegramMessage(chatId, FALLBACK_MESSAGE).catch(() => {});
   }
+}
+
+async function transcribeTelegramAudio(audio) {
+  const modelsToTry = [PRIMARY_GEMINI_MODEL, ...FALLBACK_GEMINI_MODELS];
+  let lastError = null;
+
+  for (const model of modelsToTry) {
+    const key = getGoogleKey();
+    if (!key) throw new Error("No Google API keys configured");
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: "Transcribe this audio faithfully in its original language. Return only the words that were spoken; do not answer or summarize.",
+                },
+                { inlineData: audio },
+              ],
+            },
+          ],
+          generationConfig: { maxOutputTokens: 2048, temperature: 0 },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "");
+        lastError = new Error(
+          `Gemini audio transcription failed (${response.status}): ${errorText}`
+        );
+        console.warn(`[bot] ${lastError.message}; trying fallback...`);
+        continue;
+      }
+
+      const data = await response.json();
+      const transcript = (data?.candidates?.[0]?.content?.parts || [])
+        .filter((part) => typeof part.text === "string")
+        .map((part) => part.text)
+        .join("")
+        .trim();
+      if (transcript) return transcript;
+
+      lastError = new Error(
+        `Gemini ${model} returned an empty audio transcription`
+      );
+      console.warn(`[bot] ${lastError.message}; trying fallback...`);
+    } catch (error) {
+      lastError = error;
+      console.warn(
+        `[bot] Audio transcription request failed on ${model}:`,
+        error.message
+      );
+    }
+  }
+
+  throw lastError || new Error("All Gemini audio transcription models failed");
+}
+
+function getTelegramReplyContext(replyToMessage) {
+  if (!replyToMessage) return "";
+
+  const text = (replyToMessage.text || replyToMessage.caption || "").trim();
+  const sender =
+    replyToMessage.from?.first_name ||
+    replyToMessage.from?.username ||
+    "unknown sender";
+  const excerpt = text
+    ? text.slice(0, 4000)
+    : replyToMessage.photo
+      ? "[photo message]"
+      : replyToMessage.document
+        ? `[document: ${replyToMessage.document.file_name || "file"}]`
+        : replyToMessage.voice || replyToMessage.audio
+          ? "[voice/audio message]"
+          : "[message without text]";
+
+  return `[Replied-to Telegram message from ${sender}]:\n${excerpt}\n\n[Current message]:`;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -593,7 +721,9 @@ export default async function handler(req, res) {
       message?.text ||
       message?.caption ||
       message?.photo ||
-      message?.document;
+      message?.document ||
+      message?.voice ||
+      message?.audio;
 
     if (chatId && hasContent) {
       try {
