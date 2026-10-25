@@ -30,6 +30,9 @@ const ALLOWED_QUESTION_KEYS = new Set([
   "video",
   "options",
   "correct",
+  // Explicit checkbox/radio behavior for newer multi-answer questions.
+  // Older quiz payloads omit this field and retain their existing behavior.
+  "multiSelect",
   "explanation",
   "answer",
 ]);
@@ -185,6 +188,9 @@ export function validateQuizPayload(raw) {
     const text = q.q;
     if (!text || typeof text !== "string" || !text.trim()) {
       throw new Error(`INVALID_QUESTION[${i}]: missing question text (q)`);
+    }
+    if (q.multiSelect !== undefined && typeof q.multiSelect !== "boolean") {
+      throw new Error(`INVALID_QUESTION[${i}]: multiSelect must be a boolean`);
     }
     // Essay question must have `answer` field or at least be recognizable
     if (Array.isArray(q.options) && q.options.length === 0) {
