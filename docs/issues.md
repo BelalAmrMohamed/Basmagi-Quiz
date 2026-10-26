@@ -25,6 +25,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 * They don't inlcude a source
 * They are missing new features that were added lately.
 * The modal also can have horizontal scrollbars that are useless. Improve the styling.
+* Make the create Quiz Modal have no Title field, since title can be set in the JSON, itself, and you are going to update the prompts to include them.
 
 ### AI Agent
 

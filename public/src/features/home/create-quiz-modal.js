@@ -82,11 +82,7 @@ export function openInlineCreateQuizModal() {
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
     </div>
-    <p class="create-quiz-modal__subtitle">قم باستخدام ميزة الـ \`prompt\` لتحويل أي امتحان تملكه إلى كود باستخدام الذكاء الإصطناعي</p>
-    <div class="create-quiz-modal__form-group">
-      <label for="inlineQuizTitle" class="create-quiz-modal__label">عنوان الامتحان</label>
-      <input type="text" id="inlineQuizTitle" class="create-quiz-modal__input" placeholder="Arrays in C++" />
-    </div>
+    <p class="create-quiz-modal__subtitle">ألصق بيانات الامتحان بصيغة JSON، مع كتابة العنوان والوصف والمصدر داخل حقل <code>meta</code>. يمكنك نسخ برومبت جاهز من زر Prompt.</p>
     <div class="create-quiz-modal__form-group create-quiz-modal__form-group--content">
       <label for="inlineQuizContent" class="create-quiz-modal__label">محتوى الامتحان</label>
       <textarea id="inlineQuizContent" class="inline-quiz-textarea create-quiz-modal__textarea" rows="4"></textarea>
@@ -105,6 +101,11 @@ export function openInlineCreateQuizModal() {
 
   // Set the JSON example via JS (avoids escaping a huge quoted blob inside an HTML attribute)
   const placeholderJSON = `{
+  "meta": {
+    "title": "امتحان النحو: أسلوب الشرط",
+    "description": "تدريب على أدوات الشرط وإعراب الفعلين.",
+    "source": "مذكرة النحو - الوحدة الثالثة"
+  },
   "questions": [
     {
       "q": "«إنَّ مستشارِي الغدِ مُهيَّؤون لِحمْلِ الأمانةِ.»\\n\\nعند وضع الفعل (عسى) بدلاً من الحرف الناسخ (إنّ)، تصبح الجملة الصحيحة:",
@@ -144,7 +145,6 @@ export function openInlineCreateQuizModal() {
   overlay.appendChild(modalCard);
   document.body.appendChild(overlay);
 
-  const titleInput = modalCard.querySelector("#inlineQuizTitle");
   const contentInput = modalCard.querySelector("#inlineQuizContent");
   const closeBtn = modalCard.querySelector("#inlineQuizClose");
   const createBtn = modalCard.querySelector("#inlineQuizCreate");
@@ -240,25 +240,9 @@ export function openInlineCreateQuizModal() {
 
         // Single quiz → fill the form for review/edit
         contentInput.value = text;
-        const defaultTitle = file.name
-          .replace(/\.json$/i, "")
-          .replace(/[-_]/g, " ")
-          .replace(/\b\w/g, (c) => c.toUpperCase());
-
-        try {
-          const parsed = parseQuizJson(text, defaultTitle);
-          if (parsed.meta?.title) {
-            titleInput.value = parsed.meta.title;
-          } else if (!titleInput.value) {
-            titleInput.value = defaultTitle;
-          }
-        } catch (_) {
-          if (!titleInput.value) titleInput.value = defaultTitle;
-        }
-
         showNotification(
           "نجاح",
-          "تم تحميل ملف JSON، يمكنك تعديله أو إنشاء الامتحان الآن.",
+          "تم تحميل ملف JSON. تأكد من وجود عنوان داخل meta.title (أو title) قبل إنشاء الامتحان.",
           "success",
         );
       } catch (err) {
@@ -284,30 +268,9 @@ export function openInlineCreateQuizModal() {
       const text = await file.text();
       contentInput.value = text;
 
-      const defaultTitle = file.name
-        .replace(/\.json$/i, "")
-        .replace(/[-_]/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
-
-      if (!titleInput.value) {
-        titleInput.value = defaultTitle;
-      }
-
-      // Prefill title from JSON meta when present
-      try {
-        const parsed = parseQuizJson(text, defaultTitle);
-        if (parsed.meta?.title && !titleInput.value) {
-          titleInput.value = parsed.meta.title;
-        } else if (parsed.meta?.title && titleInput.value === defaultTitle) {
-          titleInput.value = parsed.meta.title;
-        }
-      } catch (_) {
-        /* leave raw text in the textarea for the user to fix */
-      }
-
       showNotification(
         "نجاح",
-        "تم تحميل ملف JSON، يمكنك تعديله أو إنشاء الالامتحان الآن.",
+        "تم تحميل ملف JSON. تأكد من وجود عنوان داخل meta.title (أو title) قبل إنشاء الامتحان.",
         "success",
       );
     } catch (err) {
@@ -325,7 +288,6 @@ export function openInlineCreateQuizModal() {
   };
 
   createBtn.onclick = async () => {
-    const title = (titleInput.value || "").trim();
     const content = (contentInput.value || "").trim();
     if (!content) {
       showNotification("بيانات ناقصة", "الرجاء إدخال المحتوى.", "warning", 10);
@@ -334,7 +296,7 @@ export function openInlineCreateQuizModal() {
 
     let parsed;
     try {
-      parsed = parseQuizJson(content, title || "Quiz");
+      parsed = parseQuizJson(content);
     } catch (err) {
       showNotification("خطأ في التنسيق", err.message, "error", 10);
       return;
@@ -349,16 +311,25 @@ export function openInlineCreateQuizModal() {
       return;
     }
 
+    const title = String(parsed.meta?.title || "").trim();
+    if (!title) {
+      showNotification(
+        "العنوان مطلوب",
+        "أضف عنوان الامتحان داخل JSON في meta.title (أو title) ثم حاول مرة أخرى.",
+        "warning",
+        10,
+      );
+      return;
+    }
+
     // Create inside whatever folder/course the user is currently browsing
     // (currentFolderId, kept live by user-quizzes-folders.js as the user
     // navigates), not always at the "امتحاناتك" root — previously this
     // modal never passed a destination at all, so every quiz landed at
     // root regardless of where the "إنشاء اختبار" button was opened from.
-    const result = saveNewUserQuiz(parsed, title || "Untitled Quiz", currentFolderId);
+    const result = saveNewUserQuiz(parsed, title, currentFolderId);
     if (result.ok === false) {
-      // Same-level name clash (see saveNewUserQuiz's doc comment) — leave
-      // the modal open with the user's input intact so they can just edit
-      // the title and retry, instead of losing their pasted content.
+      // Same-level name clash — keep the pasted JSON available for editing.
       showNotification("الاسم مستخدم", result.reason, "warning", 10);
       return;
     }
@@ -378,7 +349,7 @@ export function openInlineCreateQuizModal() {
   // wireModalDismiss() above — no separate handlers needed here.
 
   setTimeout(() => {
-    titleInput.focus();
+    contentInput.focus();
   }, 50);
 }
 

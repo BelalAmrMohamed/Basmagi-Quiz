@@ -4169,15 +4169,18 @@ kbd {
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  max-width: 550px;
+  max-width: min(550px, calc(100vw - 24px));
   width: 90%;
+  min-width: 0;
   transform: translateY(20px);
   opacity: 0;
   animation: modalPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   /* Leave room above/below so the card never touches the viewport edges —
      the overlay already centers it, this just caps its own height. */
   max-height: min(90vh, 720px);
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -4318,6 +4321,30 @@ kbd {
    ========================================================================== */
 .prompt-selection-modal {
   position: relative;
+  width: min(520px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  max-height: min(90vh, 720px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.prompt-selection-modal > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.prompt-selection-modal .prompt-buttons-container,
+.prompt-selection-modal .prompt-btn {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.prompt-selection-modal .prompt-btn > div,
+.prompt-selection-modal .prompt-btn > div > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .prompt-selection-modal__close-btn {
@@ -4337,6 +4364,8 @@ kbd {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .create-quiz-modal__title {
@@ -4344,6 +4373,8 @@ kbd {
      of being squeezed — the title is the one that should truncate/wrap
      first if the header ever gets tight. */
   min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .create-quiz-modal__close-btn {
@@ -4426,10 +4457,21 @@ kbd {
   color: var(--color-text-secondary);
   font-size: 0.95rem;
   line-height: 1.5;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.create-quiz-modal__subtitle code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--color-background-secondary);
+  font-size: 0.9em;
 }
 
 .create-quiz-modal__form-group {
   margin-bottom: 18px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .create-quiz-modal__form-group--content {
@@ -4447,6 +4489,8 @@ kbd {
 .create-quiz-modal__input,
 .create-quiz-modal__textarea {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   direction: ltr;
   border: 1.5px solid var(--color-border);
   border-radius: 12px;
@@ -4468,6 +4512,9 @@ kbd {
   font-size: 0.95rem;
   line-height: 1.6;
   resize: vertical;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .create-quiz-modal__input:focus,
@@ -4480,12 +4527,16 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .create-quiz-modal__main-actions {
   display: flex;
   align-items: stretch;
   gap: 10px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .create-quiz-modal__main-actions .create-quiz-modal__btn {
@@ -4504,6 +4555,8 @@ kbd {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .create-quiz-modal__btn--import {
