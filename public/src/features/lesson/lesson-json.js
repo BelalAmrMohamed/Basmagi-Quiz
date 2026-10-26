@@ -16,7 +16,7 @@ function text(value, field, maxLength) {
  * reader's canonical shape.
  *
  * @param {unknown} value
- * @returns {{title: string, description: string, sections: Array, questionCount: number}}
+ * @returns {{title: string, description: string, source: string, sections: Array, questionCount: number}}
  */
 export function normalizeLessonJson(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -25,8 +25,10 @@ export function normalizeLessonJson(value) {
 
   const title = typeof value.title === "string" ? value.title.trim() : "";
   const description = typeof value.description === "string" ? value.description.trim() : "";
+  const source = typeof value.source === "string" ? value.source.trim() : "";
   if (!title || title.length > 200) invalid("The lesson title is required and must be at most 200 characters.");
   if (description.length > 1200) invalid("The lesson description must be at most 1200 characters.");
+  if (source.length > 500) invalid("The lesson source must be at most 500 characters.");
   if (!Array.isArray(value.sections) || value.sections.length < 1 || value.sections.length > 60) {
     invalid("The lesson must contain between 1 and 60 sections.");
   }
@@ -118,5 +120,5 @@ export function normalizeLessonJson(value) {
     };
   });
 
-  return { title, description, sections, questionCount };
+  return { title, description, source, sections, questionCount };
 }

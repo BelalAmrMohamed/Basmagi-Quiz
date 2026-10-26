@@ -17,10 +17,10 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ### The معلومات الامتحان modal: 
 * It's missing the link of the quiz (but on the quiz page it should be just text, not a link).
-* Same for lesson info modal, add the lesson link (as a link on every page), and also add the lesson description, because it's missing.
+* Same for lesson info modal, add the lesson link (as a link on every page).
 
 ### Settings Page
-- Implement search in the `اشتراكات المواد`, because courses can get so much. 
+- Implement search in the `اشتراكات المواد`, because courses can be too many to find a specific one. 
 
 ### Creating Lessons using the `إنشاء درس جديد` modal
 - When the JSON includes the Description and the Source, they don't get set.

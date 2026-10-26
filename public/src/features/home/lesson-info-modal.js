@@ -81,6 +81,7 @@ export function collectLessonInfo(row) {
         title: row?.meta?.title || row?.title || "درس بدون عنوان",
         description: row?.description || row?.meta?.description || "",
         source: row?.source || row?.meta?.source || "",
+        url: `${window.location.origin}/lesson/${encodeURIComponent(row?.slug || row?.id || row?.meta?.id || "")}${row?.meta?.type === "lesson" && row?.id?.startsWith("user_lesson_") ? "?type=user" : ""}`,
         passwordProtected: Boolean(row?.passwordProtected || row?.password_protected || row?.meta?.passwordProtected || row?.passwordHash || row?.password_hash),
         createdAt: row?.meta?.createdAt || row?.created_at || null,
         updatedAt: row?.meta?.updatedAt || row?.updated_at || null,
@@ -161,6 +162,9 @@ export function buildLessonInfoHtml(info) {
             ? `<a href="${escapeHtml(info.source)}" target="_blank" rel="noopener noreferrer" dir="ltr">${escapeHtml(info.source)}</a>`
             : `<span dir="ltr">${escapeHtml(info.source)}</span>`;
         addRow("المصدر", safeSource);
+    }
+    if (info.url && !info.url.endsWith("/lesson/")) {
+        addRow("رابط الدرس", `<a href="${escapeHtml(info.url)}" target="_blank" rel="noopener noreferrer" dir="ltr">${escapeHtml(info.url)}</a>`);
     }
     if (info.passwordProtected) addRow("الحماية", "محمي بكلمة مرور");
     if (info.fontLabel) addRow("خط القراءة", escapeHtml(info.fontLabel));

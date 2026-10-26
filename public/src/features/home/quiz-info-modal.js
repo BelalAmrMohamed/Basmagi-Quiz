@@ -68,6 +68,7 @@ export async function showQuizInfoModal(exam) {
 
   const config = {
     id: exam.id,
+    quizUrl: `${window.location.origin}/quiz/${encodeURIComponent(exam.id || "")}`,
     dbId: exam.dbId,
     title: exam.title || exam.id,
     description: exam.description || null,
@@ -135,6 +136,7 @@ export async function showQuizInfoModal(exam) {
 export function showUserQuizInfoModal(quiz) {
   const config = {
     id: qz(quiz, "id") || quiz.id,
+    quizUrl: `${window.location.origin}/quiz/${encodeURIComponent(qz(quiz, "id") || quiz.id || "")}?type=user`,
     title: qz(quiz, "title") || quiz.id,
     description: qz(quiz, "description") || null,
     category: null, 

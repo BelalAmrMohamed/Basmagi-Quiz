@@ -12,6 +12,7 @@ Use this exact structure:
 {
   "title": "Lesson title",
   "description": "Short optional description",
+  "source": "Optional URL or source citation",
   "sections": [
     {
       "title": "Section title",
@@ -119,7 +120,7 @@ export function openInlineCreateLessonModal() {
       lessonJsonInput.focus();
       return;
     }
-    const { title, description, sections, questionCount } = lesson;
+    const { title, description, source, sections, questionCount } = lesson;
 
     let userItems;
     try {
@@ -148,8 +149,8 @@ export function openInlineCreateLessonModal() {
         createdAt: new Date().toLocaleString("en-US"),
         updatedAt: now,
         readerPrefs: { fontId: "default" },
-        description: "",
-        source: "",
+        description,
+        source,
         passwordProtected: false,
       },
       stats: { questionCount, sectionCount: sections.length },

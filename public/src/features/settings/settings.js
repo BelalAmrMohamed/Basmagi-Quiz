@@ -417,14 +417,19 @@ function renderCourseManagerList() {
 
   const allCourses = filterTrackCourses(categoryTree, displayFilters);
   const subscribedIds = userProfile.getSubscribedCourseIds();
+  const searchInput = document.getElementById("courseManagerSearch");
+  const searchTerm = (searchInput?.value || "").trim().toLocaleLowerCase();
+  const visibleCourses = searchTerm
+    ? allCourses.filter((course) => `${course.name || ""} ${formatCourseDetails(course)}`.toLocaleLowerCase().includes(searchTerm))
+    : allCourses;
 
-  if (allCourses.length === 0) {
+  if (visibleCourses.length === 0) {
     listContainer.innerHTML =
-      '<p style="grid-column: 1/-1; text-align:center; padding:20px; color:var(--color-text-secondary);">لا توجد مواد تطابق خيارات العرض الحالية</p>';
+      `<p class="course-list-empty">${searchTerm ? "لا توجد مواد تطابق بحثك" : "لا توجد مواد تطابق خيارات العرض الحالية"}</p>`;
     return;
   }
 
-  listContainer.innerHTML = allCourses
+  listContainer.innerHTML = visibleCourses
     .map((course) => {
       const isSubscribed = subscribedIds.includes(course.id);
       const details = formatCourseDetails(course);
@@ -443,6 +448,8 @@ function renderCourseManagerList() {
     })
     .join("");
 }
+
+document.getElementById("courseManagerSearch")?.addEventListener("input", renderCourseManagerList);
 
 function renderFeaturedCourseManagerList() {
   const listContainer = document.getElementById("featuredCourseManagerList");

@@ -154,6 +154,18 @@ export function buildQuizInfoModalHtml(config, questionCount = null, creatorProf
     `);
   }
 
+  // On the quiz-taking page the URL is informational text; in library
+  // dialogs it is a convenient shareable link.
+  if (config.quizUrl) {
+    const urlHtml = config.quizUrlAsText
+      ? escapeHtml(config.quizUrl)
+      : `<a href="${escapeHtml(config.quizUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(config.quizUrl)}</a>`;
+    gridItems.push(`
+      <div class="quiz-meta-label">رابط الامتحان</div>
+      <div class="quiz-meta-value" dir="ltr">${urlHtml}</div>
+    `);
+  }
+
   // ID
   if (config.id) {
     gridItems.push(`

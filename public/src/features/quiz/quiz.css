@@ -48,6 +48,7 @@ body {
 .container {
   max-width: 1000px;
   margin: 0 auto;
+  margin-top: 50px;
   position: relative;
   z-index: 1;
 }
@@ -1804,6 +1805,7 @@ html[data-motion="reduced"] {
   position: relative;
   overflow: hidden;
   background-color: var(--color-surface);
+  transition: box-shadow .2s ease, border-color .2s ease;
 }
 
 .header::before {
@@ -2205,6 +2207,11 @@ dialog.quiz-password-dialog {
   border: 1px solid var(--color-border-light);
   margin-bottom: 24px;
   background-color: var(--color-surface);
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.question-card:focus-within {
+  border-color: color-mix(in srgb, var(--color-primary) 36%, var(--color-border-light));
 }
 
 .question-header {
@@ -2660,6 +2667,32 @@ body.is-resizing-media .media-container.resizable-media {
 .flag-btn:hover,
 .report-question-btn:hover {
   transform: scale(1.1);
+}
+
+.bookmark-btn:focus-visible,
+.flag-btn:focus-visible,
+.report-question-btn:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.bookmark-btn svg,
+.flag-btn svg {
+  width: 21px;
+  height: 21px;
+  transition: transform .18s ease, fill .18s ease;
+}
+
+.bookmark-btn.active {
+  color: #d79b12;
+  border-color: color-mix(in srgb, #d79b12 55%, var(--color-border));
+  background: color-mix(in srgb, #d79b12 12%, transparent);
+}
+
+.flag-btn.active {
+  color: var(--color-error, #dc3545);
+  border-color: color-mix(in srgb, var(--color-error, #dc3545) 55%, var(--color-border));
+  background: color-mix(in srgb, var(--color-error, #dc3545) 10%, transparent);
 }
 
 .report-question-btn {
