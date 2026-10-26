@@ -804,7 +804,7 @@
                         d="M200-120q-33 0-56.5-23.5T120-200v-160h80v160h560v-560H200v160h-80v-160q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm220-160-56-58 102-102H120v-80h346L364-622l56-58 200 200-200 200Z" />
                 </svg>
             </button>
-            <span class="app-title-text" id="appTitleText" contenteditable="false" spellcheck="false"
+            <span class="app-title-text" dir="auto" id="appTitleText" contenteditable="false" spellcheck="false"
                 title="اضغط لإعادة تسمية الدرس" onclick="startTitleEdit()" onblur="commitTitleEdit()"
                 onkeydown="handleTitleEditKeydown(event)">درس بدون عنوان</span>
 
@@ -851,9 +851,11 @@
                     <button type="button" class="menu-trigger" onclick="toggleMenu('file')">ملف</button>
                     <div class="menu-dropdown" id="menu-file" role="menu" aria-label="ملف">
                         <button type="button" class="menu-option" onclick="saveLesson(); closeAllMenus();">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M10 16h.01" />
-                                <path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+                                <path
+                                    d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
                                 <path d="M21.946 12.013H2.054" />
                                 <path d="M6 16h.01" />
                             </svg>
@@ -861,7 +863,8 @@
                             <span class="menu-option-shortcut">Ctrl+S</span>
                         </button>
                         <button type="button" class="menu-option" onclick="publishLesson(); closeAllMenus();">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 2v13" />
                                 <path d="m19 9-7-7-7 7" />
                                 <path d="M5 21h14a2 2 0 0 0 2-2v-3H3v3a2 2 0 0 0 2 2z" />
@@ -869,21 +872,27 @@
                             <span>نشر في المنصة</span>
                         </button>
                         <div class="menu-separator"></div>
-                        <button type="button" class="menu-option" onclick="downloadLessonFile('html'); closeAllMenus();">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M4 4h16v16H4z" /><path d="M8 9h8M8 13h5M8 17h8" />
+                        <button type="button" class="menu-option"
+                            onclick="downloadLessonFile('html'); closeAllMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 4h16v16H4z" />
+                                <path d="M8 9h8M8 13h5M8 17h8" />
                             </svg>
                             <span>تنزيل الدرس كـ HTML</span>
                         </button>
                         <button type="button" class="menu-option" onclick="downloadLessonFile('pdf'); closeAllMenus();">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M8 13h8M8 17h5" />
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <path d="M14 2v6h6M8 13h8M8 17h5" />
                             </svg>
                             <span>تنزيل الدرس كـ PDF</span>
                         </button>
                         <div class="menu-separator"></div>
                         <button type="button" class="menu-option" onclick="chooseEntryAction('exit'); closeAllMenus();">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                                 <polyline points="16 17 21 12 16 7" />
                                 <line x1="21" y1="12" x2="9" y2="12" />
@@ -897,22 +906,32 @@
                     <button type="button" class="menu-trigger" onclick="toggleMenu('insert')">إدراج</button>
                     <div class="menu-dropdown" id="menu-insert" role="menu" aria-label="إدراج">
                         <button type="button" class="menu-option" onclick="addSection(); closeAllMenus();">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M5 12h14" />
                                 <path d="M12 5v14" />
                             </svg>
                             <span>قسم جديد</span>
                         </button>
                         <div class="menu-separator"></div>
-                        <button type="button" class="menu-option" onclick="addBlockToLastSection('markdown'); closeAllMenus();">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M17 6H3" /><path d="M21 12H8" /><path d="M21 18H8" /><path d="M3 12v6" />
+                        <button type="button" class="menu-option"
+                            onclick="addBlockToLastSection('markdown'); closeAllMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 6H3" />
+                                <path d="M21 12H8" />
+                                <path d="M21 18H8" />
+                                <path d="M3 12v6" />
                             </svg>
                             <span>نص (Markdown)</span>
                         </button>
-                        <button type="button" class="menu-option" onclick="addBlockToLastSection('question'); closeAllMenus();">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" />
+                        <button type="button" class="menu-option"
+                            onclick="addBlockToLastSection('question'); closeAllMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                                <path d="M12 17h.01" />
                             </svg>
                             <span>سؤال مدمج</span>
                         </button>
@@ -923,23 +942,31 @@
                     <button type="button" class="menu-trigger" onclick="toggleMenu('view')">عرض</button>
                     <div class="menu-dropdown" id="menu-view" role="menu" aria-label="عرض">
                         <button type="button" class="menu-option" onclick="previewLesson(); closeAllMenus();">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
                                 <circle cx="12" cy="12" r="3" />
                             </svg>
                             <span>معاينة الدرس</span>
                             <span class="menu-option-shortcut">Ctrl+P</span>
                         </button>
                         <div class="menu-separator"></div>
-                        <button type="button" class="menu-option" onclick="document.querySelectorAll('.lesson-section-card').forEach(c=>c.classList.remove('collapsed')); closeAllMenus();">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="m7 15 5 5 5-5" /><path d="m7 9-5-5-5 5" />
+                        <button type="button" class="menu-option"
+                            onclick="document.querySelectorAll('.lesson-section-card').forEach(c=>c.classList.remove('collapsed')); closeAllMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m7 15 5 5 5-5" />
+                                <path d="m7 9-5-5-5 5" />
                             </svg>
                             <span>توسيع الأقسام</span>
                         </button>
-                        <button type="button" class="menu-option" onclick="document.querySelectorAll('.lesson-section-card').forEach(c=>c.classList.add('collapsed')); closeAllMenus();">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="m7 20 5-5 5 5" /><path d="m7 4 5 5 5-5" />
+                        <button type="button" class="menu-option"
+                            onclick="document.querySelectorAll('.lesson-section-card').forEach(c=>c.classList.add('collapsed')); closeAllMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m7 20 5-5 5 5" />
+                                <path d="m7 4 5 5 5-5" />
                             </svg>
                             <span>طي الأقسام</span>
                         </button>
@@ -950,8 +977,17 @@
                     <button type="button" class="menu-trigger" onclick="toggleMenu('help')">مساعدة</button>
                     <div class="menu-dropdown" id="menu-help" role="menu" aria-label="مساعدة">
                         <button type="button" class="menu-option" onclick="showEditorShortcuts(); closeAllMenus();">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" />
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 8h.01" />
+                                <path d="M12 12h.01" />
+                                <path d="M14 8h.01" />
+                                <path d="M16 12h.01" />
+                                <path d="M18 8h.01" />
+                                <path d="M6 8h.01" />
+                                <path d="M7 16h10" />
+                                <path d="M8 12h.01" />
+                                <rect width="20" height="16" x="2" y="4" rx="2" />
                             </svg>
                             <span>اختصارات لوحة المفاتيح</span>
                             <span class="menu-option-shortcut">؟</span>
@@ -972,7 +1008,8 @@
     <div class="global-md-bar" id="globalMdBar" style="display: none;" aria-label="شريط تنسيق النص">
         <div class="gmd-group gmd-group-reader" id="gmdReaderDefaults" aria-label="إعدادات القارئ">
             <label class="gmd-reader-label" for="lessonFontSelect">خط القراءة</label>
-            <select id="lessonFontSelect" class="gmd-select" title="الخط الافتراضي للقارئ" aria-label="الخط الافتراضي للقارئ">
+            <select id="lessonFontSelect" class="gmd-select" title="الخط الافتراضي للقارئ"
+                aria-label="الخط الافتراضي للقارئ">
                 <option value="default">الافتراضي</option>
                 <option value="tajawal">Tajawal</option>
                 <option value="cairo">Cairo</option>
@@ -1334,8 +1371,8 @@
                         وصف الدرس (اختياري)
                         <span class="char-count" id="lessonDescriptionCount">0/1200</span>
                     </label>
-                    <textarea id="lessonDescriptionInput" class="autosize-textarea" rows="1" maxlength="1200"
-                        dir="auto" placeholder="درس في النحو والصرف للصف الثالث الثانوي"
+                    <textarea id="lessonDescriptionInput" class="autosize-textarea" rows="1" maxlength="1200" dir="auto"
+                        placeholder="درس في النحو والصرف للصف الثالث الثانوي"
                         oninput="updateLessonDescription(this.value)"></textarea>
                 </div>
 
@@ -1349,13 +1386,13 @@
                 <div class="form-group">
                     <label for="lessonPasswordInput">كلمة المرور (اختياري)</label>
                     <div class="password-field">
-                        <input type="password" id="lessonPasswordInput" dir="auto"
-                            placeholder="أدخل كلمة المرور..." autocomplete="new-password" minlength="4"
-                            maxlength="128" oninput="handleLessonPasswordInput(this.value)">
+                        <input type="password" id="lessonPasswordInput" dir="auto" placeholder="أدخل كلمة المرور..."
+                            autocomplete="new-password" minlength="4" maxlength="128"
+                            oninput="handleLessonPasswordInput(this.value)">
                         <div class="password-field-actions">
                             <button type="button" class="password-action-btn" id="lessonPasswordCopy"
-                                onclick="copyLessonPassword()" title="نسخ كلمة المرور"
-                                aria-label="نسخ كلمة المرور" disabled>
+                                onclick="copyLessonPassword()" title="نسخ كلمة المرور" aria-label="نسخ كلمة المرور"
+                                disabled>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide icon-copy"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round" stroke-linejoin="round">
@@ -1370,8 +1407,7 @@
                             </button>
                             <button type="button" class="password-action-btn" id="lessonPasswordToggle"
                                 onclick="toggleLessonPasswordVisibility()" title="إظهار كلمة المرور"
-                                aria-label="إظهار كلمة المرور" aria-pressed="false"
-                                aria-controls="lessonPasswordInput">
+                                aria-label="إظهار كلمة المرور" aria-pressed="false" aria-controls="lessonPasswordInput">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide icon-eye"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round" stroke-linejoin="round">

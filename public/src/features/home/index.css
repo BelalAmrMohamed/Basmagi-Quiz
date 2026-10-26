@@ -5067,6 +5067,58 @@ kbd {
   }
 }
 
+/* Lesson cards contain user supplied titles and descriptions. Keep their
+   metadata in document flow so it cannot overlap content as cards grow. */
+@media (min-width: 641px) {
+  .exam-card.lesson-card,
+  .exam-card.user-lesson-card {
+    min-height: 250px;
+    align-self: stretch;
+  }
+
+  .exam-card.lesson-card .card-text,
+  .exam-card.user-lesson-card .card-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .exam-card.lesson-card h3,
+  .exam-card.user-lesson-card h3 {
+    margin-bottom: .5rem;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .exam-card.lesson-card .lesson-card-description,
+  .exam-card.user-lesson-card .lesson-card-description {
+    display: block;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: initial;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+  }
+
+  .exam-card.user-lesson-card .exam-card-meta {
+    position: static;
+    inset: auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    width: 100%;
+    margin: .5rem 0 0;
+    white-space: normal;
+  }
+
+  .exam-card.user-lesson-card .exam-question-count {
+    margin: 0 !important;
+  }
+}
+
 /* Phase 4a: local-only completion summary shown at a course's root. */
 .course-lesson-progress {
   grid-column: 1 / -1;
