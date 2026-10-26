@@ -298,6 +298,11 @@
   cursor: pointer;
 }
 
+.ai-agent-chat-model-select-wrap {
+  display: block;
+  width: 100%;
+}
+
 .ai-agent-chat-model-select:focus {
   outline: none;
   border-color: var(--color-primary);
@@ -2900,6 +2905,79 @@ body.sidebar-expanded .ai-agent-fab {
   color: var(--color-primary);
   letter-spacing: 0.02em;
   flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 24%, transparent);
+}
+
+.ai-agent-slash-row.is-active .ai-agent-slash-row-cmd,
+.ai-agent-slash-row:hover .ai-agent-slash-row-cmd {
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
+}
+
+.ai-agent-creator-card {
+  width: min(100%, 560px);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.ai-agent-creator-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+}
+
+.ai-agent-creator-card-header > img {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.ai-agent-creator-card-header strong { color: var(--color-text-primary); }
+.ai-agent-creator-card-header p {
+  margin: 4px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.ai-agent-creator-card-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.ai-agent-creator-card-links a {
+  display: flex;
+  min-width: 0;
+  min-height: 42px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  color: var(--color-text-primary);
+  font-size: 0.78rem;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.ai-agent-creator-card-links a:hover,
+.ai-agent-creator-card-links a:focus-visible {
+  border-color: var(--color-primary);
+  background: var(--color-hover-overlay);
+}
+
+.ai-agent-creator-card-links a img {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  object-fit: cover;
 }
 
 .ai-agent-slash-row-desc {

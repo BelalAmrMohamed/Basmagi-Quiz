@@ -82,7 +82,7 @@
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { callProvider, isSupportedProvider } from "./_providerClients.js";
-import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, CREATE_LESSON_TOOL, ADD_LESSON_SECTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL } from "./_tools.js";
+import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, CREATE_LESSON_TOOL, ADD_LESSON_SECTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL, GET_CREATOR_INFO_TOOL, DISPLAY_CREATOR_CARD_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
 import { createClient } from "@supabase/supabase-js";
@@ -376,6 +376,8 @@ const TOOLS_BY_NAME = {
   search_library: SEARCH_LIBRARY_TOOL,
   parse_item_info: PARSE_ITEM_INFO_TOOL,
   get_user_activity: GET_USER_ACTIVITY_TOOL,
+  get_creator_info: GET_CREATOR_INFO_TOOL,
+  display_creator_card: DISPLAY_CREATOR_CARD_TOOL,
 };
 
 // Historical default — the home page's original three tools — kept so

@@ -309,6 +309,22 @@ export const GET_USER_ACTIVITY_TOOL = {
   },
 };
 
+export const GET_CREATOR_INFO_TOOL = {
+  name: "get_creator_info",
+  description: "Read the full public profile and contact links of Basamgy's creator, Belal Amr Mohamed, from the site's About page. Use to answer factual questions about the creator; this is public creator information, not private information about the current chat user.",
+  input_schema: { type: "object", properties: {}, required: [] },
+};
+
+export const DISPLAY_CREATOR_CARD_TOOL = {
+  name: "display_creator_card",
+  description: "Display an interactive in-chat card with the creator's real profile photo, portfolio thumbnail, and links. Use when the user asks to see or visit the creator's portfolio, YouTube, social profiles, or contact options.",
+  input_schema: {
+    type: "object",
+    properties: { section: { type: "string", enum: ["all", "portfolio", "social", "contact"] } },
+    required: [],
+  },
+};
+
 // Create-lesson page only. One question per call is intentional: the chat
 // provider executes at most one tool call per turn, and inserting one block
 // is atomic, undoable, and never replaces the rest of the lesson.

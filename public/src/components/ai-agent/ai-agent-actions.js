@@ -345,13 +345,15 @@ export function createSlashMenu(options) {
         btn.type = "button";
         btn.setAttribute("data-slash-row", "");
         btn.className = "ai-agent-dropdown-item ai-agent-slash-row" + (index === activeIndex ? " is-active" : "");
+        btn.title = action.description || `تنفيذ أمر ${action.label}`;
+        btn.setAttribute("aria-label", `/${action.command} — ${action.description || action.label}`);
 
         btn.innerHTML = `
       <div class="ai-agent-slash-row-icon" aria-hidden="true">${action.icon || ICON_SPARKLE}</div>
       <span class="ai-agent-slash-row-text">
         <span class="ai-agent-slash-row-header">
           <span class="ai-agent-slash-row-title" dir="auto">${action.label}</span>
-          <span class="ai-agent-slash-row-cmd" dir="ltr">/${action.command}</span>
+          <span class="ai-agent-slash-row-cmd" dir="ltr" title="${action.description || `تنفيذ أمر ${action.label}`}">/${action.command}</span>
         </span>
         ${action.description ? `<span class="ai-agent-slash-row-desc" dir="auto">${action.description}</span>` : ""}
       </span>

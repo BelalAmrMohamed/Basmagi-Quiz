@@ -21,6 +21,7 @@ import { openAgentDropdown, closeAllAgentDropdowns, positionAgentDropdown } from
 import { createMentionMenu } from "./ai-agent-mention-menu.js";
 import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js";
 import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
+import { renderCreatorCard, creatorCardModelSummary } from "./ai-agent-creator-tools.js";
 
 
 // Safety cap on how many tool-driven rounds resendLastUserTurn() will
@@ -222,6 +223,11 @@ export function createChatPanel(options = {}) {
   const modelBar = document.createElement("div");
   modelBar.className = "ai-agent-chat-model-bar";
 
+  // Disabled native selects do not consistently receive pointer events, so
+  // put the explanatory tooltip on a wrapper that remains hoverable.
+  const modelSelectWrap = document.createElement("span");
+  modelSelectWrap.className = "ai-agent-chat-model-select-wrap";
+
   const modelBarSelect = document.createElement("select");
   modelBarSelect.className = "ai-agent-chat-model-select";
   modelBarSelect.id = "ai-agent-chat-model-select";
@@ -240,9 +246,9 @@ export function createChatPanel(options = {}) {
   function refreshModelBarAvailability() {
     const { hasKey } = getOwnKey();
     modelBarSelect.disabled = !hasKey;
-    modelBarSelect.title = hasKey
-      ? ""
-      : "اختيار النموذج متاح فقط عند استخدام مفتاح API الخاص بك";
+    const reason = hasKey ? "" : "اختيار النموذج متاح فقط عند استخدام مفتاح API الخاص بك. أضف مفتاحك من الإعدادات لتغيير النموذج.";
+    modelSelectWrap.title = reason;
+    modelSelectWrap.setAttribute("aria-label", reason || "اختيار النموذج");
   }
 
   function refreshModelBarOptions() {
@@ -271,7 +277,8 @@ export function createChatPanel(options = {}) {
     setSelectedModel(getSelectedProvider(), modelBarSelect.value);
   });
 
-  modelBar.appendChild(modelBarSelect);
+  modelSelectWrap.appendChild(modelBarSelect);
+  modelBar.appendChild(modelSelectWrap);
   panel.appendChild(modelBar);
   // Exposed so ai-agent.js can relocate this node into the desktop
   // sidebar (see the "Sidebar Integration" requirement — the model bar
@@ -304,6 +311,7 @@ export function createChatPanel(options = {}) {
 
   function sanitizeToolOutput(content) {
     if (typeof content !== "string") return String(content ?? "");
+    if (content.startsWith("[CREATOR_CARD]")) return creatorCardModelSummary(content);
     const trimmed = content.trim();
     const looksLikeQuizPayload =
       trimmed.startsWith("بيانات الامتحان") ||
@@ -2017,9 +2025,14 @@ export function createChatPanel(options = {}) {
   function appendToolResultMessage(text) {
     const el = document.createElement("div");
     el.className = "ai-agent-msg ai-agent-msg--assistant ai-agent-msg--tool-result";
-    const isRawQuizPayload = typeof text === "string" &&
-      (text.startsWith("بيانات الامتحان") || text.length > 800 || text.trim().startsWith("{"));
-    el.textContent = isRawQuizPayload ? "تم استرجاع بيانات الامتحان بنجاح." : text;
+    const creatorCard = renderCreatorCard(text);
+    if (creatorCard) {
+      el.appendChild(creatorCard);
+    } else {
+      const isRawQuizPayload = typeof text === "string" &&
+        (text.startsWith("بيانات الامتحان") || text.length > 800 || text.trim().startsWith("{"));
+      el.textContent = isRawQuizPayload ? "تم استرجاع بيانات الامتحان بنجاح." : text;
+    }
     if (messagesEl.querySelector(".ai-agent-msg--empty")) {
       messagesEl.innerHTML = "";
     }
@@ -2044,6 +2057,8 @@ export function createChatPanel(options = {}) {
     reset_quiz_page: "إعادة تعيين الصفحة",
     fetch_attached_quiz: "استرجاع بيانات الامتحان",
     fetch_attached_lesson: "استرجاع بيانات الدرس",
+    get_creator_info: "قراءة معلومات المطوّر",
+    display_creator_card: "عرض بطاقة المطوّر",
   };
 
   function describeToolCall(toolCall) {
@@ -2344,7 +2359,7 @@ export function createChatPanel(options = {}) {
       if (type === "tool-result") {
         return {
           role: "user",
-          content: `[نتيجة أداة]: ${content}\n(توجيه للنظام: تم تنفيذ هذا الإجراء بنجاح وأصبح موجوداً بالفعل. لا تُعد إنشاء أو تكرار نفس العنصر مجدداً، وتابع لتنفيذ بقية خطوات المستخدم إن وُجدت، أو قدم الرد النهائي).`,
+          content: `[نتيجة أداة]: ${creatorCardModelSummary(content)}\n(توجيه للنظام: تم تنفيذ هذا الإجراء بنجاح وأصبح موجوداً بالفعل. لا تُعد إنشاء أو تكرار نفس العنصر مجدداً، وتابع لتنفيذ بقية خطوات المستخدم إن وُجدت، أو قدم الرد النهائي).`,
           attachments: fileAttachments,
           type,
         };
@@ -2636,14 +2651,9 @@ export function createChatPanel(options = {}) {
       // check (rather than assuming handleKeydown always consumes Enter
       // while open) so a half-typed `@query` can never slip through as a
       // sent message if that assumption ever breaks.
-      if (mentionMenu.isOpen()) {
-        mentionMenu.close();
-        return;
-      }
-      if (slashMenu.isOpen()) {
-        slashMenu.close();
-        return;
-      }
+      // The menu's keydown listener is registered after this send guard and
+      // owns Enter while open. Leave it open so it can select its active row.
+      if (mentionMenu.isOpen() || slashMenu.isOpen()) return;
       sendMessage();
     }
   });

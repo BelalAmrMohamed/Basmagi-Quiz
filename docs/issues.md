@@ -7,6 +7,33 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### In الباشــمبصمج:
+* Sidebar model choice should have a tooltip saying why it's disabled when it's disabled.
+* Commands (e.g., `/`) should be highlited, and when pressed they should show a tooltip explaining what they do.
+* When I press `/`, then go through the items using the keyboard, then I press `Enter`, the menu closes without choosing the item.
+* So, based on that, the chat needs many feedback/info features and more polished UI/UX.
+* The model should have tools related to the platform creator (بلال عمرو):
+  - It should be able to use a tool to parse all info about the user.
+  - It should have tools to be able to display the creator's info (his Portfolio, YouTube, Email, etc...) in an interactive way with the actual images inside the chat iteslf. You can find the creator's info in the `/about` page.
+
+### Performance, Maintainance, and code quality:
+* The Sidebar/Side-menu's: The sidebar component is a part that is common to all pages. Its JS and CSS are the same and are imported in all pages, but the HTML is duplicated, which means it's extremely hard to maintain and update. And it became to messy. And it's not even the same, the docuement pages don't have the HTML directly in them, it's inserted from a JS file. 
+
+### On the quiz page (quiz.html):
+* The buttons `bookmark-btn` and `flag-btn` should show different icons when their active/not-active.
+* Should have extra top margin as much as the height of the `stats-bar`.
+* Improve the overall UI/UX of the page. 
+
+### The معلومات الامتحان modal: 
+* It's missing the link of the quiz (but on the quiz page it should be just text, not a link)
+
+### The `create-quiz-inline-modal` the ready-to-use prompts in it are not up to date:
+* They don't include the quiz title
+* They don't include a description.
+* They don't inlcude a source
+* They are missing new features that were added lately.
+* The modal also can have horizontal scrollbars that are useless. Improve the styling.
+
 ### AI Agent
 
 #### Dictation

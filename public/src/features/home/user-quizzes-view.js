@@ -56,6 +56,7 @@ import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { HOME_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { handleReadOnlyLibraryToolCall, READONLY_LIBRARY_TOOL_NAMES } from "../../components/ai-agent/ai-agent-readonly-tools.js";
+import { CREATOR_TOOL_NAMES, handleCreatorToolCall } from "../../components/ai-agent/ai-agent-creator-tools.js";
 import { renderRootCategories } from "./root-view.js";
 import {
   importJsonQuizFiles,
@@ -485,6 +486,9 @@ async function handleQuizToolCall(toolCall) {
       // module rather than duplicated here. See
       // ai-agent-readonly-tools.js's own header comment.
       return handleReadOnlyLibraryToolCall(toolCall);
+    case "get_creator_info":
+    case "display_creator_card":
+      return handleCreatorToolCall(toolCall);
     default: {
       const err = new Error(`Unknown tool call: ${toolCall?.name}`);
       err.userMessage = "أداة غير معروفة.";
@@ -891,7 +895,7 @@ export function renderUserQuizzesView() {
         contextSummary: getLiveContextSummary,
         contextPrompt: getLiveFolderTreePrompt,
         enableTools: true,
-        toolNames: ["create_lesson", "create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item", "fetch_attached_quiz", ...READONLY_LIBRARY_TOOL_NAMES],
+        toolNames: ["create_lesson", "create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item", "fetch_attached_quiz", ...READONLY_LIBRARY_TOOL_NAMES, ...CREATOR_TOOL_NAMES],
         onToolCall: handleQuizToolCall,
       }),
     );
