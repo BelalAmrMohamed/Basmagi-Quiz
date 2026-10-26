@@ -325,6 +325,29 @@ export const DISPLAY_CREATOR_CARD_TOOL = {
   },
 };
 
+export const CREATE_FLASHCARDS_TOOL = {
+  name: "create_flashcards",
+  description: "Create an interactive flashcard deck from the currently open lesson. Return concise, accurate question/answer pairs grounded only in that lesson. Aim for 6–12 cards unless the user requests another count, and include at least two useful cards. The website renders them as clickable flip cards in the current chat; do not save them as a quiz or lesson.",
+  input_schema: {
+    type: "object",
+    properties: {
+      title: { type: "string", description: "A short title for the review deck." },
+      cards: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            question: { type: "string", description: "One concise recall prompt." },
+            answer: { type: "string", description: "A clear, accurate answer grounded in the lesson." },
+          },
+          required: ["question", "answer"],
+        },
+      },
+    },
+    required: ["title", "cards"],
+  },
+};
+
 // Create-lesson page only. One question per call is intentional: the chat
 // provider executes at most one tool call per turn, and inserting one block
 // is atomic, undoable, and never replaces the rest of the lesson.

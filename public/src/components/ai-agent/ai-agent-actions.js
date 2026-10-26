@@ -198,7 +198,7 @@ const LESSON_PAGE_ACTIONS = [
         label: "بطاقات مراجعة",
         description: "توليد بطاقات مراجعة (سؤال/جواب) من أهم أفكار هذا الدرس — للمذاكرة فقط، لا تُحفظ",
         icon: ICON_SPARKLE,
-        systemDirective: "المستخدم يطلب بطاقات مراجعة (Flashcards) من هذا الدرس عبر أمر /flashcards. اكتب سلسلة من البطاقات كل واحدة بصيغة «سؤال: ... / جواب: ...» تغطي أهم مفاهيم الدرس. هذه بطاقات نصية للمذاكرة فقط داخل المحادثة، وليست تدريباً تفاعلياً ولا تُحفظ في أي مكان.",
+        systemDirective: "المستخدم يطلب بطاقات مراجعة تفاعلية من هذا الدرس عبر أمر /flashcards. استخرج أهم المفاهيم من محتوى الدرس الحالي، ثم استدعِ أداة create_flashcards فوراً مع 6 إلى 12 زوجاً واضحاً من السؤال والإجابة (أو العدد الذي حدده المستخدم). لا تكتب البطاقات كنص عادي ولا تطلب تأكيداً؛ ستُعرض كبطاقات قابلة للقلب داخل المحادثة، ولا تُحفظ كاختبار.",
         placeholder: "عدد البطاقات أو الموضوع المطلوب التركيز عليه...",
     },
     {
@@ -297,6 +297,8 @@ registerPageActions("result", RESULT_PAGE_ACTIONS);
  * @param {(menu: HTMLElement, anchor: HTMLElement) => void} options.positionMenu
  * @returns {{open: (slashIndex: number) => void, close: () => void, isOpen: () => boolean, handleInput: () => boolean, handleKeydown: (e: KeyboardEvent) => boolean, getTriggerStart: () => number}}
  */
+let slashMenuIdSequence = 0;
+
 export function createSlashMenu(options) {
     const { textarea, getActions, onPick, positionMenu } = options;
 
@@ -304,15 +306,20 @@ export function createSlashMenu(options) {
     let triggerStart = -1; // index of the '/' character
     let activeIndex = -1;
     let currentActions = [];
+    let menuId = "";
 
     function close() {
         if (!menuEl) return;
         menuEl.remove();
         menuEl = null;
+        textarea.removeAttribute("aria-controls");
+        textarea.removeAttribute("aria-expanded");
+        textarea.removeAttribute("aria-activedescendant");
         triggerStart = -1;
         activeIndex = -1;
         currentActions = [];
         window.removeEventListener("resize", reposition);
+        window.removeEventListener("scroll", reposition, true);
         document.removeEventListener("click", onOutsideClick);
     }
 
@@ -336,7 +343,9 @@ export function createSlashMenu(options) {
         activeIndex = ((index % rows.length) + rows.length) % rows.length;
         rows.forEach((row, i) => {
             row.classList.toggle("is-active", i === activeIndex);
+            row.setAttribute("aria-selected", i === activeIndex ? "true" : "false");
         });
+        textarea.setAttribute("aria-activedescendant", rows[activeIndex]?.id || "");
         rows[activeIndex]?.scrollIntoView({ block: "nearest" });
     }
 
@@ -344,20 +353,41 @@ export function createSlashMenu(options) {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.setAttribute("data-slash-row", "");
+        btn.id = `${menuId}-option-${index}`;
+        btn.setAttribute("role", "option");
+        btn.setAttribute("aria-selected", index === activeIndex ? "true" : "false");
         btn.className = "ai-agent-dropdown-item ai-agent-slash-row" + (index === activeIndex ? " is-active" : "");
-        btn.title = action.description || `تنفيذ أمر ${action.label}`;
         btn.setAttribute("aria-label", `/${action.command} — ${action.description || action.label}`);
 
-        btn.innerHTML = `
-      <div class="ai-agent-slash-row-icon" aria-hidden="true">${action.icon || ICON_SPARKLE}</div>
-      <span class="ai-agent-slash-row-text">
-        <span class="ai-agent-slash-row-header">
-          <span class="ai-agent-slash-row-title" dir="auto">${action.label}</span>
-          <span class="ai-agent-slash-row-cmd" dir="ltr" title="${action.description || `تنفيذ أمر ${action.label}`}">/${action.command}</span>
-        </span>
-        ${action.description ? `<span class="ai-agent-slash-row-desc" dir="auto">${action.description}</span>` : ""}
-      </span>
-    `;
+        const icon = document.createElement("span");
+        icon.className = "ai-agent-slash-row-icon";
+        icon.setAttribute("aria-hidden", "true");
+        const iconTemplate = document.createElement("template");
+        iconTemplate.innerHTML = action.icon || ICON_SPARKLE;
+        icon.appendChild(iconTemplate.content);
+
+        const text = document.createElement("span");
+        text.className = "ai-agent-slash-row-text";
+        const header = document.createElement("span");
+        header.className = "ai-agent-slash-row-header";
+        const title = document.createElement("span");
+        title.className = "ai-agent-slash-row-title";
+        title.dir = "auto";
+        title.textContent = action.label || `/${action.command}`;
+        const command = document.createElement("code");
+        command.className = "ai-agent-slash-row-cmd";
+        command.dir = "ltr";
+        command.textContent = `/${action.command}`;
+        header.append(title, command);
+        text.appendChild(header);
+        if (action.description) {
+            const description = document.createElement("span");
+            description.className = "ai-agent-slash-row-desc";
+            description.dir = "auto";
+            description.textContent = action.description;
+            text.appendChild(description);
+        }
+        btn.append(icon, text);
 
         btn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -370,7 +400,7 @@ export function createSlashMenu(options) {
 
     function render(query = "") {
         if (!menuEl) return;
-        menuEl.innerHTML = "";
+        menuEl.replaceChildren();
 
         const allActions = getActions() || [];
         const cleanQuery = (query || "").trim().toLowerCase();
@@ -387,22 +417,35 @@ export function createSlashMenu(options) {
         if (currentActions.length === 0) {
             const emptyEl = document.createElement("div");
             emptyEl.className = "ai-agent-slash-empty";
+            emptyEl.setAttribute("role", "status");
             emptyEl.textContent = cleanQuery ? "لا توجد أوامر مطابقة" : "لا توجد أوامر متوفرة لهذه الصفحة";
             menuEl.appendChild(emptyEl);
             activeIndex = -1;
+            textarea.removeAttribute("aria-activedescendant");
             reposition();
             return;
         }
 
         const sectionHeader = document.createElement("div");
         sectionHeader.className = "ai-agent-mention-section-header ai-agent-slash-section-header";
-        sectionHeader.textContent = "الأوامر المتاحة";
+        const sectionTitle = document.createElement("span");
+        sectionTitle.textContent = "الأوامر المتاحة";
+        const count = document.createElement("span");
+        count.className = "ai-agent-slash-count";
+        count.textContent = String(currentActions.length).padStart(2, "0");
+        sectionHeader.append(sectionTitle, count);
         menuEl.appendChild(sectionHeader);
 
+        const resultsEl = document.createElement("div");
+        resultsEl.className = "ai-agent-slash-results";
+        resultsEl.setAttribute("role", "group");
+        resultsEl.setAttribute("aria-label", "الأوامر");
         activeIndex = 0;
         currentActions.forEach((action, idx) => {
-            menuEl.appendChild(buildRow(action, idx));
+            resultsEl.appendChild(buildRow(action, idx));
         });
+        menuEl.appendChild(resultsEl);
+        textarea.setAttribute("aria-activedescendant", `${menuId}-option-0`);
 
         reposition();
     }
@@ -417,16 +460,22 @@ export function createSlashMenu(options) {
         triggerStart = slashCharIndex;
         menuEl = document.createElement("div");
         menuEl.className = "ai-agent-dropdown-menu ai-agent-slash-menu";
-        menuEl.setAttribute("role", "menu");
+        menuId = `ai-agent-slash-list-${++slashMenuIdSequence}`;
+        menuEl.id = menuId;
+        menuEl.setAttribute("role", "listbox");
+        menuEl.setAttribute("aria-label", "الأوامر المتاحة");
         menuEl.style.visibility = "hidden";
         document.body.appendChild(menuEl);
+        textarea.setAttribute("aria-controls", menuId);
+        textarea.setAttribute("aria-expanded", "true");
 
         render("");
         positionMenu(menuEl, textarea);
         menuEl.style.visibility = "visible";
 
         window.addEventListener("resize", reposition);
-        setTimeout(() => document.addEventListener("click", onOutsideClick), 0);
+        window.addEventListener("scroll", reposition, true);
+        document.addEventListener("click", onOutsideClick);
     }
 
     function handleInput() {

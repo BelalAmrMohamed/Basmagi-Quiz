@@ -57,6 +57,8 @@ import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-defa
 import { HOME_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { handleReadOnlyLibraryToolCall, READONLY_LIBRARY_TOOL_NAMES } from "../../components/ai-agent/ai-agent-readonly-tools.js";
 import { CREATOR_TOOL_NAMES, handleCreatorToolCall } from "../../components/ai-agent/ai-agent-creator-tools.js";
+import { createItemCardResult } from "../../components/ai-agent/ai-agent-result-cards.js";
+import { toSlug } from "./slug-utils.js";
 import { renderRootCategories } from "./root-view.js";
 import {
   importJsonQuizFiles,
@@ -74,6 +76,53 @@ import {
   showNotification,
   _confirm,
 } from "../../components/notifications/notifications.js";
+
+function userItemRoute(item, items) {
+  const kind = item.kind;
+  const id = item.id || item.meta?.id;
+  if (kind === "quiz") return `/quiz/${encodeURIComponent(id)}?type=user`;
+  if (kind === "lesson") return `/lesson/${encodeURIComponent(id)}`;
+  if (kind !== "folder" && kind !== "course") return "/#my-quizzes";
+
+  const byId = new Map(items.map((entry) => [entry.id || entry.meta?.id, entry]));
+  const segments = [];
+  let current = item;
+  const seen = new Set();
+  while (current && !seen.has(current.id || current.meta?.id)) {
+    const currentId = current.id || current.meta?.id;
+    seen.add(currentId);
+    const title = current.meta?.title;
+    if (title) segments.unshift(encodeURIComponent(toSlug(title)));
+    current = current.meta?.parentId ? byId.get(current.meta.parentId) : null;
+  }
+  return segments.length ? `/#my-quizzes/${segments.join("/")}` : "/#my-quizzes";
+}
+
+function getUserItemDestination(item, items) {
+  let parentId = item.meta?.parentId || null;
+  const byId = new Map(items.map((entry) => [entry.id || entry.meta?.id, entry]));
+  const ancestors = [];
+  const seen = new Set();
+  while (parentId && !seen.has(parentId)) {
+    seen.add(parentId);
+    const parent = byId.get(parentId);
+    if (!parent) break;
+    if (parent.meta?.title) ancestors.unshift(parent.meta.title);
+    parentId = parent.meta?.parentId || null;
+  }
+  return ancestors.length ? ancestors.join(" / ") : "امتحاناتك الرئيسية";
+}
+
+function createdItemResult(kind, item, items, detail) {
+  return createItemCardResult({
+    kind,
+    id: item.id || item.meta?.id,
+    title: item.meta?.title || item.title || "عنصر جديد",
+    detail,
+    destination: getUserItemDestination(item, items),
+    href: userItemRoute({ ...item, kind }, items),
+  });
+}
 import { moveToTrash, getTrashItemCount } from "./user-quizzes-trash.js";
 import { openLocalTrashPanel } from "./user-quizzes-trash-panel.js";
 import { refreshUserQuizzesCard } from "./course-count.js";
@@ -137,7 +186,9 @@ function handleCreateQuizToolCall(toolCall) {
   );
   renderRootCategories();
   renderUserQuizzesView();
-  return `✅ تم إنشاء الامتحان: ${title}`;
+  const items = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const saved = items.find((item) => (item.id || item.meta?.id) === result.id) || result;
+  return createdItemResult("quiz", saved, items, `${questions.length} سؤال${questions.length === 1 ? "" : "اً"} · جاهز للحل الآن`);
 }
 
 function handleCreateLessonToolCall(toolCall) {
@@ -191,7 +242,9 @@ function handleCreateLessonToolCall(toolCall) {
   showNotification("تم إنشاء الدرس", 'تم إنشاء الدرس وإضافته إلى "امتحاناتك".', "success");
   renderRootCategories();
   renderUserQuizzesView();
-  return `✅ تم إنشاء الدرس «${title}» وحفظه في «امتحاناتك» مع ${sections.length} قسم/أقسام.`;
+  const items = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const saved = items.find((item) => (item.id || item.meta?.id) === id) || entry;
+  return createdItemResult("lesson", saved, items, `${sections.length} ${sections.length === 1 ? "قسم" : "أقسام"} · جاهز للقراءة`);
 }
 
 /**
@@ -350,7 +403,9 @@ function handleCreateFolderToolCall(toolCall) {
   }
 
   renderUserQuizzesView();
-  return `📁 تم إنشاء المجلد: ${name.trim()}`;
+  const items = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const saved = items.find((item) => (item.id || item.meta?.id) === result.id);
+  return createdItemResult("folder", saved || { id: result.id, meta: { title: name.trim(), parentId: parentResolution.id } }, items, "مجلد جديد · جاهز لتنظيم محتواك");
 }
 
 function handleCreateCourseToolCall(toolCall) {
@@ -371,7 +426,9 @@ function handleCreateCourseToolCall(toolCall) {
   }
 
   renderUserQuizzesView();
-  return `📚 تم إنشاء المادة: ${name.trim()}`;
+  const items = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const saved = items.find((item) => (item.id || item.meta?.id) === result.id);
+  return createdItemResult("course", saved || { id: result.id, meta: { title: name.trim(), parentId: null } }, items, "مادة جديدة · مساحة مرتبة لدروسك وامتحاناتك");
 }
 
 function handleMoveItemToolCall(toolCall) {

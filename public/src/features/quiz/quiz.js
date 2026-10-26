@@ -29,6 +29,7 @@ import {
   singleCorrectIndex,
 } from "../../shared/rate-answers.js";
 import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
+import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
 import {
   getMediaUrlCandidates as _getMediaUrlCandidates,
   resolveMediaUrl as _resolveMediaUrl,
@@ -44,6 +45,8 @@ import {
   isDownloadPasswordVerified,
   markDownloadPasswordVerified,
 } from "../home/download-password.js";
+
+observeRichInputHighlighters({ selector: "textarea.essay-textarea" });
 
 // Bug 1 Fix — "start of exam" notification moved out of the top-level
 // import block and wrapped in try/catch. It previously ran as a bare
@@ -1946,7 +1949,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
     feedbackCorrectClass = isCorrect ? "correct" : "wrong";
     feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div></div>`;
   }
-  const feedbackShowClass = isLocked ? ` ${feedbackCorrectClass} show` : "";
+  const feedbackShowClass = `${feedbackCorrectClass ? ` ${feedbackCorrectClass}` : ""}${isLocked ? " show" : ""}`;
   const feedbackHtml = `<div class="feedback${feedbackShowClass}" data-correct-class="${feedbackCorrectClass}">${feedbackText}</div>`;
 
   if (isEssay) {
@@ -1958,7 +1961,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
     // only once isLocked is true.
     const formalAnswerHtml = `
       <div class="formal-answer${isLocked ? " show" : ""}">
-        <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
+        <strong class="formal-answer-score" style="text-align: center;">(${essayScore}/5) ${stars}</strong>
         <strong style="text-align: center;">الإجابة النموذجية</strong>
         <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q), { mediaBaseUrl: quizBaseUrl })}</div>
       </div>`;
@@ -2052,28 +2055,17 @@ function patchQuestionAnswerState(cardEl, q, idx) {
       checkBtn.classList.toggle("hidden", isLocked || !showCheckButton);
       checkBtn.disabled = !userSelected || String(userSelected).trim() === "";
     }
-    // The model-answer block (only shown once locked) and star rating are
-    // small enough, and different enough in structure pre/post-lock, that
-    // rebuilding just this one leaf sub-block is simpler and safer than
-    // trying to incrementally patch it — it carries no persistent media.
-    const essayContainer = cardEl.querySelector(".essay-container");
-    let formalAnswerEl = cardEl.querySelector(".formal-answer");
+    // The formal answer is present from the initial render; reveal it and
+    // update only the score when the essay is checked.
+    const formalAnswerEl = cardEl.querySelector(".formal-answer");
     if (isLocked) {
       const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
       const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
-      const formalHtml = `
-            <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
-            <strong style="text-align: center;">الإجابة النموذجية</strong>
-            <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q), { mediaBaseUrl: quizBaseUrl })}</div>`;
-      if (!formalAnswerEl) {
-        formalAnswerEl = document.createElement("div");
-        formalAnswerEl.className = "formal-answer show";
-        essayContainer?.insertAdjacentElement("afterend", formalAnswerEl);
-      }
-      formalAnswerEl.innerHTML = formalHtml;
-      formalAnswerEl.classList.add("show");
-    } else if (formalAnswerEl) {
-      formalAnswerEl.remove();
+      const scoreEl = formalAnswerEl?.querySelector(".formal-answer-score");
+      if (scoreEl) scoreEl.textContent = `(${essayScore}/5) ${stars}`;
+      formalAnswerEl?.classList.add("show");
+    } else {
+      formalAnswerEl?.classList.remove("show");
     }
   } else {
     const correctIdx = q.correct ?? q.answer;
@@ -2114,20 +2106,13 @@ function patchQuestionAnswerState(cardEl, q, idx) {
     }
   }
 
-  // Feedback block: safe to fully regenerate — it holds only explanation/
-  // model-answer prose, never the question or option text, so there is no
-  // persistent media here to lose.
+  // Feedback prose is pre-rendered with the question; interactions only
+  // toggle its visibility and the correctness styling.
   const feedbackEl = cardEl.querySelector(".feedback");
   if (feedbackEl) {
-    let feedbackClass = "feedback";
-    let feedbackText = "";
-    const explanationText =
-      q.explanation || q.desc || q.info || "No explanation provided.";
+    let feedbackCorrectClass = isEssay ? "essay-feedback" : "";
     if (isLocked) {
-      if (isEssay) {
-        feedbackClass += " essay-feedback show";
-        feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
-      } else {
+      if (!isEssay) {
         const isMultiple = isMultiSelectQuestion(q);
         const correctIdx = q.correct ?? q.answer;
         const isCorrect = isMultiple
@@ -2136,13 +2121,13 @@ function patchQuestionAnswerState(cardEl, q, idx) {
           userSelected.length === correctIdx.length &&
           correctIdx.every((i) => userSelected.includes(i))
           : isAnswerCorrect(userSelected, correctIdx);
-        feedbackClass += isCorrect ? " correct show" : " wrong show";
-        feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div></div>`;
+        feedbackCorrectClass = isCorrect ? "correct" : "wrong";
       }
     }
-    feedbackEl.className = feedbackClass;
-    feedbackEl.innerHTML = feedbackText;
-    scanDirections(feedbackEl);
+    feedbackEl.classList.toggle("correct", feedbackCorrectClass === "correct");
+    feedbackEl.classList.toggle("wrong", feedbackCorrectClass === "wrong");
+    feedbackEl.classList.toggle("essay-feedback", isEssay);
+    feedbackEl.classList.toggle("show", isLocked);
   }
 
   // Bookmark/flag/report buttons in the header can change independently
@@ -2350,33 +2335,25 @@ function buildQuestionBodyHTML(q, idx) {
   const isFlagged = gameEngine.isFlagged(examId, idx);
   const showCheckButton = quizMode !== "exam" && quizMode !== "timed_exam";
 
-  let feedbackClass = "feedback";
+  let feedbackCorrectClass = "";
   let feedbackText = "";
   const explanationText =
     q.explanation || q.desc || q.info || "No explanation provided.";
 
-  if (isLocked) {
-    let isCorrect = false;
-
-    if (isEssay) {
-      const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
-      isCorrect = essayScore >= 3;
-      feedbackClass += " essay-feedback show";
-      feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
-    } else {
-      if (isMultiSelectQuestion(q)) {
-        isCorrect =
-          Array.isArray(userSelected) &&
-          Array.isArray(correctIdx) &&
-          userSelected.length === correctIdx.length &&
-          correctIdx.every((i) => userSelected.includes(i));
-      } else {
-        isCorrect = isAnswerCorrect(userSelected, correctIdx);
-      }
-      feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div></div>`;
-    }
+  if (isEssay) {
+    feedbackCorrectClass = "essay-feedback";
+    feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
+  } else {
+    const isCorrect = isMultiSelectQuestion(q)
+      ? Array.isArray(userSelected) &&
+        Array.isArray(correctIdx) &&
+        userSelected.length === correctIdx.length &&
+        correctIdx.every((i) => userSelected.includes(i))
+      : isAnswerCorrect(userSelected, correctIdx);
+    feedbackCorrectClass = isCorrect ? "correct" : "wrong";
+    feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div></div>`;
   }
+  const feedbackClass = `feedback ${feedbackCorrectClass}${isLocked ? " show" : ""}`;
 
   const actionButtons = `
     <div class="question-actions">
@@ -2437,16 +2414,11 @@ function buildQuestionBodyHTML(q, idx) {
         }>
           تحقق من الإجابة
         </button>
-        ${isLocked
-          ? `
-          <div class="formal-answer">
-            <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
+        <div class="formal-answer${isLocked ? " show" : ""}">
+            <strong class="formal-answer-score" style="text-align: center;">(${essayScore}/5) ${stars}</strong>
             <strong style="text-align: center;">الإجابة النموذجية</strong>
             <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q), { mediaBaseUrl: quizBaseUrl })}</div>
-          </div>
-        `
-          : ""
-        }
+        </div>
         <div class="${feedbackClass}">${feedbackText}</div>
       `,
     };

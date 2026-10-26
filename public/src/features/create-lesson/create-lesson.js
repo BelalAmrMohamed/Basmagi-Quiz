@@ -54,6 +54,9 @@ import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { CREATE_LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { CREATE_LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { downloadLesson } from "../home/lesson-download.js";
+import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
+
+observeRichInputHighlighters({ selector: ".md-source" });
 
 // Matches the canonical published-lesson id shape used across the lesson
 // feature (lesson-view.js, lesson-schema.js): a Supabase UUID. Local-only

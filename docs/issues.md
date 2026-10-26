@@ -7,8 +7,13 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+## Downlaod lesson modal
+The download lesson modal should match the download quiz modal's design and functionality:
+- Icons next to each extension matching it (e.g., for JSON, PDF, and HTML).
+- Copy button next on each copyable download option (e.g., JSON and HTML)
+- loading progress with cancel buttons
+
 ### Performance, Maintainance, and code quality:
-* The Sidebar/Side-menu's: The sidebar component is a part that is common to all pages. Its JS and CSS are the same and are imported in all pages, but the HTML is duplicated, which means it's extremely hard to maintain and update. And it became to messy. And it's not even the same, the docuement pages don't have the HTML directly in them, it's inserted from a JS file. 
 
 ### AI Agent
 
@@ -21,6 +26,9 @@ Performance Improvements: Currently, there are many custom mechanism fucntionali
 Example 1: I lately found out that the `/quiz` page was rendering questions through the JS once, then when the user submits their answer, the JS renders the question again to inject the explanation & formal answer, I removed it and depended fully on CSS & HTML, the whole question including explanation & formal answer is now injected all at the first render, then I make things visible when the user submits the answer using CSS classes. That approach to get away from JS improved performance alot.
 
 Example 2: The markdown engine was manually detecting the direction of sentences to determine their `direction`. A previous performance update deleted all of the related code and forced it to use the native attribute `dir="auto"`. 
+
+Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is common to all pages. Its JS and CSS are the same and are imported in all pages, but the HTML is duplicated, which means it's extremely hard to maintain and update. And it became to messy. And it's not even the same, the docuement pages don't have the HTML directly in them, it's inserted from a JS file. 
+
 
 ## New Features
 
@@ -36,8 +44,9 @@ Example 2: The markdown engine was manually detecting the direction of sentences
   * ميمز تشجيع إيجابية
 * Some vidoes will be displayed based on the percentage of the result.
 
-### `public/src/shared/markdown.js`
-* Implement [live render plan](plans/live-render-md-prompt.md)
+### MCQ Server to Connect to Claude
+- I want users to be able to connect claude to the platform so Claude can do actions.
+- Therefore the `Basmagi Quiz` will need to be a connector to work for Claude.
 
 ### Home Page
 

@@ -25,6 +25,9 @@ import { hasSameLevelCollision } from "../home/user-quizzes-folders.js";
 import { renderCreateQuestionNavigator, initCreateQuestionNavigator } from "./question-navigator.js";
 import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar.js";
 import { applyMarkdownToolbarAction } from "../../shared/markdown-toolbar-actions.js";
+import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
+
+observeRichInputHighlighters({ selector: ".md-source" });
 
 // ============================================================================
 // STATE MANAGEMENT

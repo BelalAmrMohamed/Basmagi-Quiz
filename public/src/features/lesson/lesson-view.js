@@ -51,6 +51,10 @@ import { showLessonInfoModal } from "../home/lesson-info-modal.js";
 import { showQuizInfoModal, showUserQuizInfoModal } from "../home/quiz-info-modal.js";
 import { openAIAgentWithAttachment, buildPlatformQuizAttachment, buildPlatformLessonAttachment, resolveUserItemAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
+import { createFlashcardDeckResult } from "../../components/ai-agent/ai-agent-result-cards.js";
+import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
+
+observeRichInputHighlighters({ selector: ".lesson-question__essay-input" });
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LESSON_LOAD_TIMEOUT_MS = 10000;
@@ -451,6 +455,26 @@ function lessonAgentContext(lesson, normalized) {
 
 let rerenderLessonQuiz = null;
 function handleLessonAgentToolCall(toolCall) {
+  if (toolCall?.name === "create_flashcards") {
+    const input = toolCall.input || {};
+    const cards = (Array.isArray(input.cards) ? input.cards : [])
+      .slice(0, 30)
+      .map((card) => ({
+        question: String(card?.question || "").trim().slice(0, 1200),
+        answer: String(card?.answer || "").trim().slice(0, 2000),
+      }))
+      .filter((card) => card.question && card.answer);
+    if (cards.length < 2) {
+      const error = new Error("At least two flashcards are required.");
+      error.userMessage = "تعذر إنشاء البطاقات: أحتاج إلى سؤال وإجابة صالحين لبطاقتين على الأقل.";
+      throw error;
+    }
+    return createFlashcardDeckResult({
+      title: String(input.title || "بطاقات مراجعة من الدرس").trim().slice(0, 140),
+      cards,
+    });
+  }
+
   if (toolCall?.name !== "create_quiz") throw new Error("Unknown lesson tool");
   try {
     const quiz = createLessonQuiz(toolCall.input || {});
@@ -477,7 +501,7 @@ function lessonAgentOptions(lesson, normalized) {
     contextPrompt: () => lessonAgentContext(lesson, normalized),
     enableTools: true,
     enableFileUpload: true,
-    toolNames: ["create_quiz"],
+    toolNames: ["create_quiz", "create_flashcards"],
     onToolCall: handleLessonAgentToolCall,
   };
 }

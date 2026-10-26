@@ -22,7 +22,12 @@ import { createMentionMenu, getQuickAccessMentionDefinitions } from "./ai-agent-
 import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js";
 import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
 import { renderCreatorCard, creatorCardModelSummary } from "./ai-agent-creator-tools.js";
-import { attachRichInputHighlighter } from "../../shared/rich-input-highlighter.js";
+import { renderResultCard, resultCardModelSummary } from "./ai-agent-result-cards.js";
+import {
+  attachRichInputHighlighter,
+  decorateRichContent,
+  attachRichMessageTooltips,
+} from "../../shared/rich-input-highlighter.js";
 
 
 // Safety cap on how many tool-driven rounds resendLastUserTurn() will
@@ -294,6 +299,7 @@ export function createChatPanel(options = {}) {
   const messagesEl = document.createElement("div");
   messagesEl.className = "ai-agent-chat-messages";
   panel.appendChild(messagesEl);
+  attachRichMessageTooltips(messagesEl);
 
   function extractQuizTitle(value) {
     if (!value || typeof value !== "object") return "امتحان";
@@ -313,6 +319,8 @@ export function createChatPanel(options = {}) {
   function sanitizeToolOutput(content) {
     if (typeof content !== "string") return String(content ?? "");
     if (content.startsWith("[CREATOR_CARD]")) return creatorCardModelSummary(content);
+    const resultSummary = resultCardModelSummary(content);
+    if (resultSummary !== content) return resultSummary;
     const trimmed = content.trim();
     const looksLikeQuizPayload =
       trimmed.startsWith("بيانات الامتحان") ||
@@ -337,6 +345,7 @@ export function createChatPanel(options = {}) {
     return history.map((message) => ({
       role: message.role,
       type: message.type || undefined,
+      toolName: message.toolName || undefined,
       content: message.type === "tool-result"
         ? sanitizeToolOutput(message.content)
         : String(message.content ?? ""),
@@ -543,13 +552,14 @@ export function createChatPanel(options = {}) {
    * @param {Array<object>} historyToPersist
    */
   function toPersistedMessages(historyToPersist) {
-    return historyToPersist.map(({ role, content, attachments, type }) => {
+    return historyToPersist.map(({ role, content, attachments, type, toolName }) => {
       const first = attachments?.[0];
       const firstLabel = first?.name || first?.title;
       return {
         role,
         content,
         ...(type ? { type } : {}),
+        ...(toolName ? { toolName } : {}),
         ...(firstLabel ? { attachmentName: firstLabel } : {}),
         ...(first?.kind ? { attachmentKind: first.kind } : {}),
         ...(first?.summary ? { attachmentSummary: first.summary } : {}),
@@ -1924,6 +1934,10 @@ export function createChatPanel(options = {}) {
       // so this also keeps the "mixed Arabic/English line" behavior that
       // _processByLine used to provide directly.
       el.insertAdjacentHTML("beforeend", renderMarkdown(content));
+      decorateRichContent(el, {
+        getCommands: () => getPageActions(pageKey, options.actions),
+        getMentions: getQuickAccessMentionDefinitions,
+      });
     }
 
     wrap.appendChild(el);
@@ -2028,12 +2042,30 @@ export function createChatPanel(options = {}) {
     lastErrorCount = 0;
   }
 
-  function appendToolResultMessage(text) {
+  const INTERNAL_TOOL_RESULTS = new Set([
+    "parse_item_info",
+    "get_creator_info",
+    "fetch_attached_quiz",
+    "fetch_attached_lesson",
+  ]);
+
+  function appendToolResultMessage(text, toolName = "") {
+    // Tool payloads are context for the assistant, not chat messages for
+    // the user. Keep them in history so the assistant can answer, but never
+    // paint raw parsing results as a green bubble.
+    const looksLikeLegacyParsedItem = typeof text === "string" && /^\[(?:امتحان|مادة|مجلد|درس):/.test(text.trim());
+    const looksLikeLegacyCreatorDetails = typeof text === "string" && text.startsWith("معلومات مطوّر بصمجي:");
+    if (INTERNAL_TOOL_RESULTS.has(toolName) || (!toolName && (looksLikeLegacyParsedItem || looksLikeLegacyCreatorDetails))) {
+      resetErrorDedup();
+      return;
+    }
+
     const el = document.createElement("div");
     el.className = "ai-agent-msg ai-agent-msg--assistant ai-agent-msg--tool-result";
-    const creatorCard = renderCreatorCard(text);
-    if (creatorCard) {
-      el.appendChild(creatorCard);
+    const resultCard = renderResultCard(text);
+    const creatorCard = resultCard ? null : renderCreatorCard(text);
+    if (resultCard || creatorCard) {
+      el.appendChild(resultCard || creatorCard);
     } else {
       const isRawQuizPayload = typeof text === "string" &&
         (text.startsWith("بيانات الامتحان") || text.length > 800 || text.trim().startsWith("{"));
@@ -2342,7 +2374,7 @@ export function createChatPanel(options = {}) {
     // actually lives). The client still renders it as a chip in the UI
     // the whole time (see renderAttachmentChips/appendMessage) — it never
     // disappears from the user's view, exactly as required.
-    const toWireMessage = ({ role, content, attachments, type, isSlashCommand, slashCmdName, slashDirective }) => {
+    const toWireMessage = ({ role, content, attachments, type, toolName, isSlashCommand, slashCmdName, slashDirective }) => {
       const fileAttachments = (attachments || [])
         .filter((a) => a.kind === "file" || (!a.kind && a.base64))
         .map(({ mimeType, base64, name }) => ({ mimeType, base64, name }));
@@ -2365,7 +2397,7 @@ export function createChatPanel(options = {}) {
       if (type === "tool-result") {
         return {
           role: "user",
-          content: `[نتيجة أداة]: ${creatorCardModelSummary(content)}\n(توجيه للنظام: تم تنفيذ هذا الإجراء بنجاح وأصبح موجوداً بالفعل. لا تُعد إنشاء أو تكرار نفس العنصر مجدداً، وتابع لتنفيذ بقية خطوات المستخدم إن وُجدت، أو قدم الرد النهائي).`,
+          content: `[نتيجة أداة${toolName ? ` ${toolName}` : ""}]: ${sanitizeToolOutput(content)}\n(توجيه للنظام: تم تنفيذ هذا الإجراء بنجاح وأصبح موجوداً بالفعل. لا تُعد إنشاء أو تكرار نفس العنصر مجدداً، وتابع لتنفيذ بقية خطوات المستخدم إن وُجدت، أو قدم الرد النهائي).`,
           attachments: fileAttachments,
           type,
         };
@@ -2510,8 +2542,8 @@ export function createChatPanel(options = {}) {
               break;
             }
             if (resultText) {
-              appendToolResultMessage(resultText);
-              history.push({ role: "assistant", type: "tool-result", content: resultText });
+              appendToolResultMessage(resultText, toolCall?.name || "");
+              history.push({ role: "assistant", type: "tool-result", toolName: toolCall?.name || "", content: resultText });
               try {
                 await saveConversation({
                   id: conversationId,
@@ -2935,7 +2967,7 @@ export function createChatPanel(options = {}) {
     // branches on att.kind === "file") keeps working the same way it does
     // for a live, never-reloaded attachment.
     history.push(
-      ...conversation.messages.map(({ role, content, attachmentName, attachmentKind, attachmentSummary, type }) => {
+      ...conversation.messages.map(({ role, content, attachmentName, attachmentKind, attachmentSummary, type, toolName }) => {
         const kind = attachmentKind || "file"; // older saved records predate attachmentKind — file was the only kind that ever existed before platform-item attachments
         const attachment = attachmentName
           ? {
@@ -2948,6 +2980,7 @@ export function createChatPanel(options = {}) {
           role,
           content,
           ...(type ? { type } : {}),
+          ...(toolName ? { toolName } : {}),
           ...(attachment ? { attachments: [attachment] } : {}),
         };
       }),
@@ -2959,7 +2992,7 @@ export function createChatPanel(options = {}) {
     } else {
       history.forEach((m, i) => {
         if (m.type === "tool-result") {
-          appendToolResultMessage(m.content);
+          appendToolResultMessage(m.content, m.toolName || "");
         } else {
           appendMessage(m.role, m.content, m.attachments, i);
         }
@@ -3025,7 +3058,7 @@ export function createChatPanel(options = {}) {
     messagesEl.innerHTML = "";
     history.forEach((m, i) => {
       if (m.type === "tool-result") {
-        appendToolResultMessage(m.content);
+        appendToolResultMessage(m.content, m.toolName || "");
       } else {
         appendMessage(m.role, m.content, m.attachments, i);
       }
