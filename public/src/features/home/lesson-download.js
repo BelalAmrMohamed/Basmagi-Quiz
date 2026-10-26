@@ -4,6 +4,7 @@ import { renderBlock } from "../lesson/lesson-blocks.js";
 import { normalizeLessonContent } from "../lesson/lesson-schema.js";
 import { escapeHtml } from "./escape-html.js";
 import { gradeEssay } from "../../shared/rate-answers.js";
+import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 
 const LESSON_INTERACTION_SCRIPT = `
 const gradeEssay = (${gradeEssay.toString()});
@@ -134,6 +135,23 @@ export async function downloadLesson(lesson, triggerBtn = null, { format = null,
         if (!password || !unlocked) return;
         payload = lessonPayload(unlocked);
       }
+    }
+
+    // Catalog lesson cards carry summary metadata only. Resolve the published
+    // content lazily when the visitor actually chooses an export format.
+    if (!lesson.lesson && !payload.content?.sections?.length) {
+      const supabase = await ensureSharedSupabaseClient();
+      if (!supabase) throw new Error("تعذّر الاتصال بقاعدة البيانات.");
+      let query = supabase
+        .from("lesson_public")
+        .select("id, title, description, source, content, reader_prefs_default");
+      query = /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(String(lesson.id || ""))
+        ? query.eq("id", lesson.id)
+        : query.eq("slug", lesson.slug || lesson.id);
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      if (!data?.content) throw new Error("تعذّر تحميل محتوى الدرس للتنزيل.");
+      payload = lessonPayload({ ...lesson, ...data });
     }
 
     if (format === "pdf") {

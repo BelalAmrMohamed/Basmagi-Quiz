@@ -1122,6 +1122,196 @@
   text-align: right;
 }
 
+/* ── Reusable native-textarea syntax mirror (shared/rich-input-highlighter.js) ──
+   The textarea remains the real editing/caret/selection surface. A visual
+   mirror underneath it colors recognized spans without contenteditable's
+   cursor, paste, undo, and IME edge cases. Keep token styles metric-neutral so
+   the mirror never drifts away from the textarea's caret positions. */
+.rich-input-highlighter {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-self: stretch;
+  min-width: 0;
+  min-height: 36px;
+  overflow: hidden;
+}
+
+.rich-input-highlighter__textarea {
+  position: relative;
+  z-index: 1;
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent;
+  background: transparent !important;
+  caret-color: var(--color-text-primary, currentColor);
+}
+
+.rich-input-highlighter__textarea::placeholder {
+  color: var(--color-text-secondary, #777) !important;
+  -webkit-text-fill-color: var(--color-text-secondary, #777);
+  opacity: 1;
+}
+
+.rich-input-highlighter__textarea::selection {
+  color: var(--color-text-primary, #111);
+  -webkit-text-fill-color: var(--color-text-primary, #111);
+  background: color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+.rich-input-highlighter__mirror {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  overflow: visible;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  color: var(--color-text-primary);
+  background: transparent;
+}
+
+.rich-input-highlight--heading {
+  color: var(--color-primary, #6366f1);
+}
+
+.rich-input-highlight--bold {
+  color: var(--color-primary, #6366f1);
+}
+
+.rich-input-highlight--italic {
+  color: var(--color-secondary, #8b5cf6);
+}
+
+.rich-input-highlight--inline-code {
+  color: var(--color-success, #15803d);
+  background: color-mix(in srgb, var(--color-success, #15803d) 12%, transparent);
+  border-radius: 3px;
+}
+
+.rich-input-highlight--link {
+  color: var(--color-primary, #2563eb);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+  text-underline-offset: 2px;
+}
+
+.rich-input-highlight--code-block {
+  color: var(--color-success, #15803d);
+  background: color-mix(in srgb, var(--color-success, #15803d) 9%, transparent);
+  border-radius: 4px;
+}
+
+.rich-input-highlight--unordered-list,
+.rich-input-highlight--ordered-list,
+.rich-input-highlight--task-list,
+.rich-input-highlight--blockquote,
+.rich-input-highlight--horizontal-rule {
+  color: var(--color-primary, #6366f1);
+}
+
+.rich-input-highlight--strikethrough {
+  color: var(--color-secondary, #8b5cf6);
+  text-decoration: line-through;
+}
+
+.rich-input-highlight--command,
+.rich-input-highlight--mention {
+  border-radius: 4px;
+}
+
+.rich-input-highlight--command {
+  color: var(--color-primary, #4f46e5);
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+}
+
+.rich-input-highlight--mention {
+  color: var(--color-success, #15803d);
+  background: color-mix(in srgb, var(--color-success, #15803d) 14%, transparent);
+}
+
+.rich-input-highlighter__tooltip {
+  position: fixed;
+  z-index: var(--z-toast, 9000);
+  width: max-content;
+  max-width: min(320px, calc(100vw - 20px));
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+  direction: rtl;
+  text-align: start;
+  pointer-events: none;
+  animation: aiAgentDropdownIn 0.12s ease-out;
+}
+
+.rich-input-highlighter__tooltip[hidden] {
+  display: none;
+}
+
+.rich-input-highlighter__badge {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.rich-input-highlighter__badge--command {
+  background: color-mix(in srgb, var(--color-primary) 13%, var(--color-surface));
+  color: var(--color-primary);
+}
+
+.rich-input-highlighter__badge--mention {
+  background: color-mix(in srgb, var(--color-success, #15803d) 13%, var(--color-surface));
+  color: var(--color-success, #15803d);
+}
+
+.rich-input-highlighter__title {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.rich-input-highlighter__description,
+.rich-input-highlighter__purpose {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.rich-input-highlighter__purpose {
+  margin-top: 4px;
+}
+
+.rich-input-highlighter__usage {
+  display: block;
+  margin-top: 8px;
+  padding: 5px 7px;
+  border-radius: 7px;
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 0.72rem;
+  direction: auto;
+  overflow-wrap: anywhere;
+}
+
 .ai-agent-send-btn {
   display: inline-flex;
   align-items: center;

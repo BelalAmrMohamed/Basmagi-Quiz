@@ -17,12 +17,11 @@ import {
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
-import { getCourseItemCount, refreshUserQuizzesCard } from "./course-count.js";
+import { refreshUserQuizzesCard } from "./course-count.js";
 import { isRecentlyAdded } from "./date-utils.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { createExamCard } from "./exam-card.js";
 import { createLessonCard } from "./lesson-card.js";
-import { createCourseLessonProgressSummary } from "./lesson-progress.js";
 import { openExamDropdownMenu, createActionGroupSubmenu } from "./exam-dropdown-menu.js";
 import {
   canManageItem,
@@ -164,19 +163,13 @@ export function renderCategory(category) {
 
     const fragment = document.createDocumentFragment();
 
-    // A course-level, same-device summary. It includes lesson leaves under
-    // nested folders too; lessons never participate in quiz scoring.
-    if (!category.parent) {
-      const progressSummary = createCourseLessonProgressSummary(category);
-      if (progressSummary) fragment.appendChild(progressSummary);
-    }
-
     // Render subcategories
     (category.subcategories || []).forEach((subCatKey) => {
       const subCat = categoryTree[subCatKey];
       if (subCat) {
-        const itemCount = getCourseItemCount(subCat);
-        const card = createCategoryCard(subCat.name, itemCount, true, subCat, true);
+        const stats = getCategoryContentsStats(subCat);
+        const itemCount = stats.quizCount;
+        const card = createCategoryCard(subCat.name, itemCount, true, subCat, true, formatCategoryContents(stats));
         card.onclick = () => renderCategory(subCat);
         fragment.appendChild(card);
       }
@@ -436,4 +429,12 @@ function getCategoryContentsStats(category) {
   };
   visit(category);
   return { quizCount, lessonCount, subfolderCount };
+}
+
+function formatCategoryContents({ quizCount, lessonCount, subfolderCount }) {
+  const parts = [];
+  if (quizCount) parts.push(`${quizCount} ${quizCount === 1 ? "امتحان" : "امتحانات"}`);
+  if (lessonCount) parts.push(`${lessonCount} ${lessonCount === 1 ? "درس" : "دروس"}`);
+  if (subfolderCount) parts.push(`${subfolderCount} ${subfolderCount === 1 ? "مجلد" : "مجلدات"}`);
+  return parts.join(" · ") || "لا يوجد محتوى بعد";
 }

@@ -44,6 +44,7 @@ function buildQuickAccessItems() {
             quickAccessId: "Last_Created_Quiz",
             label: "@Last_Created_Quiz",
             description: "آخر امتحان أنشأته",
+            purpose: "إرفاق أحدث امتحان أنشأته بسياق المحادثة ليتمكن المساعد من استخدامه.",
             resolve: () => {
                 const [latest] = listRecentUserItems("", 1);
                 if (!latest) return { item: null, emptyReason: "لم تنشئ أي امتحان بعد." };
@@ -54,6 +55,7 @@ function buildQuickAccessItems() {
             quickAccessId: "Last_Taken_Quiz",
             label: "@Last_Taken_Quiz",
             description: "آخر امتحان قمت بحله",
+            purpose: "إرفاق آخر امتحان حللته ومعلومات نتيجته إلى المحادثة.",
             // Backed by the same `last_quiz_result` key as @Last_Quiz_Results
             // (see quiz.js's saveResultAndRedirect-equivalent, which writes both
             // this single overwritten key AND removes that quiz's own
@@ -70,9 +72,24 @@ function buildQuickAccessItems() {
             quickAccessId: "Last_Quiz_Results",
             label: "@Last_Quiz_Results",
             description: "نتيجة آخر امتحان قمت بحله",
+            purpose: "إرفاق نتيجة آخر امتحان مع إجاباتك لمراجعتها وتحليلها.",
             resolve: () => resolveLastQuizResultAttachment("results"),
         },
     ];
+}
+
+/**
+ * Definitions for the stable, named @ quick-access tokens. The live mention
+ * menu also searches user/platform items, but those are selected from results
+ * rather than addressed by a fixed token in message text.
+ */
+export function getQuickAccessMentionDefinitions() {
+    return buildQuickAccessItems().map(({ quickAccessId, label, description, purpose }) => ({
+        name: quickAccessId,
+        token: label,
+        description,
+        purpose,
+    }));
 }
 
 /**

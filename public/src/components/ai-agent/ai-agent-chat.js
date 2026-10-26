@@ -18,10 +18,11 @@ import { saveConversation, deriveConversationTitle } from "./ai-agent-history-id
 // export menu (ai-agent.js) — one dropdown-menu visual style for the
 // whole widget rather than a bespoke one per popover.
 import { openAgentDropdown, closeAllAgentDropdowns, positionAgentDropdown } from "./ai-agent-dropdown.js";
-import { createMentionMenu } from "./ai-agent-mention-menu.js";
+import { createMentionMenu, getQuickAccessMentionDefinitions } from "./ai-agent-mention-menu.js";
 import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js";
 import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
 import { renderCreatorCard, creatorCardModelSummary } from "./ai-agent-creator-tools.js";
+import { attachRichInputHighlighter } from "../../shared/rich-input-highlighter.js";
 
 
 // Safety cap on how many tool-driven rounds resendLastUserTurn() will
@@ -939,6 +940,7 @@ export function createChatPanel(options = {}) {
           const needsSpace = before.length > 0 && !/\s$/.test(before);
           const insert = (needsSpace ? " " : "") + "@";
           textarea.value = before + insert + after;
+          inputHighlighter.refresh();
           const newCaret = before.length + insert.length;
           textarea.setSelectionRange(newCaret, newCaret);
           updateSendBtnVisibility();
@@ -950,7 +952,10 @@ export function createChatPanel(options = {}) {
         label: "الأوامر المتاحة",
         onClick: () => {
           textarea.focus();
-          if (!textarea.value.startsWith("/")) textarea.value = `/${textarea.value}`;
+          if (!textarea.value.startsWith("/")) {
+            textarea.value = `/${textarea.value}`;
+            inputHighlighter.refresh();
+          }
           textarea.setSelectionRange(1, 1);
           resizeChatInput();
           updateSendBtnVisibility();
@@ -1384,6 +1389,7 @@ export function createChatPanel(options = {}) {
       // Live transcription directly into the chat input field, per the
       // spec — not a separate preview area.
       textarea.value = composeDictationValue(interim);
+      inputHighlighter.refresh();
       resizeChatInput();
     };
 
@@ -2594,6 +2600,7 @@ export function createChatPanel(options = {}) {
     if (!text && !attachments.length) return;
 
     textarea.value = "";
+    inputHighlighter.refresh();
     textarea.style.height = "auto";
     sendBtn.disabled = true;
     pendingAttachments = [];
@@ -2719,6 +2726,7 @@ export function createChatPanel(options = {}) {
       const after = textarea.value.slice(caret);
       const insert = `/${action.command} `;
       textarea.value = before + insert + after;
+      inputHighlighter.refresh();
       const newCaret = before.length + insert.length;
       textarea.setSelectionRange(newCaret, newCaret);
       textarea.focus();
@@ -2742,6 +2750,7 @@ export function createChatPanel(options = {}) {
       const before = textarea.value.slice(0, startIndex);
       const after = textarea.value.slice(endIndexExclusive);
       textarea.value = before + after;
+      inputHighlighter.refresh();
       textarea.setSelectionRange(before.length, before.length);
       textarea.focus();
     },
@@ -2752,6 +2761,15 @@ export function createChatPanel(options = {}) {
       folder: ATTACHMENT_FOLDER_ICON_SVG,
     },
     positionMenu: positionAgentDropdown,
+  });
+
+  // Highlighting is a separate layer over the native textarea. Its command
+  // and fixed-mention metadata come from the same registries/menu definitions
+  // as their live pickers, so page-specific actions stay in sync automatically.
+  const inputHighlighter = attachRichInputHighlighter({
+    textarea,
+    getCommands: () => getPageActions(pageKey, options.actions),
+    getMentions: getQuickAccessMentionDefinitions,
   });
 
   textarea.addEventListener("keydown", (e) => {
@@ -2879,6 +2897,7 @@ export function createChatPanel(options = {}) {
     // for the lesson selection-popup path, which can open the modal and call
     // submitText in the same frame that the panel is being mounted.
     textarea.value = value;
+    inputHighlighter.refresh();
     resizeChatInput();
     updateSendBtnVisibility();
     if (sendBtn.disabled) return false;

@@ -368,11 +368,13 @@ async function buildSubjects(quizzes, lessons, courses, folders) {
     const sectionIds = Array.isArray(row.section_ids) ? row.section_ids.map(String).filter(Boolean) : [];
     const sections = sectionIds.length ? sectionIds.map((id) => ({ id })) : Array.from({ length: Number(row.section_count) || 0 }, (_, i) => ({ id: `s${i + 1}` }));
     ensureSubject(course).lessons.push({
+      itemType: "lesson",
       id: row.id,
       slug: row.slug || null,
       title: row.title || "",
       folderSegments,
       sectionIds: sections.map((section, index) => String(section?.id || `s${index + 1}`)),
+      sectionCount: Number(row.section_count) || sections.length,
       // Completion is measured against the sections every reader is guaranteed
       // to see. `defaultHidden` sections are adaptive remediation that only
       // appear after a specific answer, so requiring them would make a lesson
@@ -390,6 +392,7 @@ async function buildSubjects(quizzes, lessons, courses, folders) {
       passwordProtected: Boolean(row.password_protected),
       courseId: row.course_id || null,
       folderId: row.folder_id || null,
+      education_type: course.education_type || null,
     });
   }
 

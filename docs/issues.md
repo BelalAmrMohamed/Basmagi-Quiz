@@ -19,13 +19,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 * It's missing the link of the quiz (but on the quiz page it should be just text, not a link).
 * Same for lesson info modal, add the lesson link (as a link on every page), and also add the lesson description, because it's missing.
 
-### The `create-quiz-inline-modal` the ready-to-use prompts in it are not up to date:
-* They don't include the quiz title
-* They don't include a description.
-* They don't inlcude a source
-* They are missing new features that were added lately.
-* The modal also can have horizontal scrollbars that are useless. Improve the styling.
-* Make the create Quiz Modal have no Title field, since title can be set in the JSON, itself, and you are going to update the prompts to include them.
+### Settings Page
+- Implement search in the `اشتراكات المواد`, because courses can get so much. 
+- I'm experiencing too much confusing and weird behaviors
 
 ### AI Agent
 
