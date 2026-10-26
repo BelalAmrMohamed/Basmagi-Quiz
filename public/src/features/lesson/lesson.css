@@ -3276,3 +3276,624 @@
     width: 100%;
   }
 }
+
+/* ── Lesson community: polished discussion surface ───────────────────────── */
+.lesson-comments {
+  --community-accent: var(--color-primary, #5791ff);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(1.1rem, 3.2vw, 2rem);
+  border: 1px solid color-mix(in srgb, var(--community-accent) 24%, var(--color-border));
+  border-radius: 26px;
+  background:
+    radial-gradient(ellipse at 100% 0, color-mix(in srgb, var(--community-accent) 12%, transparent), transparent 40%),
+    linear-gradient(145deg, color-mix(in srgb, var(--color-surface) 97%, #111b2d), var(--color-surface));
+  box-shadow: 0 22px 60px rgb(0 0 0 / .14), inset 0 1px rgb(255 255 255 / .035);
+}
+
+.lesson-comments::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--community-accent), #38c8b2, transparent);
+  content: "";
+}
+
+.lesson-comments__ambient {
+  position: absolute;
+  z-index: -1;
+  top: -110px;
+  inset-inline-end: -90px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--community-accent) 11%, transparent);
+  filter: blur(54px);
+  pointer-events: none;
+}
+
+.lesson-comments__head {
+  align-items: center;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent);
+}
+
+.lesson-comments__identity {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.lesson-comments__mark,
+.lesson-comments__composer-mark {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 1px solid color-mix(in srgb, var(--community-accent) 28%, var(--color-border));
+  border-radius: 17px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--community-accent) 18%, var(--color-surface)), color-mix(in srgb, var(--community-accent) 6%, var(--color-surface)));
+  color: var(--community-accent);
+  box-shadow: inset 0 1px rgb(255 255 255 / .08), 0 8px 22px color-mix(in srgb, var(--community-accent) 9%, transparent);
+}
+
+.lesson-comments__mark svg {
+  width: 25px;
+  height: 25px;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lesson-comments__heading-copy {
+  display: grid;
+  gap: .25rem;
+  min-width: 0;
+}
+
+.lesson-comments__eyebrow {
+  color: var(--community-accent);
+  font-size: .69rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.lesson-comments__heading-copy h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: clamp(1.25rem, 2.5vw, 1.65rem);
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.lesson-comments__heading-copy p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: .83rem;
+  line-height: 1.6;
+}
+
+.lesson-comments__stat {
+  display: grid;
+  justify-items: center;
+  gap: .12rem;
+  min-width: 84px;
+  padding: .65rem .85rem;
+  border: 1px solid color-mix(in srgb, var(--community-accent) 20%, var(--color-border));
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--community-accent) 6%, var(--color-surface));
+}
+
+.lesson-comments__stat strong {
+  color: var(--community-accent);
+  font-size: 1.15rem;
+  font-weight: 850;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.lesson-comments__stat span {
+  color: var(--color-text-secondary);
+  font-size: .62rem;
+  white-space: nowrap;
+}
+
+.lesson-comments__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .8rem;
+  margin-top: 1.1rem;
+}
+
+.lesson-comments__toolbar-label {
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  font-size: .74rem;
+  font-weight: 700;
+}
+
+.lesson-comments__sort {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface) 78%, var(--color-background-secondary, #111));
+}
+
+.lesson-comments__sort-btn {
+  min-height: 34px;
+  padding: .4rem .8rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: .76rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background .16s ease, color .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+
+.lesson-comments__sort-btn:hover {
+  color: var(--color-text-primary);
+  border-color: color-mix(in srgb, var(--community-accent) 25%, transparent);
+}
+
+.lesson-comments__sort-btn:focus-visible,
+.lesson-comments__more:focus-visible,
+.lesson-comment__react:focus-visible,
+.lesson-comment__link:focus-visible {
+  outline: 2px solid var(--community-accent);
+  outline-offset: 2px;
+}
+
+.lesson-comments__sort-btn.is-active {
+  border-color: color-mix(in srgb, var(--community-accent) 55%, transparent);
+  background: linear-gradient(135deg, var(--community-accent), color-mix(in srgb, var(--community-accent) 74%, #8d7aff));
+  color: #fff;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--community-accent) 26%, transparent);
+}
+
+.lesson-comments__notice {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  margin-top: 1rem;
+  padding: .72rem .85rem;
+  border: 1px solid color-mix(in srgb, #36b991 22%, var(--color-border));
+  border-radius: 13px;
+  background: color-mix(in srgb, #36b991 7%, var(--color-surface));
+  color: var(--color-text-secondary);
+  font-size: .74rem;
+  line-height: 1.55;
+}
+
+.lesson-comments__notice-icon {
+  display: grid;
+  flex: 0 0 27px;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 9px;
+  background: color-mix(in srgb, #36b991 13%, var(--color-surface));
+  color: #36b991;
+}
+
+.lesson-comments__notice-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lesson-comments__list {
+  display: grid;
+  gap: .8rem;
+  margin: 1.1rem 0 .8rem;
+}
+
+.lesson-comment {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem 1.05rem .85rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+  border-radius: 17px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--color-surface) 97%, var(--community-accent)), var(--color-surface));
+  box-shadow: 0 5px 16px rgb(0 0 0 / .045), inset 0 1px rgb(255 255 255 / .025);
+  scroll-margin-top: 5rem;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.lesson-comment:hover {
+  border-color: color-mix(in srgb, var(--community-accent) 24%, var(--color-border));
+  box-shadow: 0 9px 24px rgb(0 0 0 / .08), inset 0 1px rgb(255 255 255 / .035);
+}
+
+.lesson-comment--highlighted {
+  border-color: var(--community-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--community-accent) 20%, transparent), 0 12px 32px rgb(0 0 0 / .1);
+}
+
+.lesson-comment__meta {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  min-width: 0;
+}
+
+.lesson-comment__avatar {
+  display: grid;
+  flex: 0 0 39px;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  border: 1px solid color-mix(in srgb, var(--community-accent) 26%, transparent);
+  border-radius: 13px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--community-accent) 22%, var(--color-surface)), color-mix(in srgb, var(--community-accent) 8%, var(--color-surface)));
+  color: var(--community-accent);
+  font-size: .92rem;
+  font-weight: 850;
+}
+
+.lesson-comment__avatar--1 { --avatar-hue: #3dbf9b; background: color-mix(in srgb, var(--avatar-hue) 15%, var(--color-surface)); color: var(--avatar-hue); border-color: color-mix(in srgb, var(--avatar-hue) 30%, var(--color-border)); }
+.lesson-comment__avatar--2 { --avatar-hue: #ed9d4b; background: color-mix(in srgb, var(--avatar-hue) 15%, var(--color-surface)); color: var(--avatar-hue); border-color: color-mix(in srgb, var(--avatar-hue) 30%, var(--color-border)); }
+.lesson-comment__avatar--3 { --avatar-hue: #da71a7; background: color-mix(in srgb, var(--avatar-hue) 15%, var(--color-surface)); color: var(--avatar-hue); border-color: color-mix(in srgb, var(--avatar-hue) 30%, var(--color-border)); }
+.lesson-comment__avatar--4 { --avatar-hue: #50a8c9; background: color-mix(in srgb, var(--avatar-hue) 15%, var(--color-surface)); color: var(--avatar-hue); border-color: color-mix(in srgb, var(--avatar-hue) 30%, var(--color-border)); }
+
+.lesson-comment__author-wrap {
+  display: grid;
+  min-width: 0;
+  gap: .12rem;
+}
+
+.lesson-comment__author-wrap strong {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: .84rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lesson-comment__author-label {
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  font-size: .65rem;
+}
+
+.lesson-comment__meta time {
+  margin-inline-start: auto;
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  font-size: .69rem;
+  white-space: nowrap;
+}
+
+.lesson-comment__edited {
+  padding: .2rem .45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  font-size: .6rem;
+  white-space: nowrap;
+}
+
+.lesson-comment__body {
+  margin: .9rem 0 .85rem;
+  padding-inline-start: calc(39px + .65rem);
+  color: var(--color-text-primary);
+  font-size: .92rem;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.lesson-comment__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin: 0;
+  padding-top: .65rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
+}
+
+.lesson-comment__react,
+.lesson-comment__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  min-height: 32px;
+  padding: .35rem .65rem;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.lesson-comment__react:hover,
+.lesson-comment__link:hover {
+  border-color: color-mix(in srgb, var(--community-accent) 22%, var(--color-border));
+  background: color-mix(in srgb, var(--community-accent) 8%, var(--color-surface));
+  color: var(--community-accent);
+}
+
+.lesson-comment__react.is-active {
+  border-color: color-mix(in srgb, var(--community-accent) 30%, var(--color-border));
+  background: color-mix(in srgb, var(--community-accent) 10%, var(--color-surface));
+  color: var(--community-accent);
+}
+
+.lesson-comment__link--danger { color: #e06c73; }
+.lesson-comment__link--danger:hover { border-color: color-mix(in srgb, #e06c73 28%, var(--color-border)); background: color-mix(in srgb, #e06c73 9%, var(--color-surface)); color: #e06c73; }
+
+.lesson-comment__replies {
+  display: grid;
+  gap: .65rem;
+  margin-top: .8rem;
+  padding-inline-start: 1rem;
+  border-inline-start: 2px solid color-mix(in srgb, var(--community-accent) 30%, var(--color-border));
+}
+
+.lesson-comment--reply {
+  padding: .8rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--community-accent));
+}
+
+.lesson-comment--reply .lesson-comment__avatar { width: 32px; height: 32px; flex-basis: 32px; border-radius: 11px; font-size: .78rem; }
+.lesson-comment--reply .lesson-comment__body { padding-inline-start: calc(32px + .65rem); font-size: .85rem; }
+
+.lesson-comment__reply-slot:empty { margin: 0; }
+
+.lesson-comments__pending-note {
+  margin: .6rem 0;
+  padding: .75rem .85rem;
+  border: 1px solid color-mix(in srgb, #d59a3b 34%, var(--color-border));
+  border-radius: 12px;
+  background: color-mix(in srgb, #d59a3b 9%, var(--color-surface));
+  color: color-mix(in srgb, #d59a3b 78%, var(--color-text-primary));
+  font-size: .78rem;
+  line-height: 1.6;
+}
+
+.lesson-comment__tombstone {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 0;
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  font-size: .82rem;
+  font-style: italic;
+}
+
+.lesson-comments__empty {
+  display: grid;
+  justify-items: center;
+  gap: .5rem;
+  padding: clamp(1.5rem, 4vw, 2.4rem) 1rem;
+  border: 1px dashed color-mix(in srgb, var(--community-accent) 28%, var(--color-border));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--community-accent) 4%, var(--color-surface));
+  text-align: center;
+}
+
+.lesson-comments__empty-mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: .2rem;
+  border: 1px solid color-mix(in srgb, var(--community-accent) 24%, var(--color-border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--community-accent) 10%, var(--color-surface));
+  color: var(--community-accent);
+}
+
+.lesson-comments__empty-mark svg { width: 23px; height: 23px; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.lesson-comments__empty strong { color: var(--color-text-primary); font-size: .95rem; font-weight: 800; }
+.lesson-comments__empty > span:last-child { max-width: 390px; color: var(--color-text-secondary); font-size: .78rem; line-height: 1.65; }
+
+.lesson-comments__skeleton {
+  height: 112px;
+  border: 1px solid var(--color-border);
+  border-radius: 17px;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--color-surface) 94%, var(--color-border)) 20%, color-mix(in srgb, var(--community-accent) 10%, var(--color-surface)) 40%, color-mix(in srgb, var(--color-surface) 94%, var(--color-border)) 60%);
+  background-size: 220% 100%;
+  animation: lesson-comment-shimmer 1.6s ease infinite;
+}
+
+.lesson-comments__more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  margin: .6rem auto 0;
+  padding: .6rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--community-accent) 28%, var(--color-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--community-accent) 6%, var(--color-surface));
+  color: var(--community-accent);
+  font: inherit;
+  font-size: .77rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform .15s ease, background .15s ease;
+}
+
+.lesson-comments__more:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--community-accent) 12%, var(--color-surface)); }
+.lesson-comments__more[hidden] { display: none; }
+
+.lesson-comments__permalink-note {
+  padding: .55rem .75rem;
+  border-inline-start: 3px solid var(--community-accent);
+  border-radius: 8px 12px 12px 8px;
+  background: color-mix(in srgb, var(--community-accent) 7%, var(--color-surface));
+  color: var(--color-text-secondary);
+  font-size: .72rem;
+}
+
+.lesson-comments__composer {
+  gap: .8rem;
+  margin-top: 1.35rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--community-accent) 24%, var(--color-border));
+  border-radius: 18px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--community-accent) 7%, var(--color-surface)), color-mix(in srgb, var(--color-surface) 97%, #101827));
+  box-shadow: inset 0 1px rgb(255 255 255 / .035);
+}
+
+.lesson-comments__composer-head {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+}
+
+.lesson-comments__composer-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+
+.lesson-comments__composer-mark svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.lesson-comments__composer-head label { display: block; color: var(--color-text-primary); font-size: .88rem; font-weight: 800; cursor: text; }
+.lesson-comments__composer-head p { margin: .1rem 0 0; color: var(--color-text-secondary); font-size: .69rem; }
+
+.lesson-comments__composer textarea,
+.lesson-comments__form--reply textarea,
+.lesson-comment__edit-form textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 106px;
+  padding: .85rem .95rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: .84rem;
+  line-height: 1.7;
+  resize: vertical;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.lesson-comments__composer textarea::placeholder,
+.lesson-comments__form--reply textarea::placeholder { color: var(--color-text-tertiary, var(--color-text-secondary)); opacity: .8; }
+
+.lesson-comments__composer textarea:focus-visible,
+.lesson-comments__form--reply textarea:focus-visible,
+.lesson-comment__edit-form textarea:focus-visible {
+  border-color: color-mix(in srgb, var(--community-accent) 70%, var(--color-border));
+  outline: none;
+  background: var(--color-surface);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--community-accent) 15%, transparent);
+}
+
+.lesson-comments__form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .7rem;
+}
+
+.lesson-comments__count {
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  font-size: .68rem;
+  font-variant-numeric: tabular-nums;
+  transition: color .15s ease;
+}
+
+.lesson-comments__count.is-near-limit { color: #e09a48; }
+
+.lesson-comments__composer .lesson-comments__form-row button[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  min-height: 41px;
+  padding: .58rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--community-accent) 65%, transparent);
+  border-radius: 11px;
+  background: linear-gradient(135deg, var(--community-accent), color-mix(in srgb, var(--community-accent) 72%, #8d7aff));
+  color: #fff;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 800;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--community-accent) 23%, transparent);
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+}
+
+.lesson-comments__composer .lesson-comments__form-row button[type="submit"] svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.lesson-comments__composer .lesson-comments__form-row button[type="submit"]:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 9px 20px color-mix(in srgb, var(--community-accent) 30%, transparent); }
+.lesson-comments__form-row button:disabled { cursor: wait; opacity: .6; }
+
+.lesson-comments__form--reply {
+  margin-top: .65rem;
+  padding: .8rem;
+  border: 1px solid color-mix(in srgb, var(--community-accent) 19%, var(--color-border));
+  border-inline-start: 3px solid var(--community-accent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--community-accent) 5%, var(--color-surface));
+}
+
+.lesson-comments__form--reply textarea,
+.lesson-comment__edit-form textarea { min-height: 76px; }
+.lesson-comments__form--reply .lesson-comments__form-row button,
+.lesson-comment__edit-form button { min-height: 36px; padding: .45rem .8rem; border-radius: 9px; font-size: .74rem; }
+
+.lesson-comments__error {
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, #e06c73 30%, var(--color-border));
+  border-radius: 13px;
+  background: color-mix(in srgb, #e06c73 7%, var(--color-surface));
+  color: #e06c73;
+  font-size: .8rem;
+}
+
+@media (max-width: 640px) {
+  .lesson-comments { padding: 1rem; border-radius: 20px; }
+  .lesson-comments__head { align-items: flex-start; }
+  .lesson-comments__identity { gap: .7rem; }
+  .lesson-comments__mark { width: 44px; height: 44px; border-radius: 14px; }
+  .lesson-comments__mark svg { width: 21px; height: 21px; }
+  .lesson-comments__heading-copy p { font-size: .75rem; }
+  .lesson-comments__stat { min-width: 65px; padding: .55rem .5rem; }
+  .lesson-comments__stat span { max-width: 58px; font-size: .56rem; text-align: center; white-space: normal; }
+  .lesson-comments__toolbar { align-items: flex-start; flex-direction: column; }
+  .lesson-comments__sort { width: 100%; justify-content: space-between; }
+  .lesson-comments__sort-btn { flex: 1 1 auto; padding-inline: .45rem; font-size: .69rem; }
+  .lesson-comment { padding: .85rem .8rem .7rem; }
+  .lesson-comment__body { padding-inline-start: 0; font-size: .86rem; }
+  .lesson-comment__meta { gap: .5rem; }
+  .lesson-comment__avatar { width: 34px; height: 34px; flex-basis: 34px; border-radius: 11px; }
+  .lesson-comment__meta time { font-size: .63rem; }
+  .lesson-comment__edited { display: none; }
+  .lesson-comment__actions { gap: .15rem; }
+  .lesson-comment__react, .lesson-comment__link { padding-inline: .48rem; font-size: .68rem; }
+  .lesson-comments__composer { padding: .8rem; }
+  .lesson-comments__composer textarea { min-height: 92px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-comments *, .lesson-comments *::before, .lesson-comments *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

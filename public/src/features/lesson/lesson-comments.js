@@ -38,22 +38,39 @@ function timeAgo(iso) {
 
 export function renderLessonComments() {
   return `<section class="lesson-comments" aria-labelledby="lessonCommentsTitle">
-    <div class="lesson-comments__head">
-      <h2 id="lessonCommentsTitle">مجتمع الدرس</h2>
+    <div class="lesson-comments__ambient" aria-hidden="true"></div>
+    <header class="lesson-comments__head">
+      <div class="lesson-comments__identity">
+        <span class="lesson-comments__mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-9.5A7.5 7.5 0 0 1 10.5 4H12"/><path d="M15 3h6M18 0v6M7.5 10h7M7.5 14h4"/></svg></span>
+        <div class="lesson-comments__heading-copy">
+          <span class="lesson-comments__eyebrow">مساحة التعلّم المشتركة</span>
+          <h2 id="lessonCommentsTitle">مجتمع الدرس</h2>
+          <p>تبادل الأفكار والأسئلة مع زملائك حول هذا الدرس.</p>
+        </div>
+      </div>
+      <div class="lesson-comments__stat" aria-live="polite">
+        <strong id="lessonCommentsVisibleCount">0</strong>
+        <span>مشاركة ظاهرة</span>
+      </div>
+    </header>
+    <div class="lesson-comments__toolbar">
+      <span class="lesson-comments__toolbar-label">ترتيب النقاش</span>
       <div class="lesson-comments__sort" role="tablist" aria-label="ترتيب المشاركات">
         ${SORTS.map((s, i) => `<button type="button" class="lesson-comments__sort-btn${i === 0 ? " is-active" : ""}" data-sort="${s.key}" role="tab" aria-selected="${i === 0}">${s.label}</button>`).join("")}
       </div>
     </div>
-    <p class="lesson-comments__hint">شارك فكرة أو اسأل أو ناقش نقطة في الدرس. تُراجع المشاركات قبل نشرها.</p>
+    <div class="lesson-comments__notice"><span class="lesson-comments__notice-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></svg></span><span>تُراجع المشاركات قبل نشرها، للمحافظة على نقاش مفيد ومحترم.</span></div>
     <div class="lesson-comments__list" aria-live="polite"><div class="lesson-comments__skeleton"></div><div class="lesson-comments__skeleton"></div></div>
-    <button type="button" class="lesson-comments__more" hidden>عرض المزيد</button>
-    <form class="lesson-comments__form" data-role="top-level">
-      <label>اكتب تعليقك
-        <textarea maxlength="2000" required placeholder="شارك سؤالاً أو ملاحظة أو شرحاً مفيداً لزملائك…"></textarea>
-      </label>
+    <button type="button" class="lesson-comments__more" hidden>عرض المزيد من المشاركات</button>
+    <form class="lesson-comments__form lesson-comments__composer" data-role="top-level">
+      <div class="lesson-comments__composer-head">
+        <span class="lesson-comments__composer-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></span>
+        <div><label for="lessonCommentInput">أضف إلى النقاش</label><p>سؤالك أو فكرتك قد تساعد زميلاً آخر.</p></div>
+      </div>
+      <textarea id="lessonCommentInput" maxlength="2000" required placeholder="اكتب مشاركة مفيدة أو اسأل عن نقطة في الدرس…"></textarea>
       <div class="lesson-comments__form-row">
-        <span class="lesson-comments__count">0 / 2000</span>
-        <button type="submit">إرسال التعليق</button>
+        <span class="lesson-comments__count" dir="ltr" aria-live="polite">0 / 2000</span>
+        <button type="submit"><span>إرسال المشاركة</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></button>
       </div>
     </form>
   </section>`;
@@ -68,18 +85,25 @@ export function equipLessonComments(root, lessonId) {
   const topForm = section.querySelector('.lesson-comments__form[data-role="top-level"]');
   const topTextarea = topForm.querySelector("textarea");
   const topCount = topForm.querySelector(".lesson-comments__count");
+  const visibleCount = section.querySelector("#lessonCommentsVisibleCount");
 
   const state = { sort: "newest", page: 1, comments: [], hasMore: false, myToken: null };
+
+  function updateTopCount() {
+    const length = topTextarea.value.length;
+    topCount.textContent = `${length} / 2000`;
+    topCount.classList.toggle("is-near-limit", length >= 1800);
+  }
 
   // Restore a preserved top-level draft (plan step 4.4.8 — survive
   // navigation/accidental close).
   const savedDraft = getFromStorage(draftKey(lessonId), "");
   if (savedDraft) {
     topTextarea.value = savedDraft;
-    topCount.textContent = `${savedDraft.length} / 2000`;
+    updateTopCount();
   }
   topTextarea.addEventListener("input", () => {
-    topCount.textContent = `${topTextarea.value.length} / 2000`;
+    updateTopCount();
     setInStorage(draftKey(lessonId), topTextarea.value);
   });
 
@@ -116,11 +140,19 @@ export function equipLessonComments(root, lessonId) {
   }
 
   function renderOne(comment, { isReply = false } = {}) {
+    const author = String(comment.author || "طالب");
+    const initials = Array.from(author.trim())[0] || "ط";
+    const avatarTone = (initials.codePointAt(0) || 0) % 5;
     if (comment.deleted) {
-      return `<article class="lesson-comment${isReply ? " lesson-comment--reply" : ""}" id="comment-${comment.id}" data-id="${comment.id}"><p class="lesson-comment__tombstone">تم حذف هذا التعليق.</p></article>`;
+      return `<article class="lesson-comment${isReply ? " lesson-comment--reply" : ""}" id="comment-${comment.id}" data-id="${comment.id}"><p class="lesson-comment__tombstone"><span aria-hidden="true">⌁</span> تم حذف هذه المشاركة.</p></article>`;
     }
     return `<article class="lesson-comment${isReply ? " lesson-comment--reply" : ""}" id="comment-${comment.id}" data-id="${comment.id}">
-      <div class="lesson-comment__meta"><strong>${escapeHtml(comment.author)}</strong><time>${timeAgo(comment.created_at)}${comment.edited_at ? " · تم التعديل" : ""}</time></div>
+      <div class="lesson-comment__meta">
+        <span class="lesson-comment__avatar lesson-comment__avatar--${avatarTone}" aria-hidden="true">${escapeHtml(initials)}</span>
+        <span class="lesson-comment__author-wrap"><strong>${escapeHtml(author)}</strong><span class="lesson-comment__author-label">${isReply ? "ردّ على النقاش" : "مشارك في الدرس"}</span></span>
+        <time datetime="${escapeHtml(comment.created_at || "")}">${timeAgo(comment.created_at)}</time>
+        ${comment.edited_at ? '<span class="lesson-comment__edited">تم التعديل</span>' : ""}
+      </div>
       <p class="lesson-comment__body">${escapeHtml(comment.body)}</p>
       <div class="lesson-comment__actions">${renderCommentActions(comment)}</div>
       ${!isReply ? `<div class="lesson-comment__replies">${(comment.replies || []).map((r) => renderOne(r, { isReply: true })).join("")}</div>
@@ -128,9 +160,14 @@ export function equipLessonComments(root, lessonId) {
     </article>`;
   }
 
+  function countVisibleComments(comments) {
+    return (comments || []).reduce((count, comment) => count + 1 + (comment.replies?.length || 0), 0);
+  }
+
   function render() {
+    if (visibleCount) visibleCount.textContent = String(countVisibleComments(state.comments));
     if (!state.comments.length) {
-      list.innerHTML = state.page === 1 ? '<p class="lesson-comments__empty">لا توجد مشاركات منشورة بعد. كن أول من يشارك!</p>' : list.innerHTML;
+      list.innerHTML = state.page === 1 ? `<div class="lesson-comments__empty"><span class="lesson-comments__empty-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/><path d="M8 12h8M8 9h5"/></svg></span><strong>ابدأ أول نقاش</strong><span>لا توجد مشاركات منشورة بعد. شارك فكرة أو سؤالاً لتبدأ المحادثة.</span></div>` : list.innerHTML;
     } else {
       const html = state.comments.map((c) => renderOne(c)).join("");
       list.innerHTML = html;
@@ -156,7 +193,7 @@ export function equipLessonComments(root, lessonId) {
 
   async function load({ append = false } = {}) {
     if (!append) {
-      list.innerHTML = '<div class="lesson-comments__skeleton"></div><div class="lesson-comments__skeleton"></div>';
+      list.innerHTML = '<div class="lesson-comments__skeleton"></div><div class="lesson-comments__skeleton"></div><div class="lesson-comments__skeleton"></div>';
     }
     try {
       const token = await ensureToken();
@@ -184,7 +221,8 @@ export function equipLessonComments(root, lessonId) {
       const data = await res.json();
       if (!res.ok) return false;
       const items = data.parent ? [data.parent, data.comment] : [data.comment];
-      list.innerHTML = `<p class="lesson-comments__hint">عرض مشاركة محددة —</p>` + items.map((c, i) => renderOne(c, { isReply: i > 0 && !!data.parent })).join("");
+      if (visibleCount) visibleCount.textContent = String(countVisibleComments(items.filter(Boolean)));
+      list.innerHTML = `<div class="lesson-comments__permalink-note">عرض هذه المشاركة وسياقها في النقاش</div>` + items.map((c, i) => renderOne(c, { isReply: i > 0 && !!data.parent })).join("");
       moreBtn.hidden = true;
       maybeScrollToPermalink();
       return true;
@@ -239,7 +277,7 @@ export function equipLessonComments(root, lessonId) {
     const ok = await submitComment({ body, button });
     if (ok) {
       topTextarea.value = "";
-      topCount.textContent = "0 / 2000";
+      updateTopCount();
       list.insertAdjacentHTML("afterbegin", '<p class="lesson-comments__pending-note">تم إرسال مشاركتك للمراجعة. ستظهر بعد الموافقة عليها.</p>');
     }
   });
