@@ -937,40 +937,45 @@ function downloadQuizAsJson(quiz) {
  *   - courses mixed with folders/quizzes       -> "mixed" (blocked; courses
  *                                                 must be uploaded alone
  *                                                 with their own contents)
- *   - folders (+ optionally loose quizzes),
+ *   - folders (+ optionally loose quizzes/lessons),
  *     no courses                               -> "folder" wizard
+ *   - lessons (with optional quizzes),
+ *     no courses/folders                       -> "folder" wizard (choose a
+ *                                                 destination course)
  *   - quizzes only, no courses/folders          -> "quiz" wizard (existing
  *                                                 single/batch flow)
  * @param {Array} rows - raw user_quizzes rows matching the selection
  * @returns {{
  *   mode: "course"|"folder"|"quiz"|"mixed"|"empty",
- *   courses: Array, folders: Array, quizzes: Array
+ *   courses: Array, folders: Array, quizzes: Array, lessons: Array
  * }}
  */
 function classifyBulkSelection(rows) {
   const courses = [];
   const folders = [];
   const quizzes = [];
+  const lessons = [];
   for (const row of rows) {
     if (row?.meta?.type === "course") courses.push(row);
     else if (row?.meta?.type === "folder") folders.push(row);
+    else if (row?.meta?.type === "lesson") lessons.push(row);
     else quizzes.push(row);
   }
 
   let mode;
-  if (courses.length === 0 && folders.length === 0 && quizzes.length === 0) {
+  if (courses.length === 0 && folders.length === 0 && quizzes.length === 0 && lessons.length === 0) {
     mode = "empty";
-  } else if (courses.length > 0 && (folders.length > 0 || quizzes.length > 0)) {
+  } else if (courses.length > 0 && (folders.length > 0 || quizzes.length > 0 || lessons.length > 0)) {
     mode = "mixed";
   } else if (courses.length > 0) {
     mode = "course";
-  } else if (folders.length > 0) {
+  } else if (folders.length > 0 || lessons.length > 0) {
     mode = "folder";
   } else {
     mode = "quiz";
   }
 
-  return { mode, courses, folders, quizzes };
+  return { mode, courses, folders, quizzes, lessons };
 }
 
 /**
@@ -982,24 +987,32 @@ function classifyBulkSelection(rows) {
  * @param {Array} selected - raw user_quizzes rows matching the selection
  */
 function routeBulkUpload(selected) {
-  if (selected.some((row) => row?.meta?.type === "lesson")) {
-    showNotification("الدروس لا تُرفع بعد", "نشر الدروس سيُضاف في مرحلة لاحقة.", "warning");
-    return;
-  }
-  const { mode, courses, folders, quizzes } = classifyBulkSelection(selected);
+  const { mode, courses, folders, quizzes, lessons } = classifyBulkSelection(selected);
 
   if (mode === "empty") return;
 
   if (mode === "mixed") {
     showNotification(
       "لا يمكن رفع هذا التحديد معاً",
-      `المواد ترفع وحدها مع محتوياتها الكاملة. تم تحديد ${courses.length} مادة مع ${folders.length + quizzes.length} عنصر آخر — ألغِ تحديد المواد أو حددها بمفردها.`,
+      `المواد ترفع وحدها مع محتوياتها الكاملة. تم تحديد ${courses.length} مادة مع ${folders.length + quizzes.length + lessons.length} عنصر آخر — ألغِ تحديد المواد أو حددها بمفردها.`,
       "warning",
     );
     return;
   }
 
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const selectedFolderIds = new Set(folders.map((item) => item.id || item.meta?.id));
+  const standaloneLessons = lessons.filter((lesson) => {
+    let parentId = lesson.meta?.parentId || null;
+    const visited = new Set();
+    while (parentId && !visited.has(parentId)) {
+      if (selectedFolderIds.has(parentId)) return false;
+      visited.add(parentId);
+      const parent = userQuizzes.find((item) => (item.id || item.meta?.id) === parentId);
+      parentId = parent?.meta?.parentId || null;
+    }
+    return true;
+  });
 
   if (mode === "course") {
     import("./adminUpload.js").then((mod) => {
@@ -1010,7 +1023,7 @@ function routeBulkUpload(selected) {
 
   if (mode === "folder") {
     import("./adminUpload.js").then((mod) => {
-      mod.openFolderUploadModal({ folders, quizzes, userQuizzes });
+      mod.openFolderUploadModal({ folders, quizzes, lessons: standaloneLessons, userQuizzes });
     });
     return;
   }

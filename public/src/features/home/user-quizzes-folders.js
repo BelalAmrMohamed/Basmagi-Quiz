@@ -1378,7 +1378,7 @@ async function importFolderTree(jsonFiles, skippedCount = 0) {
 // These turn a slice of the local `user_quizzes` tree into the flat `items`
 // array api/upload-quiz.js's "folder" mode expects (see that file's header
 // comment for the exact shape). Both builders share the same node shape:
-//   { type: "course"|"folder"|"quiz", name, folderSegments, rootName, quiz? }
+//   { type: "course"|"folder"|"quiz"|"lesson", name, folderSegments, rootName, quiz?|lesson? }
 // `folderSegments` is always the ordered chain of ancestor names ABOVE the
 // node (never including the node's own name) — courses have none, a folder
 // has its course's name (+ any ancestor folders) directly above it, and a
@@ -1433,8 +1433,19 @@ function quizToPayload(entry) {
   };
 }
 
+function lessonToPayload(entry) {
+  return {
+    title: (entry.meta?.title || "").trim() || "درس بدون عنوان",
+    description: entry.meta?.description || "",
+    source: entry.meta?.source || "",
+    content: { sections: entry.lesson?.sections || entry.content?.sections || [] },
+    readerPrefsDefault: entry.meta?.readerPrefs || null,
+    passwordHash: entry.passwordHash || "",
+  };
+}
+
 /**
- * Recursively appends every descendant of `node` (folders + quizzes) into
+ * Recursively appends every descendant of `node` (folders + quizzes + lessons) into
  * `items`, tagging each with the ancestor chain above it (`ancestorNames`).
  * Shared by both buildCourseUploadPayload and buildFolderUploadPayload —
  * the only difference between the two callers is what ancestorNames starts
@@ -1445,14 +1456,17 @@ function appendSubtree(userQuizzes, node, ancestorNames, rootName, items) {
   for (const child of children) {
     const childId = child.id || child.meta?.id;
     const childName = (child.meta?.title || "").trim();
-    // Lessons have no upload path yet (the admin create-lesson endpoint has no
-    // client caller, and routeBulkUpload refuses lessons in a direct
-    // selection). Without this skip, a lesson nested inside an uploaded
-    // folder/course fell into the quiz branch below and was serialized as an
-    // empty quiz (questions: []) — which the server rejects wholesale or
-    // publishes as a blank quiz. Skipping is silent by design here: the
-    // folder upload itself is still valid, it just doesn't carry its lessons.
-    if (child.meta?.type === "lesson" || child.meta?.type === "draft-lesson") continue;
+    if (child.meta?.type === "draft-lesson") continue;
+    if (child.meta?.type === "lesson") {
+      items.push({
+        type: "lesson",
+        name: childName || "درس بدون عنوان",
+        folderSegments: [...ancestorNames],
+        rootName,
+        lesson: lessonToPayload(child),
+      });
+      continue;
+    }
     if (child.meta?.type === "folder") {
       items.push({
         type: "folder",
@@ -1510,7 +1524,7 @@ export function buildCourseUploadPayload(userQuizzes, courseItems) {
  *   names under the course to nest everything one level deeper into
  * @returns {{ items: Array, rootName: string }}
  */
-export function buildFolderUploadPayload(userQuizzes, folderItems, additionalQuizzes, targetCourseName, targetSubfolderPath = []) {
+export function buildFolderUploadPayload(userQuizzes, folderItems, additionalQuizzes, targetCourseName, targetSubfolderPath = [], additionalLessons = []) {
   const items = [];
   const baseChain = [targetCourseName, ...targetSubfolderPath];
 
@@ -1532,6 +1546,16 @@ export function buildFolderUploadPayload(userQuizzes, folderItems, additionalQui
       folderSegments: [...baseChain],
       rootName: targetCourseName,
       quiz: quizToPayload(quiz),
+    });
+  }
+
+  for (const lesson of additionalLessons || []) {
+    items.push({
+      type: "lesson",
+      name: (lesson.meta?.title || "").trim() || "درس بدون عنوان",
+      folderSegments: [...baseChain],
+      rootName: targetCourseName,
+      lesson: lessonToPayload(lesson),
     });
   }
 

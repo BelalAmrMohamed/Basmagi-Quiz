@@ -20,7 +20,7 @@ import {
   isAdminAuthenticated,
   hasAdminSessionHint,
 } from "../../shared/adminAuth.js";
-import { createUploadButton } from "./adminUpload.js";
+import { createUploadButton, createLessonUploadButton } from "./adminUpload.js";
 import { showUserQuizDownloadPopup } from "./download-modal.js";
 import { showUserQuizInfoModal, formatDateForInfo } from "./quiz-info-modal.js";
 import { showUserLessonInfoModal, collectLessonInfo } from "./lesson-info-modal.js";
@@ -376,18 +376,20 @@ export function createUserLessonCard(lesson) {
  * copy: renameItem / openMoveToDialog / deleteFolder all operate on any
  * user_quizzes row by id (deleteFolder is named for folders but its
  * confirm/trash/cascade/refresh path is fully item-generic — see its doc
- * comment). Deliberately absent vs. the quiz menu:
- *   - Admin upload: no client flow exists yet for publishing a lesson (the
- *     admin create-lesson endpoint has no caller), and the bulk bar already
- *     tells the user lessons "don't upload yet" — a dead button here would
- *     contradict that.
- *   - Download formats are available from the lesson card's download button.
+ * comment). Admin uploads use the same placement wizard as folder contents,
+ * while download formats stay on the lesson card's download button.
  */
 export function showUserLessonActionsOverlay(lesson, triggerBtn) {
   const lessonId = lesson.id || lesson.meta?.id;
   const title = lesson.meta?.title || "درس بدون عنوان";
 
   openExamDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
+    if (isAdminAuthenticated() || hasAdminSessionHint()) {
+      const uploadBtn = createLessonUploadButton(lesson);
+      uploadBtn.addEventListener("click", () => closeMenu());
+      menu.appendChild(uploadBtn);
+    }
+
     const editOpt = document.createElement("button");
     editOpt.type = "button";
     editOpt.className = "exam-action-btn";

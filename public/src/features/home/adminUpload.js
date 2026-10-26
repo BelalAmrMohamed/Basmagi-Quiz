@@ -832,20 +832,22 @@ function renderThreadTree(items, root, rootChain) {
   }
 
   function countDescendants(chainKey) {
-    let folders = 0, quizzes = 0;
+    let folders = 0, quizzes = 0, lessons = 0;
     function walk(key) {
       for (const item of items) {
         if ((item.folderSegments || []).join("/") !== key) continue;
         if (item.type === "folder") {
           folders++;
           walk([...(item.folderSegments || []), item.name].join("/"));
+        } else if (item.type === "lesson") {
+          lessons++;
         } else {
           quizzes++;
         }
       }
     }
     walk(chainKey);
-    return { folders, quizzes };
+    return { folders, quizzes, lessons };
   }
 
   // Renders one sibling group (all items whose folderSegments join to
@@ -864,14 +866,17 @@ function renderThreadTree(items, root, rootChain) {
       const li = document.createElement("li");
       if (item.type === "folder") {
         const childKey = [...(item.folderSegments || []), item.name].join("/");
-        const { folders, quizzes } = countDescendants(childKey);
+        const { folders, quizzes, lessons } = countDescendants(childKey);
         const badgeParts = [];
         if (folders) badgeParts.push(`${folders} مجلد`);
         if (quizzes) badgeParts.push(`${quizzes} امتحان`);
+        if (lessons) badgeParts.push(`${lessons} درس`);
         li.appendChild(makeRow("📁", item.name, badgeParts.join(" · "), true));
         appendGroup(li, childKey, depth + 1);
       } else {
-        li.appendChild(makeRow("📝", item.quiz?.meta?.title || item.name || "امتحان", "", true));
+        const isLesson = item.type === "lesson";
+        const label = isLesson ? item.lesson?.title || item.name || "درس" : item.quiz?.meta?.title || item.name || "امتحان";
+        li.appendChild(makeRow(isLesson ? "📖" : "📝", label, "", true));
       }
       sublist.appendChild(li);
     }
@@ -916,6 +921,7 @@ function renderFolderReviewStep(step1Vals) {
   const courseItem = items.find((i) => i.type === "course");
   const folderCount = items.filter((i) => i.type === "folder").length + (courseItem ? 1 : 0);
   const quizCount = items.filter((i) => i.type === "quiz").length;
+  const lessonCount = items.filter((i) => i.type === "lesson").length;
   const rootLabel = courseItem ? courseItem.name : rootName;
   const rootChain = courseItem ? [rootLabel] : [];
   const nonRootItems = courseItem ? items.filter((i) => i !== courseItem) : items;
@@ -924,7 +930,7 @@ function renderFolderReviewStep(step1Vals) {
     ${hdr("رفع مجلد إلى قاعدة البيانات")}
     ${stepsHTML(2)}
     <div class="adm-body">
-      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد/مادة ورفع ${quizCount} امتحان</p>
+      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد/مادة ورفع ${quizCount} امتحان و${lessonCount} درس</p>
       <div id="adm-tree-holder" style="max-height:320px;overflow-y:auto;"></div>
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-folder-back">→ رجوع</button>
@@ -985,17 +991,19 @@ async function doFolderUpload({ educationType, college, year, term }) {
 
   const hintEl = document.getElementById("adm-folder-hint");
   const resultEl = document.getElementById("adm-folder-result");
-  const { foldersCreated, quizzesUploaded, failed } = result;
+  const { foldersCreated, quizzesUploaded, lessonsUploaded = 0, failed } = result;
 
   if (hintEl) {
     if (failed.length === 0) {
-      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد/مادة ورفع ${quizzesUploaded} امتحان بنجاح!`;
+      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد/مادة ورفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس بنجاح!`;
       hintEl.style.color = "var(--color-success)";
       showNotification("تم الرفع بنجاح ✅", "success");
+      invalidateManifestCache();
     } else {
-      hintEl.textContent = `تم رفع ${quizzesUploaded} • فشل ${failed.length}`;
-      hintEl.style.color = quizzesUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} امتحان (فشل ${failed.length})`, "warning");
+      hintEl.textContent = `تم رفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس • فشل ${failed.length}`;
+      hintEl.style.color = quizzesUploaded + lessonsUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
+      if (quizzesUploaded + lessonsUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس (فشل ${failed.length})`, "warning");
+      invalidateManifestCache();
     }
   }
 
@@ -1045,9 +1053,11 @@ function renderCourseUploadReviewStep(step1Vals) {
     const { items } = buildCourseUploadPayload(userQuizzes, [course]);
     const folderCount = items.filter((i) => i.type === "folder").length;
     const quizCount = items.filter((i) => i.type === "quiz").length;
+    const lessonCount = items.filter((i) => i.type === "lesson").length;
     const badgeParts = [];
     if (folderCount) badgeParts.push(`${folderCount} مجلد`);
     if (quizCount) badgeParts.push(`${quizCount} امتحان`);
+    if (lessonCount) badgeParts.push(`${lessonCount} درس`);
     treeHolder.appendChild(
       renderThreadTree(items, { icon: "📚", label: courseName, badge: badgeParts.join(" · ") }, [courseName]),
     );
@@ -1098,18 +1108,18 @@ async function doCourseUpload({ educationType, college, year, term }) {
 
   const hintEl = document.getElementById("adm-course-hint");
   const resultEl = document.getElementById("adm-course-result");
-  const { coursesCount, foldersCreated, quizzesUploaded, failed } = result;
+  const { coursesCount, foldersCreated, quizzesUploaded, lessonsUploaded = 0, failed } = result;
 
   if (hintEl) {
     if (failed.length === 0) {
-      hintEl.textContent = `✅ تم إنشاء ${coursesCount} مادة و${foldersCreated} مجلد ورفع ${quizzesUploaded} امتحان بنجاح!`;
+      hintEl.textContent = `✅ تم إنشاء ${coursesCount} مادة و${foldersCreated} مجلد ورفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس بنجاح!`;
       hintEl.style.color = "var(--color-success)";
       showNotification("تم الرفع بنجاح ✅", "success");
       invalidateManifestCache();
     } else {
-      hintEl.textContent = `تم رفع ${quizzesUploaded} • فشل ${failed.length}`;
-      hintEl.style.color = quizzesUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} امتحان (فشل ${failed.length})`, "warning");
+      hintEl.textContent = `تم رفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس • فشل ${failed.length}`;
+      hintEl.style.color = quizzesUploaded + lessonsUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
+      if (quizzesUploaded + lessonsUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس (فشل ${failed.length})`, "warning");
       invalidateManifestCache();
     }
   }
@@ -1215,12 +1225,13 @@ function renderFolderUploadTargetStep(step1Vals) {
 
 // ─── Folder Upload mode: Review step (Step 3 of 4) ─────────────────────────
 function renderFolderUploadReviewStep(step1Vals) {
-  const { folderRows, quizRows, userQuizzes } = _folderUploadItems;
+  const { folderRows, quizRows, lessonRows, userQuizzes } = _folderUploadItems;
   const { courseName, subfolderPath } = _folderUploadTarget;
-  const { items } = buildFolderUploadPayload(userQuizzes, folderRows, quizRows, courseName, subfolderPath);
+  const { items } = buildFolderUploadPayload(userQuizzes, folderRows, quizRows, courseName, subfolderPath, lessonRows);
 
   const folderCount = items.filter((i) => i.type === "folder").length;
   const quizCount = items.filter((i) => i.type === "quiz").length;
+  const lessonCount = items.filter((i) => i.type === "lesson").length;
   const destinationLabel = subfolderPath.length > 0
     ? `${courseName} ← ${subfolderPath.join(" ← ")}`
     : courseName;
@@ -1229,7 +1240,7 @@ function renderFolderUploadReviewStep(step1Vals) {
     ${hdr("رفع المجلد إلى المنصة")}
     ${stepsHTML(3)}
     <div class="adm-body">
-      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد ورفع ${quizCount} امتحان داخل "${destinationLabel}"</p>
+      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد ورفع ${quizCount} امتحان و${lessonCount} درس داخل "${destinationLabel}"</p>
       <div id="adm-tree-holder" style="max-height:320px;overflow-y:auto;"></div>
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-folder-target-back">→ رجوع</button>
@@ -1249,9 +1260,9 @@ function renderFolderUploadReviewStep(step1Vals) {
 
 // ─── Folder Upload mode: Upload step (Step 4 of 4) ─────────────────────────
 async function doFolderUploadToExisting({ educationType, college, year, term }) {
-  const { folderRows, quizRows, userQuizzes } = _folderUploadItems;
+  const { folderRows, quizRows, lessonRows, userQuizzes } = _folderUploadItems;
   const { courseName, subfolderPath } = _folderUploadTarget;
-  const { items } = buildFolderUploadPayload(userQuizzes, folderRows, quizRows, courseName, subfolderPath);
+  const { items } = buildFolderUploadPayload(userQuizzes, folderRows, quizRows, courseName, subfolderPath, lessonRows);
 
   _overlay.innerHTML = `<div class="adm-card">
     ${hdr("رفع المجلد إلى المنصة")}
@@ -1288,18 +1299,18 @@ async function doFolderUploadToExisting({ educationType, college, year, term }) 
 
   const hintEl = document.getElementById("adm-folder-target-hint");
   const resultEl = document.getElementById("adm-folder-target-result");
-  const { foldersCreated, quizzesUploaded, failed } = result;
+  const { foldersCreated, quizzesUploaded, lessonsUploaded = 0, failed } = result;
 
   if (hintEl) {
     if (failed.length === 0) {
-      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد ورفع ${quizzesUploaded} امتحان بنجاح!`;
+      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد ورفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس بنجاح!`;
       hintEl.style.color = "var(--color-success)";
       showNotification("تم الرفع بنجاح ✅", "success");
       invalidateManifestCache();
     } else {
-      hintEl.textContent = `تم رفع ${quizzesUploaded} • فشل ${failed.length}`;
-      hintEl.style.color = quizzesUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} امتحان (فشل ${failed.length})`, "warning");
+      hintEl.textContent = `تم رفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس • فشل ${failed.length}`;
+      hintEl.style.color = quizzesUploaded + lessonsUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
+      if (quizzesUploaded + lessonsUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس (فشل ${failed.length})`, "warning");
       invalidateManifestCache();
     }
   }
@@ -1699,15 +1710,15 @@ export async function openCourseUploadModal(courseRows, userQuizzes) {
 /**
  * Entry point for the "☁️ رفع المجلد إلى المنصة" action — uploads one or
  * more EXISTING local folders (with their nested contents), plus optional
- * loose quizzes selected alongside them, into an EXISTING course already on
+ * loose quizzes or lessons selected alongside them, into an EXISTING course already on
  * the platform.
  * Flow: Track -> Target course/subfolder -> Review -> Upload.
- * @param {{folders: Array, quizzes: Array, userQuizzes: Array}} selection
+ * @param {{folders: Array, quizzes: Array, lessons?: Array, userQuizzes: Array}} selection
  *   - folders: selected user_quizzes rows with meta.type === "folder"
- *   - quizzes: selected plain-quiz rows to upload alongside the folders
+ *   - quizzes/lessons: selected plain items to upload alongside the folders
  *   - userQuizzes: full local user_quizzes collection
  */
-export async function openFolderUploadModal({ folders, quizzes, userQuizzes }) {
+export async function openFolderUploadModal({ folders, quizzes, lessons, userQuizzes }) {
   if (_overlay) return;
   if (!isAdminAuthenticated()) {
     showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
@@ -1716,7 +1727,8 @@ export async function openFolderUploadModal({ folders, quizzes, userQuizzes }) {
   }
   const folderRows = folders || [];
   const quizRows = quizzes || [];
-  if (folderRows.length === 0 && quizRows.length === 0) {
+  const lessonRows = lessons || [];
+  if (folderRows.length === 0 && quizRows.length === 0 && lessonRows.length === 0) {
     showNotification("لا توجد عناصر لرفعها", "warning");
     return;
   }
@@ -1725,7 +1737,7 @@ export async function openFolderUploadModal({ folders, quizzes, userQuizzes }) {
 
   try {
     _mode = "folderUpload";
-    _folderUploadItems = { folderRows, quizRows, userQuizzes };
+    _folderUploadItems = { folderRows, quizRows, lessonRows, userQuizzes };
     _folderUploadTarget = null;
     _courseUploadItems = null;
     _folderTree = null;
@@ -1850,6 +1862,21 @@ export function createUploadButton(quiz) {
   btn.setAttribute("aria-label", `رفع "${quiz.title}" إلى قاعدة البيانات`);
   btn.innerHTML = `${UPLOAD_ICON_SVG}<span>رفع لقاعدة البيانات</span>`;
   btn.addEventListener("click", (e) => { e.stopPropagation(); openModal(quiz); });
+  return btn;
+}
+
+/** Upload one locally saved lesson into a selected existing platform course. */
+export function createLessonUploadButton(lesson) {
+  injectStyles();
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "exam-action-btn";
+  btn.setAttribute("aria-label", `رفع درس "${lesson.meta?.title || "درس"}" إلى المنصة`);
+  btn.innerHTML = `${UPLOAD_ICON_SVG}<span>رفع لقاعدة البيانات</span>`;
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openFolderUploadModal({ folders: [], quizzes: [], lessons: [lesson], userQuizzes: [] });
+  });
   return btn;
 }
 

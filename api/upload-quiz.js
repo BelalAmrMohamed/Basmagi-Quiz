@@ -49,7 +49,9 @@ import {
 } from "../scripts/lib/quizPath.js";
 import { resolveCourse, resolveFolderPath, validateBatchCourseRules } from "./_courseFolders.js";
 import { notifySearchEngines } from "./_seoNotify.js";
-import { quizUrl } from "./_urls.js";
+import { quizUrl, lessonUrl } from "./_urls.js";
+import { validateLessonContent, validateLessonDescription, validateLessonSource, validateLessonPasswordHash } from "./_validateLesson.js";
+import { validateItemName, hasLessonNameCollision } from "./_itemActions.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -77,7 +79,7 @@ async function resolveAdminIdentity(adminPayload) {
 function checkScope(adminPayload, education_type, res) {
   if (!adminPayload.isOwner && adminPayload.allowed_scopes) {
     if (!adminPayload.allowed_scopes.includes(education_type)) {
-      res.status(403).json({ error: "ليس لديك صلاحية لإضافة امتحانات في هذا المسار." });
+      res.status(403).json({ error: "ليس لديك صلاحية لإضافة محتوى في هذا المسار." });
       return false;
     }
   }
@@ -282,6 +284,7 @@ async function handleSingleUpload(req, res, adminPayload) {
 //   { type: "course", name, rootName },
 //   { type: "folder", name, folderSegments: ["CourseName"], rootName },
 //   { type: "quiz", folderSegments: ["CourseName","Unit1"], rootName, quiz },
+//   { type: "lesson", folderSegments: ["CourseName","Unit1"], rootName, lesson },
 //   ...
 // ]
 // Each item's `folderSegments` is the ordered chain of ancestor
@@ -398,8 +401,9 @@ async function handleFolderUpload(req, res, adminPayload) {
     return id;
   }
 
-  const results = { coursesCount: courseIdByName.size, foldersCreated: 0, quizzesUploaded: 0, failed: [] };
+  const results = { coursesCount: courseIdByName.size, foldersCreated: 0, quizzesUploaded: 0, lessonsUploaded: 0, failed: [] };
   const uploadedQuizUrls = []; // batched for one notifySearchEngines call after the loop (plan §7.2 rule of thumb)
+  const uploadedLessonUrls = [];
 
   for (const item of items) {
     if (item.type === "course") continue; // already resolved above
@@ -415,6 +419,51 @@ async function handleFolderUpload(req, res, adminPayload) {
         const before = folderIdByKey.size;
         await resolveFolderChain(targetCourseId, itemCourseName, fullChain);
         if (folderIdByKey.size > before) results.foldersCreated++;
+        continue;
+      }
+
+      if (item.type === "lesson") {
+        const lesson = item.lesson || {};
+        const titleCheck = validateItemName(lesson.title || item.name);
+        if (!titleCheck.ok) throw new Error(titleCheck.error);
+        const content = validateLessonContent(lesson.content);
+        const description = validateLessonDescription(lesson.description);
+        const source = validateLessonSource(lesson.source);
+        const passwordHash = validateLessonPasswordHash(lesson.passwordHash);
+        const folderId = await resolveFolderChain(targetCourseId, itemCourseName, item.folderSegments || []);
+        const collision = await hasLessonNameCollision(supabase, {
+          courseId: targetCourseId,
+          folderId,
+          title: titleCheck.clean,
+        });
+        if (collision) {
+          results.failed.push({ name: titleCheck.clean, reason: "يوجد درس بنفس الاسم في هذا المكان" });
+          continue;
+        }
+
+        const { data: insertedLesson, error: insertLessonErr } = await supabase
+          .from("lessons")
+          .insert({
+            title: titleCheck.clean,
+            description: description || null,
+            source: source || null,
+            content,
+            password_hash: passwordHash ? crypto.createHash("sha256").update(passwordHash, "utf8").digest("hex") : null,
+            reader_prefs_default: lesson.readerPrefsDefault && typeof lesson.readerPrefsDefault === "object" && !Array.isArray(lesson.readerPrefsDefault)
+              ? lesson.readerPrefsDefault
+              : null,
+            course_id: targetCourseId,
+            folder_id: folderId,
+            created_by: adminId,
+          })
+          .select("id, slug")
+          .single();
+        if (insertLessonErr) {
+          results.failed.push({ name: titleCheck.clean, reason: insertLessonErr.message });
+          continue;
+        }
+        results.lessonsUploaded++;
+        uploadedLessonUrls.push(lessonUrl(insertedLesson.slug || insertedLesson.id));
         continue;
       }
 
@@ -506,9 +555,12 @@ async function handleFolderUpload(req, res, adminPayload) {
   if (uploadedQuizUrls.length > 0) {
     notifySearchEngines({ add: uploadedQuizUrls, reason: "upload-quiz:folder" });
   }
+  if (uploadedLessonUrls.length > 0) {
+    notifySearchEngines({ add: uploadedLessonUrls, reason: "upload-quiz:folder-lessons" });
+  }
 
-  const isSuccess = results.quizzesUploaded > 0 || results.foldersCreated > 0 || courseIdByName.size > 0;
-  return res.status(results.failed.length > 0 && results.quizzesUploaded === 0 && results.foldersCreated === 0 ? 207 : 201).json({
+  const isSuccess = results.quizzesUploaded > 0 || results.lessonsUploaded > 0 || results.foldersCreated > 0 || courseIdByName.size > 0;
+  return res.status(results.failed.length > 0 && results.quizzesUploaded === 0 && results.lessonsUploaded === 0 && results.foldersCreated === 0 ? 207 : 201).json({
     success: isSuccess,
     courseIds: Array.from(courseIdByName.values()),
     ...results,
