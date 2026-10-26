@@ -21,7 +21,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ### Settings Page
 - Implement search in the `اشتراكات المواد`, because courses can get so much. 
-- I'm experiencing too much confusing and weird behaviors
+
+### Creating Lessons using the `إنشاء درس جديد` modal
+- When the JSON includes the Description and the Source, they don't get set.
 
 ### AI Agent
 

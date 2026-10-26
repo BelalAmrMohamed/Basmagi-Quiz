@@ -228,12 +228,50 @@ async function init() {
   try {
     const manifest = await getManifest();
     categoryTree = manifest.categoryTree || {};
+    document.querySelector(".onboarding-load-error")?.remove();
+    document.getElementById("progressContainer")?.removeAttribute("hidden");
+    document.querySelector(".wizard-content")?.removeAttribute("hidden");
+    document.querySelector(".wizard-actions")?.removeAttribute("hidden");
     loadDraft();
     setupEventListeners();
     renderStep();
+    return true;
   } catch (e) {
     console.error("Failed to load manifest", e);
-    _alert("Failed to load application data. Please refresh.");
+    showManifestLoadError();
+    return false;
+  }
+}
+
+function showManifestLoadError() {
+  const container = document.querySelector(".wizard-container");
+  if (!container) return;
+  document.getElementById("progressContainer")?.setAttribute("hidden", "");
+  container.querySelector(".wizard-content")?.setAttribute("hidden", "");
+  container.querySelector(".wizard-actions")?.setAttribute("hidden", "");
+
+  let panel = container.querySelector(".onboarding-load-error");
+  if (!panel) {
+    panel = document.createElement("section");
+    panel.className = "onboarding-load-error";
+    panel.setAttribute("role", "alert");
+    panel.innerHTML = `
+      <div class="onboarding-load-error__icon" aria-hidden="true">⚠️</div>
+      <h2>تعذّر تحميل بيانات المنصة</h2>
+      <p>تحقق من اتصال الإنترنت ثم أعد المحاولة لتحميل المواد وخيارات الدراسة.</p>
+      <button type="button" class="btn btn-primary">إعادة المحاولة</button>
+    `;
+    container.querySelector(".wizard-content")?.before(panel);
+    panel.querySelector("button").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      button.textContent = "جارٍ إعادة المحاولة…";
+      const recovered = await init();
+      if (!recovered && button.isConnected) {
+        button.disabled = false;
+        button.textContent = "إعادة المحاولة";
+      }
+    });
   }
 }
 

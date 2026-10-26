@@ -160,6 +160,7 @@
             rel="stylesheet">
     </noscript>
 
+    <link rel="stylesheet" href="src/styles/themes.css">
     <link rel="stylesheet" href="src/features/onboarding/onboarding.css">
     <link rel="stylesheet" href="src/components/notifications/notifications.css">
 
@@ -317,8 +318,16 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="src/features/onboarding/onboarding.js"></script>
-    <script defer src="/_vercel/insights/script.js"></script>
+    <script>
+        if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname)) {
+            const insights = document.createElement("script");
+            insights.defer = true;
+            insights.src = "/_vercel/insights/script.js";
+            document.body.appendChild(insights);
+        }
+    </script>
 </body>
 
 </html>
