@@ -495,7 +495,6 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── how-to-upload-a-quiz.html
 │   ├── how-to-use-ai-agent.html
 │   ├── index.html
-│   ├── lesson-comments.html
 │   ├── lesson.html
 │   ├── llms.txt
 │   ├── manifest.json

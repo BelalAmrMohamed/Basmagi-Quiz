@@ -23,6 +23,42 @@
   flex-shrink: 0;
 }
 
+.lesson-dl-modal-card .modal-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.lesson-dl-modal-card .modal-header h2 svg {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 auto;
+  color: var(--color-primary);
+}
+
+.lesson-dl-subtitle {
+  margin: 0;
+  padding: 15px 24px 0;
+  color: var(--color-text-secondary);
+  font-size: .82rem;
+  line-height: 1.7;
+  text-align: right;
+}
+
+.lesson-dl-grid .export-card {
+  min-height: 142px;
+  justify-content: center;
+  border-radius: 14px;
+}
+
+.lesson-dl-grid .export-card[data-format="html"] .export-icon img {
+  border-radius: 10px;
+}
+
+.lesson-dl-grid .export-card[data-format="json"] .export-icon svg {
+  color: #e4a84b;
+}
+
 /* ── Download-button loading spinner ──
    Used by withDownloadLoading() (download-quiz-modal.js) — a small,
    dependency-free spinner (no Lucide/icon-font required, unlike the
@@ -237,6 +273,15 @@
 
   .dl-modal-card .modal-header {
     padding: 16px 16px 12px;
+  }
+
+  .lesson-dl-subtitle {
+    padding: 12px 16px 0;
+    font-size: .75rem;
+  }
+
+  .lesson-dl-grid .export-card {
+    min-height: 126px;
   }
 }
 

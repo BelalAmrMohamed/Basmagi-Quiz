@@ -3503,7 +3503,7 @@
 
 .lesson-comment {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   padding: 1rem 1.05rem .85rem;
   border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
   border-radius: 17px;
@@ -3637,6 +3637,66 @@
   background: color-mix(in srgb, var(--community-accent) 10%, var(--color-surface));
   color: var(--community-accent);
 }
+
+.lesson-comment__avatar-button {
+  position: relative;
+  display: grid;
+  flex: 0 0 39px;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.lesson-comment__author-identity { position: relative; display: inline-flex; flex: 0 0 auto; }
+.lesson-comment__avatar-image { width: 39px; height: 39px; border: 1px solid color-mix(in srgb, var(--community-accent) 35%, var(--color-border)); border-radius: 50%; object-fit: cover; box-shadow: 0 3px 12px rgb(0 0 0 / .14); }
+.lesson-comment__avatar-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--community-accent) 50%, transparent); outline-offset: 3px; }
+.lesson-comment__author-handle { color: var(--community-accent); font-size: .65rem; font-weight: 650; }
+.lesson-comment__role-badge { padding: .22rem .48rem; border: 1px solid color-mix(in srgb, var(--community-accent) 30%, var(--color-border)); border-radius: 999px; background: color-mix(in srgb, var(--community-accent) 9%, var(--color-surface)); color: var(--community-accent); font-size: .58rem; font-weight: 800; white-space: nowrap; }
+
+.lesson-comment__author-card {
+  position: fixed;
+  z-index: 10050;
+  inset-block-end: auto;
+  inset-inline-start: auto;
+  display: grid;
+  width: min(320px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid color-mix(in srgb, var(--community-accent) 28%, var(--color-border));
+  border-radius: 17px;
+  background: var(--color-surface);
+  box-shadow: 0 18px 48px rgb(0 0 0 / .28), 0 0 0 1px rgb(255 255 255 / .035) inset;
+  animation: lesson-author-card-in .16s ease-out both;
+}
+.lesson-comment__author-card[hidden] { display: none; }
+.lesson-comment__author-cover { display: block; height: 88px; overflow: hidden; background: linear-gradient(125deg, color-mix(in srgb, var(--community-accent) 50%, #131a29), color-mix(in srgb, var(--community-accent) 8%, #23283a)); }
+.lesson-comment__author-cover img { width: 100%; height: 100%; object-fit: cover; }
+.lesson-comment__author-card-body { display: grid; justify-items: start; gap: .35rem; padding: .85rem 1rem 1rem; }
+.lesson-comment__author-card-role { padding: .2rem .5rem; border-radius: 999px; background: color-mix(in srgb, var(--community-accent) 12%, var(--color-surface)); color: var(--community-accent); font-size: .61rem; font-weight: 800; }
+.lesson-comment__author-card-body > strong { color: var(--color-text-primary); font-size: .96rem; font-weight: 850; }
+.lesson-comment__author-card-handle { color: var(--community-accent); font-size: .75rem; font-weight: 700; }
+.lesson-comment__author-card-bio { color: var(--color-text-secondary); font-size: .75rem; line-height: 1.7; }
+.lesson-comment__author-profile-link { display: inline-flex; align-items: center; gap: .35rem; margin-top: .25rem; color: var(--community-accent); font-size: .73rem; font-weight: 800; text-decoration: none; }
+.lesson-comment__author-profile-link:hover { text-decoration: underline; }
+.lesson-comment__author-profile-link svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+@keyframes lesson-author-card-in { from { opacity: 0; transform: translateY(5px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.lesson-comment__vote-group { display: inline-grid; justify-items: start; gap: .1rem; }
+.lesson-comment__vote-buttons { display: inline-flex; align-items: center; gap: .2rem; }
+.lesson-comment__react svg { width: 15px; height: 15px; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.lesson-comment__ratio { display: grid; width: calc(100% - .5rem); gap: .2rem; padding-inline: .25rem; }
+.lesson-comment__ratio-labels { display: flex; justify-content: space-between; color: var(--color-text-tertiary, var(--color-text-secondary)); font-size: .57rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+.lesson-comment__ratio-track { display: flex; height: 4px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, #e16d7b 24%, var(--color-surface)); }
+.lesson-comment__ratio-like { display: block; height: 100%; background: linear-gradient(90deg, #38b98c, #56d8a5); transition: width .22s ease; }
+.lesson-comment__ratio-dislike { display: block; height: 100%; background: linear-gradient(90deg, #ef8790, #d85d6d); }
+.lesson-comments__success-note { margin: .7rem 0 0; padding: .65rem .8rem; border: 1px solid color-mix(in srgb, #38b98c 35%, var(--color-border)); border-radius: 11px; background: color-mix(in srgb, #38b98c 9%, var(--color-surface)); color: color-mix(in srgb, #38b98c 78%, var(--color-text-primary)); font-size: .75rem; }
 
 .lesson-comment__link--danger { color: #e06c73; }
 .lesson-comment__link--danger:hover { border-color: color-mix(in srgb, #e06c73 28%, var(--color-border)); background: color-mix(in srgb, #e06c73 9%, var(--color-surface)); color: #e06c73; }
@@ -3779,7 +3839,8 @@
   display: block;
   box-sizing: border-box;
   width: 100%;
-  min-height: 106px;
+  min-height: 44px;
+  max-height: 180px;
   padding: .85rem .95rem;
   border: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
   border-radius: 13px;
@@ -3788,7 +3849,7 @@
   font: inherit;
   font-size: .84rem;
   line-height: 1.7;
-  resize: vertical;
+  resize: none;
   transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 
@@ -3854,6 +3915,18 @@
 
 .lesson-comments__form--reply textarea,
 .lesson-comment__edit-form textarea { min-height: 76px; }
+.lesson-comments__input-wrapper { width: 100%; min-width: 0; min-height: 44px; flex: 0 0 auto; align-self: stretch; }
+.lesson-comments__composer .lesson-comments__input-wrapper { display: block; }
+.lesson-comments__composer .rich-input-highlighter__mirror,
+.lesson-comments__form--reply .rich-input-highlighter__mirror,
+.lesson-comment__edit-form .rich-input-highlighter__mirror { overflow-wrap: anywhere; }
+.lesson-comment__body.md-content { overflow-wrap: anywhere; line-height: 1.75; }
+.lesson-comment__body.md-content > :first-child { margin-top: 0; }
+.lesson-comment__body.md-content > :last-child { margin-bottom: 0; }
+.lesson-comment__body.md-content pre { max-width: 100%; overflow: auto; border-radius: 10px; }
+.lesson-comment__body.md-content table { display: block; max-width: 100%; overflow-x: auto; }
+.lesson-toc .doc-toc-link--comments { display: flex; align-items: center; gap: .45rem; color: var(--community-accent, var(--color-primary)); font-weight: 750; }
+.lesson-toc .doc-toc-link--comments svg { width: 16px; height: 16px; flex: 0 0 auto; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .lesson-comments__form--reply .lesson-comments__form-row button,
 .lesson-comment__edit-form button { min-height: 36px; padding: .45rem .8rem; border-radius: 9px; font-size: .74rem; }
 
@@ -3887,7 +3960,10 @@
   .lesson-comment__actions { gap: .15rem; }
   .lesson-comment__react, .lesson-comment__link { padding-inline: .48rem; font-size: .68rem; }
   .lesson-comments__composer { padding: .8rem; }
-  .lesson-comments__composer textarea { min-height: 92px; }
+  .lesson-comments__composer textarea { min-height: 44px; max-height: 180px; }
+  .lesson-comment__author-card { width: min(320px, calc(100vw - 24px)); }
+  .lesson-comment__actions { flex-wrap: wrap; }
+  .lesson-comment__vote-group { max-width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

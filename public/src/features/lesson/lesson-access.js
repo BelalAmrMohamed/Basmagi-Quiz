@@ -90,6 +90,7 @@ export function requestLessonPassword({
   message = "أدخل كلمة المرور للمتابعة.",
   verify,
   submitLabel = "فتح الدرس",
+  signal,
 } = {}) {
   return new Promise((resolve) => {
     const dialog = document.createElement("div");
@@ -108,6 +109,7 @@ export function requestLessonPassword({
       settled = true;
       try { nativeDialog.close(); } catch { /* no-op */ }
       nativeDialog.remove();
+      signal?.removeEventListener("abort", onAbort);
       if (previousFocus && document.body.contains(previousFocus)) {
         previousFocus.focus({ preventScroll: true });
       }
@@ -115,6 +117,12 @@ export function requestLessonPassword({
     };
 
     const close = () => finish(null);
+    const onAbort = () => close();
+    if (signal?.aborted) {
+      finish(null);
+      return;
+    }
+    signal?.addEventListener("abort", onAbort, { once: true });
     nativeDialog.querySelector("[data-password-close]")?.addEventListener("click", close);
     nativeDialog.querySelector("[data-password-cancel]")?.addEventListener("click", close);
     nativeDialog.addEventListener("cancel", (event) => { event.preventDefault(); close(); });
@@ -145,6 +153,7 @@ export function requestLessonPassword({
       error.hidden = true;
       try {
         const accepted = await verify?.(password);
+        if (settled) return;
         if (!accepted) {
           error.textContent = "كلمة المرور غير صحيحة.";
           error.hidden = false;
@@ -166,12 +175,13 @@ export function requestLessonPassword({
   });
 }
 
-export async function unlockRemoteLesson(idOrSlug, password) {
+export async function unlockRemoteLesson(idOrSlug, password, { signal } = {}) {
   const passwordHash = await sha256Hex(password);
   const response = await fetch(`/api/render-course?contentType=lesson&id=${encodeURIComponent(idOrSlug)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ passwordHash }),
+    signal,
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {

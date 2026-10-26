@@ -9,13 +9,15 @@ import { createGeometryTocScrollSpy } from "../../shared/toc-scroll-spy.js";
 
 const MINIMIZED_KEY = "lesson_toc_minimized";
 
-export function renderLessonToc(visibleSections, visitedSectionIds) {
+export function renderLessonToc(visibleSections, visitedSectionIds, { includeComments = false } = {}) {
   const titled = (visibleSections || []).filter((section) => section?.title);
-  if (titled.length < 2) return "";
+  if (titled.length < 2 && !includeComments) return "";
 
   const items = titled.map((section) => (
     `<li><a class="doc-toc-link" href="#lesson-section-${escapeHtml(section.id)}" data-section-id="${escapeHtml(section.id)}">${escapeHtml(section.title)}</a></li>`
-  )).join("");
+  )).join("") + (includeComments
+    ? `<li><a class="doc-toc-link doc-toc-link--comments" href="#lesson-comments" data-toc-comments-link><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-9.5A7.5 7.5 0 0 1 10.5 4H12"/><path d="M15 3h6M18 0v6M7.5 10h7M7.5 14h4"/></svg> مجتمع الدرس</a></li>`
+    : "");
 
   return (
     `<nav class="doc-toc lesson-toc" id="lessonTocPanel" aria-label="محتويات الدرس">` +
@@ -80,14 +82,23 @@ export function equipLessonToc(root, lessonId) {
     setMinimized(false);
   });
 
-  const links = [...toc.querySelectorAll(".doc-toc-link")];
+  const commentLink = toc.querySelector("[data-toc-comments-link]");
+  commentLink?.addEventListener("click", (event) => {
+    event.preventDefault();
+    const target = root.querySelector("#lesson-comments");
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    closeMobile();
+  });
+
+  const links = [...toc.querySelectorAll(".doc-toc-link[data-section-id]")];
   const sections = links
     .map((link) => root.querySelector(`#lesson-section-${CSS.escape(link.dataset.sectionId)}`))
     .filter(Boolean);
-  if (!sections.length) {
+  if (!sections.length && !commentLink) {
     unregisterPanel();
     return;
   }
+  if (!sections.length) return () => unregisterPanel();
 
   const linkById = new Map(links.map((link) => [link.dataset.sectionId, link]));
   const setActive = (id) => {

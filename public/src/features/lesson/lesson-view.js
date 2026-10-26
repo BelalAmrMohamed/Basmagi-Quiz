@@ -558,6 +558,7 @@ async function openLessonAgentWithPrompt(lesson, normalized, promptText) {
 const prefsCleanupByRoot = new WeakMap();
 const panelCleanupByRoot = new WeakMap();
 const tocCleanupByRoot = new WeakMap();
+const commentsCleanupByRoot = new WeakMap();
 
 function equipPrefs(root, lessonEl, authorDefaults) {
   prefsCleanupByRoot.get(root)?.();
@@ -641,10 +642,12 @@ export async function renderLessonView() {
   prefsCleanupByRoot.get(container)?.();
   panelCleanupByRoot.get(container)?.();
   tocCleanupByRoot.get(container)?.();
+  commentsCleanupByRoot.get(container)?.();
   teardownSelectionActions?.();
   prefsCleanupByRoot.delete(container);
   panelCleanupByRoot.delete(container);
   tocCleanupByRoot.delete(container);
+  commentsCleanupByRoot.delete(container);
   teardownSelectionActions = null;
   container.innerHTML = renderLessonLoadingSkeleton();
 
@@ -750,7 +753,7 @@ export async function renderLessonView() {
       `</div>` +
       `</header>` +
       (() => {
-        const tocHtml = renderLessonToc(visibleSections, progress.visitedSections);
+        const tocHtml = renderLessonToc(visibleSections, progress.visitedSections, { includeComments: !isUserCreated });
         const mainHtml =
           `<main class="lesson-view__main">` +
           `<div class="lesson-view__body">` +
@@ -796,7 +799,7 @@ export async function renderLessonView() {
     equipTts(container);
     equipLessonQuiz(container, paint);
     equipLessonBookmarks(container, lesson.id, paint);
-    if (!isUserCreated) equipLessonComments(container, lesson.id);
+    if (!isUserCreated) commentsCleanupByRoot.set(container, equipLessonComments(container, lesson.id) || (() => { }));
     mountLessonAgent(container, lesson, normalized);
 
     // Rebind selection actions after every repaint (paint() replaces
