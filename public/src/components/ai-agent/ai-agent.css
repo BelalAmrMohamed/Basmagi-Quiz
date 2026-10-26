@@ -565,6 +565,29 @@
   color: #fff;
 }
 
+/* The global rich-token palette is designed for neutral surfaces. User
+   bubbles already sit on the accent gradient, so reusing --color-primary
+   makes command chips disappear into the bubble. Keep the token bright and
+   give it a distinct translucent surface on every theme. */
+.ai-agent-msg--user .rich-input-highlight--command {
+  color: #fff;
+  background: rgba(20, 16, 72, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  font-weight: 750;
+  -webkit-text-fill-color: #fff;
+}
+
+.ai-agent-msg--user .rich-input-highlight--mention {
+  color: #effff8;
+  background: rgba(8, 75, 55, 0.34);
+  border: 1px solid rgba(220, 255, 239, 0.34);
+  border-radius: 6px;
+  font-weight: 700;
+  -webkit-text-fill-color: #effff8;
+}
+
 .ai-agent-msg-attachment {
   display: flex;
   align-items: center;
