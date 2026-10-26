@@ -10,21 +10,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ### Performance, Maintainance, and code quality:
 * The Sidebar/Side-menu's: The sidebar component is a part that is common to all pages. Its JS and CSS are the same and are imported in all pages, but the HTML is duplicated, which means it's extremely hard to maintain and update. And it became to messy. And it's not even the same, the docuement pages don't have the HTML directly in them, it's inserted from a JS file. 
 
-### On the quiz page (quiz.html):
-* The buttons `bookmark-btn` and `flag-btn` should show different icons when their active/not-active.
-* Should have extra top margin as much as the height of the `stats-bar`.
-* Improve the overall UI/UX of the page. 
-
-### The معلومات الامتحان modal: 
-* It's missing the link of the quiz (but on the quiz page it should be just text, not a link).
-* Same for lesson info modal, add the lesson link (as a link on every page).
-
-### Settings Page
-- Implement search in the `اشتراكات المواد`, because courses can be too many to find a specific one. 
-
-### Creating Lessons using the `إنشاء درس جديد` modal
-- When the JSON includes the Description and the Source, they don't get set.
-
 ### AI Agent
 
 #### Dictation

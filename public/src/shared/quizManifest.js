@@ -82,8 +82,11 @@ function saveManifestCache({ quizzes, lessons, courses, folders }) {
       folder_id: q.folder_id,
       title: q.title,
       password: q.password,
-      meta: q.data?.meta,
-      stats: q.data?.stats,
+      // The live manifest now selects just these JSON subfields instead of
+      // downloading each quiz's full question body. Keep accepting the older
+      // nested shape as well so this cache helper remains migration-safe.
+      meta: q.data?.meta || q.meta,
+      stats: q.data?.stats || q.stats,
     }));
     const payload = JSON.stringify({
       // Lessons were added to the catalog in v2. An older snapshot cannot
@@ -224,7 +227,10 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
     Promise.all([
       supabase
         .from("quizzes")
-        .select("id, course_id, folder_id, title, data, password")
+        // Catalog rendering only needs metadata/stats. Selecting `data`
+        // downloads every question body for every quiz, making first loads
+        // several MB and causing the snapshot-aware timeout on mobile links.
+        .select("id, course_id, folder_id, title, meta:data->meta, stats:data->stats, password")
         .order("created_at", { ascending: true }),
       supabase
         .from("lesson_public")
