@@ -14,6 +14,7 @@ import { getUserToken } from "../../shared/userLevel.js";
 import { getToken as getAdminToken, isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { renderMarkdown } from "../../shared/markdown.js";
 import { attachRichInputHighlighter } from "../../shared/rich-input-highlighter.js";
+import { showNotification, _confirm } from "../../components/notifications/notifications.js";
 
 const SORTS = [
   { key: "newest", label: "الأحدث" },
@@ -79,7 +80,7 @@ export function renderLessonComments() {
   </section>`;
 }
 
-export function equipLessonComments(root, lessonId) {
+export async function equipLessonComments(root, lessonId) {
   const section = root.querySelector(".lesson-comments");
   if (!section || !lessonId) return;
 
@@ -707,7 +708,7 @@ export function equipLessonComments(root, lessonId) {
           helper.remove();
           if (!copied) throw new Error("تعذّر نسخ الرابط.");
         }
-        showPublishedNotice("تم نسخ رابط المشاركة.");
+        showNotification("تم نسخ رابط المشاركة.");
       } catch (_) {
         showInteractionError("تعذّر نسخ الرابط. حاول مرة أخرى.");
       }
@@ -784,7 +785,7 @@ export function equipLessonComments(root, lessonId) {
     }
 
     if (action === "delete") {
-      if (!confirm("هل تريد حذف هذا التعليق؟")) return;
+      if (!await _confirm("هل تريد حذف هذا التعليق؟")) return;
       const comment = findComment(id);
       const article = actionBtn.closest(".lesson-comment");
       if (!comment || !article) return;
