@@ -289,6 +289,57 @@ function getLessonTitleDirection(title) {
 }
 
 /**
+ * Detects whether a lesson is predominantly in Arabic or English based on
+ * its title, description, and initial section contents.
+ */
+export function detectLessonLanguage(title, description, sections = []) {
+  const headerText = `${title || ""} ${description || ""}`.trim();
+  const arMatch = headerText.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g) || [];
+  const enMatch = headerText.match(/[A-Za-z]/g) || [];
+
+  if (enMatch.length > 0 && enMatch.length >= arMatch.length * 1.5) {
+    return "en";
+  }
+  if (arMatch.length > 0 && arMatch.length >= enMatch.length * 1.5) {
+    return "ar";
+  }
+
+  // If ambiguous or sparse header, sample the first few sections
+  let sampleText = "";
+  for (const section of (sections || []).slice(0, 3)) {
+    sampleText += ` ${section.title || ""}`;
+    for (const block of (section.blocks || []).slice(0, 2)) {
+      if (block.type === "markdown" && block.body) {
+        sampleText += ` ${block.body.slice(0, 200)}`;
+      }
+    }
+  }
+  const sampleAr = (sampleText.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g) || []).length;
+  const sampleEn = (sampleText.match(/[A-Za-z]/g) || []).length;
+
+  return sampleEn > sampleAr ? "en" : "ar";
+}
+
+/**
+ * Estimates reading time in minutes based on total word count across sections.
+ */
+export function estimateReadingMinutes(sections, lang = "ar") {
+  let wordCount = 0;
+  for (const section of (sections || [])) {
+    if (section.title) wordCount += section.title.trim().split(/\s+/).filter(Boolean).length;
+    for (const block of (section.blocks || [])) {
+      if (block.type === "markdown" && block.body) {
+        wordCount += block.body.trim().split(/\s+/).filter(Boolean).length;
+      } else if (block.prompt) {
+        wordCount += block.prompt.trim().split(/\s+/).filter(Boolean).length;
+      }
+    }
+  }
+  const wpm = lang === "en" ? 200 : 160;
+  return Math.max(1, Math.round(wordCount / wpm));
+}
+
+/**
  * Wires the Start/Download/Info/Ask buttons on every embedded quiz- and
  * lesson-reference card inside `root`. Exported so create-lesson.js's
  * preview overlay (which renders lesson content through this same module's
@@ -373,34 +424,58 @@ function renderSection(section, ctx, isHidden = false) {
 
 /** The reader's font/width/text-size/focus picker — lesson-page-only, not
  * part of the shared markdown engine. */
-export function renderPrefsPopover(prefs) {
+export function renderPrefsPopover(prefs, options = {}) {
+  const isEn = options?.lang === "en";
+  const fontLabels = {
+    default: isEn ? "Default Font" : "الخط الافتراضي",
+    amiri: isEn ? "Amiri (Naskh)" : "Amiri (نسخ)",
+  };
+  const widthLabels = {
+    comfortable: isEn ? "Comfortable" : "مريح",
+    wide: isEn ? "Wide" : "عريض",
+    narrow: isEn ? "Narrow" : "ضيق",
+  };
+  const textSizeLabels = {
+    medium: isEn ? "Medium" : "متوسط",
+    large: isEn ? "Large" : "كبير",
+    xlarge: isEn ? "Extra Large" : "كبير جداً",
+  };
+
   const fontOptions = FONT_CHOICES.map(
     (f) =>
       `<option value="${escapeHtml(f.id)}"${f.id === prefs.fontId ? " selected" : ""}>` +
-      `${escapeHtml(f.label)}</option>`,
+      `${escapeHtml(fontLabels[f.id] || f.label)}</option>`,
   ).join("");
   const widthOptions = WIDTH_CHOICES.map(
     (w) =>
       `<option value="${escapeHtml(w.id)}"${w.id === prefs.widthId ? " selected" : ""}>` +
-      `${escapeHtml(w.label)}</option>`,
+      `${escapeHtml(widthLabels[w.id] || w.label)}</option>`,
   ).join("");
   const textSizeOptions = TEXT_SIZE_CHOICES.map(
     (t) =>
       `<option value="${escapeHtml(t.id)}"${t.id === prefs.textSizeId ? " selected" : ""}>` +
-      `${escapeHtml(t.label)}</option>`,
+      `${escapeHtml(textSizeLabels[t.id] || t.label)}</option>`,
   ).join("");
 
+  const toggleLabel = isEn ? "Reading Settings" : "إعدادات القراءة";
+  const rowLabels = {
+    font: isEn ? "Font" : "الخط",
+    width: isEn ? "Reading Width" : "عرض القراءة",
+    textSize: isEn ? "Text Size" : "حجم النص",
+    focus: isEn ? "Focus Mode" : "وضع التركيز",
+  };
+
   return (
-    `<div class="lesson-prefs">` +
-    `<button type="button" class="lesson-header__action lesson-prefs__toggle" data-lesson-panel-toggle aria-expanded="false" aria-label="إعدادات القراءة" title="إعدادات القراءة">${lessonIcon("settings")}<span class="lesson-header__action-label">إعدادات القراءة</span></button>` +
+    `<div class="lesson-prefs" data-lang="${isEn ? "en" : "ar"}">` +
+    `<button type="button" class="lesson-header__action lesson-prefs__toggle" data-lesson-panel-toggle aria-expanded="false" aria-label="${escapeHtml(toggleLabel)}" title="${escapeHtml(toggleLabel)}">${lessonIcon("settings")}<span class="lesson-header__action-label">${escapeHtml(toggleLabel)}</span></button>` +
     `<div class="lesson-prefs__panel" data-lesson-panel hidden>` +
-    `<label class="lesson-prefs__row"><span>الخط</span>` +
+    `<label class="lesson-prefs__row"><span>${escapeHtml(rowLabels.font)}</span>` +
     `<select class="lesson-prefs__font" data-reader-pref="font">${fontOptions}</select></label>` +
-    `<label class="lesson-prefs__row"><span>عرض القراءة</span>` +
+    `<label class="lesson-prefs__row"><span>${escapeHtml(rowLabels.width)}</span>` +
     `<select class="lesson-prefs__width" data-reader-pref="width">${widthOptions}</select></label>` +
-    `<label class="lesson-prefs__row"><span>حجم النص</span>` +
+    `<label class="lesson-prefs__row"><span>${escapeHtml(rowLabels.textSize)}</span>` +
     `<select class="lesson-prefs__text-size" data-reader-pref="text-size">${textSizeOptions}</select></label>` +
-    `<label class="lesson-prefs__row lesson-prefs__row--switch"><span>وضع التركيز</span>` +
+    `<label class="lesson-prefs__row lesson-prefs__row--switch"><span>${escapeHtml(rowLabels.focus)}</span>` +
     `<input type="checkbox" class="lesson-prefs__focus-mode" data-reader-pref="focus"${prefs.focusMode ? " checked" : ""}></label>` +
     `</div></div>`
   );
@@ -815,6 +890,26 @@ export async function renderLessonView() {
   });
 
   const initialVisibleCount = normalized.sections.length - hiddenSectionIds.size;
+  const lessonLang = detectLessonLanguage(lesson.title, lesson.description, normalized.sections);
+  const isEnglish = lessonLang === "en";
+  const readingMinutes = estimateReadingMinutes(normalized.sections, lessonLang);
+  const hasQuestions = normalized.sections.some((section) =>
+    section.blocks.some((block) => block?.type === "question")
+  );
+
+  const strings = {
+    eyebrow: isEnglish ? "Lesson" : "درس",
+    sectionsCount: (n) => (isEnglish ? `${n} ${n === 1 ? "Section" : "Sections"}` : `عدد الأقسام: ${n}`),
+    readingTime: (m) => (isEnglish ? `~${m} min read` : `~${m} ${m === 1 ? "دقيقة" : m === 2 ? "دقيقتان" : m <= 10 ? "دقائق" : "دقيقة"} قراءة`),
+    quizBadge: isEnglish ? "Interactive Quiz" : "أسئلة تفاعلية",
+    subtitle: isEnglish
+      ? "Read through, track your progress, and ask Al-Basmagi whenever you need clarification."
+      : "تابع القراءة وراجع تقدمك، واسأل الباشــمبصمج عندما تحتاج إلى توضيح.",
+    infoBtn: isEnglish ? "Lesson Info" : "معلومات الدرس",
+    resetBtn: isEnglish ? "Reset Questions" : "إعادة ضبط الأسئلة",
+    quickFactsAria: isEnglish ? "Quick lesson facts" : "معلومات سريعة عن الدرس",
+    toolsAria: isEnglish ? "Lesson tools" : "أدوات الدرس",
+  };
 
   const mainHtml =
     `<main class="lesson-view__main">` +
@@ -826,27 +921,34 @@ export async function renderLessonView() {
     `</main>`;
 
   container.innerHTML =
-    `<article class="lesson-view lesson-view--reader" data-lesson-id="${escapeHtml(lesson.id)}">` +
-    `<header class="lesson-view__header" aria-labelledby="lessonViewTitle">` +
-    `<div class="lesson-view__header-main">` +
+    `<article class="lesson-view lesson-view--reader" data-lesson-id="${escapeHtml(lesson.id)}" data-lesson-lang="${lessonLang}">` +
+    `<header class="lesson-view__header lesson-view__header--${lessonLang}" data-lesson-lang="${lessonLang}" dir="${isEnglish ? "ltr" : "rtl"}" aria-labelledby="lessonViewTitle">` +
     `<div class="lesson-view__header-topline">` +
-    `<div class="lesson-view__eyebrow"><span class="lesson-view__eyebrow-icon">${lessonIcon("book")}</span><span>درس</span></div>` +
-    `<div class="lesson-view__meta" aria-label="معلومات سريعة عن الدرس">` +
-    `<span class="lesson-view__meta-item" data-section-count-label>عدد الأقسام: ${initialVisibleCount}</span>` +
-    (normalized.sections.some((section) => section.blocks.some((block) => block?.type === "question"))
-      ? `<span class="lesson-view__meta-item">أسئلة تفاعلية</span>`
+    `<div class="lesson-view__header-badges">` +
+    `<div class="lesson-view__eyebrow"><span class="lesson-view__eyebrow-icon">${lessonIcon("book")}</span><span class="lesson-view__eyebrow-label">${escapeHtml(strings.eyebrow)}</span></div>` +
+    `<div class="lesson-view__meta" aria-label="${escapeHtml(strings.quickFactsAria)}">` +
+    `<span class="lesson-view__meta-item" data-section-count-label><span class="lesson-view__meta-item-icon">${lessonIcon("layers")}</span><span class="lesson-view__meta-item-text">${escapeHtml(strings.sectionsCount(initialVisibleCount))}</span></span>` +
+    `<span class="lesson-view__meta-item lesson-view__meta-item--time"><span class="lesson-view__meta-item-icon">${lessonIcon("clock")}</span><span class="lesson-view__meta-item-text">${escapeHtml(strings.readingTime(readingMinutes))}</span></span>` +
+    (hasQuestions
+      ? `<span class="lesson-view__meta-item lesson-view__meta-item--quiz"><span class="lesson-view__meta-item-icon">${lessonIcon("sparkle")}</span><span class="lesson-view__meta-item-text">${escapeHtml(strings.quizBadge)}</span></span>`
       : "") +
     `</div>` +
     `</div>` +
-    `<div class="lesson-view__heading"><h1 id="lessonViewTitle" class="lesson-view__title" dir="${getLessonTitleDirection(lesson.title || "")}">${escapeHtml(lesson.title || "")}</h1>${lesson.description?.trim() ? `<p dir="auto" class="lesson-view__description" dir="rtl">${escapeHtml(lesson.description.trim())}</p>` : ""}<p class="lesson-view__subtitle" dir="rtl">تابع القراءة وراجع تقدمك، واسأل الباشــمبصمج عندما تحتاج إلى توضيح.</p></div>` +
     `</div>` +
-    `<div class="lesson-view__header-actions" role="group" aria-label="أدوات الدرس">` +
-    `<button type="button" class="lesson-header__action lesson-view__info-btn" aria-label="معلومات الدرس" title="معلومات الدرس">${lessonIcon("info")}<span class="lesson-header__action-label">معلومات الدرس</span></button>` +
-    renderPrefsPopover(getReaderPrefs(lesson.reader_prefs_default)) +
-    renderLessonBookmarks(lesson.id) +
-    (normalized.sections.some((section) => section.blocks.some((block) => block?.type === "question"))
-      ? `<button type="button" class="lesson-header__action lesson-reset-all" data-reset-all-questions aria-label="إعادة ضبط كل الأسئلة" title="إعادة ضبط كل الأسئلة">${lessonIcon("reset")}<span class="lesson-header__action-label">إعادة ضبط الأسئلة</span></button>`
+    `<div class="lesson-view__heading">` +
+    `<h1 id="lessonViewTitle" class="lesson-view__title" dir="${isEnglish ? "ltr" : "rtl"}">${escapeHtml(lesson.title || "")}</h1>` +
+    (lesson.description?.trim() ? `<p class="lesson-view__description" dir="auto">${escapeHtml(lesson.description.trim())}</p>` : "") +
+    `</div>` +
+    `<div class="lesson-view__header-footer">` +
+    `<div class="lesson-view__subtitle-wrap"><span class="lesson-view__subtitle-icon">${lessonIcon("sparkle")}</span><p class="lesson-view__subtitle" dir="auto">${escapeHtml(strings.subtitle)}</p></div>` +
+    `<div class="lesson-view__header-actions" role="group" aria-label="${escapeHtml(strings.toolsAria)}">` +
+    `<button type="button" class="lesson-header__action lesson-view__info-btn" aria-label="${escapeHtml(strings.infoBtn)}" title="${escapeHtml(strings.infoBtn)}">${lessonIcon("info")}<span class="lesson-header__action-label">${escapeHtml(strings.infoBtn)}</span></button>` +
+    renderPrefsPopover(getReaderPrefs(lesson.reader_prefs_default), { lang: lessonLang }) +
+    renderLessonBookmarks(lesson.id, { lang: lessonLang }) +
+    (hasQuestions
+      ? `<button type="button" class="lesson-header__action lesson-reset-all" data-reset-all-questions aria-label="${escapeHtml(strings.resetBtn)}" title="${escapeHtml(strings.resetBtn)}">${lessonIcon("reset")}<span class="lesson-header__action-label">${escapeHtml(strings.resetBtn)}</span></button>`
       : "") +
+    `</div>` +
     `</div>` +
     `</header>` +
     `<div class="lesson-view__layout${tocHtml ? "" : " lesson-view__layout--no-sidebar"}">` +
@@ -874,7 +976,7 @@ export async function renderLessonView() {
     const headerBookmarksSlot = container.querySelector(".lesson-bookmarks");
     if (headerBookmarksSlot) {
       const temp = document.createElement("div");
-      temp.innerHTML = renderLessonBookmarks(lesson.id);
+      temp.innerHTML = renderLessonBookmarks(lesson.id, { lang: lessonLang });
       if (temp.firstElementChild) {
         headerBookmarksSlot.replaceWith(temp.firstElementChild);
         equipLessonBookmarks(container, lesson.id, handleBookmarksChange);
@@ -909,8 +1011,13 @@ export async function renderLessonView() {
 
     if (newlyRevealed) {
       const visibleCount = normalized.sections.filter((s) => !s.defaultHidden || revealed.has(s.id)).length;
-      const countLabel = container.querySelector("[data-section-count-label]");
-      if (countLabel) countLabel.textContent = `عدد الأقسام: ${visibleCount}`;
+      const countText = container.querySelector("[data-section-count-label] .lesson-view__meta-item-text");
+      if (countText) {
+        countText.textContent = strings.sectionsCount(visibleCount);
+      } else {
+        const countLabel = container.querySelector("[data-section-count-label]");
+        if (countLabel) countLabel.textContent = strings.sectionsCount(visibleCount);
+      }
     }
   };
 
@@ -957,8 +1064,13 @@ export async function renderLessonView() {
     });
 
     const visibleCount = normalized.sections.filter((s) => !s.defaultHidden).length;
-    const countLabel = container.querySelector("[data-section-count-label]");
-    if (countLabel) countLabel.textContent = `عدد الأقسام: ${visibleCount}`;
+    const countText = container.querySelector("[data-section-count-label] .lesson-view__meta-item-text");
+    if (countText) {
+      countText.textContent = strings.sectionsCount(visibleCount);
+    } else {
+      const countLabel = container.querySelector("[data-section-count-label]");
+      if (countLabel) countLabel.textContent = strings.sectionsCount(visibleCount);
+    }
   };
 
   lessonEl.querySelector(".lesson-view__info-btn")?.addEventListener("click", () => {

@@ -16,9 +16,15 @@ export function toggleLessonBookmark(lessonId, sectionId, title = "") {
   else items.push({ sectionId, title, createdAt: new Date().toISOString() });
   all[lessonId] = items; writeAll(all); return items;
 }
-export function renderLessonBookmarks(lessonId) {
+export function renderLessonBookmarks(lessonId, options = {}) {
   const items = getLessonBookmarks(lessonId);
-  return `<div class="lesson-bookmarks"><button type="button" class="lesson-header__action lesson-bookmarks__toggle" aria-expanded="false" aria-label="العلامات المرجعية" title="العلامات المرجعية">${lessonIcon("bookmark")}<span class="lesson-header__action-label">العلامات المرجعية (${items.length})</span></button><div class="lesson-bookmarks__panel" hidden>${items.length ? items.map((item) => `<div class="lesson-bookmarks__item"><button type="button" data-bookmark-jump="${escapeAttr(item.sectionId)}">${escapeText(item.title || "قسم من الدرس")}</button><button type="button" data-bookmark-remove="${escapeAttr(item.sectionId)}" aria-label="إزالة العلامة">×</button></div>`).join("") : `<p>لم تحفظ أي قسم بعد.</p>`}</div></div>`;
+  const isEn = options?.lang === "en";
+  const label = isEn ? `Bookmarks (${items.length})` : `العلامات المرجعية (${items.length})`;
+  const ariaLabel = isEn ? "Bookmarks" : "العلامات المرجعية";
+  const emptyText = isEn ? "No bookmarks saved yet." : "لم تحفظ أي قسم بعد.";
+  const defaultTitle = isEn ? "Lesson Section" : "قسم من الدرس";
+  const removeAria = isEn ? "Remove bookmark" : "إزالة العلامة";
+  return `<div class="lesson-bookmarks" data-lang="${isEn ? "en" : "ar"}"><button type="button" class="lesson-header__action lesson-bookmarks__toggle" aria-expanded="false" aria-label="${escapeAttr(ariaLabel)}" title="${escapeAttr(ariaLabel)}">${lessonIcon("bookmark")}<span class="lesson-header__action-label">${escapeText(label)}</span></button><div class="lesson-bookmarks__panel" hidden>${items.length ? items.map((item) => `<div class="lesson-bookmarks__item"><button type="button" data-bookmark-jump="${escapeAttr(item.sectionId)}">${escapeText(item.title || defaultTitle)}</button><button type="button" data-bookmark-remove="${escapeAttr(item.sectionId)}" aria-label="${escapeAttr(removeAria)}">×</button></div>`).join("") : `<p>${emptyText}</p>`}</div></div>`;
 }
 function escapeText(value) { return String(value).replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c]); }
 function escapeAttr(value) { return escapeText(value); }
