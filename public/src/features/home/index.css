@@ -3131,6 +3131,26 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   opacity: 0.85;
 }
 
+/* "Not subscribed to this course" banner (category-view.js) — reuses the
+   .all-courses-banner shell; only the subscribe button is new. */
+.course-subscribe-banner-btn {
+  flex-shrink: 0;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.course-subscribe-banner-btn:hover {
+  opacity: 0.9;
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;

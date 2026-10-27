@@ -823,7 +823,7 @@ async function fetchImmediateChildren(parentId, isFolder) {
 
     const quizzes = [];
     for (const q of quizRows || []) {
-        if (q.password) continue; // exclude password-gated quizzes (plan §4.3 "quiz_access is unused" note)
+        if (q.password) continue; // exclude password-gated quizzes
         const metaId = q.data?.meta?.id;
         const title = q.data?.meta?.title;
         if (!metaId || !title) continue;

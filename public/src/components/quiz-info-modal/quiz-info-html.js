@@ -6,6 +6,8 @@ import { avatarEngine } from "../../shared/avatarEngine.js";
 export function formatDateForInfo(raw) {
   if (!raw) return null;
   let d = String(raw);
+  // ISO timestamps from the database ("2026-10-28T10:00:00+00:00") → date only.
+  if (/^\d{4}-\d{2}-\d{2}T/.test(d)) return d.slice(0, 10);
   if (d.includes(",")) d = d.split(",")[0];
   else if (d.includes(" - ")) d = d.split(" - ")[0];
   else if (d.includes(" ")) d = d.split(" ")[0];
@@ -46,6 +48,42 @@ export async function fetchCreatorProfile(identifier, type = "handle") {
   } catch (_) {
     return null;
   }
+}
+
+/**
+ * "إعداد" creator card section (avatar + name + handle + profile link).
+ * Returns "" when there is no profile. Shared by the quiz, course and
+ * folder info modals so they all look identical.
+ * @param {{displayName?: string, handle?: string|null, avatarUrl?: string|null, profileUrl?: string}|null} creatorProfile
+ * @param {string} [sectionTitle]
+ */
+export function buildCreatorSectionHtml(creatorProfile, sectionTitle = "إعداد") {
+  if (!creatorProfile) return "";
+  const { displayName, handle, avatarUrl } = creatorProfile;
+  const cleanHandle = handle ? handle.replace(/^@/, "") : "";
+  const profileHref = creatorProfile.profileUrl || (cleanHandle ? `/@${encodeURIComponent(cleanHandle)}` : null);
+  const avatarSrc = avatarUrl || getDefaultAvatarDataUrl(displayName || cleanHandle);
+
+  const WrapperTag = profileHref ? "a" : "div";
+  const hrefAttr = profileHref ? ` href="${profileHref}" target="_blank" rel="noopener noreferrer"` : "";
+
+  return `
+      <div class="quiz-info-section">
+        <div class="quiz-info-section-title">${escapeHtml(sectionTitle)}</div>
+        <${WrapperTag} class="quiz-creator-card"${hrefAttr}>
+          <img src="${escapeHtml(avatarSrc)}" class="quiz-creator-avatar" alt="" loading="lazy" onerror="this.src='${escapeHtml(getDefaultAvatarDataUrl(displayName || cleanHandle))}'" />
+          <div class="quiz-creator-info">
+            <span class="quiz-creator-name">${escapeHtml(displayName || cleanHandle)}</span>
+            ${cleanHandle ? `<span class="quiz-creator-handle">@${escapeHtml(cleanHandle)}</span>` : ""}
+          </div>
+          ${profileHref ? `
+            <span class="quiz-creator-cta">
+              الملف الشخصي
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </span>` : ""}
+        </${WrapperTag}>
+      </div>
+    `;
 }
 
 /**
@@ -99,6 +137,20 @@ export function buildQuizInfoModalHtml(config, questionCount = null, creatorProf
         ${escapeHtml(config.questionTypes)}
       </span>`);
   }
+  if (typeof config.attemptCount === "number") {
+    pills.push(`
+      <span class="quiz-metric-pill" title="عدد مرات حل الامتحان">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        ${config.attemptCount} محاولة
+      </span>`);
+  }
+  if (config.passwordProtected === true) {
+    pills.push(`
+      <span class="quiz-metric-pill" title="الخصوصية">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        محمي بكلمة مرور
+      </span>`);
+  }
   if (config.mode) {
     pills.push(`
       <span class="quiz-metric-pill" title="الوضع الإجباري">
@@ -128,12 +180,40 @@ export function buildQuizInfoModalHtml(config, questionCount = null, creatorProf
   // 3. Classification & Source Grid
   const gridItems = [];
 
-  // Subject (المادة)
-  const subject = config.category || "";
+  // Subject (المادة) + folder path. `category` is the category-tree key
+  // ("Course/Folder/Sub"), so the first segment is the course and the rest
+  // is the folder path inside it.
+  const categorySegments = String(config.category || "").split("/").filter(Boolean);
+  const subject = categorySegments[0] || "";
   if (subject) {
     gridItems.push(`
       <div class="quiz-meta-label">المادة</div>
       <div class="quiz-meta-value">${escapeHtml(subject)}</div>
+    `);
+  }
+  if (categorySegments.length > 1) {
+    gridItems.push(`
+      <div class="quiz-meta-label">المجلد</div>
+      <div class="quiz-meta-value">${escapeHtml(categorySegments.slice(1).join(" › "))}</div>
+    `);
+  }
+  const extraRows = [
+    ["نوع التعليم", config.eduTypeLabel],
+    ["الكلية", config.college],
+    ["العام", config.year],
+    ["الترم", config.term],
+  ];
+  for (const [label, val] of extraRows) {
+    if (val === null || val === undefined || val === "") continue;
+    gridItems.push(`
+      <div class="quiz-meta-label">${label}</div>
+      <div class="quiz-meta-value">${escapeHtml(String(val))}</div>
+    `);
+  }
+  if (typeof config.passwordProtected === "boolean") {
+    gridItems.push(`
+      <div class="quiz-meta-label">الخصوصية</div>
+      <div class="quiz-meta-value">${config.passwordProtected ? "محمي بكلمة مرور" : "عام"}</div>
     `);
   }
 
@@ -143,6 +223,14 @@ export function buildQuizInfoModalHtml(config, questionCount = null, creatorProf
     gridItems.push(`
       <div class="quiz-meta-label">التاريخ</div>
       <div class="quiz-meta-value">${escapeHtml(date)}</div>
+    `);
+  }
+
+  const updated = formatDateForInfo(config.syncedAt);
+  if (updated && updated !== date) {
+    gridItems.push(`
+      <div class="quiz-meta-label">آخر تحديث</div>
+      <div class="quiz-meta-value">${escapeHtml(updated)}</div>
     `);
   }
 
@@ -187,34 +275,7 @@ export function buildQuizInfoModalHtml(config, questionCount = null, creatorProf
   }
 
   // 4. Creator Card — use creatorProfile from account, not quiz meta
-  let creatorHtml = "";
-  if (creatorProfile) {
-    const { displayName, handle, avatarUrl } = creatorProfile;
-    const cleanHandle = handle ? handle.replace(/^@/, "") : "";
-    const profileHref = creatorProfile.profileUrl || (cleanHandle ? `/@${encodeURIComponent(cleanHandle)}` : null);
-    const avatarSrc = avatarUrl || getDefaultAvatarDataUrl(displayName || cleanHandle);
-
-    const WrapperTag = profileHref ? "a" : "div";
-    const hrefAttr = profileHref ? ` href="${profileHref}" target="_blank" rel="noopener noreferrer"` : "";
-
-    creatorHtml = `
-      <div class="quiz-info-section">
-        <div class="quiz-info-section-title">إعداد</div>
-        <${WrapperTag} class="quiz-creator-card"${hrefAttr}>
-          <img src="${escapeHtml(avatarSrc)}" class="quiz-creator-avatar" alt="" loading="lazy" onerror="this.src='${escapeHtml(getDefaultAvatarDataUrl(displayName || cleanHandle))}'" />
-          <div class="quiz-creator-info">
-            <span class="quiz-creator-name">${escapeHtml(displayName || cleanHandle)}</span>
-            ${cleanHandle ? `<span class="quiz-creator-handle">@${escapeHtml(cleanHandle)}</span>` : ""}
-          </div>
-          ${profileHref ? `
-            <span class="quiz-creator-cta">
-              الملف الشخصي
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-            </span>` : ""}
-        </${WrapperTag}>
-      </div>
-    `;
-  }
+  const creatorHtml = buildCreatorSectionHtml(creatorProfile);
 
   // Assemble full inner body
   return `

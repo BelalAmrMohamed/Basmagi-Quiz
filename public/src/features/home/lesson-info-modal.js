@@ -19,6 +19,7 @@
 // ============================================================================
 
 import { escapeHtml } from "./escape-html.js";
+import { buildInfoSkeletonHtml, buildCreatorSectionHtml, fetchCreatorById } from "./info-details.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 import { normalizeLessonContent } from "../lesson/lesson-schema.js";
 import { FONT_CHOICES } from "../lesson/lesson-reader-prefs.js";
@@ -83,6 +84,7 @@ export function collectLessonInfo(row) {
         source: row?.source || row?.meta?.source || "",
         url: `${window.location.origin}/lesson/${encodeURIComponent(row?.slug || row?.id || row?.meta?.id || "")}${row?.meta?.type === "lesson" && row?.id?.startsWith("user_lesson_") ? "?type=user" : ""}`,
         passwordProtected: Boolean(row?.passwordProtected || row?.password_protected || row?.meta?.passwordProtected || row?.passwordHash || row?.password_hash),
+        createdBy: row?.createdBy || row?.created_by || null,
         createdAt: row?.meta?.createdAt || row?.created_at || null,
         updatedAt: row?.meta?.updatedAt || row?.updated_at || null,
         sectionCount: Number.isFinite(resolvedSectionCount) ? resolvedSectionCount : 0,
@@ -207,8 +209,21 @@ export function showUserLessonInfoModal(row) {
     const dialog = document.createElement("dialog");
     dialog.className = "quiz-info-dialog lesson-info-dialog";
     dialog.setAttribute("aria-labelledby", "lessonInfoDialogTitle");
-    dialog.innerHTML = buildLessonInfoHtml(collectLessonInfo(row));
+    const info = collectLessonInfo(row);
+    dialog.innerHTML = buildLessonInfoHtml(info);
     document.body.appendChild(dialog);
+
+    // Shared lessons carry the uploader's account id: show a shimmer
+    // placeholder, then the creator card once the profile resolves.
+    if (info.createdBy) {
+        const slot = document.createElement("div");
+        slot.innerHTML = buildInfoSkeletonHtml({ title: false, pills: 0, rows: 0, card: true });
+        dialog.querySelector(".quiz-info-dialog-body")?.appendChild(slot);
+        fetchCreatorById(info.createdBy).then((creator) => {
+            if (!dialog.isConnected) return;
+            slot.innerHTML = buildCreatorSectionHtml(creator);
+        });
+    }
 
     const close = () => {
         if (dialog.open) dialog.close();

@@ -23,7 +23,14 @@ import { userProfile } from "../../shared/userProfile.js";
 import { renderRootCategories } from "./root-view.js";
 import { getCategoryTree } from "./app-state.js";
 import { buildCourseInfoRows } from "./course-info-fields.js";
-import { escapeHtml } from "./escape-html.js";
+import {
+  openInfoOverlay,
+  buildInfoTableHtml,
+  buildCreatorSectionHtml,
+  fetchCourseDetails,
+  fetchCreatorById,
+  formatDateForInfo,
+} from "./info-details.js";
 
 export function getCourseContentsStats(course) {
   const tree = getCategoryTree() || {};
@@ -96,66 +103,38 @@ export function showCourseActionsOverlay(course) {
 }
 
 /**
- * Show a full modal dialog with the course's metadata (education type,
- * faculty, year, term).  Dismissed via close button or backdrop click.
- *
- * NOTE: showNotification and _confirm are NOT ES exports —
- * they are runtime globals loaded via a non-module <script> tag from
- * src/components/notifications.js. They are not used in this function.
+ * Show a full modal dialog with the course's metadata: education type,
+ * college, year, term, content counts, dates, ID and the creator. The
+ * metadata that is already in the catalog renders immediately; dates and
+ * the creator profile load behind a shimmer skeleton.
  *
  * @param {object} course - The course object from the categoryTree.
  */
 export function showCourseInfoModal(course) {
-  const modal = document.createElement("div");
-  modal.className = "modal-overlay";
-  modal.setAttribute("role", "dialog");
-  modal.setAttribute("aria-modal", "true");
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) modal.remove();
-  });
-
-  const modalCard = document.createElement("div");
-  modalCard.className = "modal-card quiz-info-modal-card course-info-modal-card";
-
-  const h2 = document.createElement("h2");
-  h2.textContent = "معلومات المادة";
-
   const { quizCount, lessonCount, subfolderCount } = getCourseContentsStats(course);
-  const stats = document.createElement("div");
-  stats.className = "course-info-stats";
-  stats.innerHTML = `
+  const { body, isOpen } = openInfoOverlay({
+    title: "معلومات المادة",
+    statsHtml: `
     <div class="course-info-stat"><strong>${quizCount}</strong><span>امتحان</span></div>
     <div class="course-info-stat"><strong>${lessonCount}</strong><span>درس</span></div>
     <div class="course-info-stat"><strong>${subfolderCount}</strong><span>مجلد فرعي</span></div>
-  `;
+  `,
+  });
 
-  const tableWrap = document.createElement("div");
-  tableWrap.className = "quiz-info-table-wrap";
+  (async () => {
+    const details = await fetchCourseDetails(course?.id);
+    const creatorId = details?.created_by || course?.created_by || null;
+    const creator = await fetchCreatorById(creatorId);
+    if (!isOpen()) return; // closed while loading
 
-  const table = document.createElement("table");
-  table.className = "quiz-info-table";
-  const rowsHtml = buildCourseInfoRows(course)
-    .map(({ label, val, highlight }) => {
-      const escapedVal = escapeHtml(String(val));
-      const valueHtml = highlight
-        ? `<span class="featured-value">${escapedVal}</span>`
-        : escapedVal;
-      return `<tr><th>${escapeHtml(label)}</th><td${highlight ? ' class="featured-value-cell"' : ""}>${valueHtml}</td></tr>`;
-    })
-    .join("");
-  table.innerHTML = `<tbody>${rowsHtml}</tbody>`;
-  tableWrap.appendChild(table);
-
-  const closeBtn = document.createElement("button");
-  closeBtn.type = "button";
-  closeBtn.className = "close-modal";
-  closeBtn.textContent = "إغلاق";
-  closeBtn.onclick = () => modal.remove();
-
-  modalCard.appendChild(h2);
-  modalCard.appendChild(stats);
-  modalCard.appendChild(tableWrap);
-  modalCard.appendChild(closeBtn);
-  modal.appendChild(modalCard);
-  document.body.appendChild(modal);
+    const created = formatDateForInfo(details?.created_at || course?.created_at);
+    const updated = formatDateForInfo(details?.updated_at);
+    const rows = [
+      ...buildCourseInfoRows(course),
+      { label: "تاريخ الإنشاء", val: created, ltr: true },
+      { label: "آخر تعديل", val: updated && updated !== created ? updated : null, ltr: true },
+      { label: "ID", val: course?.id || null, ltr: true },
+    ];
+    body.innerHTML = buildInfoTableHtml(rows) + buildCreatorSectionHtml(creator);
+  })();
 }

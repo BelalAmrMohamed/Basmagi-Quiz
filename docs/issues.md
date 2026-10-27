@@ -37,16 +37,8 @@ Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is com
 
 ### Home Page
 
-#### Info Modals
-* Advanced Loading shimmer/animation.
-* Quizzes, Lessons, Folders, and Courses store so much info (Check their tables in [DB Context](Database-Schema-Context.md)):
-  * Extend the info in the info modal `quiz-info-dialog` (don't show the password ofcourse, but you can show an indication like (privacy: has password) or a similar label)
-  * Extend the info in the course info modal, too.
-  * Make an info modal for Folders.
-  * (Suggestion) Add: Number of Views or people who solved a quiz on each quiz.
-
-#### Message: أنت غير مشترك في هذه المادة
-* When I send a link of a specific course to my friends (like https://basmagi-quiz.vercel.app/course/Image-Processing), some of them aren't subscribed to it, so when they enter it, I want them to see a message or something that is telling them that they are not subscribed to this course, with a button to subscribe directly.
+#### Passwords are exposed
+The home page already downloads every quiz’s password to the browser, so passwords are readable by anyone. The info modal only shows whether a quiz has one, but that existing exposure is worth a separate look.
 
 ### Profile Page
 The `نشاط المطور` section should include the quizzes and the lessons. It currently includes the quizzes only. Update it, and update the DB if needed.

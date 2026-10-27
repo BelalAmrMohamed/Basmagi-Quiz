@@ -22,7 +22,9 @@ import { isRecentlyAdded } from "./date-utils.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { createExamCard } from "./exam-card.js";
 import { createLessonCard } from "./lesson-card.js";
-import { openExamDropdownMenu, createActionGroupSubmenu } from "./exam-dropdown-menu.js";
+import { openExamDropdownMenu, createActionGroupSubmenu, createExamInfoSubmenu } from "./exam-dropdown-menu.js";
+import { showFolderInfoModal } from "./folder-info-modal.js";
+import { userProfile } from "../../shared/userProfile.js";
 import {
   canManageItem,
   openSharedMoveToDialog,
@@ -163,6 +165,13 @@ export function renderCategory(category) {
 
     const fragment = document.createDocumentFragment();
 
+    // Shared course/folder links open for everyone, so tell visitors who
+    // aren't subscribed to this course (and let them subscribe in one tap).
+    const subscribeBanner = createCourseSubscribeBanner(
+      categoryTree?.[(catKey || "").split("/")[0]],
+    );
+    if (subscribeBanner) fragment.appendChild(subscribeBanner);
+
     // Render subcategories
     (category.subcategories || []).forEach((subCatKey) => {
       const subCat = categoryTree[subCatKey];
@@ -208,6 +217,48 @@ export function renderCategory(category) {
       `;
     }
   }
+}
+
+/**
+ * "أنت غير مشترك في هذه المادة" banner with a subscribe button. Returns null
+ * when there is no course to subscribe to or the visitor is already
+ * subscribed — subscribed users never see it.
+ * @param {object|undefined} course - the course node (root of the tree branch)
+ * @returns {HTMLElement|null}
+ */
+function createCourseSubscribeBanner(course) {
+  if (!course?.id || userProfile.isSubscribed(course.id)) return null;
+
+  const banner = document.createElement("div");
+  banner.className = "all-courses-banner course-subscribe-banner";
+  banner.setAttribute("role", "status");
+
+  const icon = document.createElement("span");
+  icon.className = "all-courses-banner-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = "🔔";
+
+  const text = document.createElement("span");
+  text.className = "all-courses-banner-text";
+  text.textContent = `أنت غير مشترك في هذه المادة (${course.name}). اشترك لتظهر في صفحتك الرئيسية.`;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "course-subscribe-banner-btn";
+  btn.textContent = "اشترك الآن";
+  btn.onclick = () => {
+    try {
+      userProfile.subscribeToCourse(course.id);
+      banner.remove();
+      showNotification("تم الإشتراك", `تم إضافة ${course.name} إلى موادك`, "./favicon.png");
+    } catch (error) {
+      console.error("Error subscribing to course:", error);
+      showNotification("تعذّر الإشتراك", "حدث خطأ أثناء الإشتراك. حاول مرة أخرى.", "warning");
+    }
+  };
+
+  banner.append(icon, text, btn);
+  return banner;
 }
 
 /**
@@ -351,12 +402,21 @@ export function createCategoryCard(
         };
         menu.appendChild(askAi);
 
-        const counts = document.createElement("div");
-        counts.className = "exam-action-btn";
-        counts.disabled = true;
+        // "معلومات المجلد" — quick rows inline, "كل المعلومات" opens the
+        // full folder info modal (dates, path, creator, counts).
         const { quizCount, lessonCount, subfolderCount } = getCategoryContentsStats(courseData);
-        counts.textContent = `${quizCount} امتحان · ${lessonCount} درس · ${subfolderCount} مجلد فرعي`;
-        menu.appendChild(counts);
+        const folderRows = [
+          { label: "الامتحانات", val: String(quizCount) },
+          { label: "الدروس", val: String(lessonCount) },
+          { label: "المجلدات الفرعية", val: String(subfolderCount) },
+        ];
+        menu.appendChild(createExamInfoSubmenu(
+          folderRows,
+          () => showFolderInfoModal(courseData),
+          closeMenu,
+          reposition,
+          "معلومات المجلد",
+        ));
 
         // ── Admin manage group — نقل / إعادة تسمية / حذف (→ trash) ──────
         // Folders only: gated on the same canManageItem() 3-tier check as

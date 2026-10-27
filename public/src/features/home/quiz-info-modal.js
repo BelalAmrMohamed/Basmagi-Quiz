@@ -8,6 +8,8 @@
 import { qz, formatQuestionTypesForDownload } from "./quiz-schema.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
 import { buildQuizInfoModalHtml, fetchCreatorProfile } from "../../components/quiz-info-modal/quiz-info-html.js";
+import { fetchQuizDetails, buildInfoSkeletonDialogHtml } from "./info-details.js";
+import { getEduTypeLabel } from "./course-info-fields.js";
 export { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 
 /**
@@ -48,22 +50,8 @@ function createAndShowDialog(htmlContent) {
  * Shows a read-only "quiz info" modal for manifest exams.
  */
 export async function showQuizInfoModal(exam) {
-  // Show a loading state first
-  const loadingHtml = `
-    <div class="quiz-info-dialog-inner">
-      <div class="quiz-info-dialog-header">
-        <h2 id="quizInfoDialogTitle">معلومات الامتحان</h2>
-        <button class="quiz-info-dialog-close" type="button" aria-label="إغلاق">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      <div class="quiz-info-dialog-body" style="justify-content: center; align-items: center; padding: 40px;">
-        <p style="color: var(--color-text-secondary);">جاري التحميل...</p>
-      </div>
-    </div>
-  `;
+  // Show the shimmer skeleton first
+  const loadingHtml = buildInfoSkeletonDialogHtml("معلومات الامتحان");
   const dialog = createAndShowDialog(loadingHtml);
 
   const config = {
@@ -81,8 +69,15 @@ export async function showQuizInfoModal(exam) {
     mode: null,
     view: null,
     questionTypes: formatQuestionTypesForDownload(exam.questionTypes),
+    // Password is never shown — only whether the quiz has one.
+    passwordProtected: Boolean(exam.password),
+    eduTypeLabel: exam.education_type ? getEduTypeLabel(exam) : null,
   };
   let questionCount = typeof exam.questionCount === "number" ? exam.questionCount : null;
+
+  // Extra DB facts (dates, uploader, college/year/term, attempts) are
+  // fetched in parallel with the quiz body so the modal doesn't wait twice.
+  const detailsPromise = exam.dbId ? fetchQuizDetails(exam.dbId) : Promise.resolve(null);
 
   try {
     if (exam.dbId) {
@@ -106,6 +101,20 @@ export async function showQuizInfoModal(exam) {
     }
   } catch (e) {
     console.warn("Failed to load quiz file for info modal", e);
+  }
+
+  const details = await detailsPromise;
+  if (details) {
+    if (!config.createdAt) config.createdAt = details.created_at || null;
+    config.syncedAt = details.synced_at || null;
+    if (!config.authorId && !config.authorHandle) config.authorId = details.uploaded_by || null;
+    if (details.college && details.college !== "All") config.college = details.college;
+    if (details.year) config.year = details.year;
+    if (details.term) config.term = details.term;
+    if (!config.eduTypeLabel && details.education_type) {
+      config.eduTypeLabel = getEduTypeLabel({ education_type: details.education_type });
+    }
+    if (typeof details.attempt_count === "number") config.attemptCount = details.attempt_count;
   }
 
   let creatorProfile = null;

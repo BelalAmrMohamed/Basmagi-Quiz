@@ -20,6 +20,7 @@ import {
   showNotification,
 } from "../../components/notifications/notifications.js";
 import { userProfile } from "../../shared/userProfile.js";
+import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { initKeyboardNav } from "./keyboard-nav.js";
 import {
   gradeEssay,
@@ -2663,6 +2664,18 @@ function nav(dir) {
   }
 }
 
+/**
+ * Adds one to the quiz's public attempt counter (shown in the quiz info
+ * modal). Fire-and-forget: students are anonymous, a failure must never
+ * block the result page, and only DB-backed quizzes have an id to count.
+ */
+function recordQuizAttempt() {
+  if (!quizDbId) return;
+  ensureSharedSupabaseClient()
+    .then((supabase) => supabase?.rpc("increment_quiz_attempt", { p_quiz_id: quizDbId }))
+    .catch(() => {});
+}
+
 async function finish(skipconfirmationNotification) {
   if (autoSubmitTimeout) {
     clearTimeout(autoSubmitTimeout);
@@ -2673,6 +2686,7 @@ async function finish(skipconfirmationNotification) {
     return;
 
   stopTimer();
+  recordQuizAttempt();
 
   let correctCount = 0; // MCQ points
   let essayScore = 0; // Essay points earned

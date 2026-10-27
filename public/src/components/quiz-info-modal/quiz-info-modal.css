@@ -321,3 +321,22 @@ a.quiz-creator-card:hover {
 a.quiz-creator-card:hover .quiz-creator-cta {
   opacity: 1;
 }
+
+/* ─── Info modal loading skeleton (shimmer) ─── */
+.info-skeleton { display: flex; flex-direction: column; gap: 14px; padding: 4px 0; }
+.info-skeleton-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.info-skel {
+  position: relative; overflow: hidden; border-radius: 8px;
+  background: var(--color-bg-hover, rgba(128, 128, 128, 0.18));
+}
+.info-skel::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  animation: info-skel-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes info-skel-shimmer { to { transform: translateX(100%); } }
+.info-skel--title { height: 22px; width: 55%; }
+.info-skel--pill { height: 26px; width: 84px; border-radius: 999px; }
+.info-skel--row { height: 16px; }
+.info-skel--card { height: 58px; border-radius: 14px; }
+@media (prefers-reduced-motion: reduce) { .info-skel::after { animation: none; } }
