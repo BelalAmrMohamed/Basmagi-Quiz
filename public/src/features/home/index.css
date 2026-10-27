@@ -508,8 +508,47 @@ body.sidebar-expanded {
 }
 
 .course-info-modal-card {
+  position: relative;
   padding: 28px;
   text-align: right;
+  /* Never taller than the viewport — long content scrolls inside the card. */
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.course-info-modal-card h2 {
+  padding-left: 40px; /* keep the title clear of the close button */
+}
+
+@media (max-width: 640px) {
+  .course-info-modal-card {
+    max-height: calc(100dvh - var(--bottom-nav-height, 64px) - env(safe-area-inset-bottom, 0px) - 32px);
+  }
+}
+
+.info-overlay-close {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.info-overlay-close:hover,
+.info-overlay-close:focus-visible {
+  background: var(--color-bg-hover, rgba(128, 128, 128, 0.18));
+  color: var(--color-text-primary);
 }
 
 .course-info-modal-card h2 {

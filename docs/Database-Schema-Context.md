@@ -27,19 +27,7 @@ This file is for context only. It's copied from supabase directly after running 
 | `uploaded_by` | `uuid` |  Nullable |
 | `course_id` | `uuid` |  Nullable |
 | `folder_id` | `uuid` |  Nullable |
-
-## Table `quiz_access`
-
-### Columns
-
-| Name | Type | Constraints |
-|------|------|-------------|
-| `id` | `uuid` | Primary |
-| `quiz_path` | `text` |  Unique |
-| `is_private` | `bool` |  Nullable |
-| `allowed_emails` | `_text` |  Nullable |
-| `password_hash` | `text` |  Nullable |
-| `created_at` | `timestamptz` |  Nullable |
+| `attempt_count` | `int8` |  Default 0 — total submissions; incremented only via RPC `increment_quiz_attempt(p_quiz_id uuid)` (migration `20261028120000_quiz_attempt_count_drop_quiz_access.sql`) |
 
 ## Table `admin_users`
 
@@ -352,4 +340,3 @@ Reports against a lesson comment, reviewed by admins. Independent of the comment
 | Policy | Command | Roles | Action | USING | WITH CHECK |
 |--------|---------|-------|--------|-------|------------|
 | `Public can read active colleges` | SELECT | anon, authenticated | PERMISSIVE | `(is_active = true)` | — |
-
