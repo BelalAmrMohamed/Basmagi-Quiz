@@ -7,6 +7,10 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### تحميل الدرس Button on Lessons
+- Remove the تحميل الدرس button in lessons' menu, since it exists on lessons cards.
+- Add a نسخ لامتحاناتي button for lessons (like quizzes).
+
 ### AI Agent
 
 #### Dictation

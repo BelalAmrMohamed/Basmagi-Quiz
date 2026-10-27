@@ -535,10 +535,24 @@ export function attachRichInputHighlighter({
 
   // ── Mirror geometry ──────────────────────────────────────────────────────
 
-  /** Copy font/box metrics. Runs on init, resize, font load, and style changes. */
+  /**
+   * Copy font/box metrics onto the mirror. Runs on EVERY render (as the
+   * original did), not just on resize: a textarea's padding, font-size or
+   * line-height can change through a class on an ancestor (expanded composer,
+   * :focus-within, breakpoints) without any event on the textarea itself, and
+   * a stale metric shows up as selection/caret drifting off the text line.
+   * Writes are skipped when nothing changed, so the steady-state cost is one
+   * computed-style read.
+   */
+  const appliedTypography = {};
   function syncTypography() {
     const computed = getComputedStyle(textarea);
-    for (const property of TYPOGRAPHY_PROPS) mirror.style[property] = computed[property];
+    for (const property of TYPOGRAPHY_PROPS) {
+      const value = computed[property];
+      if (appliedTypography[property] === value) continue;
+      appliedTypography[property] = value;
+      mirror.style[property] = value;
+    }
     // `dir="auto"` resolves per content; the computed `direction` alone doesn't
     // carry that, so mirror the attribute too.
     const dirAttr = textarea.getAttribute("dir");
@@ -675,7 +689,7 @@ export function attachRichInputHighlighter({
     // textarea's trailing empty line without changing what the user edits.
     if (value.endsWith("\n") || !value) fragment.appendChild(document.createTextNode("​"));
     mirror.replaceChildren(fragment);
-    syncGeometry();
+    syncTypography();
   }
 
   /** Coalesces programmatic edits into one render before the next paint. */
@@ -779,6 +793,7 @@ export function attachRichInputHighlighter({
   textarea.addEventListener("pointerleave", hideTooltip);
   textarea.addEventListener("pointerdown", hideTooltip);
   textarea.addEventListener("blur", hideTooltip);
+  textarea.addEventListener("focus", scheduleTypography);
   textarea.addEventListener("keydown", onKeydown);
   window.addEventListener("resize", onResize);
 
@@ -793,13 +808,11 @@ export function attachRichInputHighlighter({
   const fonts = document.fonts;
   fonts?.addEventListener?.("loadingdone", scheduleTypography);
 
-  syncTypography();
   render();
 
   const api = {
     refresh() {
       if (destroyed) return;
-      syncTypography();
       render();
     },
     destroy() {
@@ -813,6 +826,7 @@ export function attachRichInputHighlighter({
       textarea.removeEventListener("pointerleave", hideTooltip);
       textarea.removeEventListener("pointerdown", hideTooltip);
       textarea.removeEventListener("blur", hideTooltip);
+      textarea.removeEventListener("focus", scheduleTypography);
       textarea.removeEventListener("keydown", onKeydown);
       window.removeEventListener("resize", onResize);
       form?.removeEventListener("reset", onFormReset);
