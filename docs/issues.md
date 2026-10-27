@@ -35,20 +35,6 @@ Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is com
   * ميمز تشجيع إيجابية
 * Some vidoes will be displayed based on the percentage of the result.
 
-## MCP Server to Connect to Claude & ChatGPT (Implemented)
-* Status: **Completed**
-* Server Endpoint: `https://basmagi-quiz.vercel.app/api/mcp` (proxied to Supabase Edge Function `supabase/functions/mcp/index.ts`)
-* Authentication: **No Auth** (adheres strictly to zero-tracking / no-student-data policy)
-* Capabilities:
-  * `search_catalog`: Search courses, folders, quizzes, and lessons by keyword.
-  * `get_quiz`: Retrieve full quiz questions, options, answers, and explanations.
-  * `get_lesson`: Retrieve full lesson content and sections.
-  * `get_prompts`: Retrieve standard prompt templates (`ai-prompts.js` and `ai-agent-default-prompts.js`).
-  * `create_quiz_import_link`: Validates quiz structure and generates a 1-click import URL (`/create-quiz#data=base64,...`) opening directly in the editor.
-  * `get_creator_info`: Public portfolio and contact links for Belal Amr Mohamed.
-* 1-Click Import in Editor: Implemented in [create-quiz.js](file:///d:/Code%20projects/Websites/منصة%20إمتحانات%20بصمجي/public/src/features/create-quiz/create-quiz.js) via URL hash `#data=...` decoding.
-* Zero Vercel Function Impact: 12/12 serverless function cap preserved on Vercel Hobby.
-
 ### Home Page
 
 #### Info Modals

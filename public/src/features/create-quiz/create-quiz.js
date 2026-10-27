@@ -454,15 +454,22 @@ function resetHistory() {
 // ============================================================================
 
 /**
- * Decodes UTF-8 string from Base64 safely in browser (supports Arabic & Unicode).
+ * Decodes UTF-8 string from Base64 safely in browser (supports Arabic, Unicode, Base64URL, and unpadded strings).
  */
 function decodeBase64Utf8(str) {
+  // 1. Clean whitespace and normalize Base64URL (- and _) to standard Base64 (+ and /)
+  let cleaned = String(str || "").trim().replace(/\s+/g, "+").replace(/-/g, "+").replace(/_/g, "/");
+  // 2. Add padding if stripped
+  while (cleaned.length % 4 !== 0) {
+    cleaned += "=";
+  }
+
   try {
-    const binary = atob(str);
+    const binary = atob(cleaned);
     const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
     return new TextDecoder().decode(bytes);
   } catch (e) {
-    return atob(str);
+    return atob(cleaned);
   }
 }
 
@@ -477,17 +484,31 @@ function handlePreloadedQuizFromUrl() {
   // 1. Check URL hash first (preferred — never sent to server, no URL length limits on server)
   if (window.location.hash && window.location.hash.length > 1) {
     const hash = window.location.hash.slice(1);
-    const params = new URLSearchParams(hash);
-    rawData = params.get("data") || params.get("import");
-    if (!rawData && (hash.startsWith("{") || hash.startsWith("%7B"))) {
+    if (hash.startsWith("data=") || hash.startsWith("import=")) {
+      // Direct slice preserves + and avoids URLSearchParams converting + to spaces or splitting on &
+      rawData = hash.slice(hash.indexOf("=") + 1);
+    } else if (hash.startsWith("{") || hash.startsWith("%7B")) {
       rawData = hash;
+    } else {
+      const match = hash.match(/(?:^|&)(?:data|import)=([^&]+)/);
+      if (match) {
+        rawData = match[1];
+      } else {
+        const params = new URLSearchParams(hash);
+        rawData = params.get("data") || params.get("import");
+      }
     }
   }
 
   // 2. Check query params fallback
   if (!rawData && window.location.search) {
-    const params = new URLSearchParams(window.location.search);
-    rawData = params.get("data") || params.get("import");
+    const search = window.location.search.slice(1);
+    if (search.startsWith("data=") || search.startsWith("import=")) {
+      rawData = search.slice(search.indexOf("=") + 1);
+    } else {
+      const params = new URLSearchParams(window.location.search);
+      rawData = params.get("data") || params.get("import");
+    }
   }
 
   if (!rawData) return false;
