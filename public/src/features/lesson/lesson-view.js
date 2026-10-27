@@ -741,7 +741,7 @@ export async function renderLessonView() {
         : "") +
       `</div>` +
       `</div>` +
-      `<div class="lesson-view__heading"><h1 id="lessonViewTitle" class="lesson-view__title" dir="${getLessonTitleDirection(lesson.title || "")}">${escapeHtml(lesson.title || "")}</h1>${lesson.description?.trim() ? `<p class="lesson-view__description" dir="rtl">${escapeHtml(lesson.description.trim())}</p>` : ""}<p class="lesson-view__subtitle" dir="rtl">تابع القراءة وراجع تقدمك، واسأل الباشــمبصمج عندما تحتاج إلى توضيح.</p></div>` +
+      `<div class="lesson-view__heading"><h1 id="lessonViewTitle" class="lesson-view__title" dir="${getLessonTitleDirection(lesson.title || "")}">${escapeHtml(lesson.title || "")}</h1>${lesson.description?.trim() ? `<p dir="auto" class="lesson-view__description" dir="rtl">${escapeHtml(lesson.description.trim())}</p>` : ""}<p class="lesson-view__subtitle" dir="rtl">تابع القراءة وراجع تقدمك، واسأل الباشــمبصمج عندما تحتاج إلى توضيح.</p></div>` +
       `</div>` +
       `<div class="lesson-view__header-actions" role="group" aria-label="أدوات الدرس">` +
       `<button type="button" class="lesson-header__action lesson-view__info-btn" aria-label="معلومات الدرس" title="معلومات الدرس">${lessonIcon("info")}<span class="lesson-header__action-label">معلومات الدرس</span></button>` +

@@ -202,7 +202,12 @@
         box-shadow: 0 -6px 20px rgba(17, 24, 39, .15);
         transition: transform .2s ease;
         z-index: calc(var(--z-overlay, 4000) - 1);
-        padding-bottom: 14px;
+        /* The fixed .doc-toc-toggle is painted ABOVE this panel and sits over
+         * its bottom-left corner (same bottom offset), so it covered the last
+         * list item(s). Reserve room for it (button height ≈ 40px + its 16px
+         * offset) so the list can always scroll clear of the button. */
+        padding-bottom: 72px;
+        scroll-padding-bottom: 72px;
     }
 
     .doc-toc.doc-toc-open {
