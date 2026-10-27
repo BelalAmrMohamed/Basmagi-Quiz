@@ -5,6 +5,8 @@
 // quiz link previews. Powered by @vercel/og (Satori + WebAssembly PNG encoder).
 //
 // Usage:  /api/og?quizId=ABCD1234
+//         /api/og?course=<id>[&folder=A/B]   (course / folder thumbnails)
+//         /api/og?lesson=<id|slug>           (lesson thumbnails)
 // Cache:  Immutable 1-year CDN cache. Bust via ?v=N param from render-quiz.js.
 //
 // No JSX transpiler — uses plain ReactElement-style objects that Satori accepts.
@@ -342,6 +344,11 @@ function loadBackgroundImage() {
 // (bulb card, button, pill) that doesn't make sense for a course page.
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
+  // ?lesson=<id|slug> — lesson reading-page thumbnail (renderLessonImage,
+  // bottom of this file). Dispatched first; same shared-function rationale.
+  const lessonId = searchParams.get("lesson");
+  if (lessonId) return renderLessonImage(lessonId);
+
   const courseId = searchParams.get("course");
   if (courseId) {
     // ?folder=Algebra/Second (raw folder names, "/"-joined — see
@@ -1919,4 +1926,652 @@ async function fetchCourseMeta(courseId, folderPath) {
     console.error("[og] fetchCourseMeta error:", err);
     return null;
   }
+}
+// =============================================================================
+// Lesson OG image — /api/og?lesson=<id|slug>&v=<n>
+// =============================================================================
+// Third generator merged into this file (quiz + course + lesson) so the
+// project stays inside Vercel Hobby's 12-function cap — no new api/*.js file.
+//
+// Design: a "reading page" — a tilted paper card on the left previews the
+// lesson's real table of contents (first visible section titles, numbered),
+// backed by a second sheet for depth. The right column (fixed RTL, same as
+// the course image) shows the kind label, the course › folder breadcrumb,
+// a up-to-two-line title, a two-line description/excerpt, and a row of stat
+// chips (reading time / sections / questions or media). Everything is drawn
+// with Satori shapes + inline SVG icons — no emoji, so there are no extra
+// Twemoji network round-trips.
+//
+// Privacy: a password-protected lesson's `content` is NULL in lesson_public,
+// so the card falls back to skeleton lines + a lock badge and never leaks
+// section titles, excerpts or counts.
+//
+// Bidi: see lessonTextRun — pure-Arabic runs use renderBidiText(), mixed
+// Arabic+digit/Latin runs use sibling tokens (renderBidiChildren pattern).
+// Consecutive Latin tokens are merged into one run so "Machine Learning"
+// inside an Arabic title keeps its order.
+// =============================================================================
+
+const LESSON_ACCENT = "#0d9488"; // teal — lesson identity colour next to BRAND_BLUE
+const LESSON_COLUMN = { left: 470, right: 1130 };
+const LESSON_COLUMN_WIDTH = LESSON_COLUMN.right - LESSON_COLUMN.left; // 660
+const LESSON_WORDS_PER_MINUTE = 180; // conservative — Arabic reads slower than English
+
+/** Inline-SVG icon (Satori renders <svg> nodes natively). */
+function lessonIcon(paths, size, color, strokeWidth = 2) {
+  return {
+    type: "svg",
+    props: {
+      width: size,
+      height: size,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: color,
+      strokeWidth,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      children: paths.map((d) => ({ type: "path", props: { d } })),
+    },
+  };
+}
+
+const LESSON_ICONS = {
+  clock: ["M12 6v6l4 2", "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"],
+  layers: ["M12 3 2 8l10 5 10-5-10-5z", "M2 13l10 5 10-5", "M2 17.5l10 5 10-5"],
+  help: ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z", "M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1.9-1.1 1.8", "M12 17h.01"],
+  image: ["M4 5h16v14H4z", "M4 16l5-5 4 4 3-3 4 4", "M9 9h.01"],
+  lock: ["M6 11h12v9H6z", "M8 11V8a4 4 0 0 1 8 0v3"],
+  book: ["M5 3h14v18H5z", "M9 3v18", "M12.5 8h3.5", "M12.5 12h3.5"],
+  folder: ["M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v8.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-11z"],
+};
+
+/**
+ * Splits text into bidi-safe tokens. Whitespace-separated, but consecutive
+ * tokens with no Arabic letters (Latin words, digits, punctuation) are merged
+ * into a single run so their internal LTR order survives the row-reverse.
+ */
+function lessonTokens(text) {
+  const out = [];
+  let latinRun = null;
+  for (const tok of String(text || "").split(/\s+/).filter(Boolean)) {
+    const hasArabic = /[؀-ۿݐ-ݿࢠ-ࣿ]/.test(tok);
+    if (hasArabic) {
+      if (latinRun !== null) { out.push(latinRun); latinRun = null; }
+      out.push(tok);
+    } else {
+      latinRun = latinRun === null ? tok : `${latinRun} ${tok}`;
+    }
+  }
+  if (latinRun !== null) out.push(latinRun);
+  return out;
+}
+
+/**
+ * One single-line, right-anchored text run.
+ *  - pure Arabic  → one pre-mirrored string (renderBidiText) — the approach
+ *    already proven in prod; sibling tokens measured/painted with uneven gaps.
+ *  - pure Latin   → plain string, right-aligned.
+ *  - mixed (Arabic + digits/Latin) → sibling token divs in a row-reverse flex
+ *    with a gap, the renderBidiChildren() pattern, which dodges the
+ *    space-collapse bug documented on renderBidiText().
+ */
+function lessonTextRun(text, isArabic, style = {}) {
+  const fs = parseInt(style.fontSize, 10) || 24;
+  const tokens = lessonTokens(text);
+  const arabicTok = tokens.filter((t) => /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(t)).length;
+  const mixed = arabicTok > 0 && arabicTok < tokens.length;
+  const base = { display: "flex", whiteSpace: "nowrap", direction: "ltr", ...style };
+
+  if (!mixed) {
+    return {
+      type: "div",
+      props: {
+        style: { ...base, justifyContent: "flex-end", textAlign: "right" },
+        children: arabicTok > 0 ? renderBidiText(tokens.join(" "), true) : tokens.join(" "),
+      },
+    };
+  }
+  return {
+    type: "div",
+    props: {
+      style: { ...base, flexDirection: "row-reverse", justifyContent: "flex-start", gap: `${Math.round(fs * 0.28)}px` },
+      children: tokens.map((tok) => ({ type: "div", props: { style: { display: "flex" }, children: tok } })),
+    },
+  };
+}
+
+/** Greedy word-wrap to at most `maxLines`, ellipsising the overflow. */
+function lessonWrap(text, charsPerLine, maxLines) {
+  const words = String(text || "").split(/\s+/).filter(Boolean);
+  const lines = [];
+  let cur = "";
+  let i = 0;
+  for (; i < words.length; i++) {
+    const next = cur ? `${cur} ${words[i]}` : words[i];
+    if (next.length <= charsPerLine || !cur) {
+      cur = next;
+    } else {
+      lines.push(cur);
+      cur = words[i];
+      if (lines.length === maxLines) { cur = ""; break; }
+    }
+  }
+  if (cur && lines.length < maxLines) lines.push(cur);
+  const truncated = i < words.length;
+  if (truncated && lines.length) {
+    const last = lines[lines.length - 1];
+    lines[lines.length - 1] =
+      (last.length > charsPerLine - 1 ? last.slice(0, charsPerLine - 1) : last).trimEnd() + "…";
+  }
+  // A single over-long word must still respect the line budget.
+  return lines.map((l) => (l.length > charsPerLine ? l.slice(0, charsPerLine - 1) + "…" : l));
+}
+
+function lessonClamp(text, max) {
+  const t = String(text || "").trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1);
+  const sp = cut.lastIndexOf(" ");
+  // Prefer a word boundary when it doesn't throw away most of the budget.
+  return (sp >= max * 0.5 ? cut.slice(0, sp) : cut).trimEnd() + "…";
+}
+
+/**
+ * Arabic count phrase as logical-order tokens: 1 → "قسم واحد", 2 → "قسمان",
+ * 3–10 → "5 أقسام", 11+ → "12 قسم".
+ */
+function lessonCount(n, f) {
+  if (n === 1) return f.one;
+  if (n === 2) return [f.two];
+  return [String(n), n <= 10 ? f.few : f.many];
+}
+
+/** Plain-text excerpt from the first visible markdown block (OG-safe). */
+function lessonExcerpt(sections) {
+  for (const s of sections) {
+    const b = (s.blocks || []).find((x) => x && x.type === "markdown" && typeof x.body === "string" && x.body.trim());
+    if (!b) continue;
+    const plain = b.body
+      .replace(/```[\s\S]*?```/g, " ")
+      .replace(/\$\$[\s\S]*?\$\$/g, " ")
+      .replace(/\$[^$\n]*\$/g, " ")
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/^[#>\-*+\s\d.]+/gm, " ")
+      .replace(/[*_`~|]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (plain) return plain;
+  }
+  return "";
+}
+
+/** Derives display stats from the (already visible-only) sections. */
+function lessonStats(sections) {
+  let words = 0, questions = 0, media = 0, quizzes = 0;
+  for (const s of sections) {
+    for (const b of s.blocks || []) {
+      if (!b) continue;
+      if (b.type === "markdown" && typeof b.body === "string") {
+        const plain = b.body.replace(/```[\s\S]*?```/g, " ").replace(/[#>*_`~|\[\]()$\\-]/g, " ");
+        words += plain.split(/\s+/).filter(Boolean).length;
+      } else if (b.type === "question") questions++;
+      else if (b.type === "media") media++;
+      else if (b.type === "quizRef") quizzes++;
+    }
+  }
+  const questionTotal = questions + quizzes;
+  return {
+    minutes: Math.max(1, Math.ceil(words / LESSON_WORDS_PER_MINUTE)),
+    sectionCount: sections.length,
+    questions: questionTotal,
+    media,
+  };
+}
+
+async function fetchLessonOgMeta(idOrSlug) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error("[og] Missing SUPABASE_URL or SUPABASE_ANON_KEY");
+    return null;
+  }
+  const headers = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
+  const get = async (table, params) => {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+    for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+    const res = await fetch(url.toString(), { headers });
+    if (!res.ok) { console.error(`[og] ${table} lookup returned ${res.status}`); return null; }
+    const rows = await res.json();
+    return Array.isArray(rows) && rows.length ? rows[0] : null;
+  };
+
+  try {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+    const lesson = await get("lesson_public", {
+      select: "id,slug,title,description,source,course_id,folder_id,content,password_protected,updated_at",
+      [isUuid ? "id" : "slug"]: `eq.${idOrSlug}`,
+      limit: "1",
+    });
+    if (!lesson) return null;
+
+    const [course, folder] = await Promise.all([
+      lesson.course_id ? get("courses", { select: "name", id: `eq.${lesson.course_id}`, limit: "1" }) : null,
+      lesson.folder_id ? get("folders", { select: "name", id: `eq.${lesson.folder_id}`, limit: "1" }) : null,
+    ]);
+
+    const protectedLesson = Boolean(lesson.password_protected);
+    let sections = [];
+    if (!protectedLesson) {
+      const c = lesson.content;
+      if (typeof c === "string") sections = [{ title: "", blocks: [{ type: "markdown", body: c }] }];
+      else if (c && Array.isArray(c.sections)) sections = c.sections.filter((s) => s && !s.defaultHidden);
+      else if (c && typeof c.body === "string") sections = [{ title: "", blocks: [{ type: "markdown", body: c.body }] }];
+    }
+
+    return {
+      id: lesson.id,
+      slug: lesson.slug || null,
+      title: lesson.title || "",
+      description: (lesson.description || "").trim(),
+      protectedLesson,
+      courseName: course?.name || null,
+      folderName: folder?.name || null,
+      sectionTitles: sections.map((s) => String(s.title || "").trim()).filter(Boolean),
+      stats: protectedLesson ? null : lessonStats(sections),
+      excerpt: protectedLesson ? "" : lessonExcerpt(sections),
+    };
+  } catch (err) {
+    console.error("[og] fetchLessonOgMeta error:", err);
+    return null;
+  }
+}
+
+async function renderLessonImage(lessonId) {
+  const [fontData, meta] = await Promise.all([
+    loadFont().catch((err) => { console.error("[og] lesson font load error:", err); return null; }),
+    fetchLessonOgMeta(lessonId),
+  ]);
+
+  const rawTitle = meta?.title || "درس على منصة بصمجي";
+  const isArabic = !!detectArabic(rawTitle);
+
+  // ── Title: up to two lines, font tier by length ──────────────────────
+  const tFont = rawTitle.length <= 14 ? 68 : rawTitle.length <= 34 ? 56 : 46;
+  const tCpl = Math.floor(LESSON_COLUMN_WIDTH / (tFont * (isArabic ? 0.62 : 0.6)));
+  const titleLines = lessonWrap(rawTitle, tCpl, 2);
+
+  // ── Description: stored description, else first-paragraph excerpt ────
+  const descRaw = meta ? (meta.description || meta.excerpt) : "";
+  const dFont = 26;
+  const descIsArabic = !!detectArabic(descRaw || "ا");
+  const descLines = descRaw
+    ? lessonWrap(descRaw, Math.floor(LESSON_COLUMN_WIDTH / (dFont * (descIsArabic ? 0.72 : 0.58))), titleLines.length > 1 ? 2 : 3)
+    : [];
+
+  // ── Stat chips (max 3) ───────────────────────────────────────────────
+  const chips = [];
+  if (meta?.stats) {
+    const st = meta.stats;
+    chips.push({
+      icon: "clock", color: BRAND_BLUE,
+      tokens: lessonCount(st.minutes, { one: ["دقيقة", "واحدة"], two: "دقيقتان", few: "دقائق", many: "دقيقة" }),
+    });
+    if (st.sectionCount > 0) {
+      chips.push({
+        icon: "layers", color: LESSON_ACCENT,
+        tokens: lessonCount(st.sectionCount, { one: ["قسم", "واحد"], two: "قسمان", few: "أقسام", many: "قسم" }),
+      });
+    }
+    if (st.questions > 0) {
+      chips.push({
+        icon: "help", color: "#7c3aed",
+        tokens: lessonCount(st.questions, { one: ["سؤال", "واحد"], two: "سؤالان", few: "أسئلة", many: "سؤال" }),
+      });
+    } else if (st.media > 0) {
+      chips.push({
+        icon: "image", color: "#d97706",
+        tokens: lessonCount(st.media, { one: ["وسيط", "واحد"], two: "وسيطان", few: "وسائط", many: "وسيط" }),
+      });
+    }
+  }
+
+  // ── Breadcrumb: course / folder ──────────────────────────────────────
+  const crumbParts = [meta?.courseName, meta?.folderName].filter(Boolean).map((p) => lessonClamp(p, 20));
+
+  // ── Footer link ──────────────────────────────────────────────────────
+  const slugSeg = meta ? renderBidiSlugSegment(meta.slug || meta.id) : "";
+  const fullLink = `basmagi-quiz.vercel.app/lesson/${slugSeg}`;
+  const linkPath = fullLink.length > 90 ? "…" + fullLink.slice(fullLink.length - 89) : fullLink;
+
+  // ── Left "reading page" card ─────────────────────────────────────────
+  const tocTitles = meta?.sectionTitles || [];
+  const MAX_TOC = 5;
+  const shownToc = tocTitles.slice(0, MAX_TOC);
+  const extraToc = Math.max(0, tocTitles.length - shownToc.length);
+
+  const skeletonBar = (w, o = 1) => ({
+    type: "div",
+    props: {
+      style: {
+        display: "flex", height: "12px", width: w, borderRadius: "6px",
+        background: `rgba(15,23,42,${0.09 * o})`,
+      },
+    },
+  });
+
+  const tocRow = (title, i) => {
+    const ar = !!detectArabic(title);
+    return {
+      type: "div",
+      props: {
+        style: { display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%", gap: "12px" },
+        children: [
+          // Title (left) — number badge (right), RTL reading order.
+          {
+            type: "div",
+            props: {
+              style: { display: "flex", flex: "1", justifyContent: "flex-end", overflow: "hidden" },
+              children: lessonTextRun(lessonClamp(title, ar ? 21 : 24), ar, {
+                fontSize: "21px", fontWeight: "700", color: "#1f2937",
+              }),
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex", alignItems: "center", justifyContent: "center",
+                width: "34px", height: "34px", borderRadius: "17px", flexShrink: 0,
+                background: i === 0 ? LESSON_ACCENT : "rgba(13,148,136,0.12)",
+                color: i === 0 ? "#ffffff" : LESSON_ACCENT,
+                fontSize: "18px", fontWeight: "700", direction: "ltr",
+              },
+              children: String(i + 1),
+            },
+          },
+        ],
+      },
+    };
+  };
+
+  const cardBody =
+    shownToc.length > 0
+      ? [
+        ...shownToc.map(tocRow),
+        extraToc > 0
+          ? {
+            type: "div",
+            props: {
+              style: { display: "flex", justifyContent: "flex-end", width: "100%", marginTop: "4px" },
+              children: lessonTextRun(`+ ${extraToc} ${extraToc <= 10 ? "أقسام" : "قسم"} أخرى`, true, {
+                fontSize: "19px", color: "#9ca3af", fontWeight: "700",
+              }),
+            },
+          }
+          : null,
+        ...(shownToc.length < 4
+          ? [
+            { type: "div", props: { style: { display: "flex", height: "8px" } } },
+            skeletonBar("96%", 0.8), skeletonBar("80%"), skeletonBar("90%", 0.8), skeletonBar("58%"),
+          ]
+          : []),
+      ].filter(Boolean)
+      : // No titled sections (or protected) — skeleton "text lines" page.
+      [
+        ...(meta?.protectedLesson
+          ? [{
+            type: "div",
+            props: {
+              style: { display: "flex", alignItems: "center", justifyContent: "center", width: "100%", padding: "10px 0 6px" },
+              children: [{
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    width: "92px", height: "92px", borderRadius: "46px",
+                    background: "rgba(217,119,6,0.12)", border: "2px solid rgba(217,119,6,0.35)",
+                  },
+                  children: lessonIcon(LESSON_ICONS.lock, 46, "#b45309", 2),
+                },
+              }],
+            },
+          }]
+          : []),
+        skeletonBar("100%"), skeletonBar("86%", 0.8), skeletonBar("94%"), skeletonBar("62%", 0.8),
+        { type: "div", props: { style: { display: "flex", height: "10px" } } },
+        skeletonBar("98%"), skeletonBar("78%", 0.8), skeletonBar("90%"),
+      ];
+
+  const pageCard = {
+    type: "div",
+    props: {
+      style: {
+        display: "flex", flexDirection: "column", position: "absolute",
+        left: `${ICON_CARD.left + 6}px`, top: `${ICON_CARD.top + 6}px`,
+        width: `${ICON_CARD.width}px`, height: `${ICON_CARD.height}px`,
+        borderRadius: "30px", backgroundColor: "#ffffff", overflow: "hidden",
+        boxShadow: "0 30px 60px rgba(15,23,42,0.14)",
+        border: "1px solid rgba(15,23,42,0.06)",
+        transform: `rotate(${ICON_CARD.rotationDeg}deg)`,
+      },
+      children: [
+        // Header strip — brand gradient with the book icon + label.
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex", flexDirection: "row-reverse", alignItems: "center", gap: "12px",
+              padding: "20px 24px", height: "78px",
+              backgroundImage: `linear-gradient(135deg, ${BRAND_BLUE} 0%, ${LESSON_ACCENT} 100%)`,
+            },
+            children: [
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", alignItems: "center", justifyContent: "center", width: "46px", height: "46px", borderRadius: "23px", flexShrink: 0, background: "rgba(255,255,255,0.22)" },
+                  children: {
+                    type: "div",
+                    props: {
+                      style: { display: "flex", flexDirection: "row", width: "22px", height: "28px", borderRadius: "4px", background: "#ffffff", overflow: "hidden" },
+                      children: [{ type: "div", props: { style: { display: "flex", width: "5px", height: "28px", background: "rgba(13,148,136,0.45)" } } }],
+                    },
+                  },
+                },
+              },
+              lessonTextRun(shownToc.length > 0 ? "محتوى الدرس" : "صفحة الدرس", true, {
+                fontSize: "28px", fontWeight: "700", color: "#ffffff",
+              }),
+            ],
+          },
+        },
+        {
+          type: "div",
+          props: {
+            style: { display: "flex", flexDirection: "column", gap: "17px", padding: "26px 26px 0", width: "100%" },
+            children: cardBody,
+          },
+        },
+      ],
+    },
+  };
+
+  // Back sheet — peeks out behind the card for a stacked-pages feel.
+  const backSheet = {
+    type: "div",
+    props: {
+      style: {
+        display: "flex", position: "absolute",
+        left: `${ICON_CARD.left - 8}px`, top: `${ICON_CARD.top + 4}px`,
+        width: `${ICON_CARD.width}px`, height: `${ICON_CARD.height}px`,
+        borderRadius: "30px", backgroundColor: "rgba(0,136,204,0.10)",
+        border: "1px solid rgba(0,136,204,0.18)",
+        transform: `rotate(${ICON_CARD.rotationDeg + 7}deg)`,
+      },
+    },
+  };
+
+  // ── Right column ─────────────────────────────────────────────────────
+  const kindRow = {
+    type: "div",
+    props: {
+      style: { display: "flex", flexDirection: "row-reverse", alignItems: "center", gap: "12px" },
+      children: [
+        lessonTextRun("درس", true, { fontSize: "26px", color: BRAND_BLUE, fontWeight: "700" }),
+        meta?.protectedLesson
+          ? {
+            type: "div",
+            props: {
+              style: {
+                display: "flex", flexDirection: "row-reverse", alignItems: "center", gap: "8px",
+                background: "rgba(245,158,11,0.14)", border: "1px solid rgba(245,158,11,0.4)",
+                borderRadius: "8px", padding: "4px 12px",
+              },
+              children: [
+                lessonIcon(LESSON_ICONS.lock, 16, "#b45309", 2.4),
+                lessonTextRun("محمي بكلمة مرور", true, { fontSize: "16px", color: "#b45309", fontWeight: "700" }),
+              ],
+            },
+          }
+          : null,
+      ].filter(Boolean),
+    },
+  };
+
+  const crumbRow = crumbParts.length
+    ? {
+      type: "div",
+      props: {
+        style: { display: "flex", flexDirection: "row-reverse", alignItems: "center", gap: "10px", marginTop: "14px" },
+        children: [
+          { type: "div", props: { style: { display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", flexShrink: 0 }, children: lessonIcon(LESSON_ICONS.folder, 24, "#9ca3af", 2) } },
+          ...crumbParts.flatMap((p, i) => [
+            i > 0 ? { type: "div", props: { style: { display: "flex", fontSize: "24px", color: "#cbd5e1" }, children: "/" } } : null,
+            lessonTextRun(p, !!detectArabic(p), {
+              fontSize: "24px", color: i === crumbParts.length - 1 ? "#374151" : "#6b7280", fontWeight: "700",
+            }),
+          ]).filter(Boolean),
+        ],
+      },
+    }
+    : null;
+
+  const titleBlock = {
+    type: "div",
+    props: {
+      style: { display: "flex", flexDirection: "column", alignItems: "flex-end", marginTop: crumbRow ? "18px" : "22px", width: "100%" },
+      children: titleLines.map((line) =>
+        lessonTextRun(line, isArabic, {
+          fontSize: `${tFont}px`, fontWeight: "700", color: "#111827", lineHeight: "1.25", width: "100%",
+        }),
+      ),
+    },
+  };
+
+  const descBlock = descLines.length
+    ? {
+      type: "div",
+      props: {
+        style: {
+          display: "flex", flexDirection: "column", alignItems: "flex-end", marginTop: "20px", width: "100%",
+          paddingRight: "18px", borderRight: `4px solid ${LESSON_ACCENT}`, gap: "2px",
+        },
+        children: descLines.map((line) =>
+          lessonTextRun(line, descIsArabic, { fontSize: `${dFont}px`, color: "#4b5563", fontWeight: "400", lineHeight: "1.4", width: "100%" }),
+        ),
+      },
+    }
+    : null;
+
+  const chipsRow = chips.length
+    ? {
+      type: "div",
+      props: {
+        style: { display: "flex", flexDirection: "row-reverse", alignItems: "center", gap: "14px", marginTop: "30px" },
+        children: chips.map((c) => ({
+          type: "div",
+          props: {
+            style: {
+              display: "flex", flexDirection: "row-reverse", alignItems: "center", gap: "10px",
+              backgroundColor: "#ffffff", border: `1.5px solid ${c.color}33`, borderRadius: "14px",
+              padding: "11px 20px", boxShadow: "0 6px 18px rgba(15,23,42,0.06)",
+            },
+            children: [
+              lessonIcon(LESSON_ICONS[c.icon], 28, c.color, 2.2),
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", flexDirection: "row-reverse", gap: "8px", fontSize: "26px", fontWeight: "700", color: "#1f2937", direction: "ltr", whiteSpace: "nowrap" },
+                  children: c.tokens.map((t) => ({ type: "div", props: { style: { display: "flex" }, children: t } })),
+                },
+              },
+            ],
+          },
+        })),
+      },
+    }
+    : null;
+
+  const element = {
+    type: "div",
+    props: {
+      style: {
+        display: "flex", width: "100%", height: "100%", position: "relative",
+        fontFamily: FONT_FAMILY_STACK, backgroundColor: "#f8fafc",
+        backgroundImage:
+          "radial-gradient(circle at 0% 0%, rgba(0,136,204,0.13) 0%, rgba(0,136,204,0) 46%), radial-gradient(circle at 100% 100%, rgba(13,148,136,0.12) 0%, rgba(13,148,136,0) 42%)",
+      },
+      children: [
+        // Right-edge identity stripe (brand blue → teal).
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex", position: "absolute", right: "0px", top: "0px", width: "14px", height: "630px",
+              backgroundImage: `linear-gradient(180deg, ${BRAND_BLUE} 0%, ${LESSON_ACCENT} 100%)`,
+            },
+          },
+        },
+        backSheet,
+        pageCard,
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", position: "absolute",
+              left: `${LESSON_COLUMN.left}px`, top: "0px", height: "570px", width: `${LESSON_COLUMN_WIDTH}px`,
+              direction: "ltr", textAlign: "right",
+            },
+            children: [kindRow, crumbRow, titleBlock, descBlock, chipsRow].filter(Boolean),
+          },
+        },
+        // Footer link — centered, single line.
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex", position: "absolute", left: "40px", right: "54px", bottom: "36px",
+              justifyContent: "center", fontSize: "20px", color: "#9ca3af", fontWeight: "400",
+              whiteSpace: "nowrap", overflow: "hidden", direction: "ltr",
+            },
+            children: linkPath,
+          },
+        },
+      ],
+    },
+  };
+
+  const renderIsComplete = fontData !== null && meta !== null;
+
+  return new ImageResponse(element, {
+    width: 1200,
+    height: 630,
+    fonts: fontData
+      ? fontData.map((entry) => ({ name: entry.name, data: entry.data, weight: 700, style: "normal" }))
+      : [],
+    headers: {
+      "Cache-Control": renderIsComplete
+        ? "public, immutable, no-transform, max-age=31536000, s-maxage=31536000"
+        : "public, s-maxage=300, stale-while-revalidate=3600",
+    },
+  });
 }

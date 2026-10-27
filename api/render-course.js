@@ -82,6 +82,12 @@ const LESSON_TEMPLATE_PATH = path.join(process.cwd(), "public", "lesson.html");
 // refresh instead of continuing to serve the broken layout forever.
 const OG_IMAGE_VERSION = 3;
 
+// Bump when /api/og's LESSON-image layout changes (renderLessonImage). The
+// image URL also carries the lesson's updated_at, so editing a lesson busts
+// the immutable 1-year cache on its own — this constant is only for design
+// changes that affect every lesson at once.
+const OG_LESSON_IMAGE_VERSION = 1;
+
 const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
 
 // Mirrors public/src/features/home/slug-utils.js's toSlug() exactly (kept in
@@ -283,10 +289,18 @@ async function handleLessonRequest(req, res) {
 
     html = replaceMetaContent(html, "property", "og:title", lesson.title);
     html = replaceMetaContent(html, "property", "og:url", canonicalUrl);
-    // No lesson-specific OG image variant for v1 — leave og:image as
-    // whatever the template's generic site image already is (a deliberate
-    // fallback, see the plan's ⚠️ note above). og:description/twitter still
-    // get the lesson's own excerpt, same as the course branch's title/desc.
+    // Lesson-specific OG thumbnail — rendered by /api/og?lesson= (merged into
+    // the shared Edge OG function; see api/og.js renderLessonImage). The
+    // updated_at stamp changes the URL whenever the lesson is edited, so
+    // platforms/CDNs refetch instead of serving a year-old immutable image.
+    const stamp = lesson.updated_at ? Date.parse(lesson.updated_at) : NaN;
+    const ogImageUrl =
+        `${SITE_ORIGIN}/api/og?lesson=${encodeURIComponent(lesson.id)}` +
+        `&v=${OG_LESSON_IMAGE_VERSION}${Number.isFinite(stamp) ? `-${stamp}` : ""}`;
+    html = replaceMetaContent(html, "property", "og:image", ogImageUrl);
+    html = replaceMetaContent(html, "property", "og:image:alt", lesson.title);
+    html = replaceMetaContent(html, "name", "twitter:image", ogImageUrl);
+    html = replaceMetaContent(html, "name", "twitter:image:alt", lesson.title);
     if (excerpt) {
         html = replaceMetaContent(html, "property", "og:description", excerpt);
         html = replaceMetaContent(html, "name", "twitter:description", excerpt);
@@ -313,7 +327,7 @@ async function handleLessonRequest(req, res) {
  */
 async function fetchLessonMeta(idOrSlug) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
-    const query = getSupabase().from("lesson_public").select("id, slug, title, description, source, content, password_protected");
+    const query = getSupabase().from("lesson_public").select("id, slug, title, description, source, content, password_protected, updated_at");
     const { data, error } = isUuid
         ? await query.eq("id", idOrSlug).maybeSingle()
         : await query.eq("slug", idOrSlug).maybeSingle();
@@ -332,6 +346,7 @@ async function fetchLessonMeta(idOrSlug) {
         source: data.source || "",
         content: data.content,
         password_protected: Boolean(data.password_protected),
+        updated_at: data.updated_at || null,
     };
 }
 
