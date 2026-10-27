@@ -543,9 +543,11 @@ export async function equipLessonComments(root, lessonId) {
 
   topForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    const button = topForm.querySelector("button[type=submit]");
+    if (button?.disabled) return;
     const body = topTextarea.value.trim();
     if (!body) return;
-    const button = topForm.querySelector("button[type=submit]");
+    button.disabled = true;
     const pendingId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     appendSubmittedComment({ id: pendingId, body, author: "أنت", created_at: new Date().toISOString(), parent_id: null, replies: [], like_count: 0, dislike_count: 0, is_mine: false, pending: true });
     topTextarea.value = "";
@@ -606,11 +608,13 @@ export async function equipLessonComments(root, lessonId) {
     const form = event.target.closest('form[data-role="reply"]');
     if (!form) return;
     event.preventDefault();
+    const button = form.querySelector("button[type=submit]");
+    if (button?.disabled) return;
     const parentId = form.dataset.parent;
     const textarea = form.querySelector("textarea");
     const body = textarea.value.trim();
     if (!body) return;
-    const button = form.querySelector("button[type=submit]");
+    button.disabled = true;
     const pendingId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     appendSubmittedComment({ id: pendingId, body, author: "أنت", created_at: new Date().toISOString(), parent_id: parentId, replies: [], like_count: 0, dislike_count: 0, is_mine: false, pending: true }, parentId);
     const created = await submitComment({ body, parentId, button });

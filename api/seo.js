@@ -56,6 +56,9 @@ function buildSitemapXml(catalog) {
     for (const q of catalog.quizzes) {
         urlEntries.push({ loc: q.url, lastmod: q.lastmod, changefreq: "monthly", priority: "0.9" });
     }
+    for (const l of (catalog.lessons || [])) {
+        urlEntries.push({ loc: l.url, lastmod: l.lastmod, changefreq: "weekly", priority: "0.8" });
+    }
     for (const p of catalog.profiles) {
         urlEntries.push({ loc: p.url, lastmod: p.lastmod, changefreq: "monthly", priority: "0.5" });
     }
@@ -129,6 +132,17 @@ function collectFeedEntries(catalog) {
             date: f.lastmod,
             category: null,
             ogImage: null,
+        });
+    }
+    for (const l of (catalog.lessons || [])) {
+        entries.push({
+            kind: "lesson",
+            title: l.title,
+            description: l.courseName ? `درس في مقرر ${l.courseName}` : "درس تفاعلي",
+            url: l.url,
+            date: l.lastmod || l.createdAt,
+            category: l.courseName || null,
+            ogImage: absUrl(`/api/og?lesson=${encodeURIComponent(l.id)}&v=1`),
         });
     }
 
@@ -339,6 +353,7 @@ async function handleCron(req, res) {
         ...recent.courses.map((c) => c.url),
         ...recent.folders.map((f) => f.url),
         ...recent.quizzes.map((q) => q.url),
+        ...((recent.lessons || []).map((l) => l.url)),
         ...recent.profiles.map((p) => p.url),
     ];
 
@@ -349,6 +364,7 @@ async function handleCron(req, res) {
         "courses:", recent.courses.length,
         "folders:", recent.folders.length,
         "quizzes:", recent.quizzes.length,
+        "lessons:", (recent.lessons || []).length,
         "profiles:", recent.profiles.length,
     );
 
@@ -359,6 +375,7 @@ async function handleCron(req, res) {
             courses: recent.courses.length,
             folders: recent.folders.length,
             quizzes: recent.quizzes.length,
+            lessons: (recent.lessons || []).length,
             profiles: recent.profiles.length,
         },
     });

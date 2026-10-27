@@ -280,14 +280,15 @@ async function handleLessonRequest(req, res) {
     const excerpt = lesson.password_protected ? "" : (lesson.description?.trim() || buildLessonExcerpt(lesson.content));
     const canonicalUrl = `${SITE_ORIGIN}/lesson/${encodeURIComponent(lesson.slug || lesson.id)}`;
 
+    const fullTitle = `${lesson.title} | منصة امتحانات بصمجي`;
     html = html.replace(
         /<title>[^<]*<\/title>/i,
-        `<title>${escapeHtml(lesson.title)}</title>`,
+        `<title>${escapeHtml(fullTitle)}</title>`,
     );
 
     html = replaceLinkHref(html, "canonical", canonicalUrl);
 
-    html = replaceMetaContent(html, "property", "og:title", lesson.title);
+    html = replaceMetaContent(html, "property", "og:title", fullTitle);
     html = replaceMetaContent(html, "property", "og:url", canonicalUrl);
     // Lesson-specific OG thumbnail — rendered by /api/og?lesson= (merged into
     // the shared Edge OG function; see api/og.js renderLessonImage). The
@@ -306,7 +307,7 @@ async function handleLessonRequest(req, res) {
         html = replaceMetaContent(html, "name", "twitter:description", excerpt);
         html = replaceMetaContent(html, "name", "description", excerpt);
     }
-    html = replaceMetaContent(html, "name", "twitter:title", lesson.title);
+    html = replaceMetaContent(html, "name", "twitter:title", fullTitle);
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader(
@@ -898,7 +899,7 @@ function escapeHtml(str) {
 function replaceMetaContent(html, attr, value, newContent) {
     const tagRe = new RegExp(
         `<meta[^>]*\\b${attr}=["']${escapeRegex(value)}["'][^>]*>`,
-        "i",
+        "gi",
     );
     return html.replace(tagRe, (tag) => {
         if (/content=["'][^"']*["']/i.test(tag)) {

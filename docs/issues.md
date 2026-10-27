@@ -15,13 +15,30 @@ Fix Dictation: The dictation doesn't work on Brave browser, even though other we
 ### Performance (Globally, but specially the main page)
 Performance Improvements: Currently, there are many custom mechanism fucntionalities built in JS that works perfectly, but it may exist natively in HTML, CSS, or as a browser API. In that case we shouldn't reinvent the wheel, specially if it exists natively. Anything that exists natively in HTML, CSS, or as a browser API should be used that way and we should delete any custom JS implementation that has native alternatives. That would improve performance very well. Search for everything, anything that can be implemented in HTML & CSS directly without JS should be done so. You can search the web for modern HTML & CSS, because sometimes they add new things, but watch out for compatibility with different browsers (minimum requirenment: Chrome). But I don't want to miss up any functionality, this is just for performance, not to change any fucntionality.
 
-Example 1: I lately found out that the `/quiz` page was rendering questions through the JS once, then when the user submits their answer, the JS renders the question again to inject the explanation & formal answer, I removed it and depended fully on CSS & HTML, the whole question including explanation & formal answer is now injected all at the first render, then I make things visible when the user submits the answer using CSS classes. That approach to get away from JS improved performance alot.
+Example 1: I lately found out that the `/quiz` page was rendering questions through the JS once, then when the user submits their answer, the JS renders the question again to inject the explanation & formal answer, I removed it and depended fully on CSS & HTML, the whole question including explanation & formal answer is now injected all at the first render, then I make things visible when the user submits the answer using CSS classes. That approach to get away from JS improved performance alot. (This is already patched and tested).
 
-Example 2: The markdown engine was manually detecting the direction of sentences to determine their `direction`. A previous performance update deleted all of the related code and forced it to use the native attribute `dir="auto"`. 
+Example 2: The markdown engine was manually detecting the direction of sentences to determine their `direction`. A previous performance update deleted all of the related code and forced it to use the native attribute `dir="auto"`. (This is already patched and tested). 
 
 Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is common to all pages. Its JS and CSS are the same and are imported in all pages, but the HTML is duplicated, which means it's extremely hard to maintain and update. And it became to messy. And it's not even the same, the docuement pages don't have the HTML directly in them, it's inserted from a JS file. 
 
 ## New Features
+
+### Update document pages
+I recently made a YouTube video: https://youtu.be/B8kAaa59ogI
+Explanining all of this:
+```
+أجزاء الفيديو:
+00:00 إنشاء امتحان باستخدام الباشــمبصمج 
+01:57 مراجعة الامتحان
+02:35 تعديل الامتحان
+06:02 استعمال Prompt جاهز
+07:10 رفع امتحان (للمشرفين فقط)
+07:44 إنشاء مادة جديدة
+08:08 التأكد من الرفع
+08:44 استكشاف بعض مميزات المنصة
+```
+
+Document pages that are pending or that are related should get this video embedded at the top (with ad-restricting embedding, like using YouTube's privacy-enhanced mode domain `https://www.youtube-nocookie.com/embed/`...)
 
 ### Result Pages
 

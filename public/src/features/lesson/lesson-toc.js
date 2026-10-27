@@ -9,16 +9,18 @@ import { createGeometryTocScrollSpy } from "../../shared/toc-scroll-spy.js";
 
 const MINIMIZED_KEY = "lesson_toc_minimized";
 
-export function renderLessonToc(visibleSections, visitedSectionIds, { includeComments = false, lessonHref = "" } = {}) {
-  const titled = (visibleSections || []).filter((section) => section?.title);
+export function renderLessonToc(allSections, visitedSectionIds, { includeComments = false, lessonHref = "", hiddenSectionIds = new Set() } = {}) {
+  const titled = (allSections || []).filter((section) => section?.title);
   if (titled.length < 2 && !includeComments) return "";
 
   const commentsHref = lessonHref
     ? `${lessonHref}#lesson-comments`
     : `${location.pathname}${location.search}#lesson-comments`;
-  const items = titled.map((section) => (
-    `<li><a class="doc-toc-link" href="#lesson-section-${escapeHtml(section.id)}" data-section-id="${escapeHtml(section.id)}">${escapeHtml(section.title)}</a></li>`
-  )).join("") + (includeComments
+  const items = titled.map((section) => {
+    const isHidden = hiddenSectionIds?.has?.(section.id);
+    const isVisited = visitedSectionIds?.includes?.(section.id);
+    return `<li${isHidden ? ' hidden aria-hidden="true"' : ""}><a class="doc-toc-link${isVisited ? " doc-toc-link--visited" : ""}" href="#lesson-section-${escapeHtml(section.id)}" data-section-id="${escapeHtml(section.id)}">${escapeHtml(section.title)}</a></li>`;
+  }).join("") + (includeComments
     ? `<li><a class="doc-toc-link doc-toc-link--comments" href="${escapeHtml(commentsHref)}" data-toc-comments-link><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-9.5A7.5 7.5 0 0 1 10.5 4H12"/><path d="M15 3h6M18 0v6M7.5 10h7M7.5 14h4"/></svg> تعليقات الدرس</a></li>`
     : "");
 
