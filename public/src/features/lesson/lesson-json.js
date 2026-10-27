@@ -65,8 +65,38 @@ export function normalizeLessonJson(value) {
           body: text(block.body ?? "", `Section ${sectionIndex + 1}, block ${blockIndex + 1}`, 20000),
         };
       }
+      if (block?.type === "media") {
+        const url = text(block.url ?? "", `Section ${sectionIndex + 1}, block ${blockIndex + 1} URL`, 4000).trim();
+        if (!url) invalid(`Section ${sectionIndex + 1}, block ${blockIndex + 1} needs a media URL.`);
+        const kind = ["image", "audio", "video"].includes(block.kind) ? block.kind : "image";
+        return {
+          type: "media",
+          url,
+          kind,
+          ...(typeof block.alt === "string" && block.alt ? { alt: block.alt.slice(0, 200) } : {}),
+        };
+      }
+      if (block?.type === "quizRef") {
+        const quizId = text(block.quizId ?? "", `Section ${sectionIndex + 1}, block ${blockIndex + 1} quizId`, 200).trim();
+        if (!quizId) invalid(`Section ${sectionIndex + 1}, block ${blockIndex + 1} needs a quiz ID.`);
+        return {
+          type: "quizRef",
+          quizId,
+          ...(typeof block.title === "string" && block.title ? { title: block.title.slice(0, 200) } : {}),
+        };
+      }
+      if (block?.type === "lesson-reference" || block?.type === "lessonRef") {
+        const lessonId = text(block.lessonId ?? block.lessonRefId ?? "", `Section ${sectionIndex + 1}, block ${blockIndex + 1} lessonId`, 200).trim();
+        if (!lessonId) invalid(`Section ${sectionIndex + 1}, block ${blockIndex + 1} needs a lesson ID.`);
+        return {
+          type: "lesson-reference",
+          lessonId,
+          ...(typeof block.title === "string" && block.title ? { title: block.title.slice(0, 200) } : {}),
+          ...(typeof block.slug === "string" && block.slug ? { slug: block.slug.slice(0, 200) } : {}),
+        };
+      }
       if (block?.type !== "question") {
-        invalid(`Section ${sectionIndex + 1}, block ${blockIndex + 1} must be markdown or question.`);
+        invalid(`Section ${sectionIndex + 1}, block ${blockIndex + 1} has an unsupported type.`);
       }
 
       const prompt = typeof block.prompt === "string" ? block.prompt.trim() : "";

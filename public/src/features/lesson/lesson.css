@@ -3916,6 +3916,7 @@
 .lesson-comment__edit-form textarea { min-height: 76px; }
 .lesson-comments__input-wrapper { width: 100%; min-width: 0; min-height: 44px; flex: 0 0 auto; align-self: stretch; }
 .lesson-comments__composer .lesson-comments__input-wrapper { display: block; }
+.lesson-comments__form .rich-input-highlighter__textarea { margin-top: 0; }
 .lesson-comments__composer .rich-input-highlighter__mirror,
 .lesson-comments__form--reply .rich-input-highlighter__mirror,
 .lesson-comment__edit-form .rich-input-highlighter__mirror { overflow-wrap: anywhere; }

@@ -54,7 +54,7 @@ export function renderLessonComments() {
       </div>
       <div class="lesson-comments__stat" aria-live="polite">
         <strong id="lessonCommentsVisibleCount">0</strong>
-        <span>مشاركة ظاهرة</span>
+        <span>تعليق</span>
       </div>
     </header>
     <div class="lesson-comments__toolbar">
@@ -802,8 +802,8 @@ export async function equipLessonComments(root, lessonId) {
         if (!res.ok) throw new Error(data.error || "تعذر حذف التعليق.");
         clearInteractionError();
       } catch (err) {
-      state.comments = previousComments;
-      render();
+        state.comments = previousComments;
+        render();
         showInteractionError(err.message);
       }
       return;
