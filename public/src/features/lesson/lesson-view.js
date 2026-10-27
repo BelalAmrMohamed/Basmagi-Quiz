@@ -753,7 +753,8 @@ export async function renderLessonView() {
       `</div>` +
       `</header>` +
       (() => {
-        const tocHtml = renderLessonToc(visibleSections, progress.visitedSections, { includeComments: !isUserCreated });
+        const lessonHref = `/lesson/${encodeURIComponent(lesson.slug || lesson.id)}`;
+        const tocHtml = renderLessonToc(visibleSections, progress.visitedSections, { includeComments: !isUserCreated, lessonHref });
         const mainHtml =
           `<main class="lesson-view__main">` +
           `<div class="lesson-view__body">` +

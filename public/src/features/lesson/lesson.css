@@ -3923,6 +3923,19 @@
 .lesson-comments__composer .rich-input-highlighter__mirror,
 .lesson-comments__form--reply .rich-input-highlighter__mirror,
 .lesson-comment__edit-form .rich-input-highlighter__mirror { overflow-wrap: anywhere; }
+/* The composer auto-resizes and can scroll internally. Keep the textarea and
+   its syntax mirror on identical Arabic font metrics and wrapping rules so
+   native selection/caret geometry tracks highlighted glyphs after resize. */
+.lesson-comments__composer .rich-input-highlighter__textarea,
+.lesson-comments__composer .rich-input-highlighter__mirror {
+  font-family: inherit !important;
+  font-size: .84rem !important;
+  line-height: 1.7 !important;
+  letter-spacing: normal !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
 .lesson-comment__body.md-content { overflow-wrap: anywhere; line-height: 1.75; }
 .lesson-comment__body.md-content > :first-child { margin-top: 0; }
 .lesson-comment__body.md-content > :last-child { margin-bottom: 0; }

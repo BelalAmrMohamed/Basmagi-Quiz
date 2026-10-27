@@ -21,7 +21,6 @@ Example 2: The markdown engine was manually detecting the direction of sentences
 
 Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is common to all pages. Its JS and CSS are the same and are imported in all pages, but the HTML is duplicated, which means it's extremely hard to maintain and update. And it became to messy. And it's not even the same, the docuement pages don't have the HTML directly in them, it's inserted from a JS file. 
 
-
 ## New Features
 
 ### Result Pages

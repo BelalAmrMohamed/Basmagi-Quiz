@@ -1,3 +1,4 @@
+// rich-input-highlighter.js
 import { detectLang, highlightCode } from "./markdown.js";
 
 /**
@@ -524,7 +525,7 @@ export function decorateRichContent(root, {
 
 /** One delegated, shared tooltip controller for the chat's rendered messages. */
 export function attachRichMessageTooltips(root) {
-  if (!root) return { destroy() {} };
+  if (!root) return { destroy() { } };
   const tooltip = document.createElement("div");
   tooltip.className = "rich-input-highlighter__tooltip";
   tooltip.id = `rich-message-tooltip-${Math.random().toString(36).slice(2)}`;
@@ -604,7 +605,7 @@ export function observeRichInputHighlighters({
   getCommands = () => [],
   getMentions = () => [],
 } = {}) {
-  if (!root || !selector) return { refresh() {}, destroy() {} };
+  if (!root || !selector) return { refresh() { }, destroy() { } };
   const attached = new Map();
 
   function scan() {

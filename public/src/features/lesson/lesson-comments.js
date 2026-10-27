@@ -111,7 +111,9 @@ export function equipLessonComments(root, lessonId) {
   }
 
   function permalinkFor(id) {
-    return `${location.origin}/lesson/${encodeURIComponent(lessonId)}#comment-${encodeURIComponent(id)}`;
+    // Preserve the public lesson route as opened (including a slug when one
+    // is used) so copied links always point back to this lesson.
+    return `${location.origin}${location.pathname}${location.search}#comment-${encodeURIComponent(id)}`;
   }
 
   function autoSize(textarea) {
@@ -129,6 +131,12 @@ export function equipLessonComments(root, lessonId) {
     topCount.classList.toggle("is-near-limit", length >= 1800);
     autoSize(topTextarea);
     topHighlighter.refresh();
+    // Resizing a capped textarea can make the browser scroll its native text
+    // to keep the caret visible after this input handler returns. Refresh once
+    // layout/scroll have settled or the syntax mirror lags behind selection.
+    requestAnimationFrame(() => {
+      if (topTextarea.isConnected) topHighlighter.refresh();
+    });
   }
 
   // Restore a preserved top-level draft (plan step 4.4.8 — survive
@@ -197,7 +205,7 @@ export function equipLessonComments(root, lessonId) {
     } else {
       buttons.push(`<button type="button" class="lesson-comment__link" data-action="report" data-id="${comment.id}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 21V5m0 1c5-5 11 5 16 0v11c-5 5-11-5-16 0"/></svg> إبلاغ</button>`);
     }
-    buttons.push(`<a class="lesson-comment__link" href="${escapeHtml(permalinkFor(comment.id))}" data-action="permalink" data-id="${comment.id}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l3-3A5 5 0 0 0 13 2.9l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.1 0l-3 3A5 5 0 0 0 11 21.1l1.7-1.7"/></svg> رابط</a>`);
+    buttons.push(`<button type="button" class="lesson-comment__link" data-action="permalink" data-id="${comment.id}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l3-3A5 5 0 0 0 13 2.9l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.1 0l-3 3A5 5 0 0 0 11 21.1l1.7-1.7"/></svg> نسخ الرابط</button>`);
     return buttons.join("");
   }
 
@@ -683,14 +691,26 @@ export function equipLessonComments(root, lessonId) {
     if (action === "reply") return openReplyComposer(id);
 
     if (action === "permalink") {
-      event.preventDefault();
       const shareUrl = permalinkFor(id);
-      const targetUrl = new URL(shareUrl);
-      if (targetUrl.pathname === location.pathname) history.replaceState(null, "", `${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`);
-      else history.pushState(null, "", `${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`);
-      const target = section.querySelector(`#comment-${id}`);
-      target?.scrollIntoView({ behavior: "smooth", block: "center" });
-      navigator.clipboard?.writeText(shareUrl).catch(() => { });
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(shareUrl);
+        } else {
+          const helper = document.createElement("textarea");
+          helper.value = shareUrl;
+          helper.setAttribute("readonly", "");
+          helper.style.position = "fixed";
+          helper.style.opacity = "0";
+          document.body.appendChild(helper);
+          helper.select();
+          const copied = document.execCommand("copy");
+          helper.remove();
+          if (!copied) throw new Error("تعذّر نسخ الرابط.");
+        }
+        showPublishedNotice("تم نسخ رابط المشاركة.");
+      } catch (_) {
+        showInteractionError("تعذّر نسخ الرابط. حاول مرة أخرى.");
+      }
       return;
     }
 
