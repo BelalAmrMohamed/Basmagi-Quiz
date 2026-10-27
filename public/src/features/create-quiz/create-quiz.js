@@ -450,8 +450,138 @@ function resetHistory() {
 }
 
 // ============================================================================
-// INITIALIZATION
+// INITIALIZATION & PRELOADED IMPORT
 // ============================================================================
+
+/**
+ * Decodes UTF-8 string from Base64 safely in browser (supports Arabic & Unicode).
+ */
+function decodeBase64Utf8(str) {
+  try {
+    const binary = atob(str);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch (e) {
+    return atob(str);
+  }
+}
+
+/**
+ * Checks URL hash (#data=... or #import=...) or query params (?data=... or ?import=...)
+ * for pre-generated quiz JSON (e.g. from Claude or ChatGPT connector 1-click links).
+ * If valid, loads it directly into the editor and bypasses the entry screen.
+ */
+function handlePreloadedQuizFromUrl() {
+  let rawData = null;
+
+  // 1. Check URL hash first (preferred — never sent to server, no URL length limits on server)
+  if (window.location.hash && window.location.hash.length > 1) {
+    const hash = window.location.hash.slice(1);
+    const params = new URLSearchParams(hash);
+    rawData = params.get("data") || params.get("import");
+    if (!rawData && (hash.startsWith("{") || hash.startsWith("%7B"))) {
+      rawData = hash;
+    }
+  }
+
+  // 2. Check query params fallback
+  if (!rawData && window.location.search) {
+    const params = new URLSearchParams(window.location.search);
+    rawData = params.get("data") || params.get("import");
+  }
+
+  if (!rawData) return false;
+
+  try {
+    let jsonString = rawData;
+    if (rawData.startsWith("base64,")) {
+      jsonString = decodeBase64Utf8(rawData.slice(7));
+    } else {
+      try {
+        jsonString = decodeURIComponent(rawData);
+      } catch (e) {
+        jsonString = rawData;
+      }
+      if (!jsonString.trim().startsWith("{")) {
+        try {
+          const decoded = decodeBase64Utf8(jsonString);
+          if (decoded.trim().startsWith("{")) jsonString = decoded;
+        } catch (e) { /* ignore */ }
+      }
+    }
+
+    const parsed = parseQuizJson(jsonString);
+    if (!parsed || !Array.isArray(parsed.questions) || !parsed.questions.length) {
+      return false;
+    }
+
+    resetPageData();
+    quizData.title = parsed.meta?.title || "امتحان جديد";
+    quizData.description = parsed.meta?.description || "";
+    quizData.source = parsed.meta?.source || "تم التوليد بواسطة الذكاء الاصطناعي";
+
+    const titleEl = document.getElementById("quizTitle");
+    const descEl = document.getElementById("quizDescription");
+    const sourceInput = document.getElementById("quizSource");
+    if (titleEl) {
+      titleEl.value = quizData.title;
+      updateCharCount("titleCharCount", quizData.title.length, 100);
+    }
+    if (descEl) {
+      descEl.value = quizData.description;
+      updateCharCount("descCharCount", quizData.description.length, 500);
+      if (typeof autoResizeMdSource === "function") autoResizeMdSource(descEl);
+    }
+    if (sourceInput) {
+      sourceInput.value = quizData.source;
+      updateCharCount("sourceCharCount", quizData.source.length, 250);
+    }
+
+    parsed.questions.forEach((q) => {
+      const questionId = ++questionIdCounter;
+      let importedCorrect;
+      if (Array.isArray(q.correct)) {
+        importedCorrect = q.correct;
+      } else if (typeof q.correct === "number" && !Number.isNaN(q.correct)) {
+        importedCorrect = [q.correct];
+      } else {
+        importedCorrect = [];
+      }
+      const question = {
+        id: questionId,
+        q: q.q || "",
+        options: q.options || ["", ""],
+        correct: importedCorrect,
+        ...(q.multiSelect !== undefined ? { multiSelect: Boolean(q.multiSelect) } : {}),
+        explanation: q.explanation || "",
+        ...(q.answer ? { answer: q.answer } : {}),
+      };
+      quizData.questions.push(question);
+      renderQuestion(question);
+    });
+
+    finishFormInit();
+    updateAppTitleBar();
+    pushHistorySnapshot();
+    autosave();
+
+    // Clean URL hash/query without reloading
+    const cleanUrl = window.location.pathname;
+    try {
+      history.replaceState(null, "", cleanUrl);
+    } catch (e) { /* ignore */ }
+
+    showNotification(
+      "تم استيراد الامتحان!",
+      `تم استيراد ${parsed.questions.length} سؤال بنجاح من الرابط المباشر.`,
+      "success"
+    );
+    return true;
+  } catch (err) {
+    console.warn("[create-quiz] Failed to parse preloaded quiz from URL:", err);
+    return false;
+  }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   migrateWorkspaceDrafts();
@@ -485,6 +615,9 @@ document.addEventListener("DOMContentLoaded", () => {
     editingQuizId = editId;
     showQuizForm();
     loadQuizFromLocalStorage(editId);
+  } else if (handlePreloadedQuizFromUrl()) {
+    // Deep-linked 1-click import (#data=... or ?data=...) from Claude/ChatGPT
+    // opened straight into form with prefilled questions.
   } else {
     showEntryScreen();
   }

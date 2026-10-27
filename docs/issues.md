@@ -23,23 +23,6 @@ Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is com
 
 ## New Features
 
-### Update document pages
-I recently made a YouTube video: https://youtu.be/B8kAaa59ogI
-Explanining all of this:
-```
-أجزاء الفيديو:
-00:00 إنشاء امتحان باستخدام الباشــمبصمج 
-01:57 مراجعة الامتحان
-02:35 تعديل الامتحان
-06:02 استعمال Prompt جاهز
-07:10 رفع امتحان (للمشرفين فقط)
-07:44 إنشاء مادة جديدة
-08:08 التأكد من الرفع
-08:44 استكشاف بعض مميزات المنصة
-```
-
-Document pages that are pending or that are related should get this video embedded at the top (with ad-restricting embedding, like using YouTube's privacy-enhanced mode domain `https://www.youtube-nocookie.com/embed/`...)
-
 ### Result Pages
 
 #### Videos (Easy to make and intersting idea)
@@ -52,13 +35,24 @@ Document pages that are pending or that are related should get this video embedd
   * ميمز تشجيع إيجابية
 * Some vidoes will be displayed based on the percentage of the result.
 
-### MCQ Server to Connect to Claude
-- I want users to be able to connect claude to the platform so Claude can do actions.
-- Therefore the `Basmagi Quiz` will need to be a connector to work for Claude.
+## MCP Server to Connect to Claude & ChatGPT (Implemented)
+* Status: **Completed**
+* Server Endpoint: `https://quiz.basmagi.com/api/mcp` (proxied to Supabase Edge Function `supabase/functions/mcp/index.ts`)
+* Authentication: **No Auth** (adheres strictly to zero-tracking / no-student-data policy)
+* Capabilities:
+  * `search_catalog`: Search courses, folders, quizzes, and lessons by keyword.
+  * `get_quiz`: Retrieve full quiz questions, options, answers, and explanations.
+  * `get_lesson`: Retrieve full lesson content and sections.
+  * `get_prompts`: Retrieve standard prompt templates (`ai-prompts.js` and `ai-agent-default-prompts.js`).
+  * `create_quiz_import_link`: Validates quiz structure and generates a 1-click import URL (`/create-quiz#data=base64,...`) opening directly in the editor.
+  * `get_creator_info`: Public portfolio and contact links for Belal Amr Mohamed.
+* 1-Click Import in Editor: Implemented in [create-quiz.js](file:///d:/Code%20projects/Websites/منصة%20إمتحانات%20بصمجي/public/src/features/create-quiz/create-quiz.js) via URL hash `#data=...` decoding.
+* Zero Vercel Function Impact: 12/12 serverless function cap preserved on Vercel Hobby.
 
 ### Home Page
 
 #### Info Modals
+* Advanced Loading shimmer/animation.
 * Quizzes, Lessons, Folders, and Courses store so much info (Check their tables in [DB Context](Database-Schema-Context.md)):
   * Extend the info in the info modal `quiz-info-dialog` (don't show the password ofcourse, but you can show an indication like (privacy: has password) or a similar label)
   * Extend the info in the course info modal, too.
