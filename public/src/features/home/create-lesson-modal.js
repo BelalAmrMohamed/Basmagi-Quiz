@@ -1,6 +1,6 @@
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { showNotification } from "../../components/notifications/notifications.js";
-import { hasSameLevelCollision } from "./user-quizzes-folders.js";
+import { hasSameLevelCollision, currentFolderId } from "./user-quizzes-folders.js";
 import { renderUserQuizzesView } from "./user-quizzes-view.js";
 import { wireModalDismiss, fadeOutAndRemove } from "./modal-utils.js";
 import { normalizeLessonJson } from "../lesson/lesson-json.js";
@@ -12,7 +12,7 @@ Use this exact structure:
 {
   "title": "Lesson title",
   "description": "Short optional description",
-  "source": "Optional URL or source citation",
+  "source": "https://... (Direct URL or link to the source lecture/drive/book; must be a link whenever available)",
   "sections": [
     {
       "title": "Section title",
@@ -39,7 +39,7 @@ Use this exact structure:
   ]
 }
 \`\`\`
-Create multiple logically ordered sections as needed. Each section may contain multiple Markdown blocks and embedded interactive questions. For single-answer MCQs use one zero-based correctIndex; for multiple-answer MCQs use "multiSelect": true and a zero-based "correctIndexes" array instead. Every MCQ must have 2-8 options, a correct answer, and a useful explanation. Every essay question must include a complete modelAnswer (Students Answers will be rated based on it using keyword matching). Keep the lesson accurate, clear, appropriately detailed, and useful for studying. Return valid JSON.`;
+Create multiple logically ordered sections as needed. Each section may contain multiple Markdown blocks and embedded interactive questions. For single-answer MCQs use one zero-based correctIndex; for multiple-answer MCQs use "multiSelect": true and a zero-based "correctIndexes" array instead. Every MCQ must have 2-8 options, a correct answer, and a useful explanation. Every essay question must include a complete modelAnswer (Students Answers will be rated based on it using keyword matching). The "source" MUST be a direct link/URL (e.g. Google Drive link to lecture slides or PDF). Keep the lesson accurate, clear, appropriately detailed, and useful for studying. Return valid JSON.`;
 
 export function openInlineCreateLessonModal() {
   if (!document.getElementById("modal-pop-in-style")) {
@@ -80,7 +80,7 @@ export function openInlineCreateLessonModal() {
     <p class="create-quiz-modal__subtitle">الصق JSON للدرس كاملاً، بما يشمل العنوان والأقسام والأسئلة المدمجة.</p>
     <div class="create-quiz-modal__form-group create-quiz-modal__form-group--content">
       <label for="inlineLessonJson" class="create-quiz-modal__label">JSON الدرس</label>
-      <textarea id="inlineLessonJson" class="create-quiz-modal__textarea" rows="11" spellcheck="false" dir="ltr" placeholder='{"title":"...","description":"...","sections":[{"title":"...","blocks":[{"type":"markdown","body":"..."}]}]}'></textarea>
+      <textarea id="inlineLessonJson" class="create-quiz-modal__textarea" rows="11" spellcheck="false" dir="ltr" placeholder='{"title":"...","description":"...","source":"https://...","sections":[{"title":"...","blocks":[{"type":"markdown","body":"..."}]}]}'></textarea>
     </div>
     <div class="create-quiz-modal__actions">
       <div class="create-quiz-modal__main-actions">
@@ -133,8 +133,15 @@ export function openInlineCreateLessonModal() {
       return;
     }
 
-    if (hasSameLevelCollision(userItems, { type: "lesson", title, parentId: null })) {
-      showNotification("تعذّر إنشاء الدرس", "يوجد درس بالاسم نفسه في المستوى الرئيسي من امتحاناتك.", "warning");
+    const targetParentId = currentFolderId || null;
+    if (hasSameLevelCollision(userItems, { type: "lesson", title, parentId: targetParentId })) {
+      showNotification(
+        "تعذّر إنشاء الدرس",
+        targetParentId
+          ? "يوجد درس بنفس الاسم في هذا المجلد بالفعل. اختر اسماً مختلفاً."
+          : "يوجد درس بالاسم نفسه في المستوى الرئيسي من امتحاناتك.",
+        "warning",
+      );
       return;
     }
 
@@ -145,7 +152,7 @@ export function openInlineCreateLessonModal() {
       meta: {
         type: "lesson",
         title,
-        parentId: null,
+        parentId: targetParentId,
         createdAt: new Date().toLocaleString("en-US"),
         updatedAt: now,
         readerPrefs: { fontId: "default" },
@@ -165,7 +172,13 @@ export function openInlineCreateLessonModal() {
     }
     close();
     renderUserQuizzesView();
-    showNotification("تم إنشاء الدرس", 'يمكنك العثور عليه في "امتحاناتك".', "success");
+    showNotification(
+      "تم إنشاء الدرس",
+      targetParentId
+        ? "تم إنشاء الدرس وإضافته إلى هذا المجلد بنجاح."
+        : 'يمكنك العثور عليه في "امتحاناتك".',
+      "success",
+    );
   };
 
   modalCard.querySelector("#inlineLessonCreate").addEventListener("click", createLesson);

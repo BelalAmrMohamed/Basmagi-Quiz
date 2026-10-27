@@ -741,12 +741,8 @@ export function renderUserQuizzesView() {
         };
         menu.appendChild(quizOpt);
 
-        // "درس جديد" — opens the lesson authoring page. Lessons have no
-        // folder picker (create-lesson.js files every new lesson at the
-        // "امتحاناتك" root; the user moves it afterwards), so this is a plain
-        // navigation and, unlike "مادة جديدة" below, needs no
-        // currentFolderId gating. Same destination as the "إنشاء درس" entry
-        // in the #userQuizContextMenu "إنشاء" submenu.
+        // "درس جديد" — opens the inline create lesson modal, which creates the
+        // lesson directly in currentFolderId (or root if at root).
         const lessonOpt = document.createElement("button");
         lessonOpt.type = "button";
         lessonOpt.className = "exam-action-btn";

@@ -79,6 +79,8 @@ let lessonData = emptyLessonData();
 let currentDraftId = null;
 /** id of an already-saved local lesson row being edited (?edit=<id>), or null. */
 let editingLessonId = null;
+/** Target folder ID if passed via URL (?folder=<id> or ?parentId=<id>). */
+let targetFolderId = new URLSearchParams(window.location.search).get("folder") || new URLSearchParams(window.location.search).get("parentId") || null;
 
 /** Published Supabase lesson currently open in the editor, if any. */
 let publishedLessonId = null;
@@ -208,7 +210,7 @@ function buildRow(id, type, existing) {
             ...(existing?.meta || {}),
             type,
             title: lessonData.title.trim(),
-            parentId: existing?.meta?.parentId ?? null,
+            parentId: existing?.meta?.parentId ?? targetFolderId ?? null,
             createdAt: existing?.meta?.createdAt || new Date().toLocaleString("en-US"),
             updatedAt: now,
             readerPrefs: readerPrefsFromData(),
@@ -3182,10 +3184,12 @@ window.saveLesson = async function () {
                     _writeUserItems(items);
                     savedId = editingLessonId;
                 }
-            } else {
-                // New lesson (from a draft): file it at the workspace root.
-                if (hasLessonLevelCollision(items, { title, parentId: null })) {
-                    errorMessage = "يوجد درس بنفس الاسم في المستوى الرئيسي من امتحاناتك بالفعل.";
+                // New lesson: file it into targetFolderId (if passed) or workspace root.
+                const targetParent = targetFolderId || null;
+                if (hasLessonLevelCollision(items, { title, parentId: targetParent })) {
+                    errorMessage = targetParent
+                        ? "يوجد درس بنفس الاسم في هذا المجلد بالفعل."
+                        : "يوجد درس بنفس الاسم في المستوى الرئيسي من امتحاناتك بالفعل.";
                 } else {
                     const id = `user_lesson_${Date.now()}`;
                     items.push(buildRow(id, LESSON_TYPE, null));

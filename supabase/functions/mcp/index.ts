@@ -39,7 +39,7 @@ The object must use this shape:
   "meta": {
     "title": "A clear, specific quiz title",
     "description": "A short description of the quiz and what it assesses",
-    "source": "The supplied source name, book, URL, or material; use an empty string if none was supplied"
+    "source": "https://... (Direct URL or link to the source lecture/drive/book; MUST be a web link, not plain text. Use empty string \"\" only if no link exists)"
   },
   "questions": [
     {
@@ -64,7 +64,8 @@ The object must use this shape:
 }
 
 Schema and content rules:
-- Always provide a meaningful meta.title, meta.description, and meta.source.
+- Always provide a meaningful meta.title and meta.description.
+- The meta.source MUST be a direct link/URL (such as a Google Drive link to lecture slides/PDF, lecture video URL, or web link). NEVER write plain descriptive text or titles in the source field; always provide a URL (https://...). Use an empty string "" only if no link is available.
 - Include a non-empty questions array. Each question needs q and an explanation. For multiple-choice questions, provide options and set correct to the zero-based index of the right option. For a genuinely multi-answer question, set correct to an array of zero-based indexes and multiSelect to true.
 - Use {"q":"...","answer":"...","explanation":"..."} for open-ended/essay questions.
 - A two-option question can be used for true/false.
@@ -73,19 +74,19 @@ Schema and content rules:
 const PROMPTS_REGISTRY: Record<string, { description: string; text: string }> = {
   general_purpose_quiz: {
     description: "Standard prompt for generating quizzes from raw study material",
-    text: `${QUIZ_JSON_INSTRUCTIONS}\n\nAdapt the question types and difficulty to the supplied subject and audience. For unsolved questions, solve them carefully and explain the reasoning.\n\nNow convert the source material I provide:`,
+    text: `${QUIZ_JSON_INSTRUCTIONS}\n\nAdapt the question types and difficulty to the supplied subject and audience. For unsolved questions, solve them carefully and explain the reasoning. The "source" MUST be a direct link/URL (e.g. Google Drive link to lecture slides or PDF), not plain text.\n\nNow convert the source material I provide:`,
   },
   english_specializing: {
     description: "Specialized prompt for English grammar, vocabulary, and reading comprehension quizzes",
-    text: `${QUIZ_JSON_INSTRUCTIONS}\n\nFor English-language material:\n- Assess skills present (grammar, vocabulary, reading comprehension, usage).\n- Use natural English, plausible distractors, and context-rich examples.\n- For reading questions, include the passage in the question text with Markdown formatting, then ask a focused question about it.\n\nNow convert the English source material I provide:`,
+    text: `${QUIZ_JSON_INSTRUCTIONS}\n\nFor English-language material:\n- Assess skills present (grammar, vocabulary, reading comprehension, usage).\n- Use natural English, plausible distractors, and context-rich examples.\n- For reading questions, include the passage in the question text with Markdown formatting, then ask a focused question about it.\n- The "source" MUST be a direct link/URL (e.g. Google Drive link or web URL), not plain text.\n\nNow convert the English source material I provide:`,
   },
   math_specializing: {
     description: "Specialized prompt for mathematics and science quizzes with LaTeX formula support",
-    text: `${QUIZ_JSON_INSTRUCTIONS}\n\nFor mathematics and science material:\n- Preserve mathematical meaning and use correct LaTeX delimiters: $...$ inline and $$...$$ display math.\n- Include a mix of conceptual and computational questions when appropriate.\n- Check calculations and symbolic answers before returning them.\n\nNow convert the mathematics/science source material I provide:`,
+    text: `${QUIZ_JSON_INSTRUCTIONS}\n\nFor mathematics and science material:\n- Preserve mathematical meaning and use correct LaTeX delimiters: $...$ inline and $$...$$ display math.\n- Include a mix of conceptual and computational questions when appropriate.\n- Check calculations and symbolic answers before returning them.\n- The "source" MUST be a direct link/URL (e.g. Google Drive link or web URL), not plain text.\n\nNow convert the mathematics/science source material I provide:`,
   },
   assistant_system_prompt: {
     description: "Official system prompt of El-Bashmebasamag the smart platform assistant",
-    text: `You are El-Bashmebasamag, the smart assistant for Basamgy Exams Platform — an educational platform that lets users create, browse, and manage exams and lessons.\nExplain academic topics accurately. Propose quiz and lesson content cleanly. Always respect zero-based indexing for question options (correct: 0 is the first option).`,
+    text: `You are El-Bashmebasamag, the smart assistant for Basamgy Exams Platform — an educational platform that lets users create, browse, and manage exams and lessons.\nExplain academic topics accurately. Propose quiz and lesson content cleanly. Always respect zero-based indexing for question options (correct: 0 is the first option). When creating quizzes or lessons, the "source" field MUST always be a link/URL (like a Google Drive lecture link or web URL), never just plain text.`,
   },
 };
 
@@ -262,7 +263,7 @@ const TOOLS = [
       properties: {
         title: { type: "string", description: "Quiz title" },
         description: { type: "string", description: "Quiz description" },
-        source: { type: "string", description: "Reference or source material" },
+        source: { type: "string", description: "Direct URL/link to the source material (e.g. Google Drive link to lecture slides/PDF, video URL, or document link). MUST be a URL (https://...), NEVER plain text." },
         questions: {
           type: "array",
           description: "Array of questions",
@@ -294,7 +295,7 @@ const TOOLS = [
       properties: {
         title: { type: "string", description: "Lesson title (1-200 chars)." },
         description: { type: "string", description: "Short summary (max 1200 chars)." },
-        source: { type: "string", description: "Source or book reference (max 500 chars)." },
+        source: { type: "string", description: "Direct URL/link to the source lecture, Drive folder, PDF, or recording (e.g. Google Drive link or web URL). MUST be a URL (https://...), NEVER plain text." },
         sections: {
           type: "array",
           description: "Array of sections (1-60 sections)",

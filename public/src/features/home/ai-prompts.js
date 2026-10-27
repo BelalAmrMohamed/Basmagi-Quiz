@@ -7,7 +7,7 @@ The object must use this shape:
   "meta": {
     "title": "A clear, specific quiz title",
     "description": "A short description of the quiz and what it assesses",
-    "source": "The supplied source name, book, URL, or material; use an empty string if none was supplied"
+    "source": "https://... (Direct URL or link to the source lecture, Google Drive folder, PDF, or video; MUST be a link, not plain text. Use empty string \"\" only if no link was provided)"
   },
   "questions": [
     {
@@ -32,7 +32,7 @@ The object must use this shape:
 }
 
 Schema and content rules:
-- Always provide a meaningful meta.title, meta.description, and meta.source. Do not invent a source: name the supplied material accurately, or use an empty string when no source is provided.
+- Always provide a meaningful meta.title, meta.description, and meta.source. The "source" field MUST be a direct link/URL (such as a Google Drive link to lecture slides/PDF, video URL, or document link). Do NOT write plain text names in "source"; always provide a link. Use an empty string "" only when no source link is provided.
 - Include a non-empty questions array. Each question needs q and an explanation. For multiple-choice questions, provide options and set correct to the zero-based index of the right option. For a genuinely multi-answer question, set correct to an array of zero-based indexes and multiSelect to true. Do not mark a single-answer question as multiSelect.
 - Use {"q":"...","answer":"...","explanation":"..."} for open-ended/essay questions. The answer is the expected model answer or grading guidance.
 - A two-option question can be used for true/false. Make options clear and keep each correct index within the options array.

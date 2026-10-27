@@ -906,8 +906,7 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
         },
       },
       {
-        // Lessons have no folder picker — create-lesson.js files a new
-        // lesson at the "امتحاناتك" root regardless of where this was opened.
+        // Creates a new lesson in currentFolderId (or root if at root).
         icon: CREATE_LESSON_SVG,
         label: "إنشاء درس",
         onClick: async () => {
