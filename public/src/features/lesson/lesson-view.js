@@ -1130,4 +1130,26 @@ export async function renderLessonView() {
       }
     },
   );
+
+  // Resolve any initial hash anchor (e.g. #lesson-comments, #comment-..., #lesson-section-...)
+  // once the dynamic DOM has rendered, which the browser's native initial scroll missed
+  // before the asynchronous lesson fetch completed.
+  const initialHash = window.location.hash;
+  if (initialHash) {
+    const scrollToTarget = () => {
+      try {
+        const target = container.querySelector(initialHash);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+          return true;
+        }
+      } catch {
+        // ignore invalid selector
+      }
+      return false;
+    };
+    if (!scrollToTarget()) {
+      window.setTimeout(scrollToTarget, 100);
+    }
+  }
 }

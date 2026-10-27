@@ -442,6 +442,10 @@ export async function equipLessonComments(root, lessonId) {
   }
 
   function maybeScrollToPermalink() {
+    if (location.hash === "#lesson-comments") {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     if (!location.hash.startsWith("#comment-")) return;
     const target = section.querySelector(location.hash);
     if (target) {
@@ -876,12 +880,21 @@ export async function equipLessonComments(root, lessonId) {
     }
   });
 
+  const handleHashChange = () => {
+    maybeScrollToPermalink();
+  };
+  window.addEventListener("hashchange", handleHashChange);
+  if (location.hash === "#lesson-comments" || location.hash.startsWith("#comment-")) {
+    window.setTimeout(() => maybeScrollToPermalink(), 80);
+  }
+
   (async () => {
     const handledPermalink = await loadPermalinkIfPresent();
     if (!handledPermalink) load();
   })();
 
   return () => {
+    window.removeEventListener("hashchange", handleHashChange);
     closeAuthorCard();
     document.removeEventListener("click", handleDocumentClick);
     document.removeEventListener("keydown", handleDocumentKeydown);
