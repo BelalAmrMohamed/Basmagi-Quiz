@@ -458,14 +458,55 @@ document.addEventListener("visibilitychange", () => {
 // =============================================================================
 
 /**
- * Decodes UTF-8 string from Base64 safely in browser (supports Arabic, Unicode, Base64URL, and unpadded strings).
+ * Decodes UTF-8 string from Base64 safely in browser (supports Arabic, Unicode, Base64URL,
+ * percent-encoded %20/%2B, unpadded strings, and soft line-breaks from ChatGPT/markdown).
  */
 export function decodeBase64Utf8(str) {
-    let cleaned = String(str || "").trim().replace(/\s+/g, "+").replace(/-/g, "+").replace(/_/g, "/");
+    let raw = String(str || "").trim();
+
+    // 1. Decode percent-encoding (%20, %2B, %2F, %3D, etc.) if present
+    if (/%[0-9a-fA-F]{2}/.test(raw)) {
+        try {
+            raw = decodeURIComponent(raw);
+        } catch (_) {
+            raw = raw.replace(/%20/gi, " ");
+        }
+    }
+
+    // 2. ChatGPT and markdown renderers often insert soft-wrap whitespace/newlines
+    // into long URLs. In Base64, whitespace is never a valid character.
+    // Strategy A (Preferred): Strip all whitespace completely.
+    // Strategy B (Query param fallback): Replace whitespace with '+' (where URLSearchParams converted '+' to ' ').
+    const candidateStrip = raw.replace(/\s+/g, "").replace(/-/g, "+").replace(/_/g, "/");
+    const candidateReplace = raw.replace(/\s+/g, "+").replace(/-/g, "+").replace(/_/g, "/");
+
+    const candidates = candidateStrip === candidateReplace ? [candidateStrip] : [candidateStrip, candidateReplace];
+
+    for (const cand of candidates) {
+        let cleaned = cand;
+        while (cleaned.length % 4 !== 0) {
+            cleaned += "=";
+        }
+        try {
+            const binary = atob(cleaned);
+            const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+            const decoded = new TextDecoder().decode(bytes);
+            const trimmed = decoded.trim();
+            if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+                try {
+                    JSON.parse(trimmed);
+                    return decoded;
+                } catch (_) {}
+            } else {
+                return decoded;
+            }
+        } catch (_) {}
+    }
+
+    let cleaned = candidateStrip;
     while (cleaned.length % 4 !== 0) {
         cleaned += "=";
     }
-
     try {
         const binary = atob(cleaned);
         const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
@@ -488,6 +529,8 @@ function handlePreloadedLessonFromUrl() {
         const hash = window.location.hash.slice(1);
         if (hash.startsWith("data=") || hash.startsWith("import=")) {
             rawData = hash.slice(hash.indexOf("=") + 1);
+            const ampIdx = rawData.indexOf("&");
+            if (ampIdx !== -1) rawData = rawData.slice(0, ampIdx);
         } else if (hash.startsWith("{") || hash.startsWith("%7B")) {
             rawData = hash;
         } else {
@@ -506,6 +549,8 @@ function handlePreloadedLessonFromUrl() {
         const search = window.location.search.slice(1);
         if (search.startsWith("data=") || search.startsWith("import=")) {
             rawData = search.slice(search.indexOf("=") + 1);
+            const ampIdx = rawData.indexOf("&");
+            if (ampIdx !== -1) rawData = rawData.slice(0, ampIdx);
         } else {
             const params = new URLSearchParams(window.location.search);
             rawData = params.get("data") || params.get("import");

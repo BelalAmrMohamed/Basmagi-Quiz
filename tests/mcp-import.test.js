@@ -2,7 +2,43 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 function decodeBase64Utf8(str) {
-  let cleaned = String(str || "").trim().replace(/\s+/g, "+").replace(/-/g, "+").replace(/_/g, "/");
+  let raw = String(str || "").trim();
+
+  if (/%[0-9a-fA-F]{2}/.test(raw)) {
+    try {
+      raw = decodeURIComponent(raw);
+    } catch (_) {
+      raw = raw.replace(/%20/gi, " ");
+    }
+  }
+
+  const candidateStrip = raw.replace(/\s+/g, "").replace(/-/g, "+").replace(/_/g, "/");
+  const candidateReplace = raw.replace(/\s+/g, "+").replace(/-/g, "+").replace(/_/g, "/");
+
+  const candidates = candidateStrip === candidateReplace ? [candidateStrip] : [candidateStrip, candidateReplace];
+
+  for (const cand of candidates) {
+    let cleaned = cand;
+    while (cleaned.length % 4 !== 0) {
+      cleaned += "=";
+    }
+    try {
+      const binary = atob(cleaned);
+      const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+      const decoded = new TextDecoder().decode(bytes);
+      const trimmed = decoded.trim();
+      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+        try {
+          JSON.parse(trimmed);
+          return decoded;
+        } catch (_) {}
+      } else {
+        return decoded;
+      }
+    } catch (_) {}
+  }
+
+  let cleaned = candidateStrip;
   while (cleaned.length % 4 !== 0) {
     cleaned += "=";
   }
@@ -60,6 +96,19 @@ test("MCP 1-click import: Base64URL and spaces resilience (Claude / ChatGPT payl
   const decodedSpaces = decodeBase64Utf8(withSpaces);
   const parsedSpaces = JSON.parse(decodedSpaces);
   assert.equal(parsedSpaces.questions.length, 3);
+});
+
+test("MCP 1-click import: ChatGPT %20 line-wrap payload resilience", () => {
+  const chatGptPayload = "eyJtZXRhIjp7InRpdGxlIjoiRXRoaWNzLCBNb3JhbGl0eSwgSW50ZWdyaXR5LCBhbmQgTGF3cyDigJQgVHJ1ZSBvciBGYWxzZSIsImRlc2NyaXB0aW9uIjoiQSBmaXZlLXF1ZXN0aW9uIFRydWUg%20b3IgRmFsc2UgcXVpeiBhYm91dCBldGhpY3MgYW5kIHByb2Zlc3Npb25hbCBjb25kdWN0LiIsInNvdXJjZSI6IlVzZXItcHJvdmlkZWQgcXVlc3Rpb25zIn0sInF1ZXN0aW9ucyI6W3sicSI6IkV0aGljcyBpcyBkZWZpbmVkIGFzIHRoZSBzdHVkeSBvZiB3aGF0IGl0IG1lYW5zIHRvIFwiZG8gdGhlIHJpZ2h0IHRoaW5nLlwiIiwib3B0aW9ucyI6WyJUcnVlIiwiRmFsc2UiXSwiY29ycmVjdCI6WzBdLCJtdWx0aVNlbGVjdCI6ZmFsc2UsImV4cGxhbmF0aW9uIjoiRXRoaWNzIGV4YW1pbmVzIHByaW5jaXBsZXMgb2YgcmlnaHQgYW5kIHdyb25nIGFuZCB3aGF0IGl0IG1lYW5zIHRvIGFjdCByaWdodGx5LiJ9LHsicSI6Ik1vcmFsaXR5IHJlZmVycyB0byBzb2NpZXR5J3MgcnVsZXMgb2YgY29uZHVjdCBiYXNlZCBvbiBldGhpY2FsIGJlbGllZnMuIiwib3B0aW9ucyI6WyJUcnVlIiwiRmFsc2UiXSwiY29ycmVjdCI6WzBdLCJtdWx0aVNlbGVjdCI6ZmFsc2UsImV4cGx%20hbmF0aW9uIjoiTW9yYWxpdHkgY29uY2VybnMgbm9ybXMgYW5kIGJlbGllZnMgYWJvdXQgcmlnaHQgYW5kIHdyb25nIHRoYXQgZ3VpZGUgY29uZHVjdCwgb2Z0ZW4gd2l0aGluIGEgc29jaWV0eS4ifSx7InEiOiJJbnRlZ3JpdHkgbWVhbnMgYWN0aW5nIGFjY29yZGluZyB0byBjb252ZW5pZW5jZSByYXRoZXIgdGhhbiBtb3JhbCBwcmluY2lwbGVzLiIsIm9wdGlvbnMiOlsiVHJ1ZSIsIkZhbHNlIl0sImNvcnJlY3QiOlsxXSwibXVsdGlTZWxlY3QiOmZhbHNlLCJleHBsYW5hdGlvbiI6IkludGVncml0eSBtZWFucyBhZGhlcmluZyB0byBtb3JhbCBhbmQgZXRoaWNhbCBwcmluY2lwbGVzLCBldmVuIHdoZW4gZG9pbmcgc28gaXMgaW5jb252ZW5pZW50LiJ9LHsicSI6Ikxhd3MgYXJlIGFsd2F5cyBlcXVpdmFsZW50IHRvIGV0aGljcyBhbmQgY292ZXIgYWxsIG1vcmFsIHNpdHVhdGlvbnMuIiwib3B0aW9ucyI6WyJUcnVlIiwiRmFsc2UiXSwiY29ycmVjdCI6WzFdLCJtdWx0aVNlbGVjdCI6ZmFsc2UsImV4cGx%20hbmF0aW9uIjoiTGF3IGFuZCBldGhpY3Mgb3ZlcmxhcCBidXQgYXJlIG5vdCBpZGVudGljYWw7IGxhd3MgZG8gbm90IGFkZHJlc3MgZXZlcnkgbW9yYWwgc2l0dWF0aW9uLiJ9LHsicSI6IkNvcnBvcmF0ZSBjb2RlcyBvZiBldGhpY3MgYXJlIHVzdWFsbHkgbWVhbnQgdG8gZ3VpZGUgZW1wbG95ZWVzJyBiZWhhdmlvciBhbmQgZGVjaXNpb24tbWFraW5nLiIsIm9wdGlvbnMiOlsiVHJ1ZSIsIkZhbHNlIl0sImNvcnJlY3QiOlswXSwibXVsdGlTZWxlY3QiOmZhbHNlLCJleHBsYW5hdGlvbiI6IkNvcnBvcmF0ZSBjb2RlcyBvZiBldGhpY3Mgc2V0IGV4cGVjdGF0aW9ucyBhbmQgcHJvdmlkZSBndWlkYW5jZSBmb3Igd29ya3BsYWNlIGNvbmR1Y3QgYW5kIGRlY2lzaW9ucy4ifV19";
+
+  const decoded = decodeBase64Utf8(chatGptPayload);
+  const parsed = JSON.parse(decoded);
+
+  assert.equal(parsed.meta.title, "Ethics, Morality, Integrity, and Laws — True or False");
+  assert.equal(parsed.questions.length, 5);
+  assert.equal(parsed.questions[0].q, "Ethics is defined as the study of what it means to \"do the right thing.\"");
+  assert.equal(parsed.questions[0].options[0], "True");
+  assert.deepEqual(parsed.questions[0].correct, [0]);
 });
 
 test("MCP 1-click import: Lesson JSON Base64 roundtrip with sections, media, MCQ, and Essay", async () => {

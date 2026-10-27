@@ -563,7 +563,7 @@ function handleCreateQuizImportLink(args: any) {
   // Safe UTF-8 Base64 encoding for Arabic text
   const bytes = new TextEncoder().encode(jsonString);
   const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join("");
-  const base64Data = btoa(binary);
+  const base64Data = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_");
 
   const importUrl = `https://basmagi-quiz.vercel.app/create-quiz#data=base64,${base64Data}`;
 
@@ -749,9 +749,9 @@ function handleCreateLessonImportLink(args: any) {
     return "حجم الدرس كبير جداً (أكثر من 200 كيلوبايت). يُرجى تقليص حجم النصوص أو تقسيم الدرس.";
   }
 
-  // Safe UTF-8 Base64 encoding
+  // Safe UTF-8 Base64URL encoding
   const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join("");
-  const base64Data = btoa(binary);
+  const base64Data = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_");
 
   const importUrl = `https://basmagi-quiz.vercel.app/create-lesson#data=base64,${base64Data}`;
 
