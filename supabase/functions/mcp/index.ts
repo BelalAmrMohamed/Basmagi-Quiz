@@ -265,7 +265,7 @@ async function handleSearchCatalog(args: { query: string; scope?: string }) {
           const id = q.meta?.id || q.id || "unknown";
           const title = q.meta?.title || q.title || "امتحان بدون عنوان";
           const qCount = q.questions?.length || 0;
-          return `  - [امتحان] ${title} (${qCount} أسئلة) — id: ${id} — الرابط: https://quiz.basmagi.com/quiz/${id}`;
+          return `  - [امتحان] ${title} (${qCount} أسئلة) — id: ${id} — الرابط: https://basmagi-quiz.vercel.app/quiz/${id}`;
         });
         sections.push(`امتحانات مطابقة:\n${lines.join("\n")}`);
       }
@@ -282,7 +282,7 @@ async function handleSearchCatalog(args: { query: string; scope?: string }) {
 
     if (!error && lessons && lessons.length > 0) {
       const lines = lessons.map((l: any) => {
-        return `  - [درس] ${l.title} — id: ${l.id} — الرابط: https://quiz.basmagi.com/lesson/${l.slug || l.id}`;
+        return `  - [درس] ${l.title} — id: ${l.id} — الرابط: https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`;
       });
       sections.push(`دروس مطابقة:\n${lines.join("\n")}`);
     }
@@ -388,7 +388,7 @@ async function handleGetLesson(args: { lessonId: string }) {
     return `لم يتم العثور على الدرس بالمعرف أو الرابط "${lessonId}".`;
   }
 
-  return `# ${data.title}\n\n${data.description || ""}\n\nالمصدر: ${data.source || "منصة بصمجي"}\nرابط الدرس: https://quiz.basmagi.com/lesson/${data.slug || data.id}`;
+  return `# ${data.title}\n\n${data.description || ""}\n\nالمصدر: ${data.source || "منصة بصمجي"}\nرابط الدرس: https://basmagi-quiz.vercel.app/lesson/${data.slug || data.id}`;
 }
 
 function handleGetPrompts(args: { name: string }) {
@@ -445,7 +445,7 @@ function handleCreateQuizImportLink(args: any) {
   const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join("");
   const base64Data = btoa(binary);
 
-  const importUrl = `https://quiz.basmagi.com/create-quiz#data=base64,${base64Data}`;
+  const importUrl = `https://basmagi-quiz.vercel.app/create-quiz#data=base64,${base64Data}`;
 
   return `✅ تم التحقق من هيكل الامتحان بنجاح (${normalizedQuiz.questions.length} سؤال).\n\n🔗 **رابط الفتح والاستيراد المباشر بضغطة واحدة:**\n${importUrl}\n\n(عند فتح هذا الرابط، ستفتح المنصة مباشرة ومعها كافة الأسئلة والخيارات والتفسيرات في صفحة المحرر جاهزة للبدء أو الحفظ في مكتبتك دون تسجيل دخول).`;
 }
@@ -455,7 +455,7 @@ function handleGetCreatorInfo() {
 - المطور: بلال عمرو محمد (Belal Amr Mohamed)
 - نبذة: مطور برمجيات ومؤسس منصة امتحانات بصمجي التعليمية المجانية والمفتوحة للطلاب.
 - الموقع الشخصي ومعرض الأعمال: https://belalamr.me
-- صفحة من نحن على المنصة: https://quiz.basmagi.com/about
+- صفحة من نحن على المنصة: https://basmagi-quiz.vercel.app/about
 - GitHub: https://github.com/BelalAmrMohamed`;
 }
 
@@ -662,7 +662,7 @@ Deno.serve(async (req: Request) => {
           name: "Basmagi Quiz Model Context Protocol (MCP) Server",
           status: "online",
           version: "1.0.0",
-          documentation: "https://quiz.basmagi.com",
+          documentation: "https://basmagi-quiz.vercel.app",
           toolsAvailable: TOOLS.map((t) => t.name),
         },
         null,

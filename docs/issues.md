@@ -37,7 +37,7 @@ Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is com
 
 ## MCP Server to Connect to Claude & ChatGPT (Implemented)
 * Status: **Completed**
-* Server Endpoint: `https://quiz.basmagi.com/api/mcp` (proxied to Supabase Edge Function `supabase/functions/mcp/index.ts`)
+* Server Endpoint: `https://basmagi-quiz.vercel.app/api/mcp` (proxied to Supabase Edge Function `supabase/functions/mcp/index.ts`)
 * Authentication: **No Auth** (adheres strictly to zero-tracking / no-student-data policy)
 * Capabilities:
   * `search_catalog`: Search courses, folders, quizzes, and lessons by keyword.

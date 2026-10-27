@@ -14,7 +14,7 @@ flowchart LR
     end
 
     subgraph EntryPoint ["Basmagi Gateway (Vercel)"]
-        V["https://quiz.basmagi.com/api/mcp"]
+        V["https://basmagi-quiz.vercel.app/api/mcp"]
         Rewrite["vercel.json rewrite"]
     end
 
@@ -49,7 +49,7 @@ flowchart LR
    - Vercel Hobby also enforces a 10-second timeout, which drops long-lived SSE connections needed by MCP.
    - **Solution:** Follow the existing project pattern established in `supabase/functions/lesson-progress/index.ts`. Implement the MCP server as a **Supabase Edge Function** (`supabase/functions/mcp/index.ts`), proxied cleanly via `vercel.json` (`/api/mcp`).
 3. **1-Click Quiz/Lesson Delivery:**
-   - When Claude or ChatGPT generates a quiz, it returns the structured Basmagi JSON alongside a direct import URL: `https://quiz.basmagi.com/create-quiz#data=<compressed-json>`.
+   - When Claude or ChatGPT generates a quiz, it returns the structured Basmagi JSON alongside a direct import URL: `https://basmagi-quiz.vercel.app/create-quiz#data=<compressed-json>`.
    - Clicking the link opens `create-quiz.html` with the questions pre-loaded into the editor and saved to the student's browser `localStorage`.
 
 ---
@@ -97,7 +97,7 @@ flowchart LR
    - **`get_quiz`**: Query `quizzes` table by ID and return parsed questions.
    - **`get_lesson`**: Query `lesson_public` table by ID and return markdown content.
    - **`get_prompts`**: Return prompts from `ai-prompts.js`.
-   - **`create_quiz_import_link`**: Generate safe base64/URI encoded payload pointing to `https://quiz.basmagi.com/create-quiz#data=...`.
+   - **`create_quiz_import_link`**: Generate safe base64/URI encoded payload pointing to `https://basmagi-quiz.vercel.app/create-quiz#data=...`.
 
 ---
 
@@ -120,13 +120,13 @@ flowchart LR
 #### In ChatGPT (`chatgpt.com`):
 1. Navigate to **Plugins / Connectors** $\rightarrow$ Click **`+ Add`** $\rightarrow$ **`Add custom MCP server`**.
 2. **Name:** `Basmagi Quiz`
-3. **URL:** `https://quiz.basmagi.com/api/mcp`
+3. **URL:** `https://basmagi-quiz.vercel.app/api/mcp`
 4. **Authentication:** Select **`No Auth`**.
 5. Save and mention `@Basmagi Quiz` in any chat.
 
 #### In Claude (`claude.ai`):
 1. Navigate to **Customize** $\rightarrow$ **Connectors** $\rightarrow$ Click **`+ Add`** $\rightarrow$ **`Add custom connector`**.
-2. Enter the HTTPS URL (`https://quiz.basmagi.com/api/mcp`).
+2. Enter the HTTPS URL (`https://basmagi-quiz.vercel.app/api/mcp`).
 3. Toggle on the connector in chat.
 
 ---
@@ -136,7 +136,7 @@ flowchart LR
 1. **Local Edge Function Test:**
    - Test MCP endpoint with `curl`:
      ```bash
-     curl -X POST https://quiz.basmagi.com/api/mcp \
+     curl -X POST https://basmagi-quiz.vercel.app/api/mcp \
        -H "Content-Type: application/json" \
        -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
      ```
