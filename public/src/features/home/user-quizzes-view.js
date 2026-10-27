@@ -35,6 +35,7 @@ import {
   moveItemsToFolder,
   expandSelectionWithDescendants,
   hasSameLevelCollision,
+  uploadFolderForAdmins,
 } from "./user-quizzes-folders.js";
 import { openSignInDialog } from "../../components/log-in/sign-in.js";
 import { container, title } from "./dom-refs.js";
@@ -787,6 +788,21 @@ export function renderUserQuizzesView() {
           courseOpt.style.cursor = "not-allowed";
         }
         menu.appendChild(courseOpt);
+
+        // "استيراد مجلد من جهازك" (admin only) — phones have no right-click,
+        // so this global action lives in the mobile "إنشاء" dropdown.
+        if (isAdminAuthenticated()) {
+          const importOpt = document.createElement("button");
+          importOpt.type = "button";
+          importOpt.className = "exam-action-btn";
+          importOpt.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>استيراد مجلد من جهازك</span>`;
+          importOpt.onclick = (e) => {
+            e.stopPropagation();
+            closeMenu();
+            uploadFolderForAdmins();
+          };
+          menu.appendChild(importOpt);
+        }
 
         // "سلة المهملات" — same gating as root-view.js's "امتحاناتك" card
         // ⋮ menu and the #userQuizContextMenu global actions (see

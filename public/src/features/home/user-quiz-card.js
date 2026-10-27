@@ -26,6 +26,7 @@ import { showUserQuizInfoModal, formatDateForInfo } from "./quiz-info-modal.js";
 import { showUserLessonInfoModal, collectLessonInfo } from "./lesson-info-modal.js";
 import {
   createExamInfoSubmenu,
+  createActionGroupSubmenu,
   openExamDropdownMenu,
 } from "./exam-dropdown-menu.js";
 import { renderRootCategories } from "./root-view.js";
@@ -33,7 +34,14 @@ import {
   renderUserQuizzesView,
   updateBulkActionBar,
 } from "./user-quizzes-view.js";
-import { openMoveToDialog, renameItem, deleteFolder } from "./user-quizzes-folders.js";
+import {
+  openMoveToDialog,
+  renameItem,
+  deleteFolder,
+  selectItem,
+  moveItemOutOfFolder,
+  currentFolderId,
+} from "./user-quizzes-folders.js";
 import { userProfile } from "../../shared/userProfile.js";
 import {
   LOCK_ICON_SVG,
@@ -391,43 +399,27 @@ export function showUserLessonActionsOverlay(lesson, triggerBtn) {
       menu.appendChild(uploadBtn);
     }
 
-    const editOpt = document.createElement("button");
-    editOpt.type = "button";
-    editOpt.className = "exam-action-btn";
-    editOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل الدرس</span>`;
-    editOpt.onclick = (e) => {
-      e.stopPropagation();
-      closeMenu();
-      window.location.href = `/create-lesson?edit=${encodeURIComponent(lessonId)}`;
-    };
-    menu.appendChild(editOpt);
+    appendSelectOption(menu, closeMenu, lessonId);
 
-    const metadataOpt = document.createElement("button");
-    metadataOpt.type = "button";
-    metadataOpt.className = "exam-action-btn";
-    metadataOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل التفاصيل</span>`;
-    metadataOpt.onclick = (e) => {
-      e.stopPropagation();
-      closeMenu();
-      openDescriptionSourceModal({
-        title,
-        description: lesson.meta?.description || lesson.description || "",
-        source: lesson.meta?.source || lesson.source || "",
-        onSave: ({ description, source }) => saveLocalItemMetadata(lessonId, description, source),
-      });
-    };
-    menu.appendChild(metadataOpt);
-
-    const renameOpt = document.createElement("button");
-    renameOpt.type = "button";
-    renameOpt.className = "exam-action-btn";
-    renameOpt.innerHTML = `${RENAME_ICON_SVG}<span>إعادة تسمية</span>`;
-    renameOpt.onclick = async (e) => {
-      e.stopPropagation();
-      closeMenu();
-      await renameItem(lessonId, title);
-    };
-    menu.appendChild(renameOpt);
+    appendEditGroup(menu, closeMenu, reposition, [
+      {
+        label: "تعديل الدرس",
+        icon: EDIT_ICON_SVG,
+        onClick: () => { window.location.href = `/create-lesson?edit=${encodeURIComponent(lessonId)}`; },
+      },
+      {
+        label: "تعديل التفاصيل",
+        icon: EDIT_ICON_SVG,
+        onClick: () =>
+          openDescriptionSourceModal({
+            title,
+            description: lesson.meta?.description || lesson.description || "",
+            source: lesson.meta?.source || lesson.source || "",
+            onSave: ({ description, source }) => saveLocalItemMetadata(lessonId, description, source),
+          }),
+      },
+      { label: "إعادة تسمية", icon: RENAME_ICON_SVG, onClick: () => renameItem(lessonId, title) },
+    ]);
 
     // ── "معلومات الدرس" submenu — same quick-rows-then-"كل المعلومات"
     // pattern as the quiz menu, but the rows come from collectLessonInfo()
@@ -450,16 +442,7 @@ export function showUserLessonActionsOverlay(lesson, triggerBtn) {
       ),
     );
 
-    const moveOpt = document.createElement("button");
-    moveOpt.type = "button";
-    moveOpt.className = "exam-action-btn";
-    moveOpt.innerHTML = `${MOVE_TO_ICON_SVG}<span>نقل إلى</span>`;
-    moveOpt.onclick = (e) => {
-      e.stopPropagation();
-      closeMenu();
-      openMoveToDialog([lessonId]);
-    };
-    menu.appendChild(moveOpt);
+    appendMoveGroup(menu, closeMenu, reposition, lessonId);
 
     const askAiOpt = document.createElement("button");
     askAiOpt.type = "button";
@@ -586,46 +569,30 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
     };
     menu.appendChild(downloadOpt);
 
-    // ── Edit — present in the menu on all screen sizes (desktop and
-    // mobile). There is no standalone edit icon on the card itself — this
-    // menu is the single entry-point for editing on both form factors.
-    const editOpt = document.createElement("button");
-    editOpt.type = "button";
-    editOpt.className = "exam-action-btn";
-    editOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل الامتحان</span>`;
-    editOpt.onclick = (e) => {
-      e.stopPropagation();
-      closeMenu();
-      window.location.href = `create-quiz?edit=${encodeURIComponent(quiz.id)}`;
-    };
-    menu.appendChild(editOpt);
+    appendSelectOption(menu, closeMenu, quiz.id || quiz.meta?.id);
 
-    const metadataOpt = document.createElement("button");
-    metadataOpt.type = "button";
-    metadataOpt.className = "exam-action-btn";
-    metadataOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل التفاصيل</span>`;
-    metadataOpt.onclick = (e) => {
-      e.stopPropagation();
-      closeMenu();
-      openDescriptionSourceModal({
-        title: qz(quiz, "title") || "الامتحان",
-        description: qz(quiz, "description") || "",
-        source: qz(quiz, "source") || "",
-        onSave: ({ description, source }) => saveLocalItemMetadata(quiz.id || quiz.meta?.id, description, source),
-      });
-    };
-    menu.appendChild(metadataOpt);
-
-    const renameOpt = document.createElement("button");
-    renameOpt.type = "button";
-    renameOpt.className = "exam-action-btn";
-    renameOpt.innerHTML = `${RENAME_ICON_SVG}<span>إعادة تسمية</span>`;
-    renameOpt.onclick = async (e) => {
-      e.stopPropagation();
-      closeMenu();
-      await renameItem(quiz.id || quiz.meta?.id, qz(quiz, "title"));
-    };
-    menu.appendChild(renameOpt);
+    // ── Edit group — تعديل الامتحان / تعديل التفاصيل / إعادة تسمية in one
+    // submenu (this menu is the single entry-point for editing; the card has
+    // no standalone edit icon).
+    appendEditGroup(menu, closeMenu, reposition, [
+      {
+        label: "تعديل الامتحان",
+        icon: EDIT_ICON_SVG,
+        onClick: () => { window.location.href = `create-quiz?edit=${encodeURIComponent(quiz.id)}`; },
+      },
+      {
+        label: "تعديل التفاصيل",
+        icon: EDIT_ICON_SVG,
+        onClick: () =>
+          openDescriptionSourceModal({
+            title: qz(quiz, "title") || "الامتحان",
+            description: qz(quiz, "description") || "",
+            source: qz(quiz, "source") || "",
+            onSave: ({ description, source }) => saveLocalItemMetadata(quiz.id || quiz.meta?.id, description, source),
+          }),
+      },
+      { label: "إعادة تسمية", icon: RENAME_ICON_SVG, onClick: () => renameItem(quiz.id || quiz.meta?.id, qz(quiz, "title")) },
+    ]);
 
     // ── "معلومات الامتحان" submenu — user quizzes carry everything already
     // in localStorage (quiz.meta/quiz.stats), so the preview builds
@@ -651,18 +618,9 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
     );
     menu.appendChild(infoSubmenu);
 
-    // ── Move to / out of a folder — the touch-friendly fallback for the
-    // drag-and-drop move gesture, since mobile has no usable drag here.
-    const moveOpt = document.createElement("button");
-    moveOpt.type = "button";
-    moveOpt.className = "exam-action-btn";
-    moveOpt.innerHTML = `${MOVE_TO_ICON_SVG}<span>نقل إلى</span>`;
-    moveOpt.onclick = (e) => {
-      e.stopPropagation();
-      closeMenu();
-      openMoveToDialog([quiz.id || quiz.meta?.id]);
-    };
-    menu.appendChild(moveOpt);
+    // ── Move group — نقل إلى / نقل إلى الخارج (touch-friendly fallback for
+    // drag-and-drop).
+    appendMoveGroup(menu, closeMenu, reposition, quiz.id || quiz.meta?.id);
 
     // ── PHASE 2: "اسأل الباشـمبصمج" — opens the AI Agent with this
     // quiz/folder/course pre-attached (see ai-agent-attach-launcher.js's
@@ -699,7 +657,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
   });
 }
 
-function saveLocalItemMetadata(itemId, description, source) {
+export function saveLocalItemMetadata(itemId, description, source) {
   const items = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const item = items.find((row) => (row.id || row.meta?.id) === itemId);
   if (!item) throw new Error("لم يتم العثور على العنصر في «امتحاناتك».");
@@ -711,3 +669,35 @@ function saveLocalItemMetadata(itemId, description, source) {
   renderUserQuizzesView();
   return true;
 }
+
+
+// ── Shared ⋮ menu groups ────────────────────────────────────────────────────
+// Related actions are collapsed into submenus so the dropdown stays short.
+// Used by both the quiz and lesson menus so they can never drift apart.
+
+function appendSelectOption(menu, closeMenu, itemId) {
+  const selectOpt = document.createElement("button");
+  selectOpt.type = "button";
+  selectOpt.className = "exam-action-btn";
+  selectOpt.innerHTML = `${CHECK_SQUARE_SVG}<span>تحديد</span>`;
+  selectOpt.onclick = (e) => {
+    e.stopPropagation();
+    closeMenu();
+    selectItem(itemId);
+  };
+  menu.appendChild(selectOpt);
+}
+
+function appendEditGroup(menu, closeMenu, reposition, actions) {
+  menu.appendChild(createActionGroupSubmenu(actions, closeMenu, reposition, "تعديل"));
+}
+
+function appendMoveGroup(menu, closeMenu, reposition, itemId) {
+  const actions = [{ label: "نقل إلى", icon: MOVE_TO_ICON_SVG, onClick: () => openMoveToDialog([itemId]) }];
+  if (currentFolderId !== null) {
+    actions.push({ label: "نقل إلى الخارج", icon: MOVE_TO_ICON_SVG, onClick: () => moveItemOutOfFolder(itemId) });
+  }
+  menu.appendChild(createActionGroupSubmenu(actions, closeMenu, reposition, "نقل"));
+}
+
+const CHECK_SQUARE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`;

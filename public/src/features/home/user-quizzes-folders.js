@@ -5,7 +5,7 @@ import { isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { renderUserQuizzesView, updateBulkActionBar } from "./user-quizzes-view.js";
 import { getSelectedUserQuizzes } from "./app-state.js";
 import { toSlug } from "./slug-utils.js";
-import { buildUserQuizEntry } from "./quiz-schema.js";
+import { buildUserQuizEntry, qz } from "./quiz-schema.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { MORE_DOTS_ICON_SVG } from "./icons.js";
 import { openMoveToDialogWithSource } from "./move-to-dialog.js";
@@ -210,6 +210,18 @@ export function getCurrentFolderPathStack() {
 function pathStackParentId() {
   if (folderPathStack.length <= 1) return null;
   return folderPathStack[folderPathStack.length - 2].id;
+}
+
+/**
+ * "نقل إلى الخارج" — moves one item up a level (out of currentFolderId).
+ * Shared by the right-click menu and the ⋮ dropdown so both behave the same.
+ * No-op at the root, where there is nothing to move out of.
+ */
+export function moveItemOutOfFolder(itemId) {
+  if (currentFolderId === null) return;
+  const { moved } = moveItemsToFolder([itemId], pathStackParentId());
+  if (moved > 0) showNotification("تم النقل", "تم نقل العنصر خارج المجلد الحالي.", "success");
+  renderUserQuizzesView();
 }
 
 export function navigateToFolder(folderId, folderTitle) {
@@ -816,71 +828,106 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   e.preventDefault();
   contextMenuEl.innerHTML = "";
 
-  // Item-specific options first (when right-clicking on a quiz/folder/course)
+  // Right-click (or ⋮) on an item shows ONLY that item's own commands.
+  // The global commands (create, import, trash, delete-all) are shown only
+  // when right-clicking empty space; on touch devices they are reachable from
+  // the امتحاناتك card ⋮ menu and the "إنشاء" button instead.
   if (targetType === "item" || targetType === "folder" || targetType === "course") {
-    contextMenuEl.appendChild(createMenuItem(SELECT_SVG, "تحديد", () => selectItem(targetId)));
-
-    if (targetType === "item") {
-      // "item" covers both quizzes and lessons — send each to its own editor.
-      // (A lesson id opened in create-quiz would find no quiz and show an
-      // error/blank editor.)
-      const targetRow = readUserQuizzes().find((q) => (q.id || q.meta?.id) === targetId);
-      const isLesson = targetRow?.meta?.type === "lesson";
-      contextMenuEl.appendChild(
-        createMenuItem(EDIT_SVG, isLesson ? "تعديل الدرس" : "تعديل الامتحان", () => {
-          window.location.href = isLesson
-            ? `/create-lesson?edit=${encodeURIComponent(targetId)}`
-            : `create-quiz?edit=${encodeURIComponent(targetId)}`;
-        }),
-      );
-    }
-
-    if (targetType !== "course") {
-      contextMenuEl.appendChild(createMenuItem(MOVE_TO_SVG, "نقل إلى", () => openMoveToDialog([targetId])));
-    }
-
-    if (targetType !== "course" && currentFolderId !== null) {
-      const parentId = pathStackParentId();
-      contextMenuEl.appendChild(
-        createMenuItem(MOVE_TO_SVG, "نقل إلى الخارج", () => {
-          const { moved } = moveItemsToFolder([targetId], parentId);
-          if (moved > 0) showNotification("تم النقل", "تم نقل العنصر خارج المجلد الحالي.", "success");
-          renderUserQuizzesView();
-        }),
-      );
-    }
-
-    contextMenuEl.appendChild(createMenuItem(RENAME_SVG, "إعادة تسمية", () => renameItem(targetId, targetTitle)));
-
-    contextMenuEl.appendChild(
-      createMenuItem(ASK_AI_SVG, "اسأل الباشـمبصمج", async () => {
-        const { openAIAgentWithAttachment, resolveUserItemAttachment } = await import(
-          "../../components/ai-agent/ai-agent-attach-launcher.js"
-        );
-        const attachment = resolveUserItemAttachment(targetId);
-        if (attachment) openAIAgentWithAttachment(attachment);
-      }),
-    );
-
-    // Per-item "upload to platform" action — pushes this specific
-    // course/folder (with all of its nested contents) up to the DB via the
-    // dedicated course/folder upload wizards (adminUpload.js). Distinct from
-    // the "استيراد مجلد من جهازك" action below, which imports FROM the local
-    // filesystem INTO user_quizzes rather than uploading an existing local
-    // item OUT to the platform.
-    if (isAdminAuthenticated() && (targetType === "course" || targetType === "folder")) {
-      const label = targetType === "course" ? "رفع المادة إلى المنصة" : "رفع المجلد إلى المنصة";
-      contextMenuEl.appendChild(createMenuItem(UPLOAD_FOLDER_SVG, label, () => uploadItemToPlatform(targetType, targetId)));
-    }
-
-    contextMenuEl.appendChild(createMenuItem(DELETE_SVG, "حذف", () => deleteFolder(targetId), true));
-
-    // Divider before global actions
-    const divider = document.createElement("div");
-    divider.style.cssText = "border-top: 1px solid var(--color-border); margin: 4px 0;";
-    contextMenuEl.appendChild(divider);
+    buildItemMenuItems(targetType, targetId, targetTitle);
+  } else {
+    buildGlobalMenuItems();
   }
 
+  contextMenuEl.style.left = `${e.pageX}px`;
+  contextMenuEl.style.top = `${e.pageY}px`;
+  contextMenuEl.style.display = "flex";
+  customMenuJustOpened = true;
+  positionContextMenu(e);
+}
+
+/** Item-scoped commands: quiz / lesson / folder / course. */
+function buildItemMenuItems(targetType, targetId, targetTitle) {
+  contextMenuEl.appendChild(createMenuItem(SELECT_SVG, "تحديد", () => selectItem(targetId)));
+
+  const targetRow = readUserQuizzes().find((q) => (q.id || q.meta?.id) === targetId);
+  const isLesson = targetRow?.meta?.type === "lesson";
+  const rename = { icon: RENAME_SVG, label: "إعادة تسمية", onClick: () => renameItem(targetId, targetTitle) };
+
+  if (targetType === "item") {
+    // "item" covers both quizzes and lessons — send each to its own editor.
+    // Edit actions are grouped in one "تعديل" submenu to keep the menu short.
+    contextMenuEl.appendChild(
+      createSubmenuItem(EDIT_SVG, "تعديل", [
+        {
+          icon: EDIT_SVG,
+          label: isLesson ? "تعديل الدرس" : "تعديل الامتحان",
+          onClick: () => {
+            window.location.href = isLesson
+              ? `/create-lesson?edit=${encodeURIComponent(targetId)}`
+              : `create-quiz?edit=${encodeURIComponent(targetId)}`;
+          },
+        },
+        {
+          icon: EDIT_SVG,
+          label: "تعديل التفاصيل",
+          onClick: async () => {
+            const [{ openDescriptionSourceModal }, { saveLocalItemMetadata }] = await Promise.all([
+              import("./description-source-modal.js"),
+              import("./user-quiz-card.js"),
+            ]);
+            openDescriptionSourceModal({
+              title: targetRow?.meta?.title || targetTitle || "",
+              description: targetRow ? (qz(targetRow, "description") || targetRow.meta?.description || "") : "",
+              source: targetRow ? (qz(targetRow, "source") || targetRow.meta?.source || "") : "",
+              onSave: ({ description, source }) => saveLocalItemMetadata(targetId, description, source),
+            });
+          },
+        },
+        rename,
+      ]),
+    );
+  } else {
+    contextMenuEl.appendChild(createMenuItem(rename.icon, rename.label, rename.onClick));
+  }
+
+  if (targetType !== "course") {
+    const moveItems = [{ icon: MOVE_TO_SVG, label: "نقل إلى", onClick: () => openMoveToDialog([targetId]) }];
+    if (currentFolderId !== null) {
+      moveItems.push({ icon: MOVE_TO_SVG, label: "نقل إلى الخارج", onClick: () => moveItemOutOfFolder(targetId) });
+    }
+    if (moveItems.length > 1) {
+      contextMenuEl.appendChild(createSubmenuItem(MOVE_TO_SVG, "نقل", moveItems));
+    } else {
+      contextMenuEl.appendChild(createMenuItem(moveItems[0].icon, moveItems[0].label, moveItems[0].onClick));
+    }
+  }
+
+  contextMenuEl.appendChild(
+    createMenuItem(ASK_AI_SVG, "اسأل الباشـمبصمج", async () => {
+      const { openAIAgentWithAttachment, resolveUserItemAttachment } = await import(
+        "../../components/ai-agent/ai-agent-attach-launcher.js"
+      );
+      const attachment = resolveUserItemAttachment(targetId);
+      if (attachment) openAIAgentWithAttachment(attachment);
+    }),
+  );
+
+  // Per-item "upload to platform" (admin) — pushes this course/folder with
+  // all nested contents to the DB. Distinct from the global "استيراد مجلد من
+  // جهازك", which imports FROM the local filesystem.
+  if (isAdminAuthenticated() && (targetType === "course" || targetType === "folder")) {
+    const label = targetType === "course" ? "رفع المادة إلى المنصة" : "رفع المجلد إلى المنصة";
+    contextMenuEl.appendChild(createMenuItem(UPLOAD_FOLDER_SVG, label, () => uploadItemToPlatform(targetType, targetId)));
+  }
+
+  const divider = document.createElement("div");
+  divider.style.cssText = "border-top: 1px solid var(--color-border); margin: 4px 0;";
+  contextMenuEl.appendChild(divider);
+  contextMenuEl.appendChild(createMenuItem(DELETE_SVG, "حذف", () => deleteFolder(targetId), true));
+}
+
+/** Global commands: shown only when right-clicking empty space. */
+function buildGlobalMenuItems() {
   // Global actions — always visible regardless of what was right-clicked
   //
   // "إنشاء امتحان" — opens the same paste-text/import-file modal
@@ -969,11 +1016,6 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
     );
   }
 
-  contextMenuEl.style.left = `${e.pageX}px`;
-  contextMenuEl.style.top = `${e.pageY}px`;
-  contextMenuEl.style.display = "flex";
-  customMenuJustOpened = true;
-  positionContextMenu(e);
 }
 
 /**
@@ -1178,7 +1220,7 @@ function uploadItemToPlatform(type, itemId) {
  * user_quizzes is a local/localStorage collection like the rest of this
  * feature.
  */
-function uploadFolderForAdmins() {
+export function uploadFolderForAdmins() {
   const input = document.createElement("input");
   input.type = "file";
   input.webkitdirectory = true;
