@@ -61,3 +61,82 @@ test("MCP 1-click import: Base64URL and spaces resilience (Claude / ChatGPT payl
   const parsedSpaces = JSON.parse(decodedSpaces);
   assert.equal(parsedSpaces.questions.length, 3);
 });
+
+test("MCP 1-click import: Lesson JSON Base64 roundtrip with sections, media, MCQ, and Essay", async () => {
+  const { normalizeLessonJson } = await import("../public/src/features/lesson/lesson-json.js");
+
+  const lessonObj = {
+    title: "مقدمة في علم وظائف الأعضاء (Physiology)",
+    description: "درس تفاعلي يغطي وظائف الخلية والجهاز العصبي مع أسئلة تقييمية ومصادر مرئية.",
+    source: "توليد Claude / ChatGPT",
+    sections: [
+      {
+        title: "مقدمة الخلية والوظائف الحيوية",
+        defaultHidden: false,
+        blocks: [
+          {
+            type: "markdown",
+            body: "# وظائف الخلية\n\nالخلية هي **الوحدة الأساسية** للحياة وتتكون من الغشاء البلازمي والسيتوبلازم والنواة.",
+          },
+          {
+            type: "media",
+            url: "https://example.com/cell-diagram.jpg",
+            kind: "image",
+            alt: "مخطط تركيب الخلية الحية",
+          },
+          {
+            type: "question",
+            questionKind: "mcq",
+            prompt: "ما هو العضو المسؤول عن إنتاج الطاقة (ATP) في الخلية؟",
+            options: ["الميتوكوندريا", "الريبوسوم", "جهاز جولجي", "النوية"],
+            correctIndex: 0,
+            explanation: "الميتوكوندريا تُعرف ببيت الطاقة في الخلية.",
+          },
+        ],
+      },
+      {
+        title: "السيال العصبي ونقل الإشارات",
+        defaultHidden: true,
+        blocks: [
+          {
+            type: "markdown",
+            body: "ينتقل السيال العصبي عبر الخلايا العصبية عبر مضخة الصوديوم والبوتاسيوم $Na^+/K^+$ pump.",
+          },
+          {
+            type: "question",
+            questionKind: "essay",
+            prompt: "اشرح آلية عمل مضخة الصوديوم والبوتاسيوم في إبقاء جهد الراحة.",
+            modelAnswer: "تقوم المضخة بنقل 3 أيونات صوديوم خارج الخلية مقابل أيوني بوتاسيوم لداخل الخلية باستهلاك جزيء ATP.",
+            explanation: "تعتمد الاستقطابية على التوزيع غير المتكافئ للشحنات عبر غشاء الخلية العصبية.",
+          },
+        ],
+      },
+    ],
+  };
+
+  const jsonStr = JSON.stringify(lessonObj);
+  const base64Str = encodeBase64Utf8(jsonStr);
+
+  // Test URL-safe conversion (- and _)
+  const urlSafe = base64Str.replace(/\+/g, "-").replace(/\//g, "_");
+  const decodedStr = decodeBase64Utf8(urlSafe);
+  const parsed = JSON.parse(decodedStr);
+
+  const normalized = normalizeLessonJson(parsed);
+
+  assert.equal(normalized.title, lessonObj.title);
+  assert.equal(normalized.sections.length, 2);
+  assert.equal(normalized.sections[0].title, "مقدمة الخلية والوظائف الحيوية");
+  assert.equal(normalized.sections[0].blocks[0].type, "markdown");
+  assert.equal(normalized.sections[0].blocks[1].type, "media");
+  assert.equal(normalized.sections[0].blocks[2].type, "question");
+  assert.equal(normalized.sections[0].blocks[2].questionKind, "mcq");
+  assert.equal(normalized.sections[0].blocks[2].correctIndex, 0);
+
+  assert.equal(normalized.sections[1].defaultHidden, true);
+  assert.equal(normalized.sections[1].blocks[1].type, "question");
+  assert.equal(normalized.sections[1].blocks[1].questionKind, "essay");
+  assert.equal(normalized.sections[1].blocks[1].modelAnswer, lessonObj.sections[1].blocks[1].modelAnswer);
+  assert.equal(normalized.questionCount, 2);
+});
+

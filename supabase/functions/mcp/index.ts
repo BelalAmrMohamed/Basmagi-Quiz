@@ -219,6 +219,126 @@ const TOOLS = [
     },
   },
   {
+    name: "create_lesson_import_link",
+    description:
+      "Validates a generated lesson structure and generates a 1-click import URL that opens directly in Basmagi Lesson Creator (/create-lesson) with all sections, content blocks, and embedded questions pre-loaded.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: {
+          type: "string",
+          description: "Lesson title (1-200 characters).",
+        },
+        description: {
+          type: "string",
+          description: "Brief description of the lesson (optional, up to 1200 characters).",
+        },
+        source: {
+          type: "string",
+          description: "Source material reference (optional, up to 500 characters).",
+        },
+        sections: {
+          type: "array",
+          description: "Array of lesson sections (1 to 60 sections).",
+          items: {
+            type: "object",
+            properties: {
+              title: {
+                type: "string",
+                description: "Title of the section.",
+              },
+              defaultHidden: {
+                type: "boolean",
+                description: "Whether the section is initially collapsed or hidden (optional, default: false).",
+              },
+              blocks: {
+                type: "array",
+                description: "Array of content blocks (markdown, media, quizRef, lesson-reference, question).",
+                items: {
+                  type: "object",
+                  properties: {
+                    type: {
+                      type: "string",
+                      enum: ["markdown", "media", "quizRef", "lesson-reference", "question"],
+                      description: "Block type.",
+                    },
+                    body: {
+                      type: "string",
+                      description: "Markdown prose for markdown blocks (supports headings, bold, bullet points, LaTeX).",
+                    },
+                    url: {
+                      type: "string",
+                      description: "Direct URL for media blocks.",
+                    },
+                    kind: {
+                      type: "string",
+                      enum: ["image", "audio", "video"],
+                      description: "Type of media for media blocks.",
+                    },
+                    alt: {
+                      type: "string",
+                      description: "Optional alt text or caption for media.",
+                    },
+                    quizId: {
+                      type: "string",
+                      description: "UUID or slug of referenced quiz for quizRef blocks.",
+                    },
+                    lessonId: {
+                      type: "string",
+                      description: "UUID of referenced lesson for lesson-reference blocks.",
+                    },
+                    slug: {
+                      type: "string",
+                      description: "Optional slug of referenced lesson for lesson-reference blocks.",
+                    },
+                    questionKind: {
+                      type: "string",
+                      enum: ["mcq", "essay"],
+                      description: "Kind of embedded question ('mcq' or 'essay').",
+                    },
+                    prompt: {
+                      type: "string",
+                      description: "Question prompt text.",
+                    },
+                    options: {
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Choices for multiple choice questions (2-8 options).",
+                    },
+                    correctIndex: {
+                      type: "integer",
+                      description: "0-based index of correct option for single-select MCQ.",
+                    },
+                    correctIndexes: {
+                      type: "array",
+                      items: { type: "integer" },
+                      description: "Array of 0-based indices of correct options for multi-select MCQ.",
+                    },
+                    multiSelect: {
+                      type: "boolean",
+                      description: "Whether the question allows selecting multiple answers.",
+                    },
+                    modelAnswer: {
+                      type: "string",
+                      description: "Model answer for essay questions.",
+                    },
+                    explanation: {
+                      type: "string",
+                      description: "Explanation or feedback for the question.",
+                    },
+                  },
+                  required: ["type"],
+                },
+              },
+            },
+            required: ["title", "blocks"],
+          },
+        },
+      },
+      required: ["title", "sections"],
+    },
+  },
+  {
     name: "get_creator_info",
     description: "Read the public profile and contact links of Basamgy's creator, Belal Amr Mohamed.",
     inputSchema: {
@@ -450,6 +570,194 @@ function handleCreateQuizImportLink(args: any) {
   return `✅ تم التحقق من هيكل الامتحان بنجاح (${normalizedQuiz.questions.length} سؤال).\n\n🔗 **رابط الفتح والاستيراد المباشر بضغطة واحدة:**\n${importUrl}\n\n(عند فتح هذا الرابط، ستفتح المنصة مباشرة ومعها كافة الأسئلة والخيارات والتفسيرات في صفحة المحرر جاهزة للبدء أو الحفظ في مكتبتك دون تسجيل دخول).`;
 }
 
+function handleCreateLessonImportLink(args: any) {
+  if (!args || typeof args !== "object") {
+    return "بيانات الدرس غير صالحة. يجب توفير كائن يحتوي على title و sections.";
+  }
+
+  const title = String(args.title || "").trim();
+  if (!title || title.length > 200) {
+    return "عنوان الدرس (title) مطلوب ويجب ألا يتجاوز 200 حرف.";
+  }
+
+  const description = String(args.description || "").trim();
+  if (description.length > 1200) {
+    return "وصف الدرس (description) يجب ألا يتجاوز 1200 حرف.";
+  }
+
+  const source = String(args.source || "توليد Claude / ChatGPT").trim();
+  if (source.length > 500) {
+    return "مصدر الدرس (source) يجب ألا يتجاوز 500 حرف.";
+  }
+
+  const rawSections = Array.isArray(args.sections)
+    ? args.sections
+    : Array.isArray(args.content?.sections)
+    ? args.content.sections
+    : null;
+
+  if (!rawSections || rawSections.length === 0 || rawSections.length > 60) {
+    return "يجب أن يحتوي الدرس على أقسام (sections) بين 1 و 60 قسماً.";
+  }
+
+  let totalQuestions = 0;
+  let totalBlocks = 0;
+
+  const normalizedSections = [];
+  for (let sIdx = 0; sIdx < rawSections.length; sIdx++) {
+    const s = rawSections[sIdx];
+    if (!s || typeof s !== "object") {
+      return `القسم رقم ${sIdx + 1} غير صالح.`;
+    }
+
+    const secTitle = String(s.title || "").trim();
+    if (!secTitle || secTitle.length > 200) {
+      return `عنوان القسم رقم ${sIdx + 1} مطلوب ويجب ألا يتجاوز 200 حرف.`;
+    }
+
+    const rawBlocks = Array.isArray(s.blocks)
+      ? s.blocks
+      : typeof s.content === "string"
+      ? [{ type: "markdown", body: s.content }]
+      : [];
+
+    if (rawBlocks.length > 100) {
+      return `القسم رقم ${sIdx + 1} يحتوي على عدد عناصر كبير جداً (الحد الأقصى 100 عنصر).`;
+    }
+
+    const cleanBlocks = [];
+    for (let bIdx = 0; bIdx < rawBlocks.length; bIdx++) {
+      const b = rawBlocks[bIdx];
+      if (!b || typeof b !== "object") continue;
+
+      const type = b.type || (b.prompt ? "question" : "markdown");
+      if (type === "markdown") {
+        const body = String(b.body ?? b.content ?? "");
+        if (body.length > 20000) {
+          return `نص العنصر في القسم رقم ${sIdx + 1} يتجاوز الحد الأقصى (20000 حرف).`;
+        }
+        cleanBlocks.push({ type: "markdown", body });
+      } else if (type === "media") {
+        const url = String(b.url || "").trim();
+        if (!url) {
+          return `رابط الوسائط مفقود في القسم رقم ${sIdx + 1} العنصر رقم ${bIdx + 1}.`;
+        }
+        const kind = ["image", "audio", "video"].includes(b.kind) ? b.kind : "image";
+        cleanBlocks.push({
+          type: "media",
+          url,
+          kind,
+          ...(b.alt ? { alt: String(b.alt).trim().slice(0, 200) } : {}),
+        });
+      } else if (type === "quizRef") {
+        const quizId = String(b.quizId || "").trim();
+        if (!quizId) {
+          return `معرف الامتحان مفقود في عنصر الامتحان بالقسم رقم ${sIdx + 1}.`;
+        }
+        cleanBlocks.push({
+          type: "quizRef",
+          quizId,
+          ...(b.title ? { title: String(b.title).trim().slice(0, 200) } : {}),
+        });
+      } else if (type === "lesson-reference" || type === "lessonRef") {
+        const lessonId = String(b.lessonId || b.lessonRefId || "").trim();
+        if (!lessonId) {
+          return `معرف الدرس مفقود في عنصر إشارة الدرس بالقسم رقم ${sIdx + 1}.`;
+        }
+        cleanBlocks.push({
+          type: "lesson-reference",
+          lessonId,
+          ...(b.title ? { title: String(b.title).trim().slice(0, 200) } : {}),
+          ...(b.slug ? { slug: String(b.slug).trim().slice(0, 200) } : {}),
+        });
+      } else if (type === "question") {
+        const prompt = String(b.prompt || b.q || "").trim();
+        if (!prompt) {
+          return `نص السؤال مطلوب في القسم رقم ${sIdx + 1} العنصر رقم ${bIdx + 1}.`;
+        }
+        const explanation = String(b.explanation || "").trim().slice(0, 10000);
+        const isEssay = b.questionKind === "essay" || (!b.options && (b.modelAnswer || b.answer));
+
+        if (isEssay) {
+          const modelAnswer = String(b.modelAnswer || b.answer || "").trim();
+          if (!modelAnswer) {
+            return `الإجابة النموذجية مطلوبة للسؤال المقالي في القسم رقم ${sIdx + 1}.`;
+          }
+          cleanBlocks.push({
+            type: "question",
+            questionKind: "essay",
+            prompt,
+            modelAnswer,
+            ...(explanation ? { explanation } : {}),
+          });
+        } else {
+          const rawOpts = Array.isArray(b.options) && b.options.length ? b.options : ["نعم", "لا"];
+          if (rawOpts.length < 2 || rawOpts.length > 8) {
+            return `السؤال الاختياري في القسم رقم ${sIdx + 1} يحتاج بين خيارين إلى 8 خيارات.`;
+          }
+          const options = rawOpts.map((opt: any) => String(opt || "").trim());
+          const multiSelect = Boolean(b.multiSelect);
+          let correctIndexes: number[] = [];
+          if (Array.isArray(b.correctIndexes)) {
+            correctIndexes = b.correctIndexes.map(Number);
+          } else if (Array.isArray(b.correct)) {
+            correctIndexes = b.correct.map(Number);
+          } else if (Number.isInteger(b.correctIndex)) {
+            correctIndexes = [b.correctIndex];
+          } else if (Number.isInteger(b.correct)) {
+            correctIndexes = [b.correct];
+          }
+          correctIndexes = correctIndexes.filter(
+            (idx) => Number.isInteger(idx) && idx >= 0 && idx < options.length
+          );
+          if (!correctIndexes.length) correctIndexes = [0];
+          correctIndexes = [...new Set(correctIndexes)];
+
+          cleanBlocks.push({
+            type: "question",
+            questionKind: "mcq",
+            prompt,
+            options,
+            ...(multiSelect
+              ? { multiSelect: true, correctIndexes }
+              : { correctIndex: correctIndexes[0] }),
+            ...(explanation ? { explanation } : {}),
+          });
+        }
+        totalQuestions++;
+      }
+      totalBlocks++;
+    }
+
+    normalizedSections.push({
+      title: secTitle,
+      defaultHidden: Boolean(s.defaultHidden),
+      blocks: cleanBlocks,
+    });
+  }
+
+  const normalizedLesson = {
+    title,
+    description,
+    source,
+    sections: normalizedSections,
+  };
+
+  const jsonString = JSON.stringify(normalizedLesson);
+  const bytes = new TextEncoder().encode(jsonString);
+  if (bytes.length > 200000) {
+    return "حجم الدرس كبير جداً (أكثر من 200 كيلوبايت). يُرجى تقليص حجم النصوص أو تقسيم الدرس.";
+  }
+
+  // Safe UTF-8 Base64 encoding
+  const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join("");
+  const base64Data = btoa(binary);
+
+  const importUrl = `https://basmagi-quiz.vercel.app/create-lesson#data=base64,${base64Data}`;
+
+  return `✅ تم التحقق من هيكل الدرس بنجاح (${normalizedLesson.sections.length} قسم/أقسام، ${totalBlocks} عنصر/عناصر تشمل ${totalQuestions} سؤال).\n\n🔗 **رابط الفتح والاستيراد المباشر بضغطة واحدة:**\n${importUrl}\n\n(عند فتح هذا الرابط، ستفتح المنصة مباشرة ومعها كافة الأقسام والنصوص والوسائط والأسئلة في صفحة محرر الدروس جاهزة للمراجعة أو الحفظ في مكتبتك دون تسجيل دخول).`;
+}
+
 function handleGetCreatorInfo() {
   return `معلومات مطور منصة إمتحانات بصمجي:
 - المطور: بلال عمرو محمد (Belal Amr Mohamed)
@@ -531,6 +839,9 @@ async function handleRpcRequest(reqBody: any) {
             break;
           case "create_quiz_import_link":
             resultText = handleCreateQuizImportLink(toolArgs);
+            break;
+          case "create_lesson_import_link":
+            resultText = handleCreateLessonImportLink(toolArgs);
             break;
           case "get_creator_info":
             resultText = handleGetCreatorInfo();

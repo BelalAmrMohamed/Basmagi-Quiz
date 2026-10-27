@@ -454,6 +454,133 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // =============================================================================
+// PRELOADED IMPORT FROM URL (1-Click Claude / ChatGPT Connector)
+// =============================================================================
+
+/**
+ * Decodes UTF-8 string from Base64 safely in browser (supports Arabic, Unicode, Base64URL, and unpadded strings).
+ */
+export function decodeBase64Utf8(str) {
+    let cleaned = String(str || "").trim().replace(/\s+/g, "+").replace(/-/g, "+").replace(/_/g, "/");
+    while (cleaned.length % 4 !== 0) {
+        cleaned += "=";
+    }
+
+    try {
+        const binary = atob(cleaned);
+        const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+        return new TextDecoder().decode(bytes);
+    } catch (e) {
+        return atob(cleaned);
+    }
+}
+
+/**
+ * Checks URL hash (#data=... or #import=...) or query params (?data=... or ?import=...)
+ * for pre-generated lesson JSON (e.g. from Claude or ChatGPT connector 1-click links).
+ * If valid, loads it directly into the editor and bypasses the entry screen.
+ */
+function handlePreloadedLessonFromUrl() {
+    let rawData = null;
+
+    // 1. Check URL hash first (preferred — never sent to server, no URL length limits on server)
+    if (window.location.hash && window.location.hash.length > 1) {
+        const hash = window.location.hash.slice(1);
+        if (hash.startsWith("data=") || hash.startsWith("import=")) {
+            rawData = hash.slice(hash.indexOf("=") + 1);
+        } else if (hash.startsWith("{") || hash.startsWith("%7B")) {
+            rawData = hash;
+        } else {
+            const match = hash.match(/(?:^|&)(?:data|import)=([^&]+)/);
+            if (match) {
+                rawData = match[1];
+            } else {
+                const params = new URLSearchParams(hash);
+                rawData = params.get("data") || params.get("import");
+            }
+        }
+    }
+
+    // 2. Check query params fallback
+    if (!rawData && window.location.search) {
+        const search = window.location.search.slice(1);
+        if (search.startsWith("data=") || search.startsWith("import=")) {
+            rawData = search.slice(search.indexOf("=") + 1);
+        } else {
+            const params = new URLSearchParams(window.location.search);
+            rawData = params.get("data") || params.get("import");
+        }
+    }
+
+    if (!rawData) return false;
+
+    try {
+        let jsonString = rawData;
+        if (rawData.startsWith("base64,")) {
+            jsonString = decodeBase64Utf8(rawData.slice(7));
+        } else {
+            try {
+                jsonString = decodeURIComponent(rawData);
+            } catch (e) {
+                jsonString = rawData;
+            }
+            if (!jsonString.trim().startsWith("{")) {
+                try {
+                    const decoded = decodeBase64Utf8(jsonString);
+                    if (decoded.trim().startsWith("{")) jsonString = decoded;
+                } catch (e) { /* ignore */ }
+            }
+        }
+
+        const parsedJson = JSON.parse(jsonString);
+        const normalized = normalizeLessonJson(parsedJson);
+        if (!normalized || !Array.isArray(normalized.sections) || !normalized.sections.length) {
+            return false;
+        }
+
+        lessonData = emptyLessonData();
+        currentDraftId = null;
+        editingLessonId = null;
+        publishedLessonId = null;
+        lessonPasswordDraft = "";
+
+        lessonData.title = normalized.title || "درس جديد";
+        lessonData.description = normalized.description || "";
+        lessonData.source = normalized.source || "تم التوليد بواسطة الذكاء الاصطناعي";
+        lessonData.sections = normalized.sections.map((section) => ({
+            ...section,
+            id: newLocalId("s"),
+            blocks: section.blocks.map((block) => ({
+                ...block,
+                id: block.id || newLocalId("q"),
+                _localId: newLocalId("b"),
+            })),
+        }));
+
+        resetHistory();
+        renderLessonForm();
+        showLessonForm();
+        autosave();
+
+        // Clean URL hash/query without reloading
+        const cleanUrl = window.location.pathname;
+        try {
+            history.replaceState(null, "", cleanUrl);
+        } catch (e) { /* ignore */ }
+
+        showNotification(
+            "تم استيراد الدرس!",
+            `تم استيراد الدرس «${lessonData.title}» (${lessonData.sections.length} قسم/أقسام) بنجاح من الرابط المباشر.`,
+            "success"
+        );
+        return true;
+    } catch (err) {
+        console.warn("[create-lesson] Failed to parse preloaded lesson from URL:", err);
+        return false;
+    }
+}
+
+// =============================================================================
 // INIT
 // =============================================================================
 
@@ -489,13 +616,15 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.error("Failed to open lesson for editing:", err);
             openedOk = false;
         }
+    } else if (handlePreloadedLessonFromUrl()) {
+        openedOk = true;
     }
 
     if (!openedOk) {
         if (isAdmin) await loadSharedLessons();
         showEntryScreen();
     } else {
-        // Deep-linked edit bypasses the entry screen, same as create-quiz.
+        // Deep-linked edit or preloaded URL import bypasses the entry screen, same as create-quiz.
     }
 
     document.dispatchEvent(new Event("app:ready"));
