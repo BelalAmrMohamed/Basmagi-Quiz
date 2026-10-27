@@ -1897,6 +1897,13 @@ body.sidebar-expanded .global-md-bar {
     position: relative;
 }
 
+/* The rich Markdown highlighter wraps .md-source in a mirror surface. Hide
+   the whole surface in preview mode so syntax tokens never bleed beside the
+   rendered Markdown (including when the observer attaches the wrapper late). */
+.lesson-md-editor.is-previewing .rich-input-highlighter {
+    display: none;
+}
+
 /* Selectors are doubled up (`.form-group textarea.wp-textarea` as well as
    plain `.wp-textarea`) so this wins in the cascade over the generic
    `.form-group textarea` / `.form-group textarea:focus` rules above.

@@ -2171,11 +2171,17 @@ window.setMdMode = function (fieldId, mode) {
     const preview = document.getElementById(`preview-${fieldId}`);
     if (!textarea || !preview) return;
     root.querySelectorAll(".lesson-md-tab").forEach((t) => t.classList.toggle("active", t.dataset.mode === mode));
+    root.classList.toggle("is-previewing", mode === "preview");
+    // The shared highlighter wraps the textarea in its own mirror surface.
+    // Hiding only the textarea leaves that mirror visible beside the preview
+    // (the narrow blue column of Markdown tokens seen in the editor).
+    const inputSurface = textarea.closest(".rich-input-highlighter") || textarea;
     if (mode === "preview") {
         preview.innerHTML = renderMarkdown(textarea.value || "");
-        textarea.style.display = "none";
+        inputSurface.style.display = "none";
         preview.style.display = "";
     } else {
+        inputSurface.style.display = "";
         textarea.style.display = "";
         preview.style.display = "none";
         textarea.focus();

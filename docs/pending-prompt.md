@@ -1,4 +1,3 @@
-- Remove the useless تم حذف هذه المشاركة. when a comment is deleted on the lesson page. if it's stored in the DB, update the DB and remove it, it's a useless label
 - When I tried to create the lesson (pasted JSON), I got this error:
 بيانات الدرس غير صالحة
 The lesson must contain between 1 and 60 sections.
