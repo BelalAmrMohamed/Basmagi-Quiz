@@ -45,6 +45,9 @@ Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is com
   * Make an info modal for Folders.
   * (Suggestion) Add: Number of Views or people who solved a quiz on each quiz.
 
+#### Message: أنت غير مشترك في هذه المادة
+* When I send a link of a specific course to my friends (like https://basmagi-quiz.vercel.app/course/Image-Processing), some of them aren't subscribed to it, so when they enter it, I want them to see a message or something that is telling them that they are not subscribed to this course, with a button to subscribe directly.
+
 ### `public\about.html` Page
 * Suggestion: Add an open-source Angle (Since the repo is currently open source).
 * Suggestion: Add a short testimonial or review.
