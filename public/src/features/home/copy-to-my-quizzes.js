@@ -214,12 +214,11 @@ export async function copyLessonToUserQuizzes(lesson) {
     if (!setInStorage("user_quizzes", JSON.stringify(current))) {
       throw new Error("تعذّر حفظ الدرس في امتحاناتك. تحقق من مساحة التخزين.");
     }
-    const [{ renderRootCategories }, { renderUserQuizzesView }] = await Promise.all([
-      import("./root-view.js"),
-      import("./user-quizzes-view.js"),
-    ]);
-    renderRootCategories();
-    renderUserQuizzesView();
+    // Refresh the root card's count without rendering either home view:
+    // renderUserQuizzesView() pushes /#my-quizzes and would take the user
+    // away from the lesson/course where they started the copy.
+    const { refreshUserQuizzesCard } = await import("./course-count.js");
+    refreshUserQuizzesCard();
     showNotification("تم النسخ", `تم نسخ «${normalized.title}» إلى امتحاناتك.`, "success");
     return true;
   } catch (error) {

@@ -7,12 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-## Copying Lessons.
-- نسخ لامتحاناتي button for lessons: ![Screenshot](image.png)
-
-## Highlight Issue: ![Screenshot](image-1.png)
-In the discussion comment box ("أضف إلى النقاش"), both the text selection highlight and the cursor position are vertically offset and rendering lower than the actual text line. As shown in the screenshot, the selection box is detached and positioned below the Arabic text. That issue doesn't exist any where else in the same page, or on any other page, it only exists in that comment box only.
-
 ### AI Agent
 
 #### Dictation
