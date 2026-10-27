@@ -54,16 +54,26 @@ flowchart LR
 
 ---
 
-## 2. Tools & Capabilities Offered to Claude & ChatGPT
+## 2. Tools & Capabilities Offered to Claude & ChatGPT (v2.2.0)
 
 | Tool / Primitive | Type | Description |
 | :--- | :--- | :--- |
-| `search_catalog` | Tool | Search public courses, folders, quizzes, and lessons by keyword with optional scope filter (`quizzes`, `lessons`, `courses`, `all`). |
-| `get_quiz` | Tool | Retrieve full quiz metadata, question texts, options, correct answers, and explanations by quiz ID. |
-| `get_lesson` | Tool | Retrieve complete lesson content (markdown sections, explanations, and embedded questions) by lesson ID. |
-| `get_prompts` | Tool / MCP Prompt | Retrieve prompt templates from `ai-prompts.js` (`General_Purpose_AI_Prompt`, `English_Specializing_Prompt`, `Math_Specializing_Prompt`) and `ai-agent-default-prompts.js`. |
-| `create_quiz_import_link` | Tool | Validates a generated quiz against Basmagi schema and returns both standard JSON and a 1-click pre-filled import URL. |
-| `get_creator_info` | Tool | Public info & links about the creator (Belal Amr Mohamed) matching `_tools.js`. |
+| `search_catalog` | Tool | Search public courses, folders, quizzes, and lessons by keyword with optional scope filter (`quizzes`, `lessons`, `courses`, `folders`, `all`). |
+| `list_courses` | Tool | Discover and list courses with filters: `education_type`, `college`, `year`, `term`, `limit`. |
+| `list_colleges` | Tool | List all active educational colleges/institutions registered on the platform with year and term counts. |
+| `get_course_contents` | Tool | Retrieve all content inside a specific course. Supports `recursive: true` to fetch all quizzes and lessons across all nested subfolders, and `format: 'summary' \| 'json'`. |
+| `get_folder_contents` | Tool | Retrieve all content inside a folder. Supports `recursive: true` to traverse descendant subfolders, and `format: 'summary' \| 'json'`. |
+| `list_folder_tree` | Tool | Visual ASCII tree of the complete folder hierarchy for a course with quiz and lesson counts per folder. |
+| `get_quiz` | Tool | Retrieve full quiz metadata, question texts, options, correct answers, and explanations. Supports `format: 'text' \| 'json'`. |
+| `get_quiz_by_url` | Tool | Resolve and fetch a quiz directly from any Basmagi URL, short ID, or UUID. |
+| `get_lesson` | Tool | Retrieve lesson metadata (title, description, source, section count, protection status). |
+| `get_lesson_content` | Tool | Retrieve complete content of a lesson (sections, markdown text, embedded MCQ/essay questions, media). Supports `format: 'text' \| 'json'`. |
+| `list_recent_content` | Tool | Retrieve recently added or updated public quizzes and lessons. |
+| `get_platform_stats` | Tool | Summary statistics of public catalog items (total courses, folders, quizzes, lessons, colleges). |
+| `get_prompts` | Tool / MCP Prompt | Retrieve prompt templates from `ai-prompts.js` and `ai-agent-default-prompts.js`. |
+| `create_quiz_import_link` | Tool | Validates a generated quiz against Basmagi schema and returns a 1-click pre-filled import URL for Quiz Creator. |
+| `create_lesson_import_link` | Tool | Validates a generated lesson structure and returns a 1-click pre-filled import URL for Lesson Creator. |
+| `get_creator_info` | Tool | Public info & links about the creator (Belal Amr Mohamed). |
 
 ---
 
