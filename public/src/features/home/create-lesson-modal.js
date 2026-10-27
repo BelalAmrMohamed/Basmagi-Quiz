@@ -92,7 +92,7 @@ export function openInlineCreateLessonModal() {
   document.body.appendChild(overlay);
 
   const lessonJsonInput = modalCard.querySelector("#inlineLessonJson");
-  const close = wireModalDismiss(overlay, () => fadeOutAndRemove(overlay, modalCard));
+  const close = wireModalDismiss(overlay, () => fadeOutAndRemove(overlay, modalCard), { dismissOnBackdrop: false });
   modalCard.querySelector("#inlineLessonClose").addEventListener("click", close);
 
   modalCard.querySelector("#inlineLessonPrompt").addEventListener("click", async () => {

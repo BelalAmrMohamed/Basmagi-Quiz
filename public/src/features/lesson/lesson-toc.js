@@ -16,7 +16,7 @@ export function renderLessonToc(visibleSections, visitedSectionIds, { includeCom
   const items = titled.map((section) => (
     `<li><a class="doc-toc-link" href="#lesson-section-${escapeHtml(section.id)}" data-section-id="${escapeHtml(section.id)}">${escapeHtml(section.title)}</a></li>`
   )).join("") + (includeComments
-    ? `<li><a class="doc-toc-link doc-toc-link--comments" href="#lesson-comments" data-toc-comments-link><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-9.5A7.5 7.5 0 0 1 10.5 4H12"/><path d="M15 3h6M18 0v6M7.5 10h7M7.5 14h4"/></svg> مجتمع الدرس</a></li>`
+    ? `<li><a class="doc-toc-link doc-toc-link--comments" href="#lesson-comments" data-toc-comments-link><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-9.5A7.5 7.5 0 0 1 10.5 4H12"/><path d="M15 3h6M18 0v6M7.5 10h7M7.5 14h4"/></svg> تعليقات الدرس</a></li>`
     : "");
 
   return (

@@ -948,7 +948,7 @@ window.renameEntryItem = async function (event, quizId) {
   if (!quiz) return;
 
   const currentTitle = quiz.meta?.title || quiz.title || "";
-  const newTitle = await _prompt("أدخل الاسم الجديد:", currentTitle);
+  const newTitle = await _prompt("أدخل الاسم الجديد:", currentTitle, { dismissOnBackdrop: false });
   if (!newTitle || !newTitle.trim()) return;
   const trimmedTitle = newTitle.trim();
 

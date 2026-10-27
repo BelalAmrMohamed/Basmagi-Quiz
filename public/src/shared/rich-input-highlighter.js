@@ -213,8 +213,14 @@ export function attachRichInputHighlighter({
     for (const property of styleProperties) {
       mirror.style[property] = computed[property];
     }
-    // clientWidth/clientHeight include padding but exclude borders, so the
-    // mirror uses that same inner border-box regardless of the textarea's
+    // The mirror is positioned at the textarea's client origin (inside its
+    // border) and sized to clientWidth/clientHeight. Keeping the copied
+    // textarea border here would add the border a second time before the
+    // mirrored text's padding, shifting highlighted glyphs away from the
+    // textarea's native caret and selection—most visible with Arabic marks.
+    mirror.style.border = "0 solid transparent";
+    // clientWidth/clientHeight include padding and exclude borders, so the
+    // borderless mirror uses that same inner box regardless of the textarea's
     // own box-sizing mode.
     mirror.style.boxSizing = "border-box";
     mirror.style.width = `${textarea.clientWidth}px`;

@@ -7,14 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-## Downlaod lesson modal
-The download lesson modal should match the download quiz modal's design and functionality:
-- Icons next to each extension matching it (e.g., for JSON, PDF, and HTML).
-- Copy button next on each copyable download option (e.g., JSON and HTML)
-- loading progress with cancel buttons
-
-### Performance, Maintainance, and code quality:
-
 ### AI Agent
 
 #### Dictation

@@ -286,6 +286,7 @@ const ITEM_ACTIONS = new Set([
   "delete-course",
   "move-item",
   "rename-item",
+  "update-item-metadata",
   "update-quiz",
   "create-lesson",
   "update-lesson",
@@ -1130,6 +1131,58 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
   return res.status(200).json({ success: true, name: nameCheck.clean });
 }
 
+// ── action=update-item-metadata ──────────────────────────────────────────────
+// Shared metadata editor for platform quizzes and lessons. This intentionally
+// updates only description/source, preserving the content and placement.
+async function handleUpdateItemMetadata(req, res, adminPayload, adminId, supabase) {
+  const { itemType, itemId, description, source } = req.body || {};
+  if (!["quiz", "lesson"].includes(itemType) || !itemId) {
+    return res.status(400).json({ error: "بيانات الوصف والمصدر غير مكتملة." });
+  }
+  let cleanDescription;
+  let cleanSource;
+  try {
+    cleanDescription = validateLessonDescription(description);
+    cleanSource = validateLessonSource(source);
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+
+  const fetched = await fetchItemForAuth(supabase, itemType, itemId);
+  if (!fetched) return res.status(404).json({ error: "العنصر غير موجود." });
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لتعديل تفاصيل هذا العنصر." });
+  }
+
+  let query;
+  if (itemType === "quiz") {
+    const data = fetched.row.data || {};
+    const updatedData = {
+      ...data,
+      meta: { ...(data.meta || {}), description: cleanDescription, source: cleanSource },
+    };
+    query = supabase.from("quizzes").update({ data: updatedData }).eq("id", itemId);
+  } else {
+    query = supabase.from("lessons").update({
+      description: cleanDescription || null,
+      source: cleanSource || null,
+      updated_at: new Date().toISOString(),
+    }).eq("id", itemId);
+  }
+
+  const { error } = await query;
+  if (error) {
+    console.error("[admin:update-item-metadata] failed:", error.message);
+    return res.status(500).json({ error: "تعذّر حفظ الوصف والمصدر." });
+  }
+  if (itemType === "lesson") {
+    notifySearchEngines({ add: [lessonUrl(fetched.row.slug || itemId)], reason: "update-item-metadata:lesson" });
+  } else if (fetched.row.data?.meta?.id && !fetched.row.password) {
+    notifySearchEngines({ add: [quizUrl(fetched.row.data.meta.id)], reason: "update-item-metadata:quiz" });
+  }
+  return res.status(200).json({ success: true, itemType, itemId });
+}
+
 // ── action=update-quiz ──────────────────────────────────────────────────────
 // Body: { id: <quizzes.id UUID>, quiz: {meta, stats, questions} } — the same
 // {meta, stats, questions} shape validated by _validateQuiz.js on the create
@@ -1637,6 +1690,7 @@ async function handleItemActions(req, res) {
   if (action === "delete-course") return handleDeleteTree(req, res, payload, adminId, supabase, "course");
   if (action === "move-item") return handleMoveItem(req, res, payload, adminId, supabase);
   if (action === "rename-item") return handleRenameItem(req, res, payload, adminId, supabase);
+  if (action === "update-item-metadata") return handleUpdateItemMetadata(req, res, payload, adminId, supabase);
   if (action === "update-quiz") return handleUpdateQuiz(req, res, payload, adminId, supabase);
   if (action === "list-lessons") return handleListLessons(req, res, payload, adminId, supabase);
   if (action === "get-lesson") return handleGetLesson(req, res, payload, adminId, supabase);

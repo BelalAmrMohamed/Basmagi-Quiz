@@ -184,8 +184,10 @@ export function openInlineCreateQuizModal() {
     createBtn.style.boxShadow = "0 4px 14px rgba(220, 38, 38, 0.4)";
   };
 
-  const close = wireModalDismiss(overlay, () =>
-    fadeOutAndRemove(overlay, modalCard),
+  const close = wireModalDismiss(
+    overlay,
+    () => fadeOutAndRemove(overlay, modalCard),
+    { dismissOnBackdrop: false },
   );
 
   closeBtn.onclick = close;

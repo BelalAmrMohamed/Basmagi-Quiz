@@ -492,7 +492,7 @@
   background: var(--color-surface, transparent);
 }
 
-/* ── Phase 4: مجتمع الدرس ─────────────────────────────────────────────────── */
+/* ── Phase 4: تعليقات الدرس ─────────────────────────────────────────────────── */
 
 .lesson-comments__head {
   display: flex;
@@ -3691,12 +3691,15 @@
 .lesson-comment__vote-group { display: inline-grid; justify-items: start; gap: .1rem; }
 .lesson-comment__vote-buttons { display: inline-flex; align-items: center; gap: .2rem; }
 .lesson-comment__react svg { width: 15px; height: 15px; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.lesson-comment__link svg { width: 14px; height: 14px; flex: 0 0 auto; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.lesson-comment__vote-group[aria-busy="true"] .lesson-comment__react { opacity: .72; }
 .lesson-comment__ratio { display: grid; width: calc(100% - .5rem); gap: .2rem; padding-inline: .25rem; }
 .lesson-comment__ratio-labels { display: flex; justify-content: space-between; color: var(--color-text-tertiary, var(--color-text-secondary)); font-size: .57rem; font-weight: 750; font-variant-numeric: tabular-nums; }
 .lesson-comment__ratio-track { display: flex; height: 4px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, #e16d7b 24%, var(--color-surface)); }
 .lesson-comment__ratio-like { display: block; height: 100%; background: linear-gradient(90deg, #38b98c, #56d8a5); transition: width .22s ease; }
 .lesson-comment__ratio-dislike { display: block; height: 100%; background: linear-gradient(90deg, #ef8790, #d85d6d); }
 .lesson-comments__success-note { margin: .7rem 0 0; padding: .65rem .8rem; border: 1px solid color-mix(in srgb, #38b98c 35%, var(--color-border)); border-radius: 11px; background: color-mix(in srgb, #38b98c 9%, var(--color-surface)); color: color-mix(in srgb, #38b98c 78%, var(--color-text-primary)); font-size: .75rem; }
+.lesson-comments__error-note { margin: .7rem 0; padding: .7rem .85rem; border: 1px solid color-mix(in srgb, #e06c73 38%, var(--color-border)); border-radius: 12px; background: color-mix(in srgb, #e06c73 10%, var(--color-surface)); color: #e06c73; font-size: .78rem; line-height: 1.55; }
 
 .lesson-comment__link--danger { color: #e06c73; }
 .lesson-comment__link--danger:hover { border-color: color-mix(in srgb, #e06c73 28%, var(--color-border)); background: color-mix(in srgb, #e06c73 9%, var(--color-surface)); color: #e06c73; }

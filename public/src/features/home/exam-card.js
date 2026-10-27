@@ -23,6 +23,7 @@ import {
   canManageItem,
   openSharedMoveToDialog,
   renameSharedItem,
+  editSharedItemMetadata,
   deleteSharedItem,
 } from "./admin-item-actions.js";
 import { showQuizInfoModal } from "./quiz-info-modal.js";
@@ -400,6 +401,11 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
               if (!exam.dbId) return;
               window.location.href = `/create-quiz?id=${encodeURIComponent(exam.dbId)}&mode=edit`;
             },
+          },
+          {
+            label: "تعديل التفاصيل",
+            icon: EDIT_ICON_SVG,
+            onClick: () => editSharedItemMetadata(exam),
           },
           {
             // نقل — shared Move-Source dialog over the DB courses+folders

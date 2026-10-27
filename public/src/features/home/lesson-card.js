@@ -3,7 +3,7 @@ import { downloadLesson } from "./lesson-download.js";
 import { openExamDropdownMenu, createActionGroupSubmenu, createExamInfoSubmenu } from "./exam-dropdown-menu.js";
 import { showUserLessonInfoModal, collectLessonInfo } from "./lesson-info-modal.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
-import { canManageItem, openSharedMoveToDialog, renameSharedItem, deleteSharedItem } from "./admin-item-actions.js";
+import { canManageItem, openSharedMoveToDialog, renameSharedItem, editSharedItemMetadata, deleteSharedItem } from "./admin-item-actions.js";
 import { openAIAgentWithAttachment, buildPlatformLessonAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { showNotification } from "../../components/notifications/notifications.js";
@@ -143,7 +143,7 @@ function openLessonActionsMenu(lesson, trigger) {
       label: "مشاركة الرابط", icon: SHARE_ICON_SVG,
       onClick: () => {
         const url = lessonUrl(lesson);
-        if (navigator.share) void navigator.share({ title: lesson.title || "درس", url }).catch(() => {});
+        if (navigator.share) void navigator.share({ title: lesson.title || "درس", url }).catch(() => { });
         else void navigator.clipboard.writeText(url).then(() => showNotification("تم النسخ", "تم نسخ رابط الدرس.", "success"));
       },
     });
@@ -169,6 +169,10 @@ function openLessonActionsMenu(lesson, trigger) {
 
     if (canManageItem({ ...lesson, itemType: "lesson" })) {
       const adminMenu = createActionGroupSubmenu([
+        {
+          label: "تعديل التفاصيل", icon: EDIT_ICON_SVG,
+          onClick: () => editSharedItemMetadata({ ...lesson, itemType: "lesson" }),
+        },
         {
           label: "تعديل", icon: EDIT_ICON_SVG,
           onClick: () => { window.location.href = `/create-lesson?edit=${encodeURIComponent(lesson.id)}`; },

@@ -18,7 +18,7 @@
  * @returns {() => void} close - call this from every button/action that
  *   should close the modal. Idempotent.
  */
-export function wireModalDismiss(overlay, dismiss) {
+export function wireModalDismiss(overlay, dismiss, { dismissOnBackdrop = true } = {}) {
   let closed = false;
 
   const close = () => {
@@ -36,9 +36,11 @@ export function wireModalDismiss(overlay, dismiss) {
   }
 
   document.addEventListener("keydown", escHandler);
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) close();
-  });
+  if (dismissOnBackdrop) {
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) close();
+    });
+  }
 
   return close;
 }

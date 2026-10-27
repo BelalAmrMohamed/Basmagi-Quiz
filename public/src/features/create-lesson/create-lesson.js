@@ -1029,7 +1029,7 @@ window.renameEntryItem = async function (event, id) {
     if (idx < 0 && !draft) return;
     const row = draft || items[idx];
 
-    const next = await _prompt("اسم الدرس الجديد:", row.meta?.title || "");
+    const next = await _prompt("اسم الدرس الجديد:", row.meta?.title || "", { dismissOnBackdrop: false });
     if (next === null || next === undefined) return;
     const title = String(next).trim();
     if (!title) {

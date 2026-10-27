@@ -61,6 +61,7 @@ import {
 // rationale.
 import { openAIAgentWithAttachment, resolveUserItemAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 import { downloadLesson } from "./lesson-download.js";
+import { openDescriptionSourceModal } from "./description-source-modal.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { SPARKLE_ICON_SVG } from "./icons.js";
 
@@ -401,6 +402,22 @@ export function showUserLessonActionsOverlay(lesson, triggerBtn) {
     };
     menu.appendChild(editOpt);
 
+    const metadataOpt = document.createElement("button");
+    metadataOpt.type = "button";
+    metadataOpt.className = "exam-action-btn";
+    metadataOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل التفاصيل</span>`;
+    metadataOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      openDescriptionSourceModal({
+        title,
+        description: lesson.meta?.description || lesson.description || "",
+        source: lesson.meta?.source || lesson.source || "",
+        onSave: ({ description, source }) => saveLocalItemMetadata(lessonId, description, source),
+      });
+    };
+    menu.appendChild(metadataOpt);
+
     const renameOpt = document.createElement("button");
     renameOpt.type = "button";
     renameOpt.className = "exam-action-btn";
@@ -583,6 +600,22 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
     };
     menu.appendChild(editOpt);
 
+    const metadataOpt = document.createElement("button");
+    metadataOpt.type = "button";
+    metadataOpt.className = "exam-action-btn";
+    metadataOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل التفاصيل</span>`;
+    metadataOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      openDescriptionSourceModal({
+        title: qz(quiz, "title") || "الامتحان",
+        description: qz(quiz, "description") || "",
+        source: qz(quiz, "source") || "",
+        onSave: ({ description, source }) => saveLocalItemMetadata(quiz.id || quiz.meta?.id, description, source),
+      });
+    };
+    menu.appendChild(metadataOpt);
+
     const renameOpt = document.createElement("button");
     renameOpt.type = "button";
     renameOpt.className = "exam-action-btn";
@@ -664,4 +697,17 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
     };
     menu.appendChild(deleteOpt);
   });
+}
+
+function saveLocalItemMetadata(itemId, description, source) {
+  const items = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const item = items.find((row) => (row.id || row.meta?.id) === itemId);
+  if (!item) throw new Error("لم يتم العثور على العنصر في «امتحاناتك».");
+  item.meta = { ...(item.meta || {}), description, source, updatedAt: new Date().toISOString() };
+  if (!setInStorage("user_quizzes", JSON.stringify(items))) {
+    throw new Error("تعذّر حفظ التغييرات في التخزين المحلي.");
+  }
+  renderRootCategories();
+  renderUserQuizzesView();
+  return true;
 }

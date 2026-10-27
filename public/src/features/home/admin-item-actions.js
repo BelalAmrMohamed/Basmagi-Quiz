@@ -36,6 +36,7 @@ import {
   _prompt,
 } from "../../components/notifications/notifications.js";
 import { openMoveToDialogWithSource } from "./move-to-dialog.js";
+import { openDescriptionSourceModal } from "./description-source-modal.js";
 
 // ── Type / id resolution ─────────────────────────────────────────────────────
 // The item shapes fed into this module (see quizManifest.js):
@@ -238,7 +239,7 @@ export async function renameSharedItem(item) {
   }
 
   const currentTitle = item.title || item.name || "";
-  const newName = await _prompt("أدخل الاسم الجديد:", currentTitle);
+  const newName = await _prompt("أدخل الاسم الجديد:", currentTitle, { dismissOnBackdrop: false });
   if (!newName || !newName.trim()) return false;
 
   const res = await postAdminAction("rename-item", {
@@ -256,6 +257,27 @@ export async function renameSharedItem(item) {
   );
   await refreshSharedArea();
   return true;
+}
+
+/** Edit description/source for a shared quiz or lesson. */
+export function editSharedItemMetadata(item) {
+  const itemType = resolveItemType(item);
+  const itemId = resolveItemId(item);
+  if (!["quiz", "lesson"].includes(itemType) || !itemId) {
+    showNotification("تعذّر تعديل التفاصيل", "تعذّر تحديد الامتحان أو الدرس المطلوب.", "error");
+    return;
+  }
+  openDescriptionSourceModal({
+    title: item.title || "العنصر المحدد",
+    description: item.description || item.meta?.description || "",
+    source: item.source || item.meta?.source || "",
+    onSave: async ({ description, source }) => {
+      const result = await postAdminAction("update-item-metadata", { itemType, itemId, description, source });
+      if (!result) return false;
+      await refreshSharedArea();
+      return true;
+    },
+  });
 }
 
 // ── Delete / soft-delete (→ trash) ────────────────────────────────────────────

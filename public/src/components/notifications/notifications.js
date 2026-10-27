@@ -352,7 +352,7 @@ export function _alert(message) {
       (matches native prompt() semantics exactly).
      ============================ */
 
-export function _prompt(message, defaultValue = "") {
+export function _prompt(message, defaultValue = "", options = {}) {
   return new Promise((resolve) => {
     // 1. Create Overlay
     const overlay = document.createElement("div");
@@ -460,10 +460,13 @@ export function _prompt(message, defaultValue = "") {
     cancelBtn.addEventListener("click", handleCancel);
     window.addEventListener("keydown", handleKeydown);
 
-    // Click outside treats as cancel
-    overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) handleCancel();
-    });
+    // Backdrop dismissal is configurable for dialogs where accidental
+    // dismissal would discard a rename or an in-progress create flow.
+    if (options.dismissOnBackdrop !== false) {
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) handleCancel();
+      });
+    }
   });
 }
 

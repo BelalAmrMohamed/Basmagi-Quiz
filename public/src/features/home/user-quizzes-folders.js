@@ -348,7 +348,7 @@ export function findFolderByName(title, parentTitle = null) {
 }
 
 export async function renameItem(itemId, currentTitle) {
-  const newName = await _prompt("أدخل الاسم الجديد:", currentTitle);
+  const newName = await _prompt("أدخل الاسم الجديد:", currentTitle, { dismissOnBackdrop: false });
   if (!newName || !newName.trim()) return;
 
   const userQuizzes = readUserQuizzes();

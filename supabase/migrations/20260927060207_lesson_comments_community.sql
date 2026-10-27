@@ -1,5 +1,5 @@
 -- =============================================================================
--- Lesson comments -> "مجتمع الدرس" (lesson community discussion), Phase 4.
+-- Lesson comments -> "تعليقات الدرس" (lesson community discussion), Phase 4.
 -- =============================================================================
 
 ALTER TABLE public.lesson_comments

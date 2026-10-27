@@ -1,6 +1,6 @@
 // =============================================================================
 // public/src/features/lesson/lesson-comments.js
-// "مجتمع الدرس" — Phase 4 community discussion.
+// "تعليقات الدرس" — Phase 4 community discussion.
 //
 // Talks to api/college-quiz.js (lessonComments=true). Replies (one level),
 // reactions, sort, edit/delete (server-verified via getUserToken()'s
@@ -47,7 +47,7 @@ export function renderLessonComments() {
         <span class="lesson-comments__mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-9.5A7.5 7.5 0 0 1 10.5 4H12"/><path d="M15 3h6M18 0v6M7.5 10h7M7.5 14h4"/></svg></span>
         <div class="lesson-comments__heading-copy">
           <span class="lesson-comments__eyebrow">مساحة التعلّم المشتركة</span>
-          <h2 id="lessonCommentsTitle">مجتمع الدرس</h2>
+          <h2 id="lessonCommentsTitle">تعليقات الدرس</h2>
           <p>تبادل الأفكار والأسئلة مع زملائك حول هذا الدرس.</p>
         </div>
       </div>
@@ -68,7 +68,7 @@ export function renderLessonComments() {
         <span class="lesson-comments__composer-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></span>
         <div><label for="lessonCommentInput">أضف إلى النقاش</label><p>سؤالك أو فكرتك قد تساعد زميلاً آخر.</p></div>
       </div>
-      <textarea id="lessonCommentInput" rows="1" maxlength="2000" required placeholder="اكتب مشاركة مفيدة أو اسأل عن نقطة في الدرس…"></textarea>
+      <textarea id="lessonCommentInput" rows="1" dir="auto" maxlength="2000" required placeholder="اكتب مشاركة مفيدة أو اسأل عن نقطة في الدرس…"></textarea>
       <div class="lesson-comments__form-row">
         <span class="lesson-comments__count" dir="ltr" aria-live="polite">0 / 2000</span>
         <button type="submit"><span>إرسال المشاركة</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></button>
@@ -95,6 +95,8 @@ export function equipLessonComments(root, lessonId) {
   let activeAuthorTrigger = null;
   let activeAuthorParent = null;
   const highlighters = new Map();
+  const pendingReactions = new Set();
+  let sortRequestVersion = 0;
 
   function closeAuthorCard() {
     if (activeAuthorCard) {
@@ -182,6 +184,7 @@ export function equipLessonComments(root, lessonId) {
   }
 
   function renderCommentActions(comment) {
+    if (comment.pending) return `<span class="lesson-comment__pending-note" role="status">جارٍ النشر…</span>`;
     const buttons = [renderReactionControls(comment)];
     if (!comment.parent_id) {
       buttons.push(`<button type="button" class="lesson-comment__link" data-action="reply" data-id="${comment.id}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 10 4 15l5 5"/><path d="M4 15h9a7 7 0 0 0 7-7V5"/></svg> رد</button>`);
@@ -282,6 +285,7 @@ export function equipLessonComments(root, lessonId) {
       if (!parent) return;
       parent.replies = parent.replies || [];
       parent.replies.push(comment);
+      parent.reply_count = (Number(parent.reply_count) || 0) + 1;
       let replies = parentArticle?.querySelector(".lesson-comment__replies");
       if (parentArticle && !replies) {
         parentArticle.querySelector(".lesson-comment__reply-slot")?.insertAdjacentHTML("beforebegin", '<div class="lesson-comment__replies"></div>');
@@ -297,10 +301,48 @@ export function equipLessonComments(root, lessonId) {
     syncVisibleCount();
   }
 
+  function replacePendingComment(pendingId, created, parentId) {
+    if (!created) return;
+    created.replies = [];
+    const article = list.querySelector(`.lesson-comment[data-id="${CSS.escape(pendingId)}"]`);
+    if (parentId) {
+      const parent = findComment(parentId);
+      if (parent) {
+        const index = (parent.replies || []).findIndex((item) => item.id === pendingId);
+        if (index >= 0) parent.replies[index] = created;
+      }
+      article?.replaceWith(document.createRange().createContextualFragment(renderOne(created, { isReply: true })));
+    } else {
+      const index = state.comments.findIndex((item) => item.id === pendingId);
+      if (index >= 0) state.comments[index] = created;
+      article?.replaceWith(document.createRange().createContextualFragment(renderOne(created)));
+    }
+    syncVisibleCount();
+  }
+
+  function removePendingComment(pendingId, parentId) {
+    const article = list.querySelector(`.lesson-comment[data-id="${CSS.escape(pendingId)}"]`);
+    article?.remove();
+    if (parentId) {
+      const parent = findComment(parentId);
+      if (parent) {
+        const before = (parent.replies || []).length;
+        parent.replies = (parent.replies || []).filter((item) => item.id !== pendingId);
+        if (parent.replies.length < before) parent.reply_count = Math.max(0, (Number(parent.reply_count) || before) - 1);
+      }
+    } else {
+      state.comments = state.comments.filter((item) => item.id !== pendingId);
+      if (!state.comments.length) {
+        list.insertAdjacentHTML("afterbegin", '<div class="lesson-comments__empty"><strong>ابدأ أول نقاش</strong><span>لا توجد مشاركات منشورة بعد. شارك فكرة أو سؤالاً لتبدأ المحادثة.</span></div>');
+      }
+    }
+    syncVisibleCount();
+  }
+
   function setEditedComment(comment, body, editedAt) {
     if (!comment) return;
     comment.body = body;
-    comment.edited_at = editedAt || new Date().toISOString();
+    comment.edited_at = editedAt || null;
     const article = list.querySelector(`.lesson-comment[data-id="${CSS.escape(comment.id)}"]`);
     if (!article) return;
     const bodyEl = article.querySelector(".lesson-comment__body");
@@ -310,9 +352,10 @@ export function equipLessonComments(root, lessonId) {
       bodyEl.hidden = false;
     }
     article.querySelector(".lesson-comment__edit-form")?.remove();
-    if (!article.querySelector(".lesson-comment__edited")) {
+    if (comment.edited_at && !article.querySelector(".lesson-comment__edited")) {
       article.querySelector(".lesson-comment__meta time")?.insertAdjacentHTML("afterend", '<span class="lesson-comment__edited">تم التعديل</span>');
     }
+    if (!comment.edited_at) article.querySelector(".lesson-comment__edited")?.remove();
   }
 
   function setDeletedComment(comment) {
@@ -330,6 +373,61 @@ export function equipLessonComments(root, lessonId) {
 
   function countVisibleComments(comments) {
     return (comments || []).reduce((count, comment) => count + 1 + (comment.replies?.length || 0), 0);
+  }
+
+  function sortLoadedComments() {
+    const metric = (comment) => state.sort === "most_reacted"
+      ? (Number(comment.like_count) || 0) + (Number(comment.dislike_count) || 0)
+      : Number(comment.reply_count ?? comment.replies?.length ?? 0);
+    state.comments.sort((a, b) => {
+      if (state.sort !== "newest" && metric(a) !== metric(b)) return metric(b) - metric(a);
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+    for (const comment of state.comments) {
+      const article = [...list.children].find((node) => node.matches?.(".lesson-comment") && node.dataset.id === comment.id);
+      if (article) list.appendChild(article);
+    }
+  }
+
+  function updateSortSelection() {
+    section.querySelectorAll(".lesson-comments__sort-btn").forEach((btn) => {
+      const active = btn.dataset.sort === state.sort;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-selected", String(active));
+    });
+  }
+
+  function showInteractionError(message) {
+    section.querySelector(".lesson-comments__error-note")?.remove();
+    const note = document.createElement("p");
+    note.className = "lesson-comments__error-note";
+    note.setAttribute("role", "alert");
+    note.textContent = message || "تعذر تنفيذ هذا الإجراء. حاول مرة أخرى.";
+    section.querySelector(".lesson-comments__toolbar")?.insertAdjacentElement("afterend", note);
+    setTimeout(() => note.remove(), 6000);
+  }
+
+  function clearInteractionError() {
+    section.querySelector(".lesson-comments__error-note")?.remove();
+  }
+
+  function applyReaction(comment, next) {
+    const previous = comment.my_reaction || null;
+    if (previous === next) return;
+    if (previous) {
+      const key = previous === "like" ? "like_count" : "dislike_count";
+      comment[key] = Math.max(0, (Number(comment[key]) || 0) - 1);
+    }
+    if (next) {
+      const key = next === "like" ? "like_count" : "dislike_count";
+      comment[key] = (Number(comment[key]) || 0) + 1;
+    }
+    comment.my_reaction = next;
+  }
+
+  function refreshReactionControls(comment, article) {
+    const group = article?.querySelector(".lesson-comment__vote-group");
+    if (group) group.outerHTML = renderReactionControls(comment);
   }
 
   function render() {
@@ -389,10 +487,10 @@ export function equipLessonComments(root, lessonId) {
       const res = await fetch(`/api/college-quiz?${params}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       const data = await res.json();
       if (!res.ok) return false;
-      const items = data.parent ? [data.parent, data.comment] : [data.comment];
-      state.comments = data.parent ? [{ ...data.parent, replies: [data.comment] }] : [data.comment];
-      if (visibleCount) visibleCount.textContent = String(countVisibleComments(items.filter(Boolean)));
-      list.innerHTML = `<div class="lesson-comments__permalink-note">عرض هذه المشاركة وسياقها في النقاش</div>` + items.map((c, i) => renderOne(c, { isReply: i > 0 && !!data.parent })).join("");
+      const context = data.parent ? { ...data.parent, reply_count: Math.max(Number(data.parent.reply_count) || 0, 1), replies: [data.comment] } : data.comment;
+      state.comments = context ? [context] : [];
+      syncVisibleCount();
+      list.innerHTML = `<div class="lesson-comments__permalink-note">عرض هذه المشاركة وسياقها في النقاش</div>` + (context ? renderOne(context) : "");
       moreBtn.hidden = true;
       maybeScrollToPermalink();
       return true;
@@ -407,7 +505,7 @@ export function equipLessonComments(root, lessonId) {
     if (slot.querySelector("form")) { slot.querySelector("textarea")?.focus(); return; }
     const saved = getFromStorage(draftKey(lessonId, parentId), "");
     slot.innerHTML = `<form class="lesson-comments__form lesson-comments__form--reply" data-role="reply" data-parent="${parentId}">
-      <textarea maxlength="2000" required placeholder="اكتب ردك…">${escapeHtml(saved)}</textarea>
+      <textarea dir="auto" maxlength="2000" required placeholder="اكتب ردك…">${escapeHtml(saved)}</textarea>
       <div class="lesson-comments__form-row">
         <button type="button" data-action="cancel-reply">إلغاء</button>
         <button type="submit">إرسال الرد</button>
@@ -436,7 +534,7 @@ export function equipLessonComments(root, lessonId) {
       setInStorage(draftKey(lessonId, parentId), "");
       return data.comment || null;
     } catch (err) {
-      alert(err.message || "تعذر إرسال التعليق.");
+      showInteractionError(err.message || "تعذر إرسال التعليق.");
       return null;
     } finally {
       button.disabled = false;
@@ -444,6 +542,7 @@ export function equipLessonComments(root, lessonId) {
   }
 
   function showPublishedNotice(text) {
+    clearInteractionError();
     section.querySelector(".lesson-comments__success-note")?.remove();
     topForm.insertAdjacentHTML("afterend", `<p class="lesson-comments__success-note" role="status">${escapeHtml(text)}</p>`);
     setTimeout(() => section.querySelector(".lesson-comments__success-note")?.remove(), 4200);
@@ -454,21 +553,54 @@ export function equipLessonComments(root, lessonId) {
     const body = topTextarea.value.trim();
     if (!body) return;
     const button = topForm.querySelector("button[type=submit]");
+    const pendingId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    appendSubmittedComment({ id: pendingId, body, author: "أنت", created_at: new Date().toISOString(), parent_id: null, replies: [], like_count: 0, dislike_count: 0, is_mine: false, pending: true });
+    topTextarea.value = "";
+    setInStorage(draftKey(lessonId), "");
+    updateTopCount();
     const created = await submitComment({ body, button });
     if (created) {
-      topTextarea.value = "";
-      updateTopCount();
-      appendSubmittedComment(created);
+      replacePendingComment(pendingId, created);
       showPublishedNotice("نُشرت مشاركتك في النقاش.");
+    } else {
+      removePendingComment(pendingId);
+      topTextarea.value = body;
+      setInStorage(draftKey(lessonId), body);
+      updateTopCount();
     }
   });
 
   section.querySelectorAll(".lesson-comments__sort-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       if (btn.dataset.sort === state.sort) return;
+      const previousSort = state.sort;
+      const previousPage = state.page;
       state.sort = btn.dataset.sort;
       state.page = 1;
-      load();
+      sortLoadedComments();
+      updateSortSelection();
+      const requestVersion = ++sortRequestVersion;
+      (async () => {
+        try {
+          const token = await ensureToken();
+          const params = new URLSearchParams({ lessonComments: "true", lessonId, sort: state.sort, page: "1" });
+          const res = await fetch(`/api/college-quiz?${params}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "تعذر ترتيب المشاركات.");
+          if (requestVersion !== sortRequestVersion) return;
+          state.comments = data.comments || [];
+          state.hasMore = !!data.hasMore;
+          clearInteractionError();
+          render();
+        } catch (err) {
+          if (requestVersion !== sortRequestVersion) return;
+          state.sort = previousSort;
+          state.page = previousPage;
+          sortLoadedComments();
+          updateSortSelection();
+          showInteractionError(err.message || "تعذر ترتيب المشاركات.");
+        }
+      })();
     });
   });
 
@@ -486,14 +618,18 @@ export function equipLessonComments(root, lessonId) {
     const body = textarea.value.trim();
     if (!body) return;
     const button = form.querySelector("button[type=submit]");
+    const pendingId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    appendSubmittedComment({ id: pendingId, body, author: "أنت", created_at: new Date().toISOString(), parent_id: parentId, replies: [], like_count: 0, dislike_count: 0, is_mine: false, pending: true }, parentId);
     const created = await submitComment({ body, parentId, button });
     if (created) {
-      appendSubmittedComment(created, parentId);
+      replacePendingComment(pendingId, created, parentId);
       const textarea = form.querySelector("textarea");
       highlighters.get(textarea)?.destroy();
       highlighters.delete(textarea);
       form.remove();
       showPublishedNotice("نُشر ردك في النقاش.");
+    } else {
+      removePendingComment(pendingId, parentId);
     }
   });
 
@@ -559,32 +695,45 @@ export function equipLessonComments(root, lessonId) {
     }
 
     if (action === "react") {
-      const token = await ensureToken();
-      if (!token) return alert("تعذر التحقق من هويتك، حاول تحديث الصفحة.");
-      actionBtn.disabled = true;
+      if (pendingReactions.has(id)) return;
+      const comment = findComment(id);
+      const article = actionBtn.closest(".lesson-comment");
+      if (!comment || !article) return;
+      const before = {
+        my_reaction: comment.my_reaction || null,
+        like_count: Number(comment.like_count) || 0,
+        dislike_count: Number(comment.dislike_count) || 0,
+      };
+      const requested = actionBtn.dataset.reaction;
+      const optimistic = comment.my_reaction === requested ? null : requested;
+      applyReaction(comment, optimistic);
+      refreshReactionControls(comment, article);
+      pendingReactions.add(id);
+      const voteGroup = article.querySelector(".lesson-comment__vote-group");
+      voteGroup?.setAttribute("aria-busy", "true");
+      voteGroup?.querySelectorAll("button").forEach((button) => { button.disabled = true; });
       try {
+        const token = await ensureToken();
+        if (!token) throw new Error("تعذر التحقق من هويتك. سجّل الدخول ثم حاول مرة أخرى.");
         const res = await fetch("/api/college-quiz?lessonComments=true", {
           method: "POST",
           headers: authHeaders(token),
           body: JSON.stringify({ action: "react-lesson-comment", comment_id: id, reaction: actionBtn.dataset.reaction }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        const comment = findComment(id);
-        if (comment) {
-          const previous = comment.my_reaction;
-          const next = data.my_reaction || null;
-          if (previous) comment[previous === "like" ? "like_count" : "dislike_count"] = Math.max(0, (Number(comment[previous === "like" ? "like_count" : "dislike_count"]) || 0) - 1);
-          if (next) comment[next === "like" ? "like_count" : "dislike_count"] = (Number(comment[next === "like" ? "like_count" : "dislike_count"]) || 0) + 1;
-          comment.my_reaction = next;
-          const article = actionBtn.closest(".lesson-comment");
-          const actions = article?.querySelector(".lesson-comment__actions");
-          if (actions) actions.innerHTML = renderCommentActions(comment);
-        }
+        if (!res.ok) throw new Error(data.error || "تعذر تسجيل التفاعل.");
+        applyReaction(comment, data.my_reaction || null);
+        clearInteractionError();
+        refreshReactionControls(comment, article);
       } catch (err) {
-        alert(err.message || "تعذر تسجيل التفاعل.");
+        Object.assign(comment, before);
+        refreshReactionControls(comment, article);
+        showInteractionError(err.message);
       } finally {
-        actionBtn.disabled = false;
+        pendingReactions.delete(id);
+        const currentGroup = article.querySelector(".lesson-comment__vote-group");
+        currentGroup?.removeAttribute("aria-busy");
+        currentGroup?.querySelectorAll("button").forEach((button) => { button.disabled = false; });
       }
       return;
     }
@@ -596,7 +745,7 @@ export function equipLessonComments(root, lessonId) {
       if (article.querySelector(".lesson-comment__edit-form")) return;
       bodyEl.insertAdjacentHTML(
         "afterend",
-        `<form class="lesson-comment__edit-form"><textarea maxlength="2000">${escapeHtml(current)}</textarea><div class="lesson-comments__form-row"><button type="button" data-action="cancel-edit">إلغاء</button><button type="submit">حفظ</button></div></form>`
+        `<form class="lesson-comment__edit-form"><textarea dir="auto" maxlength="2000">${escapeHtml(current)}</textarea><div class="lesson-comments__form-row"><button type="button" data-action="cancel-edit">إلغاء</button><button type="submit">حفظ</button></div></form>`
       );
       bodyEl.hidden = true;
       const editTextarea = article.querySelector(".lesson-comment__edit-form textarea");
@@ -616,21 +765,25 @@ export function equipLessonComments(root, lessonId) {
 
     if (action === "delete") {
       if (!confirm("هل تريد حذف هذا التعليق؟")) return;
-      const token = await ensureToken();
-      actionBtn.disabled = true;
+      const comment = findComment(id);
+      const article = actionBtn.closest(".lesson-comment");
+      if (!comment || !article) return;
+      setDeletedComment(comment);
       try {
+        const token = await ensureToken();
+        if (!token) throw new Error("تعذر التحقق من هويتك. سجّل الدخول ثم حاول مرة أخرى.");
         const res = await fetch("/api/college-quiz?lessonComments=true", {
           method: "POST",
           headers: authHeaders(token),
           body: JSON.stringify({ action: "delete-lesson-comment", comment_id: id }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        setDeletedComment(findComment(id));
+        if (!res.ok) throw new Error(data.error || "تعذر حذف التعليق.");
+        clearInteractionError();
       } catch (err) {
-        alert(err.message || "تعذر حذف التعليق.");
-      } finally {
-        actionBtn.disabled = false;
+        comment.deleted = false;
+        article.replaceWith(document.createRange().createContextualFragment(renderOne(comment, { isReply: !!comment.parent_id })));
+        showInteractionError(err.message);
       }
       return;
     }
@@ -673,8 +826,14 @@ export function equipLessonComments(root, lessonId) {
     const id = article.dataset.id;
     const body = form.querySelector("textarea").value.trim();
     if (!body) return;
-    const button = form.querySelector("button[type=submit]");
-    button.disabled = true;
+    const comment = findComment(id);
+    if (!comment) return;
+    const before = { body: comment.body, edited_at: comment.edited_at };
+    const editedAt = new Date().toISOString();
+    const textarea = form.querySelector("textarea");
+    highlighters.get(textarea)?.destroy();
+    highlighters.delete(textarea);
+    setEditedComment(comment, body, editedAt);
     try {
       const token = await ensureToken();
       const res = await fetch("/api/college-quiz?lessonComments=true", {
@@ -683,14 +842,12 @@ export function equipLessonComments(root, lessonId) {
         body: JSON.stringify({ action: "edit-lesson-comment", comment_id: id, body }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      const textarea = form.querySelector("textarea");
-      highlighters.get(textarea)?.destroy();
-      highlighters.delete(textarea);
-      setEditedComment(findComment(id), body, data.edited_at);
+      if (!res.ok) throw new Error(data.error || "تعذر تعديل التعليق.");
+      comment.edited_at = data.edited_at || editedAt;
+      clearInteractionError();
     } catch (err) {
-      alert(err.message || "تعذر تعديل التعليق.");
-      button.disabled = false;
+      setEditedComment(comment, before.body, before.edited_at);
+      showInteractionError(err.message);
     }
   });
 
