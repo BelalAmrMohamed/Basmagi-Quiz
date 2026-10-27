@@ -17,6 +17,9 @@ import { buildUserQuizEntry } from "./quiz-schema.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { hasSameLevelCollision } from "./user-quizzes-folders.js";
+import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+import { normalizeLessonJson } from "../lesson/lesson-json.js";
+import { isLessonProtected, requestLessonPassword, unlockRemoteLesson } from "../lesson/lesson-access.js";
 
 const copiesInFlight = new Set();
 
@@ -133,6 +136,96 @@ export async function copyQuizToUserQuizzes(exam) {
       "success",
     );
     return true;
+  } finally {
+    copiesInFlight.delete(key);
+  }
+}
+
+/** Copies a published lesson into the local lessons area in «امتحاناتك». */
+export async function copyLessonToUserQuizzes(lesson) {
+  const title = lesson?.title || lesson?.id || "درس";
+  const key = inFlightKey("lesson", null, title);
+  if (copiesInFlight.has(key)) return false;
+  copiesInFlight.add(key);
+  try {
+    const current = JSON.parse(getFromStorage("user_quizzes", "[]"));
+    if (hasSameLevelCollision(current, { type: "lesson", title, parentId: null })) {
+      showNotification("موجود بالفعل", "يوجد درس بهذا الاسم في المستوى الرئيسي من امتحاناتك بالفعل.", "warning");
+      return false;
+    }
+
+    let loaded = lesson?.content?.sections ? lesson : null;
+    if (!loaded && isLessonProtected(lesson)) {
+      let unlocked = null;
+      const password = await requestLessonPassword({
+        title,
+        submitLabel: "نسخ الدرس",
+        verify: async (candidate) => {
+          unlocked = await unlockRemoteLesson(lesson.id || lesson.slug, candidate);
+          return Boolean(unlocked);
+        },
+      });
+      if (!password || !unlocked) return false;
+      loaded = unlocked;
+    }
+
+    if (!loaded) {
+      const supabase = await ensureSharedSupabaseClient();
+      if (!supabase) throw new Error("تعذّر الاتصال بقاعدة البيانات.");
+      let query = supabase.from("lesson_public").select("id, slug, title, description, source, content, reader_prefs_default");
+      query = /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(String(lesson.id || ""))
+        ? query.eq("id", lesson.id)
+        : query.eq("slug", lesson.slug || lesson.id);
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      if (!data?.content) throw new Error("تعذّر تحميل محتوى الدرس للنسخ.");
+      loaded = data;
+    }
+
+    const content = loaded.content || loaded.lesson || lesson.content || {};
+    const normalized = normalizeLessonJson({
+      title: loaded.title || title,
+      description: loaded.description ?? lesson.description ?? "",
+      source: loaded.source ?? lesson.source ?? "",
+      content,
+    });
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const entry = {
+      id,
+      meta: {
+        id,
+        type: "lesson",
+        title: normalized.title,
+        description: normalized.description,
+        source: normalized.source,
+        parentId: null,
+        createdAt: new Date().toLocaleString("en-US"),
+        updatedAt: now,
+        readerPrefs: loaded.reader_prefs_default || {},
+        passwordProtected: false,
+        copiedFrom: lesson.id || lesson.slug || null,
+      },
+      stats: { questionCount: normalized.questionCount, sectionCount: normalized.sections.length },
+      lesson: { sections: normalized.sections },
+      questions: [],
+    };
+    current.push(entry);
+    if (!setInStorage("user_quizzes", JSON.stringify(current))) {
+      throw new Error("تعذّر حفظ الدرس في امتحاناتك. تحقق من مساحة التخزين.");
+    }
+    const [{ renderRootCategories }, { renderUserQuizzesView }] = await Promise.all([
+      import("./root-view.js"),
+      import("./user-quizzes-view.js"),
+    ]);
+    renderRootCategories();
+    renderUserQuizzesView();
+    showNotification("تم النسخ", `تم نسخ «${normalized.title}» إلى امتحاناتك.`, "success");
+    return true;
+  } catch (error) {
+    console.error("[copy-to-my-quizzes] lesson copy failed:", error);
+    showNotification("تعذّر النسخ", error?.message || "تعذّر نسخ الدرس. حاول مرة أخرى.", "error");
+    return false;
   } finally {
     copiesInFlight.delete(key);
   }

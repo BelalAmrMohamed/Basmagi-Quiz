@@ -437,12 +437,8 @@ async function handlePostReports(req, res) {
     return res.status(400).json({ error: "إجراء غير صالح" });
 }
 
-// Shape a raw lesson_comments row (+ its reaction rows) for public output.
-// Soft-deleted comments keep their id/parent_id/reply-count/reactions so the
-// thread structure survives, but their body/author label are replaced with
-// a tombstone — never returned to the client.
+// Shape a visible lesson_comments row (+ its reaction rows) for public output.
 function shapePublicComment(row, { reactionCounts, myReactions, authorLabelFor, replyCounts }) {
-    const isDeleted = !!row.deleted_at;
     const reactions = reactionCounts.get(row.id) || { like: 0, dislike: 0 };
     const official = row.author_role === "admin" || row.author_role === "developer";
     return {
@@ -450,10 +446,9 @@ function shapePublicComment(row, { reactionCounts, myReactions, authorLabelFor, 
         parent_id: row.parent_id,
         created_at: row.created_at,
         edited_at: row.edited_at,
-        deleted: isDeleted,
-        body: isDeleted ? null : row.body,
-        author: isDeleted ? null : official ? (row.author_name || authorLabelFor(row)) : authorLabelFor(row),
-        ...(official && !isDeleted ? {
+        body: row.body,
+        author: official ? (row.author_name || authorLabelFor(row)) : authorLabelFor(row),
+        ...(official ? {
             author_role: row.author_role,
             author_handle: row.author_handle,
             author_profile_url: row.author_profile_url,
@@ -461,7 +456,7 @@ function shapePublicComment(row, { reactionCounts, myReactions, authorLabelFor, 
             author_thumbnail_url: row.author_thumbnail_url,
             author_bio: row.author_bio,
         } : {}),
-        is_mine: !isDeleted && !!row.__isMine,
+        is_mine: !!row.__isMine,
         like_count: reactions.like,
         dislike_count: reactions.dislike,
         my_reaction: myReactions?.get(row.id) || null,
@@ -539,6 +534,7 @@ async function handleGetLessonCommentsPublic(req, res) {
             .select("*")
             .eq("id", permalinkId)
             .eq("lesson_id", lessonId)
+            .is("deleted_at", null)
             .maybeSingle();
         if (targetErr || !target) return res.status(404).json({ error: "التعليق غير موجود" });
         if (target.deleted_at) return res.status(404).json({ error: "التعليق غير متاح" });
@@ -549,6 +545,7 @@ async function handleGetLessonCommentsPublic(req, res) {
                 .from("lesson_comments")
                 .select("*")
                 .eq("id", target.parent_id)
+                .is("deleted_at", null)
                 .maybeSingle();
             parent = parentRow || null;
         }
@@ -571,7 +568,8 @@ async function handleGetLessonCommentsPublic(req, res) {
         .from("lesson_comments")
         .select("*", { count: "exact" })
         .eq("lesson_id", lessonId)
-        .is("parent_id", null);
+        .is("parent_id", null)
+        .is("deleted_at", null);
 
     if (sort === "newest") {
         topQuery = topQuery.order("created_at", { ascending: false });
@@ -623,6 +621,7 @@ async function handleGetLessonCommentsPublic(req, res) {
             .from("lesson_comments")
             .select("*")
             .in("parent_id", topIds)
+            .is("deleted_at", null)
             .order("created_at", { ascending: true });
         if (replyErr) return res.status(500).json({ error: "فشل جلب الردود" });
         replyRows = data || [];
@@ -832,18 +831,26 @@ async function handleLessonComments(req, res) {
         return res.status(200).json({ success: true, edited_at: new Date().toISOString() });
     }
 
-    // 4. Delete own comment (soft delete, server-verified ownership) — or
-    //    admin moderation delete, reusing the same action with an admin token.
+    // 4. Delete own comment (server-verified ownership) — or admin moderation
+    //    delete. The reply/reaction foreign keys cascade, so removed comments
+    //    and their dependent rows disappear without leaving a tombstone.
     if (action === "delete-lesson-comment") {
         const ip = clientIp(req);
         if (isRateLimited(ip, LESSON_COMMENT_WRITE_RATE_LIMIT, lessonCommentWriteLog)) return res.status(429).json({ error: "طلبات كثيرة جدًا، حاول لاحقًا" });
         if (!isValidUUID(commentId)) return res.status(400).json({ error: "معرف التعليق غير صالح" });
 
+        const { data: target, error: targetError } = await supabase
+            .from("lesson_comments")
+            .select("id, user_profile_id, deleted_at")
+            .eq("id", commentId)
+            .maybeSingle();
+        if (targetError) return res.status(500).json({ error: "تعذّر التحقق من التعليق." });
+        if (!target || target.deleted_at) return res.status(404).json({ error: "التعليق غير موجود" });
+
         let isOwner = false;
         try {
             const { profileId } = requireUserProfile(req);
-            const { data: comment } = await supabase.from("lesson_comments").select("user_profile_id").eq("id", commentId).maybeSingle();
-            isOwner = !!comment?.user_profile_id && comment.user_profile_id === profileId;
+            isOwner = !!target.user_profile_id && target.user_profile_id === profileId;
         } catch (_) {
             /* not a user-profile token — fall through to admin check */
         }
@@ -857,7 +864,7 @@ async function handleLessonComments(req, res) {
             }
         }
 
-        const { error } = await supabase.from("lesson_comments").update({ deleted_at: new Date().toISOString() }).eq("id", commentId);
+        const { error } = await supabase.from("lesson_comments").delete().eq("id", commentId);
         if (error) return res.status(500).json({ error: "تعذر حذف التعليق." });
         return res.status(200).json({ success: true });
     }

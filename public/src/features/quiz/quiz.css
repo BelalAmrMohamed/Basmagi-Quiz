@@ -2735,6 +2735,18 @@ body.is-resizing-media .media-container.resizable-media {
   direction: rtl;
 }
 
+/* The rich-text mirror is clipped to the essay field's viewport. Without this
+   field-level clip, the mirror's long highlighted value paints outside the
+   scrollable textarea and overlaps the answer controls below it. */
+.essay-container > .rich-input-highlighter--field {
+  min-height: 180px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.essay-container > .rich-input-highlighter--field .rich-input-highlighter__mirror {
+  overflow: hidden;
+}
+
 [data-theme="dark-slate"] .essay-textarea,
 [data-theme="dark"] .essay-textarea {
   background: var(--color-background-secondary);

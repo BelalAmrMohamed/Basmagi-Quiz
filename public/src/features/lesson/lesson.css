@@ -609,12 +609,6 @@
   overflow-wrap: anywhere;
 }
 
-.lesson-comment__tombstone {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-style: italic;
-}
-
 .lesson-comment__actions {
   display: flex;
   flex-wrap: wrap;
@@ -1405,6 +1399,17 @@
   color: var(--color-text-secondary);
   font-size: .8rem;
   line-height: 1.6;
+}
+
+/* Essay mirrors must stay inside the native textarea viewport; otherwise
+   highlighted overflow can escape the field and overlap feedback/actions. */
+.lesson-question__essay-wrap > .rich-input-highlighter--field {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 10px;
+}
+.lesson-question__essay-wrap .rich-input-highlighter__mirror {
+  overflow: hidden;
 }
 
 .lesson-info-modal__prefs-grid {
@@ -3631,6 +3636,7 @@
   background: color-mix(in srgb, var(--community-accent) 8%, var(--color-surface));
   color: var(--community-accent);
 }
+.lesson-comment__link.is-copied { color: #36b991; }
 
 .lesson-comment__react.is-active {
   border-color: color-mix(in srgb, var(--community-accent) 30%, var(--color-border));
@@ -3732,16 +3738,6 @@
   color: color-mix(in srgb, #d59a3b 78%, var(--color-text-primary));
   font-size: .78rem;
   line-height: 1.6;
-}
-
-.lesson-comment__tombstone {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  margin: 0;
-  color: var(--color-text-tertiary, var(--color-text-secondary));
-  font-size: .82rem;
-  font-style: italic;
 }
 
 .lesson-comments__empty {

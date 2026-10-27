@@ -29,7 +29,14 @@ export function normalizeLessonJson(value) {
   if (!title || title.length > 200) invalid("The lesson title is required and must be at most 200 characters.");
   if (description.length > 1200) invalid("The lesson description must be at most 1200 characters.");
   if (source.length > 500) invalid("The lesson source must be at most 500 characters.");
-  if (!Array.isArray(value.sections) || value.sections.length < 1 || value.sections.length > 60) {
+  // Platform JSON downloads wrap reader content as `content.sections`;
+  // accept that canonical export alongside the editor's flat shape.
+  const inputSections = Array.isArray(value.sections)
+    ? value.sections
+    : Array.isArray(value.content?.sections)
+      ? value.content.sections
+      : null;
+  if (!inputSections || inputSections.length < 1 || inputSections.length > 60) {
     invalid("The lesson must contain between 1 and 60 sections.");
   }
   if (new TextEncoder().encode(JSON.stringify(value)).length > 200000) {
@@ -37,7 +44,7 @@ export function normalizeLessonJson(value) {
   }
 
   let questionCount = 0;
-  const sections = value.sections.map((section, sectionIndex) => {
+  const sections = inputSections.map((section, sectionIndex) => {
     const sectionTitle = typeof section?.title === "string" ? section.title.trim() : "";
     if (!sectionTitle || sectionTitle.length > 200) {
       invalid(`Section ${sectionIndex + 1} needs a title of at most 200 characters.`);

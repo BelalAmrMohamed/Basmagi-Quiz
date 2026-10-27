@@ -8,8 +8,9 @@ import { openAIAgentWithAttachment, buildPlatformLessonAttachment } from "../../
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+import { copyLessonToUserQuizzes } from "./copy-to-my-quizzes.js";
 import {
-  DOWNLOAD_ICON_SVG, MORE_DOTS_ICON_SVG, COPY_ICON_SVG, SHARE_ICON_SVG,
+  DOWNLOAD_ICON_SVG, MORE_DOTS_ICON_SVG, COPY_ICON_SVG, SHARE_ICON_SVG, DUPLICATE_ICON_SVG,
   SPARKLE_ICON_SVG, EDIT_ICON_SVG, MOVE_TO_ICON_SVG,
   RENAME_ICON_SVG, TRASH_ICON_SVG,
 } from "./icons.js";
@@ -131,8 +132,8 @@ export function createLessonCard(lesson) {
 function openLessonActionsMenu(lesson, trigger) {
   openExamDropdownMenu(trigger, (menu, closeMenu, reposition) => {
     addMenuAction(menu, closeMenu, {
-      label: "تحميل الدرس", icon: DOWNLOAD_ICON_SVG,
-      onClick: () => { void downloadLesson(lesson, trigger); },
+      label: "نسخ لامتحاناتي", icon: DUPLICATE_ICON_SVG,
+      onClick: () => { void copyLessonToUserQuizzes(lesson); },
     });
     addMenuAction(menu, closeMenu, {
       label: "نسخ الرابط", icon: COPY_ICON_SVG,

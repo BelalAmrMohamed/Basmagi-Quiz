@@ -206,7 +206,7 @@ export async function equipLessonComments(root, lessonId) {
     } else {
       buttons.push(`<button type="button" class="lesson-comment__link" data-action="report" data-id="${comment.id}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 21V5m0 1c5-5 11 5 16 0v11c-5 5-11-5-16 0"/></svg> إبلاغ</button>`);
     }
-    buttons.push(`<button type="button" class="lesson-comment__link" data-action="permalink" data-id="${comment.id}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l3-3A5 5 0 0 0 13 2.9l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.1 0l-3 3A5 5 0 0 0 11 21.1l1.7-1.7"/></svg> نسخ الرابط</button>`);
+    buttons.push(`<button type="button" class="lesson-comment__link" data-action="permalink" data-id="${comment.id}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l3-3A5 5 0 0 0 13 2.9l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.1 0l-3 3A5 5 0 0 0 11 21.1l1.7-1.7"/></svg><span>نسخ الرابط</span></button>`);
     return buttons.join("");
   }
 
@@ -254,9 +254,6 @@ export async function equipLessonComments(root, lessonId) {
     const author = String(comment.author || "طالب");
     const initials = Array.from(author.trim())[0] || "ط";
     const avatarTone = (initials.codePointAt(0) || 0) % 5;
-    if (comment.deleted) {
-      return `<article class="lesson-comment${isReply ? " lesson-comment--reply" : ""}" id="comment-${comment.id}" data-id="${comment.id}"><p class="lesson-comment__tombstone"><span aria-hidden="true">⌁</span> تم حذف هذه المشاركة.</p></article>`;
-    }
     return `<article class="lesson-comment${isReply ? " lesson-comment--reply" : ""}" id="comment-${comment.id}" data-id="${comment.id}">
       <div class="lesson-comment__meta">
         ${renderAuthorIdentity(comment, author, initials, avatarTone)}
@@ -365,19 +362,6 @@ export async function equipLessonComments(root, lessonId) {
       article.querySelector(".lesson-comment__meta time")?.insertAdjacentHTML("afterend", '<span class="lesson-comment__edited">تم التعديل</span>');
     }
     if (!comment.edited_at) article.querySelector(".lesson-comment__edited")?.remove();
-  }
-
-  function setDeletedComment(comment) {
-    if (!comment) return;
-    comment.deleted = true;
-    const article = list.querySelector(`.lesson-comment[data-id="${CSS.escape(comment.id)}"]`);
-    if (!article) return;
-    article.classList.add("lesson-comment--deleted");
-    article.querySelector(".lesson-comment__meta")?.remove();
-    article.querySelector(".lesson-comment__body")?.remove();
-    article.querySelector(".lesson-comment__actions")?.remove();
-    article.querySelector(".lesson-comment__reply-slot")?.remove();
-    article.insertAdjacentHTML("afterbegin", '<p class="lesson-comment__tombstone"><span aria-hidden="true">⌁</span> تم حذف هذه المشاركة.</p>');
   }
 
   function countVisibleComments(comments) {
@@ -708,7 +692,16 @@ export async function equipLessonComments(root, lessonId) {
           helper.remove();
           if (!copied) throw new Error("تعذّر نسخ الرابط.");
         }
-        showNotification("تم نسخ رابط المشاركة.");
+        const label = actionBtn.querySelector("span");
+        if (label) {
+          label.textContent = "تم نسخ الرابط";
+          actionBtn.classList.add("is-copied");
+          window.setTimeout(() => {
+            if (label.isConnected) label.textContent = "نسخ الرابط";
+            actionBtn.classList.remove("is-copied");
+          }, 2200);
+        }
+        showPublishedNotice("تم نسخ رابط المشاركة.");
       } catch (_) {
         showInteractionError("تعذّر نسخ الرابط. حاول مرة أخرى.");
       }
@@ -789,7 +782,14 @@ export async function equipLessonComments(root, lessonId) {
       const comment = findComment(id);
       const article = actionBtn.closest(".lesson-comment");
       if (!comment || !article) return;
-      setDeletedComment(comment);
+      const previousComments = JSON.parse(JSON.stringify(state.comments));
+      if (comment.parent_id) {
+        const parent = findComment(comment.parent_id);
+        if (parent) parent.replies = (parent.replies || []).filter((reply) => reply.id !== id);
+      } else {
+        state.comments = state.comments.filter((entry) => entry.id !== id);
+      }
+      render();
       try {
         const token = await ensureToken();
         if (!token) throw new Error("تعذر التحقق من هويتك. سجّل الدخول ثم حاول مرة أخرى.");
@@ -802,8 +802,8 @@ export async function equipLessonComments(root, lessonId) {
         if (!res.ok) throw new Error(data.error || "تعذر حذف التعليق.");
         clearInteractionError();
       } catch (err) {
-        comment.deleted = false;
-        article.replaceWith(document.createRange().createContextualFragment(renderOne(comment, { isReply: !!comment.parent_id })));
+      state.comments = previousComments;
+      render();
         showInteractionError(err.message);
       }
       return;
