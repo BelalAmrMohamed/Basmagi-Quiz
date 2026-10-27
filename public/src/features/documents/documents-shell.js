@@ -434,3 +434,18 @@ await import("../../components/side-menu/side-menu.js");
   window.addEventListener("resize", scheduleUpdate);
   updateProgress();
 })();
+
+// ── Interactive Video Guide Timestamp Chips ─────────────────────────────
+document.addEventListener("click", (event) => {
+  const chip = event.target.closest(".doc-video-chip");
+  if (!chip) return;
+  const time = chip.dataset.time;
+  const card = chip.closest(".doc-video-card");
+  const iframe = card?.querySelector(".doc-video-card__iframe");
+  if (iframe && typeof time !== "undefined") {
+    event.preventDefault();
+    const baseSrc = "https://www.youtube-nocookie.com/embed/B8kAaa59ogI";
+    iframe.src = `${baseSrc}?start=${time}&autoplay=1&rel=0`;
+    card.querySelectorAll(".doc-video-chip").forEach((c) => c.classList.toggle("is-active", c === chip));
+  }
+});

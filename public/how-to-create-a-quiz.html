@@ -16,12 +16,14 @@
             } catch (_) { }
         })();
     </script>
-    <meta name="description" content="دليل إنشاء امتحان على منصة امتحانات بصمجي." />
+    <meta name="description"
+        content="دليل شامل لإنشاء ومراجعة وتعديل الامتحانات على منصة بصمجي بالذكاء الاصطناعي مع فيديو توضيحي مقسم زمنياً." />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://basmagi-quiz.vercel.app/how-to-create-a-quiz" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="كيفية إنشاء امتحان | منصة امتحانات بصمجي" />
-    <meta property="og:description" content="دليل إنشاء امتحان على منصة امتحانات بصمجي." />
+    <meta property="og:description"
+        content="دليل شامل لإنشاء ومراجعة وتعديل الامتحانات على منصة بصمجي بالذكاء الاصطناعي مع فيديو توضيحي مقسم زمنياً." />
     <meta property="og:url" content="https://basmagi-quiz.vercel.app/how-to-create-a-quiz" />
     <link rel="icon" href="/favicon.png" type="image/png" />
     <title>كيفية إنشاء امتحان | منصة امتحانات بصمجي</title>
@@ -46,19 +48,111 @@
                     <div class="brand-name">منصة امتحانات بصمجي</div>
                 </div>
                 <h1>كيفية إنشاء امتحان</h1>
-                <div class="doc-meta"><span>الدليل قيد الإعداد</span></div>
+                <div class="doc-meta"><span>دليل الميزات</span><span>فيديو توضيحي متاح</span></div>
             </header>
 
-            <p class="intro"><strong>هذا الدليل قريباً.</strong> سنشرح هنا طريقتي إنشاء الامتحانات: الإنشاء اليدوي من
-                صفحة إنشاء امتحان، والإنشاء التلقائي باستخدام الذكاء الاصطناعي.</p>
+            <p class="intro">تتيح لك منصة بصمجي إنشاء امتحانات تفاعلية متكاملة بسهولة فائقة، سواء بالاعتماد على
+                <strong>الباشــمبصمج</strong> (مساعد الذكاء الاصطناعي المدمج) لتوليد الأسئلة فورياً من مذكراتك أو عبر
+                الأوامر الجاهزة، أو من خلال أدوات التحرير اليدوية لضبط كل تفصيلة في الامتحان.</p>
 
-            <section class="section" aria-labelledby="placeholder-title">
-                <h2 id="placeholder-title">ما الذي سيشمله الدليل؟</h2>
+            <!-- Video Guide Embed Card -->
+            <article class="doc-video-card" aria-label="فيديو شرح إنشاء امتحان">
+                <div class="doc-video-card__head">
+                    <span class="doc-video-card__badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            aria-hidden="true">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        فيديو تطبيقي
+                    </span>
+                    <h2>شرح بالفيديو: إنشاء ومراجعة وتعديل الامتحانات</h2>
+                    <p class="doc-video-card__desc">شاهد خطوات توليد الامتحان بالذكاء الاصطناعي، مراجعته، تعديل الخيارات، واستخدام القوالب الجاهزة خطوة بخطوة. اضغط على أي جزء للانتقال إليه مباشرة:</p>
+                </div>
+
+                <div class="doc-video-card__player-wrap">
+                    <iframe class="doc-video-card__iframe"
+                        src="https://www.youtube-nocookie.com/embed/B8kAaa59ogI?rel=0"
+                        title="شرح إنشاء وتعديل الامتحانات على منصة بصمجي"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+
+                <div class="doc-video-card__chapters">
+                    <span class="doc-video-card__chapters-title">فصول الشرح السريع:</span>
+                    <div class="doc-video-card__timeline" role="list">
+                        <button type="button" class="doc-video-chip is-active" data-time="0">
+                            <span class="doc-video-chip__time">00:00</span>
+                            <span>إنشاء امتحان بالباشــمبصمج</span>
+                        </button>
+                        <button type="button" class="doc-video-chip" data-time="117">
+                            <span class="doc-video-chip__time">01:57</span>
+                            <span>مراجعة الامتحان</span>
+                        </button>
+                        <button type="button" class="doc-video-chip" data-time="155">
+                            <span class="doc-video-chip__time">02:35</span>
+                            <span>تعديل الامتحان</span>
+                        </button>
+                        <button type="button" class="doc-video-chip" data-time="362">
+                            <span class="doc-video-chip__time">06:02</span>
+                            <span>استعمال Prompt جاهز</span>
+                        </button>
+                        <button type="button" class="doc-video-chip" data-time="524">
+                            <span class="doc-video-chip__time">08:44</span>
+                            <span>استكشاف مميزات المنصة</span>
+                        </button>
+                    </div>
+                </div>
+            </article>
+
+            <section class="section" aria-labelledby="s1">
+                <h2 id="s1">
+                    ١. إنشاء الامتحان بواسطة الباشــمبصمج
+                    <span class="section-badge">تلقائي وسريع</span>
+                </h2>
+                <p>الطريقة الأسرع والأكثر فاعلية هي الاستعانة بمساعد الذكاء الاصطناعي داخل المنصة:</p>
                 <ul>
-                    <li>إنشاء امتحان يدوياً وإضافة الأسئلة والاختيارات.</li>
-                    <li>استخدام القالب التلقائي وتجهيز المحتوى للنشر.</li>
-                    <li>فيديوهات وصور توضيحية للخطوات.</li>
+                    <li>افتح المساعد من الزر العائم (FAB) في الصفحة الرئيسية.</li>
+                    <li>اطلب منه موضوع الامتحان، عدد الأسئلة المرغوبة، ومستوى الصعوبة.</li>
+                    <li>يمكنك تزويده بفقرة نصية أو نقاط رئيسية من مذكرتك ليقوم بصياغة أسئلة اختيار من متعدد مستخرجة منها بدقة مع شروحات لكل إجابة.</li>
+                    <li>بعد إنشاء المسودة، سيعرض عليك المساعد خيار فتح الامتحان مباشرة لمعاينته ومراجعته.</li>
                 </ul>
+            </section>
+
+            <section class="section" aria-labelledby="s2">
+                <h2 id="s2">
+                    ٢. مراجعة محتوى الامتحان
+                    <span class="section-badge">التدقيق</span>
+                </h2>
+                <p>تتيح لك المنصة مراجعة تفاعلية شاملة لكل سؤال قبل نشره أو إتاحته للطلاب:</p>
+                <ul>
+                    <li><strong>التأكد من نص السؤال:</strong> وضوح الصياغة اللغوية وخلوها من اللبس.</li>
+                    <li><strong>مراجعة الإجابات والخيارات:</strong> تحديد الاختيار الصحيح بدقة وتجنب البدائل المكررة.</li>
+                    <li><strong>شروحات الإجابة (Explanations):</strong> تزويد كل سؤال بتفسير يوضح سبب صحة الخيار لتثبيت المعلومة لدى المتعلم.</li>
+                </ul>
+            </section>
+
+            <section class="section" aria-labelledby="s3">
+                <h2 id="s3">
+                    ٣. تعديل وتخصيص الأسئلة
+                    <span class="section-badge">مرونة كاملة</span>
+                </h2>
+                <p>يمكنك في أي وقت الدخول إلى محرر الامتحان وإجراء أي تعديلات:</p>
+                <ul>
+                    <li>إضافة أسئلة جديدة أو حذف أسئلة محددة.</li>
+                    <li>إعادة ترتيب الأسئلة حسب التسلسل الأكاديمي المناسب.</li>
+                    <li>تعديل إعدادات التوقيت، ودرجات الأسئلة، ومعايير النجاح.</li>
+                </ul>
+            </section>
+
+            <section class="section" aria-labelledby="s4">
+                <h2 id="s4">
+                    ٤. استخدام الأوامر الجاهزة (Prompts)
+                    <span class="section-badge">كفاءة أعلى</span>
+                </h2>
+                <p>للحصول على أفضل النتائج التوليدية من المساعد، يمكنك الاستعانة بصيغ أوامر قياسية مصممة للمنصة توفر لك وقت كتابة التعليمات وتضمن تنسيقاً سليماً وجاهزاً للاستيراد فوراً، كما هو موضح في الدقيقة <strong>06:02</strong> من الفيديو أعلاه.</p>
+                <p>للمزيد من التفاصيل حول أوامر وإمكانيات المساعد، راجع دليل <a href="/how-to-use-ai-agent">كيفية استخدام الباشــمبصمج</a>. وإذا كنت مشرفاً وتريد اعتماد ونشر الامتحان، توجه إلى دليل <a href="/how-to-upload-a-quiz">كيفية رفع امتحان</a>.</p>
             </section>
         </div>
     </main>
