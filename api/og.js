@@ -1135,8 +1135,26 @@ async function renderCourseImage(courseId, folderPath) {
   // renderBidiChildren's doc comment).
   const countsTokens = meta
     ? isArabic
-      ? [String(meta.folderCount), "مجلد", "·", String(meta.quizCount), "امتحان"]
-      : [String(meta.folderCount), "Folders", "·", String(meta.quizCount), "Quizzes"]
+      ? [
+          String(meta.folderCount),
+          "مجلد",
+          "·",
+          String(meta.quizCount),
+          "امتحان",
+          "·",
+          String(meta.lessonCount ?? 0),
+          "درس",
+        ]
+      : [
+          String(meta.folderCount),
+          "Folders",
+          "·",
+          String(meta.quizCount),
+          "Quizzes",
+          "·",
+          String(meta.lessonCount ?? 0),
+          "Lessons",
+        ]
     : null;
 
   // Human-readable link line, mirroring the actual /course/:slug[/...] URL
@@ -1660,7 +1678,7 @@ async function renderCourseImage(courseId, folderPath) {
                         props: {
                           style: {
                             display: "flex",
-                            flexDirection: "row-reverse",
+                            flexDirection: isArabic ? "row-reverse" : "row",
                             marginTop: "32px",
                             alignItems: "center",
                             gap: "8px",
@@ -1847,10 +1865,12 @@ async function fetchCourseMeta(courseId, folderPath) {
       ? Promise.all([
         countFor("folders", "parent_folder_id"),
         countFor("quizzes", "folder_id"),
+        countFor("lesson_public", "folder_id"),
       ])
       : Promise.all([
         countFor("folders", "course_id"),
         countFor("quizzes", "course_id"),
+        countFor("lesson_public", "course_id"),
       ]);
 
     // Best-effort extra stats (question count total, last-updated date) —
@@ -1889,7 +1909,7 @@ async function fetchCourseMeta(courseId, folderPath) {
       return { questionCount, lastUpdated };
     })();
 
-    const [[folderCount, quizCount], { questionCount, lastUpdated }] =
+    const [[folderCount, quizCount, lessonCount], { questionCount, lastUpdated }] =
       await Promise.all([countsPromise, extraStatsPromise]);
 
     return {
@@ -1919,6 +1939,7 @@ async function fetchCourseMeta(courseId, folderPath) {
       term: course.term != null ? String(course.term) : null,
       folderCount,
       quizCount,
+      lessonCount,
       questionCount,
       lastUpdated,
     };

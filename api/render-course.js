@@ -79,8 +79,8 @@ const LESSON_TEMPLATE_PATH = path.join(process.cwd(), "public", "lesson.html");
 // folder images were rendered under buggy code and are cached for a full
 // year (immutable, max-age=31536000) under the v=2 URL, so this bump is
 // required for every folder image already shared anywhere to actually
-// refresh instead of continuing to serve the broken layout forever.
-const OG_IMAGE_VERSION = 3;
+// Bumped to 4: added lesson count to course and folder OG images.
+const OG_IMAGE_VERSION = 4;
 
 // Bump when /api/og's LESSON-image layout changes (renderLessonImage). The
 // image URL also carries the lesson's updated_at, so editing a lesson busts

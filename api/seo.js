@@ -34,7 +34,7 @@ import { escapeXml, absUrl } from "./_urls.js";
 import { notifySearchEngines } from "./_seoNotify.js";
 
 const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
-const OG_IMAGE_VERSION = 3; // keep in sync with render-quiz.js / render-course.js
+const OG_IMAGE_VERSION = 4; // keep in sync with render-quiz.js / render-course.js
 
 // Cache-Control shared by every read-only discovery document here (plan §6.3,
 // user-adjustment #3): 1h fresh, 24h stale-while-revalidate. Vercel's Edge
