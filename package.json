@@ -40,6 +40,7 @@
     "ignore": "^7.0.8",
     "jsonwebtoken": "^9.0.3",
     "mammoth": "^1.12.2",
-    "pdfkit": "^0.20.2"
+    "pdfkit": "^0.20.2",
+    "upng-js": "2.1.0"
   }
 }

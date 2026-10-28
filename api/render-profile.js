@@ -31,6 +31,18 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY,
 );
 
+// Service-role client — used ONLY to read the admin's email server-side so we
+// can tell a developer (email in OWNER_EMAILS, same rule as api/admin.js) from
+// a regular admin. The email is compared and discarded; it is never written
+// into the page. Absent key/env => everyone is simply an admin.
+const supabaseService = process.env.SUPABASE_SERVICE_KEY
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
+  : null;
+const OWNER_EMAILS = (process.env.OWNER_EMAILS || "")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
 const TEMPLATE_PATH = path.join(process.cwd(), "public", "profile.html");
 const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
 
@@ -131,13 +143,30 @@ export default async function handler(req, res) {
     .then((result) => result)
     .catch((err) => ({ data: null, error: err }));
 
+  const rolePromise =
+    supabaseService && OWNER_EMAILS.length
+      ? supabaseService
+          .from("admin_users")
+          .select("email")
+          .ilike("handle", normalizedHandle)
+          .maybeSingle()
+          .then(({ data }) =>
+            data?.email && OWNER_EMAILS.includes(String(data.email).trim().toLowerCase())
+              ? "developer"
+              : "admin",
+          )
+          .catch(() => "admin")
+      : Promise.resolve("admin");
+
   let html;
   let lookup;
+  let role = "admin";
 
   try {
-    [html, lookup] = await Promise.all([
+    [html, lookup, role] = await Promise.all([
       loadTemplate(),
       withTimeout(lookupPromise, DB_LOOKUP_TIMEOUT_MS),
+      withTimeout(rolePromise, DB_LOOKUP_TIMEOUT_MS).then((r) => r || "admin"),
     ]);
   } catch (err) {
     console.error("[render-profile] Could not read profile.html:", err);
@@ -195,13 +224,8 @@ export default async function handler(req, res) {
   const level = Math.max(1, Math.floor(Number(adminData.current_level) || 1));
   const uploaded = Math.max(0, Math.floor(Number(adminData.uploaded_quizzes) || 0));
   const bio = String(adminData.bio || "").replace(/\s+/g, " ").trim();
-  const description = buildProfileDescription({
-    displayLabel,
-    handle: adminData.handle || cleanHandle,
-    level,
-    uploaded,
-    bio,
-  });
+  const roleLabel = role === "developer" ? "مطوّر" : "مشرف";
+  const description = buildProfileDescription({ role, level, uploaded, bio });
 
   // /api/og?profile=… is an Edge function that already exists (merged into
   // api/og.js — no extra function slot). `v` fingerprints everything the card
@@ -210,6 +234,7 @@ export default async function handler(req, res) {
   const ogVersion = createHash("sha1")
     .update(
       [
+        role,
         adminData.display_name,
         adminData.handle,
         bio,
@@ -226,7 +251,7 @@ export default async function handler(req, res) {
   const ogImageUrl = `${SITE_ORIGIN}/api/og?profile=${encodeURIComponent(
     String(adminData.handle || cleanHandle).toLowerCase(),
   )}&v=${ogVersion}`;
-  const ogImageAlt = `${displayLabel} (@${adminData.handle || cleanHandle}) — المستوى ${level} · ${uploaded} امتحان مرفوع على منصة امتحانات بصمجي`;
+  const ogImageAlt = `${roleLabel} على منصة امتحانات بصمجي: ${displayLabel} (@${adminData.handle || cleanHandle}) — المستوى ${level} · ${uploaded} امتحان مرفوع`;
 
   // Inject meta tags for client-side JS to pick up. avatar_url is a (possibly
   // large) data-URL — escapeHtml handles the characters that matter inside a
@@ -356,10 +381,13 @@ function applyHeadRewrites(
   );
 }
 
-// Search/share snippet: who, role, level and upload count, then the bio if the
-// admin wrote one. Kept under ~200 chars so Facebook/WhatsApp don't cut it.
-function buildProfileDescription({ displayLabel, handle, level, uploaded, bio }) {
-  const facts = `${displayLabel} (@${handle}) — مشرف على منصة امتحانات بصمجي · المستوى ${level} · ${uploaded} امتحان مرفوع`;
+// Share snippet. The name is deliberately NOT repeated (it is already the
+// og:title), which also avoids a Latin name bleeding into the Arabic sentence
+// and scrambling the bidi order in Telegram/WhatsApp previews. Kept under
+// ~200 chars so previews don't cut it.
+function buildProfileDescription({ role, level, uploaded, bio }) {
+  const who = role === "developer" ? "مطوّر في منصة امتحانات بصمجي" : "مشرف على منصة امتحانات بصمجي";
+  const facts = `${who} · المستوى ${level} · ${uploaded} امتحان مرفوع`;
   if (!bio) return facts;
   const room = 200 - facts.length - 3;
   if (room < 20) return facts;

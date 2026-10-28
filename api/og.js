@@ -2630,7 +2630,8 @@ async function renderLessonImage(lessonId) {
 // and only passed through if PNG/JPEG/GIF/SVG, (b) fetched with a timeout and
 // size cap when they are URLs, and (c) the whole render is retried once
 // without user images (initial-letter avatar + brand gradient banner) if it
-// still fails. A profile that doesn't exist redirects to the static profile
+// still fails. The finished PNG is palette-quantised (profileOptimizePng) so a
+// sharp photo banner stays ~100–150KB. A profile that doesn't exist redirects to the static profile
 // thumbnail instead of returning an error image.
 // =============================================================================
 
@@ -2645,7 +2646,14 @@ const PROFILE_ICONS = {
   zap: ["M13 2 4 14h7l-1 8 9-12h-7l1-8z"],
   award: ["M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12z", "M8.2 13.9 7 22l5-3 5 3-1.2-8.1"],
   star: ["M12 2.5 15 9l7 1-5 5 1.3 7L12 18.5 5.7 22 7 15 2 10l7-1z"],
-  shield: ["M12 3l8 3v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6l8-3z", "M8.5 12l2.5 2.5L16 9.5"],
+  shield: ["M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"], // same glyphs as profile.js role badges
+  code: ["M16 18l6-6-6-6", "M8 6l-6 6 6 6"],
+};
+
+// Role badge palette — identical gradients to .role-badge in profile.css.
+const PROFILE_ROLES = {
+  admin: { label: "مشرف", icon: "shield", from: "#3b82f6", to: "#1e40af", shadow: "rgba(37,99,235,0.40)" },
+  developer: { label: "مطور", icon: "code", from: "#a855f7", to: "#6d28d9", shadow: "rgba(109,40,217,0.40)" },
 };
 
 // Initial-letter avatar palettes (brand-family gradients), picked by name hash.
@@ -2704,6 +2712,9 @@ async function profileSafeImage(src) {
     let url;
     if (src.startsWith("/")) url = new URL(src, SITE_ORIGIN);
     else url = new URL(src);
+    // Satori cannot decode WebP. Static assets that are (or will be) shipped as
+    // .webp for the site keep a .jpg twin next to them for this renderer.
+    if (url.origin === new URL(SITE_ORIGIN).origin) url.pathname = url.pathname.replace(/\.webp$/i, ".jpg");
     const allowed = new Set([new URL(SITE_ORIGIN).origin]);
     if (SUPABASE_URL) allowed.add(new URL(SUPABASE_URL).origin);
     if (url.protocol !== "https:" || !allowed.has(url.origin)) return null;
@@ -2733,6 +2744,39 @@ function loadProfileLogo() {
   return _profileLogoPromise;
 }
 
+/**
+ * Developer vs admin. A developer is an admin whose email is in OWNER_EMAILS
+ * (same rule as api/admin.js getOwnerEmails / auth.js isOwner). The email is
+ * read with the service key, compared here and never leaves this function.
+ * Any failure (no env, no key, timeout) degrades to "admin".
+ */
+async function fetchProfileRole(handle) {
+  const owners = (process.env.OWNER_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!owners.length || !serviceKey || !SUPABASE_URL) return "admin";
+  try {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/admin_users`);
+    url.searchParams.set("select", "email");
+    url.searchParams.set("handle", `ilike.${handle.replace(/[%_\\*]/g, "\\$&")}`);
+    url.searchParams.set("limit", "1");
+    const res = await profileFetchTimeout(
+      url.toString(),
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+      2500,
+    );
+    if (!res.ok) return "admin";
+    const rows = await res.json();
+    const email = String(rows?.[0]?.email || "").trim().toLowerCase();
+    return email && owners.includes(email) ? "developer" : "admin";
+  } catch (err) {
+    console.error("[og] profile role lookup failed:", err?.message || err);
+    return "admin";
+  }
+}
+
 async function fetchProfileOgMeta(handle) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     console.error("[og] Missing SUPABASE_URL or SUPABASE_ANON_KEY");
@@ -2748,17 +2792,20 @@ async function fetchProfileOgMeta(handle) {
     // ("_" is legal in handles).
     url.searchParams.set("handle", `ilike.${handle.replace(/[%_\\*]/g, "\\$&")}`);
     url.searchParams.set("limit", "1");
-    const res = await profileFetchTimeout(
-      url.toString(),
-      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
-      3000,
-    );
+    const [res, role] = await Promise.all([
+      profileFetchTimeout(
+        url.toString(),
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
+        3000,
+      ),
+      fetchProfileRole(handle),
+    ]);
     if (!res.ok) {
       console.error(`[og] admin_users lookup returned ${res.status}`);
       return null;
     }
     const rows = await res.json();
-    return Array.isArray(rows) && rows.length ? rows[0] : null;
+    return Array.isArray(rows) && rows.length ? { ...rows[0], role } : null;
   } catch (err) {
     console.error("[og] fetchProfileOgMeta error:", err);
     return null;
@@ -2787,31 +2834,14 @@ function pd(style, children) {
   return { type: "div", props: { style: { display: "flex", ...style }, children } };
 }
 
-/**
- * Banner <img>. ImageResponse can only emit PNG, and a detailed photo makes a
- * 600KB–1MB PNG (WhatsApp previews get unreliable above ~300KB). The source
- * JPEG's byte size is a cheap proxy for detail, so busier banners get a
- * stronger blur — which also reads as a frosted backdrop behind the text.
- * The image is oversized inside an overflow:hidden box so blurred edges never
- * fade to transparent.
- */
 function profileBannerImage(dataUrl) {
-  const approxBytes = Math.floor((dataUrl.length * 3) / 4);
-  const blur = approxBytes < 60_000 ? 4 : approxBytes < 120_000 ? 9 : 14;
-  const bleed = blur ? blur * 2 : 0;
-  return pd({
-    position: "absolute", left: "0px", top: "0px", width: "1200px", height: "244px", overflow: "hidden",
-  }, {
+  return {
     type: "img",
     props: {
-      src: dataUrl, width: 1200 + bleed * 2, height: 244 + bleed * 2,
-      style: {
-        position: "absolute", left: `${-bleed}px`, top: `${-bleed}px`,
-        width: `${1200 + bleed * 2}px`, height: `${244 + bleed * 2}px`, objectFit: "cover",
-        ...(blur ? { filter: `blur(${blur}px)` } : {}),
-      },
+      src: dataUrl, width: 1200, height: 244,
+      style: { position: "absolute", left: "0px", top: "0px", width: "1200px", height: "244px", objectFit: "cover" },
     },
-  });
+  };
 }
 
 /**
@@ -2856,7 +2886,11 @@ function buildProfileElement({ meta, avatar, banner, logo }) {
   // ── Bio: up to two lines ─────────────────────────────────────────────────
   const bioRaw = String(meta.bio || "").replace(/\s+/g, " ").trim();
   const hasBio = bioRaw.length > 0;
-  const bioText = hasBio ? bioRaw : "مشرف يساهم بالمحتوى التعليمي على منصة امتحانات بصمجي";
+  const bioText = hasBio
+    ? bioRaw
+    : meta.role === "developer"
+      ? "ضمن فريق تطوير منصة امتحانات بصمجي"
+      : "مشرف يساهم بالمحتوى التعليمي على منصة امتحانات بصمجي";
   const bioAr = !!detectArabic(bioText);
   const bFont = 25;
   const bioLines = lessonWrap(bioText, Math.floor((COL_W - 22) / (bFont * (bioAr ? 0.74 : 0.58))), 2);
@@ -2877,18 +2911,15 @@ function buildProfileElement({ meta, avatar, banner, logo }) {
     }),
   ].filter(Boolean);
 
-  // Platform pill (top-left of banner).
+  // Platform mark (top-left of banner): logo only, in a round glass badge.
   const brandPill = pd({
-    position: "absolute", left: "36px", top: "30px",
-    flexDirection: "row-reverse", alignItems: "center", gap: "12px",
-    padding: "8px 20px 8px 9px", borderRadius: "999px",
-    background: "rgba(6,14,34,0.52)", border: "1.5px solid rgba(255,255,255,0.30)",
-  }, [
-    logo
-      ? { type: "img", props: { src: logo, width: 42, height: 42, style: { width: "42px", height: "42px", borderRadius: "21px" } } }
-      : pd({ width: "42px", height: "42px", borderRadius: "21px", background: BRAND_BLUE }),
-    lessonTextRun("منصة امتحانات بصمجي", true, { fontSize: "24px", fontWeight: "700", color: "#ffffff" }),
-  ]);
+    position: "absolute", left: "34px", top: "26px", width: "88px", height: "88px", borderRadius: "44px",
+    alignItems: "center", justifyContent: "center",
+    background: "rgba(6,14,34,0.50)", border: "2px solid rgba(255,255,255,0.34)",
+    boxShadow: "0 10px 28px rgba(0,0,0,0.30)",
+  }, logo
+    ? { type: "img", props: { src: logo, width: 68, height: 68, style: { width: "68px", height: "68px", borderRadius: "34px" } } }
+    : pd({ width: "68px", height: "68px", borderRadius: "34px", background: BRAND_BLUE }));
 
   // ── Avatar (gradient ring + white gap) ───────────────────────────────────
   const AV = { outer: 232, right: 60, top: 126 };
@@ -2951,12 +2982,14 @@ function buildProfileElement({ meta, avatar, banner, logo }) {
     color: BRAND_BLUE, fontSize: "27px", fontWeight: "700", direction: "ltr", whiteSpace: "nowrap",
   }, `@${handle.length > 24 ? handle.slice(0, 23) + "…" : handle}`);
 
+  const role = PROFILE_ROLES[meta.role === "developer" ? "developer" : "admin"];
   const adminChip = pd({
-    flexDirection: "row-reverse", alignItems: "center", gap: "8px", padding: "4px 16px 4px 14px", borderRadius: "999px",
-    background: profileHexA(LESSON_ACCENT, 0.12), border: `1.5px solid ${profileHexA(LESSON_ACCENT, 0.34)}`,
+    flexDirection: "row-reverse", alignItems: "center", gap: "9px", padding: "4px 18px 4px 14px", borderRadius: "999px",
+    backgroundImage: `linear-gradient(135deg, ${role.from} 0%, ${role.to} 100%)`,
+    boxShadow: `0 6px 14px ${role.shadow}`,
   }, [
-    lessonIcon(PROFILE_ICONS.shield, 24, LESSON_ACCENT, 2.2),
-    lessonTextRun("مشرف", true, { fontSize: "24px", fontWeight: "700", color: LESSON_ACCENT }),
+    lessonIcon(PROFILE_ICONS[role.icon], 24, "#ffffff", 2.5),
+    lessonTextRun(role.label, true, { fontSize: "24px", fontWeight: "700", color: "#ffffff" }),
   ]);
 
   const badgeRow = pd({ flexDirection: "row-reverse", alignItems: "center", gap: "12px", marginTop: "6px" }, [handleChip, adminChip]);
@@ -3029,6 +3062,26 @@ async function profileRenderPng(element, fontData) {
   }
 }
 
+/**
+ * ImageResponse can only emit 24-bit PNG, and a photo banner makes that
+ * 450–700KB (WhatsApp previews get unreliable above ~300KB). Re-encoding to a
+ * 256-colour palette PNG (UPNG's quantiser) keeps the banner fully sharp at
+ * ~100–150KB. Loaded lazily and wrapped in try/catch: if the library or the
+ * quantiser ever fails, the original PNG is served unchanged.
+ */
+async function profileOptimizePng(pngBuffer) {
+  try {
+    const UPNG = (await import("upng-js")).default;
+    const img = UPNG.decode(pngBuffer);
+    const rgba = UPNG.toRGBA8(img)[0];
+    const out = UPNG.encode([rgba], img.width, img.height, 256);
+    return out.byteLength > 0 && out.byteLength < pngBuffer.byteLength ? out : pngBuffer;
+  } catch (err) {
+    console.error("[og] png optimise skipped:", err?.message || err);
+    return pngBuffer;
+  }
+}
+
 async function renderProfileImage(handleRaw, version) {
   const handle = String(handleRaw || "").trim().toLowerCase();
   const fallback = () =>
@@ -3057,6 +3110,7 @@ async function renderProfileImage(handleRaw, version) {
     png = await profileRenderPng(buildProfileElement({ meta, avatar: null, banner: null, logo }), fontData);
   }
   if (!png) return fallback();
+  png = await profileOptimizePng(png);
 
   // With ?v=<content hash> (render-profile.js changes it whenever the profile
   // changes) the URL is immutable; without it, revalidate hourly.
