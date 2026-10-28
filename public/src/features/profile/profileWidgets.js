@@ -6,6 +6,16 @@
 import { gameEngine, BADGES } from "../../shared/gameEngine.js";
 import { InfiniteList } from "./infiniteScroll.js";
 
+// Local on purpose: shared/markdown.js also exports escHtml, but importing it
+// would pull the whole markdown engine into the profile page for one function.
+function escHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 // ==================== Activity Heatmap ====================
 // Built entirely from user.history[].date - no new data model needed.
 
@@ -34,9 +44,32 @@ export function dateKey(d) {
   return `${y}-${m}-${d2}`;
 }
 
+// Upload timestamps (ISO strings) of an admin/dev's quizzes AND lessons. They
+// count as activity on top of user.history, so the "نشاط المشرف/المطور" heatmap
+// reflects what the account actually does on the platform: solving quizzes and
+// publishing quizzes + lessons. Empty for regular users (heatmap unchanged).
+let uploadActivityDates = [];
+// Last user object the heatmap was drawn from, so late-arriving upload data
+// can redraw it without every caller having to know about this.
+let lastHeatmapUser = null;
+
+// Once uploads are merged in, a day's count is no longer "exams solved", so the
+// noun goes generic. Regular users keep the original wording.
+function heatmapCountLabel(count) {
+  if (uploadActivityDates.length > 0) {
+    return `${count} ${count === 1 ? "نشاط" : "أنشطة"}`;
+  }
+  return `${count} ${count === 1 ? "امتحان" : "امتحانات"}`;
+}
+
+export function setUploadActivity(isoDates) {
+  uploadActivityDates = Array.isArray(isoDates) ? isoDates : [];
+  if (lastHeatmapUser) renderActivityHeatmap(lastHeatmapUser);
+}
+
 function heatmapHoverHtml(date, count) {
   const dateLabel = date.toLocaleDateString("ar-EG");
-  const countLabel = `${count} ${count === 1 ? "امتحان" : "امتحانات"}`;
+  const countLabel = heatmapCountLabel(count);
   return `
     <span class="heatmap-hover-date">${dateLabel}</span>
     <span class="heatmap-hover-count">${countLabel}</span>`;
@@ -70,10 +103,17 @@ const MONTH_LABELS_AR = [
 export function renderActivityHeatmap(user) {
   const container = document.getElementById("activityHeatmap");
   if (!container) return;
+  lastHeatmapUser = user;
 
   const counts = {};
   (user.history || []).forEach((h) => {
     const d = new Date(h.date);
+    if (isNaN(d)) return;
+    const key = dateKey(d);
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  uploadActivityDates.forEach((iso) => {
+    const d = new Date(iso);
     if (isNaN(d)) return;
     const key = dateKey(d);
     counts[key] = (counts[key] || 0) + 1;
@@ -166,7 +206,7 @@ export function renderActivityHeatmap(user) {
             return `<span class="heatmap-cell heatmap-cell-disabled" aria-hidden="true" style="animation-delay:${delay}ms"></span>`;
           }
           const level = levelFor(d.count);
-          const ariaLabel = `${d.date.toLocaleDateString("ar-EG")} • ${d.count} ${d.count === 1 ? "امتحان" : "امتحانات"}`;
+          const ariaLabel = `${d.date.toLocaleDateString("ar-EG")} • ${heatmapCountLabel(d.count)}`;
           return `<span class="heatmap-cell js-has-hover" data-level="${level}" data-date="${d.key}" data-count="${d.count}" aria-label="${ariaLabel}" style="animation-delay:${delay}ms"></span>`;
         })
         .join("");
@@ -453,40 +493,82 @@ window.unflagQuestion = function (examId, qIdx) {
   renderFlaggedQuestions(user, window.__examListCache || []);
 };
 
-// ==================== Uploaded Quizzes History ====================
-// Admin/dev only — last quizzes uploaded by the profile's owner, shown
-// above التاريخ on both the owner's own dashboard and public /@handle
-// profiles. Data comes from GET /api/admin-stats?uploads=true(&handle=X),
-// which reuses this route's existing handle/JWT resolution (see
-// api/admin-stats.js) rather than a new endpoint.
+// ==================== Uploaded Content History ====================
+// Admin/dev only — the latest quizzes AND lessons uploaded by the profile's
+// owner, shown above التاريخ on both the owner's own dashboard and public
+// /@handle profiles. Data comes from GET /api/admin-stats?uploads=true(&handle=X),
+// which reuses that route's existing handle/JWT resolution rather than a new
+// endpoint. The server returns ready-made hrefs (see api/admin.js) — quiz
+// links need the short meta id, lesson links the slug — so this file never
+// builds a URL from a database id itself.
 
-let uploadedQuizzesListInstance = null;
+let uploadedListInstance = null;
+// Guards against out-of-order responses when this runs more than once (the
+// owner's dashboard re-renders): only the newest call may touch the DOM.
+let uploadsRequestId = 0;
 
-function uploadedQuizItemHtml(quiz) {
-  const date = quiz.createdAt
-    ? new Date(quiz.createdAt).toLocaleDateString("ar-EG")
+const UPLOAD_ICONS = {
+  quiz: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+  lesson: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+};
+
+function uploadedItemHtml(item) {
+  const isLesson = item.type === "lesson";
+  const date = item.createdAt
+    ? new Date(item.createdAt).toLocaleDateString("ar-EG")
     : "";
-  const subtitleParts = [quiz.category, quiz.subject].filter(Boolean);
+  const subtitleParts = (
+    isLesson ? [item.course] : [item.category, item.subject]
+  ).filter(Boolean);
+  const subtitle = [...subtitleParts, date].filter(Boolean).map(escHtml).join(" • ");
+  const typeLabel = isLesson ? "درس" : "امتحان";
+  const fallbackTitle = isLesson ? "درس بدون عنوان" : "امتحان بدون عنوان";
+  const buttonLabel = isLesson ? "اذهب إلى الدرس" : "اذهب إلى الامتحان";
+  // href is null for a quiz that has no short id (no valid public URL yet) —
+  // better no button than one that 404s.
+  const action = item.href
+    ? `<a href="${escHtml(item.href)}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">${buttonLabel}</a>`
+    : "";
   return `
-      <div class="history-item">
+      <div class="history-item upload-item" data-type="${isLesson ? "lesson" : "quiz"}">
         <div class="history-info">
-          <h4>${quiz.title || "امتحان بدون عنوان"}</h4>
-          <small>${subtitleParts.join(" • ")}${subtitleParts.length && date ? " • " : ""}${date}</small>
+          <h4><span class="upload-type-badge is-${isLesson ? "lesson" : "quiz"}">${UPLOAD_ICONS[isLesson ? "lesson" : "quiz"]}${typeLabel}</span>${escHtml(item.title || fallbackTitle)}</h4>
+          <small>${subtitle}</small>
         </div>
-        <div class="history-actions">
-          ${quiz.path ? `<a href="/quiz/${quiz.id}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">اذهب إلى الامتحان</a>` : ""}
-        </div>
+        <div class="history-actions">${action}</div>
       </div>`;
+}
+
+// Shimmer rows shown while the request is in flight, so the section is never
+// an empty heading sitting under a fully-loaded hero.
+function uploadedSkeletonHtml(rows = 3) {
+  const row = `
+      <div class="history-item upload-skeleton-row" aria-hidden="true">
+        <div class="history-info">
+          <span class="upload-skeleton-bar is-title"></span>
+          <span class="upload-skeleton-bar is-meta"></span>
+        </div>
+        <span class="upload-skeleton-bar is-btn"></span>
+      </div>`;
+  return row.repeat(rows);
 }
 
 // handle: null on the owner's own dashboard (resolved server-side via the
 // Bearer token instead); the visited admin's handle on a public profile.
-export async function renderUploadedQuizzes(handle = null) {
+export async function renderUploadedContent(handle = null) {
   const section = document.getElementById("uploadedQuizzesSection");
   const container = document.getElementById("uploadedQuizzesList");
   if (!section || !container) return;
 
+  const requestId = ++uploadsRequestId;
+
+  if (uploadedListInstance) {
+    uploadedListInstance.destroy();
+    uploadedListInstance = null;
+  }
   section.style.display = "";
+  container.setAttribute("aria-busy", "true");
+  container.innerHTML = uploadedSkeletonHtml();
 
   try {
     const token = getToken();
@@ -497,24 +579,33 @@ export async function renderUploadedQuizzes(handle = null) {
     if (handle) url += `&handle=${encodeURIComponent(handle)}`;
 
     const res = await fetch(url, { headers });
+    if (requestId !== uploadsRequestId) return;
     if (!res.ok) {
       section.style.display = "none";
       return;
     }
     const data = await res.json();
+    if (requestId !== uploadsRequestId) return;
     const uploads = data.uploads || [];
 
-    if (uploadedQuizzesListInstance) uploadedQuizzesListInstance.destroy();
-    uploadedQuizzesListInstance = new InfiniteList({
+    // Feeds the activity heatmap (quizzes + lessons by day); redraws it if it
+    // was already painted from user.history alone.
+    setUploadActivity(data.activity || []);
+
+    container.removeAttribute("aria-busy");
+    uploadedListInstance = new InfiniteList({
       containerEl: container,
       items: uploads,
-      renderItem: uploadedQuizItemHtml,
-      emptyHtml: `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path class="icon-line" pathLength="1" d="M12 3v12"/><path class="icon-line" pathLength="1" d="m7 8 5-5 5 5"/><path class="icon-line" pathLength="1" d="M5 21h14"/></svg></div><p>لم يتم رفع أي امتحانات بعد</p></div>`,
+      renderItem: uploadedItemHtml,
+      emptyHtml: `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path class="icon-line" pathLength="1" d="M12 3v12"/><path class="icon-line" pathLength="1" d="m7 8 5-5 5 5"/><path class="icon-line" pathLength="1" d="M5 21h14"/></svg></div><p>لم يتم رفع أي امتحانات أو دروس بعد</p></div>`,
       mode: "button",
     });
-    uploadedQuizzesListInstance.mount();
+    uploadedListInstance.mount();
   } catch (err) {
-    console.error("Failed to render uploaded quizzes", err);
+    if (requestId !== uploadsRequestId) return;
+    console.error("Failed to render uploaded content", err);
     section.style.display = "none";
+  } finally {
+    if (requestId === uploadsRequestId) container.removeAttribute("aria-busy");
   }
 }

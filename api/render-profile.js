@@ -136,7 +136,7 @@ export default async function handler(req, res) {
   const lookupPromise = supabase
     .from("admin_users")
     .select(
-      "display_name, handle, bio, avatar_url, thumbnail_url, current_level, uploaded_quizzes, total_points, total_badges",
+      "display_name, handle, bio, avatar_url, thumbnail_url, current_level, uploaded_quizzes, uploaded_lessons, total_points, total_badges",
     )
     .ilike("handle", normalizedHandle)
     .maybeSingle()
@@ -223,9 +223,10 @@ export default async function handler(req, res) {
   // Share-card facts. Same fields the OG image draws (api/og.js ?profile=).
   const level = Math.max(1, Math.floor(Number(adminData.current_level) || 1));
   const uploaded = Math.max(0, Math.floor(Number(adminData.uploaded_quizzes) || 0));
+  const uploadedLessons = Math.max(0, Math.floor(Number(adminData.uploaded_lessons) || 0));
   const bio = String(adminData.bio || "").replace(/\s+/g, " ").trim();
   const roleLabel = role === "developer" ? "مطوّر" : "مشرف";
-  const description = buildProfileDescription({ role, level, uploaded, bio });
+  const description = buildProfileDescription({ role, level, uploaded, uploadedLessons, bio });
 
   // /api/og?profile=… is an Edge function that already exists (merged into
   // api/og.js — no extra function slot). `v` fingerprints everything the card
@@ -240,6 +241,7 @@ export default async function handler(req, res) {
         bio,
         level,
         uploaded,
+        uploadedLessons,
         adminData.total_points,
         adminData.total_badges,
         adminData.avatar_url,
@@ -251,7 +253,7 @@ export default async function handler(req, res) {
   const ogImageUrl = `${SITE_ORIGIN}/api/og?profile=${encodeURIComponent(
     String(adminData.handle || cleanHandle).toLowerCase(),
   )}&v=${ogVersion}`;
-  const ogImageAlt = `${roleLabel} على منصة امتحانات بصمجي: ${displayLabel} (@${adminData.handle || cleanHandle}) — المستوى ${level} · ${uploaded} امتحان مرفوع`;
+  const ogImageAlt = `${roleLabel} على منصة امتحانات بصمجي: ${displayLabel} (@${adminData.handle || cleanHandle}) — المستوى ${level} · ${uploaded} امتحان · ${uploadedLessons} درس مرفوع`;
 
   // Inject meta tags for client-side JS to pick up. avatar_url is a (possibly
   // large) data-URL — escapeHtml handles the characters that matter inside a
@@ -385,9 +387,9 @@ function applyHeadRewrites(
 // og:title), which also avoids a Latin name bleeding into the Arabic sentence
 // and scrambling the bidi order in Telegram/WhatsApp previews. Kept under
 // ~200 chars so previews don't cut it.
-function buildProfileDescription({ role, level, uploaded, bio }) {
+function buildProfileDescription({ role, level, uploaded, uploadedLessons = 0, bio }) {
   const who = role === "developer" ? "مطوّر في منصة امتحانات بصمجي" : "مشرف على منصة امتحانات بصمجي";
-  const facts = `${who} · المستوى ${level} · ${uploaded} امتحان مرفوع`;
+  const facts = `${who} · المستوى ${level} · ${uploaded} امتحان · ${uploadedLessons} درس مرفوع`;
   if (!bio) return facts;
   const room = 200 - facts.length - 3;
   if (room < 20) return facts;

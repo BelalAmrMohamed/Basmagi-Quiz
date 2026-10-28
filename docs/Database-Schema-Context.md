@@ -47,6 +47,7 @@ This file is for context only. It's copied from supabase directly after running 
 | `current_level` | `int4` |  Nullable |
 | `avatar_url` | `text` |  Nullable |
 | `uploaded_quizzes` | `int4` |  Nullable |
+| `uploaded_lessons` | `int4` |  Default 0 — live lessons created by this admin; maintained by trigger `lessons_sync_uploaded_lessons_trigger` (migration `20261028180000_admin_uploaded_lessons.sql`), never written by the API |
 | `activity_heatmap` | `jsonb` |  Nullable |
 | `thumbnail_url` | `text` |  Nullable |
 | `allowed_scopes` | `_text` |  Nullable |

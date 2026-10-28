@@ -938,6 +938,15 @@
 
                     if (document.querySelector('meta[name="admin:handle"]')) {
                         container.setAttribute("data-visitor-view", "1");
+                        // Visitor view: identity band is server-injected and
+                        // paints instantly, but stats/heatmap come from the
+                        // API a moment later. This flag shimmers those
+                        // regions until profile.js clears it (see
+                        // profile.css ".is-data-loading").
+                        container.classList.add("is-data-loading");
+                        setTimeout(function () {
+                            container.classList.remove("is-data-loading");
+                        }, 10000);
                     }
 
                     // Last-resort failsafe, independent of profile.js. The
@@ -1293,6 +1302,17 @@
             <div class="stat-card">
                 <div class="icon"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path class="icon-line" d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                        <path class="icon-line" d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                    </svg></div>
+                <div class="info">
+                    <span class="label">إجمالي الدروس المرفوعة</span>
+                    <span class="value" id="adminUploadedLessons">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path class="icon-line" d="M5 3v18" />
                         <path class="icon-line" d="M5 4h13l-3 4 3 4H5" />
                     </svg></div>
@@ -1361,7 +1381,7 @@
                             <path class="icon-line" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                             <path class="icon-line" d="M17 8 12 3 7 8" />
                             <path class="icon-line" d="M12 3v12" />
-                        </svg> الامتحانات المرفوعة</h2>
+                        </svg> الامتحانات والدروس المرفوعة</h2>
                     <div id="uploadedQuizzesList" class="history-list">
                     </div>
                 </section>

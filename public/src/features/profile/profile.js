@@ -10,7 +10,7 @@ import {
   renderCategoryMastery,
   renderNextBadges,
   renderFlaggedQuestions,
-  renderUploadedQuizzes,
+  renderUploadedContent,
   activityLabelFor,
   dateKey,
 } from "./profileWidgets.js";
@@ -187,7 +187,7 @@ export function refreshUI(options = {}) {
     // on the very first load in that branch — so gate it the same way
     // fetchAndRenderAdminStats is gated, on skipNetworkFetches.
     if (!skipNetworkFetches) {
-      renderUploadedQuizzes();
+      renderUploadedContent();
     }
     if (!skipNetworkFetches) {
       // isVisitorContext=false: this is the owner's own dashboard, so the
@@ -282,6 +282,7 @@ async function renderAdminGallery(myToken = refreshToken) {
       const displayName = entry.displayName || entry.handle;
       const avatar = adminAvatarUrl(entry);
       const quizzes = (entry.totalQuizzes || 0).toLocaleString();
+      const lessons = (entry.totalLessons || 0).toLocaleString();
       const handle = (entry.handle || "").replace(/^@/, "");
       const profileHref = handle ? `/@${encodeURIComponent(handle)}` : null;
 
@@ -301,7 +302,7 @@ async function renderAdminGallery(myToken = refreshToken) {
           ${badgeHtml}
         </span>
         <span class="admin-gallery-handle" dir="ltr">@${handle}</span>
-        <span class="admin-gallery-meta">${quizzes} امتحان مرفوع</span>
+        <span class="admin-gallery-meta">${quizzes} امتحان • ${lessons} درس</span>
       `;
 
       return profileHref
@@ -453,6 +454,8 @@ async function fetchAndRenderAdminStats(
 
       document.getElementById("adminUploadedQuizzes").textContent =
         data.uploadedQuizzes || 0;
+      const lessonsEl = document.getElementById("adminUploadedLessons");
+      if (lessonsEl) lessonsEl.textContent = data.uploadedLessons || 0;
       document.getElementById("adminReportsCount").textContent =
         data.reportsCount || 0;
       document.getElementById("adminResolvedReportsCount").textContent =
@@ -762,7 +765,7 @@ function renderBioDisplay(bio) {
 async function setupVisitorView(handle) {
   // Setup UI for visitor view
   document.querySelectorAll(".content-section").forEach((el) => {
-    // renderUploadedQuizzes() below manages this section's own display
+    // renderUploadedContent() below manages this section's own display
     // (shows it once uploads resolve, hides it on fetch failure) — if
     // the blanket hide here ran after that resolves, it would clobber it.
     if (el.id === "uploadedQuizzesSection") return;
@@ -840,6 +843,15 @@ async function setupVisitorView(handle) {
   // source of truth on this page for who the visited user actually is —
   // read role/isOwner from its response instead of assuming "admin" for
   // every visitor (that previously mislabeled regular users as admins).
+  // Uploaded content (quizzes + lessons) — public on /@handle for whichever
+  // admin/dev this profile belongs to. Started BEFORE the stats await so the
+  // two requests run in parallel and the section shows its shimmer rows from
+  // the first frame instead of popping in after the stats resolve. Not
+  // awaited: it manages its own section visibility/loading state. Runs
+  // unconditionally (no skipNetworkFetches gate, unlike the owner-dashboard
+  // call in refreshUI()) since visitor view has no local-only refresh path.
+  renderUploadedContent(handle);
+
   const visitedRole = await fetchAndRenderAdminStats(
     handle,
     refreshToken,
@@ -850,14 +862,6 @@ async function setupVisitorView(handle) {
   // dashboard (setActivityLabel/activityLabelFor), just fed the visited
   // user's role/isOwner instead of the local getAdminRoleInfo() result.
   setActivityLabel(visitedRole);
-
-  // Uploaded Quizzes History — public on /@handle for whichever admin/dev
-  // this profile belongs to. Not awaited: it manages its own section
-  // visibility/loading state independently and nothing below depends on
-  // it finishing. Runs unconditionally here (no skipNetworkFetches gate,
-  // unlike the owner-dashboard call in refreshUI()) since visitor view has
-  // no local-only refresh path.
-  renderUploadedQuizzes(handle);
 
   // Override the meta-rendered avatar/thumbnail with the freshly-fetched
   // admin row when available. The meta tags are only an optimization for
@@ -1123,6 +1127,16 @@ function hideProfileSkeleton() {
   window.__profileSkeletonHidden = true;
 }
 
+// Visitor view (/@handle) only: .is-data-loading is set by profile.html's
+// bootstrap script and shimmers the stat numbers + heatmap until the API data
+// lands (see profile.css). Separate from the skeleton above on purpose — the
+// hero is ready immediately, the data is not.
+function clearDataLoading() {
+  const container = document.querySelector(".container");
+  if (container) container.classList.remove("is-data-loading");
+}
+setTimeout(clearDataLoading, 8000);
+
 // Failsafe. If a render throws before reaching the normal dismissal below,
 // the user would otherwise be stuck staring at a shimmer forever — far worse
 // than the blank page this replaced. Deliberately generous: it should never
@@ -1260,6 +1274,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // it here lets the leaderboard fetch start in the same tick instead of
     // queueing behind the stats call.
     const visitorReady = setupVisitorView(visitedHandle);
+    // Stats + heatmap are in (or failed) once setupVisitorView settles — drop
+    // the data shimmer either way so it can never get stuck.
+    visitorReady.finally(clearDataLoading);
 
     // Real leaderboard, with the visited profile's row highlighted instead
     // of the viewer's own (the viewer has no meaningful position here, and

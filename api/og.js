@@ -2787,7 +2787,7 @@ async function fetchProfileOgMeta(handle) {
     const url = new URL(`${SUPABASE_URL}/rest/v1/admin_users`);
     url.searchParams.set(
       "select",
-      "display_name,handle,bio,avatar_url,thumbnail_url,current_level,uploaded_quizzes,total_points,total_badges",
+      "display_name,handle,bio,avatar_url,thumbnail_url,current_level,uploaded_quizzes,uploaded_lessons,total_points,total_badges",
     );
     // ilike = case-insensitive like render-profile.js; escape LIKE wildcards
     // ("_" is legal in handles).
@@ -3053,7 +3053,8 @@ function buildProfileElement({ meta, avatar, banner, logo }) {
   const stats = pd({
     position: "absolute", left: "60px", right: "60px", top: "490px", flexDirection: "row-reverse", gap: "20px",
   }, [
-    tile(PROFILE_ICONS.upload, BRAND_BLUE, profileFormatCount(meta.uploaded_quizzes), "الامتحانات المرفوعة"),
+    tile(PROFILE_ICONS.upload, BRAND_BLUE, // Quizzes + lessons in one tile: a 4th tile would not fit the card width.
+    profileFormatCount((Number(meta.uploaded_quizzes) || 0) + (Number(meta.uploaded_lessons) || 0)), "المحتوى المرفوع"),
     tile(PROFILE_ICONS.zap, "#d97706", profileFormatCount(meta.total_points), "النقاط"),
     tile(PROFILE_ICONS.award, "#7c3aed", profileFormatCount(meta.total_badges), "الشارات"),
   ]);

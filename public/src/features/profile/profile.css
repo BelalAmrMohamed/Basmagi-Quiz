@@ -674,7 +674,7 @@ body.sidebar-expanded {
          (dashed divider, muted surface, small eyebrow label) so it doesn't read
          as a stray, mismatched duplicate of the main stats row underneath it. */
 #adminStatsGrid {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   position: relative;
   margin-top: 18px;
   padding-top: 22px;
@@ -718,6 +718,12 @@ body.sidebar-expanded {
       var(--color-border-light));
 }
 
+@media (max-width: 1024px) {
+  #adminStatsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
 
   body,
@@ -731,11 +737,9 @@ body.sidebar-expanded {
     gap: 10px;
   }
 
-  /* 3 admin cards over 2 columns leaves a lone card on its own row —
-           let it span both columns instead of sitting stranded on one side. */
-  #adminStatsGrid .stat-card:last-child {
-    grid-column: 1 / -1;
-  }
+  /* 4 admin cards over 2 columns: two even rows, nothing stranded. (A third
+     "إجمالي البلاغات" row would need a full-width :last-child rule again if
+     the card count ever becomes odd.) */
 }
 
 @media (max-width: 480px) {
@@ -3071,6 +3075,107 @@ html[data-motion="reduced"] {
   .empty-state:hover .empty-state-icon .icon-line,
   .empty-state:focus-within .empty-state-icon .icon-line,
   .empty-state.is-drawing .empty-state-icon .icon-line {
+    animation: none;
+  }
+}
+
+
+/* ============================================================
+   UPLOADED CONTENT LIST (quizzes + lessons) + VISITOR DATA SHIMMER
+   ============================================================ */
+
+/* Type badge before each upload's title. */
+.upload-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-end: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  vertical-align: middle;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+}
+
+.upload-type-badge.is-lesson {
+  background: color-mix(in srgb, #7c3aed 12%, transparent);
+  color: #7c3aed;
+}
+
+/* Shared shimmer, same sweep as the page skeleton (skeleton-sweep). Own
+   variables because .profile-skeleton (which defines them) is removed from
+   the DOM once the hero is ready. */
+.upload-skeleton-bar,
+.container.is-data-loading .stat-card .value,
+.container.is-data-loading #activityHeatmap::before {
+  --skeleton-base: var(--color-background-secondary, #e9edf2);
+  --skeleton-sheen: var(--color-surface, #f6f8fb);
+  background-color: var(--skeleton-base);
+  background-image: linear-gradient(90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--skeleton-sheen) 70%, transparent) 50%,
+      transparent 100%);
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+.upload-skeleton-row {
+  pointer-events: none;
+}
+
+.upload-skeleton-bar {
+  display: block;
+}
+
+.upload-skeleton-bar.is-title {
+  width: min(260px, 70%);
+  height: 16px;
+  margin-block-end: 8px;
+}
+
+.upload-skeleton-bar.is-meta {
+  width: min(160px, 45%);
+  height: 11px;
+}
+
+.upload-skeleton-bar.is-btn {
+  width: 110px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+/* Visitor view (/@handle): the identity band is server-injected and paints
+   at once, while the numbers and the heatmap arrive from the API. Until
+   profile.js drops .is-data-loading, show shimmer where they will appear
+   instead of "0" values and an empty card. Layout is unchanged (same boxes),
+   so nothing shifts when real data lands. */
+.container.is-data-loading .stat-card .value {
+  color: transparent;
+  user-select: none;
+  min-width: 3.2ch;
+  display: inline-block;
+}
+
+.container.is-data-loading #activityHeatmap {
+  position: relative;
+  min-height: 150px;
+}
+
+.container.is-data-loading #activityHeatmap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .upload-skeleton-bar,
+  .container.is-data-loading .stat-card .value,
+  .container.is-data-loading #activityHeatmap::before {
     animation: none;
   }
 }

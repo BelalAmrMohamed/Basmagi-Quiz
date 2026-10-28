@@ -1974,10 +1974,13 @@ async function handleStats(req, res) {
     const { data, error } = await supabase
       .from("admin_users")
       .select(
-        "display_name, handle, uploaded_quizzes, current_level, avatar_url, thumbnail_url, total_points, email",
+        "display_name, handle, uploaded_quizzes, uploaded_lessons, current_level, avatar_url, thumbnail_url, total_points, email",
       )
       .order("uploaded_quizzes", { ascending: false })
-      .limit(10);
+      // Admin rows are few. Pull them all and rank by quizzes + lessons in
+      // JS below (PostgREST can't order by a sum of two columns), then keep
+      // the top 10 — so a lesson-heavy admin isn't cut off by the SQL order.
+      .limit(200);
 
     if (error) {
       return res.status(500).json({ error: error.message });
@@ -1992,10 +1995,20 @@ async function handleStats(req, res) {
     // intentionally excluded from the response for the same enumeration
     // reason noted there — this is a public/anon-key read).
     const ownerEmails = getOwnerEmails();
-    const leaderboard = (data || []).map((row) => ({
+    const leaderboard = (data || [])
+      .slice()
+      .sort(
+        (a, b) =>
+          (b.uploaded_quizzes || 0) +
+          (b.uploaded_lessons || 0) -
+          ((a.uploaded_quizzes || 0) + (a.uploaded_lessons || 0)),
+      )
+      .slice(0, 10)
+      .map((row) => ({
       handle: row.handle,
       displayName: row.display_name || null,
       totalQuizzes: row.uploaded_quizzes || 0,
+      totalLessons: row.uploaded_lessons || 0,
       currentLevel: row.current_level || 1,
       avatarUrl: row.avatar_url || null,
       thumbnailUrl: row.thumbnail_url || null,
@@ -2022,7 +2035,7 @@ async function handleStats(req, res) {
     const { data } = await supabase
       .from("admin_users")
       .select(
-        "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
+        "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, uploaded_lessons, activity_heatmap",
       )
       .eq("id", id)
       .maybeSingle();
@@ -2036,7 +2049,7 @@ async function handleStats(req, res) {
     const { data } = await supabase
       .from("admin_users")
       .select(
-        "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
+        "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, uploaded_lessons, activity_heatmap",
       )
       .ilike("handle", normalizedHandle)
       .maybeSingle();
@@ -2065,7 +2078,7 @@ async function handleStats(req, res) {
           const { data } = await supabase
             .from("admin_users")
             .select(
-              "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
+              "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, uploaded_lessons, activity_heatmap",
             )
             .ilike("email", normalizedEmail)
             .maybeSingle();
@@ -2095,28 +2108,98 @@ async function handleStats(req, res) {
   if (isUploads) {
     // Public (anon-key) read, same as the rest of this GET path — visitor
     // profiles need this too, so no auth gate here beyond resolving which
-    // admin's quizzes to list (already done above via handle or JWT).
-    const { data: recentQuizzes, error: recentErr } = await supabase
-      .from("quizzes")
-      .select("id, title, category, subject, path, created_at")
-      .eq("uploaded_by", adminUser.id)
-      .order("created_at", { ascending: false })
-      .limit(20);
+    // admin's uploads to list (already done above via handle or JWT).
+    //
+    // Returns everything the admin/dev uploaded — quizzes AND lessons — as one
+    // list, newest first, plus the raw upload timestamps of the current year
+    // for the "نشاط" heatmap.
+    //
+    // Links are built HERE (single source of truth) because the identifier a
+    // public URL needs is not the row's primary key:
+    //   - quizzes live at /quiz/<8-char base32 id> (data->meta->>id, the same
+    //     key api/render-quiz.js resolves) — NOT quizzes.id (a UUID).
+    //   - lessons live at /lesson/<slug> when a slug exists, else /lesson/<id>
+    //     (see api/_urls.js lessonUrl / api/render-course.js).
+    const LIST_LIMIT = 50; // per type; merged list is capped below
+    const ACTIVITY_LIMIT = 2000; // per type; timestamps only (tiny rows)
+    // Heatmap shows the current calendar year in the viewer's local time.
+    // Start one day early so timezone offsets can't clip Jan 1.
+    const activitySince = new Date(
+      Date.UTC(new Date().getUTCFullYear(), 0, 1) - 24 * 60 * 60 * 1000,
+    ).toISOString();
 
-    if (recentErr) {
-      return res.status(500).json({ error: recentErr.message });
+    const [quizList, lessonList, quizActivity, lessonActivity] =
+      await Promise.all([
+        supabase
+          .from("quizzes")
+          .select(
+            "id, title, category, subject, created_at, meta_id:data->meta->>id",
+          )
+          .eq("uploaded_by", adminUser.id)
+          .order("created_at", { ascending: false })
+          .limit(LIST_LIMIT),
+        supabase
+          .from("lessons")
+          .select("id, slug, title, created_at, course:courses(name)")
+          .eq("created_by", adminUser.id)
+          .order("created_at", { ascending: false })
+          .limit(LIST_LIMIT),
+        supabase
+          .from("quizzes")
+          .select("created_at")
+          .eq("uploaded_by", adminUser.id)
+          .gte("created_at", activitySince)
+          .limit(ACTIVITY_LIMIT),
+        supabase
+          .from("lessons")
+          .select("created_at")
+          .eq("created_by", adminUser.id)
+          .gte("created_at", activitySince)
+          .limit(ACTIVITY_LIMIT),
+      ]);
+
+    const failed = [quizList, lessonList, quizActivity, lessonActivity].find(
+      (r) => r.error,
+    );
+    if (failed) {
+      console.error("[admin-stats:uploads] query failed:", failed.error.message);
+      return res.status(500).json({ error: failed.error.message });
     }
+
+    const quizItems = (quizList.data || []).map((q) => ({
+      type: "quiz",
+      id: q.id,
+      title: q.title,
+      category: q.category,
+      subject: q.subject,
+      createdAt: q.created_at,
+      // No short id => no valid public URL: send null so the client renders no
+      // button rather than a link that 404s.
+      href: q.meta_id ? `/quiz/${encodeURIComponent(q.meta_id)}` : null,
+    }));
+
+    const lessonItems = (lessonList.data || []).map((l) => ({
+      type: "lesson",
+      id: l.id,
+      title: l.title,
+      course: l.course?.name || null,
+      createdAt: l.created_at,
+      href: `/lesson/${encodeURIComponent(l.slug || l.id)}`,
+    }));
+
+    const uploads = [...quizItems, ...lessonItems]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, LIST_LIMIT * 2);
+
+    const activity = [
+      ...(quizActivity.data || []),
+      ...(lessonActivity.data || []),
+    ].map((r) => r.created_at);
 
     return res.status(200).json({
       handle: adminUser.handle,
-      uploads: (recentQuizzes || []).map((q) => ({
-        id: q.id,
-        title: q.title,
-        category: q.category,
-        subject: q.subject,
-        path: q.path,
-        createdAt: q.created_at,
-      })),
+      uploads,
+      activity,
     });
   }
 
@@ -2160,6 +2243,14 @@ async function handleStats(req, res) {
       typeof adminUser.uploaded_quizzes !== "undefined"
         ? adminUser.uploaded_quizzes
         : quizzesCount || 0,
+    // Lessons: trigger-maintained counter (see
+    // 20261028180000_admin_uploaded_lessons.sql). That migration must be
+    // applied BEFORE this code is deployed — the admin_users selects above
+    // name the column.
+    uploadedLessons:
+      typeof adminUser.uploaded_lessons !== "undefined"
+        ? adminUser.uploaded_lessons || 0
+        : 0,
     reportsCount: reportsCount,
     resolvedReports: resolvedCount || 0,
     totalPoints: adminUser.total_points || 0,
