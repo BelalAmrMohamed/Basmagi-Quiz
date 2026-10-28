@@ -232,6 +232,8 @@ body.sidebar-expanded .app-title-bar {
 }
 
 .app-title-text {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  text-align: start;
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--color-text-primary);
@@ -610,6 +612,8 @@ select.form-input {
 }
 
 .entry-item-title {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  text-align: start;
     font-size: 0.875rem;
     font-weight: 500;
     color: var(--color-text-primary);

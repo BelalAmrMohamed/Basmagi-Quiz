@@ -74,6 +74,8 @@ body {
   margin: 0; color: var(--color-text-primary); font-size: 22px; font-weight: 800;
 }
 .item-metadata-modal__item-title {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  text-align: start;
   margin: 4px 0 0; overflow: hidden; color: var(--color-text-secondary);
   font-size: 13px; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -1736,6 +1738,8 @@ Container
 
   /* ── .card-text: takes up remaining middle space ─────────────────────────── */
   .card-text {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  text-align: start;
     display: flex;
     flex-direction: column;
     gap: 1px;
@@ -1767,6 +1771,7 @@ Container
   .card h3,
   .category-card h3,
   .exam-card h3 {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
     font-size: 0.83rem;
     font-weight: 600;
     margin-bottom: 0;
@@ -1783,6 +1788,7 @@ Container
   .card p,
   .category-card p,
   .exam-card p {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
     font-size: 0.7rem;
     color: var(--color-text-tertiary, #888);
     margin-bottom: 0;
@@ -2646,6 +2652,8 @@ Container
 }
 
 .move-to-dialog-subtitle {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  text-align: start;
   margin: 0;
   font-size: 0.82rem;
   color: var(--color-text-secondary);
@@ -2775,6 +2783,8 @@ Container
 }
 
 .move-to-dialog-node-label {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  text-align: start;
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -4073,6 +4083,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   /* Title: compact, single line, truncated */
   .exam-card.user-quiz-card h3,
   .user-quizzes-container .category-card h3 {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
     font-size: 0.83rem !important;
     font-weight: 600 !important;
     margin-bottom: 0 !important;
@@ -5272,6 +5283,8 @@ kbd {
 
   .exam-card.lesson-card h3,
   .exam-card.user-lesson-card h3 {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  text-align: start;
     margin-bottom: .5rem;
     overflow-wrap: anywhere;
     display: -webkit-box;
@@ -5283,6 +5296,8 @@ kbd {
 
   .exam-card.lesson-card .lesson-card-description,
   .exam-card.user-lesson-card .lesson-card-description {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  text-align: start;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;

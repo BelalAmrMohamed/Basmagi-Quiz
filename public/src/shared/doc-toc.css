@@ -35,6 +35,8 @@
 }
 
 .doc-toc-heading-label {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  text-align: start;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

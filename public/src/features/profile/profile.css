@@ -1105,6 +1105,8 @@ html[data-motion="reduced"] .empty-state.is-drawing .empty-state-icon .icon-line
 }
 
 .history-info small {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  text-align: start;
   font-size: 0.72rem;
   color: var(--color-text-tertiary);
   overflow: hidden;

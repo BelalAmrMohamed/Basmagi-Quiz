@@ -214,7 +214,7 @@ function injectStyles() {
       font-size:.84rem; background:var(--color-background-secondary);
       margin-bottom:6px; border:1px solid var(--color-border);
     }
-    .adm-batch-item-title { font-weight:600; color:var(--color-text-primary); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .adm-batch-item-title { font-weight:600; color:var(--color-text-primary); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; unicode-bidi:plaintext; }
     .adm-batch-item-count { font-size:.75rem; color:var(--color-text-tertiary); white-space:nowrap; }
 
     /* ── Thread tree (course/folder upload review) ──────────────────────────
@@ -278,7 +278,7 @@ function injectStyles() {
     .adm-progress-item.error     { border-color:var(--color-error); background:var(--color-error-light); }
     .adm-progress-item.skipped   { border-color:var(--color-border); background:var(--color-background-secondary); opacity:.6; }
     .adm-progress-icon { font-size:1rem; flex-shrink:0; min-width:20px; text-align:center; }
-    .adm-progress-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
+    .adm-progress-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; unicode-bidi:plaintext; font-weight:600; }
     .adm-progress-msg  { font-size:.75rem; color:var(--color-text-tertiary); }
 
     .adm-btns { display:flex; gap:9px; margin-top:16px; }
@@ -1500,7 +1500,7 @@ function renderConfirmationLinks(container, links) {
     li.className = "adm-batch-item adm-copy-btn";
     li.style.cssText = "cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .2s;";
     li.dataset.url = quizLinkHref(l.quizId);
-    li.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;">${l.title}</span><span style="font-size:1.1rem;color:var(--color-primary);" title="نسخ الرابط">📋</span>`;
+    li.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:start;unicode-bidi:plaintext;">${l.title}</span><span style="font-size:1.1rem;color:var(--color-primary);" title="نسخ الرابط">📋</span>`;
     li.addEventListener("click", () => copyLinkToClipboard(li.dataset.url));
     li.addEventListener("mouseover", () => { li.style.background = "var(--color-primary-light)"; });
     li.addEventListener("mouseout", () => { li.style.background = "var(--color-background-secondary)"; });

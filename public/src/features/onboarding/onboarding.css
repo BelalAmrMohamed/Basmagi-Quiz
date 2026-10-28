@@ -627,6 +627,7 @@ input:checked+.toggle-switch::after {
 }
 
 .course-list .course-info {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
   flex: 1;
   min-width: 0;
   /* required for text-overflow: ellipsis */
@@ -634,6 +635,8 @@ input:checked+.toggle-switch::after {
 }
 
 .course-list .course-info h4 {
+  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  text-align: start;
   font-size: var(--text-sm);
   font-weight: 700;
   color: var(--color-text-primary, #111);
