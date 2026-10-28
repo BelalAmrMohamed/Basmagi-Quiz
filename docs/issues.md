@@ -21,6 +21,9 @@ Example 2: The markdown engine was manually detecting the direction of sentences
 
 Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is common to all pages. Its JS and CSS are the same and are imported in all pages, but the HTML is duplicated, which means it's extremely hard to maintain and update. And it became to messy. And it's not even the same, the docuement pages don't have the HTML directly in them, it's inserted from a JS file. 
 
+### UI: Truncated names ignore the text direction
+Names (profile page, but also cards, leaderboards, creator cards, breadcrumbs, etc.) get cut with the ellipsis on the wrong side when the name's direction differs from the page's (e.g. an English/LTR name inside the RTL page shows `... Taha Mohamed Tawfiek`, so the beginning of the name is lost instead of the end). Names should be truncated according to their own direction (RTL or LTR), so the visible part is the start of the name. The profile page name is the most critical case; the same problem exists in many other places on the platform and needs a platform-wide review (probably `dir="auto"` / `unicode-bidi: plaintext` on the name elements) before turning it into a plan.
+
 ## New Features
 
 ### Result Pages

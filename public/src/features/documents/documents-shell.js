@@ -444,7 +444,9 @@ document.addEventListener("click", (event) => {
   const iframe = card?.querySelector(".doc-video-card__iframe");
   if (iframe && typeof time !== "undefined") {
     event.preventDefault();
-    const baseSrc = "https://www.youtube-nocookie.com/embed/B8kAaa59ogI";
+    // Each card keeps its own video: reuse the iframe's current embed URL
+    // (without its query string) instead of a hardcoded video id.
+    const baseSrc = iframe.src.split("?")[0];
     iframe.src = `${baseSrc}?start=${time}&autoplay=1&rel=0`;
     card.querySelectorAll(".doc-video-chip").forEach((c) => c.classList.toggle("is-active", c === chip));
   }
