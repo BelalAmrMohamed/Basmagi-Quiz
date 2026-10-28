@@ -28,6 +28,7 @@
 // =============================================================================
 
 import { ImageResponse } from "@vercel/og";
+import { toVisual } from "./_arabicShape.js";
 
 export const config = { runtime: "edge" };
 
@@ -2845,22 +2846,46 @@ function profileBannerImage(dataUrl) {
 }
 
 /**
- * Right-anchored text line built from one div per word (row-reverse + gap).
- * Satori shapes a single long Arabic string with uneven inter-word gaps, so
- * running text (the bio) uses sibling tokens, which give uniform spacing.
+ * One right-anchored text line, pre-shaped (see api/_arabicShape.js).
+ *
+ * Satori still runs its own contextual shaping / bidi reordering on any
+ * adjacent Arabic-block characters inside one text node (it swaps neighbouring
+ * isolated letters and swallows spaces next to them). So after shaping, every
+ * Arabic glyph is placed in its OWN flex item, in final left-to-right order:
+ * nothing is left for Satori to re-join or reorder, and each box is exactly
+ * one glyph wide. Latin/digit runs stay together as one text node.
  */
-function profileWordsLine(text, isArabic, style = {}) {
+const PROFILE_ARABIC_GLYPH = /[\u0600-\u06ff\ufb50-\ufdff\ufe70-\ufeff]/;
+
+function profileText(text, style = {}) {
   const fs = parseInt(style.fontSize, 10) || 24;
-  const tokens = isArabic ? lessonTokens(text) : String(text).split(/\s+/).filter(Boolean);
+  const visual = Array.from(toVisual(text));
+  const children = [];
+  let latin = "";
+  const flush = () => {
+    if (latin) children.push({ type: "div", props: { style: { display: "flex" }, children: latin } });
+    latin = "";
+  };
+  for (const ch of visual) {
+    if (ch === " ") {
+      flush();
+      children.push({ type: "div", props: { style: { display: "flex", width: `${Math.round(fs * 0.26)}px`, height: "1px", flexShrink: 0 } } });
+    } else if (PROFILE_ARABIC_GLYPH.test(ch)) {
+      flush();
+      children.push({ type: "div", props: { style: { display: "flex" }, children: ch } });
+    } else {
+      latin += ch;
+    }
+  }
+  flush();
   return {
     type: "div",
     props: {
       style: {
-        display: "flex", direction: "ltr", whiteSpace: "nowrap",
-        flexDirection: isArabic ? "row-reverse" : "row", justifyContent: isArabic ? "flex-start" : "flex-start",
-        gap: `${Math.round(fs * 0.3)}px`, ...style,
+        display: "flex", flexDirection: "row", direction: "ltr", whiteSpace: "nowrap",
+        justifyContent: "flex-end", alignItems: "baseline", ...style,
       },
-      children: tokens.map((t) => ({ type: "div", props: { style: { display: "flex" }, children: t } })),
+      children,
     },
   };
 }
@@ -2963,7 +2988,7 @@ function buildProfileElement({ meta, avatar, banner, logo }) {
   }, [
     pd({ position: "absolute", right: "14px", top: "11px" }, lessonIcon(PROFILE_ICONS.star, 24, "#3b2300", 2.4)),
     pd({ position: "absolute", right: "46px", top: "7px", width: "120px", justifyContent: "flex-end" },
-      lessonTextRun("المستوى", true, { fontSize: "25px", fontWeight: "700", color: "#3b2300" })),
+      profileText("المستوى", { fontSize: "25px", fontWeight: "700", color: "#3b2300" })),
     pd({
       position: "absolute", left: "8px", top: "5px", width: "40px", height: "36px", borderRadius: "18px",
       alignItems: "center", justifyContent: "center", background: "#ffffff",
@@ -2972,7 +2997,7 @@ function buildProfileElement({ meta, avatar, banner, logo }) {
   ]);
 
   // ── Identity column ──────────────────────────────────────────────────────
-  const nameRow = lessonTextRun(nameText, nameAr, {
+  const nameRow = profileText(nameText, {
     fontSize: `${nFont}px`, fontWeight: "700", color: "#0f172a", lineHeight: "1.2", width: "100%",
   });
 
@@ -2989,7 +3014,7 @@ function buildProfileElement({ meta, avatar, banner, logo }) {
     boxShadow: `0 6px 14px ${role.shadow}`,
   }, [
     lessonIcon(PROFILE_ICONS[role.icon], 24, "#ffffff", 2.5),
-    lessonTextRun(role.label, true, { fontSize: "24px", fontWeight: "700", color: "#ffffff" }),
+    profileText(role.label, { fontSize: "24px", fontWeight: "700", color: "#ffffff" }),
   ]);
 
   const badgeRow = pd({ flexDirection: "row-reverse", alignItems: "center", gap: "12px", marginTop: "6px" }, [handleChip, adminChip]);
@@ -2998,7 +3023,7 @@ function buildProfileElement({ meta, avatar, banner, logo }) {
     flexDirection: "column", alignItems: "flex-end", width: "100%", marginTop: "14px",
     paddingRight: "18px", borderRight: `4px solid ${hasBio ? LESSON_ACCENT : "#cbd5e1"}`, gap: "2px",
   }, bioLines.map((line) =>
-    profileWordsLine(line, bioAr, {
+    profileText(line, {
       fontSize: `${bFont}px`, color: hasBio ? "#475569" : "#94a3b8", fontWeight: "400", lineHeight: "1.4", width: "100%",
     }),
   ));
@@ -3021,7 +3046,7 @@ function buildProfileElement({ meta, avatar, banner, logo }) {
       }, lessonIcon(icon, 28, color, 2.2)),
       pd({ flexDirection: "column", alignItems: "flex-end", flex: "1" }, [
         pd({ fontSize: "34px", fontWeight: "700", color: "#0f172a", direction: "ltr", lineHeight: "1.1" }, value),
-        lessonTextRun(label, true, { fontSize: "20px", color: "#64748b", fontWeight: "700" }),
+        profileText(label, { fontSize: "20px", color: "#64748b", fontWeight: "700" }),
       ]),
     ]);
 
