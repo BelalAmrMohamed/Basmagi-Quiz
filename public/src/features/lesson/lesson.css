@@ -3712,6 +3712,8 @@
 }
 
 .lesson-comment__author-wrap strong {
+  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  text-align: start;
   overflow: hidden;
   color: var(--color-text-primary);
   font-size: .84rem;

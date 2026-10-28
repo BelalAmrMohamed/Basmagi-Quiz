@@ -520,6 +520,8 @@
 }
 
 .side-menu-profile-dropdown-name {
+  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  text-align: start;
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--color-text-primary);

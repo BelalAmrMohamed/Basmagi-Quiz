@@ -229,6 +229,8 @@ body.sidebar-expanded {
 }
 
 .identity-text h1 {
+  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  text-align: start;
   font-size: clamp(1.35rem, 2.4vw, 1.85rem);
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -1093,6 +1095,8 @@ html[data-motion="reduced"] .empty-state.is-drawing .empty-state-icon .icon-line
 }
 
 .history-info h4 {
+  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  text-align: start;
   font-size: 0.9rem;
   font-weight: 600;
   overflow: hidden;
@@ -1430,6 +1434,8 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 .lb-name {
+  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  text-align: start;
   flex: 1;
   min-width: 0;
   overflow: hidden;

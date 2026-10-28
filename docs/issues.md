@@ -38,9 +38,7 @@ Names (profile page, but also cards, leaderboards, creator cards, breadcrumbs, e
   * ميمز تشجيع إيجابية
 * Some vidoes will be displayed based on the percentage of the result.
 
-### Home Page
-
-#### Passwords are exposed
+### Passwords are exposed
 The home page already downloads every quiz’s password to the browser, so passwords are readable by anyone. The info modal only shows whether a quiz has one, but that existing exposure is worth a separate look.
 
 ### Profile Page

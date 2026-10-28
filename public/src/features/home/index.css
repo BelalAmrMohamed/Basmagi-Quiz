@@ -965,6 +965,8 @@ body.sidebar-expanded {
   }
 
   .breadcrumb-text {
+  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  text-align: start;
     font-size: 0.8rem;
     white-space: nowrap;
     overflow: hidden;
@@ -1423,6 +1425,8 @@ ANIMATIONS
 
 /* ── Path items (<a> links + <span> for current) ─────────────────────────── */
 .title-breadcrumb-item {
+  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  text-align: start;
   display: inline-block;
   max-width: 220px;
   white-space: nowrap;
@@ -1577,6 +1581,8 @@ ANIMATIONS
 }
 
 .title-breadcrumb-dropdown-label {
+  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  text-align: start;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

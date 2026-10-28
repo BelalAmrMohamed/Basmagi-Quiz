@@ -622,6 +622,8 @@ html[data-theme="dark-slate"] .about-page {
 }
 
 .about-page .featured-link-profile-name {
+  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  text-align: start;
   font-size: .88rem;
   overflow: hidden;
   text-overflow: ellipsis;

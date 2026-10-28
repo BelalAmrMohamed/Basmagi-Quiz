@@ -1788,6 +1788,8 @@
 }
 
 .ai-agent-history-item-title {
+  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  text-align: start;
   font-size: 0.87rem;
   font-weight: 600;
   overflow: hidden;
@@ -3646,6 +3648,8 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-creator-card-link-copy strong {
+  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  text-align: start;
   overflow: hidden;
   font-size: 0.77rem;
   font-weight: 750;
