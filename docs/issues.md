@@ -46,7 +46,7 @@ create-lesson:1  Failed to load resource: the server responded with a status of 
 ```
 
 - I'm unable to change the title of the lesson from the top right.
-- I'm unable to asme the lesson. I got this error ![error](image.png), which doesn't explain anything.
+- I'm unable to save the lesson I created with AI from the import link (MCP Server). I got this error ![error](image.png), which doesn't explain anything. I didn't face any issues when using the create-quiz page
 
 ### Profile Page
 - The `نشاط المطور` section should include the quizzes and the lessons. It currently includes the quizzes only. Update it, and update the DB if needed.
