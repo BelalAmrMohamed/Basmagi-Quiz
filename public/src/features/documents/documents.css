@@ -711,3 +711,238 @@ html[data-motion="reduced"] *::after {
     }
 }
 
+
+/* ─────────────────────────────────────────
+    SUB-HEADINGS, NUMBERED LISTS & INLINE CODE (inside .section)
+    Used by how-to-use-ai-agent / how-to-create-a-quiz. The global reset
+    zeroes every margin/padding, so <ol>, <h3> and <code> need explicit rules
+    or numbers sit outside the text column and subheadings touch the
+    paragraph above them.
+───────────────────────────────────────── */
+.section h3 {
+    font-family: "Noto Naskh Arabic", serif;
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 30px 0 12px;
+    padding-right: 12px;
+    border-right: 3px solid var(--accent);
+    line-height: 1.6;
+}
+
+.section h2+p+h3,
+.section h2+h3 {
+    margin-top: 22px;
+}
+
+.section ol {
+    margin-right: 4px;
+    padding-right: 26px;
+    color: var(--ink-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.section ol li::marker {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.section ul+p,
+.section ol+p,
+.section ul+.doc-download-card,
+.section p+.doc-download-card,
+.section p+.doc-video-card {
+    margin-top: 16px;
+}
+
+.section code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82em;
+    direction: ltr;
+    unicode-bidi: isolate;
+    display: inline-block;
+    max-width: 100%;
+    padding: 1px 8px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    background: var(--bg-tint);
+    color: var(--ink);
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+    vertical-align: baseline;
+}
+
+/* Video card inside a section uses h3 (the section owns the h2) */
+.doc-video-card h3 {
+    font-family: "Noto Naskh Arabic", serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 8px;
+    padding: 0;
+    border: 0;
+}
+
+.section .doc-video-card {
+    margin: 0 0 8px;
+}
+
+.doc-video-card__note {
+    margin-top: 10px;
+    font-size: 0.82rem;
+    color: var(--ink-muted);
+    line-height: 1.6;
+}
+
+/* ─────────────────────────────────────────
+    DOWNLOAD CARD (.doc-download-card)
+    A downloadable file with a short "what's in it" list and one button.
+───────────────────────────────────────── */
+.doc-download-card {
+    margin: 0;
+    padding: 24px;
+    border: 1px solid var(--rule-heavy);
+    border-radius: 18px;
+    background: var(--bg-wash);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, .04);
+}
+
+.doc-download-card__head {
+    margin-bottom: 14px;
+}
+
+.doc-download-card__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    margin-bottom: 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--rule));
+    color: var(--accent);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.doc-download-card__title {
+    font-family: "Noto Naskh Arabic", serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.6;
+    margin-bottom: 6px;
+}
+
+.doc-download-card__desc {
+    font-size: 0.93rem;
+    line-height: 1.7;
+    margin-bottom: 0;
+    text-align: start;
+}
+
+.doc-download-card__list {
+    list-style: none;
+    margin: 0;
+    padding: 16px 0 0;
+    border-top: 1px solid var(--rule);
+    gap: 12px;
+}
+
+.doc-download-card__list li {
+    position: relative;
+    padding: 0 22px 0 0;
+    font-size: 0.93rem;
+    line-height: 1.7;
+}
+
+.doc-download-card__list li::before {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 0.62em;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.doc-download-card__list li strong {
+    display: block;
+    color: var(--ink);
+}
+
+.doc-download-card__footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+}
+
+.doc-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.doc-download-btn:hover {
+    background: var(--accent-mid);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .18);
+}
+
+.doc-download-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.doc-download-card__meta {
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+}
+
+.doc-download-card__meta bdi {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    direction: ltr;
+}
+
+.doc-download-card__hint {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 0.84rem;
+    color: var(--ink-muted);
+    line-height: 1.7;
+    text-align: start;
+}
+
+@media (max-width: 640px) {
+    .doc-download-card {
+        padding: 16px;
+        border-radius: 14px;
+    }
+
+    .doc-download-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media print {
+    .doc-download-btn {
+        display: none;
+    }
+}

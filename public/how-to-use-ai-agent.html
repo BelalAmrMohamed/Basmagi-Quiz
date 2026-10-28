@@ -17,7 +17,7 @@
         })();
     </script>
     <meta name="description"
-        content="دليل استخدام الباشــمبصمج، مساعد الذكاء الاصطناعي داخل منصة امتحانات بصمجي: كيفية فتحه، وما يمكنه فعله، وكيف يحافظ على بياناتك." />
+        content="دليل استخدام الباشــمبصمج، مساعد الذكاء الاصطناعي داخل منصة امتحانات بصمجي: كيفية فتحه، وما يمكنه فعله، وكيف يحافظ على بياناتك، وربط المنصة بـ Claude مع Skill للتحميل." />
     <meta name="author" content="بلال عمرو محمد" />
     <meta name="robots" content="index, follow" />
     <meta property="og:type" content="website" />
@@ -149,7 +149,7 @@
                     <li><strong>السجل:</strong> قائمة بمحادثاتك السابقة مع المساعد على هذه الصفحة، يمكنك فتح أي منها
                         للمتابعة من حيث توقفت.</li>
                     <li><strong>الإعدادات:</strong> لضبط مزوّد النموذج، لغة الردود، وتخصيصات أخرى (تفصيل كامل في القسم
-                        الخامس أدناه).</li>
+                        السادس أدناه).</li>
                 </ul>
                 <p>على الشاشات الكبيرة تظهر أيضاً قائمة جانبية إضافية بجوار التبويبات، تتيح بدء محادثة جديدة، نسخ
                     المحادثة الحالية كنص، والوصول السريع لآخر محادثاتك دون فتح تبويب السجل كاملاً. على الهاتف، هذه
@@ -258,78 +258,134 @@
                 </h2>
                 <p>إلى جانب المساعد المدمج، تتيح المنصة <strong>خادم MCP</strong> يربطها بمساعدك المفضل خارج المنصة، فيستطيع البحث في محتوى المنصة (المواد والمجلدات والامتحانات والدروس) وإنشاء رابط يفتح امتحاناً أو درساً جاهزاً من محاضرتك.</p>
 
-            <!-- Video Guide Embed Card: MCP / Claude connection -->
-            <article class="doc-video-card" aria-label="فيديو شرح ربط المنصة بـ Claude">
-                <div class="doc-video-card__head">
-                    <span class="doc-video-card__badge">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            aria-hidden="true">
-                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                        </svg>
-                        ربط Claude بالمنصة
-                    </span>
-                    <h2>شرح بالفيديو: ربط منصة امتحانات بصمجي بـ Claude مباشرة</h2>
-                    <p class="doc-video-card__desc">شاهد خطوات إضافة الـ Connector في Claude، وتجربة البحث، وإنشاء امتحان أو درس من محاضرة، ثم الربط مع Gemini وChatGPT:</p>
-                </div>
-
-                <div class="doc-video-card__player-wrap">
-                    <iframe class="doc-video-card__iframe"
-                        src="https://www.youtube-nocookie.com/embed/ZjizaeFrdwE?rel=0"
-                        title="شرح بالفيديو: ربط منصة امتحانات بصمجي بـ Claude مباشرة"
-                        loading="lazy"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowfullscreen>
-                    </iframe>
-                </div>
-
-                <div class="doc-video-card__chapters">
-                    <span class="doc-video-card__chapters-title">فصول الشرح السريع:</span>
-                    <div class="doc-video-card__timeline" role="list">
-                        <button type="button" class="doc-video-chip is-active" data-time="0">
-                            <span class="doc-video-chip__time">00:00</span>
-                            <span>مقدمة: الباشــمبصمج وأدواته</span>
-                        </button>
-                        <button type="button" class="doc-video-chip" data-time="36">
-                            <span class="doc-video-chip__time">00:36</span>
-                            <span>إضافة Connector مخصص في Claude</span>
-                        </button>
-                        <button type="button" class="doc-video-chip" data-time="60">
-                            <span class="doc-video-chip__time">01:00</span>
-                            <span>تجربة البحث في محتوى المنصة</span>
-                        </button>
-                        <button type="button" class="doc-video-chip" data-time="91">
-                            <span class="doc-video-chip__time">01:31</span>
-                            <span>رفع محاضرة وإنشاء امتحان أو درس</span>
-                        </button>
-                        <button type="button" class="doc-video-chip" data-time="97">
-                            <span class="doc-video-chip__time">01:37</span>
-                            <span>لماذا الرابط طويل؟</span>
-                        </button>
-                        <button type="button" class="doc-video-chip" data-time="141">
-                            <span class="doc-video-chip__time">02:21</span>
-                            <span>إنشاء درس من محاضرة</span>
-                        </button>
-                        <button type="button" class="doc-video-chip" data-time="174">
-                            <span class="doc-video-chip__time">02:54</span>
-                            <span>الربط مع Gemini وChatGPT</span>
-                        </button>
+                <!-- Video Guide Embed Card: MCP / Claude connection -->
+                <article class="doc-video-card" aria-label="فيديو شرح ربط المنصة بـ Claude">
+                    <div class="doc-video-card__head">
+                        <span class="doc-video-card__badge">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            ربط Claude بالمنصة
+                        </span>
+                        <h3>شرح بالفيديو: ربط منصة امتحانات بصمجي بـ Claude مباشرة</h3>
+                        <p class="doc-video-card__desc">شاهد خطوات إضافة الـ Connector في Claude، وتجربة البحث، وإنشاء امتحان أو درس من محاضرة، ثم الربط مع Gemini وChatGPT:</p>
+                        <p class="doc-video-card__note">ملاحظة: الفيديو مسجّل قبل آخر تحديث، والرابط الذي يعطيك إياه Claude الآن أصبح قصيراً (تفاصيل ذلك أدناه).</p>
                     </div>
-                </div>
-            </article>
 
-                <h3>خطوات الربط مع Claude:</h3>
+                    <div class="doc-video-card__player-wrap">
+                        <iframe class="doc-video-card__iframe"
+                            src="https://www.youtube-nocookie.com/embed/ZjizaeFrdwE?rel=0"
+                            title="شرح بالفيديو: ربط منصة امتحانات بصمجي بـ Claude مباشرة"
+                            loading="lazy"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+
+                    <div class="doc-video-card__chapters">
+                        <span class="doc-video-card__chapters-title">فصول الشرح السريع:</span>
+                        <div class="doc-video-card__timeline" role="list">
+                            <button type="button" class="doc-video-chip is-active" data-time="0">
+                                <span class="doc-video-chip__time">00:00</span>
+                                <span>مقدمة: الباشــمبصمج وأدواته</span>
+                            </button>
+                            <button type="button" class="doc-video-chip" data-time="36">
+                                <span class="doc-video-chip__time">00:36</span>
+                                <span>إضافة Connector مخصص في Claude</span>
+                            </button>
+                            <button type="button" class="doc-video-chip" data-time="60">
+                                <span class="doc-video-chip__time">01:00</span>
+                                <span>تجربة البحث في محتوى المنصة</span>
+                            </button>
+                            <button type="button" class="doc-video-chip" data-time="91">
+                                <span class="doc-video-chip__time">01:31</span>
+                                <span>رفع محاضرة وإنشاء امتحان أو درس</span>
+                            </button>
+                            <button type="button" class="doc-video-chip" data-time="97">
+                                <span class="doc-video-chip__time">01:37</span>
+                                <span>لماذا الرابط طويل؟ (قبل التحديث)</span>
+                            </button>
+                            <button type="button" class="doc-video-chip" data-time="141">
+                                <span class="doc-video-chip__time">02:21</span>
+                                <span>إنشاء درس من محاضرة</span>
+                            </button>
+                            <button type="button" class="doc-video-chip" data-time="174">
+                                <span class="doc-video-chip__time">02:54</span>
+                                <span>الربط مع Gemini وChatGPT</span>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+
+                <h3 id="mcp-connect">خطوات الربط مع Claude</h3>
                 <ol>
                     <li>من إعدادات <strong>Connectors</strong> في Claude اختر <strong>Manage Connectors</strong> ثم <strong>Add custom connector</strong>.</li>
-                    <li>سمّه <strong>Basmagi Quiz</strong> والصق رابط خادم MCP: <code dir="ltr">https://basmagi-quiz.vercel.app/api/mcp/</code> (رابط المنصة متبوعاً بـ <code dir="ltr">/api/mcp/</code>).</li>
+                    <li>سمّه <strong>Basmagi Quiz</strong> والصق رابط خادم MCP: <code>https://basmagi-quiz.vercel.app/api/mcp/</code> (رابط المنصة متبوعاً بـ <code>/api/mcp/</code>).</li>
                     <li>اضغط <strong>Continue</strong> ثم <strong>Add</strong>، وسيتعرّف Claude تلقائياً على أدوات المنصة.</li>
                     <li>اطلب منه استخدام الـ Connector، مثل: «استخدم Basmagi Quiz connector وابحث عن محتوى المادة كذا». ويمكنك اختيار <strong>Always allow</strong> لأداة البحث.</li>
                 </ol>
 
-                <h3>إنشاء امتحان أو درس من محاضرة:</h3>
-                <p>ارفع محاضرتك في المحادثة واطلب منه إنشاء امتحان أو درس على المنصة. سيعطيك رابطاً يفتح صفحة الإنشاء بالمحتوى جاهزاً لتراجعه وتحفظه. الرابط طويل لأن الامتحان أو الدرس نفسه مُرمَّز داخله (JSON ثم Base64) وليس رابطاً لعنصر محفوظ مسبقاً على المنصة.</p>
+                <h3 id="mcp-create">إنشاء امتحان أو درس من محاضرة</h3>
+                <p>ارفع محاضرتك في المحادثة واطلب من Claude إنشاء امتحان أو درس على المنصة. سيعطيك <strong>رابطاً قصيراً</strong> (مثل <code>/create-quiz?draft=…</code>) يفتح صفحة الإنشاء بالمحتوى جاهزاً لتراجعه وتحفظه. الرابط صالح <strong>٧٢ ساعة</strong> ولا يحتاج تسجيل دخول لفتحه، ولا يُنشر شيء على المنصة إلا بعد أن تضغط أنت على الحفظ.</p>
+                <ul>
+                    <li><strong>تعديل بلا بداية من الصفر:</strong> اطلب من Claude تعديل الامتحان أو الدرس وسيعدّل في نفس المسودة وبنفس الرابط. (إعادة فتح الرابط تستبدل ما في المحرّر، فاطلب التعديل قبل أن تبدأ بالتعديل بنفسك.)</li>
+                    <li><strong>نسخ امتحان أو درس موجود:</strong> لترجمته أو تقصيره أو عمل نسخة ثانية منه؛ يُنسخ إلى مسودة جديدة ويبقى الأصل كما هو. (العناصر المحمية بكلمة مرور لا يمكن نسخها.)</li>
+                </ul>
 
-                <h3>Gemini و ChatGPT:</h3>
+                <h3 id="skill">Skill كتابة الامتحانات والدروس (لـ Claude)</h3>
+                <p>لنتيجة أدق من أول مرة، نزّل الـ Skill وأضفه إلى Claude؛ فهو دليل رسمي للمنصة يعرّف Claude بطريقة العمل الصحيحة مع الـ Connector.</p>
+
+                <article class="doc-download-card" aria-labelledby="skillCardTitle">
+                    <div class="doc-download-card__head">
+                        <span class="doc-download-card__badge">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            تحديث جديد · ملف للتحميل
+                        </span>
+                        <div class="doc-download-card__title" id="skillCardTitle">📖 دليل كتابة جوّه الموصل (AI Skill)</div>
+                        <p class="doc-download-card__desc">دلوقتي Claude بقى عنده دليل رسمي للمنصة، فالنتيجة أحسن من أول مرة. لو بتعمل امتحانات أو دروس عن طريق Claude، الموضوع بقى أسهل وأسرع بكتير:</p>
+                    </div>
+
+                    <ul class="doc-download-card__list">
+                        <li>
+                            <strong>رابط قصير بدل الرابط الطويل</strong>
+                            دلوقتي Claude بيديك رابط صغير بيفتح صفحة الإنشاء فيها المحتوى جاهز، وصالح ٧٢ ساعة. من غير تسجيل دخول.
+                        </li>
+                        <li>
+                            <strong>تعديل من غير ما تبدأ من الأول</strong>
+                            عايز تعدل على الامتحان؟ Claude بيعدّل في نفس المسودة وبنفس الرابط، بدل ما يعيد كتابة كل حاجة.
+                        </li>
+                        <li>
+                            <strong>نسخ امتحان أو درس موجود وتعديله</strong>
+                            تحب تترجم امتحان، تقصّره، أو تعمل منه نسخة تانية؟ Claude بينسخه لمسودة جديدة ويعدّل عليها، والأصلي ما بيتغيرش.
+                        </li>
+                    </ul>
+
+                    <div class="doc-download-card__footer">
+                        <a class="doc-download-btn" href="/assets/downloads/basmagi-quiz-authoring.skill"
+                            download="basmagi-quiz-authoring.skill">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            تحميل الـ Skill
+                        </a>
+                        <span class="doc-download-card__meta"><bdi>basmagi-quiz-authoring.skill</bdi> · ٣ كيلوبايت</span>
+                        <p class="doc-download-card__hint">بعد التحميل، ارفعه من إعدادات Claude (قسم Skills). يعمل مع الـ Connector الموضّح أعلاه، ومخصّص لـ Claude فقط. جرّبوه وقولولي رأيكم.</p>
+                    </div>
+                </article>
+
+                <h3 id="mcp-other">Gemini و ChatGPT</h3>
                 <p>الفكرة نفسها: أضف رابط خادم MCP ذاته كموصّل مخصص وسمّه كما تشاء. تجد الخطوات مع Gemini و ChatGPT في الفيديو (من الدقيقة <strong>02:54</strong>).</p>
             </section>
         </div>

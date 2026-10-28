@@ -9,7 +9,8 @@
 - [إنشاء امتحاناتك التفاعلية](https://basmagi-quiz.vercel.app/create-quiz): أنشئ امتحانًا بصيغ اختيار من متعدد، صح/خطأ، ومقالي مع شرح وصور وفيديو.
 - [كيفية إنشاء امتحان](https://basmagi-quiz.vercel.app/how-to-create-a-quiz): دليل خطوة بخطوة.
 - [كيفية رفع امتحان للمشرفين](https://basmagi-quiz.vercel.app/how-to-upload-a-quiz): دليل الإدخال الجماعي.
-- [الباشــمبصمج — مساعد AI](https://basmagi-quiz.vercel.app/how-to-use-ai-agent): مساعد ذكاء اصطناعي لفهم وشرح الأسئلة وتحضير الامتحانات.
+- [الباشــمبصمج — مساعد AI](https://basmagi-quiz.vercel.app/how-to-use-ai-agent): مساعد ذكاء اصطناعي لفهم وشرح الأسئلة وتحضير الامتحانات، وربط المنصة بـ Claude عبر MCP.
+- [Skill كتابة الامتحانات والدروس لـ Claude](https://basmagi-quiz.vercel.app/assets/downloads/basmagi-quiz-authoring.skill): ملف Skill للتحميل يعرّف Claude بطريقة العمل مع موصّل المنصة.
 
 ## التخصصات والمواد (قائمة كاملة محدثة باستمرار)
 - [القائمة الكاملة للمواد والمجلدات والامتحانات العامة](https://basmagi-quiz.vercel.app/llms-full.txt)
