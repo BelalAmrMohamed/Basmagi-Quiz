@@ -85,3 +85,74 @@ test("static content exposes the expected sections", () => {
   assert.deepEqual(Object.keys(CREATOR_INFO).sort(), ["contact", "links", "pages", "platform", "profile"]);
   assert.match(CREATOR_INFO.contact, /belalamrofficial@gmail\.com/);
 });
+
+import { applyDraftPatch, outlineQuiz, outlineLesson, quizToDraftInput, lessonToDraftInput } from "../supabase/functions/mcp/lib.ts";
+
+const baseQuiz = () => validateQuiz({ title: "t", description: "d", questions: [
+  { q: "one", options: ["a", "b"], correct: 0, explanation: "e" },
+  { q: "two", options: ["a", "b"], correct: 1, explanation: "e" },
+  { q: "three", answer: "m", explanation: "e" },
+] }).data;
+
+test("patch quiz: set/insert/delete/move/append/meta are 1-based and atomic-validated", () => {
+  let r = applyDraftPatch("quiz", baseQuiz(), { meta: { title: "new" }, ops: [
+    { op: "set_question", at: 2, question: { q: "TWO", options: ["x", "y", "z"], correct: 2, explanation: "e" } },
+    { op: "insert_question", at: 1, question: { q: "zero", answer: "a", explanation: "e" } },
+    { op: "delete_question", at: 4 },
+    { op: "move_question", at: 3, to: 1 },
+    { op: "append_questions", questions: [{ q: "last", answer: "a", explanation: "e" }] },
+  ] });
+  assert.ok(!r.error, r.error);
+  assert.equal(r.data.meta.title, "new");
+  assert.deepEqual(r.data.questions.map((q) => q.q), ["TWO", "zero", "one", "last"]);
+  const v = validateQuiz({ ...r.data.meta, questions: r.data.questions });
+  assert.equal(v.ok, true, v.errors.join());
+});
+
+test("patch quiz: bad index / unknown op / empty patch give clear errors; input not mutated", () => {
+  const d = baseQuiz(); const snap = JSON.stringify(d);
+  assert.match(applyDraftPatch("quiz", d, { ops: [{ op: "delete_question", at: 9 }] }).error, /العملية 1.*خارج النطاق/);
+  assert.match(applyDraftPatch("quiz", d, { ops: [{ op: "fly" }] }).error, /غير معروفة/);
+  assert.match(applyDraftPatch("quiz", d, {}).error, /فارغ/);
+  assert.equal(JSON.stringify(d), snap);
+});
+
+test("patch quiz: set_question that breaks validation is caught by re-validation", () => {
+  const r = applyDraftPatch("quiz", baseQuiz(), { ops: [{ op: "set_question", at: 1, question: { q: "x", options: ["a", "b"], correct: 7 } }] });
+  const v = validateQuiz({ ...r.data.meta, questions: r.data.questions });
+  assert.equal(v.ok, false);
+});
+
+test("patch: replace_text hits every string and errors when absent", () => {
+  const r = applyDraftPatch("quiz", baseQuiz(), { ops: [{ op: "replace_text", find: "two", replace: "اثنان" }] });
+  assert.equal(r.data.questions[1].q, "اثنان");
+  assert.match(applyDraftPatch("quiz", baseQuiz(), { ops: [{ op: "replace_text", find: "zzz", replace: "" }] }).error, /غير موجود/);
+});
+
+test("patch lesson: sections and blocks ops + outline numbering", () => {
+  const lesson = validateLesson({ title: "L", description: "d", sections: [
+    { title: "A", blocks: [{ type: "markdown", body: "a1" }, { type: "markdown", body: "a2" }] },
+    { title: "B", blocks: [{ type: "markdown", body: "b1" }] },
+  ] }).data;
+  const r = applyDraftPatch("lesson", lesson, { meta: { description: "dd" }, ops: [
+    { op: "insert_block", section: 1, at: 2, block: { type: "question", questionKind: "essay", prompt: "p", modelAnswer: "m" } },
+    { op: "delete_block", section: 1, at: 1 },
+    { op: "append_blocks", section: 2, blocks: [{ type: "markdown", body: "b2" }] },
+    { op: "move_section", at: 2, to: 1 },
+    { op: "append_sections", sections: [{ title: "C", blocks: [] }] },
+  ] });
+  assert.ok(!r.error, r.error);
+  assert.equal(r.data.description, "dd");
+  assert.deepEqual(r.data.sections.map((s) => s.title), ["B", "A", "C"]);
+  assert.equal(validateLesson(r.data).ok, true);
+  assert.match(outlineLesson(r.data), /2\.1 \[question\] essay: p/);
+});
+
+test("outline + clone helpers", () => {
+  assert.match(outlineQuiz(baseQuiz()), /3\. \[essay\] three/);
+  const clone = quizToDraftInput({ meta: { id: "X", path: "p", author_id: "a", title: "T", source: "not a url" }, questions: [{ q: "q", options: ["a", "b"], correct: 1 }] });
+  assert.equal(clone.source, "");
+  assert.equal(validateQuiz(clone).ok, true);
+  const l = lessonToDraftInput({ title: "T", description: "d", source: "https://a.b", content: { sections: [{ title: "s", blocks: [{ type: "markdown", body: "x" }] }] } });
+  assert.equal(validateLesson(l).ok, true);
+});

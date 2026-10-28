@@ -356,7 +356,12 @@ export const AUTHORING_GUIDE: Record<string, string> = {
    - If the result lists ERRORS nothing was saved: fix exactly what it says and call again.
    - WARNINGS are saved but worth fixing; mention important ones to the user.
 4. Give the user the link as-is (never edit/re-encode it) and tell them to open it, review, then press save/publish in the editor. Nothing is published until they do.
-5. Check for existing content first with search_catalog to avoid duplicates, and offer to link related lessons/quizzes (quizRef / lesson-reference blocks).
+5. Revising: do NOT rebuild and re-send everything.
+   - get_import_draft(code) → numbered outline → update_import_draft(code, patch) with only the change (same link stays valid; 1-based positions; atomic).
+   - Improve/translate/extend something that already exists: clone_to_draft(type,id), then patch. Inspect originals cheaply with get_quiz / get_lesson_content format="outline".
+   - Not sure the content is valid? create_*_import_link with dry_run=true validates without saving.
+   - Re-opening an updated link REPLACES whatever is currently in the user's editor, so patch before they start editing, and say so.
+6. Check for existing content first with search_catalog to avoid duplicates, and offer to link related lessons/quizzes (quizRef / lesson-reference blocks).
 Language: write quiz/lesson text in the language of the source material (usually Arabic). Keep tool arguments (field names) in English.`,
 
   quiz: `# Quiz schema (create_quiz_import_link)
@@ -394,3 +399,159 @@ Long reading text shown as a styled passage…
 \`\`\`
 Text direction is detected per block, so mixing Arabic and English is fine. Avoid raw HTML. Put formulas in LaTeX, never as images.`,
 };
+
+// ── Draft outline / patch / clone ───────────────────────────────────────────
+// All human-facing numbers are 1-based (matching error messages and get_quiz text);
+// `correct` / `correctIndex` stay zero-based, as everywhere else.
+
+const clip = (s: unknown, n = 90) => {
+  const t = String(s ?? "").replace(/\s+/g, " ").trim();
+  return t.length > n ? t.slice(0, n - 1) + "…" : t;
+};
+
+export function outlineQuiz(data: any): string {
+  const qs: any[] = data?.questions || [];
+  const lines = qs.map((q, i) => {
+    const hasOpts = Array.isArray(q.options) && q.options.length > 0;
+    const c = Array.isArray(q.correct) ? q.correct.join(",") : q.correct;
+    const kind = !hasOpts ? "essay" : Array.isArray(q.correct) && q.correct.length > 1 ? "multi" : "mcq";
+    return `${i + 1}. [${kind}${hasOpts ? ` ${q.options.length} opts, correct=${c}` : ""}${q.explanation ? "" : ", no explanation"}] ${clip(q.q)}`;
+  });
+  const m = data?.meta || {};
+  return `title: ${m.title || ""}\ndescription: ${clip(m.description, 160)}\nsource: ${m.source || "(none)"}\nquestions: ${qs.length}\n\n${lines.join("\n")}`;
+}
+
+export function outlineLesson(data: any): string {
+  const secs: any[] = data?.sections || [];
+  const out = secs.map((s, i) => {
+    const blocks: any[] = Array.isArray(s.blocks) ? s.blocks : typeof s.content === "string" ? [{ type: "markdown", body: s.content }] : [];
+    const bl = blocks.map((b, j) => {
+      const label = b.type === "markdown" ? clip(b.body, 70)
+        : b.type === "media" ? `${b.kind || "image"} ${clip(b.url, 50)}`
+        : b.type === "question" ? `${b.questionKind || "mcq"}: ${clip(b.prompt ?? b.q, 60)}`
+        : b.type === "quizRef" ? `quiz ${b.quizId}`
+        : b.type === "lesson-reference" || b.type === "lessonRef" ? `lesson ${b.lessonId ?? b.lessonRefId}`
+        : "";
+      return `   ${i + 1}.${j + 1} [${b.type}] ${label}`;
+    });
+    return `${i + 1}. ${s.title || "(untitled)"}${s.defaultHidden ? " (hidden)" : ""}\n${bl.join("\n")}`;
+  });
+  const total = secs.reduce((n, s) => n + (Array.isArray(s.blocks) ? s.blocks.length : 0), 0);
+  return `title: ${data?.title || ""}\ndescription: ${clip(data?.description, 160)}\nsource: ${data?.source || "(none)"}\nsections: ${secs.length}, blocks: ${total}\n\n${out.join("\n")}`;
+}
+
+const MAX_OPS = 200;
+const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
+
+function replaceTextDeep(node: any, find: string, rep: string, count: { n: number }): any {
+  if (typeof node === "string") {
+    const parts = node.split(find);
+    count.n += parts.length - 1;
+    return parts.join(rep);
+  }
+  if (Array.isArray(node)) return node.map((x) => replaceTextDeep(x, find, rep, count));
+  if (node && typeof node === "object") {
+    const o: any = {};
+    for (const k of Object.keys(node)) o[k] = replaceTextDeep(node[k], find, rep, count);
+    return o;
+  }
+  return node;
+}
+
+// Applies patch = { meta?, ops?[] } to stored draft data. Pure; returns the NEW raw data
+// (still to be validated by validateQuiz/validateLesson) or { error }.
+export function applyDraftPatch(kind: "quiz" | "lesson", data: any, patch: any): { data?: any; error?: string; applied?: string[] } {
+  if (!patch || typeof patch !== "object") return { error: "patch يجب أن يكون كائناً: { meta?, ops? }." };
+  const ops: any[] = Array.isArray(patch.ops) ? patch.ops : [];
+  if (!ops.length && !patch.meta) return { error: "patch فارغ — أضف meta أو ops." };
+  if (ops.length > MAX_OPS) return { error: `عدد العمليات يتجاوز ${MAX_OPS}.` };
+
+  let d = clone(data);
+  const applied: string[] = [];
+  const list = kind === "quiz" ? "questions" : "sections";
+  const arr = () => d[list] as any[];
+
+  const metaTarget = kind === "quiz" ? (d.meta = d.meta || {}) : d;
+  if (patch.meta) {
+    for (const k of ["title", "description", "source"]) {
+      if (patch.meta[k] !== undefined) { metaTarget[k] = patch.meta[k]; applied.push(`meta.${k}`); }
+    }
+  }
+
+  const idx = (v: any, len: number, name: string, allowEnd = false): number => {
+    const n = Number(v);
+    const max = allowEnd ? len + 1 : len;
+    if (!Number.isInteger(n) || n < 1 || n > max) throw new Error(`${name}=${JSON.stringify(v)} خارج النطاق 1..${max}.`);
+    return n - 1;
+  };
+  const move = (a: any[], from: number, to: number) => { const [x] = a.splice(from, 1); a.splice(to, 0, x); };
+  const blocksOf = (s: number) => {
+    const sec = arr()[s];
+    if (!Array.isArray(sec.blocks)) sec.blocks = typeof sec.content === "string" ? [{ type: "markdown", body: sec.content }] : [];
+    return sec.blocks as any[];
+  };
+
+  try {
+    ops.forEach((op, i) => {
+      const at = `العملية ${i + 1} (${op?.op})`;
+      try {
+        switch (op?.op) {
+          case "replace_text": {
+            if (typeof op.find !== "string" || !op.find) throw new Error("find مطلوب.");
+            const c = { n: 0 };
+            d = replaceTextDeep(d, op.find, String(op.replace ?? ""), c);
+            if (!c.n) throw new Error(`النص «${clip(op.find, 40)}» غير موجود.`);
+            applied.push(`replace_text ×${c.n}`);
+            break;
+          }
+          // quiz
+          case "set_question": { const k = idx(op.at, arr().length, "at"); arr()[k] = op.question; applied.push(`set_question ${k + 1}`); break; }
+          case "insert_question": { const k = idx(op.at, arr().length, "at", true); arr().splice(k, 0, op.question); applied.push(`insert_question ${k + 1}`); break; }
+          case "append_questions": { if (!Array.isArray(op.questions)) throw new Error("questions مصفوفة مطلوبة."); arr().push(...op.questions); applied.push(`append_questions ×${op.questions.length}`); break; }
+          case "delete_question": { const k = idx(op.at, arr().length, "at"); arr().splice(k, 1); applied.push(`delete_question ${k + 1}`); break; }
+          case "move_question": { move(arr(), idx(op.at, arr().length, "at"), idx(op.to, arr().length, "to")); applied.push(`move_question`); break; }
+          // lesson sections
+          case "set_section": { const k = idx(op.at, arr().length, "at"); arr()[k] = op.section; applied.push(`set_section ${k + 1}`); break; }
+          case "insert_section": { const k = idx(op.at, arr().length, "at", true); arr().splice(k, 0, op.section); applied.push(`insert_section ${k + 1}`); break; }
+          case "append_sections": { if (!Array.isArray(op.sections)) throw new Error("sections مصفوفة مطلوبة."); arr().push(...op.sections); applied.push(`append_sections ×${op.sections.length}`); break; }
+          case "delete_section": { const k = idx(op.at, arr().length, "at"); arr().splice(k, 1); applied.push(`delete_section ${k + 1}`); break; }
+          case "move_section": { move(arr(), idx(op.at, arr().length, "at"), idx(op.to, arr().length, "to")); applied.push(`move_section`); break; }
+          // lesson blocks (section = 1-based section number)
+          case "set_block": { const s = idx(op.section, arr().length, "section"); const b = blocksOf(s); b[idx(op.at, b.length, "at")] = op.block; applied.push(`set_block ${s + 1}.${op.at}`); break; }
+          case "insert_block": { const s = idx(op.section, arr().length, "section"); const b = blocksOf(s); b.splice(idx(op.at, b.length, "at", true), 0, op.block); applied.push(`insert_block ${s + 1}.${op.at}`); break; }
+          case "append_blocks": { const s = idx(op.section, arr().length, "section"); if (!Array.isArray(op.blocks)) throw new Error("blocks مصفوفة مطلوبة."); blocksOf(s).push(...op.blocks); applied.push(`append_blocks ×${op.blocks.length} → ${s + 1}`); break; }
+          case "delete_block": { const s = idx(op.section, arr().length, "section"); const b = blocksOf(s); b.splice(idx(op.at, b.length, "at"), 1); applied.push(`delete_block ${s + 1}.${op.at}`); break; }
+          case "move_block": { const s = idx(op.section, arr().length, "section"); const b = blocksOf(s); move(b, idx(op.at, b.length, "at"), idx(op.to, b.length, "to")); applied.push(`move_block ${s + 1}`); break; }
+          default: throw new Error(`عملية غير معروفة. المتاح: ${kind === "quiz"
+            ? "set_question, insert_question, append_questions, delete_question, move_question, replace_text"
+            : "set_section, insert_section, append_sections, delete_section, move_section, set_block, insert_block, append_blocks, delete_block, move_block, replace_text"}.`);
+        }
+      } catch (e: any) {
+        throw new Error(`${at}: ${e.message}`);
+      }
+    });
+  } catch (e: any) {
+    return { error: e.message };
+  }
+  return { data: d, applied };
+}
+
+// Public quiz row → draft input (drops platform-only meta: id, path, author_id, createdAt, stats).
+export function quizToDraftInput(quizData: any) {
+  const m = quizData?.meta || {};
+  return {
+    title: m.title || quizData?.title || "",
+    description: m.description || quizData?.description || "",
+    source: /^https?:\/\//i.test(m.source || "") ? m.source : "",
+    questions: (quizData?.questions || []).map((q: any) => ({ ...q })),
+  };
+}
+
+export function lessonToDraftInput(row: any) {
+  return {
+    title: row?.title || "",
+    description: row?.description || "",
+    source: /^https?:\/\//i.test(row?.source || "") ? row.source : "",
+    sections: row?.content?.sections || [],
+  };
+}

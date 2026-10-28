@@ -3,6 +3,9 @@
 // Model Context Protocol (MCP) Server for Basmagi Quiz (منصة إمتحانات بصمجي)
 // Connects Claude.ai and ChatGPT.com to Basmagi Quiz tools, prompts, and catalog.
 //
+// Version 3.1.0: get_import_draft, update_import_draft (atomic patch ops), clone_to_draft,
+//   dry_run on create tools, format 'outline' on get_quiz / get_lesson_content.
+//
 // Version 3.0.0:
 //   - create_*_import_link now stores a short-lived draft (table import_drafts) and returns a
 //     SHORT link (/create-quiz?draft=<code>) instead of a huge base64 URL. Falls back to base64
@@ -26,6 +29,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   AUTHORING_GUIDE, CREATOR_INFO, DRAFT_CODE_RE, DRAFT_TTL_HOURS, SITE,
   draftUrl, makeDraftCode, validateLesson, validateQuiz,
+  applyDraftPatch, lessonToDraftInput, outlineLesson, outlineQuiz, quizToDraftInput,
 } from "./lib.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
@@ -200,7 +204,7 @@ const TOOLS = [
       type: "object",
       properties: {
         quizId: { type: "string", description: "The unique identifier of the quiz (short ID like 'a1b2c3d4' or full UUID)." },
-        format: { type: "string", enum: ["text", "json"], description: "Output format: 'text' (default) for readable Markdown questions & answers, 'json' for the exact quiz JSON schema." },
+        format: { type: "string", enum: ["text", "json", "outline"], description: "'text' (default) readable questions & answers · 'json' exact quiz JSON · 'outline' compact numbered list (type, #options, correct index, first words) + folder path — cheapest way to inspect a quiz." },
       },
       required: ["quizId"],
     },
@@ -213,7 +217,7 @@ const TOOLS = [
       type: "object",
       properties: {
         url_or_id: { type: "string", description: "A Basmagi quiz URL (e.g. https://basmagi-quiz.vercel.app/quiz/...), short ID, or UUID." },
-        format: { type: "string", enum: ["text", "json"], description: "Output format: 'text' (default) or 'json'." },
+        format: { type: "string", enum: ["text", "json", "outline"], description: "'text' (default), 'json', or 'outline' (compact numbered list + folder path)." },
       },
       required: ["url_or_id"],
     },
@@ -238,7 +242,7 @@ const TOOLS = [
       type: "object",
       properties: {
         lessonId: { type: "string", description: "The UUID or slug of the lesson." },
-        format: { type: "string", enum: ["text", "json"], description: "Output format: 'text' (default) for readable rendered markdown, 'json' for raw structured sections/blocks." },
+        format: { type: "string", enum: ["text", "json", "outline"], description: "'text' (default) rendered markdown · 'json' raw sections/blocks · 'outline' numbered sections.blocks list (cheapest way to inspect a lesson)." },
       },
       required: ["lessonId"],
     },
@@ -289,6 +293,7 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
+        dry_run: { type: "boolean", description: "Validate only: return errors/warnings/stats and save NO draft." },
         title: { type: "string", description: "Quiz title" },
         description: { type: "string", description: "Quiz description" },
         source: { type: "string", description: "Direct URL/link to the source material (e.g. Google Drive link to lecture slides/PDF, video URL, or document link). MUST be a URL (https://...), NEVER plain text. Leave it empty if there is no link available." },
@@ -322,6 +327,7 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
+        dry_run: { type: "boolean", description: "Validate only: return errors/warnings/stats and save NO draft." },
         title: { type: "string", description: "Lesson title (1-200 chars)." },
         description: { type: "string", description: "Short summary (max 1200 chars)." },
         source: { type: "string", description: "Direct URL/link to the source lecture, Drive folder, PDF, or recording (e.g. Google Drive link or web URL). MUST be a URL (https://...), NEVER plain text. Leave empty if no link is available." },
@@ -364,6 +370,45 @@ const TOOLS = [
         },
       },
       required: ["title", "sections"],
+    },
+  },
+  {
+    name: "get_import_draft",
+    annotations: { title: "Read back a draft", readOnlyHint: true, openWorldHint: false },
+    description: "Read a draft made by create_*_import_link / clone_to_draft (by the 10-char code or the full link). format 'outline' (default) = numbered, compact; 'json' = full content. Use it to get the numbers you need for update_import_draft, or to recover after losing context.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        code: { type: "string", description: "Draft code or the full ?draft= link." },
+        format: { type: "string", enum: ["outline", "json"] },
+      },
+      required: ["code"],
+    },
+  },
+  {
+    name: "update_import_draft",
+    annotations: { title: "Edit a draft in place", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    description: "Edit an existing draft instead of re-sending it whole. The SAME link keeps working (expiry is renewed); the user just reloads/opens it again. Atomic: the whole patch is validated and, on any error, nothing changes. patch = { meta?: {title?, description?, source?}, ops?: [...] }. 1-based positions. Quiz ops: set_question{at,question} insert_question{at,question} append_questions{questions} delete_question{at} move_question{at,to}. Lesson ops: set_section/insert_section{at,section} append_sections{sections} delete_section{at} move_section{at,to}; set_block/insert_block{section,at,block} append_blocks{section,blocks} delete_block{section,at} move_block{section,at,to}. Both: replace_text{find,replace} (every string, e.g. fix a term everywhere). Questions/blocks use the same shape as the create tools.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        code: { type: "string", description: "Draft code or the full ?draft= link." },
+        patch: { type: "object", description: "{ meta?, ops? } — see tool description." },
+      },
+      required: ["code", "patch"],
+    },
+  },
+  {
+    name: "clone_to_draft",
+    annotations: { title: "Copy an existing quiz/lesson into a draft", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    description: "Server-side copy of a PUBLIC quiz or lesson into a new editable draft (platform ids/paths/authors dropped). Use for translating, fixing, shortening, extending or making variants without re-sending the whole content: clone, then update_import_draft with only the changes. The original is never modified. Returns the short link + outline.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        type: { type: "string", enum: ["quiz", "lesson"] },
+        id: { type: "string", description: "Quiz id / URL, or lesson id / slug." },
+      },
+      required: ["type", "id"],
     },
   },
   {
@@ -996,10 +1041,7 @@ async function handleListFolderTree(args: { courseId: string }) {
   return `# شجرة مجلدات: ${course.name}\nID: ${courseId} | إجمالي المجلدات: ${allFolders.length}\n\n${renderTree(null, 0).join("\n")}`;
 }
 
-async function handleGetQuiz(args: { quizId: string; format?: string }) {
-  const quizId = (args?.quizId || "").trim();
-  if (!quizId) return "الرجاء تحديد معرف الامتحان المطلوب (quizId).";
-
+async function fetchQuizData(quizId: string): Promise<any | null> {
   let quizData: any = null;
 
   // Try fast JSONB filter first (data->meta->>id)
@@ -1024,10 +1066,22 @@ async function handleGetQuiz(args: { quizId: string; format?: string }) {
     if (byPk) quizData = byPk.data;
   }
 
+  return quizData;
+}
+
+async function handleGetQuiz(args: { quizId: string; format?: string }) {
+  const quizId = (args?.quizId || "").trim();
+  if (!quizId) return "الرجاء تحديد معرف الامتحان المطلوب (quizId).";
+
+  const quizData: any = await fetchQuizData(quizId);
+
   if (!quizData) return `لم يتم العثور على امتحان بالمعرف "${quizId}" (أو قد يكون محمياً بكلمة مرور).`;
 
   if (args?.format === "json") {
     return JSON.stringify(quizData, null, 2);
+  }
+  if (args?.format === "outline") {
+    return `${outlineQuiz(quizData)}\n\nالمسار: ${quizData.meta?.path || "—"}\nالرابط: ${SITE}/quiz/${quizData.meta?.id || quizId}`;
   }
 
   const title = quizData.meta?.title || quizData.title || "امتحان";
@@ -1099,6 +1153,10 @@ async function handleGetLessonContent(args: { lessonId: string; format?: string 
   }
 
   if (!data.content) return `# ${data.title}\n\nلا يوجد محتوى متاح لهذا الدرس.\nرابط الدرس: ${lessonUrl}`;
+
+  if (args?.format === "outline") {
+    return outlineLesson({ ...data.content, title: data.title, description: data.description, source: data.source });
+  }
 
   if (args?.format === "json") {
     return JSON.stringify({
@@ -1271,6 +1329,7 @@ async function saveDraft(kind: "quiz" | "lesson", data: unknown): Promise<{ url:
 async function handleCreateQuizImportLink(args: any) {
   const v = validateQuiz(args);
   if (!v.ok) return formatIssues("الامتحان", v);
+  if (args?.dry_run) return [`✅ (تجربة فقط — لم يُحفظ شيء) الامتحان صالح: ${JSON.stringify(v.stats)}`, formatIssues("الامتحان", v)].filter(Boolean).join("\n\n");
   const { url, short } = await saveDraft("quiz", v.data);
   const s = v.stats!;
   const head = `✅ تم التحقق من الامتحان: ${s.questions} سؤال (اختيار فردي ${s.mcq} · متعدد ${s.multiSelect} · مقالي ${s.essay}).`;
@@ -1283,6 +1342,7 @@ async function handleCreateQuizImportLink(args: any) {
 async function handleCreateLessonImportLink(args: any) {
   const v = validateLesson(args);
   if (!v.ok) return formatIssues("الدرس", v);
+  if (args?.dry_run) return [`✅ (تجربة فقط — لم يُحفظ شيء) الدرس صالح: ${JSON.stringify(v.stats)}`, formatIssues("الدرس", v)].filter(Boolean).join("\n\n");
   const { url, short } = await saveDraft("lesson", v.data);
   const s = v.stats!;
   const head = `✅ تم التحقق من الدرس: ${s.sections} قسم، ${s.blocks} عنصر، ${s.questions} سؤال.`;
@@ -1290,6 +1350,89 @@ async function handleCreateLessonImportLink(args: any) {
     ? `🔗 رابط قصير صالح ${DRAFT_TTL_HOURS} ساعة (بلا تسجيل دخول). يفتح محرر الدرس معبّأً؛ لن يُنشر شيء قبل أن يحفظه المستخدم:\n${url}`
     : `🔗 تعذّر إنشاء رابط قصير فاستُخدم رابط الاستيراد الطويل (انسخه كاملاً دون تعديل):\n${url}`;
   return [head, how, formatIssues("الدرس", v)].filter(Boolean).join("\n\n");
+}
+
+
+function extractCode(raw: string): string {
+  const m = String(raw || "").match(/draft=([2-9a-hj-km-np-z]{10})/i) || String(raw || "").trim().match(/^([2-9a-hj-km-np-z]{10})$/i);
+  return m ? m[1].toLowerCase() : "";
+}
+
+async function loadDraft(code: string) {
+  const { data, error } = await supabase.from("import_drafts").select("kind, payload, expires_at").eq("code", code).maybeSingle();
+  if (error || !data || new Date(data.expires_at).getTime() < Date.now()) return null;
+  return data as { kind: "quiz" | "lesson"; payload: any; expires_at: string };
+}
+
+const NO_DRAFT = "❌ المسودة غير موجودة أو انتهت صلاحيتها (72 ساعة). أنشئ مسودة جديدة بـ create_*_import_link أو clone_to_draft.";
+
+async function handleGetImportDraft(args: { code: string; format?: string }) {
+  const code = extractCode(args?.code);
+  if (!code) return "الرجاء تمرير كود المسودة (10 أحرف) أو رابطها الكامل.";
+  const d = await loadDraft(code);
+  if (!d) return NO_DRAFT;
+  const link = draftUrl(d.kind, code);
+  if (args?.format === "json") return JSON.stringify({ kind: d.kind, link, expires_at: d.expires_at, content: d.payload }, null, 2);
+  return `# مسودة ${d.kind === "quiz" ? "امتحان" : "درس"} — ${link}\nتنتهي: ${d.expires_at}\n\n${d.kind === "quiz" ? outlineQuiz(d.payload) : outlineLesson(d.payload)}`;
+}
+
+async function handleUpdateImportDraft(args: { code: string; patch: any }) {
+  const code = extractCode(args?.code);
+  if (!code) return "الرجاء تمرير كود المسودة (10 أحرف) أو رابطها الكامل.";
+  const d = await loadDraft(code);
+  if (!d) return NO_DRAFT;
+
+  const res = applyDraftPatch(d.kind, d.payload, args?.patch);
+  if (res.error) return `❌ لم يتغير شيء — ${res.error}`;
+  const v: any = d.kind === "quiz" ? validateQuiz({ ...res.data.meta, questions: res.data.questions }) : validateLesson(res.data);
+  if (!v.ok) return formatIssues("المسودة بعد التعديل", v);
+
+  const { error } = await supabase.from("import_drafts").update({
+    payload: v.data,
+    expires_at: new Date(Date.now() + DRAFT_TTL_HOURS * 3600_000).toISOString(),
+  }).eq("code", code);
+  if (error) return "❌ تعذّر حفظ التعديل، حاول مجدداً.";
+
+  const link = draftUrl(d.kind, code);
+  const stats = d.kind === "quiz" ? `${v.stats.questions} سؤال` : `${v.stats.sections} قسم، ${v.stats.questions} سؤال`;
+  return [
+    `✅ تم تطبيق ${res.applied!.length} تعديل (${res.applied!.join("، ")}). المسودة الآن: ${stats}.`,
+    `🔗 نفس الرابط (صلاحيته جُدّدت ${DRAFT_TTL_HOURS} ساعة) — على المستخدم إعادة فتحه/تحديث الصفحة ليرى التعديل:\n${link}`,
+    formatIssues("المسودة", v),
+  ].filter(Boolean).join("\n\n");
+}
+
+async function handleCloneToDraft(args: { type: string; id: string }) {
+  const id = String(args?.id || "").trim();
+  if (!id) return "الرجاء تحديد id.";
+  let input: any, kind: "quiz" | "lesson";
+  if (args?.type === "quiz") {
+    kind = "quiz";
+    const m = id.match(/\/(?:quiz|q)\/([^/?#]+)/);
+    const qd = await fetchQuizData(m ? decodeURIComponent(m[1]) : id);
+    if (!qd) return `لم يتم العثور على امتحان عام بالمعرف "${id}" (أو أنه محمي بكلمة مرور).`;
+    input = quizToDraftInput(qd);
+  } else if (args?.type === "lesson") {
+    kind = "lesson";
+    const slug = id.match(/\/lesson\/([^/?#]+)/)?.[1] || id;
+    const { data, error } = await supabase.from("lesson_public")
+      .select("title, description, source, content, password_protected")
+      .or(`id.eq.${slug},slug.eq.${slug}`).maybeSingle();
+    if (error || !data) return `لم يتم العثور على الدرس "${id}".`;
+    if (data.password_protected) return "هذا الدرس محمي بكلمة مرور ولا يمكن نسخه.";
+    input = lessonToDraftInput(data);
+  } else return "type يجب أن يكون quiz أو lesson.";
+
+  const v: any = kind === "quiz" ? validateQuiz(input) : validateLesson(input);
+  if (!v.ok) return `❌ المحتوى الأصلي لا يجتاز التحقق الحالي، لذا لم تُنشأ مسودة:\n${v.errors.map((e: string) => `  - ${e}`).join("\n")}`;
+  const { url, short } = await saveDraft(kind, v.data);
+  return [
+    `✅ نُسخ ${kind === "quiz" ? "الامتحان" : "الدرس"} إلى مسودة جديدة (الأصل لم يتغيّر).`,
+    short ? `🔗 ${url}` : `🔗 (رابط طويل) ${url}`,
+    "عدّل بـ update_import_draft أو راجع المحتوى بـ get_import_draft.",
+    "الملخص:\n" + (kind === "quiz" ? outlineQuiz(v.data) : outlineLesson(v.data)),
+    formatIssues("المسودة", v),
+  ].filter(Boolean).join("\n\n");
 }
 
 function handleGetAuthoringGuide(args: { topic?: string }) {
@@ -1333,7 +1476,7 @@ async function handleRpcRequest(reqBody: any) {
         result: {
           protocolVersion: "2024-11-05",
           capabilities: { tools: {}, prompts: {} },
-          serverInfo: { name: "Basmagi Quiz Connector", version: "3.0.0" },
+          serverInfo: { name: "Basmagi Quiz Connector", version: "3.1.0" },
         },
       };
 
@@ -1370,6 +1513,9 @@ async function handleRpcRequest(reqBody: any) {
           case "create_quiz_import_link":   resultText = await handleCreateQuizImportLink(toolArgs);  break;
           case "create_lesson_import_link": resultText = await handleCreateLessonImportLink(toolArgs); break;
           case "get_creator_info":          resultText = handleGetCreatorInfo(toolArgs);            break;
+          case "get_import_draft":          resultText = await handleGetImportDraft(toolArgs);      break;
+          case "update_import_draft":       resultText = await handleUpdateImportDraft(toolArgs);   break;
+          case "clone_to_draft":            resultText = await handleCloneToDraft(toolArgs);        break;
           case "get_authoring_guide":       resultText = handleGetAuthoringGuide(toolArgs);         break;
           default:
             isError = true;
@@ -1437,7 +1583,7 @@ Deno.serve(async (req: Request) => {
         status: "ok",
         protocol: "mcp-jsonrpc-2.0",
         name: "Basmagi Quiz Model Context Protocol (MCP) Server",
-        version: "3.0.0",
+        version: "3.1.0",
         homepage: "https://basmagi-quiz.vercel.app",
         toolsCount: TOOLS.length,
         toolsAvailable: TOOLS.map((t) => t.name),
