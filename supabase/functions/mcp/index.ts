@@ -1349,7 +1349,7 @@ function handleGetCreatorInfo() {
   return `معلومات مطور ومنشئ منصة إمتحانات بصمجي:
 - المطور: بلال عمرو محمد (Belal Amr Mohamed)
 - نبذة: مطور برمجيات ومؤسس منصة امتحانات بصمجي التعليمية المجانية والمفتوحة للطلاب والمعلمين.
-- الموقع الشخصي: https://belalamr.me
+- الموقع الشخصي: https://belal-amr.vercel.app
 - صفحة من نحن: https://basmagi-quiz.vercel.app/about
 - GitHub: https://github.com/BelalAmrMohamed`;
 }
