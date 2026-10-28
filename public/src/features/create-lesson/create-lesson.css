@@ -2472,3 +2472,159 @@ body.lesson-preview-open {
     font-size: .8rem;
     flex-wrap: wrap;
 }
+
+/* ============================================================================
+   RESPONSIVE — PHONES (mirrors create-quiz.css)
+   Phones use the bottom nav, not the side rail: no side gap to reserve, but
+   room is needed at the bottom for the nav. Fixed min-widths and non-wrapping
+   rows are relaxed so nothing can push the layout wider than the screen
+   (which also made the fixed top bars and bottom nav scroll sideways).
+   ============================================================================ */
+html {
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding-right: 16px;
+        padding-bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px);
+    }
+
+    body.sidebar-expanded {
+        padding-right: 16px;
+    }
+
+    .container {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .container,
+    .lesson-creator,
+    .lesson-creator > *,
+    .card,
+    .sections-container,
+    .lesson-section-card,
+    .lesson-block-card {
+        min-width: 0;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    body.lesson-form-active {
+        padding-top: 0;
+    }
+
+    .container {
+        padding: 0;
+    }
+
+    .card {
+        padding: 16px;
+    }
+
+    .autosave-indicator {
+        margin-right: auto;
+    }
+
+    /* Sections header: title + "new section" button wrap instead of squeezing */
+    .lesson-sections-header {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .lesson-sections-header h2 {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .lesson-sections-header .btn {
+        flex: 1 1 100%;
+        justify-content: center;
+        padding: 10px 16px;
+    }
+
+    .lesson-section-card {
+        padding: 10px;
+    }
+
+    .lesson-section-card-header {
+        gap: 8px;
+    }
+
+    .lesson-section-title-group {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .lesson-section-title-input {
+        min-width: 0;
+    }
+
+    .lesson-section-actions {
+        flex: 1 1 100%;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        min-width: 0;
+    }
+
+    .lesson-section-hidden-toggle {
+        white-space: normal;
+        margin-inline-end: auto;
+    }
+
+    .lesson-add-block-row {
+        gap: 6px;
+    }
+
+    .lesson-add-block-row > * {
+        flex: 1 1 calc(50% - 6px);
+        min-width: 0;
+        justify-content: center;
+        padding: 9px 8px;
+        font-size: 0.88rem;
+        white-space: normal;
+    }
+
+    .lesson-block-card {
+        padding: 10px;
+    }
+
+    .lesson-block-card-header {
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .lesson-md-tab {
+        padding: 7px 12px;
+    }
+
+    .lesson-md-editor,
+    .lesson-md-textarea,
+    .lesson-md-preview,
+    .lesson-media-editor,
+    .lesson-question-prompt {
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .lesson-md-preview,
+    .lesson-md-preview pre,
+    .lesson-md-preview table {
+        overflow-x: auto;
+        max-width: 100%;
+    }
+
+    .lesson-question-option-row {
+        gap: 6px;
+        min-width: 0;
+    }
+
+    .lesson-question-option-row input[type="text"],
+    .lesson-question-option-row textarea {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+}
