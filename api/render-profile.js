@@ -23,6 +23,7 @@
 import fs from "fs";
 import fsp from "fs/promises";
 import path from "path";
+import { createHash } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -122,7 +123,9 @@ export default async function handler(req, res) {
   // open-ended stall.
   const lookupPromise = supabase
     .from("admin_users")
-    .select("display_name, handle, avatar_url, thumbnail_url")
+    .select(
+      "display_name, handle, bio, avatar_url, thumbnail_url, current_level, uploaded_quizzes, total_points, total_badges",
+    )
     .ilike("handle", normalizedHandle)
     .maybeSingle()
     .then((result) => result)
@@ -186,8 +189,44 @@ export default async function handler(req, res) {
   const displayLabel = adminData.display_name || adminData.handle;
 
   const title = displayLabel;
-  const description = `الصفحة الشخصية للمشرف ${displayLabel} على منصة امتحانات بصمجي`;
   const canonicalUrl = `${SITE_ORIGIN}/@${encodeURIComponent(cleanHandle)}`;
+
+  // Share-card facts. Same fields the OG image draws (api/og.js ?profile=).
+  const level = Math.max(1, Math.floor(Number(adminData.current_level) || 1));
+  const uploaded = Math.max(0, Math.floor(Number(adminData.uploaded_quizzes) || 0));
+  const bio = String(adminData.bio || "").replace(/\s+/g, " ").trim();
+  const description = buildProfileDescription({
+    displayLabel,
+    handle: adminData.handle || cleanHandle,
+    level,
+    uploaded,
+    bio,
+  });
+
+  // /api/og?profile=… is an Edge function that already exists (merged into
+  // api/og.js — no extra function slot). `v` fingerprints everything the card
+  // shows, so the URL is immutable-cacheable yet changes the moment the admin
+  // edits their profile, which is what makes WhatsApp/Telegram/X re-scrape it.
+  const ogVersion = createHash("sha1")
+    .update(
+      [
+        adminData.display_name,
+        adminData.handle,
+        bio,
+        level,
+        uploaded,
+        adminData.total_points,
+        adminData.total_badges,
+        adminData.avatar_url,
+        adminData.thumbnail_url,
+      ].join("\u0001"),
+    )
+    .digest("hex")
+    .slice(0, 10);
+  const ogImageUrl = `${SITE_ORIGIN}/api/og?profile=${encodeURIComponent(
+    String(adminData.handle || cleanHandle).toLowerCase(),
+  )}&v=${ogVersion}`;
+  const ogImageAlt = `${displayLabel} (@${adminData.handle || cleanHandle}) — المستوى ${level} · ${uploaded} امتحان مرفوع على منصة امتحانات بصمجي`;
 
   // Inject meta tags for client-side JS to pick up. avatar_url is a (possibly
   // large) data-URL — escapeHtml handles the characters that matter inside a
@@ -221,11 +260,15 @@ export default async function handler(req, res) {
     name: title,
     url: canonicalUrl,
     inLanguage: "ar",
+    description,
+    primaryImageOfPage: { "@type": "ImageObject", url: ogImageUrl, width: 1200, height: 630 },
     about: {
       "@type": "Person",
       name: displayLabel,
+      alternateName: `@${adminData.handle || cleanHandle}`,
       url: canonicalUrl,
-      image: thumbnailValue || undefined,
+      image: ogImageUrl,
+      description: bio || undefined,
     },
   };
 
@@ -252,7 +295,13 @@ export default async function handler(req, res) {
 
   // The remaining rewrites each target a distinct, unique tag, so they're
   // collapsed into one walk over the document rather than one walk each.
-  html = applyHeadRewrites(html, { title, description, canonicalUrl });
+  html = applyHeadRewrites(html, {
+    title,
+    description,
+    canonicalUrl,
+    ogImageUrl,
+    ogImageAlt,
+  });
 
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader(
@@ -265,7 +314,10 @@ export default async function handler(req, res) {
 // Collapses the title/canonical/OG/Twitter/description rewrites into a single
 // pass. Each match is dispatched by tag identity, so the document is scanned
 // once instead of once per field.
-function applyHeadRewrites(html, { title, description, canonicalUrl }) {
+function applyHeadRewrites(
+  html,
+  { title, description, canonicalUrl, ogImageUrl, ogImageAlt },
+) {
   const metaTargets = new Map([
     ["og:title", title],
     ["og:url", canonicalUrl],
@@ -273,6 +325,12 @@ function applyHeadRewrites(html, { title, description, canonicalUrl }) {
     ["twitter:title", title],
     ["twitter:description", description],
     ["description", description],
+    ["og:type", "profile"],
+    ["og:site_name", "منصة امتحانات بصمجي"],
+    ["og:image", ogImageUrl],
+    ["og:image:alt", ogImageAlt],
+    ["twitter:image", ogImageUrl],
+    ["twitter:image:alt", ogImageAlt],
   ]);
 
   return html.replace(
@@ -296,6 +354,17 @@ function applyHeadRewrites(html, { title, description, canonicalUrl }) {
       return replaceAttr(tag, "content", metaTargets.get(key));
     },
   );
+}
+
+// Search/share snippet: who, role, level and upload count, then the bio if the
+// admin wrote one. Kept under ~200 chars so Facebook/WhatsApp don't cut it.
+function buildProfileDescription({ displayLabel, handle, level, uploaded, bio }) {
+  const facts = `${displayLabel} (@${handle}) — مشرف على منصة امتحانات بصمجي · المستوى ${level} · ${uploaded} امتحان مرفوع`;
+  if (!bio) return facts;
+  const room = 200 - facts.length - 3;
+  if (room < 20) return facts;
+  const clipped = bio.length > room ? `${bio.slice(0, room - 1).trimEnd()}…` : bio;
+  return `${facts} — ${clipped}`;
 }
 
 function matchAttr(tag, attr) {
