@@ -3,6 +3,16 @@
 // Model Context Protocol (MCP) Server for Basmagi Quiz (منصة إمتحانات بصمجي)
 // Connects Claude.ai and ChatGPT.com to Basmagi Quiz tools, prompts, and catalog.
 //
+// Version 3.0.0:
+//   - create_*_import_link now stores a short-lived draft (table import_drafts) and returns a
+//     SHORT link (/create-quiz?draft=<code>) instead of a huge base64 URL. Falls back to base64
+//     only if the database write fails. No sign-in involved.
+//   - Strict validation with ERRORS (nothing saved) and WARNINGS (saved), never silent guessing.
+//   - Fixed: essay questions no longer get fake "نعم/لا" options; search_catalog searches ALL quizzes.
+//   - New: get_authoring_guide; get_creator_info(section) rebuilt from the /about page;
+//     tool annotations (readOnly / destructive hints).
+//   - GET /draft/<code> → JSON, used by the create-quiz / create-lesson pages.
+//
 // Version 2.2.0:
 //   - Full content retrieval for courses & folders (with recursive traversal)
 //   - Format toggle (text summary vs raw JSON) on quizzes, lessons, and course/folder content
@@ -13,6 +23,10 @@
 // =============================================================================
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  AUTHORING_GUIDE, CREATOR_INFO, DRAFT_CODE_RE, DRAFT_TTL_HOURS, SITE,
+  draftUrl, makeDraftCode, validateLesson, validateQuiz,
+} from "./lib.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_KEY =
@@ -95,6 +109,7 @@ const PROMPTS_REGISTRY: Record<string, { description: string; text: string }> = 
 const TOOLS = [
   {
     name: "search_catalog",
+    annotations: { readOnlyHint: true, openWorldHint: false },
     description: "Search public educational content on Basmagi Platform: courses, folders, quizzes, and lessons by keyword with optional scope filter.",
     inputSchema: {
       type: "object",
@@ -107,6 +122,7 @@ const TOOLS = [
   },
   {
     name: "list_courses",
+    annotations: { readOnlyHint: true, openWorldHint: false },
     description: "List courses on Basmagi Platform with optional filters (education track, college, year, term). Use this to discover available subjects and get their IDs.",
     inputSchema: {
       type: "object",
@@ -122,6 +138,7 @@ const TOOLS = [
   },
   {
     name: "list_colleges",
+    annotations: { readOnlyHint: true, openWorldHint: false },
     description: "List all active colleges and institutions registered on Basmagi Platform, with metadata on years and terms.",
     inputSchema: {
       type: "object",
@@ -133,6 +150,7 @@ const TOOLS = [
   },
   {
     name: "get_course_contents",
+    annotations: { readOnlyHint: true, openWorldHint: false },
     description: "Retrieve all content inside a specific course. Supports 'recursive: true' to gather ALL quizzes and lessons across all nested subfolders in one single call, or direct items when false.",
     inputSchema: {
       type: "object",
@@ -148,6 +166,7 @@ const TOOLS = [
   },
   {
     name: "get_folder_contents",
+    annotations: { readOnlyHint: true, openWorldHint: false },
     description: "Retrieve all content inside a specific folder: sub-folders, quizzes, and lessons. Supports 'recursive: true' to gather everything inside all descendant subfolders.",
     inputSchema: {
       type: "object",
@@ -163,6 +182,7 @@ const TOOLS = [
   },
   {
     name: "list_folder_tree",
+    annotations: { readOnlyHint: true, openWorldHint: false },
     description: "Get the complete hierarchical folder tree of a course in a single visual ASCII call, with counts of quizzes and lessons in each folder.",
     inputSchema: {
       type: "object",
@@ -174,6 +194,7 @@ const TOOLS = [
   },
   {
     name: "get_quiz",
+    annotations: { readOnlyHint: true, openWorldHint: false },
     description: "Fetch a public quiz by its ID (8-character short ID or UUID). Returns either formatted readable questions with answers and explanations, or raw JSON.",
     inputSchema: {
       type: "object",
@@ -186,6 +207,7 @@ const TOOLS = [
   },
   {
     name: "get_quiz_by_url",
+    annotations: { readOnlyHint: true, openWorldHint: false },
     description: "Resolve and fetch a quiz directly from any Basmagi URL, short ID, or UUID.",
     inputSchema: {
       type: "object",
@@ -198,6 +220,7 @@ const TOOLS = [
   },
   {
     name: "get_lesson",
+    annotations: { readOnlyHint: true, openWorldHint: false },
     description: "Fetch metadata (title, description, source, section count, protection status) of a public lesson by ID or slug.",
     inputSchema: {
       type: "object",
@@ -209,6 +232,7 @@ const TOOLS = [
   },
   {
     name: "get_lesson_content",
+    annotations: { readOnlyHint: true, openWorldHint: false },
     description: "Fetch the complete content of a public lesson: sections, full markdown bodies, embedded questions (MCQ/essay), and media references.",
     inputSchema: {
       type: "object",
@@ -221,6 +245,7 @@ const TOOLS = [
   },
   {
     name: "list_recent_content",
+    annotations: { readOnlyHint: true, openWorldHint: false },
     description: "Retrieve recently published or updated public quizzes and lessons on Basmagi Platform.",
     inputSchema: {
       type: "object",
@@ -233,6 +258,7 @@ const TOOLS = [
   },
   {
     name: "get_platform_stats",
+    annotations: { readOnlyHint: true, openWorldHint: false },
     description: "Retrieve high-level platform statistics: total count of public quizzes, lessons, courses, folders, and colleges.",
     inputSchema: {
       type: "object",
@@ -242,6 +268,7 @@ const TOOLS = [
   },
   {
     name: "get_prompts",
+    annotations: { readOnlyHint: true, openWorldHint: false },
     description: "Retrieve ready-to-use prompt templates for generating quizzes and lessons aligned with Basmagi specifications.",
     inputSchema: {
       type: "object",
@@ -257,7 +284,8 @@ const TOOLS = [
   },
   {
     name: "create_quiz_import_link",
-    description: "Validates a quiz structure and generates a 1-click import URL that opens directly in Basmagi Quiz Creator pre-loaded with the data.",
+    annotations: { title: "Create quiz (short import link)", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    description: "Validate a quiz and return ONE SHORT link (…/create-quiz?draft=CODE, valid 72h, no sign-in) that opens the Quiz Creator pre-filled. Nothing is published until the user saves in the editor. Returns ERRORS (nothing saved — fix and retry) or a link plus WARNINGS. Call get_authoring_guide(topic='quiz') first for the schema. Essay questions: give `answer` and NO options.",
     inputSchema: {
       type: "object",
       properties: {
@@ -289,7 +317,8 @@ const TOOLS = [
   },
   {
     name: "create_lesson_import_link",
-    description: "Validates a lesson structure and generates a 1-click import URL for Basmagi Lesson Creator pre-loaded with the data.",
+    annotations: { title: "Create lesson (short import link)", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    description: "Validate a lesson and return ONE SHORT link (…/create-lesson?draft=CODE, valid 72h, no sign-in) that opens the Lesson Creator pre-filled. Nothing is published until the user saves. Returns ERRORS (nothing saved — fix and retry) or a link plus WARNINGS. Call get_authoring_guide(topic='lesson') first for block types and structure tips.",
     inputSchema: {
       type: "object",
       properties: {
@@ -338,9 +367,26 @@ const TOOLS = [
     },
   },
   {
+    name: "get_authoring_guide",
+    annotations: { title: "Authoring guide for Claude", readOnlyHint: true, openWorldHint: false },
+    description: "Read-me for creating quizzes and lessons: workflow, exact schemas, limits, quality rules and supported Markdown. Call once before create_quiz_import_link / create_lesson_import_link.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        topic: { type: "string", enum: ["all", "workflow", "quiz", "lesson", "markdown"], description: "Defaults to 'all'." },
+      },
+    },
+  },
+  {
     name: "get_creator_info",
-    description: "Read the public profile and contact links of the platform creator, Belal Amr Mohamed.",
-    inputSchema: { type: "object", properties: {} },
+    annotations: { title: "About the creator & platform", readOnlyHint: true, openWorldHint: false },
+    description: "Who built Basmagi and how to reach them: profile, all links (site, GitHub, YouTube, Upwork, Mostaql), contact (WhatsApp/Telegram/email), platform story & principles, tech stack, Telegram bot, useful pages. Use `section` to fetch only one part.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        section: { type: "string", enum: ["all", "profile", "links", "contact", "platform", "pages"], description: "Defaults to 'all'." },
+      },
+    },
   },
 ];
 
@@ -355,21 +401,17 @@ async function handleSearchCatalog(args: { query: string; scope?: string }) {
   const sections: string[] = [];
 
   if (scope === "all" || scope === "quizzes") {
+    const safe = query.replace(/[,()%*]/g, " ").trim();
+    const pat = `%${safe}%`;
     const { data: quizzes } = await supabase
       .from("quizzes")
       .select("id, data")
       .is("password", null)
+      .or(`data->meta->>title.ilike.${pat},data->meta->>description.ilike.${pat},data->>title.ilike.${pat}`)
       .limit(30);
 
     if (quizzes) {
-      const qLower = query.toLowerCase();
-      const matched = quizzes
-        .map((row: any) => ({ pk: row.id, ...row.data }))
-        .filter((d: any) => {
-          const title = (d?.meta?.title || d?.title || "").toLowerCase();
-          const desc = (d?.meta?.description || d?.description || "").toLowerCase();
-          return title.includes(qLower) || desc.includes(qLower);
-        });
+      const matched = quizzes.map((row: any) => ({ pk: row.id, ...row.data }));
 
       if (matched.length > 0) {
         const lines = matched.slice(0, 10).map((q: any) => {
@@ -1192,166 +1234,86 @@ function handleGetPrompts(args: { name: string }) {
   return `=== [${target}] ===\nالوصف: ${prompt.description}\n\n${prompt.text}`;
 }
 
-function handleCreateQuizImportLink(args: any) {
-  if (!args || !args.title || !Array.isArray(args.questions) || !args.questions.length) {
-    return "بيانات الامتحان غير مكتملة. يجب توفير title ومصفوفة questions غير فارغة.";
-  }
-
-  const normalizedQuiz = {
-    meta: {
-      title: String(args.title).trim(),
-      description: String(args.description || "").trim(),
-      source: String(args.source || "").trim(),
-    },
-    questions: args.questions.map((q: any) => {
-      let correct = q.correct;
-      if (typeof correct === "number") correct = [correct];
-      if (!Array.isArray(correct) && !q.answer) correct = [0];
-      return {
-        q: String(q.q || "").trim(),
-        options: (q.options || ["نعم", "لا"]).map((o: any) => String(o || "").trim()),
-        correct,
-        multiSelect: Boolean(q.multiSelect || (Array.isArray(correct) && correct.length > 1)),
-        explanation: String(q.explanation || "").trim(),
-        ...(q.answer ? { answer: String(q.answer).trim() } : {}),
-      };
-    }),
-  };
-
-  const jsonString = JSON.stringify(normalizedQuiz);
-  const bytes = new TextEncoder().encode(jsonString);
-  const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join("");
-  const base64Data = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_");
-  const importUrl = `https://basmagi-quiz.vercel.app/create-quiz#data=base64,${base64Data}`;
-
-  return `✅ تم التحقق من هيكل الامتحان بنجاح (${normalizedQuiz.questions.length} سؤال).\n\n🔗 رابط الاستيراد المباشر بضغطة زر واحدة:\n${importUrl}`;
+function formatIssues(what: string, v: { errors: string[]; warnings: string[] }) {
+  const lines: string[] = [];
+  if (v.errors.length) lines.push(`❌ لم يُحفظ شيء — ${what} يحتوي على ${v.errors.length} خطأ. صحّحها وأعد الاستدعاء:\n` + v.errors.map((e) => `  - ${e}`).join("\n"));
+  if (v.warnings.length) lines.push(`⚠️ تنبيهات:\n` + v.warnings.map((w) => `  - ${w}`).join("\n"));
+  return lines.join("\n\n");
 }
 
-function handleCreateLessonImportLink(args: any) {
-  if (!args || typeof args !== "object") return "بيانات الدرس غير صالحة.";
+function base64Link(kind: "quiz" | "lesson", data: unknown) {
+  const bytes = new TextEncoder().encode(JSON.stringify(data));
+  const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join("");
+  const b64 = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_");
+  return `${SITE}/create-${kind}#data=base64,${b64}`;
+}
 
-  const title = String(args.title || "").trim();
-  if (!title || title.length > 200) return "عنوان الدرس (title) مطلوب ويجب ألا يتجاوز 200 حرف.";
-
-  const description = String(args.description || "").trim();
-  if (description.length > 1200) return "وصف الدرس يجب ألا يتجاوز 1200 حرف.";
-
-  const source = String(args.source || "").trim();
-  if (source.length > 500) return "مصدر الدرس يجب ألا يتجاوز 500 حرف.";
-
-  const rawSections = Array.isArray(args.sections)
-    ? args.sections
-    : Array.isArray(args.content?.sections)
-    ? args.content.sections
-    : null;
-
-  if (!rawSections || rawSections.length === 0 || rawSections.length > 60) {
-    return "يجب أن يحتوي الدرس على أقسام (sections) بين 1 و 60 قسماً.";
-  }
-
-  let totalQuestions = 0;
-  let totalBlocks = 0;
-  const normalizedSections = [];
-
-  for (let sIdx = 0; sIdx < rawSections.length; sIdx++) {
-    const s = rawSections[sIdx];
-    if (!s || typeof s !== "object") return `القسم رقم ${sIdx + 1} غير صالح.`;
-
-    const secTitle = String(s.title || "").trim();
-    if (!secTitle || secTitle.length > 200) return `عنوان القسم رقم ${sIdx + 1} مطلوب ولا يتجاوز 200 حرف.`;
-
-    const rawBlocks = Array.isArray(s.blocks)
-      ? s.blocks
-      : typeof s.content === "string"
-      ? [{ type: "markdown", body: s.content }]
-      : [];
-
-    if (rawBlocks.length > 100) return `القسم رقم ${sIdx + 1} يحتوي على عدد عناصر كبير جداً (الحد 100).`;
-
-    const cleanBlocks = [];
-    for (let bIdx = 0; bIdx < rawBlocks.length; bIdx++) {
-      const b = rawBlocks[bIdx];
-      if (!b || typeof b !== "object") continue;
-
-      const type = b.type || (b.prompt ? "question" : "markdown");
-      if (type === "markdown") {
-        const body = String(b.body ?? b.content ?? "");
-        if (body.length > 20000) return `نص العنصر في القسم رقم ${sIdx + 1} يتجاوز الحد الأقصى (20,000 حرف).`;
-        cleanBlocks.push({ type: "markdown", body });
-      } else if (type === "media") {
-        const url = String(b.url || "").trim();
-        if (!url) return `رابط الوسائط مفقود في القسم رقم ${sIdx + 1}.`;
-        const kind = ["image", "audio", "video"].includes(b.kind) ? b.kind : "image";
-        cleanBlocks.push({ type: "media", url, kind, ...(b.alt ? { alt: String(b.alt).trim().slice(0, 200) } : {}) });
-      } else if (type === "quizRef") {
-        const quizId = String(b.quizId || "").trim();
-        if (!quizId) return `معرف الامتحان مفقود في مرجع الامتحان بالقسم رقم ${sIdx + 1}.`;
-        cleanBlocks.push({ type: "quizRef", quizId, ...(b.title ? { title: String(b.title).trim().slice(0, 200) } : {}) });
-      } else if (type === "lesson-reference" || type === "lessonRef") {
-        const lessonId = String(b.lessonId || b.lessonRefId || "").trim();
-        if (!lessonId) return `معرف الدرس مفقود في مرجع الدرس بالقسم رقم ${sIdx + 1}.`;
-        cleanBlocks.push({
-          type: "lesson-reference",
-          lessonId,
-          ...(b.title ? { title: String(b.title).trim().slice(0, 200) } : {}),
-          ...(b.slug ? { slug: String(b.slug).trim().slice(0, 200) } : {}),
-        });
-      } else if (type === "question") {
-        const prompt = String(b.prompt || b.q || "").trim();
-        if (!prompt) return `نص السؤال مطلوب في القسم رقم ${sIdx + 1}.`;
-        const explanation = String(b.explanation || "").trim().slice(0, 10000);
-        const isEssay = b.questionKind === "essay" || (!b.options && (b.modelAnswer || b.answer));
-
-        if (isEssay) {
-          const modelAnswer = String(b.modelAnswer || b.answer || "").trim();
-          if (!modelAnswer) return `الإجابة النموذجية مطلوبة للسؤال المقالي في القسم رقم ${sIdx + 1}.`;
-          cleanBlocks.push({ type: "question", questionKind: "essay", prompt, modelAnswer, ...(explanation ? { explanation } : {}) });
-        } else {
-          const rawOpts = Array.isArray(b.options) && b.options.length ? b.options : ["نعم", "لا"];
-          if (rawOpts.length < 2 || rawOpts.length > 8) return `السؤال الاختياري في القسم رقم ${sIdx + 1} يحتاج بين 2 و 8 خيارات.`;
-          const options = rawOpts.map((opt: any) => String(opt || "").trim());
-          const multiSelect = Boolean(b.multiSelect);
-          let correctIndexes: number[] = [];
-          if (Array.isArray(b.correctIndexes)) correctIndexes = b.correctIndexes.map(Number);
-          else if (Array.isArray(b.correct)) correctIndexes = b.correct.map(Number);
-          else if (Number.isInteger(b.correctIndex)) correctIndexes = [b.correctIndex];
-          else if (Number.isInteger(b.correct)) correctIndexes = [b.correct];
-          correctIndexes = correctIndexes.filter((idx) => Number.isInteger(idx) && idx >= 0 && idx < options.length);
-          if (!correctIndexes.length) correctIndexes = [0];
-          correctIndexes = [...new Set(correctIndexes)];
-          cleanBlocks.push({
-            type: "question", questionKind: "mcq", prompt, options,
-            ...(multiSelect ? { multiSelect: true, correctIndexes } : { correctIndex: correctIndexes[0] }),
-            ...(explanation ? { explanation } : {}),
-          });
-        }
-        totalQuestions++;
-      }
-      totalBlocks++;
+// Stores the validated payload and returns the short link (or a base64 fallback).
+async function saveDraft(kind: "quiz" | "lesson", data: unknown): Promise<{ url: string; short: boolean }> {
+  try {
+    const nowIso = new Date().toISOString();
+    await supabase.from("import_drafts").delete().lt("expires_at", nowIso); // opportunistic cleanup
+    const { count } = await supabase.from("import_drafts").select("*", { count: "exact", head: true });
+    if ((count ?? 0) > 5000) throw new Error("draft store is full");
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const code = makeDraftCode();
+      const { error } = await supabase.from("import_drafts").insert({
+        code, kind, payload: data,
+        expires_at: new Date(Date.now() + DRAFT_TTL_HOURS * 3600_000).toISOString(),
+      });
+      if (!error) return { url: draftUrl(kind, code), short: true };
+      if (error.code !== "23505") throw error; // 23505 = code collision → retry
     }
-
-    normalizedSections.push({ title: secTitle, defaultHidden: Boolean(s.defaultHidden), blocks: cleanBlocks });
-  }
-
-  const normalizedLesson = { title, description, source, sections: normalizedSections };
-  const jsonString = JSON.stringify(normalizedLesson);
-  const bytes = new TextEncoder().encode(jsonString);
-  if (bytes.length > 200000) return "حجم الدرس كبير جداً (أكثر من 200 كيلوبايت).";
-
-  const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join("");
-  const base64Data = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_");
-  const importUrl = `https://basmagi-quiz.vercel.app/create-lesson#data=base64,${base64Data}`;
-
-  return `✅ تم التحقق من هيكل الدرس بنجاح (${normalizedLesson.sections.length} قسم، ${totalBlocks} عنصر، ${totalQuestions} سؤال).\n\n🔗 رابط الاستيراد المباشر بضغطة زر واحدة:\n${importUrl}`;
+  } catch (_) { /* fall through */ }
+  return { url: base64Link(kind, data), short: false };
 }
 
-function handleGetCreatorInfo() {
-  return `معلومات مطور ومنشئ منصة إمتحانات بصمجي:
-- المطور: بلال عمرو محمد (Belal Amr Mohamed)
-- نبذة: مطور برمجيات ومؤسس منصة امتحانات بصمجي التعليمية المجانية والمفتوحة للطلاب والمعلمين.
-- الموقع الشخصي: https://belal-amr.vercel.app
-- صفحة من نحن: https://basmagi-quiz.vercel.app/about
-- GitHub: https://github.com/BelalAmrMohamed`;
+async function handleCreateQuizImportLink(args: any) {
+  const v = validateQuiz(args);
+  if (!v.ok) return formatIssues("الامتحان", v);
+  const { url, short } = await saveDraft("quiz", v.data);
+  const s = v.stats!;
+  const head = `✅ تم التحقق من الامتحان: ${s.questions} سؤال (اختيار فردي ${s.mcq} · متعدد ${s.multiSelect} · مقالي ${s.essay}).`;
+  const how = short
+    ? `🔗 رابط قصير صالح ${DRAFT_TTL_HOURS} ساعة (بلا تسجيل دخول). يفتح محرر الامتحان معبّأً؛ لن يُنشر شيء قبل أن يحفظه المستخدم:\n${url}`
+    : `🔗 تعذّر إنشاء رابط قصير فاستُخدم رابط الاستيراد الطويل (انسخه كاملاً دون تعديل):\n${url}`;
+  return [head, how, formatIssues("الامتحان", v)].filter(Boolean).join("\n\n");
+}
+
+async function handleCreateLessonImportLink(args: any) {
+  const v = validateLesson(args);
+  if (!v.ok) return formatIssues("الدرس", v);
+  const { url, short } = await saveDraft("lesson", v.data);
+  const s = v.stats!;
+  const head = `✅ تم التحقق من الدرس: ${s.sections} قسم، ${s.blocks} عنصر، ${s.questions} سؤال.`;
+  const how = short
+    ? `🔗 رابط قصير صالح ${DRAFT_TTL_HOURS} ساعة (بلا تسجيل دخول). يفتح محرر الدرس معبّأً؛ لن يُنشر شيء قبل أن يحفظه المستخدم:\n${url}`
+    : `🔗 تعذّر إنشاء رابط قصير فاستُخدم رابط الاستيراد الطويل (انسخه كاملاً دون تعديل):\n${url}`;
+  return [head, how, formatIssues("الدرس", v)].filter(Boolean).join("\n\n");
+}
+
+function handleGetAuthoringGuide(args: { topic?: string }) {
+  const topic = (args?.topic || "all").trim();
+  if (topic === "all") return Object.values(AUTHORING_GUIDE).join("\n\n---\n\n");
+  return AUTHORING_GUIDE[topic] || `topic غير معروف. المتاح: all, ${Object.keys(AUTHORING_GUIDE).join(", ")}`;
+}
+
+function handleGetCreatorInfo(args: { section?: string }) {
+  const section = (args?.section || "all").trim();
+  if (section === "all") return `# منصة إمتحانات بصمجي — المطوّر والمنصة\n\n` + Object.values(CREATOR_INFO).join("\n\n");
+  return CREATOR_INFO[section] || `section غير معروف. المتاح: all, ${Object.keys(CREATOR_INFO).join(", ")}`;
+}
+
+// GET /draft/<code> → the stored payload (used by the creator pages).
+async function handleDraftRequest(code: string, kind: string | null) {
+  const json = (obj: unknown, status: number) =>
+    new Response(JSON.stringify(obj), { status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" } });
+  if (!DRAFT_CODE_RE.test(code)) return json({ error: "invalid_code" }, 400);
+  const { data, error } = await supabase.from("import_drafts").select("kind, payload, expires_at").eq("code", code).maybeSingle();
+  if (error) return json({ error: "lookup_failed" }, 500);
+  if (!data || new Date(data.expires_at).getTime() < Date.now()) return json({ error: "not_found_or_expired" }, 404);
+  if (kind && data.kind !== kind) return json({ error: "wrong_kind", kind: data.kind }, 409);
+  return json({ kind: data.kind, payload: data.payload, expires_at: data.expires_at }, 200);
 }
 
 // ── MCP JSON-RPC Handler ────────────────────────────────────────────────────
@@ -1371,7 +1333,7 @@ async function handleRpcRequest(reqBody: any) {
         result: {
           protocolVersion: "2024-11-05",
           capabilities: { tools: {}, prompts: {} },
-          serverInfo: { name: "Basmagi Quiz Connector", version: "2.2.0" },
+          serverInfo: { name: "Basmagi Quiz Connector", version: "3.0.0" },
         },
       };
 
@@ -1405,9 +1367,10 @@ async function handleRpcRequest(reqBody: any) {
           case "list_recent_content":       resultText = await handleListRecentContent(toolArgs);   break;
           case "get_platform_stats":        resultText = await handleGetPlatformStats();            break;
           case "get_prompts":               resultText = handleGetPrompts(toolArgs);                break;
-          case "create_quiz_import_link":   resultText = handleCreateQuizImportLink(toolArgs);      break;
-          case "create_lesson_import_link": resultText = handleCreateLessonImportLink(toolArgs);    break;
-          case "get_creator_info":          resultText = handleGetCreatorInfo();                    break;
+          case "create_quiz_import_link":   resultText = await handleCreateQuizImportLink(toolArgs);  break;
+          case "create_lesson_import_link": resultText = await handleCreateLessonImportLink(toolArgs); break;
+          case "get_creator_info":          resultText = handleGetCreatorInfo(toolArgs);            break;
+          case "get_authoring_guide":       resultText = handleGetAuthoringGuide(toolArgs);         break;
           default:
             isError = true;
             resultText = `Unknown tool: ${toolName}`;
@@ -1466,12 +1429,15 @@ Deno.serve(async (req: Request) => {
   }
 
   if (req.method === "GET") {
+    const url = new URL(req.url);
+    const m = url.pathname.match(/\/draft\/([^/]+)\/?$/);
+    if (m) return await handleDraftRequest(m[1], url.searchParams.get("kind"));
     return new Response(
       JSON.stringify({
         status: "ok",
         protocol: "mcp-jsonrpc-2.0",
         name: "Basmagi Quiz Model Context Protocol (MCP) Server",
-        version: "2.2.0",
+        version: "3.0.0",
         homepage: "https://basmagi-quiz.vercel.app",
         toolsCount: TOOLS.length,
         toolsAvailable: TOOLS.map((t) => t.name),

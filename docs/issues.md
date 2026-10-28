@@ -21,9 +21,6 @@ Example 2: The markdown engine was manually detecting the direction of sentences
 
 Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is common to all pages. Its JS and CSS are the same and are imported in all pages, but the HTML is duplicated, which means it's extremely hard to maintain and update. And it became to messy. And it's not even the same, the docuement pages don't have the HTML directly in them, it's inserted from a JS file. 
 
-### UI: Truncated names ignore the text direction
-Names (profile page, but also cards, leaderboards, creator cards, breadcrumbs, etc.) get cut with the ellipsis on the wrong side when the name's direction differs from the page's (e.g. an English/LTR name inside the RTL page shows `... Taha Mohamed Tawfiek`, so the beginning of the name is lost instead of the end). Names should be truncated according to their own direction (RTL or LTR), so the visible part is the start of the name. The profile page name is the most critical case; the same problem exists in many other places on the platform and needs a platform-wide review (probably `dir="auto"` / `unicode-bidi: plaintext` on the name elements) before turning it into a plan.
-
 ## New Features
 
 ### Result Pages
@@ -38,18 +35,17 @@ Names (profile page, but also cards, leaderboards, creator cards, breadcrumbs, e
   * ميمز تشجيع إيجابية
 * Some vidoes will be displayed based on the percentage of the result.
 
-### Passwords are exposed
-The home page already downloads every quiz’s password to the browser, so passwords are readable by anyone. The info modal only shows whether a quiz has one, but that existing exposure is worth a separate look.
+### Quiz Passwords are exposed
+The home page downloads every quiz’s password to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be fixed.
 
 ### Profile Page
 The `نشاط المطور` section should include the quizzes and the lessons. It currently includes the quizzes only. Update it, and update the DB if needed.
 
-
 ### `public\about.html` Page
 * Suggestion: Add an open-source Angle (Since the repo is currently open source).
 * Suggestion: Add a short testimonial or review.
-* Add the number of views of the whole platform (try to integrate vercel insights if possible) to the `المنصة بالأرقام` section.
-* Extend the `كيف بُنيت المنصة؟` section to include `SEO (Search Engine Optimization)` and `GEO (Generative Engine Optimization)`
+* Suggestion: Add the number of views of the whole platform (try to integrate vercel insights if possible) to the `المنصة بالأرقام` section.
+* Extend the `كيف بُنيت المنصة؟` section to include `SEO (Search Engine Optimization)`, `GEO (Generative Engine Optimization)`, and MCP Server
 
 ### Create Quiz Page
 `create-quiz.js` is 5000+ lines in one file — It's the right time to split it into modules.
@@ -57,11 +53,11 @@ The `نشاط المطور` section should include the quizzes and the lessons. 
 ### Connect Canva
 Think of a new way to download quizzes and lessons, maybe through canva.
 
-### Download as Python
+### Download as Python Manim
 Think about this suggestion, a new way to download quizzes.
 
 ### Translation and content expansion (Suggestion)
-* Add English translation support.
+* Native English translation support with native LTR pages.
 
 ### Offline Page
 Improve:

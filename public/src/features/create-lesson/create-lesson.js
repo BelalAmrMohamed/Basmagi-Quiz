@@ -55,6 +55,7 @@ import { CREATE_LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-a
 import { CREATE_LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { downloadLesson } from "../home/lesson-download.js";
 import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
+import { fetchImportDraft } from "../../shared/import-draft.js";
 
 observeRichInputHighlighters({ selector: ".md-source" });
 
@@ -523,7 +524,17 @@ export function decodeBase64Utf8(str) {
  * for pre-generated lesson JSON (e.g. from Claude or ChatGPT connector 1-click links).
  * If valid, loads it directly into the editor and bypasses the entry screen.
  */
-function handlePreloadedLessonFromUrl() {
+// Short MCP link (?draft=<code>) → JSON string, or null (also null + toast on failure).
+async function loadDraftJsonSafely() {
+    try {
+        return await fetchImportDraft("lesson");
+    } catch (err) {
+        showNotification("تعذّر فتح الرابط", err.message, "error");
+        return null;
+    }
+}
+
+function handlePreloadedLessonFromUrl(draftJson = null) {
     let rawData = null;
 
     // 1. Check URL hash first (preferred — never sent to server, no URL length limits on server)
@@ -559,11 +570,13 @@ function handlePreloadedLessonFromUrl() {
         }
     }
 
-    if (!rawData) return false;
+    if (!rawData && !draftJson) return false;
 
     try {
         let jsonString = rawData;
-        if (rawData.startsWith("base64,")) {
+        if (draftJson) {
+            jsonString = draftJson; // short ?draft= link: already plain JSON
+        } else if (rawData.startsWith("base64,")) {
             jsonString = decodeBase64Utf8(rawData.slice(7));
         } else {
             try {
@@ -663,7 +676,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.error("Failed to open lesson for editing:", err);
             openedOk = false;
         }
-    } else if (handlePreloadedLessonFromUrl()) {
+    } else if (handlePreloadedLessonFromUrl(await loadDraftJsonSafely())) {
         openedOk = true;
     }
 

@@ -26,6 +26,7 @@ import { renderCreateQuestionNavigator, initCreateQuestionNavigator } from "./qu
 import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar.js";
 import { applyMarkdownToolbarAction } from "../../shared/markdown-toolbar-actions.js";
 import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
+import { fetchImportDraft } from "../../shared/import-draft.js";
 
 observeRichInputHighlighters({ selector: ".md-source" });
 
@@ -517,7 +518,17 @@ function decodeBase64Utf8(str) {
  * for pre-generated quiz JSON (e.g. from Claude or ChatGPT connector 1-click links).
  * If valid, loads it directly into the editor and bypasses the entry screen.
  */
-function handlePreloadedQuizFromUrl() {
+// Short MCP link (?draft=<code>) → JSON string, or null (also null + toast on failure).
+async function loadDraftJsonSafely() {
+  try {
+    return await fetchImportDraft("quiz");
+  } catch (err) {
+    showNotification("تعذّر فتح الرابط", err.message, "error");
+    return null;
+  }
+}
+
+function handlePreloadedQuizFromUrl(draftJson = null) {
   let rawData = null;
 
   // 1. Check URL hash first (preferred — never sent to server, no URL length limits on server)
@@ -553,11 +564,13 @@ function handlePreloadedQuizFromUrl() {
     }
   }
 
-  if (!rawData) return false;
+  if (!rawData && !draftJson) return false;
 
   try {
     let jsonString = rawData;
-    if (rawData.startsWith("base64,")) {
+    if (draftJson) {
+      jsonString = draftJson; // short ?draft= link: already plain JSON
+    } else if (rawData.startsWith("base64,")) {
       jsonString = decodeBase64Utf8(rawData.slice(7));
     } else {
       try {
@@ -646,7 +659,7 @@ function handlePreloadedQuizFromUrl() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   migrateWorkspaceDrafts();
   // Detect admin role — controls upload-tab visibility
   isAdmin = isAdminAuthenticated();
@@ -678,7 +691,7 @@ document.addEventListener("DOMContentLoaded", () => {
     editingQuizId = editId;
     showQuizForm();
     loadQuizFromLocalStorage(editId);
-  } else if (handlePreloadedQuizFromUrl()) {
+  } else if (handlePreloadedQuizFromUrl(await loadDraftJsonSafely())) {
     // Deep-linked 1-click import (#data=... or ?data=...) from Claude/ChatGPT
     // opened straight into form with prefilled questions.
   } else {
