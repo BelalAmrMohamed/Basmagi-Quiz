@@ -38,8 +38,24 @@ Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is com
 ### Quiz Passwords are exposed
 The home page downloads every quiz’s password to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be fixed.
 
+### Create-Lesson
+![alt text](image-1.png)
+
+```
+create-lesson:1  Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+```
+
+- I'm unable to change the title of the lesson from the top right.
+- I'm unable to asme the lesson. I got this error ![error](image.png), which doesn't explain anything.
+
 ### Profile Page
-The `نشاط المطور` section should include the quizzes and the lessons. It currently includes the quizzes only. Update it, and update the DB if needed.
+- The `نشاط المطور` section should include the quizzes and the lessons. It currently includes the quizzes only. Update it, and update the DB if needed.
+- The list of uploaded exams hold wrong links (Probably because it's storing the IDs of quizzes before they were uploaded and assigned a new ID. That is shown in one of the links: `https://basmagi-quiz.vercel.app/quiz/8eb84379-6c54-4578-ab78-9e0ad27a9dab` Actual quizzes don't have that type of link/ID, they use a `https://basmagi-quiz.vercel.app/quiz/S6ASBQEG`)
+- In public profile pages (e.g., `https://basmagi-quiz.vercel.app/@username`), The loading animation/shimmer has issues:
+  - Initially the profile picture, banner, and name load quickly.
+  - But the rest of the page takes slightly more.
+  - In between the profile picture, banner, name and the rest of the page, there is no animation/shimmer that indicates that the page is still loading.
+
 
 ### `public\about.html` Page
 * Suggestion: Add an open-source Angle (Since the repo is currently open source).
