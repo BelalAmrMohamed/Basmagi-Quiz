@@ -2828,6 +2828,12 @@
     gap: .75rem;
   }
 
+  /* In a column footer, the row-oriented "flex: 1 1 20rem" turned into a
+     320px-tall box — the big blank gap. Size to content instead. */
+  .lesson-view--reader .lesson-view__subtitle-wrap {
+    flex: 0 0 auto;
+  }
+
   .lesson-view--reader .lesson-view__header-actions {
     width: 100%;
     justify-content: flex-start;

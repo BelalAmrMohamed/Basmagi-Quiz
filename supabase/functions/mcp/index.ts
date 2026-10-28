@@ -32,14 +32,14 @@ const corsHeaders = {
 
 // ── Prompts Library ─────────────────────────────────────────────────────────
 
-const QUIZ_JSON_INSTRUCTIONS = `Create a quiz from the material I provide. Return one valid JSON object only: no Markdown fences, comments, or extra text.
+const QUIZ_JSON_INSTRUCTIONS = `Create a quiz from the material I provide. Return one valid JSON object only.
 
 The object must use this shape:
 {
   "meta": {
     "title": "A clear, specific quiz title",
     "description": "A short description of the quiz and what it assesses",
-    "source": "https://... (Direct URL or link to the source lecture/drive/book; MUST be a web link, not plain text. Use empty string \"\" only if no link exists)"
+    "source": "https://... (the source link of the quiz, like the drive link of the original quiz, or \"\" if none)"
   },
   "questions": [
     {
@@ -65,7 +65,7 @@ The object must use this shape:
 
 Schema and content rules:
 - Always provide a meaningful meta.title and meta.description.
-- The meta.source MUST be a direct link/URL (such as a Google Drive link to lecture slides/PDF, lecture video URL, or web link). NEVER write plain descriptive text or titles in the source field; always provide a URL (https://...). Use an empty string "" only if no link is available.
+- meta.source: copy the real link to the source material (Google Drive/Docs/Slides link, PDF URL, YouTube/video URL, article or book page). It must be a complete URL starting with https:// or http://. If there is no link, use an empty string "".
 - Include a non-empty questions array. Each question needs q and an explanation. For multiple-choice questions, provide options and set correct to the zero-based index of the right option. For a genuinely multi-answer question, set correct to an array of zero-based indexes and multiSelect to true.
 - Use {"q":"...","answer":"...","explanation":"..."} for open-ended/essay questions.
 - A two-option question can be used for true/false.
@@ -263,7 +263,7 @@ const TOOLS = [
       properties: {
         title: { type: "string", description: "Quiz title" },
         description: { type: "string", description: "Quiz description" },
-        source: { type: "string", description: "Direct URL/link to the source material (e.g. Google Drive link to lecture slides/PDF, video URL, or document link). MUST be a URL (https://...), NEVER plain text." },
+        source: { type: "string", description: "Direct URL/link to the source material (e.g. Google Drive link to lecture slides/PDF, video URL, or document link). MUST be a URL (https://...), NEVER plain text. Leave it empty if there is no link available." },
         questions: {
           type: "array",
           description: "Array of questions",
@@ -295,7 +295,7 @@ const TOOLS = [
       properties: {
         title: { type: "string", description: "Lesson title (1-200 chars)." },
         description: { type: "string", description: "Short summary (max 1200 chars)." },
-        source: { type: "string", description: "Direct URL/link to the source lecture, Drive folder, PDF, or recording (e.g. Google Drive link or web URL). MUST be a URL (https://...), NEVER plain text." },
+        source: { type: "string", description: "Direct URL/link to the source lecture, Drive folder, PDF, or recording (e.g. Google Drive link or web URL). MUST be a URL (https://...), NEVER plain text. Leave empty if no link is available." },
         sections: {
           type: "array",
           description: "Array of sections (1-60 sections)",
@@ -1201,7 +1201,7 @@ function handleCreateQuizImportLink(args: any) {
     meta: {
       title: String(args.title).trim(),
       description: String(args.description || "").trim(),
-      source: String(args.source || "توليد Claude / ChatGPT").trim(),
+      source: String(args.source || "").trim(),
     },
     questions: args.questions.map((q: any) => {
       let correct = q.correct;
@@ -1236,7 +1236,7 @@ function handleCreateLessonImportLink(args: any) {
   const description = String(args.description || "").trim();
   if (description.length > 1200) return "وصف الدرس يجب ألا يتجاوز 1200 حرف.";
 
-  const source = String(args.source || "توليد Claude / ChatGPT").trim();
+  const source = String(args.source || "").trim();
   if (source.length > 500) return "مصدر الدرس يجب ألا يتجاوز 500 حرف.";
 
   const rawSections = Array.isArray(args.sections)

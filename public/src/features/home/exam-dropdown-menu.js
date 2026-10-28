@@ -186,6 +186,14 @@ export function createExamInfoSubmenu(basicRows, onShowFull, closeDropdown, repo
   container.appendChild(content);
 
   function setOpen(open) {
+    // Phones: accordion behavior — opening this submenu closes any sibling.
+    if (open && window.matchMedia && window.matchMedia("(max-width: 480px)").matches) {
+      container.parentElement
+        ?.querySelectorAll(":scope > .submenu-container.submenu-open")
+        .forEach((el) => {
+          if (el !== container) el.dispatchEvent(new CustomEvent("submenu-close"));
+        });
+    }
     content.classList.toggle("show", open);
     container.classList.toggle("submenu-open", open);
 
@@ -240,6 +248,7 @@ export function createExamInfoSubmenu(basicRows, onShowFull, closeDropdown, repo
     setOpen(!content.classList.contains("show"));
   };
   content.onclick = (e) => e.stopPropagation();
+  container.addEventListener("submenu-close", () => setOpen(false));
 
   return container;
 }
@@ -300,6 +309,14 @@ export function createActionGroupSubmenu(actions, closeDropdown, reposition, tri
   container.appendChild(content);
 
   function setOpen(open) {
+    // Phones: accordion behavior — opening this submenu closes any sibling.
+    if (open && window.matchMedia && window.matchMedia("(max-width: 480px)").matches) {
+      container.parentElement
+        ?.querySelectorAll(":scope > .submenu-container.submenu-open")
+        .forEach((el) => {
+          if (el !== container) el.dispatchEvent(new CustomEvent("submenu-close"));
+        });
+    }
     content.classList.toggle("show", open);
     container.classList.toggle("submenu-open", open);
 
@@ -341,6 +358,7 @@ export function createActionGroupSubmenu(actions, closeDropdown, reposition, tri
     setOpen(!content.classList.contains("show"));
   };
   content.onclick = (e) => e.stopPropagation();
+  container.addEventListener("submenu-close", () => setOpen(false));
 
   return container;
 }

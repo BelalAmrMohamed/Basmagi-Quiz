@@ -5318,3 +5318,81 @@ kbd {
   background: var(--color-success);
   color: #fff;
 }
+
+/* Folder/course info modal: the card already has its own padding, so drop the
+   section's extra padding and let the creator card shrink/wrap on phones. */
+.course-info-modal-card .quiz-info-section {
+  padding: 16px 0 0;
+  border-bottom: none;
+}
+
+.course-info-modal-card .quiz-creator-card {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.course-info-modal-card .quiz-creator-info {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .course-info-modal-card {
+    padding: 20px 16px;
+  }
+
+  .course-info-modal-card .quiz-creator-card {
+    flex-wrap: wrap;
+    padding: 12px;
+    gap: 10px 12px;
+  }
+
+  .course-info-modal-card .quiz-creator-cta {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+}
+
+
+/* Phones: workspace lesson card — wrap description/meta so nothing clips or
+   runs under the play button. */
+@media (max-width: 640px) {
+  .exam-card.user-lesson-card .card-text {
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+
+  .exam-card.user-lesson-card .lesson-card-description {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0 0 4px;
+    direction: rtl;
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    -webkit-line-clamp: 2;
+  }
+
+  .exam-card.user-lesson-card .exam-card-meta {
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    gap: 2px 10px !important;
+    width: 100% !important;
+    margin: 0 !important;
+    white-space: normal !important;
+    direction: rtl !important;
+  }
+
+  .exam-card.user-lesson-card .exam-question-count,
+  .exam-card.user-lesson-card .exam-types-subtext {
+    order: 0 !important;
+    flex: 0 1 auto !important;
+    margin: 0 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-align: start !important;
+    direction: rtl !important;
+  }
+}

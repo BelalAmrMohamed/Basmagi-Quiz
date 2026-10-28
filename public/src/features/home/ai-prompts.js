@@ -1,13 +1,13 @@
 // Ready-to-use prompts for generating quizzes that match the current import schema.
 
-const QUIZ_JSON_INSTRUCTIONS = `Create a quiz from the material I provide. Return one valid JSON object only: no Markdown fences, comments, or extra text.
+const QUIZ_JSON_INSTRUCTIONS = `Create a quiz from the material I provide. Return one valid JSON object only.
 
 The object must use this shape:
 {
   "meta": {
     "title": "A clear, specific quiz title",
     "description": "A short description of the quiz and what it assesses",
-    "source": "https://... (Direct URL or link to the source lecture, Google Drive folder, PDF, or video; MUST be a link, not plain text. Use empty string \"\" only if no link was provided)"
+    "source": "https://... (the source link of the quiz, like the drive link of the original quiz, or \"\" if none)"
   },
   "questions": [
     {
@@ -32,7 +32,8 @@ The object must use this shape:
 }
 
 Schema and content rules:
-- Always provide a meaningful meta.title, meta.description, and meta.source. The "source" field MUST be a direct link/URL (such as a Google Drive link to lecture slides/PDF, video URL, or document link). Do NOT write plain text names in "source"; always provide a link. Use an empty string "" only when no source link is provided.
+- Always provide a meaningful meta.title and meta.description.
+- meta.source: copy the real link to the source material (Google Drive/Docs/Slides link, PDF URL, YouTube/video URL, article or book page). It must be a complete URL starting with https:// or http://. If there is no link, use an empty string "".
 - Include a non-empty questions array. Each question needs q and an explanation. For multiple-choice questions, provide options and set correct to the zero-based index of the right option. For a genuinely multi-answer question, set correct to an array of zero-based indexes and multiSelect to true. Do not mark a single-answer question as multiSelect.
 - Use {"q":"...","answer":"...","explanation":"..."} for open-ended/essay questions. The answer is the expected model answer or grading guidance.
 - A two-option question can be used for true/false. Make options clear and keep each correct index within the options array.
