@@ -88,6 +88,10 @@ let publishedLessonId = null;
 
 /** Public lesson rows used for the admin publishing picker and edit deep links. */
 let sharedLessons = [];
+/** Published lessons (public metadata) offered by the lesson-reference picker — loaded for EVERY visitor, unlike `sharedLessons` which feeds the admin-only entry tiles. */
+let referenceLessons = [];
+/** category key -> display name, so quiz search results can show where a quiz lives. */
+let quizCategoryNames = {};
 
 /** `examList` from getManifest(), used by the quiz-reference picker. */
 let quizExamList = [];
@@ -666,6 +670,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupReaderDefaultsBar();
     updateUndoRedoButtons();
     loadQuizExamList();
+    loadReferenceLessons();
 
     // Wrapped defensively: an old-schema/corrupt draft (e.g. a block shape
     // that predates this feature) can throw while normalizing or rendering.
@@ -897,8 +902,11 @@ function setupMenuBarListeners() {
 
 async function loadQuizExamList() {
     try {
-        const { examList } = await getManifest();
+        const { examList, categoryTree } = await getManifest();
         quizExamList = Array.isArray(examList) ? examList : [];
+        quizCategoryNames = Object.fromEntries(
+            Object.entries(categoryTree || {}).map(([key, node]) => [key, node?.name || ""]),
+        );
     } catch (err) {
         console.error("[create-lesson] failed to load quiz manifest:", err);
         quizExamList = [];
@@ -2506,6 +2514,22 @@ function quizRefSelectedHtml(exam, fallbackTitle) {
     </div>`;
 }
 
+/** One picker result row: title + badge on the first line, small details underneath. */
+function pickerResultHtml({ onclick, title, badge = "", details = [], role = "" }) {
+    const sub = details.filter(Boolean).join(" · ");
+    return `<button type="button" class="lesson-quizref-result"${role ? ` role="${role}"` : ""} onclick="${onclick}">` +
+        `<span class="lesson-quizref-result-main"><span class="lesson-quizref-result-title">${escapeHtml(title)}</span>` +
+        (sub ? `<span class="lesson-quizref-result-sub">${escapeHtml(sub)}</span>` : "") +
+        `</span>` +
+        (badge ? `<span class="lesson-quizref-result-count">${escapeHtml(badge)}</span>` : "") +
+        `</button>`;
+}
+
+function shortText(text, max = 90) {
+    const clean = String(text || "").replace(/\s+/g, " ").trim();
+    return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
+}
+
 function quizRefBlockInnerHtml(sectionId, block) {
     const sid = escapeHtml(sectionId);
     const bid = escapeHtml(block._localId);
@@ -2535,13 +2559,17 @@ window.handleQuizRefSearch = function (input) {
         return;
     }
     resultsEl.innerHTML = matches
-        .map(
-            (q) =>
-                `<button type="button" class="lesson-quizref-result" onclick="selectQuizRef('${escapeHtml(input.dataset.sectionId)}', '${escapeHtml(input.dataset.localId)}', '${escapeHtml(q.id)}')">
-          <span>${escapeHtml(q.title)}</span>
-          ${typeof q.questionCount === "number" ? `<span class="lesson-quizref-result-count">${q.questionCount} سؤال</span>` : ""}
-        </button>`,
-        )
+        .map((q) => pickerResultHtml({
+            onclick: `selectQuizRef('${escapeHtml(input.dataset.sectionId)}', '${escapeHtml(input.dataset.localId)}', '${escapeHtml(q.id)}')`,
+            title: q.title,
+            badge: typeof q.questionCount === "number" ? `${q.questionCount} سؤال` : "",
+            details: [
+                quizCategoryNames[q.category] || "",
+                q.author ? `بواسطة ${q.author}` : "",
+                q.password ? "محمي بكلمة مرور" : "",
+                shortText(q.description),
+            ],
+        }))
         .join("");
 };
 
@@ -2572,7 +2600,7 @@ function lessonReferenceOptions(currentLessonId) {
         lesson: row,
         localRow: row,
     }));
-    const published = sharedLessons
+    const published = [...referenceLessons, ...sharedLessons]
         .filter((row) => String(row.id) !== String(currentLessonId))
         .map((row) => ({ id: row.id, title: row.title || "درس بدون عنوان", slug: row.slug || null, source: "platform", lesson: row }));
     const seen = new Set();
@@ -2634,9 +2662,21 @@ window.handleLessonRefSearch = function (input) {
         resultsEl.innerHTML = `<p class="lesson-quizref-no-results">لا توجد نتائج.</p>`;
         return;
     }
-    resultsEl.innerHTML = matches.map((item) =>
-        `<button type="button" class="lesson-quizref-result" role="option" onclick="selectLessonReference('${escapeHtml(input.dataset.sectionId)}','${escapeHtml(input.dataset.localId)}','${escapeHtml(item.id)}','${escapeHtml(item.source)}')"><span>${escapeHtml(item.title)}</span><span class="lesson-quizref-result-count">${item.source === "platform" ? "منشور" : "محلي"}</span></button>`
-    ).join("");
+    resultsEl.innerHTML = matches.map((item) => {
+        const row = item.lesson || {};
+        const sections = Number(row.section_count ?? row.stats?.sectionCount ?? row.lesson?.sections?.length ?? 0);
+        return pickerResultHtml({
+            role: "option",
+            onclick: `selectLessonReference('${escapeHtml(input.dataset.sectionId)}','${escapeHtml(input.dataset.localId)}','${escapeHtml(item.id)}','${escapeHtml(item.source)}')`,
+            title: item.title,
+            badge: item.source === "platform" ? "منشور" : "محلي",
+            details: [
+                sections ? `${sections} ${sections === 1 ? "قسم" : "أقسام"}` : "",
+                (row.password_protected || row.passwordProtected) ? "محمي بكلمة مرور" : "",
+                shortText(row.description || row.meta?.description),
+            ],
+        });
+    }).join("");
 };
 
 window.focusLessonRefSearch = function (localId) {
@@ -2851,6 +2891,28 @@ async function loadSharedLessons() {
         return;
     }
     sharedLessons = Array.isArray(data) ? data : [];
+}
+
+/**
+ * Public metadata of every published lesson, for the lesson-reference
+ * picker. The old code only loaded this for admins (`if (isAdmin) await
+ * loadSharedLessons()`), so anyone else searching for a lesson to embed saw
+ * "no results" forever. lesson_public is readable by everyone and carries no
+ * password material, so no sign-in is needed.
+ */
+async function loadReferenceLessons() {
+    try {
+        const client = await ensureSharedSupabaseClient();
+        if (!client) return;
+        const { data, error } = await client
+            .from("lesson_public")
+            .select("id, slug, title, description, section_count, course_id, folder_id, created_at, updated_at, password_protected")
+            .order("updated_at", { ascending: false });
+        if (error) throw error;
+        referenceLessons = Array.isArray(data) ? data : [];
+    } catch (err) {
+        console.warn("[create-lesson] failed to load published lessons for the reference picker:", err?.message || err);
+    }
 }
 
 async function openPublishedLessonById(id) {

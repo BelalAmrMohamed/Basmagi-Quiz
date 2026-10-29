@@ -174,6 +174,7 @@ function stripPublicLesson(lesson) {
         source: lesson.source || "",
         content: lesson.content || { sections: [] },
         reader_prefs_default: lesson.reader_prefs_default || null,
+        created_by: lesson.created_by || null,
         created_at: lesson.created_at || null,
         updated_at: lesson.updated_at || null,
         password_protected: Boolean(lesson.password_hash),
@@ -195,7 +196,7 @@ function constantTimeEqual(a, b) {
 
 async function fetchLessonMetaWithSecret(idOrSlug) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
-    const query = getServiceSupabase().from("lessons").select("id, slug, title, description, source, content, reader_prefs_default, created_at, updated_at, password_hash");
+    const query = getServiceSupabase().from("lessons").select("id, slug, title, description, source, content, reader_prefs_default, created_by, created_at, updated_at, password_hash");
     const { data, error } = isUuid
         ? await query.eq("id", idOrSlug).maybeSingle()
         : await query.eq("slug", idOrSlug).maybeSingle();

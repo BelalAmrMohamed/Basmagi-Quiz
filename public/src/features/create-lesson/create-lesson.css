@@ -1071,6 +1071,26 @@ select.form-input {
     background: var(--color-primary-light);
 }
 
+.lesson-quizref-result-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.lesson-quizref-result-title {
+    font-weight: 600;
+}
+
+.lesson-quizref-result-sub {
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .lesson-quizref-result-count {
     font-size: 0.75rem;
     color: var(--color-text-tertiary);

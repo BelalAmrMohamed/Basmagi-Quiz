@@ -121,7 +121,7 @@ const ICON_BRANCH = '<line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" 
  * @param {ReturnType<typeof collectLessonInfo>} info
  * @returns {string}
  */
-export function buildLessonInfoHtml(info) {
+export function buildLessonInfoBodyHtml(info) {
     const plural = (n, one, two, many) => (n === 1 ? one : n === 2 ? two : many);
 
     const pills = [
@@ -177,6 +177,40 @@ export function buildLessonInfoHtml(info) {
     if (info.id) addRow("ID", `<span class="quiz-id-badge">${escapeHtml(info.id)}</span>`);
 
     return `
+        <div class="quiz-info-hero">
+          <h3>${escapeHtml(info.title)}</h3>
+          <div class="quiz-metrics-row">${pills.join("")}</div>
+        </div>
+        <div class="quiz-info-section">
+          <div class="quiz-info-section-title">تفاصيل الدرس</div>
+          <div class="quiz-meta-grid">${rows.join("")}</div>
+        </div>
+        ${info.createdBy ? `<div data-lesson-creator-slot>${buildInfoSkeletonHtml({ title: false, pills: 0, rows: 0, card: true })}</div>` : ""}`;
+}
+
+/**
+ * Fills the creator slot rendered by buildLessonInfoBodyHtml() once the
+ * creator's profile resolves. Shared by every lesson info modal (home,
+ * lesson page, embedded lesson cards) so they all show the same facts.
+ * @param {ParentNode} root - element containing the modal body
+ * @param {{createdBy?: string|null}} info
+ */
+export function hydrateLessonCreator(root, info) {
+    const slot = root.querySelector("[data-lesson-creator-slot]");
+    if (!slot || !info?.createdBy) return;
+    fetchCreatorById(info.createdBy).then((creator) => {
+        if (!slot.isConnected) return;
+        slot.innerHTML = buildCreatorSectionHtml(creator);
+    });
+}
+
+/**
+ * Markup for the whole dialog (header + body) of the standalone info modal.
+ * @param {ReturnType<typeof collectLessonInfo>} info
+ * @returns {string}
+ */
+export function buildLessonInfoHtml(info) {
+    return `
     <div class="quiz-info-dialog-inner">
       <div class="quiz-info-dialog-header">
         <h2 id="lessonInfoDialogTitle">معلومات الدرس</h2>
@@ -186,16 +220,7 @@ export function buildLessonInfoHtml(info) {
           </svg>
         </button>
       </div>
-      <div class="quiz-info-dialog-body">
-        <div class="quiz-info-hero">
-          <h3>${escapeHtml(info.title)}</h3>
-          <div class="quiz-metrics-row">${pills.join("")}</div>
-        </div>
-        <div class="quiz-info-section">
-          <div class="quiz-info-section-title">تفاصيل الدرس</div>
-          <div class="quiz-meta-grid">${rows.join("")}</div>
-        </div>
-      </div>
+      <div class="quiz-info-dialog-body">${buildLessonInfoBodyHtml(info)}</div>
     </div>`;
 }
 
@@ -213,17 +238,9 @@ export function showUserLessonInfoModal(row) {
     dialog.innerHTML = buildLessonInfoHtml(info);
     document.body.appendChild(dialog);
 
-    // Shared lessons carry the uploader's account id: show a shimmer
-    // placeholder, then the creator card once the profile resolves.
-    if (info.createdBy) {
-        const slot = document.createElement("div");
-        slot.innerHTML = buildInfoSkeletonHtml({ title: false, pills: 0, rows: 0, card: true });
-        dialog.querySelector(".quiz-info-dialog-body")?.appendChild(slot);
-        fetchCreatorById(info.createdBy).then((creator) => {
-            if (!dialog.isConnected) return;
-            slot.innerHTML = buildCreatorSectionHtml(creator);
-        });
-    }
+    // Shared lessons carry the uploader's account id: the body renders a
+    // shimmer placeholder, then the creator card once the profile resolves.
+    hydrateLessonCreator(dialog, info);
 
     const close = () => {
         if (dialog.open) dialog.close();

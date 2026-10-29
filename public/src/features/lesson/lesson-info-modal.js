@@ -20,6 +20,7 @@
 // ============================================================================
 
 import { escapeHtml } from "../home/escape-html.js";
+import { collectLessonInfo, buildLessonInfoBodyHtml, hydrateLessonCreator } from "../home/lesson-info-modal.js";
 import { renderLessonBookmarks, equipLessonBookmarks, cleanupLessonBookmarks } from "./lesson-bookmarks.js";
 import {
     computeLessonProgressSummary,
@@ -34,67 +35,9 @@ import {
     TEXT_SIZE_CHOICES,
 } from "./lesson-reader-prefs.js";
 
-const BLOCK_LABELS = {
-    markdown: "نص",
-    media: "وسائط",
-    quizRef: "امتحان",
-    question: "سؤال",
-};
-
-function collectLiveLessonInfo(lesson, normalized) {
-    const blockCounts = {};
-    let questionCount = 0;
-    for (const section of normalized.sections || []) {
-        for (const block of section.blocks || []) {
-            blockCounts[block.type] = (blockCounts[block.type] || 0) + 1;
-            if (block.type === "question") questionCount += 1;
-        }
-    }
-    return {
-        title: lesson.title || "درس بدون عنوان",
-        sectionCount: normalized.sections?.length || 0,
-        questionCount,
-        blockCounts,
-        createdAt: lesson.created_at || null,
-    };
-}
-
-function formatDate(value) {
-    if (!value) return null;
-    try {
-        return new Date(value).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" });
-    } catch {
-        return null;
-    }
-}
-
-function renderInfoSection(info) {
-    const plural = (n, one, two, many) => (n === 1 ? one : n === 2 ? two : many);
-    const rows = [];
-    const presentTypes = Object.keys(BLOCK_LABELS).filter((t) => info.blockCounts[t]);
-    for (const type of presentTypes) {
-        rows.push(
-            `<div class="quiz-meta-label">${escapeHtml(BLOCK_LABELS[type])}</div>` +
-            `<div class="quiz-meta-value">${escapeHtml(String(info.blockCounts[type]))}</div>`,
-        );
-    }
-    const created = formatDate(info.createdAt);
-    if (created) {
-        rows.push(`<div class="quiz-meta-label">تاريخ الإنشاء</div><div class="quiz-meta-value"><span dir="ltr">${escapeHtml(created)}</span></div>`);
-    }
-    return (
-        `<div class="quiz-info-section">` +
-        `<div class="quiz-info-section-title">عن هذا الدرس</div>` +
-        `<div class="quiz-metrics-row">` +
-        `<span class="quiz-metric-pill">${info.sectionCount} ${escapeHtml(plural(info.sectionCount, "قسم", "قسمان", "أقسام"))}</span>` +
-        (info.questionCount
-            ? `<span class="quiz-metric-pill">${info.questionCount} ${escapeHtml(plural(info.questionCount, "سؤال مدمج", "سؤالان مدمجان", "أسئلة مدمجة"))}</span>`
-            : "") +
-        `</div>` +
-        (rows.length ? `<div class="quiz-meta-grid" style="margin-top:12px">${rows.join("")}</div>` : "") +
-        `</div>`
-    );
-}
+// The "about this lesson" facts (counts, description, source, link, creator,
+// dates, ID...) come from the SAME builder the home page's info modal uses
+// (home/lesson-info-modal.js), so one lesson shows the same info everywhere.
 
 // AI study actions offered from the modal — each just fills the AI
 // composer with a ready-made prompt via the same one-click "submitText"
@@ -163,7 +106,7 @@ export function showLessonControlModal(options) {
         onAiStudyAction,
     } = options;
 
-    const info = collectLiveLessonInfo(lesson, normalized);
+    const info = collectLessonInfo(lesson.localRow || lesson);
     const sectionTitleById = new Map((normalized.sections || []).map((s) => [s.id, s.title || "قسم من الدرس"]));
     const progressSummary = computeLessonProgressSummary(normalized, lesson.id);
 
@@ -180,8 +123,7 @@ export function showLessonControlModal(options) {
         `</button>` +
         `</div>` +
         `<div class="quiz-info-dialog-body">` +
-        `<div class="quiz-info-hero"><h3>${escapeHtml(info.title)}</h3></div>` +
-        renderInfoSection(info) +
+        buildLessonInfoBodyHtml(info) +
         `<div class="quiz-info-section"><div class="quiz-info-section-title">التقدّم</div>${renderLessonProgressSummary(progressSummary, sectionTitleById)}</div>` +
         `<div class="quiz-info-section lesson-info-modal__bookmarks-section"><div class="quiz-info-section-title">العلامات المرجعية</div>${renderLessonBookmarks(lesson.id)}</div>` +
         renderInfoPrefs(getReaderPrefs(lesson.reader_prefs_default)) +
@@ -189,6 +131,7 @@ export function showLessonControlModal(options) {
         `</div>` +
         `</div>`;
     document.body.appendChild(dialog);
+    hydrateLessonCreator(dialog, info);
 
     const lessonEl = document.querySelector(`.lesson-view[data-lesson-id="${CSS.escape(lesson.id)}"]`);
     const prefsCleanup = lessonEl

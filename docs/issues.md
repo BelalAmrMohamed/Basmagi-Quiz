@@ -10,6 +10,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ### Quiz Passwords are exposed
 The home page downloads every quiz’s password to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be fixed.
 
+### Create-Lesson And Create-Quiz
+![Screenshot](image.png) Editing titles is now 'possible', but still buggy.
+
 ### AI Agent
 
 #### Dictation

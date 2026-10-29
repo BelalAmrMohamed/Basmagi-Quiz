@@ -24,6 +24,7 @@ import {
   getLessonProgress,
   resolveRevealedSections,
   collectLessonReferenceIds,
+  normalizeLessonReferenceBlock,
 } from "./lesson-schema.js";
 import { renderBlock, equipQuestionBlocks } from "./lesson-blocks.js";
 import { renderLessonToc, equipLessonToc } from "./lesson-toc.js";
@@ -52,6 +53,8 @@ import { showQuizInfoModal, showUserQuizInfoModal } from "../home/quiz-info-moda
 import { openAIAgentWithAttachment, buildPlatformQuizAttachment, buildPlatformLessonAttachment, resolveUserItemAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { createFlashcardDeckResult } from "../../components/ai-agent/ai-agent-result-cards.js";
+import { resolveUserItemById, readUserQuizzes } from "../../components/ai-agent/ai-agent-item-lookup.js";
+import { loadFullQuizData } from "../home/quiz-data-loader.js";
 import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
 
 observeRichInputHighlighters({ selector: ".lesson-question__essay-input" });
@@ -121,7 +124,7 @@ async function fetchLesson(idOrSlug) {
 
   const query = supabase
     .from("lesson_public")
-    .select("id, slug, title, description, source, content, section_ids, section_count, reader_prefs_default, created_at, updated_at, password_protected");
+    .select("id, slug, title, description, source, content, section_ids, section_count, reader_prefs_default, created_by, created_at, updated_at, password_protected");
   const request = UUID_RE.test(idOrSlug)
     ? query.eq("id", idOrSlug).maybeSingle()
     : query.eq("slug", idOrSlug).maybeSingle();
@@ -199,6 +202,9 @@ async function fetchQuizRefs(quizIds) {
           questionCount: stats.questionCount ?? null,
           source: "platform",
           meta,
+          // Full row data (questions/answers): lets the AI agent read an
+          // embedded quiz without a second network round trip.
+          fullData: row?.data || null,
         };
         if (entry.id) lookup.set(String(entry.id), entry);
         if (entry.dbId) lookup.set(String(entry.dbId), entry);
@@ -220,7 +226,7 @@ async function fetchLessonRefs(lessonIds, currentLessonId) {
       const { data, error } = await withTimeout(
         supabase
           .from("lesson_public")
-          .select("id, slug, title, description, source, section_ids, section_count, reader_prefs_default, created_at, updated_at, password_protected")
+          .select("id, slug, title, description, source, section_ids, section_count, reader_prefs_default, created_by, created_at, updated_at, password_protected")
           .in("id", ids),
         QUIZ_REF_TIMEOUT_MS,
         "انتهت مهلة تحميل الدروس المرتبطة.",
@@ -351,7 +357,7 @@ export function estimateReadingMinutes(sections, lang = "ar") {
  * @param {Map} quizLookup - reference id -> quiz metadata (id/dbId/title/source/password/...)
  * @param {Map} lessonLookup - reference id -> lesson metadata (id/title/slug/localRow/...)
  */
-export function equipReferenceCardActions(root, lesson, quizLookup, lessonLookup) {
+export function equipReferenceCardActions(root, lesson, quizLookup, lessonLookup, { onAsk = null } = {}) {
   const buttons = root.querySelectorAll("[data-reference-kind][data-reference-action]");
   buttons.forEach((button) => {
     button.addEventListener("click", async (event) => {
@@ -386,15 +392,27 @@ export function equipReferenceCardActions(root, lesson, quizLookup, lessonLookup
         }
         if (action === "ask") {
           const attachment = kind === "quiz"
-            ? (entity.source === "local" ? resolveUserItemAttachment(id) : buildPlatformQuizAttachment(entity, { meta: { title: entity.title, id }, stats: { questionCount: entity.questionCount || 0 } }))
-            : (entity.localRow ? resolveUserItemAttachment(id) : buildPlatformLessonAttachment(entity));
-          openAIAgentWithAttachment(attachment, { defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT });
+            ? (entity.source === "local" ? resolveUserItemAttachment(id) : buildPlatformQuizAttachment(entity, { id, meta: entity.meta || { title: entity.title, id }, stats: { questionCount: entity.questionCount || 0 } }))
+            : (entity.localRow ? resolveUserItemAttachment(id) : withAttachmentId(buildPlatformLessonAttachment(entity), id));
+          if (!attachment) return;
+          // On a lesson page the ask button continues THIS lesson's
+          // conversation (same pageKey as the FAB). The standalone home
+          // panel is only the fallback (e.g. the create-lesson preview,
+          // which has no lesson agent).
+          if (typeof onAsk === "function") onAsk(attachment);
+          else openAIAgentWithAttachment(attachment, { defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT });
         }
       } catch (error) {
         console.error("[lesson-view] reference action failed:", error);
       }
     });
   });
+}
+
+/** The model needs the exact id to call fetch_attached_* later. */
+function withAttachmentId(attachment, id) {
+  if (!attachment) return attachment;
+  return { ...attachment, payload: { ...(attachment.payload || {}), id } };
 }
 
 async function showQuizDownloadPopupForReference(quiz, triggerBtn) {
@@ -505,6 +523,29 @@ function currentSectionId(normalized) {
  * claim no lesson content was provided. contextPrompt is the correct
  * channel for a differently-shaped, single page-wide blob of context).
  */
+// Lookups for the exams/lessons embedded in the lesson being read. Set once
+// the page has resolved them; read lazily by the agent context + tool handler
+// (there is only ever one lesson per page, like `rerenderLessonQuiz` below).
+let lessonEmbeds = { quizLookup: new Map(), lessonLookup: new Map() };
+
+function embeddedItemLine(block) {
+  if (block?.type === "quizRef" && block.quizId) {
+    const id = String(block.quizId);
+    const entry = lessonEmbeds.quizLookup.get(id);
+    const title = entry?.title || block.title || "امتحان بدون عنوان";
+    const count = entry?.questionCount != null ? `، ${entry.questionCount} سؤال` : "";
+    return `[امتحان مدمج] «${title}» (quizId: ${entry?.id || id}${count}) — محتواه غير مضمّن هنا؛ استخدم الأداة fetch_attached_quiz بهذا المعرّف عندما يسأل المستخدم عن تفاصيله.`;
+  }
+  const ref = block?.type === "lesson-reference" ? normalizeLessonReferenceBlock(block) : null;
+  if (ref?.lessonId) {
+    const id = String(ref.lessonId);
+    const entry = lessonEmbeds.lessonLookup.get(id);
+    const title = entry?.title || ref.title || "درس بدون عنوان";
+    return `[درس مدمج] «${title}» (lessonId: ${id}) — محتواه غير مضمّن هنا؛ استخدم الأداة fetch_attached_lesson بهذا المعرّف عندما يسأل المستخدم عن تفاصيله.`;
+  }
+  return null;
+}
+
 function lessonAgentContext(lesson, normalized) {
   const activeId = currentSectionId(normalized);
   const lines = [`عنوان الدرس: ${lesson.title}`, ""];
@@ -512,7 +553,10 @@ function lessonAgentContext(lesson, normalized) {
     const isCurrent = section.id === activeId;
     lines.push(`## قسم ${index + 1}: ${section.title || `قسم ${index + 1}`}${isCurrent ? " (القسم الحالي الذي يقرأه المستخدم الآن)" : ""}`);
     section.blocks.forEach((block) => {
-      if (block.type === "markdown" && block.body) {
+      const embedded = embeddedItemLine(block);
+      if (embedded) {
+        lines.push(embedded);
+      } else if (block.type === "markdown" && block.body) {
         lines.push(block.body);
       } else if (block.prompt) {
         lines.push(`سؤال: ${block.prompt}`);
@@ -528,8 +572,47 @@ function lessonAgentContext(lesson, normalized) {
 }
 
 
+/** Quiz payload for the agent: never includes any password material. */
+async function embeddedQuizToolResult(requestedId) {
+  const entry = lessonEmbeds.quizLookup.get(requestedId);
+  if (entry) {
+    const protectedQuiz = Boolean(entry.meta?.password || entry.meta?.passwordProtected || entry.password);
+    if (protectedQuiz) {
+      return `الامتحان ${entry.title || requestedId} محمي بكلمة مرور، لذلك لا يمكن قراءة أسئلته من هنا. اطلب من المستخدم فتحه بنفسه.`;
+    }
+    let data = entry.fullData;
+    if (!data && entry.dbId) data = await loadFullQuizData({ dbId: entry.dbId });
+    const { password: _pw, passwordHash: _ph, ...meta } = data?.meta || entry.meta || {};
+    return `بيانات الامتحان ${entry.title || requestedId} (المعرّف ${requestedId}):\n${JSON.stringify({ meta, stats: data?.stats || {}, questions: data?.questions || [] })}`;
+  }
+  const local = resolveUserItemById(requestedId, readUserQuizzes());
+  if (local?.kind === "quiz") return `بيانات الامتحان ${local.title} (المعرّف ${requestedId}):\n${JSON.stringify(local.payload || {})}`;
+  throw new Error("الامتحان المطلوب غير مدمج في هذا الدرس.");
+}
+
+async function embeddedLessonToolResult(requestedId) {
+  const entry = lessonEmbeds.lessonLookup.get(requestedId);
+  if (entry?.localRow) {
+    const local = resolveUserItemById(requestedId, readUserQuizzes());
+    if (local?.kind === "lesson") return `بيانات الدرس ${local.title} (المعرّف ${requestedId}):\n${JSON.stringify(local.payload || {})}`;
+  }
+  if (!entry) throw new Error("الدرس المطلوب غير مدمج في هذا الدرس.");
+  if (entry.password_protected) {
+    return `الدرس ${entry.title || requestedId} محمي بكلمة مرور. افتح الدرس وأدخِل كلمة المرور أولاً ثم أعد المحاولة.`;
+  }
+  const supabase = await ensureSharedSupabaseClient();
+  const { data, error } = supabase
+    ? await supabase.from("lesson_public").select("id, title, description, content").eq("id", requestedId).maybeSingle()
+    : { data: null, error: new Error("no client") };
+  if (error || !data?.content) return `تعذّر تحميل محتوى الدرس ${entry.title || requestedId}.`;
+  return `بيانات الدرس ${data.title || requestedId} (المعرّف ${requestedId}):\n${JSON.stringify({ description: data.description || "", content: data.content })}`;
+}
+
 let rerenderLessonQuiz = null;
 function handleLessonAgentToolCall(toolCall) {
+  if (toolCall?.name === "fetch_attached_quiz") return embeddedQuizToolResult(String(toolCall.input?.quizId || ""));
+  if (toolCall?.name === "fetch_attached_lesson") return embeddedLessonToolResult(String(toolCall.input?.lessonId || ""));
+
   if (toolCall?.name === "create_flashcards") {
     const input = toolCall.input || {};
     const cards = (Array.isArray(input.cards) ? input.cards : [])
@@ -576,7 +659,7 @@ function lessonAgentOptions(lesson, normalized) {
     contextPrompt: () => lessonAgentContext(lesson, normalized),
     enableTools: true,
     enableFileUpload: true,
-    toolNames: ["create_quiz", "create_flashcards"],
+    toolNames: ["create_quiz", "create_flashcards", "fetch_attached_quiz", "fetch_attached_lesson"],
     onToolCall: handleLessonAgentToolCall,
   };
 }
@@ -628,6 +711,21 @@ async function openLessonAgentWithPrompt(lesson, normalized, promptText) {
     };
     requestAnimationFrame(submit);
   });
+}
+
+/**
+ * Opens the lesson AI Agent — the SAME cached "lesson-<id>" panel the FAB
+ * opens, so the conversation history is shared — and attaches an embedded
+ * exam/lesson to the composer (never auto-sends).
+ */
+function openLessonAgentWithAttachment(lesson, normalized, attachment) {
+  const options = lessonAgentOptions(lesson, normalized);
+  openAIAgentModal(options, null);
+  const panel = getChatPanelForPageKey(options.pageKey);
+  if (panel && typeof panel.addPendingAttachment === "function") {
+    panel.setAttachmentToolHandler?.(options.onToolCall);
+    panel.addPendingAttachment(attachment);
+  }
 }
 
 const prefsCleanupByRoot = new WeakMap();
@@ -858,6 +956,7 @@ export async function renderLessonView() {
     ]);
     quizLookup = quizRefs;
     lessonLookup = lessonRefs;
+    lessonEmbeds = { quizLookup, lessonLookup };
   } catch (error) {
     console.error("[lesson-view] Lesson content preparation failed:", error);
     renderLessonLoadError("تعذّر تجهيز محتوى الدرس. جرّب إعادة المحاولة، وإذا استمر الخطأ افتح الدرس من قسم «امتحاناتك» مرة أخرى.");
@@ -1086,7 +1185,9 @@ export async function renderLessonView() {
     });
   });
 
-  equipReferenceCardActions(lessonEl, lesson, quizLookup, lessonLookup);
+  equipReferenceCardActions(lessonEl, lesson, quizLookup, lessonLookup, {
+    onAsk: (attachment) => openLessonAgentWithAttachment(lesson, normalized, attachment),
+  });
   equipPrefs(container, lessonEl, lesson.reader_prefs_default);
   equipQuestionBlocks(container, lesson.id, handleQuestionAnswered, (details) => {
     const contentBlock = details.kind === "mcq"
