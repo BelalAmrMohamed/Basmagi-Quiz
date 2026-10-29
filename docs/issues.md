@@ -20,14 +20,6 @@ create-lesson:1  Failed to load resource: the server responded with a status of 
 - I'm unable to change the title of the lesson from the top right.
 - I'm unable to save the lesson I created with AI from the import link (MCP Server). I got this error ![error](image.png), which doesn't explain anything. I didn't face any issues when using the create-quiz page. Although in both pages it's hard to edit the title, probably related to text selection issues, but I might be wrong.
 
-### Profile Page
-- The `نشاط المطور` section should include the quizzes and the lessons. It currently includes the quizzes only. Update it, and update the DB if needed.
-- The list of uploaded exams hold wrong links (Probably because it's storing the IDs of quizzes before they were uploaded and assigned a new ID. That is shown in one of the links: `https://basmagi-quiz.vercel.app/quiz/8eb84379-6c54-4578-ab78-9e0ad27a9dab` Actual quizzes don't have that type of link/ID, they use a `https://basmagi-quiz.vercel.app/quiz/S6ASBQEG`)
-- In public profile pages (e.g., `https://basmagi-quiz.vercel.app/@username`), The loading animation/shimmer has issues:
-  - Initially the profile picture, banner, and name load quickly.
-  - But the rest of the page takes slightly more.
-  - In between the profile picture, banner, name and the rest of the page, there is no animation/shimmer that indicates that the page is still loading.
-
 ### AI Agent
 
 #### Dictation
@@ -80,4 +72,3 @@ Improve:
 
 ### `api\og.js`
 * Special courses that get the (مادة مميزة) badge, since there is no info table displayed, the middle of the image becomes emtpy, I need to fill it with something, or ideas to improve it when it has the  (مادة مميزة) badge. 
-* Lessons in the `lesson.html` don't get custom OGs like quizzes do.
