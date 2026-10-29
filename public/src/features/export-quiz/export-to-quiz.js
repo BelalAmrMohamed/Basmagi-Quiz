@@ -396,119 +396,132 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   [data-theme="dark"] {
     color-scheme: dark;
 
-    --bg-primary:    #000000;
-    --bg-secondary:  #0a0a0a;
-    /* Raised from #1a1a1a: at that value the option-letter circle (A/B/C)
-       and toggle-switch track were nearly indistinguishable from
-       --bg-primary/--card-bg, which read as "invisible" unselected
-       options in dark mode. #26262c gives a clear one-step-lighter
-       surface while staying dark. */
-    --bg-tertiary:   #26262c;
-    /* Page backdrop stays true black in dark mode too — no gradient
-       wash, so the card's own dark surface (--card-bg) is what creates
-       depth against it. */
+    /* ── Dark palette: "deep teal on tinted charcoal" ────────────────────
+       Every neutral below carries a hint of the brand teal (hue ≈ 195°,
+       saturation ≈ 15–25%) so surfaces, borders and text read as one
+       family with the accent. The previous palette mixed pure grays with a
+       neon-mint accent, which is why some parts looked "too bright" and
+       others looked unrelated to the theme.
+
+       Surface ladder (each step is one notch lighter, so depth comes from
+       tone instead of from borders and shadows):
+         page      #000000   true black, kept for OLED
+         primary   #0b1012   container, option rows, inputs, side menu
+         secondary #0f1619   control bars, settings rows, results panel
+         card      #111a1d   question card, dialogs, modals
+         tertiary  #1b2629   letter circles, toggle tracks, secondary buttons */
     --page-bg:       #000000;
-    --text-primary:  #f5f5f5;
-    --text-secondary:#c4c4c4;
-    --text-muted:    #8a8a8a;
-    /* Brightened from #262626 so unselected .option-btn/.nav-btn borders
-       stay readable against a pure-black page instead of nearly
-       disappearing into it. */
-    --border-color:  #33333a;
-    --card-bg:       #0d0d10;
-    --card-answered: #062825;
+    --bg-primary:    #0b1012;
+    --bg-secondary:  #0f1619;
+    --bg-tertiary:   #1b2629;
+    --card-bg:       #111a1d;
+    --card-answered: #0a2926;
+    --border-color:  #263439;
 
-    /* Dark-mode brand accent — the same teal family, brightened so it
-       reads clearly against true black (a dark-on-dark accent would all
-       but disappear, which is what made the previous gray version look
-       muddy in both themes at once). Kept as one saturated gradient
-       fill for .header/.gradient surfaces (menu-toggle, side-menu
-       header, question-num badge, buttons, nav-btn.current — all paired
-       with white text), with a softer variant for *outline/border*
-       accents (answered question-card borders, the answered/current
-       nav-btn ring, toggle-switch "on" fill) so those read as a clear
-       but not overpowering ring against black. */
-    --gradient-start:     #2dd4bf;
-    --gradient-end:       #14b8a6;
-    --gradient-start-rgb: 45, 212, 191;
+    /* Text — off-white instead of #f5f5f5 so large areas of body copy don't
+       glare on true black. All three clear WCAG AA on every surface above
+       (muted is the lowest: ≈ 4.9:1 on --card-bg). */
+    --text-primary:   #e8eef0;
+    --text-secondary: #b0bdc2;
+    --text-muted:     #7d8d93;
+
+    /* Brand accent, split by job.
+       • --gradient-start / --accent-outline*: BRIGHT mint — only for thin or
+         small things (borders, rings, focus outlines, caret, link text,
+         the progress fill), where brightness helps and nothing is written
+         on top of it.
+       • --accent-fill-*: DEEP teal — for every surface that carries WHITE
+         text (header, buttons, menu toggle, number pill, current nav
+         button). #0f766e → #115e59 gives white text 5.5:1 → 7.6:1; the old
+         #2dd4bf → #14b8a6 fill gave only ≈ 1.7:1 → 2.5:1 and was the
+         brightest object on the page. */
+    --gradient-start:      #2dd4bf;
+    --gradient-end:        #14b8a6;
+    --gradient-start-rgb:  45, 212, 191;
     --accent-outline:      #5eead4;
-    --accent-outline-soft: #14b8a6;
-    --gradient-body:      var(--page-bg);
-    /* Text-on-dark counterpart to light mode's --gradient-start-text:
-       there the accent needed darkening to clear AA on white; here the
-       accent already clears AA on black (11:1+), so text uses it
-       directly rather than needing a separate shade. */
-    --gradient-start-text: var(--gradient-start);
+    --accent-outline-soft: #19a597;
+    --accent-fill-start:   #0f766e;
+    --accent-fill-end:     #115e59;
+    --gradient:            linear-gradient(135deg, var(--accent-fill-start) 0%, var(--accent-fill-end) 100%);
+    /* Thin accent strip along the top of the info dialog. */
+    --gradient-accent:     linear-gradient(90deg, #2dd4bf 0%, #0f766e 100%);
+    --gradient-body:       var(--page-bg);
+    --gradient-start-text: var(--accent-outline);
 
-    --success-bg:   #051b12;
-    --success-text: #6ee7b7;
-    --error-bg:     #200606;
-    --error-text:   #fca5a5;
-    --warning-bg:   #1a1206;
-    --warning-text: #fcd34d;
-    --info-bg:      #06121f;
-    --info-text:    #7db3f5;
+    /* Semantic colors — slightly de-saturated so they sit on the charcoal
+       surfaces without vibrating. "info" moves from electric blue
+       (#3b82f6 / #7db3f5) to a calm sky tone that sits next to teal instead
+       of fighting it; it drives the explanation box, the True/False badge,
+       info toasts and (via --color-primary below) markdown links. */
+    --success:      #17a673;
+    --success-bg:   #07211a;
+    --success-text: #7be3bd;
+    --error:        #e5484d;
+    --error-bg:     #230a0c;
+    --error-text:   #ffb0b0;
+    --warning:      #e8a317;
+    --warning-bg:   #1c1507;
+    --warning-text: #f6cf6b;
+    --info:         #4aa3d4;
+    --info-bg:      #0a1822;
+    --info-text:    #a3d4ec;
 
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.5);
     --shadow-md: 0 4px 16px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4);
     --shadow-lg: 0 20px 60px rgba(0,0,0,0.8);
   }
 
-  /* ── Dark-mode glow/shadow neutralization ────────────────────────
-     These ambient shadows/rings (menu toggle's floating shadow, the
-     current-nav-question badge glow, the primary button's drop shadow,
-     the essay textarea's focus ring, text selection tint) all derive
-     from rgba(var(--gradient-start-rgb), alpha) — the same neutral gray
-     accent as --gradient-start — so they automatically track whichever
-     theme is active instead of hardcoding a color. Dimming their alpha
-     here keeps them a subtle, contained shadow rather than a glow that
-     washes out against true black. */
+  /* ── Dark-mode glows → quiet rims ────────────────────────────────
+     In light mode the brand fills cast a soft colored shadow. On true black
+     that same shadow turns into a neon halo, so in dark mode every filled
+     brand surface gets a plain black drop shadow plus a 1px mint rim
+     instead (the rim is what keeps a deep-teal button visibly "a button"
+     against a near-black page). */
   [data-theme="dark"] ::selection {
-    background: rgba(var(--gradient-start-rgb), 0.35);
+    background: rgba(var(--gradient-start-rgb), 0.28);
   }
 
   [data-theme="dark"] .menu-toggle {
-    box-shadow: 0 4px 16px rgba(var(--gradient-start-rgb), 0.35);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(var(--gradient-start-rgb), 0.28);
   }
 
   [data-theme="dark"] .menu-toggle:hover {
-    box-shadow: 0 6px 22px rgba(var(--gradient-start-rgb), 0.5);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(var(--gradient-start-rgb), 0.5);
   }
 
   [data-theme="dark"] .nav-btn.current {
-    box-shadow: 0 2px 8px rgba(var(--gradient-start-rgb), 0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(var(--gradient-start-rgb), 0.35);
   }
 
   [data-theme="dark"] .question-num {
-    box-shadow: 0 2px 8px rgba(var(--gradient-start-rgb), 0.35);
+    box-shadow: inset 0 0 0 1px rgba(var(--gradient-start-rgb), 0.3);
   }
 
   [data-theme="dark"] .essay-input:focus {
-    box-shadow: 0 0 0 3px rgba(var(--gradient-start-rgb), 0.3);
+    box-shadow: 0 0 0 3px rgba(var(--gradient-start-rgb), 0.2);
   }
 
-  [data-theme="dark"] .btn-primary {
-    box-shadow: 0 2px 12px rgba(var(--gradient-start-rgb), 0.4);
+  [data-theme="dark"] .btn-primary,
+  [data-theme="dark"] .check-answer-btn {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(var(--gradient-start-rgb), 0.28);
   }
 
-  [data-theme="dark"] .btn-primary:hover:not(:disabled) {
-    box-shadow: 0 6px 20px rgba(var(--gradient-start-rgb), 0.55);
+  [data-theme="dark"] .btn-primary:hover:not(:disabled),
+  [data-theme="dark"] .check-answer-btn:hover:not(:disabled) {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(var(--gradient-start-rgb), 0.5);
   }
 
   [data-theme="dark"] .btn-primary:active:not(:disabled) {
-    box-shadow: 0 2px 8px rgba(var(--gradient-start-rgb), 0.3);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(var(--gradient-start-rgb), 0.28);
+  }
+
+  [data-theme="dark"] .skip-link {
+    background: var(--accent-fill-start);
   }
 
   /* ── Dark-mode outline/fill accents ───────────────────────────────
-     These elements use a border or solid fill rather than a soft
-     shadow, so they're swapped to --accent-outline/--accent-outline-soft
-     (a lighter neutral gray, defined alongside the rest of the dark
-     palette above) rather than the darker --gradient-start, since a
-     dark fill used as a thin border/ring would nearly disappear against
-     true black. Gradient *fills* (the header, .btn-primary,
-     .question-num, .nav-btn.current) are left using --gradient/
-     --gradient-start directly — a solid gray block reads fine on black
-     the same way it does on white. */
+     Borders and rings use the bright mint (--accent-outline*); anything
+     with white text on it uses the deep teal (--accent-fill-start). */
   [data-theme="dark"] .question-card.answered {
     border-color: var(--accent-outline-soft);
   }
@@ -527,15 +540,86 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   }
 
   [data-theme="dark"] .option-btn.selected .option-letter {
-    background: var(--accent-outline-soft);
+    background: var(--accent-fill-start);
   }
 
   [data-theme="dark"] .option-btn:hover:not(.disabled) {
     border-color: var(--accent-outline-soft);
   }
 
+  /* After "Check answer" an option is .selected AND .correct/.wrong. The
+     .selected rules above are more specific than the base .correct/.wrong
+     rules, so a wrong answer used to keep a TEAL border (and a teal letter
+     circle) instead of turning red. These must stay below the .selected
+     rules. The letter circles use deeper fills than --success/--error so
+     the white letter stays readable. */
+  [data-theme="dark"] .option-btn.correct,
+  [data-theme="dark"] .option-btn.selected.correct {
+    border-color: var(--success);
+    background: var(--success-bg);
+  }
+
+  [data-theme="dark"] .option-btn.wrong,
+  [data-theme="dark"] .option-btn.selected.wrong {
+    border-color: var(--error);
+    background: var(--error-bg);
+  }
+
+  [data-theme="dark"] .option-btn.correct .option-letter,
+  [data-theme="dark"] .option-btn.selected.correct .option-letter {
+    background: #047857;
+  }
+
+  [data-theme="dark"] .option-btn.wrong .option-letter,
+  [data-theme="dark"] .option-btn.selected.wrong .option-letter {
+    background: #b91c1c;
+  }
+
   [data-theme="dark"] .toggle-switch.active {
     background: var(--accent-outline-soft);
+  }
+
+  /* The option rows' read-only checkbox is the browser's native one: in dark
+     mode it renders as a flat gray square (and a gray tick when checked)
+     that matches nothing else on the page. Draw it with the theme instead.
+     Dark-only; light mode keeps the native control. */
+  [data-theme="dark"] .export-checkbox {
+    -webkit-appearance: none;
+    appearance: none;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid #4a5b61;
+    border-radius: 5px;
+    background: var(--bg-primary);
+    display: inline-grid;
+    place-content: center;
+    vertical-align: middle;
+  }
+
+  [data-theme="dark"] .export-checkbox:checked {
+    background: var(--accent-fill-start);
+    border-color: var(--accent-outline-soft);
+  }
+
+  [data-theme="dark"] .export-checkbox:checked::after {
+    content: "";
+    width: 4px;
+    height: 8px;
+    margin-top: -1px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  [data-theme="dark"] .option-btn.correct .export-checkbox:checked {
+    background: #047857;
+    border-color: var(--success);
+  }
+
+  [data-theme="dark"] .option-btn.wrong .export-checkbox:checked {
+    background: #b91c1c;
+    border-color: var(--error);
   }
 
   [data-theme="dark"] .toggle-option:focus-visible,
@@ -546,6 +630,65 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
 
   [data-theme="dark"] .essay-input:focus {
     border-color: var(--accent-outline-soft);
+  }
+
+  /* Header: the progress FILL is the one place a bright accent is wanted on
+     the deep-teal header (small, no text on it). It used to be a green
+     (#34d399) unrelated to the teal brand. */
+  [data-theme="dark"] .progress-container {
+    background: rgba(0, 0, 0, 0.28);
+  }
+
+  [data-theme="dark"] .progress-bar {
+    background: linear-gradient(90deg, #5eead4, #2dd4bf);
+    box-shadow: 0 0 8px rgba(var(--gradient-start-rgb), 0.35);
+  }
+
+  [data-theme="dark"] .header::after {
+    background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
+  }
+
+  /* Dialogs and modals were --bg-primary (#000), i.e. exactly the page
+     color with no border, so they melted into the backdrop. Lift them one
+     step (--card-bg) and give them a hairline border. */
+  [data-theme="dark"] .modal-content,
+  [data-theme="dark"] dialog.quiz-info-dialog,
+  [data-theme="dark"] .quiz-info-dialog {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+  }
+
+  [data-theme="dark"] .side-menu {
+    border-left: 1px solid var(--border-color);
+    box-shadow: -8px 0 48px rgba(0, 0, 0, 0.7);
+  }
+
+  [data-theme="dark"] .toast {
+    background: var(--card-bg);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Results badge: the saturated red/green gradients with a white ring were
+     the brightest elements on the results screen. Deeper fills, a ring in
+     the badge's own hue, and a black shadow instead of a colored glow. */
+  [data-theme="dark"] .score-circle.pass {
+    background: linear-gradient(135deg, #0e8a72, #066b55);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(110, 231, 183, 0.25);
+  }
+
+  [data-theme="dark"] .score-circle.fail {
+    background: linear-gradient(135deg, #d24b4b, #8f1d1d);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 176, 176, 0.25);
+  }
+
+  [data-theme="dark"] .score-circle.pass::after {
+    border-color: #34d399;
+    opacity: 0.4;
+  }
+
+  [data-theme="dark"] .score-circle.fail::after {
+    border-color: #f87171;
+    opacity: 0.4;
   }
 
   /* ── Base ────────────────────────────────────────────────────── */
@@ -2048,6 +2191,13 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     --color-text-tertiary: var(--text-muted);
     --color-background: var(--bg-primary);
     --color-background-secondary: var(--bg-secondary);
+    /* The shared quiz-info-modal CSS also reads these three. They were never
+       mapped here, so its fallbacks won: a near-white (#fafafa) dialog body
+       in dark mode, a blue→violet strip across the dialog header, and a
+       neutral-gray skeleton color. */
+    --color-background-light: var(--bg-secondary);
+    --color-bg-hover: rgba(128, 128, 128, 0.18);
+    --gradient-accent: var(--gradient);
     --color-hover-overlay: rgba(var(--gradient-start-rgb), 0.08);
     --color-success: var(--success);
     --color-error: var(--error);
@@ -2069,6 +2219,12 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   }
   
   [data-theme="dark"] {
+    /* "primary" drives markdown links/blockquotes and the info dialog's
+       links + focus ring. In light mode it is the blue --info; in dark mode
+       it is the brand mint so those elements match the rest of the theme. */
+    --color-primary: var(--accent-outline);
+    --color-primary-light: rgba(var(--gradient-start-rgb), 0.1);
+    --color-bg-hover: rgba(255, 255, 255, 0.08);
     --color-code: #e2e8f0;
     --color-hover-overlay: rgba(var(--gradient-start-rgb), 0.15);
     --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.6);
@@ -2079,6 +2235,63 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
 
   ${MARKDOWN_CSS}
   ${QuizInfoModalCSS}
+
+  /* ── Export-specific overrides of the shared CSS above ───────────
+     markdown-css.js and quiz-info-modal-css.js are shared with the live
+     site, where an indigo/violet accent is part of the look. They have to
+     stay as they are there, so the export re-skins the few places where
+     they hard-code a color that clashes with this file's teal theme. This
+     block comes after both on purpose. */
+
+  /* The shared rule colors the dialog title with --color-primary (blue in
+     light mode), overriding the teal this file's own rule asks for. */
+  .quiz-info-dialog-header h2 {
+    color: var(--gradient-start-text);
+  }
+
+  [data-theme="dark"] .quiz-info-dialog-header h2 {
+    color: var(--accent-outline);
+  }
+
+  /* Dialog layers in dark mode: card-colored shell + header, slightly
+     darker hero, and a body that is one step lighter than the hero. */
+  [data-theme="dark"] .quiz-info-hero {
+    background-color: var(--bg-primary);
+  }
+
+  [data-theme="dark"] .quiz-info-dialog-close:hover {
+    background: var(--bg-tertiary);
+  }
+
+  [data-theme="dark"] .quiz-id-badge {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+  }
+
+  /* Markdown tables: hard-coded indigo header/hover tints → brand teal. */
+  [data-theme="dark"] .md-table-wrapper {
+    background-color: var(--bg-primary);
+    border-color: var(--border-color);
+  }
+
+  [data-theme="dark"] .md-table thead tr,
+  [data-theme="dark"] .md-table th {
+    background: rgba(var(--gradient-start-rgb), 0.1);
+    border-bottom-color: rgba(var(--gradient-start-rgb), 0.28);
+  }
+
+  [data-theme="dark"] .md-table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  [data-theme="dark"] .md-table tbody tr:hover {
+    background: rgba(var(--gradient-start-rgb), 0.07);
+    box-shadow: inset 0 0 0 1px rgba(var(--gradient-start-rgb), 0.14);
+  }
+
+  [data-theme="dark"] .md-table td {
+    border-bottom-color: var(--border-color);
+  }
 
   /* ── Print ───────────────────────────────────────────────────── */
   @media print {

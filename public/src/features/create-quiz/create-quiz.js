@@ -968,9 +968,69 @@ function showQuizForm() {
 /** Keep the compact app-bar title in sync with the quiz's own title field. */
 function updateAppTitleBar() {
   const titleEl = document.getElementById("appTitleText");
-  if (titleEl && titleEl.getAttribute("contenteditable") !== "true") {
+  if (titleEl) bindTitleEditor(titleEl);
+  if (titleEl && !isTitleEditing(titleEl)) {
     titleEl.textContent = quizData.title?.trim() || "امتحان بدون عنوان";
   }
+}
+
+/** Same limit as the real #quizTitle field (maxlength="100" + the counter). */
+const QUIZ_TITLE_MAX = 100;
+
+function isTitleEditing(el = document.getElementById("appTitleText")) {
+  return !!el && el.classList.contains("editing");
+}
+
+/** Single-line, whitespace-normalised, length-capped title text. */
+function normalizeTitleText(raw) {
+  return String(raw ?? "").replace(/\s+/g, " ").trim().slice(0, QUIZ_TITLE_MAX);
+}
+
+function placeCaretAtEnd(el) {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+/**
+ * One-time wiring for the contenteditable title (the markup only has the
+ * click / blur / keydown attributes). Pasted or dropped content is forced to
+ * plain single-line text — a contenteditable otherwise accepts rich HTML and
+ * line breaks, which broke the one-line title bar — and the length cap is
+ * enforced while typing. Previously the 100-character limit only applied to
+ * the hidden #quizTitle input's maxlength, which does NOT apply to a value set
+ * from script, so a longer title slipped through on commit.
+ */
+function bindTitleEditor(el) {
+  if (el._titleEditorBound) return;
+  el._titleEditorBound = true;
+
+  // Keyboard access: the title is a focusable "button" until editing starts.
+  if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
+  if (!el.hasAttribute("role")) el.setAttribute("role", "button");
+
+  el.addEventListener("paste", (e) => {
+    if (!isTitleEditing(el)) return;
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData)?.getData("text") || "";
+    const flat = text.replace(/\s+/g, " ");
+    if (flat) document.execCommand("insertText", false, flat);
+  });
+  el.addEventListener("drop", (e) => {
+    if (isTitleEditing(el)) e.preventDefault();
+  });
+  el.addEventListener("input", (e) => {
+    if (!isTitleEditing(el) || e.isComposing) return;
+    // Chromium can leave a stray <br> behind after the text is cleared.
+    if (el.childElementCount > 0 && !el.textContent) el.textContent = "";
+    if (el.textContent.length > QUIZ_TITLE_MAX) {
+      el.textContent = el.textContent.slice(0, QUIZ_TITLE_MAX);
+      placeCaretAtEnd(el);
+    }
+  });
 }
 
 // ============================================================================
@@ -986,7 +1046,20 @@ function updateAppTitleBar() {
 window.startTitleEdit = function () {
   const titleEl = document.getElementById("appTitleText");
   if (!titleEl) return;
+  bindTitleEditor(titleEl);
 
+  // The markup calls this from `onclick`, which also fires for every click
+  // INSIDE the box while it is already being edited. Re-running the start
+  // logic there rewrote the text back to the last committed title (throwing
+  // away whatever was typed) and re-selected everything, so the caret could
+  // never be placed and words could not be selected with the mouse. While
+  // editing, clicks belong to the browser.
+  if (isTitleEditing(titleEl)) return;
+
+  // Keep the box at least as wide as the label it replaces so entering edit
+  // mode doesn't make the bar jump; it still grows with the text (see
+  // .app-title-text.editing in create-quiz.css).
+  titleEl.style.minWidth = `${Math.ceil(titleEl.getBoundingClientRect().width)}px`;
   titleEl.setAttribute("contenteditable", "true");
   titleEl.textContent = quizData.title || "";
   titleEl.classList.add("editing");
@@ -999,17 +1072,27 @@ window.startTitleEdit = function () {
   selection.addRange(range);
 };
 
+function endTitleEdit(titleEl) {
+  titleEl.classList.remove("editing");
+  titleEl.style.minWidth = "";
+  titleEl.scrollLeft = 0;
+  titleEl.setAttribute("contenteditable", "false");
+}
+
 /** Commit the edited app-bar title back into #quizTitle (the real field). */
 window.commitTitleEdit = function () {
   const titleEl = document.getElementById("appTitleText");
-  if (!titleEl || titleEl.getAttribute("contenteditable") !== "true") return;
+  if (!isTitleEditing(titleEl)) return;
 
-  titleEl.setAttribute("contenteditable", "false");
-  titleEl.classList.remove("editing");
+  const newTitle = normalizeTitleText(titleEl.textContent);
+  endTitleEdit(titleEl);
 
-  const newTitle = titleEl.textContent.trim();
   const titleInput = document.getElementById("quizTitle");
   if (titleInput && titleInput.value !== newTitle) {
+    // A rename is one discrete structural change (not a per-keystroke edit),
+    // so it gets its own undo point — same as the lesson editor. Must run
+    // BEFORE quizData.title changes so the snapshot holds the old title.
+    pushHistorySnapshot();
     titleInput.value = newTitle;
     // Reuse the exact same path typing in the metadata field already
     // takes: updates quizData.title, the char counter, the app-bar text,
@@ -1020,20 +1103,36 @@ window.commitTitleEdit = function () {
   }
 };
 
+/** Discard the in-progress rename (Escape). */
+window.cancelTitleEdit = function () {
+  const titleEl = document.getElementById("appTitleText");
+  if (!isTitleEditing(titleEl)) return;
+  endTitleEdit(titleEl);
+  updateAppTitleBar();
+};
+
 /** Enter commits, Escape cancels without saving. */
 window.handleTitleEditKeydown = function (event) {
+  const titleEl = document.getElementById("appTitleText");
+  if (!titleEl || event.isComposing) return;
+
+  if (!isTitleEditing(titleEl)) {
+    // Keyboard users: Enter / Space / F2 on the focused title starts a rename.
+    if (event.key === "Enter" || event.key === " " || event.key === "F2") {
+      event.preventDefault();
+      window.startTitleEdit();
+    }
+    return;
+  }
+
   if (event.key === "Enter") {
     event.preventDefault();
-    document.getElementById("appTitleText")?.blur();
+    titleEl.blur(); // → onblur → commitTitleEdit
   } else if (event.key === "Escape") {
     event.preventDefault();
-    const titleEl = document.getElementById("appTitleText");
-    if (titleEl) {
-      titleEl.setAttribute("contenteditable", "false");
-      titleEl.classList.remove("editing");
-      updateAppTitleBar();
-      titleEl.blur();
-    }
+    event.stopPropagation();
+    window.cancelTitleEdit();
+    titleEl.blur();
   }
 };
 
@@ -4626,6 +4725,8 @@ function updateInUserQuizzes(quizId, quizToSave) {
 // ============================================================================
 
 window.exportQuiz = function () {
+  // Ctrl+E while the title is mid-rename: apply the rename first.
+  window.commitTitleEdit();
   const errors = validateQuiz();
   if (errors.length > 0) {
     showNotification(
@@ -4728,6 +4829,8 @@ window.exportQuiz = function () {
 // ============================================================================
 
 window.saveLocally = function () {
+  // Ctrl+S while the title is mid-rename: apply the rename before validating/saving.
+  window.commitTitleEdit();
   const errors = validateQuiz();
 
   if (errors.length > 0) {
@@ -4946,6 +5049,8 @@ function resetPreviewModalTitle() {
 }
 
 window.previewQuiz = function () {
+  // Ctrl+P while the title is mid-rename: apply the rename first.
+  window.commitTitleEdit();
   const errors = validateQuiz();
 
   if (errors.length > 0) {

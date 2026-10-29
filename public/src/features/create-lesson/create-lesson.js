@@ -1376,16 +1376,87 @@ function hydrateBlock(block) {
 // APP-BAR TITLE — click-to-rename (the ONLY place the lesson title is set)
 // =============================================================================
 
+const LESSON_TITLE_MAX = 200;
+
 function updateAppTitleBar() {
     const el = document.getElementById("appTitleText");
-    if (el && el.getAttribute("contenteditable") !== "true") {
+    if (el) bindTitleEditor(el);
+    if (el && !isTitleEditing(el)) {
         el.textContent = lessonData.title?.trim() || "درس بدون عنوان";
     }
+}
+
+function isTitleEditing(el = document.getElementById("appTitleText")) {
+    return !!el && el.classList.contains("editing");
+}
+
+/** Single-line, whitespace-normalised, length-capped title text. */
+function normalizeTitleText(raw) {
+    return String(raw ?? "").replace(/\s+/g, " ").trim().slice(0, LESSON_TITLE_MAX);
+}
+
+/**
+ * One-time wiring for the contenteditable title (the markup only has the
+ * click / blur / keydown attributes). Pasted or dropped content is forced to
+ * plain single-line text — a contenteditable otherwise accepts rich HTML and
+ * line breaks, which broke the one-line title bar — and the length cap is
+ * enforced while typing, not only when the edit is committed.
+ */
+function bindTitleEditor(el) {
+    if (el._titleEditorBound) return;
+    el._titleEditorBound = true;
+
+    // Keyboard access: the title is a focusable "button" until editing starts.
+    if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
+    if (!el.hasAttribute("role")) el.setAttribute("role", "button");
+
+    el.addEventListener("paste", (e) => {
+        if (!isTitleEditing(el)) return;
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData)?.getData("text") || "";
+        const flat = text.replace(/\s+/g, " ");
+        if (flat) document.execCommand("insertText", false, flat);
+    });
+    el.addEventListener("drop", (e) => {
+        if (isTitleEditing(el)) e.preventDefault();
+    });
+    el.addEventListener("input", (e) => {
+        if (!isTitleEditing(el) || e.isComposing) return;
+        // Chromium can leave a stray <br> behind after the text is cleared.
+        if (el.childElementCount > 0 && !el.textContent) el.textContent = "";
+        if (el.textContent.length > LESSON_TITLE_MAX) {
+            el.textContent = el.textContent.slice(0, LESSON_TITLE_MAX);
+            placeCaretAtEnd(el);
+        }
+    });
+}
+
+function placeCaretAtEnd(el) {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
 }
 
 window.startTitleEdit = function () {
     const el = document.getElementById("appTitleText");
     if (!el) return;
+    bindTitleEditor(el);
+
+    // The markup calls this from `onclick`, which also fires for every click
+    // INSIDE the box while it is already being edited. Re-running the start
+    // logic there rewrote the text back to the last committed title (throwing
+    // away whatever was typed) and re-selected everything, so the caret could
+    // never be placed and words could not be selected with the mouse. While
+    // editing, clicks belong to the browser.
+    if (isTitleEditing(el)) return;
+
+    // Keep the box at least as wide as the label it replaces so entering edit
+    // mode doesn't make the bar jump; it still grows with the text (see
+    // .app-title-text.editing in create-lesson.css).
+    el.style.minWidth = `${Math.ceil(el.getBoundingClientRect().width)}px`;
     el.setAttribute("contenteditable", "true");
     el.textContent = lessonData.title || "";
     el.classList.add("editing");
@@ -1397,14 +1468,20 @@ window.startTitleEdit = function () {
     sel.addRange(range);
 };
 
+function endTitleEdit(el) {
+    el.classList.remove("editing");
+    el.style.minWidth = "";
+    el.scrollLeft = 0;
+    el.setAttribute("contenteditable", "false");
+}
+
 window.commitTitleEdit = function () {
     const el = document.getElementById("appTitleText");
-    if (!el || el.getAttribute("contenteditable") !== "true") return;
-    el.setAttribute("contenteditable", "false");
-    el.classList.remove("editing");
+    if (!isTitleEditing(el)) return;
+    const next = normalizeTitleText(el.textContent);
+    endTitleEdit(el);
 
-    const next = el.textContent.trim().slice(0, 200);
-    if (next !== lessonData.title) {
+    if (next !== (lessonData.title || "")) {
         // Unlike a quiz's mirrored #quizTitle input, this contenteditable
         // span IS the only place lessonData.title is ever set (see the
         // section header above) — so a commit here is a single discrete
@@ -1419,19 +1496,34 @@ window.commitTitleEdit = function () {
     updateAppTitleBar();
 };
 
+window.cancelTitleEdit = function () {
+    const el = document.getElementById("appTitleText");
+    if (!isTitleEditing(el)) return;
+    endTitleEdit(el);
+    updateAppTitleBar();
+};
+
 window.handleTitleEditKeydown = function (event) {
     const el = document.getElementById("appTitleText");
+    if (!el || event.isComposing) return;
+
+    if (!isTitleEditing(el)) {
+        // Keyboard users: Enter / Space / F2 on the focused title starts a rename.
+        if (event.key === "Enter" || event.key === " " || event.key === "F2") {
+            event.preventDefault();
+            window.startTitleEdit();
+        }
+        return;
+    }
+
     if (event.key === "Enter") {
         event.preventDefault();
-        el?.blur();
+        el.blur(); // → onblur → commitTitleEdit
     } else if (event.key === "Escape") {
         event.preventDefault();
-        if (el) {
-            el.setAttribute("contenteditable", "false");
-            el.classList.remove("editing");
-            updateAppTitleBar();
-            el.blur();
-        }
+        event.stopPropagation();
+        window.cancelTitleEdit();
+        el.blur();
     }
 };
 
@@ -3048,6 +3140,9 @@ async function loadReaderModules() {
 }
 
 window.previewLesson = async function () {
+    // Ctrl+P while the title is mid-rename: apply the rename first, otherwise
+    // the preview (and validation) would use the old title.
+    window.commitTitleEdit();
     const errors = validateLesson();
     if (errors.length > 0) {
         showNotification("خطأ في التحقق", "الرجاء إصلاح الأخطاء التالية:\n\n" + errors.join("\n"), "error");
@@ -3229,6 +3324,8 @@ function validateLesson() {
 //   * an already-saved lesson is updated in place, keeping its parentId.
 
 window.saveLesson = async function () {
+    // Ctrl+S while the title is mid-rename: apply the rename before saving.
+    window.commitTitleEdit();
     if (publishedLessonId) return window.publishLesson();
     await ensureLessonPasswordHashReady();
     const errors = validateLesson();

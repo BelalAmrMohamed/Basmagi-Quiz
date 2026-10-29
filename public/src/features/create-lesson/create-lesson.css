@@ -256,14 +256,31 @@ body.sidebar-expanded .app-title-bar {
     background: var(--color-background);
 }
 
+.app-title-text:focus-visible:not(.editing) {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
 .app-title-text.editing {
     cursor: text;
-    overflow: visible;
+    /* While renaming, the box grows with the text up to a cap and then
+       scrolls INSIDE itself. It used to be `overflow: visible`, so a long title
+       spilled out of its 260px box and was painted on top of the autosave
+       indicator and the undo/redo buttons next to it. */
+    max-width: min(46vw, 440px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    text-overflow: clip;
     white-space: nowrap;
+    scrollbar-width: none;
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px var(--color-primary-light);
     background: var(--color-surface);
     outline: none;
+}
+
+.app-title-text.editing::-webkit-scrollbar {
+    display: none;
 }
 
 @media (max-width: 768px) {
@@ -302,6 +319,10 @@ body.sidebar-expanded .app-title-bar {
 
     .app-title-text {
         max-width: 120px;
+    }
+
+    .app-title-text.editing {
+        max-width: min(62vw, 260px);
     }
 
     .app-bar-menu {
