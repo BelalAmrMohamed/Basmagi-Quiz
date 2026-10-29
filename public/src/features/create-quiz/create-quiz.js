@@ -344,7 +344,13 @@ function isHistoryTextField(el) {
 function textHistoryAvailable(kind) {
   if (!lastTextField || !document.body.contains(lastTextField)) return false;
   try {
-    if (document.activeElement !== lastTextField) lastTextField.focus({ preventScroll: true });
+    const active = document.activeElement;
+    if (active !== lastTextField) {
+      // Never pull focus away from another editable element (e.g. the app-bar
+      // title) — it blurred the title right after it was clicked.
+      if (active && (active.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName))) return false;
+      lastTextField.focus({ preventScroll: true });
+    }
     return document.queryCommandEnabled(kind);
   } catch (_) {
     return false;

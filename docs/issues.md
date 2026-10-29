@@ -10,16 +10,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ### Quiz Passwords are exposed
 The home page downloads every quiz’s password to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be fixed.
 
-### Create-Lesson
-![alt text](image-1.png)
-
-```
-create-lesson:1  Failed to load resource: the server responded with a status of 503 (Service Unavailable)
-```
-
-- I'm unable to change the title of the lesson from the top right.
-- I'm unable to save the lesson I created with AI from the import link (MCP Server). I got this error ![error](image.png), which doesn't explain anything. I didn't face any issues when using the create-quiz page. Although in both pages it's hard to edit the title, probably related to text selection issues, but I might be wrong.
-
 ### AI Agent
 
 #### Dictation

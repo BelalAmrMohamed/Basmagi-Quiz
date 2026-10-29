@@ -269,7 +269,14 @@ function isHistoryTextField(el) {
 function textHistoryAvailable(kind) {
     if (!lastTextField || !document.body.contains(lastTextField)) return false;
     try {
-        if (document.activeElement !== lastTextField) lastTextField.focus({ preventScroll: true });
+        const active = document.activeElement;
+        if (active !== lastTextField) {
+            // Never pull focus away from another editable element (the app-bar title,
+            // an input...). Doing so blurred the title right after it was clicked,
+            // which ended the rename before anything could be typed.
+            if (active && (active.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName))) return false;
+            lastTextField.focus({ preventScroll: true });
+        }
         return document.queryCommandEnabled(kind);
     } catch (_) {
         return false;
@@ -3197,6 +3204,7 @@ window.saveLesson = async function () {
                     _writeUserItems(items);
                     savedId = editingLessonId;
                 }
+            } else {
                 // New lesson: file it into targetFolderId (if passed) or workspace root.
                 const targetParent = targetFolderId || null;
                 if (hasLessonLevelCollision(items, { title, parentId: targetParent })) {
