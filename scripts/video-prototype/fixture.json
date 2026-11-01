@@ -1,0 +1,8 @@
+{"lesson":{"title":"طريقة السمبلكس (Simplex Method)","lang":"ar","type":"math"},
+"scenes":[
+{"id":"s1","title":"مقدمة","md":"### طريقة السمبلكس (Simplex Method)\nفي مسألة التعظيم (Maximization) نكتب دالة الهدف $Z = 3x_1 + 5x_2$ مع القيد $2x_1 + x_2 \\le 8$ ثم نضيف متغيرات مساعدة (Slack Variables)."},
+{"id":"s2","title":"قانون الجذور","md":"لحل المعادلة التربيعية نستخدم القانون الآتي:\n$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$\nحيث الـ discriminant يساوي $b^2 - 4ac$."},
+{"id":"s3","title":"التفاضل والتكامل","md":"مشتقة الدالة $f(x)=x^2$ هي:\n$$\\frac{d}{dx}x^2 = 2x$$\nوالتكامل المحدد:\n$$\\int_0^1 x\\,dx = \\frac{1}{2}$$"},
+{"id":"s4","title":"حل خطوة بخطوة","md":"نحل المعادلة خطوة بخطوة:\n$$\\begin{aligned}2x+3&=11\\\\2x&=8\\\\x&=4\\end{aligned}$$\nإذن قيمة الـ variable تساوي 4."},
+{"id":"s5","title":"قوانين التحديث","md":"قانون الصف الجديد:\nNew Z = Old Z - (Pivot Key Coefficient * New Entering Row)\nأي أن الـ Pivot Key يُستخدم لتحديث صف Z."}
+]}
