@@ -7,9 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### MCP Server and set prompts
-Update the set prompts and the prompts in the MCP Server to make sure that AI is using LaTeX math for math equations in lessons and quizzes. It shouldn't use normal text, it should use LaTeX math.
-
 ### Quiz Passwords are exposed
 The home page downloads every quiz’s password to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be fixed.
 
@@ -28,6 +25,12 @@ Example 2: The markdown engine was manually detecting the direction of sentences
 Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is common to all pages. Its JS and CSS are the same and are imported in all pages, but the HTML is duplicated, which means it's extremely hard to maintain and update. And it became to messy. And it's not even the same, the docuement pages don't have the HTML directly in them, it's inserted from a JS file. 
 
 ## New Features
+
+## Dictation for Essay Questions (Lesson & Quiz Pages)
+Add dictation feature for essays in quizzes and lessons
+
+## New clear button in the create pages
+Add a button for clearing/deleting all drafts (المسودات) in the create-quiz page and the create-lesson page.
 
 ### Result Pages
 

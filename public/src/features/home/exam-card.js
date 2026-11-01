@@ -242,12 +242,29 @@ export function createExamCard(exam) {
   const metaWrap = document.createElement("div");
   metaWrap.className = "exam-card-meta";
 
-  // Render question types as a plain subtext line (e.g. "MCQ · Essay")
+  // Render question types as styled pill chips (consistent with user-quiz-card)
   if (Array.isArray(exam.questionTypes) && exam.questionTypes.length > 0) {
-    const typesLine = document.createElement("p");
-    typesLine.className = "exam-question-count exam-types-subtext";
-    typesLine.textContent = exam.questionTypes.join(" · ");
-    metaWrap.appendChild(typesLine);
+    const typesRow = document.createElement("div");
+    typesRow.className = "user-quiz-types-row exam-types-subtext";
+    const colorMap = {
+      MCQ: "var(--color-primary-light)",
+      Essay: "var(--color-success-light)",
+      "True/False": "var(--color-warning-light)",
+    };
+    exam.questionTypes.forEach((t) => {
+      const chip = document.createElement("span");
+      chip.textContent = t;
+      chip.style.cssText = `
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: ${colorMap[t] || "var(--color-border)"};
+        color: var(--color-text-primary);
+      `;
+      typesRow.appendChild(chip);
+    });
+    metaWrap.appendChild(typesRow);
   }
 
   metaWrap.appendChild(questionCountLine);

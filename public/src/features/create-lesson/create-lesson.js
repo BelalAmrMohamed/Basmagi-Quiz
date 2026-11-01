@@ -999,7 +999,14 @@ function createLessonFromAgent(toolCall) {
     const normalizedSections = lesson.sections.map((section) => ({
         ...section,
         id: newLocalId("s"),
-        blocks: section.blocks.map((block) => ({ ...block, id: block.id || newLocalId("q"), _localId: newLocalId("b") })),
+        blocks: section.blocks.map((block) => {
+            const b = { ...block, _localId: newLocalId("b") };
+            // Only question blocks carry an `id` — adding `id` to markdown/media/quizRef/
+            // lesson-reference blocks would make them fail the validator's whitelist check
+            // (assertNoExtraKeys) with "حقل غير مسموح به: id".
+            if (b.type === "question") b.id = b.id || newLocalId("q");
+            return b;
+        }),
     }));
 
     pushHistorySnapshot();

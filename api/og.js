@@ -102,7 +102,10 @@ const AUTHOR_ROW = { centerX: 635, top: 588 };
 // are narrower, so the Latin limit stays more generous.
 const TITLE_MAX_CHARS_ARABIC = 34;
 const TITLE_MAX_CHARS_LATIN = 55;
-const DESCRIPTION_MAX_CHARS = 90;
+// At 20px Tajawal in the 640px TEXT_COLUMN, Latin glyphs average ~11px wide
+// → ≈58 chars max before overflow; Arabic glyphs are wider so we use 55 for
+// a shared safe limit that covers both scripts without a separate detection pass.
+const DESCRIPTION_MAX_CHARS = 55;
 
 // ── Course info fields (mirrors public/src/features/home/course-info-fields.js) ─
 // This is a small server-side adapter, not a verbatim reuse: the client's

@@ -1,4 +1,4 @@
-// Platform lesson card and its shared actions menu.
+﻿// Platform lesson card and its shared actions menu.
 import { downloadLesson } from "./lesson-download.js";
 import { openExamDropdownMenu, createActionGroupSubmenu, createExamInfoSubmenu } from "./exam-dropdown-menu.js";
 import { showUserLessonInfoModal, collectLessonInfo } from "./lesson-info-modal.js";
@@ -78,10 +78,14 @@ export function createLessonCard(lesson) {
     text.appendChild(desc);
   }
   const sectionCount = Number(lesson.sectionIds?.length ?? lesson.sectionCount ?? 0);
+  const questionCount = Number(lesson.questionCount ?? lesson.stats?.questionCount ?? 0);
   const meta = document.createElement("p");
   meta.className = "exam-question-count";
-  meta.textContent = [sectionCount === 1 ? "قسم واحد" : `${sectionCount} أقسام`, lesson.passwordProtected ? "محمي" : ""]
-    .filter(Boolean).join(" · ");
+  meta.textContent = [
+    sectionCount === 1 ? "قسم واحد" : `الأقسام: ${sectionCount}`,
+    questionCount > 0 ? `الأسئلة المدمجة: ${questionCount}` : "",
+    lesson.passwordProtected ? "محمي" : ""
+  ].filter(Boolean).join(" · ");
   text.appendChild(meta);
 
   const actions = document.createElement("div");

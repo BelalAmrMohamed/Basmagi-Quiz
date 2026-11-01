@@ -1,4 +1,4 @@
-/* ============================================================================ */
+﻿/* ============================================================================ */
 /* public/src/features/home/index.css */
 /* CSS variables at themes.css */
 /* All animations are in `public/src/shared/flow-field.js` */
@@ -3738,6 +3738,16 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   font-size: 1.1rem;
 }
 
+/* Desktop: truncate long quiz-card titles to 2 lines */
+.exam-card.user-quiz-card h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
 /* Metadata row (question count + date) */
 .user-quiz-metadata {
   display: flex;
@@ -5311,6 +5321,7 @@ kbd {
     inset: auto;
     display: flex;
     flex-wrap: wrap;
+    align-items: baseline;
     justify-content: space-between;
     width: 100%;
     margin: .5rem 0 0;

@@ -139,6 +139,17 @@ function isURL_orPath(string) {
       Confirmation Modal
      ============================ */
 
+
+/**
+ * Returns the topmost open <dialog>, or document.body as fallback.
+ * Native <dialog>.showModal() creates a browser top-layer that beats any
+ * z-index value, so confirmation overlays must be appended INSIDE the open
+ * dialog to appear above it (e.g. the trash panel, quiz-info-modal, etc.).
+ */
+function getOverlayContainer() {
+  const openDialogs = Array.from(document.querySelectorAll("dialog[open]"));
+  return openDialogs.length ? openDialogs[openDialogs.length - 1] : document.body;
+}
 export function _confirm(message) {
   return new Promise((resolve) => {
     // 1. Create Overlay
@@ -171,7 +182,7 @@ export function _confirm(message) {
       `;
 
     overlay.appendChild(modal);
-    document.body.appendChild(overlay);
+    getOverlayContainer().appendChild(overlay);
 
     // 4. Focus Management
     const confirmBtn = modal.querySelector(".confirm");
@@ -282,7 +293,7 @@ export function _alert(message) {
       `;
 
     overlay.appendChild(modal);
-    document.body.appendChild(overlay);
+    getOverlayContainer().appendChild(overlay);
 
     // 4. Focus Management
     const okBtn = modal.querySelector(".confirm");
@@ -383,7 +394,7 @@ export function _prompt(message, defaultValue = "", options = {}) {
       `;
 
     overlay.appendChild(modal);
-    document.body.appendChild(overlay);
+    getOverlayContainer().appendChild(overlay);
 
     // 4. Focus Management
     const input = modal.querySelector(".prompt-input");
@@ -578,7 +589,7 @@ function openTypedConfirmationStep({ confirmPhrase, inputLabel, confirmButtonLab
       `;
 
     overlay.appendChild(modal);
-    document.body.appendChild(overlay);
+    getOverlayContainer().appendChild(overlay);
 
     const input = modal.querySelector(".typed-confirmation-input");
     const confirmBtn = modal.querySelector(".typed-confirmation-confirm-btn");
