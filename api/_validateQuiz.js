@@ -4,6 +4,8 @@
 // All validation is whitelist-based (unknown keys are REJECTED, not stripped).
 // =============================================================================
 
+import { checkQuiz, formatIssueList } from "../scripts/lib/content-rules.js";
+
 const MAX_SIZE_BYTES = 1_000_000; // 1 MB per quiz, below the serverless request-body limit
 
 const ALLOWED_TOP_KEYS = new Set(["meta", "stats", "questions"]);
@@ -121,33 +123,17 @@ export function validateQuizPayload(raw) {
     );
   }
 
-  // meta.title — required
-  if (typeof meta.title !== "string" || !meta.title.trim()) {
-    throw new Error("MISSING_META_FIELD: title is required in meta");
+  // meta.title / description / source CONTENT rules (limits, required, URL) are
+  // checked together with the questions by the shared rules below — only the
+  // types are checked here.
+  if (typeof meta.title !== "string") {
+    throw new Error("title مطلوب: يجب أن يكون نصاً.");
   }
-  if (meta.title.trim().length > 200) {
-    throw new Error("INVALID_META_FIELD: title exceeds 200 characters");
+  if (meta.description !== undefined && typeof meta.description !== "string") {
+    throw new Error("INVALID_META_FIELD: description must be a string");
   }
-
-  // meta.description — optional string
-  if (meta.description !== undefined) {
-    if (typeof meta.description !== "string") {
-      throw new Error("INVALID_META_FIELD: description must be a string");
-    }
-    if (meta.description.length > 1000) {
-      throw new Error(
-        "INVALID_META_FIELD: description exceeds 1000 characters",
-      );
-    }
-  }
-
-  // meta.source — optional URL
-  if (meta.source !== undefined) {
-    if (typeof meta.source !== "string" || !URL_REGEX.test(meta.source)) {
-      throw new Error(
-        "INVALID_META_FIELD: source must be a valid http/https URL",
-      );
-    }
+  if (meta.source !== undefined && typeof meta.source !== "string") {
+    throw new Error("INVALID_META_FIELD: source must be a string");
   }
 
   // meta.author_id — optional string
@@ -185,20 +171,23 @@ export function validateQuizPayload(raw) {
         throw new Error(`INVALID_QUESTION[${i}]: unknown key "${key}"`);
       }
     }
-    const text = q.q;
-    if (!text || typeof text !== "string" || !text.trim()) {
-      throw new Error(`INVALID_QUESTION[${i}]: missing question text (q)`);
-    }
     if (q.multiSelect !== undefined && typeof q.multiSelect !== "boolean") {
       throw new Error(`INVALID_QUESTION[${i}]: multiSelect must be a boolean`);
     }
-    // Essay question must have `answer` field or at least be recognizable
-    if (Array.isArray(q.options) && q.options.length === 0) {
-      throw new Error(
-        `INVALID_QUESTION[${i}]: options array must not be empty if present`,
-      );
-    }
   });
+
+  // Content rules — the SAME checks the editor page and the MCP server run
+  // (scripts/lib/content-rules.js is a synced copy of public/src/shared/content-rules.js).
+  // Every problem is reported at once, not just the first one.
+  const content = checkQuiz({
+    title: meta.title,
+    description: meta.description,
+    source: meta.source,
+    questions: quiz.questions,
+  });
+  if (content.errors.length) {
+    throw new Error(`الامتحان يحتوي على ${content.errors.length} مشكلة:\n${formatIssueList(content.errors)}`);
+  }
 
   // ── 6. Validate stats — recompute and compare ───────────────────────────────
   const computedStats = computeStats(quiz.questions);

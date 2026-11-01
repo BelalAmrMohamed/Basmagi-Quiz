@@ -45,7 +45,8 @@ import {
     _prompt,
 } from "../../components/notifications/notifications.js";
 import { normalizeLessonContent, hasLessonLevelCollision } from "../lesson/lesson-schema.js";
-import { normalizeLessonJson } from "../lesson/lesson-json.js";
+import { normalizeLessonJson, normalizeLessonDraft } from "../lesson/lesson-json.js";
+import { checkLesson, stripLegacySource } from "../../shared/content-rules.js";
 import { FONT_CHOICES, normalizeFontId, applyReaderPrefs } from "../lesson/lesson-reader-prefs.js";
 import { sha256Hex, validateLessonPasswordInput } from "../lesson/lesson-access.js";
 import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar.js";
@@ -604,8 +605,11 @@ function handlePreloadedLessonFromUrl(draftJson = null) {
         }
 
         const parsedJson = JSON.parse(jsonString);
-        const normalized = normalizeLessonJson(parsedJson);
+        // Lenient: never throws away an AI draft over fixable content problems —
+        // they are listed after loading (same checks as save/upload).
+        const normalized = normalizeLessonDraft(parsedJson);
         if (!normalized || !Array.isArray(normalized.sections) || !normalized.sections.length) {
+            showNotification("تعذّر استيراد الدرس", "البيانات المستوردة لا تحتوي على أقسام.", "error");
             return false;
         }
 
@@ -617,7 +621,8 @@ function handlePreloadedLessonFromUrl(draftJson = null) {
 
         lessonData.title = normalized.title || "درس جديد";
         lessonData.description = normalized.description || "";
-        lessonData.source = normalized.source || "تم التوليد بواسطة الذكاء الاصطناعي";
+        // `source` is a link only (normalized.source is already cleaned) — never a made-up sentence.
+        lessonData.source = normalized.source || "";
         lessonData.sections = normalized.sections.map((section) => ({
             ...section,
             id: newLocalId("s"),
@@ -644,9 +649,23 @@ function handlePreloadedLessonFromUrl(draftJson = null) {
             `تم استيراد الدرس «${lessonData.title}» (${lessonData.sections.length} قسم/أقسام) بنجاح من الرابط المباشر.`,
             "success"
         );
+        const importIssues = [...normalized.issues];
+        if (normalized.droppedSource) importIssues.push("تم تجاهل «المصدر» لأنه ليس رابطاً (يجب أن يكون https://...).");
+        if (importIssues.length) {
+            showNotification(
+                `${importIssues.length} ملاحظة تحتاج مراجعة`,
+                importIssues.slice(0, 4).join(" • ") + (importIssues.length > 4 ? ` • … و${importIssues.length - 4} أخرى` : ""),
+                "warning"
+            );
+        }
         return true;
     } catch (err) {
         console.warn("[create-lesson] Failed to parse preloaded lesson from URL:", err);
+        showNotification(
+            "تعذّر استيراد الدرس",
+            `البيانات المستوردة غير صالحة: ${err?.message || err}. اطلب رابطاً جديداً أو أصلح الملف.`,
+            "error"
+        );
         return false;
     }
 }
@@ -1320,7 +1339,7 @@ function openLessonById(id) {
     lessonData = {
         title: row.meta?.title || "",
         description: row.description ?? row.meta?.description ?? "",
-        source: row.source ?? row.meta?.source ?? "",
+        source: stripLegacySource(row.source ?? row.meta?.source ?? ""),
         fontId: normalizeFontId(prefs.fontId),
         passwordHash: row.passwordHash || null,
         passwordProtected: Boolean(row.passwordProtected || row.meta?.passwordProtected || row.passwordHash),
@@ -3029,7 +3048,7 @@ async function openPublishedLessonById(id) {
     lessonData = {
         title: row.title || "",
         description: row.description || "",
-        source: row.source || "",
+        source: stripLegacySource(row.source || ""),
         fontId: normalizeFontId(prefs.fontId),
         passwordHash: null,
         passwordProtected: Boolean(row.password_protected ?? row.passwordProtected),
@@ -3255,60 +3274,42 @@ function closeLessonPreview() {
 // passes here is also publishable server-side later without surprises.
 // =============================================================================
 
+// The content rules come from shared/content-rules.js — the same checks the MCP
+// server and the upload API run. Only editor-only checks stay here.
+function lessonToRuleInput() {
+    return {
+        title: lessonData.title,
+        description: lessonData.description,
+        source: lessonData.source,
+        sections: lessonData.sections.map((section) => ({
+            title: section.title,
+            blocks: section.blocks.map((block) => {
+                if (block.type !== "question" || block.questionKind === "essay") return block;
+                return { ...block, correctIndexes: block.multiSelect ? block.correctIndexes : [block.correctIndex] };
+            }),
+        })),
+    };
+}
+
 function validateLesson() {
-    const errors = [];
+    const publish = Boolean(publishedLessonId || isAdmin);
+    const errors = checkLesson(lessonToRuleInput(), { publish }).errors.map((e) => e.message);
 
-    if (!lessonData.title || !lessonData.title.trim()) {
-        errors.push("عنوان الدرس مطلوب (اضغط على الاسم في الشريط العلوي لتسميته)");
-    }
-    if (lessonData.sections.length === 0) {
-        errors.push("الدرس يحتاج قسماً واحداً على الأقل");
-    }
-    if ((lessonData.description || "").length > 1200) errors.push("وصف الدرس طويل جداً (الحد الأقصى 1200 حرف)");
-    if (publishedLessonId || isAdmin) {
-        lessonData.sections.forEach((section, sIdx) => {
-            section.blocks.forEach((block, bIdx) => {
-                if (block.type === "lesson-reference" && block.lessonId && !UUID_RE.test(String(block.lessonId))) {
-                    errors.push(`القسم ${sIdx + 1} · العنصر ${bIdx + 1}: يجب أن يكون مرجع الدرس المنشور درساً منشوراً وليس درساً محلياً.`);
-                }
-            });
-        });
-    }
-    if (lessonData.passwordProtected && !lessonData.passwordHash) {
-        // Existing published passwords are represented by protection metadata without a client-side hash.
-        if (!publishedLessonId) errors.push("تعذّر التحقق من إعدادات كلمة مرور الدرس");
-    }
-
+    // Editor-only checks (need editor state, not just the content).
     lessonData.sections.forEach((section, sIdx) => {
-        const sLabel = `القسم ${sIdx + 1}`;
         section.blocks.forEach((block, bIdx) => {
-            const label = `${sLabel} · العنصر ${bIdx + 1}`;
-            if (block.type === "media") {
-                if (!block.url?.trim()) errors.push(`${label}: رابط الوسائط مطلوب`);
-            } else if (block.type === "quizRef") {
-                if (!block.quizId?.trim()) errors.push(`${label}: اختر الامتحان المرتبط`);
-            } else if (block.type === "lesson-reference") {
-                if (!block.lessonId?.trim()) errors.push(`${label}: اختر الدرس المرتبط`);
-                else {
-                    const currentIds = [editingLessonId, publishedLessonId].filter(Boolean).map(String);
-                    if (currentIds.includes(String(block.lessonId))) errors.push(`${label}: لا يمكن ربط الدرس بنفسه`);
-                }
-            } else if (block.type === "question") {
-                if (!block.prompt?.trim()) errors.push(`${label}: نص السؤال مطلوب`);
-                if (block.questionKind === "essay") {
-                    if (!block.modelAnswer?.trim()) errors.push(`${label}: الإجابة النموذجية مطلوبة للسؤال المقالي`);
-                } else {
-                    if ((block.options || []).some((o) => !o || !o.trim())) {
-                        errors.push(`${label}: جميع الخيارات يجب أن تحتوي على نص`);
-                    }
-                    const correctIndexes = block.multiSelect ? block.correctIndexes : [block.correctIndex];
-                    if (!Array.isArray(correctIndexes) || !correctIndexes.length || correctIndexes.some((i) => !Number.isInteger(i) || i < 0 || i >= (block.options || []).length)) {
-                        errors.push(`${label}: حدّد الإجابة الصحيحة`);
-                    }
+            if (block.type === "lesson-reference" && block.lessonId?.trim()) {
+                const currentIds = [editingLessonId, publishedLessonId].filter(Boolean).map(String);
+                if (currentIds.includes(String(block.lessonId))) {
+                    errors.push(`القسم ${sIdx + 1} / العنصر ${bIdx + 1}: لا يمكن ربط الدرس بنفسه.`);
                 }
             }
         });
     });
+    if (lessonData.passwordProtected && !lessonData.passwordHash) {
+        // Existing published passwords are represented by protection metadata without a client-side hash.
+        if (!publishedLessonId) errors.push("تعذّر التحقق من إعدادات كلمة مرور الدرس");
+    }
 
     return errors;
 }

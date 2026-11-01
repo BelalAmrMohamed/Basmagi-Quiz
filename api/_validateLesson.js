@@ -13,9 +13,11 @@
 // action handlers before any Supabase write).
 // =============================================================================
 
+import { LIMITS, checkLesson, formatIssueList, isBadSource } from "../scripts/lib/content-rules.js";
+
 const MAX_SIZE_BYTES = 200_000; // lessons carry more prose than a quiz; generous but bounded
 const MAX_SECTIONS = 60;
-const MAX_BLOCKS_PER_SECTION = 40;
+const MAX_BLOCKS_PER_SECTION = LIMITS.blocksPerSection; // shared with the editor + MCP
 const MAX_TITLE_LENGTH = 200;
 const MAX_MARKDOWN_LENGTH = 20_000;
 const MAX_OPTIONS = 8;
@@ -227,6 +229,9 @@ export function validateLessonSource(source) {
     if (clean.length > MAX_SOURCE_LENGTH) {
         throw new Error(`مصدر الدرس طويل جداً (الحد الأقصى ${MAX_SOURCE_LENGTH} حرف).`);
     }
+    if (isBadSource(clean)) {
+        throw new Error("مصدر الدرس يجب أن يكون رابطاً كاملاً يبدأ بـ https:// ولا شيء غيره — أو اتركه فارغاً.");
+    }
     return clean;
 }
 
@@ -268,6 +273,25 @@ export function validateLessonContent(content) {
     const sections = Array.isArray(content.sections) ? content.sections : [];
     if (sections.length === 0) throw new Error("الدرس يحتاج قسماً واحداً على الأقل.");
     if (sections.length > MAX_SECTIONS) throw new Error(`عدد كبير جداً من الأقسام (الحد الأقصى ${MAX_SECTIONS}).`);
+
+    // Content rules — the SAME checks the editor page and the MCP server run
+    // (scripts/lib/content-rules.js is a synced copy of public/src/shared/content-rules.js).
+    // All problems are reported together instead of one at a time.
+    const shared = checkLesson(
+        {
+            sections: sections.map((section) => ({
+                ...(isPlainObject(section) ? section : {}),
+                blocks: (Array.isArray(section?.blocks) ? section.blocks : []).map((block) =>
+                    block?.type === "question" && block.questionKind !== "essay"
+                        ? { ...block, correctIndexes: block.multiSelect ? block.correctIndexes : [block.correctIndex] }
+                        : block),
+            })),
+        },
+        { publish: true, sectionsOnly: true },
+    );
+    if (shared.errors.length) {
+        throw new Error(`الدرس يحتوي على ${shared.errors.length} مشكلة:\n${formatIssueList(shared.errors)}`);
+    }
 
     // Every question id and section id must be unique across the WHOLE
     // lesson (not just within one section) — adaptive-reveal rules and the

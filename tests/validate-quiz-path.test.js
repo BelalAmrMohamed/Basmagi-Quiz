@@ -31,7 +31,7 @@ test("validateQuizPayload accepts quizzes larger than the former 50 KB limit", (
   assert.doesNotThrow(() => validateQuizPayload({
     meta: { id: "AAAAAAAA", title: "Large quiz" },
     stats: { questionCount: 1, questionTypes: ["Essay"] },
-    questions: [{ q: question }],
+    questions: [{ q: question, answer: "نموذج" }],
   }));
 });
 

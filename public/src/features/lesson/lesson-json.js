@@ -1,3 +1,5 @@
+import { LIMITS, checkLesson, cleanSource } from "../../shared/content-rules.js";
+
 function invalid(message) {
   const error = new Error(message);
   error.userMessage = message;
@@ -54,8 +56,8 @@ export function normalizeLessonJson(value) {
       : typeof section.content === "string"
         ? [{ type: "markdown", body: section.content }]
         : null;
-    if (!inputBlocks || inputBlocks.length > 100) {
-      invalid(`Section ${sectionIndex + 1} must have a blocks array with at most 100 blocks.`);
+    if (!inputBlocks || inputBlocks.length > LIMITS.blocksPerSection) {
+      invalid(`Section ${sectionIndex + 1} must have a blocks array with at most ${LIMITS.blocksPerSection} blocks.`);
     }
 
     const blocks = inputBlocks.map((block, blockIndex) => {
@@ -100,14 +102,14 @@ export function normalizeLessonJson(value) {
       }
 
       const prompt = typeof block.prompt === "string" ? block.prompt.trim() : "";
-      if (!prompt || prompt.length > 10000) {
+      if (!prompt || prompt.length > LIMITS.promptMax) {
         invalid(`Question ${blockIndex + 1} in section ${sectionIndex + 1} needs a prompt.`);
       }
       questionCount += 1;
-      const explanation = text(block.explanation ?? "", "Question explanation", 10000);
+      const explanation = text(block.explanation ?? "", "Question explanation", LIMITS.explanationMax);
       if (block.questionKind === "essay") {
         const modelAnswer = typeof block.modelAnswer === "string" ? block.modelAnswer.trim() : "";
-        if (!modelAnswer || modelAnswer.length > 20000) {
+        if (!modelAnswer || modelAnswer.length > LIMITS.modelAnswerMax) {
           invalid(`Essay question ${blockIndex + 1} in section ${sectionIndex + 1} needs a modelAnswer.`);
         }
         return {
@@ -158,4 +160,115 @@ export function normalizeLessonJson(value) {
   });
 
   return { title, description, source, sections, questionCount };
+}
+
+/**
+ * Lenient import for the editor's ?draft= / #data= links.
+ *
+ * Unlike normalizeLessonJson (strict: throws on the first content problem), this
+ * never discards an AI draft because of fixable content problems. It throws only
+ * when there is nothing to load (not an object / no sections) and otherwise
+ * returns the best-effort lesson plus `issues`: Arabic messages from the shared
+ * rules (the same checks the editor's save button and the upload step run).
+ *
+ * @param {unknown} value
+ * @returns {{title: string, description: string, source: string, sections: Array, issues: string[], droppedSource: boolean}}
+ */
+export function normalizeLessonDraft(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("بيانات الدرس يجب أن تكون كائناً يحتوي على title و sections.");
+  }
+  const inputSections = Array.isArray(value.sections)
+    ? value.sections
+    : Array.isArray(value.content?.sections)
+      ? value.content.sections
+      : null;
+  if (!inputSections || !inputSections.length) {
+    throw new Error("الدرس لا يحتوي على أقسام (sections فارغة أو مفقودة).");
+  }
+
+  const issues = checkLesson(value, { publish: false }).errors.map((e) => e.message);
+  const str = (v) => (v === undefined || v === null ? "" : String(v));
+  const ints = (arr) => (Array.isArray(arr) ? arr.map(Number).filter((n) => Number.isInteger(n)) : []);
+
+  const sections = inputSections.map((section) => {
+    const inputBlocks = Array.isArray(section?.blocks)
+      ? section.blocks
+      : typeof section?.content === "string"
+        ? [{ type: "markdown", body: section.content }]
+        : [];
+    const blocks = [];
+    for (const block of inputBlocks) {
+      if (!block || typeof block !== "object") continue;
+      const type = block.type || (block.prompt || block.q ? "question" : "markdown");
+      if (type === "markdown") {
+        blocks.push({ type: "markdown", body: str(block.body ?? block.content) });
+      } else if (type === "media") {
+        blocks.push({
+          type: "media",
+          url: str(block.url).trim(),
+          kind: ["image", "audio", "video"].includes(block.kind) ? block.kind : "image",
+          ...(block.alt ? { alt: str(block.alt).slice(0, 200) } : {}),
+        });
+      } else if (type === "quizRef") {
+        blocks.push({ type: "quizRef", quizId: str(block.quizId).trim(), ...(block.title ? { title: str(block.title).slice(0, 200) } : {}) });
+      } else if (type === "lesson-reference" || type === "lessonRef") {
+        blocks.push({
+          type: "lesson-reference",
+          lessonId: str(block.lessonId ?? block.lessonRefId).trim(),
+          ...(block.title ? { title: str(block.title).slice(0, 200) } : {}),
+          ...(block.slug ? { slug: str(block.slug).slice(0, 200) } : {}),
+        });
+      } else if (type === "question") {
+        const prompt = str(block.prompt ?? block.q);
+        const explanation = str(block.explanation);
+        const hasOptions = Array.isArray(block.options) && block.options.length > 0;
+        const modelAnswer = str(block.modelAnswer ?? block.answer);
+        if (block.questionKind === "essay" || (!hasOptions && modelAnswer)) {
+          blocks.push({ type: "question", id: crypto.randomUUID(), questionKind: "essay", prompt, modelAnswer, explanation });
+        } else {
+          const options = hasOptions ? block.options.map((o) => str(o)) : ["", ""];
+          const picked = Array.isArray(block.correctIndexes)
+            ? ints(block.correctIndexes)
+            : Number.isInteger(block.correctIndex)
+              ? [block.correctIndex]
+              : Number.isInteger(block.correct)
+                ? [block.correct]
+                : ints(block.correct);
+          const correctIndexes = [...new Set(picked)];
+          const multiSelect = block.multiSelect === true || correctIndexes.length > 1;
+          // An invalid/missing correct answer is kept invalid (never guessed) so the editor flags it.
+          blocks.push({
+            type: "question",
+            id: crypto.randomUUID(),
+            questionKind: "mcq",
+            prompt,
+            options,
+            multiSelect,
+            correctIndexes,
+            correctIndex: correctIndexes.length ? correctIndexes[0] : null,
+            explanation,
+          });
+        }
+      }
+      // unknown block types are skipped; the issue list already names them
+    }
+    return {
+      id: crypto.randomUUID(),
+      title: str(section?.title).trim(),
+      defaultHidden: Boolean(section?.defaultHidden),
+      blocks,
+    };
+  });
+
+  const rawSource = str(value.source).trim();
+  const source = cleanSource(rawSource);
+  return {
+    title: str(value.title).trim(),
+    description: str(value.description).trim(),
+    source,
+    sections,
+    issues,
+    droppedSource: Boolean(rawSource) && !source && rawSource !== "تم التوليد بواسطة الذكاء الاصطناعي",
+  };
 }

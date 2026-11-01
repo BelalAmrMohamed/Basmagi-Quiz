@@ -9,20 +9,12 @@
 
 export const SITE = "https://basmagi-quiz.vercel.app";
 
+import { LIMITS as RULE_LIMITS, checkQuiz, checkLesson } from "./content-rules.js";
+
+// Content limits come from the shared rules (single source of truth, same as the
+// editor pages and the upload API). `draftBytes` is the only MCP-specific cap.
 export const LIMITS = {
-  quizTitle: 100,
-  quizDescription: 500,
-  quizSource: 250,
-  quizQuestions: 500,
-  optionsMin: 2,
-  optionsMax: 8, // lessons (matches the lesson editor)
-  quizOptionsMax: 10,
-  lessonTitle: 200,
-  lessonDescription: 1200,
-  lessonSource: 500,
-  lessonSections: 60,
-  blocksPerSection: 100,
-  markdownBody: 20000,
+  ...RULE_LIMITS,
   draftBytes: 200_000,
 };
 
@@ -40,82 +32,40 @@ function readCorrect(raw: any[], n: number): { idx: number[]; bad: number[] } {
 }
 
 // ── Quiz ────────────────────────────────────────────────────────────────────
+// The rules themselves live in content-rules.js (shared with the editor pages and
+// the upload API). This wrapper only builds the cleaned draft payload.
 
 export function validateQuiz(args: any) {
-  const issues: Issues = { errors: [], warnings: [] };
-  const { errors, warnings } = issues;
+  const check = checkQuiz(args);
+  const errors: string[] = check.errors.map((e: any) => e.message);
+  const warnings: string[] = check.warnings.map((w: any) => w.message);
 
   const title = str(args?.title);
-  if (!title) errors.push("title مطلوب.");
-  if (title.length > LIMITS.quizTitle) errors.push(`title أطول من ${LIMITS.quizTitle} حرف (الحالي ${title.length}).`);
-
   const description = str(args?.description);
-  if (description.length > LIMITS.quizDescription) {
-    errors.push(`description أطول من ${LIMITS.quizDescription} حرف (الحالي ${description.length}).`);
-  }
-  if (!description) warnings.push("description فارغ — يُفضّل وصف قصير لما يقيسه الامتحان.");
-
   const source = str(args?.source);
-  if (source && !isHttpUrl(source)) errors.push('source يجب أن يكون رابطاً كاملاً يبدأ بـ https:// (أو اتركه "").');
-  if (source.length > LIMITS.quizSource) errors.push(`source أطول من ${LIMITS.quizSource} حرف.`);
 
   const rawQs = args?.questions;
   if (!Array.isArray(rawQs) || !rawQs.length) {
-    errors.push("questions يجب أن تكون مصفوفة غير فارغة.");
     return { ok: false, data: null, errors, warnings, stats: null };
   }
-  if (rawQs.length > LIMITS.quizQuestions) errors.push(`عدد الأسئلة يتجاوز ${LIMITS.quizQuestions}.`);
 
-  let mcq = 0, multi = 0, essay = 0, noExplanation = 0;
-  const seen = new Map<string, number>();
-
-  const questions = rawQs.map((q: any, i: number) => {
-    const n = i + 1;
+  let mcq = 0, multi = 0, essay = 0;
+  const questions = rawQs.map((q: any) => {
     const text = str(q?.q);
-    if (!text) errors.push(`السؤال ${n}: نص السؤال (q) مفقود.`);
     const explanation = str(q?.explanation);
-    if (!explanation) noExplanation++;
-
-    const key = text.toLowerCase().replace(/\s+/g, " ");
-    if (key) {
-      if (seen.has(key)) warnings.push(`السؤال ${n} مكرر للسؤال ${seen.get(key)}.`);
-      else seen.set(key, n);
-    }
-
     const hasOptions = Array.isArray(q?.options) && q.options.length > 0;
     const answer = str(q?.answer);
 
-    // Essay / open-ended: no options at all. (Previously these got fake "نعم/لا" options.)
+    // Essay / open-ended: no options at all (never invent fake options).
     if (!hasOptions) {
-      if (!answer) {
-        errors.push(`السؤال ${n}: لا يملك options ولا answer — أضف خيارات (اختيار من متعدد) أو answer (سؤال مقالي).`);
-      }
       essay++;
       return { q: text, answer, explanation };
     }
 
     const options = q.options.map((o: any) => str(o));
-    if (options.length < LIMITS.optionsMin || options.length > LIMITS.quizOptionsMax) {
-      errors.push(`السؤال ${n}: عدد الخيارات ${options.length} — المسموح ${LIMITS.optionsMin} إلى ${LIMITS.quizOptionsMax}.`);
-    }
-    if (options.some((o: string) => !o)) errors.push(`السؤال ${n}: يوجد خيار فارغ.`);
-    if (new Set(options.map((o: string) => o.toLowerCase())).size !== options.length) {
-      warnings.push(`السؤال ${n}: يحتوي على خيارات مكررة.`);
-    }
-
     const rawCorrect = Array.isArray(q.correct) ? q.correct : q.correct === undefined || q.correct === null ? [] : [q.correct];
-    if (!rawCorrect.length) {
-      errors.push(`السؤال ${n}: حقل correct مفقود (فهرس الإجابة الصحيحة يبدأ من 0) — لن أخمّن الإجابة.`);
-    }
-    const { idx, bad } = readCorrect(rawCorrect, options.length);
-    if (bad.length) {
-      errors.push(`السؤال ${n}: correct=${JSON.stringify(q.correct)} خارج النطاق (الفهارس الصالحة 0..${options.length - 1}).`);
-    }
-    const wantsMulti = q.multiSelect === true;
-    if (wantsMulti && idx.length < 2) {
-      warnings.push(`السؤال ${n}: multiSelect=true لكن توجد إجابة صحيحة واحدة فقط.`);
-    }
-    const multiSelect = wantsMulti || idx.length > 1;
+    const { idx } = readCorrect(rawCorrect, options.length);
+    const multiSelect = q.multiSelect === true || idx.length > 1;
     if (multiSelect) multi++; else mcq++;
 
     return {
@@ -127,8 +77,6 @@ export function validateQuiz(args: any) {
       ...(answer ? { answer } : {}),
     };
   });
-
-  if (noExplanation) warnings.push(`${noExplanation} سؤال بلا explanation — الشرح هو ما يجعل الامتحان تعليمياً.`);
 
   const data = { meta: { title, description, source }, questions };
   const bytes = new TextEncoder().encode(JSON.stringify(data)).length;
@@ -146,18 +94,14 @@ export function validateQuiz(args: any) {
 // ── Lesson ──────────────────────────────────────────────────────────────────
 
 export function validateLesson(args: any) {
-  const issues: Issues = { errors: [], warnings: [] };
-  const { errors, warnings } = issues;
+  // publish:true — the server only accepts published-lesson UUIDs in lesson-reference blocks.
+  const check = checkLesson(args, { publish: true });
+  const errors: string[] = check.errors.map((e: any) => e.message);
+  const warnings: string[] = check.warnings.map((w: any) => w.message);
 
   const title = str(args?.title);
-  if (!title) errors.push("title مطلوب.");
-  if (title.length > LIMITS.lessonTitle) errors.push(`title أطول من ${LIMITS.lessonTitle} حرف.`);
   const description = str(args?.description);
-  if (description.length > LIMITS.lessonDescription) errors.push(`description أطول من ${LIMITS.lessonDescription} حرف.`);
-  if (!description) warnings.push("description فارغ.");
   const source = str(args?.source);
-  if (source && !isHttpUrl(source)) errors.push('source يجب أن يكون رابطاً كاملاً يبدأ بـ https:// (أو اتركه "").');
-  if (source.length > LIMITS.lessonSource) errors.push(`source أطول من ${LIMITS.lessonSource} حرف.`);
 
   const rawSections = Array.isArray(args?.sections)
     ? args.sections
@@ -165,79 +109,53 @@ export function validateLesson(args: any) {
     ? args.content.sections
     : null;
   if (!rawSections || !rawSections.length) {
-    errors.push("sections يجب أن تكون مصفوفة غير فارغة.");
     return { ok: false, data: null, errors, warnings, stats: null };
   }
-  if (rawSections.length > LIMITS.lessonSections) errors.push(`عدد الأقسام يتجاوز ${LIMITS.lessonSections}.`);
 
   let blocksTotal = 0, questions = 0, markdownChars = 0;
-  const sections = rawSections.map((s: any, sIdx: number) => {
-    const sn = sIdx + 1;
+  const sections = rawSections.map((s: any) => {
     const secTitle = str(s?.title);
-    if (!secTitle) errors.push(`القسم ${sn}: العنوان مطلوب.`);
-    if (secTitle.length > 200) errors.push(`القسم ${sn}: العنوان أطول من 200 حرف.`);
-
     const rawBlocks = Array.isArray(s?.blocks)
       ? s.blocks
       : typeof s?.content === "string"
       ? [{ type: "markdown", body: s.content }]
       : [];
-    if (!rawBlocks.length) warnings.push(`القسم ${sn} («${secTitle}») بلا عناصر.`);
-    if (rawBlocks.length > LIMITS.blocksPerSection) errors.push(`القسم ${sn}: أكثر من ${LIMITS.blocksPerSection} عنصر.`);
 
     const blocks: any[] = [];
-    rawBlocks.forEach((b: any, bIdx: number) => {
+    rawBlocks.forEach((b: any) => {
       if (!b || typeof b !== "object") return;
-      const at = `القسم ${sn} / العنصر ${bIdx + 1}`;
       const type = b.type || (b.prompt || b.q ? "question" : "markdown");
       blocksTotal++;
 
       if (type === "markdown") {
         const body = String(b.body ?? b.content ?? "");
-        if (!body.trim()) warnings.push(`${at}: نص markdown فارغ.`);
-        if (body.length > LIMITS.markdownBody) errors.push(`${at}: النص يتجاوز ${LIMITS.markdownBody} حرف — قسّمه إلى عناصر.`);
         markdownChars += body.length;
         blocks.push({ type: "markdown", body });
       } else if (type === "media") {
         const url = str(b.url);
-        if (!url) errors.push(`${at}: رابط الوسائط (url) مفقود.`);
-        else if (!isHttpUrl(url) && !url.startsWith("./") && !url.startsWith("/")) errors.push(`${at}: url غير صالح.`);
         const kind = ["image", "audio", "video"].includes(b.kind) ? b.kind : "image";
         blocks.push({ type: "media", url, kind, ...(b.alt ? { alt: str(b.alt).slice(0, 200) } : {}) });
       } else if (type === "quizRef") {
-        const quizId = str(b.quizId);
-        if (!quizId) errors.push(`${at}: quizId مفقود.`);
-        blocks.push({ type: "quizRef", quizId, ...(b.title ? { title: str(b.title).slice(0, 200) } : {}) });
+        blocks.push({ type: "quizRef", quizId: str(b.quizId), ...(b.title ? { title: str(b.title).slice(0, 200) } : {}) });
       } else if (type === "lesson-reference" || type === "lessonRef") {
-        const lessonId = str(b.lessonId ?? b.lessonRefId);
-        if (!lessonId) errors.push(`${at}: lessonId مفقود.`);
         blocks.push({
           type: "lesson-reference",
-          lessonId,
+          lessonId: str(b.lessonId ?? b.lessonRefId),
           ...(b.title ? { title: str(b.title).slice(0, 200) } : {}),
           ...(b.slug ? { slug: str(b.slug).slice(0, 200) } : {}),
         });
       } else if (type === "question") {
         questions++;
         const prompt = str(b.prompt ?? b.q);
-        if (!prompt) errors.push(`${at}: نص السؤال (prompt) مفقود.`);
-        const explanation = str(b.explanation).slice(0, 10000);
+        const explanation = str(b.explanation);
         const hasOptions = Array.isArray(b.options) && b.options.length > 0;
         const isEssay = b.questionKind === "essay" || (!hasOptions && !!(b.modelAnswer || b.answer));
 
         if (isEssay) {
           const modelAnswer = str(b.modelAnswer ?? b.answer);
-          if (!modelAnswer) errors.push(`${at}: السؤال المقالي يحتاج modelAnswer.`);
           blocks.push({ type: "question", questionKind: "essay", prompt, modelAnswer, ...(explanation ? { explanation } : {}) });
         } else {
-          if (!hasOptions) {
-            errors.push(`${at}: سؤال بلا options — أضف خيارات أو اجعله مقالياً (questionKind:"essay" + modelAnswer).`);
-          }
           const options = (hasOptions ? b.options : []).map((o: any) => str(o));
-          if (hasOptions && (options.length < LIMITS.optionsMin || options.length > LIMITS.optionsMax)) {
-            errors.push(`${at}: عدد الخيارات ${options.length} — المسموح ${LIMITS.optionsMin} إلى ${LIMITS.optionsMax}.`);
-          }
-          if (options.some((o: string) => !o)) errors.push(`${at}: يوجد خيار فارغ.`);
           const rawCorrect = Array.isArray(b.correctIndexes)
             ? b.correctIndexes
             : Array.isArray(b.correct)
@@ -247,11 +165,8 @@ export function validateLesson(args: any) {
             : Number.isInteger(b.correct)
             ? [b.correct]
             : [];
-          if (hasOptions && !rawCorrect.length) errors.push(`${at}: correctIndex مفقود (يبدأ من 0) — لن أخمّن الإجابة.`);
-          const { idx, bad } = readCorrect(rawCorrect, options.length);
-          if (bad.length) errors.push(`${at}: الفهرس الصحيح خارج النطاق 0..${options.length - 1}.`);
+          const { idx } = readCorrect(rawCorrect, options.length);
           const multiSelect = b.multiSelect === true || idx.length > 1;
-          if (!explanation) warnings.push(`${at}: سؤال بلا explanation.`);
           blocks.push({
             type: "question",
             questionKind: "mcq",
@@ -261,9 +176,8 @@ export function validateLesson(args: any) {
             ...(explanation ? { explanation } : {}),
           });
         }
-      } else {
-        errors.push(`${at}: type="${type}" غير معروف (المسموح: markdown, media, quizRef, lesson-reference, question).`);
       }
+      // unknown block types are reported by the shared check and not copied
     });
 
     return { title: secTitle, defaultHidden: Boolean(s?.defaultHidden), blocks };
@@ -271,7 +185,9 @@ export function validateLesson(args: any) {
 
   const data = { title, description, source, sections };
   const bytes = new TextEncoder().encode(JSON.stringify(data)).length;
-  if (bytes > LIMITS.draftBytes) errors.push(`حجم الدرس ${Math.round(bytes / 1024)}KB يتجاوز ${LIMITS.draftBytes / 1000}KB.`);
+  if (bytes > LIMITS.draftBytes && !errors.some((e) => e.includes("حجم الدرس"))) {
+    errors.push(`حجم الدرس ${Math.round(bytes / 1024)}KB يتجاوز ${LIMITS.draftBytes / 1000}KB.`);
+  }
 
   return {
     ok: errors.length === 0,
@@ -354,6 +270,7 @@ export const AUTHORING_GUIDE: Record<string, string> = {
 3. Build the object, then call create_quiz_import_link / create_lesson_import_link.
    - Result is ONE short link: ${SITE}/create-quiz?draft=<code> (valid ${DRAFT_TTL_HOURS}h, no sign-in needed).
    - If the result lists ERRORS nothing was saved: fix exactly what it says and call again.
+   - The errors are the SAME checks the editor page and the upload step run, so a draft that passes here will not fail later. Each error names the question/block and how to fix it.
    - WARNINGS are saved but worth fixing; mention important ones to the user.
 4. Give the user the link as-is (never edit/re-encode it) and tell them to open it, review, then press save/publish in the editor. Nothing is published until they do.
 5. Revising: do NOT rebuild and re-send everything.
@@ -371,10 +288,12 @@ Language: write quiz/lesson text in the language of the source material (usually
 Question kinds — decided by which fields exist:
 - Single-answer MCQ:  { q, options: [2..${LIMITS.quizOptionsMax} strings], correct: <zero-based int>, explanation }
 - Multi-answer MCQ:   { q, options, correct: [0, 2], multiSelect: true, explanation }
-- True/False:         { q, options: ["صح","خطأ"], correct: 0|1, explanation }
+- True/False:         { q, options: ["صح","خطأ"] (Arabic quiz) or ["True","False"] (English quiz), correct: 0|1, explanation }
 - Essay/open-ended:   { q, answer: "<model answer>", explanation }   ← NO options key at all
 
-Rules the server enforces: correct is ZERO-based and must be in range (it never guesses a missing answer); options are non-empty and ≤${LIMITS.quizOptionsMax} (lesson questions: ≤${LIMITS.optionsMax}); source must be a real URL or empty.
+Rules the server enforces (identical to the editor page and the upload check): correct is ZERO-based and must be in range (it never guesses a missing answer); options are non-empty and ≤${LIMITS.quizOptionsMax} (lesson questions: ≤${LIMITS.optionsMax}); an essay question MUST have a non-empty answer; source must be a real https:// link or empty "" — never a sentence (e.g. never "generated by AI").
+True/False options must be in the quiz's language: ["صح","خطأ"] for Arabic, ["True","False"] for English. "correct" is 0 or 1.
+Math: every formula, variable, exponent, fraction, root, Greek letter or math symbol in q/options/answer/explanation/lesson bodies must be LaTeX: $...$ inline, $$...$$ display. Never plain text (x^2, sqrt(x), 1/2, x², √, ≤). Escape backslashes in JSON (\\\\frac).
 Quality rules: one unambiguous correct answer; plausible distractors of similar length; don't put "all of the above" unless needed; shuffle the position of correct answers (don't make them all 0/1); every question gets a teaching explanation; vary difficulty; no duplicate questions.
 Inline Markdown works in q / options / explanation: **bold**, \`code\`, $x^2$ inline and $$...$$ block LaTeX, GFM tables, ![alt](url) images, ![audio](url), ![video](url) (YouTube auto-embeds).`,
 
@@ -390,14 +309,14 @@ Block types:
 - { type:"quizRef", quizId, title? }               — embed an existing quiz (find ids with search_catalog)
 - { type:"lesson-reference", lessonId, title?, slug? }
 
-Structure tips: one idea per section; a short markdown intro, the explanation, then 1–3 check-yourself questions at the end of each section; a final "ملخص / مراجعة" section; set defaultHidden:true for long optional material (e.g. worked solutions). Lessons are never scored — questions are for self-check.`,
+Structure tips: one idea per section; a short markdown intro, the explanation, then 1–3 check-yourself questions at the end of each section; a final "ملخص / مراجعة" section; set defaultHidden:true for long optional material (e.g. worked solutions). Lessons are never scored — questions are for self-check. lesson-reference blocks need the UUID of a PUBLISHED lesson (get it from search_catalog). Math: every formula, variable, exponent, fraction, root, Greek letter or math symbol in q/options/answer/explanation/lesson bodies must be LaTeX: $...$ inline, $$...$$ display. Never plain text (x^2, sqrt(x), 1/2, x², √, ≤). Escape backslashes in JSON (\\\\frac).`,
 
   markdown: `# Markdown supported in lessons / quizzes
 Headings, **bold**/*italic*, lists (nested), blockquotes, links, GFM tables, fenced code blocks (with copy button), images, inline audio/video (\`![audio](url)\`, \`![video](url)\`, YouTube auto-embed), KaTeX math ($inline$, $$display$$), and reading passages:
 \`\`\`passage
 Long reading text shown as a styled passage…
 \`\`\`
-Text direction is detected per block, so mixing Arabic and English is fine. Avoid raw HTML. Put formulas in LaTeX, never as images.`,
+Text direction is detected per block, so mixing Arabic and English is fine. Avoid raw HTML. Put formulas in LaTeX, never as images. Math: every formula, variable, exponent, fraction, root, Greek letter or math symbol in q/options/answer/explanation/lesson bodies must be LaTeX: $...$ inline, $$...$$ display. Never plain text (x^2, sqrt(x), 1/2, x², √, ≤). Escape backslashes in JSON (\\\\frac).`,
 };
 
 // ── Draft outline / patch / clone ───────────────────────────────────────────
