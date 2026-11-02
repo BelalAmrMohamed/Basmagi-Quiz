@@ -38,7 +38,7 @@ import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.
 import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.js";
 import { renderMarkdown } from "../../shared/markdown.js";
 import { isYouTubeUrl } from "../../shared/media-resolve.js";
-import { readEditorDrafts, upsertEditorDraft, removeEditorDraft, migrateWorkspaceDrafts } from "../../shared/editor-drafts.js";
+import { clearEditorDrafts, readEditorDrafts, upsertEditorDraft, removeEditorDraft, migrateWorkspaceDrafts } from "../../shared/editor-drafts.js";
 import { escapeHtml } from "../home/escape-html.js";
 import {
     showNotification,
@@ -1215,7 +1215,7 @@ function renderEntryItemsGrid() {
 
     let html = "";
     if (drafts.length) {
-        html += `<div class="entry-section"><h2 class="entry-screen-heading">المسودات</h2><div class="entry-items-grid">${drafts.map(makeTile).join("")}</div></div>`;
+        html += `<div class="entry-section"><div class="entry-section-head"><h2 class="entry-screen-heading">المسودات</h2><button type="button" class="entry-clear-drafts-btn" onclick="clearAllDrafts()" title="حذف كل المسودات"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>حذف كل المسودات</span></button></div><div class="entry-items-grid">${drafts.map(makeTile).join("")}</div></div>`;
     }
     if (saved.length) {
         html += `<div class="entry-section"><h2 class="entry-screen-heading">الدروس المحفوظة</h2><div class="entry-items-grid">${saved.map(makeTile).join("")}</div></div>`;
@@ -1283,6 +1283,16 @@ window.renameEntryItem = async function (event, id) {
         _writeUserItems(items);
     }
     renderEntryItemsGrid();
+};
+
+window.clearAllDrafts = async function () {
+    const count = readEditorDrafts().filter((r) => r.meta?.type === LESSON_DRAFT_TYPE).length;
+    if (!count) return;
+    if (!(await _confirm(`سيتم حذف ${count} ${count === 1 ? "مسودة" : "مسودات"} نهائياً ولا يمكن التراجع عن هذا الإجراء. متابعة؟`))) return;
+    clearEditorDrafts([LESSON_DRAFT_TYPE]);
+    currentDraftId = null;
+    renderEntryItemsGrid();
+    showNotification("تم الحذف", "تم حذف كل المسودات.", "success");
 };
 
 window.deleteEntryItem = async function (event, id) {

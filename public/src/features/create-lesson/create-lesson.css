@@ -2673,3 +2673,34 @@ html {
         flex: 1 1 auto;
     }
 }
+/* Drafts heading row + "delete all drafts" button */
+.entry-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.entry-section-head .entry-screen-heading {
+  margin: 0;
+  border-bottom: 0;
+}
+.entry-clear-drafts-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-error, #dc2626);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.entry-clear-drafts-btn:hover {
+  background: var(--color-error-light, rgba(220, 38, 38, 0.08));
+  border-color: var(--color-error, #dc2626);
+}

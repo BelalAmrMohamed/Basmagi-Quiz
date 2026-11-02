@@ -28,7 +28,7 @@
 // =============================================================================
 
 import { ImageResponse } from "@vercel/og";
-import { toVisual } from "./_arabicShape.js";
+import { toVisual, hasArabic } from "./_arabicShape.js";
 
 export const config = { runtime: "edge" };
 
@@ -891,6 +891,59 @@ function detectArabic(text) {
 }
 
 /**
+ * Arabic-safe text run — the SAME technique the /@handle card uses (see
+ * profileText, bottom of this file), shared by every OG card.
+ *
+ * Satori runs its own contextual shaping / bidi reordering on any adjacent
+ * Arabic-block characters inside one text node, which swaps neighbouring
+ * letters and swallows or stretches spaces (the uneven word spacing). So the
+ * text is shaped + reordered ahead of time (api/_arabicShape.js → toVisual)
+ * and every Arabic glyph is placed in its OWN flex item in final
+ * left-to-right order; spaces become fixed-width spacers; Latin/digit runs
+ * stay together as one text node. Nothing is left for Satori to re-join.
+ *
+ * Returns ONE wrapper element. It sets no font styles (size/colour/weight are
+ * inherited from the parent) and spacer widths are in `em`, so it can be
+ * dropped into any existing text container as its only child.
+ */
+const SHAPED_ARABIC_GLYPH = /[\u0600-\u06ff\ufb50-\ufdff\ufe70-\ufeff]/;
+
+/** Plain string for non-Arabic text, a pre-shaped run (as children) otherwise. */
+function txt(text) {
+  const str = String(text ?? "");
+  return hasArabic(str) ? [shapedRun(str)] : str;
+}
+
+function shapedRun(text) {
+  const visual = Array.from(toVisual(text));
+  const children = [];
+  let latin = "";
+  const flush = () => {
+    if (latin) children.push({ type: "div", props: { style: { display: "flex" }, children: latin } });
+    latin = "";
+  };
+  for (const ch of visual) {
+    if (ch === " ") {
+      flush();
+      children.push({ type: "div", props: { style: { display: "flex", width: "0.26em", height: "1px", flexShrink: 0 } } });
+    } else if (SHAPED_ARABIC_GLYPH.test(ch)) {
+      flush();
+      children.push({ type: "div", props: { style: { display: "flex" }, children: ch } });
+    } else {
+      latin += ch;
+    }
+  }
+  flush();
+  return {
+    type: "div",
+    props: {
+      style: { display: "flex", flexDirection: "row", direction: "ltr", whiteSpace: "nowrap", alignItems: "baseline", flexShrink: 0 },
+      children,
+    },
+  };
+}
+
+/**
  * Satori does NOT run the Unicode Bidirectional Algorithm — it lays out a
  * text node's characters/words in raw source (storage) order. Critically,
  * this means `direction: "rtl"` on the div wrapping a pre-reversed string
@@ -936,6 +989,7 @@ function detectArabic(text) {
  * label) — those have no such boundary and are unaffected.
  */
 function renderBidiText(text, isArabic) {
+  if (text && hasArabic(text)) return [shapedRun(text)];
   if (!text || !isArabic) return text;
   return tokenizeBidiText(text).reverse().join(" ");
 }
@@ -998,6 +1052,7 @@ function tokenizeBidiText(text) {
  */
 function renderBidiChildren(text, isArabic, { noShrink = false } = {}) {
   if (!text) return [];
+  if (hasArabic(text)) return [shapedRun(text)];
   const tokens = isArabic ? tokenizeBidiText(text) : text.split(" ");
   return tokens.map((tok) => ({
     type: "div",
@@ -1034,6 +1089,9 @@ function formatQuestionTypes(qt) {
  * than moved, so doubled hyphens don't collapse or migrate.
  */
 function renderBidiSlugSegment(segment) {
+  // The footer link is now pre-shaped by shapedRun()/toVisual (real bidi), so
+  // segments must stay in LOGICAL order — pre-reversing them would flip twice.
+  if (true) return segment;
   if (!segment || !detectArabic(segment)) return segment;
   return segment.split("-").reverse().join("-");
 }
@@ -1309,7 +1367,7 @@ async function renderCourseImage(courseId, folderPath) {
                     whiteSpace: "nowrap",
                     textAlign: "left",
                   },
-                  children: String(row.val),
+                  children: txt(row.val),
                 },
               },
               // Key column — always the RIGHT side, always RTL-reading
@@ -1531,9 +1589,9 @@ async function renderCourseImage(courseId, folderPath) {
                                 ...(isFolder || isArabic ? {} : { letterSpacing: "1px" }),
                                 direction: "ltr",
                               },
-                              children: isFolder
+                              children: txt(isFolder
                                 ? "مجلد"
-                                : isArabic ? "مقرر دراسي" : "COURSE",
+                                : isArabic ? "مقرر دراسي" : "COURSE"),
                             },
                           },
                           // "مادة مميزة" badge — Featured courses only.
@@ -1563,7 +1621,7 @@ async function renderCourseImage(courseId, folderPath) {
                                   padding: "4px 12px",
                                   direction: "ltr",
                                 },
-                                children: EDU_TYPE_AR.Featured,
+                                children: txt(EDU_TYPE_AR.Featured),
                               },
                             }
                             : null,
@@ -1589,7 +1647,7 @@ async function renderCourseImage(courseId, folderPath) {
                           children: [
                             {
                               type: "div",
-                              props: { style: { display: "flex" }, children: "في" },
+                              props: { style: { display: "flex" }, children: txt("في") },
                             },
                             {
                               type: "div",
@@ -1713,10 +1771,12 @@ async function renderCourseImage(courseId, folderPath) {
                             fontWeight: "700",
                             direction: "ltr",
                           },
-                          children: countsTokens.map((tok) => ({
-                            type: "div",
-                            props: { style: { display: "flex" }, children: tok },
-                          })),
+                          children: hasArabic(countsTokens.join(" "))
+                            ? [shapedRun(countsTokens.join(" "))]
+                            : countsTokens.map((tok) => ({
+                              type: "div",
+                              props: { style: { display: "flex" }, children: tok },
+                            })),
                         },
                       }
                       : null,
@@ -1754,7 +1814,7 @@ async function renderCourseImage(courseId, folderPath) {
               overflow: "hidden",
               direction: "ltr",
             },
-            children: linkPath,
+            children: txt(linkPath),
           },
         },
       ],
@@ -2065,12 +2125,22 @@ function lessonTextRun(text, isArabic, style = {}) {
   const mixed = arabicTok > 0 && arabicTok < tokens.length;
   const base = { display: "flex", whiteSpace: "nowrap", direction: "ltr", ...style };
 
+  if (arabicTok > 0) {
+    // Any Arabic (pure or mixed with digits/Latin): one pre-shaped run — see shapedRun().
+    return {
+      type: "div",
+      props: {
+        style: { ...base, justifyContent: "flex-end", textAlign: "right" },
+        children: [shapedRun(tokens.join(" "))],
+      },
+    };
+  }
   if (!mixed) {
     return {
       type: "div",
       props: {
         style: { ...base, justifyContent: "flex-end", textAlign: "right" },
-        children: arabicTok > 0 ? renderBidiText(tokens.join(" "), true) : tokens.join(" "),
+        children: tokens.join(" "),
       },
     };
   }
@@ -2544,7 +2614,9 @@ async function renderLessonImage(lessonId) {
                 type: "div",
                 props: {
                   style: { display: "flex", flexDirection: "row-reverse", gap: "8px", fontSize: "26px", fontWeight: "700", color: "#1f2937", direction: "ltr", whiteSpace: "nowrap" },
-                  children: c.tokens.map((t) => ({ type: "div", props: { style: { display: "flex" }, children: t } })),
+                  children: hasArabic(c.tokens.join(" "))
+                    ? [shapedRun(c.tokens.join(" "))]
+                    : c.tokens.map((t) => ({ type: "div", props: { style: { display: "flex" }, children: t } })),
                 },
               },
             ],
@@ -2596,7 +2668,7 @@ async function renderLessonImage(lessonId) {
               justifyContent: "center", fontSize: "20px", color: "#9ca3af", fontWeight: "400",
               whiteSpace: "nowrap", overflow: "hidden", direction: "ltr",
             },
-            children: linkPath,
+            children: txt(linkPath),
           },
         },
       ],

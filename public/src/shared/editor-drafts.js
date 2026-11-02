@@ -28,6 +28,19 @@ export function removeEditorDraft(id) {
   writeEditorDrafts(readEditorDrafts().filter((draft) => draft.id !== id));
 }
 
+/**
+ * Deletes every draft whose meta.type is in `types` ("draft" = quizzes,
+ * "draft-lesson" = lessons — the two editors share one storage key, so each
+ * page may only clear its own kind). Returns how many were removed.
+ */
+export function clearEditorDrafts(types) {
+  const wanted = new Set(types);
+  const drafts = readEditorDrafts();
+  const kept = drafts.filter((d) => !wanted.has(d?.meta?.type));
+  writeEditorDrafts(kept);
+  return drafts.length - kept.length;
+}
+
 /** Move old draft rows out of the user workspace once. */
 export function migrateWorkspaceDrafts() {
   const drafts = readEditorDrafts();

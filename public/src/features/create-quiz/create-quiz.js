@@ -14,7 +14,7 @@ import {
 } from "../../shared/quiz-json.js";
 import { showDownloadModal } from "../../components/download-quiz-modal/download-quiz-modal.js";
 import { renderMarkdown } from "../../shared/markdown.js";
-import { readEditorDrafts, upsertEditorDraft, removeEditorDraft, migrateWorkspaceDrafts } from "../../shared/editor-drafts.js";
+import { clearEditorDrafts, readEditorDrafts, upsertEditorDraft, removeEditorDraft, migrateWorkspaceDrafts } from "../../shared/editor-drafts.js";
 import { isAdminAuthenticated, getToken } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { loadFullQuizData, checkQuizHasPassword } from "../home/quiz-data-loader.js";
@@ -939,7 +939,7 @@ function renderEntryItemsGrid() {
   if (draftTiles) {
     html += `
     <div class="entry-section">
-      <h2 class="entry-screen-heading">المسودات</h2>
+      <div class="entry-section-head"><h2 class="entry-screen-heading">المسودات</h2><button type="button" class="entry-clear-drafts-btn" onclick="clearAllDrafts()" title="حذف كل المسودات"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>حذف كل المسودات</span></button></div>
       <div class="entry-items-grid">${draftTiles}</div>
     </div>`;
   }
@@ -1323,6 +1323,16 @@ window.renameEntryItem = async function (event, quizId) {
 };
 
 /** Delete a saved quiz directly from user_quizzes, then refresh the grid. */
+window.clearAllDrafts = async function () {
+  const count = readEditorDrafts().filter((q) => q.meta?.type === "draft").length;
+  if (!count) return;
+  if (!(await _confirm(`سيتم حذف ${count} ${count === 1 ? "مسودة" : "مسودات"} نهائياً ولا يمكن التراجع عن هذا الإجراء. متابعة؟`))) return;
+  clearEditorDrafts(["draft"]);
+  currentDraftId = null;
+  renderEntryItemsGrid();
+  showNotification("تم الحذف", "تم حذف كل المسودات.", "success");
+};
+
 window.deleteEntryItem = async function (event, quizId) {
   event.stopPropagation();
   closeAllEntryItemMenus();
