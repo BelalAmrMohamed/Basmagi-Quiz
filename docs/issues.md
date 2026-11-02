@@ -7,6 +7,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Update OG Titles & Descriptions
+Folders and Courses OG titles & desciptions weren't updated to include lessons. 
+
 ### Quiz Passwords are exposed
 The home page downloads every quiz’s password to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be fixed.
 
@@ -26,11 +29,27 @@ Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is com
 
 ## New Features
 
-## Dictation for Essay Questions (Lesson & Quiz Pages)
-Add dictation feature for essays in quizzes and lessons
+### Online MatLab Compiler
+I recently built an online jupytor-notebook-style matlab compiler website specializing in the fundametals of MatLab: [exact copy of its code](../online-matlab-compiler)
+* And before improving it further, I figured it would be better and more dynamic if I integrate it inside Basmagi-Quiz (this website) instead of being a seperate website.
+  * So it would be a new different one or two types next to quizzes and lessons: (notebooks with matlab-compiler engine). And admins can make new notebooks for matlab. 
+  * That would make it great and expandable feature (I can add C++ or Python compiler for the fundamentals in the future).
 
-## New clear button in the create pages
-Add a button for clearing/deleting all drafts (المسودات) in the create-quiz page and the create-lesson page.
+Objective: 
+* Implement the online matlab compiler in this website.
+* Recomment types: 
+  * Since I want this to be expandable should this be just a third type (notebook) next to quizzes and lessons? 
+  * Or should it be different types (matlab, c++, python, etc...)?
+  * Should I add the new notebook type only? Or should I also add code-editor or something similar?
+
+Some parts of the platform will need to be like:
+* The markdown engine to add proper coloring for the matlab code.
+* The امتحاناتك section: to support the new types of content we will add. With proper creation modals + ready-to-use prompts.
+* Admins should be able to upload whatever new types we will add.
+* The MCP Server should be updated to support them, too.
+
+### Dictation for Essay Questions (Lesson & Quiz Pages)
+Add dictation feature for essays in quizzes and lessons
 
 ### Result Pages
 

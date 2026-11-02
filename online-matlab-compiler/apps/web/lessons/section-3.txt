@@ -1,0 +1,233 @@
+@id section-3
+@title Section 3 · uint8, creating images from scratch
+@group Sections
+@files test.png
+%% md
+# Section 3 · Creating images
+**`uint8`** = *u*nsigned *int*eger, *8* bits: whole numbers from 0 to 255 only. Gray and color images are stored as `uint8`: `0` = black, `255` = white, in between = shades of gray.
+
+Out-of-range values are clipped (saturated):
+%% code
+x = imread('test.png');
+class(x)
+r = 50;
+disp(r); class(r)
+x1 = uint8(-10);  disp(x1); class(x1)
+x2 = uint8(100);  disp(x2); class(x2)
+x3 = uint8(300);  disp(x3); class(x3)
+%% md
+## zeros and ones
+`zeros(rows, cols)` makes a matrix of zeros, `zeros(n)` a square one, and `'uint8'` sets the class.
+%% code
+x = zeros(3,4);
+disp(x); class(x)
+y = zeros(5);
+disp(y); class(y)
+%% code
+x = ones(3,4);
+disp(x); class(x)
+y = ones(5);
+disp(y)
+%% md
+## Black image
+%% code
+black = zeros(200,200,'uint8');
+class(black)
+imtool(black);
+imwrite(black, 'black.png');
+%% md
+## Shades of gray (horizontal)
+Pixel value = column number − 1, so 0 on the left and 255 on the right.
+%% code
+A = zeros(256,256,'uint8');
+for i=1:256
+    for j=1:256
+        A(i,j) = j-1;
+    end
+end
+imtool(A);
+imwrite(A, 'gray_horizontal.png');
+imfinfo('gray_horizontal.png')
+%% md
+## Shades of gray (vertical)
+The value depends on the row now. Try the other two formulas in the comments.
+%% code
+B = zeros(256,256,'uint8');
+for i=1:256
+    for j=1:256
+%         B(i,j) = i-1;
+%         B(i,j) = 256-i;
+        B(j,i) = 256-j;
+    end
+end
+imtool(B);
+imwrite(B, 'gray_vertical.png');
+imfinfo('gray_vertical.png')
+%% md
+*(The original script wrote `A` to `gray_vertical.png`. Here it saves `B`, the vertical image.)*
+
+## White image
+`ones(...,'uint8')` is almost black (every pixel is **1**). Multiply by 255 to get white:
+%% code
+w1 = ones(200,200,'uint8');
+imtool(w1);
+white = 255*ones(200,200,'uint8');
+imtool(white);
+white2 = 255 + zeros(200,200,'uint8');
+class(white)
+imwrite(white, 'white.png');
+%% md
+## White image with a black cross (X)
+The two diagonals are `A(i,i)` and `A(i,257-i)`.
+%% code
+A = 255 * ones(256, 256, 'uint8');
+imtool(A);
+for i = 1:256
+    A(i,i) = 0;
+    A(i,257-i) = 0;
+end
+imtool(A);
+imwrite(A, 'black_cross.png');
+%% md
+## Black image with a white cross (X)
+%% code
+A = zeros(256, 256, 'uint8');
+for i = 1:256
+    A(i, i) = 255;
+    A(i, 257-i) = 255;
+end
+imtool(A);
+imwrite(A, 'white_cross.png');
+%% md
+## Three layers (color)
+Add a third dimension: `zeros(rows, cols, 3, 'uint8')`. Layer 1 = red, 2 = green, 3 = blue.
+%% code
+x = zeros(3,4,3);
+disp(x); class(x)
+%% md
+**Shades of red** (horizontal). Change `256-j` to `256-i` for vertical.
+%% code
+A = zeros(256,256,3,'uint8');
+for i=1:size(A,1)
+    for j=1:size(A,2)
+        A(i,j,1) = 256-j;
+        A(i,j,2) = 0;
+        A(i,j,3) = 0;
+    end
+end
+imtool(A);
+imwrite(A, 'color_red.png');
+imfinfo('color_red.png')
+%% code
+A = zeros(256,256,3,'uint8');
+for i=1:size(A,1)
+    for j=1:size(A,2)
+        A(i,j,2) = 256-j;
+    end
+end
+imtool(A);
+imwrite(A, 'color_green.png');
+%% code
+A = zeros(256,256,3,'uint8');
+for i=1:size(A,1)
+    for j=1:size(A,2)
+        A(i,j,3) = 256-j;
+    end
+end
+imtool(A);
+imwrite(A, 'color_blue.png');
+%% md
+## Nested squares
+A 300×300 RGB image: red background, a green square inside, a blue square in the center.
+%% code
+A = zeros(300,300,3,'uint8');
+for i=1:300
+    for j=1:300
+        A(i,j,1) = 255;
+    end
+end
+for i=61:240
+    for j=61:240
+        A(i,j,1) = 0;
+        A(i,j,2) = 255;
+    end
+end
+for i=121:180
+    for j=121:180
+        A(i,j,2) = 0;
+        A(i,j,3) = 255;
+    end
+end
+imtool(A);
+imwrite(A, 'nested_squares.png');
+%% md
+## A function that does it for any size
+`createSquareImage(rows, cols, name)` draws the three nested squares; each square is 1/5 smaller on every side.
+%% code
+function createSquareImage(rows, cols, imageName)
+    img = zeros(rows, cols, 3, 'uint8');
+    rowsInc = rows/5;
+    colsInc = cols/5;
+    for i=1:rows
+        for j=1:cols
+            img(i,j,1) = 255;
+            img(i,j,2) = 0;
+            img(i,j,3) = 0;
+        end
+    end
+    imtool(img);
+    for i=rowsInc+1:rows-rowsInc
+        for j=colsInc+1:cols-colsInc
+            img(i,j,1) = 0;
+            img(i,j,2) = 255;
+            img(i,j,3) = 0;
+        end
+    end
+    imtool(img);
+    for i=(rowsInc*2)+1:rows-(rowsInc*2)
+        for j=(colsInc*2)+1:cols-(colsInc*2)
+            img(i,j,1) = 0;
+            img(i,j,2) = 0;
+            img(i,j,3) = 255;
+        end
+    end
+    imtool(img);
+    imwrite(img, imageName);
+end
+%% code
+createSquareImage(300, 300, 'SquareImage.png');
+%% md
+## Exercises
+1. Create a 256×256 gray image that is **black on the left half and white on the right half**.
+2. Create a 200×200 RGB image that is completely **yellow** (red + green).
+3. Create a white 256×256 image with a **black border** 10 pixels wide.
+%% code
+% your answer here
+
+%% md
+### Solution (try first!)
+%% code
+A = zeros(256,256,'uint8');
+for i=1:256
+    for j=129:256
+        A(i,j) = 255;
+    end
+end
+imtool(A);
+Y = zeros(200,200,3,'uint8');
+for i=1:200
+    for j=1:200
+        Y(i,j,1) = 255;
+        Y(i,j,2) = 255;
+    end
+end
+imtool(Y);
+Z = 255*ones(256,256,'uint8');
+for i=1:256
+    for j=1:256
+        if i<=10 || i>=247 || j<=10 || j>=247
+            Z(i,j) = 0;
+        end
+    end
+end
+imtool(Z);

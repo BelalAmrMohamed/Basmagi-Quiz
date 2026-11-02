@@ -1,0 +1,72 @@
+@id section-1
+@title Section 1 · Image processing levels, reading & showing images
+@group Sections
+@files test.png testgray.png
+%% md
+# Section 1 · First steps
+**Goal:** read an image into a variable, show it, inspect it and save it.
+
+**Image processing levels**
+1. *Low level* (image processing): image in → image out. Example: noise removal, sharpening.
+2. *Mid level* (image analysis): image in → attributes out. Example: segmentation, OCR.
+3. *High level* (computer vision): image in → understanding out. Example: scene understanding, self-driving.
+
+**Image types:** Binary (1 bit, 0 or 1) · Grayscale (8 bit, 0..255) · RGB (3 × 8 = 24 bit).
+
+**Ways of writing code:** Command Window (a code cell here), Script (the whole notebook, *Run all*) and Function (a `function` cell).
+In the Command Window, `;` hides the result and no `;` prints it.
+%% md
+## 1. Reading an image
+`imread('name')` loads an image into a matrix. The files are in the **Current Folder** panel on the right.
+%% code
+x = imread('test.png');
+y = imread('testgray.png');
+%% md
+## 2. Showing images
+`imshow` shows one image. To show several, put `figure` between them (each `figure` opens a new window).
+%% code
+imshow(x);
+%% code
+imshow(x), figure, imshow(y);
+%% md
+`imtool` is the second way to show an image. Move the mouse over it to see the **pixel values** (the "pixel region" of MATLAB's Image Tool).
+%% code
+imtool(x);
+imtool(y);
+%% md
+## 3. Size and information
+Without `;` the result is printed. A color image is *rows × columns × 3*, a gray image is *rows × columns*.
+%% code
+size(x)
+size(y)
+%% code
+imfinfo('test.png')
+imfinfo('testgray.png')
+%% md
+## 4. Writing (saving) an image
+`imwrite(matrix, 'name')` creates a new file in the Current Folder. Download it with the ↓ button.
+%% code
+imwrite(x, 'newTest.png');
+imwrite(y, 'newTestGray.png');
+%% md
+## 5. Useful commands
+`who` / `whos` list the variables, `clc` clears the output, `clear` is the *clear* button of the Workspace panel.
+%% code
+whos
+%% md
+## Exercises
+1. Read `testgray.png` into `g` and show it together with `test.png` in two figures.
+2. How many rows and columns does `g` have? What is its class? (use `size(g)` and `class(g)`)
+3. Save `g` as `copy.png` and check it with `imfinfo`.
+%% code
+% your answer here
+
+%% md
+### Solution (try first!)
+%% code
+g = imread('testgray.png');
+imshow(g), figure, imshow(imread('test.png'));
+size(g)
+class(g)
+imwrite(g, 'copy.png');
+imfinfo('copy.png')

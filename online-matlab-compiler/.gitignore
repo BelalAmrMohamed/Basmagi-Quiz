@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Local environment and logs
+.env
+.env.*
+!.env.example
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Generated archives and operating-system files
+*.zip
+.DS_Store
+Thumbs.db
+
+online-matlab-compiler.zip

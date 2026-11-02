@@ -1,0 +1,13 @@
+{
+  "installCommand": "cd apps/web && npm install",
+  "buildCommand": "cd apps/web && npm run build",
+  "outputDirectory": "apps/web/dist",
+  "headers": [
+    { "source": "/(.*)", "headers": [
+      { "key": "X-Content-Type-Options", "value": "nosniff" },
+      { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+      { "key": "X-Frame-Options", "value": "SAMEORIGIN" } ] },
+    { "source": "/(.*)\\.(png|svg|ico|webmanifest)", "headers": [
+      { "key": "Cache-Control", "value": "public, max-age=86400" } ] }
+  ]
+}

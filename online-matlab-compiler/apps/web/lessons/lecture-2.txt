@@ -1,0 +1,130 @@
+@id lecture-2
+@title Lecture 2 · Image representation: binary, gray, color, indexed
+@group Lectures
+@files test.png testgray.png BinaryImage.png GrayscaleImage.png ColorImage.png test_lookup.gif
+%% md
+# Lecture 2 · Image representation
+**Image types:** Binary · Grayscale · Color-24 (RGB) · Color-8 (indexed, with a *lookup table*).
+
+An **indexed** image stores one number per pixel. That number is a row of a color table (the *map*), with one RGB triple per row.
+%% code
+a = imread('BinaryImage.png');
+b = imread('GrayscaleImage.png');
+c = imread('ColorImage.png');
+[d, map] = imread('test_lookup.gif');
+e = imread('testgray.png');
+f = imread('test.png');
+%% md
+The first three are only 2×2 pixels. Print them to see the numbers:
+%% code
+a
+b
+c
+%% md
+## Showing an indexed image
+Give `imshow` the image **and** its map.
+%% code
+imshow(d, map);
+%% code
+imtool(d, map);
+map(101,1) = 0.8; map(101,3) = 0.1;
+imtool(d, map);
+%% md
+Changing one row of the map changes **every pixel that has the index 100**. (Pixel value 100 uses row 101.)
+
+## Image information
+%% code
+imfinfo 'BinaryImage.png'
+imfinfo 'GrayscaleImage.png'
+imfinfo 'ColorImage.png'
+imfinfo 'test_lookup.gif'
+%% md
+## Size of a matrix
+%% code
+size(e)
+size(f, 1)
+size(f, 2)
+size(f, 3)
+%% md
+## Brightness as a sample (grayscale)
+%% code
+a = imread('testgray.png');
+imtool(a);
+for i = 1 : size(a,1)
+    for j = 1 : size(a,2)
+        a(i,j) = a(i,j) + 50;
+    end
+end
+imtool(a);
+%% md
+## Brightness as a sample (color)
+%% code
+a = imread('test.png');
+imtool(a);
+for i = 1 : size(a,1)
+    for j = 1 : size(a,2)
+        a(i,j,1) = a(i,j,1) + 50;
+        a(i,j,2) = a(i,j,2) + 50;
+        a(i,j,3) = a(i,j,3) + 50;
+    end
+end
+imtool(a);
+%% md
+## The same code as a script
+Only the green layer of the top-left 200×200 block changes, so the picture gets greener.
+%% code
+a = imread('test.png');
+imtool(a);
+for i = 1 : 200
+    for j = 1 : 200
+        a(i,j,2) = a(i,j,2) + 50;
+    end
+end
+imtool(a);
+%% md
+## The same code as a function
+`brightcolor_v1` adds the same value V to all layers; `brightcolor_v2` adds a different value to each layer.
+%% code
+function brightcolor_v1(imgname, V)
+    c = imread(imgname);
+    imtool(c);
+    for i=1:size(c,1)
+        for j=1:size(c,2)
+            c(i,j,1) = c(i,j,1) + V;
+            c(i,j,2) = c(i,j,2) + V;
+            c(i,j,3) = c(i,j,3) + V;
+        end
+    end
+    imtool(c);
+end
+%% code
+function brightcolor_v2(imgname, R, G, B)
+    c = imread(imgname);
+    imtool(c);
+    for i=1:size(c,1)
+        for j=1:size(c,2)
+            c(i,j,1) = c(i,j,1) + R;
+            c(i,j,2) = c(i,j,2) + G;
+            c(i,j,3) = c(i,j,3) + B;
+        end
+    end
+    imtool(c);
+end
+%% code
+brightcolor_v1('test.png', 50);
+%% code
+brightcolor_v2('test.png', 150, -150, -150);
+%% md
+## Exercises
+1. In the indexed image, make **pixel value 50** red by changing its row in `map`. (Hint: row 51.)
+2. Call `brightcolor_v2` so that the picture becomes **bluer** and **less red**.
+%% code
+% your answer here
+
+%% md
+### Solution (try first!)
+%% code
+[d, map] = imread('test_lookup.gif');
+map(51,:) = [1 0 0];
+imtool(d, map);
+brightcolor_v2('test.png', -80, 0, 100);

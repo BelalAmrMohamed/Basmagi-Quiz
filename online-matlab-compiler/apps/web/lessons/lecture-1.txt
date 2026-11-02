@@ -1,0 +1,57 @@
+@id lecture-1
+@title Lecture 1 · Writing code in MATLAB, reading and showing images
+@group Lectures
+@files test.png testgray.png
+%% md
+# Lecture 1 · Getting started
+## Three methods of writing code
+1. **Command Window**: one line at a time. The result prints unless the line ends with `;`.
+2. **Script**: a list of commands saved in a file, then run. (Here: a whole notebook, *Run all*.)
+3. **Function**: code with inputs and outputs, then called by name. (Here: a `function` cell.)
+%% code
+x = 5
+y = 7;
+x + y
+%% md
+## The MATLAB interface
+- **Current Folder**: your files (right panel).
+- **Editor**: where scripts are written (the cells).
+- **Workspace**: variables and their values (right panel).
+- **Command Window**: where results appear (under each cell).
+%% md
+## Reading an image
+%% code
+a = imread('test.png');
+b = imread('testgray.png');
+%% md
+## Showing images
+%% code
+imshow(a);
+imshow(b);
+%% md
+Show more than one image with `figure`:
+%% code
+imshow(a), figure, imshow(b);
+%% md
+`imtool` shows the image and the **pixel values** when you hover over it:
+%% code
+imtool(a);
+%% md
+## Writing an image
+%% code
+imwrite(a, 'new.png');
+%% md
+## Exercises
+1. Read both images and show them with `imtool`.
+2. Remove the `;` after `a = imread('test.png')` and look at what is printed. Why is it a good idea to keep the `;`?
+3. Save `testgray.png` as `my_gray.png`.
+%% code
+% your answer here
+
+%% md
+### Solution (try first!)
+%% code
+a = imread('test.png');
+g = imread('testgray.png');
+imtool(a), imtool(g);
+imwrite(g, 'my_gray.png');
