@@ -147,6 +147,18 @@ export function createExamInfoSubmenu(basicRows, onShowFull, closeDropdown, repo
       .join("")
     : `<p class="quiz-info-empty">لا توجد معلومات إضافية</p>`;
 
+  // Rows may carry `loadVal: () => Promise<string|number|null>` for values
+  // that need a network fetch (views, creator name). They render with "…" and
+  // are filled in (or removed when empty) once the promise settles.
+  basicRows.forEach(({ loadVal }, i) => {
+    if (typeof loadVal !== "function") return;
+    const row = content.querySelectorAll(".tooltip-row")[i];
+    Promise.resolve().then(loadVal).then((v) => {
+      if (v === null || v === undefined || v === "") row?.remove();
+      else if (row) row.lastElementChild.textContent = String(v);
+    }).catch(() => row?.remove());
+  });
+
   // Wire up copy-to-clipboard for any copyable rows (e.g. المصدر/source).
   // The UI indicator is a small check icon next to the label (swapped in for
   // the copy icon briefly) rather than text next to the value, so copying

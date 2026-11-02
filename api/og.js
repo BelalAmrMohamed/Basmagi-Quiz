@@ -105,7 +105,7 @@ const TITLE_MAX_CHARS_LATIN = 55;
 // At 20px Tajawal in the 640px TEXT_COLUMN, Latin glyphs average ~11px wide
 // → ≈58 chars max before overflow; Arabic glyphs are wider so we use 55 for
 // a shared safe limit that covers both scripts without a separate detection pass.
-const DESCRIPTION_MAX_CHARS = 55;
+const DESCRIPTION_MAX_CHARS = 48;
 
 // ── Course info fields (mirrors public/src/features/home/course-info-fields.js) ─
 // This is a small server-side adapter, not a verbatim reuse: the client's
@@ -614,7 +614,7 @@ export default async function handler(req) {
                       overflow: "hidden",
                       justifyContent: "center",
                     },
-                    children: renderBidiChildren(description, isArabic),
+                    children: renderBidiChildren(description, isArabic, { noShrink: true }),
                   },
                 }
                 : null,
@@ -871,8 +871,15 @@ function truncateTitle(title, maxChars) {
  * size and must also never wrap (single line only).
  */
 function truncateDescription(description) {
-  if (!description || description.length <= DESCRIPTION_MAX_CHARS) return description;
-  return description.slice(0, DESCRIPTION_MAX_CHARS - 1).trimEnd() + "…";
+  if (!description) return description;
+  const clean = description.replace(/\s+/g, " ").trim();
+  if (clean.length <= DESCRIPTION_MAX_CHARS) return clean;
+  // Cut on a word boundary and end with a plain "..." (the single "…" glyph
+  // painted as a stray "." in the thumbnail font, so it read as a full stop).
+  const cut = clean.slice(0, DESCRIPTION_MAX_CHARS - 3);
+  const lastSpace = cut.lastIndexOf(" ");
+  const base = lastSpace >= DESCRIPTION_MAX_CHARS * 0.5 ? cut.slice(0, lastSpace) : cut;
+  return base.replace(/[\s,.;:،؛\-]+$/, "") + "...";
 }
 
 function detectArabic(text) {
@@ -989,12 +996,14 @@ function tokenizeBidiText(text) {
  * future RTL-aware flex features (e.g. wrapping) behave the same as this
  * file's other sibling-based rows.
  */
-function renderBidiChildren(text, isArabic) {
+function renderBidiChildren(text, isArabic, { noShrink = false } = {}) {
   if (!text) return [];
   const tokens = isArabic ? tokenizeBidiText(text) : text.split(" ");
   return tokens.map((tok) => ({
     type: "div",
-    props: { style: { display: "flex" }, children: tok },
+    // noShrink: in a nowrap row, flex items otherwise shrink below their
+    // content width when the line is too long, squashing words together.
+    props: { style: noShrink ? { display: "flex", flexShrink: 0 } : { display: "flex" }, children: tok },
   }));
 }
 

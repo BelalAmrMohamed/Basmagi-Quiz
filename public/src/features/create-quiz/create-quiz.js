@@ -1,5 +1,6 @@
 // public/src/features/create-quiz/create-quiz.js
 
+import "../../shared/text-direction-sync.js";
 import {
   showNotification,
   _confirm,

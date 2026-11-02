@@ -340,3 +340,19 @@ a.quiz-creator-card:hover .quiz-creator-cta {
 .info-skel--row { height: 16px; }
 .info-skel--card { height: 58px; border-radius: 14px; }
 @media (prefers-reduced-motion: reduce) { .info-skel::after { animation: none; } }
+/* Attempts — highlighted stat in the quiz info hero */
+.quiz-attempts-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 4px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--color-primary, #6366f1);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+  color: var(--color-text-primary);
+}
+.quiz-attempts-stat__icon { display: flex; color: var(--color-primary, #6366f1); }
+.quiz-attempts-stat__value { font-size: 1.5rem; font-weight: 800; line-height: 1; color: var(--color-primary, #6366f1); }
+.quiz-attempts-stat__label { font-size: 0.85rem; color: var(--color-text-secondary); }
+.quiz-attempts-stat[hidden] { display: none; }

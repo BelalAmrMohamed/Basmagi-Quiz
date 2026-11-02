@@ -1005,6 +1005,7 @@ export async function renderLessonView() {
       ? "Read through, track your progress, and ask Al-Basmagi whenever you need clarification."
       : "تابع القراءة وراجع تقدمك، واسأل الباشــمبصمج عندما تحتاج إلى توضيح.",
     infoBtn: isEnglish ? "Lesson Info" : "معلومات الدرس",
+    downloadBtn: isEnglish ? "Download Lesson" : "تنزيل الدرس",
     resetBtn: isEnglish ? "Reset Questions" : "إعادة ضبط الأسئلة",
     quickFactsAria: isEnglish ? "Quick lesson facts" : "معلومات سريعة عن الدرس",
     toolsAria: isEnglish ? "Lesson tools" : "أدوات الدرس",
@@ -1042,6 +1043,7 @@ export async function renderLessonView() {
     `<div class="lesson-view__subtitle-wrap"><span class="lesson-view__subtitle-icon">${lessonIcon("sparkle")}</span><p class="lesson-view__subtitle" dir="auto">${escapeHtml(strings.subtitle)}</p></div>` +
     `<div class="lesson-view__header-actions" role="group" aria-label="${escapeHtml(strings.toolsAria)}">` +
     `<button type="button" class="lesson-header__action lesson-view__info-btn" aria-label="${escapeHtml(strings.infoBtn)}" title="${escapeHtml(strings.infoBtn)}">${lessonIcon("info")}<span class="lesson-header__action-label">${escapeHtml(strings.infoBtn)}</span></button>` +
+    `<button type="button" class="lesson-header__action lesson-view__download-btn" aria-label="${escapeHtml(strings.downloadBtn)}" title="${escapeHtml(strings.downloadBtn)}">${lessonIcon("download")}<span class="lesson-header__action-label">${escapeHtml(strings.downloadBtn)}</span></button>` +
     renderPrefsPopover(getReaderPrefs(lesson.reader_prefs_default), { lang: lessonLang }) +
     renderLessonBookmarks(lesson.id, { lang: lessonLang }) +
     (hasQuestions
@@ -1183,6 +1185,12 @@ export async function renderLessonView() {
       onBookmarksChange: handleBookmarksChange,
       onAiStudyAction: (_actionId, prompt) => openLessonAgentWithPrompt(lesson, normalized, prompt),
     });
+  });
+
+  import("../home/info-details.js").then((m) => m.recordLessonView(lesson.id)).catch(() => {});
+
+  lessonEl.querySelector(".lesson-view__download-btn")?.addEventListener("click", (event) => {
+    void downloadLesson(lesson, event.currentTarget);
   });
 
   equipReferenceCardActions(lessonEl, lesson, quizLookup, lessonLookup, {

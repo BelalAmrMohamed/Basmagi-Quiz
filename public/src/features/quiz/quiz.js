@@ -1330,6 +1330,10 @@ async function init() {
         const type = config.authorId ? "id" : "handle";
         creatorProfile = await fetchCreatorProfile(authorIdentifier, type);
       }
+      if (quizDbId) {
+        const details = await import("../home/info-details.js").then((m) => m.fetchQuizDetails(quizDbId)).catch(() => null);
+        if (typeof details?.attempt_count === "number") config.attemptCount = details.attempt_count;
+      }
 
       dialog.innerHTML = buildQuizInfoModalHtml(
         config,

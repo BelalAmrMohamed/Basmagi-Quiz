@@ -323,6 +323,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       creatorProfile = await fetchCreatorProfile(authorIdentifier, type);
     }
 
+    if (resolvedQuizDbId) {
+      const details = await import("../home/info-details.js").then((m) => m.fetchQuizDetails(resolvedQuizDbId)).catch(() => null);
+      if (typeof details?.attempt_count === "number") config.attemptCount = details.attempt_count;
+    }
+
     els.quizInfoDialog.innerHTML = buildQuizInfoModalHtml(
       config,
       questions.length,

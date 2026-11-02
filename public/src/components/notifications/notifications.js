@@ -150,6 +150,26 @@ function getOverlayContainer() {
   const openDialogs = Array.from(document.querySelectorAll("dialog[open]"));
   return openDialogs.length ? openDialogs[openDialogs.length - 1] : document.body;
 }
+/**
+ * Mounts a full-screen overlay above everything, including an open modal
+ * <dialog>. Appending inside the dialog alone is NOT enough: the dialog keeps a
+ * `transform` (animation fill-mode) and `overflow: hidden`, which turn it into
+ * the containing block for `position: fixed` and clip the overlay to the
+ * dialog's box. Promoting the overlay to the top layer via the Popover API
+ * (while keeping it a DOM descendant of the dialog so it stays non-inert)
+ * escapes both.
+ */
+function mountOverlay(overlay) {
+  const container = getOverlayContainer();
+  container.appendChild(overlay);
+  if (container !== document.body && typeof overlay.showPopover === "function") {
+    try {
+      overlay.setAttribute("popover", "manual");
+      overlay.showPopover();
+    } catch (_) { /* fall back to plain fixed positioning */ }
+  }
+}
+
 export function _confirm(message) {
   return new Promise((resolve) => {
     // 1. Create Overlay
@@ -182,7 +202,7 @@ export function _confirm(message) {
       `;
 
     overlay.appendChild(modal);
-    getOverlayContainer().appendChild(overlay);
+    mountOverlay(overlay);
 
     // 4. Focus Management
     const confirmBtn = modal.querySelector(".confirm");
@@ -293,7 +313,7 @@ export function _alert(message) {
       `;
 
     overlay.appendChild(modal);
-    getOverlayContainer().appendChild(overlay);
+    mountOverlay(overlay);
 
     // 4. Focus Management
     const okBtn = modal.querySelector(".confirm");
@@ -394,7 +414,7 @@ export function _prompt(message, defaultValue = "", options = {}) {
       `;
 
     overlay.appendChild(modal);
-    getOverlayContainer().appendChild(overlay);
+    mountOverlay(overlay);
 
     // 4. Focus Management
     const input = modal.querySelector(".prompt-input");
@@ -589,7 +609,7 @@ function openTypedConfirmationStep({ confirmPhrase, inputLabel, confirmButtonLab
       `;
 
     overlay.appendChild(modal);
-    getOverlayContainer().appendChild(overlay);
+    mountOverlay(overlay);
 
     const input = modal.querySelector(".typed-confirmation-input");
     const confirmBtn = modal.querySelector(".typed-confirmation-confirm-btn");

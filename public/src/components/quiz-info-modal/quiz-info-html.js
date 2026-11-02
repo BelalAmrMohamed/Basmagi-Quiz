@@ -137,13 +137,6 @@ export function buildQuizInfoModalHtml(config, questionCount = null, creatorProf
         ${escapeHtml(config.questionTypes)}
       </span>`);
   }
-  if (typeof config.attemptCount === "number") {
-    pills.push(`
-      <span class="quiz-metric-pill" title="عدد مرات حل الامتحان">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-        ${config.attemptCount} محاولة
-      </span>`);
-  }
   if (config.passwordProtected === true) {
     pills.push(`
       <span class="quiz-metric-pill" title="الخصوصية">
@@ -169,10 +162,21 @@ export function buildQuizInfoModalHtml(config, questionCount = null, creatorProf
 
   const pillsHtml = pills.length > 0 ? `<div class="quiz-metrics-row">${pills.join("")}</div>` : "";
 
+  // Attempts get their own highlighted stat (not a plain pill) — it's the
+  // one number that tells a student how popular the quiz is.
+  const attemptsHtml = typeof config.attemptCount === "number"
+    ? `<div class="quiz-attempts-stat" title="عدد مرات حل الامتحان">
+        <span class="quiz-attempts-stat__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></span>
+        <span class="quiz-attempts-stat__value">${Number(config.attemptCount).toLocaleString("en-US")}</span>
+        <span class="quiz-attempts-stat__label">مرة تم حل هذا الامتحان</span>
+      </div>`
+    : "";
+
   const heroHtml = `
     <div class="quiz-info-hero">
       <h3>${escapeHtml(title)}</h3>
       ${descHtml}
+      ${attemptsHtml}
       ${pillsHtml}
     </div>
   `;

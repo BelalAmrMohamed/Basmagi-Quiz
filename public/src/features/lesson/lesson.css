@@ -2834,11 +2834,29 @@
     flex: 0 0 auto;
   }
 
+  /* NOT overflow-x:auto — that also clips the absolutely positioned
+     settings/bookmarks panels (and shows a sliver of scrollbar) so they never
+     appear. The row already wraps (flex-wrap), so nothing needs scrolling. */
   .lesson-view--reader .lesson-view__header-actions {
     width: 100%;
     justify-content: flex-start;
-    overflow-x: auto;
+    overflow: visible;
     padding-bottom: 2px;
+  }
+
+  /* On phones the panels open as a viewport-fitted sheet above the bottom bar
+     instead of hanging off their (possibly off-centre) toggle button. */
+  .lesson-view--reader .lesson-prefs__panel,
+  .lesson-view--reader .lesson-bookmarks__panel {
+    position: fixed;
+    inset-inline: .5rem;
+    top: auto;
+    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    max-height: min(60vh, 28rem);
+    overflow-y: auto;
   }
 }
 

@@ -123,6 +123,7 @@ export function showLessonControlModal(options) {
         `</button>` +
         `</div>` +
         `<div class="quiz-info-dialog-body">` +
+        `<div class="quiz-attempts-stat lesson-views-stat" data-lesson-views hidden><span class="quiz-attempts-stat__value" data-lesson-views-value></span><span class="quiz-attempts-stat__label">مشاهدة لهذا الدرس</span></div>` +
         buildLessonInfoBodyHtml(info) +
         `<div class="quiz-info-section"><div class="quiz-info-section-title">التقدّم</div>${renderLessonProgressSummary(progressSummary, sectionTitleById)}</div>` +
         `<div class="quiz-info-section lesson-info-modal__bookmarks-section"><div class="quiz-info-section-title">العلامات المرجعية</div>${renderLessonBookmarks(lesson.id)}</div>` +
@@ -132,6 +133,13 @@ export function showLessonControlModal(options) {
         `</div>`;
     document.body.appendChild(dialog);
     hydrateLessonCreator(dialog, info);
+    import("../home/info-details.js").then((m) => m.fetchLessonViewCount(lesson.id)).then((count) => {
+        const stat = dialog.querySelector("[data-lesson-views]");
+        if (stat && typeof count === "number") {
+            stat.querySelector("[data-lesson-views-value]").textContent = count.toLocaleString("en-US");
+            stat.hidden = false;
+        }
+    }).catch(() => {});
 
     const lessonEl = document.querySelector(`.lesson-view[data-lesson-id="${CSS.escape(lesson.id)}"]`);
     const prefsCleanup = lessonEl

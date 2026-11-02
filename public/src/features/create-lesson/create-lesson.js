@@ -32,6 +32,7 @@
 // passed_quizzes_count.
 // =============================================================================
 
+import "../../shared/text-direction-sync.js";
 import { getToken, isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.js";

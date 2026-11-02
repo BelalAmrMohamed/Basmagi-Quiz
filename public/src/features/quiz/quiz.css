@@ -3574,3 +3574,30 @@ body.is-resizing-media .media-container.resizable-media {
     flex-shrink: 0;
   }
 }
+
+/* Icon feedback on locked options — colour alone isn't enough for colour-blind
+   users or grayscale screens. A green check marks every correct option, a red
+   cross marks the user's wrong pick. Pure CSS so every render path
+   (full render + in-place lock update) gets it. */
+.option-row.locked.correct::after,
+.option-row.locked.wrong::after {
+  content: "";
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin-inline-start: auto;
+  border-radius: 50%;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 14px 14px;
+}
+
+.option-row.locked.correct::after {
+  background-color: var(--color-success, #10b981);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+}
+
+.option-row.locked.wrong::after {
+  background-color: var(--color-error, #ef4444);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E");
+}

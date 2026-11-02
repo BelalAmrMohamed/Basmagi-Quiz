@@ -1,0 +1,27 @@
+/* Embed mode (?embed=1) — hides platform chrome so a quiz/lesson reads cleanly
+   inside an iframe. Activated by src/shared/embed-mode.js. */
+html.embed-mode {
+  --sidebar-collapsed-width: 0px;
+  --sidebar-expanded-width: 0px;
+}
+html.embed-mode .sidebar,
+html.embed-mode #sideMenuBackdrop,
+html.embed-mode .side-menu-backdrop,
+html.embed-mode .ai-agent-fab,
+html.embed-mode footer,
+html.embed-mode #sidebarExpandBtn,
+html.embed-mode canvas#flowField,
+html.embed-mode .flow-field,
+html.embed-mode [data-hide-in-embed] {
+  display: none !important;
+}
+html.embed-mode body {
+  padding-inline: 0 !important;
+  margin: 0 !important;
+}
+html.embed-mode main,
+html.embed-mode .container {
+  padding-right: 12px !important;
+  padding-left: 12px !important;
+  margin-right: 0 !important;
+}

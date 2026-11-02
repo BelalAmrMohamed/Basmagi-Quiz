@@ -5316,7 +5316,8 @@ kbd {
     text-overflow: ellipsis;
   }
 
-  .exam-card.user-lesson-card .exam-card-meta {
+  .exam-card.user-lesson-card .exam-card-meta,
+  .exam-card.lesson-card .exam-card-meta {
     position: static;
     inset: auto;
     display: flex;
@@ -5328,7 +5329,8 @@ kbd {
     white-space: normal;
   }
 
-  .exam-card.user-lesson-card .exam-question-count {
+  .exam-card.user-lesson-card .exam-question-count,
+  .exam-card.lesson-card .exam-question-count {
     margin: 0 !important;
   }
 }
@@ -5407,7 +5409,8 @@ kbd {
     -webkit-line-clamp: 2;
   }
 
-  .exam-card.user-lesson-card .exam-card-meta {
+  .exam-card.user-lesson-card .exam-card-meta,
+  .exam-card.lesson-card .exam-card-meta {
     flex-wrap: wrap !important;
     justify-content: space-between !important;
     gap: 2px 10px !important;
@@ -5418,7 +5421,9 @@ kbd {
   }
 
   .exam-card.user-lesson-card .exam-question-count,
-  .exam-card.user-lesson-card .exam-types-subtext {
+  .exam-card.user-lesson-card .exam-types-subtext,
+  .exam-card.lesson-card .exam-question-count,
+  .exam-card.lesson-card .exam-types-subtext {
     order: 0 !important;
     flex: 0 1 auto !important;
     margin: 0 !important;
@@ -5427,4 +5432,18 @@ kbd {
     text-align: start !important;
     direction: rtl !important;
   }
+}
+
+/* Quiz card titles are cut at two lines with an ellipsis, exactly like lesson
+   cards, so a long title can no longer spill over the badges/buttons below. */
+.exam-card .card-text > h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+  unicode-bidi: plaintext;
+  text-align: start;
 }

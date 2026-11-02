@@ -28,10 +28,13 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 const ALLOWED_SECTION_KEYS = new Set(["id", "title", "defaultHidden", "blocks"]);
 const ALLOWED_BLOCK_KEYS_BY_TYPE = {
-    markdown: new Set(["type", "body"]),
-    media: new Set(["type", "url", "kind", "alt"]),
-    quizRef: new Set(["type", "quizId", "title"]),
-    "lesson-reference": new Set(["type", "lessonId", "title", "slug"]),
+    // `id` / `_localId` are editor bookkeeping that legitimately ride along on
+    // any block (local drafts, exported lessons). They are tolerated here and
+    // dropped below — each branch rebuilds a clean block from known fields only.
+    markdown: new Set(["type", "body", "id", "_localId"]),
+    media: new Set(["type", "url", "kind", "alt", "id", "_localId"]),
+    quizRef: new Set(["type", "quizId", "title", "id", "_localId"]),
+    "lesson-reference": new Set(["type", "lessonId", "title", "slug", "id", "_localId"]),
     question: new Set([
         "type",
         "id",
@@ -45,6 +48,7 @@ const ALLOWED_BLOCK_KEYS_BY_TYPE = {
         "explanation",
         "onWrong",
         "onCorrect",
+        "_localId",
     ]),
 };
 

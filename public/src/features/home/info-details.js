@@ -142,3 +142,68 @@ export function openInfoOverlay({ title, statsHtml = "" }) {
   document.body.appendChild(modal);
   return { body, close, isOpen: () => modal.isConnected };
 }
+// ── Lesson views ────────────────────────────────────────────────────────────
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Public lesson view total, or null (unknown id, local lesson, migration not applied). */
+export async function fetchLessonViewCount(lessonId) {
+  if (!UUID_RE.test(String(lessonId || ""))) return null;
+  try {
+    const supabase = await ensureSharedSupabaseClient();
+    const { data, error } = await supabase.rpc("get_lesson_view_count", { p_lesson_id: lessonId });
+    if (error || data === null || data === undefined) return null;
+    return Number(data);
+  } catch (_) {
+    return null;
+  }
+}
+
+/** Counts one view per lesson per browser session. Fire-and-forget. */
+export function recordLessonView(lessonId) {
+  if (!UUID_RE.test(String(lessonId || ""))) return;
+  const key = `lesson_viewed_${lessonId}`;
+  try {
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+  } catch (_) { /* storage blocked — count anyway */ }
+  ensureSharedSupabaseClient()
+    .then((supabase) => supabase?.rpc("increment_lesson_view", { p_lesson_id: lessonId }))
+    .catch(() => {});
+}
+
+// ── Info-submenu helpers ────────────────────────────────────────────────────
+
+/** Display name of an account uuid (the "إعداد" row), or null. */
+export async function fetchCreatorName(userId) {
+  if (!userId) return null;
+  const profile = await fetchCreatorProfile(String(userId), "id");
+  return profile?.displayName || null;
+}
+
+/** Quiz / lesson / subfolder totals for a category-tree node (recursive). */
+export function countCategoryContents(tree, node) {
+  let quizCount = 0;
+  let lessonCount = 0;
+  let folderCount = 0;
+  const visit = (n, isChild = false) => {
+    if (!n) return;
+    if (isChild) folderCount += 1;
+    quizCount += Array.isArray(n.exams) ? n.exams.length : 0;
+    lessonCount += Array.isArray(n.lessons) ? n.lessons.length : 0;
+    (n.subcategories || []).forEach((key) => visit(tree?.[key], true));
+  };
+  visit(node);
+  return { quizCount, lessonCount, folderCount };
+}
+
+/** Rows shared by the course and folder submenus: counts + creator. */
+export function buildContainerInfoRows(tree, node) {
+  const { quizCount, lessonCount, folderCount } = countCategoryContents(tree, node);
+  return [
+    { label: "امتحان", val: String(quizCount) },
+    { label: "درس", val: String(lessonCount) },
+    { label: "مجلد", val: String(folderCount) },
+    ...(node?.created_by ? [{ label: "إعداد", val: "…", loadVal: () => fetchCreatorName(node.created_by) }] : []),
+  ];
+}

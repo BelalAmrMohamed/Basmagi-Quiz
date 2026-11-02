@@ -22,6 +22,7 @@ import { isRecentlyAdded } from "./date-utils.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { createExamCard } from "./exam-card.js";
 import { createLessonCard } from "./lesson-card.js";
+import { buildContainerInfoRows } from "./info-details.js";
 import { openExamDropdownMenu, createActionGroupSubmenu, createExamInfoSubmenu } from "./exam-dropdown-menu.js";
 import { showFolderInfoModal } from "./folder-info-modal.js";
 import { userProfile } from "../../shared/userProfile.js";
@@ -404,12 +405,7 @@ export function createCategoryCard(
 
         // "معلومات المجلد" — quick rows inline, "كل المعلومات" opens the
         // full folder info modal (dates, path, creator, counts).
-        const { quizCount, lessonCount, subfolderCount } = getCategoryContentsStats(courseData);
-        const folderRows = [
-          { label: "الامتحانات", val: String(quizCount) },
-          { label: "الدروس", val: String(lessonCount) },
-          { label: "المجلدات الفرعية", val: String(subfolderCount) },
-        ];
+        const folderRows = buildContainerInfoRows(getCategoryTree(), courseData);
         menu.appendChild(createExamInfoSubmenu(
           folderRows,
           () => showFolderInfoModal(courseData),

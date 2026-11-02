@@ -396,3 +396,16 @@
   word-break: break-word;
   user-select: all;
 }
+/* When promoted to the top layer via popover (see mountOverlay in
+   notifications.js) undo the UA popover defaults so the overlay keeps its own look. */
+.confirmation-overlay[popover] {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+  inset: 0;
+  color: inherit;
+}
+.confirmation-overlay[popover]:not(:popover-open) { display: none; }

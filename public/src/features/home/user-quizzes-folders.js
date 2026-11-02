@@ -1118,15 +1118,32 @@ function createSubmenuItem(iconSvg, label, items) {
 
   function place() {
     // Reset, then measure with the submenu visible.
+    sub.style.position = "absolute";
+    sub.style.boxShadow = "";
+    sub.style.borderStyle = "";
+    sub.style.margin = "";
+    sub.style.minWidth = "160px";
     sub.style.right = "calc(100% - 2px)";
     sub.style.left = "auto";
     sub.style.top = "-6px";
     const margin = 8;
-    const r = sub.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    let r = sub.getBoundingClientRect();
     if (r.left < margin) {
       // No room on the left — open on the right of the row instead.
       sub.style.right = "auto";
       sub.style.left = "calc(100% - 2px)";
+      r = sub.getBoundingClientRect();
+    }
+    if (r.left < margin || r.right > vw - margin) {
+      // Neither side fits (phones) — expand inline below the trigger instead
+      // of floating off-screen.
+      sub.style.position = "static";
+      sub.style.minWidth = "0";
+      sub.style.margin = "2px 8px 4px";
+      sub.style.boxShadow = "none";
+      sub.style.borderStyle = "dashed";
+      return;
     }
     const r2 = sub.getBoundingClientRect();
     if (r2.bottom > document.documentElement.clientHeight - margin) {

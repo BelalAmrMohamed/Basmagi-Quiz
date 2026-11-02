@@ -232,10 +232,14 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
         // several MB and causing the snapshot-aware timeout on mobile links.
         .select("id, course_id, folder_id, title, meta:data->meta, stats:data->stats, password")
         .order("created_at", { ascending: true }),
-      supabase
-        .from("lesson_public")
-        .select("id, course_id, folder_id, title, slug, section_ids, section_count, description, source, password_protected, created_by, created_at, updated_at")
-        .order("created_at", { ascending: true }),
+      // question_count needs the 20261101140000 migration; until it is applied
+      // the first query errors, so retry without it rather than losing every lesson.
+      (async () => {
+        const columns = "id, course_id, folder_id, title, slug, section_ids, section_count, description, source, password_protected, created_by, created_at, updated_at";
+        const withCount = await supabase.from("lesson_public").select(`${columns}, question_count`).order("created_at", { ascending: true });
+        if (!withCount.error) return withCount;
+        return supabase.from("lesson_public").select(columns).order("created_at", { ascending: true });
+      })(),
       supabase
         .from("courses")
         .select("id, name, education_type, college, year, term, created_by, created_at, icon")
@@ -381,6 +385,7 @@ async function buildSubjects(quizzes, lessons, courses, folders) {
       folderSegments,
       sectionIds: sections.map((section, index) => String(section?.id || `s${index + 1}`)),
       sectionCount: Number(row.section_count) || sections.length,
+      questionCount: Number(row.question_count) || 0,
       // Completion is measured against the sections every reader is guaranteed
       // to see. `defaultHidden` sections are adaptive remediation that only
       // appear after a specific answer, so requiring them would make a lesson

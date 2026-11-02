@@ -3258,11 +3258,14 @@ body.reorder-mode-active .question-card {
 }
 
 .md-blockquote {
-  border-right: 4px solid var(--color-primary);
+  border-inline-start: 4px solid var(--color-primary);
   margin: 0.5em 0;
   padding: 8px 16px;
   background: var(--color-primary-light);
-  border-radius: 0 6px 6px 0;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+  border-start-end-radius: 6px;
+  border-end-end-radius: 6px;
   color: var(--color-text-secondary);
   font-style: italic;
 }

@@ -1,5 +1,7 @@
 ﻿// Platform lesson card and its shared actions menu.
 import { downloadLesson } from "./lesson-download.js";
+import { EMBED_ICON_SVG, copyEmbedCode } from "./embed-code.js";
+import { fetchLessonViewCount, fetchCreatorName } from "./info-details.js";
 import { openExamDropdownMenu, createActionGroupSubmenu, createExamInfoSubmenu } from "./exam-dropdown-menu.js";
 import { showUserLessonInfoModal, collectLessonInfo } from "./lesson-info-modal.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
@@ -79,13 +81,26 @@ export function createLessonCard(lesson) {
   }
   const sectionCount = Number(lesson.sectionIds?.length ?? lesson.sectionCount ?? 0);
   const questionCount = Number(lesson.questionCount ?? lesson.stats?.questionCount ?? 0);
-  const meta = document.createElement("p");
-  meta.className = "exam-question-count";
-  meta.textContent = [
-    sectionCount === 1 ? "قسم واحد" : `الأقسام: ${sectionCount}`,
-    questionCount > 0 ? `الأسئلة المدمجة: ${questionCount}` : "",
-    lesson.passwordProtected ? "محمي" : ""
-  ].filter(Boolean).join(" · ");
+  // Same two-label structure as the workspace lesson card (user-quiz-card.js):
+  // sections on one side, embedded questions on the other.
+  const meta = document.createElement("div");
+  meta.className = "exam-card-meta user-quiz-card-meta";
+  const sectionsLabel = document.createElement("p");
+  sectionsLabel.className = "exam-question-count";
+  sectionsLabel.textContent = sectionCount === 1 ? "قسم واحد" : `الأقسام: ${sectionCount}`;
+  meta.appendChild(sectionsLabel);
+  if (questionCount > 0) {
+    const questionsLabel = document.createElement("p");
+    questionsLabel.className = "exam-types-subtext";
+    questionsLabel.textContent = `الأسئلة المدمجة: ${questionCount}`;
+    meta.appendChild(questionsLabel);
+  }
+  if (lesson.passwordProtected) {
+    const protectedLabel = document.createElement("p");
+    protectedLabel.className = "exam-types-subtext";
+    protectedLabel.textContent = "محمي";
+    meta.appendChild(protectedLabel);
+  }
   text.appendChild(meta);
 
   const actions = document.createElement("div");
@@ -145,6 +160,10 @@ function openLessonActionsMenu(lesson, trigger) {
         .then(() => showNotification("تم النسخ", "تم نسخ رابط الدرس.", "success")),
     });
     addMenuAction(menu, closeMenu, {
+      label: "نسخ كود التضمين", icon: EMBED_ICON_SVG,
+      onClick: () => { void copyEmbedCode("lesson", lesson.slug || lesson.id, lesson.title); },
+    });
+    addMenuAction(menu, closeMenu, {
       label: "مشاركة الرابط", icon: SHARE_ICON_SVG,
       onClick: () => {
         const url = lessonUrl(lesson);
@@ -159,10 +178,12 @@ function openLessonActionsMenu(lesson, trigger) {
 
     const info = collectLessonInfo(lesson);
     const basicRows = [
-      { label: "ID", val: info.id, multiline: true, copyable: true, ltr: true },
       { label: "الأقسام", val: info.sectionCount || null },
+      { label: "المشاهدات", val: "…", loadVal: () => fetchLessonViewCount(lesson.id) },
       { label: "التاريخ", val: formatDateForInfo(info.createdAt), ltr: true },
-      { label: "المصدر", val: lesson.source || null, multiline: true, copyable: true },
+      ...(lesson.createdBy || lesson.created_by
+        ? [{ label: "إعداد", val: "…", loadVal: () => fetchCreatorName(lesson.createdBy || lesson.created_by) }]
+        : []),
     ].filter((row) => row.val);
     menu.appendChild(createExamInfoSubmenu(
       basicRows,

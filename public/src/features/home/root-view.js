@@ -33,6 +33,7 @@ import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
 import { createExamInfoSubmenu, createActionGroupSubmenu } from "./exam-dropdown-menu.js";
 import { showCourseInfoModal } from "./course-actions.js";
 import { buildCourseInfoRows } from "./course-info-fields.js";
+import { buildContainerInfoRows } from "./info-details.js";
 import { copyCategoryTreeToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
 import {
   canManageItem,
@@ -131,7 +132,7 @@ function attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe =
       menu.appendChild(askAi);
 
       menu.appendChild(createExamInfoSubmenu(
-        buildCourseInfoRows(course),
+        buildContainerInfoRows(categoryTree, course),
         () => showCourseInfoModal(course),
         closeMenu,
         reposition,

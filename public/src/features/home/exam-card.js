@@ -27,6 +27,8 @@ import {
   deleteSharedItem,
 } from "./admin-item-actions.js";
 import { showQuizInfoModal } from "./quiz-info-modal.js";
+import { EMBED_ICON_SVG, copyEmbedCode } from "./embed-code.js";
+import { fetchQuizDetails, fetchCreatorName } from "./info-details.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 import {
   createExamInfoSubmenu,
@@ -329,6 +331,17 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     };
     menu.appendChild(copyOpt);
 
+    const embedOpt = document.createElement("button");
+    embedOpt.type = "button";
+    embedOpt.className = "exam-action-btn";
+    embedOpt.innerHTML = `${EMBED_ICON_SVG}<span>نسخ كود التضمين</span>`;
+    embedOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      void copyEmbedCode("quiz", exam.id, exam.title);
+    };
+    menu.appendChild(embedOpt);
+
     const shareOpt = document.createElement("button");
     shareOpt.type = "button";
     shareOpt.className = "exam-action-btn";
@@ -460,21 +473,20 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     // copy-to-clipboard). "كل المعلومات" opens the full quiz-info-modal-card
     // via showQuizInfoModal, which does the async backfill fetch for
     // anything still missing.
+    // Most useful at a glance: size, popularity, where it lives, when, who.
+    // (ID / description / source stay in "كل المعلومات".)
     const basicRows = [
-      { label: "ID", val: exam.id, multiline: true, copyable: true, ltr: true },
-      {
-        label: "المادة",
-        val: exam.category || null,
-        multiline: true,
-      },
-      { label: "الوصف", val: exam.description || null, multiline: true },
+      { label: "الأسئلة", val: typeof exam.questionCount === "number" ? exam.questionCount : null },
+      ...(exam.dbId ? [{
+        label: "المحاولات", val: "…",
+        loadVal: () => fetchQuizDetails(exam.dbId).then((d) => (typeof d?.attempt_count === "number" ? d.attempt_count : null)),
+      }] : []),
+      { label: "المادة", val: exam.category || null, multiline: true },
       { label: "التاريخ", val: formatDateForInfo(exam.createdAt), ltr: true },
-      {
-        label: "المصدر",
-        val: exam.source || null,
-        multiline: true,
-        copyable: true,
-      },
+      ...(exam.dbId ? [{
+        label: "إعداد", val: "…",
+        loadVal: () => fetchQuizDetails(exam.dbId).then((d) => fetchCreatorName(d?.uploaded_by)),
+      }] : []),
     ].filter((r) => r.val);
     const infoSubmenu = createExamInfoSubmenu(
       basicRows,

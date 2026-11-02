@@ -271,9 +271,28 @@ export async function buildStandaloneLessonHtml(payload, { signal, onProgress } 
   throwIfAborted(signal);
   updateProgress(onProgress, 78, "إضافة التفاعلات ومحتوى الدرس…");
   const ctx = { lessonId: "__lesson_export__", quizLookup: new Map(), lessonLookup: new Map(), questionLabels };
+  // Embedded quiz/lesson references: the downloaded file can't resolve them
+  // from the platform, so seed the lookups from the block itself (otherwise the
+  // card renders as "unavailable" with a disabled start button) and turn the
+  // start button into a plain link back to the platform.
+  const siteOrigin = (typeof location !== "undefined" && /^https?:/.test(location.origin)) ? location.origin : "";
+  normalized.sections.forEach((section) => section.blocks.forEach((block) => {
+    if (block?.quizId) {
+      const id = String(block.quizId || "").trim();
+      if (id) ctx.quizLookup.set(id, { id, title: block.title || "امتحان" });
+    } else if (block?.lessonId) {
+      const id = String(block.lessonId).trim();
+      if (id) ctx.lessonLookup.set(id, { id, title: block.title || "درس" });
+    }
+  }));
+  const linkifyReferenceCard = (markup) => markup.replace(
+    /<button type="button" class="lesson-ref-card__action lesson-ref-card__action--start" data-reference-kind="(quiz|lesson)"[^>]*data-reference-id="([^"]*)"[^>]*>([\s\S]*?)<\/button>/g,
+    (_m, kind, id, inner) => `<a class="lesson-ref-card__action lesson-ref-card__action--start" href="${siteOrigin}/${kind}/${id}" target="_blank" rel="noopener">${inner}</a>`,
+  ).replace(/<button type="button" class="lesson-ref-card__action lesson-ref-card__action--(?:download|info|ask)"[\s\S]*?<\/button>/g, "");
   const sections = normalized.sections.map((section, sectionIndex) => {
     const blocks = section.blocks.map((block) => {
       let markup = renderBlock(block, ctx);
+      if (markup.includes("lesson-ref-card__action")) markup = linkifyReferenceCard(markup);
       if (block?.type === "question" && block.id) {
         const revealRule = escapeHtml(JSON.stringify({
           onCorrect: block.onCorrect || null,
@@ -292,7 +311,7 @@ export async function buildStandaloneLessonHtml(payload, { signal, onProgress } 
 <title>${title}</title><style>${markdownCss}\n${lessonCss}
 :root{color-scheme:light;--color-primary:#2563eb;--color-primary-light:#dbeafe;--color-border:#d1d5db;--color-text-primary:#171717;--color-text-secondary:#52525b;--color-background:#fff;--color-background-secondary:#f4f4f5}
 body{max-width:900px;margin:0 auto;padding:24px;font-family:Tahoma,Arial,sans-serif;color:#171717;background:#fff}
-.lesson-view__title{margin:0 0 1.5rem}.lesson-section[hidden]{display:none}
+a.lesson-ref-card__action{text-decoration:none}.lesson-view__title{margin:0 0 1.5rem}.lesson-section[hidden]{display:none}
 .lesson-question__essay-check-btn,.lesson-question__check-btn{margin-top:.75rem;padding:.5rem 1rem;border:0;border-radius:8px;background:#2563eb;color:#fff;font:inherit;cursor:pointer}
 @media(max-width:600px){body{padding:14px}}
 @media print{body{max-width:none;padding:0}.lesson-section[hidden]{display:block!important}.lesson-question__option{color:#111}.lesson-question__check-btn,.lesson-question__essay-check-btn{display:none}.lesson-question__feedback[hidden]{display:grid!important}.lesson-question__verdict:empty{display:none}}</style>
