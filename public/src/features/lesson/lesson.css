@@ -887,18 +887,6 @@
   max-width: var(--lesson-reading-width);
 }
 
-/* ── Phase 3: focus mode ───────────────────────────────────────────────────
-   Hides secondary nav/controls so the reader sees content + the essentials
-   only (TTS toolbar, question controls, reset). Does not touch the reading
-   width/text-size vars — those are independent reader choices. */
-.lesson-view--focus .lesson-view__sidebar,
-.lesson-view--focus .lesson-toc,
-.lesson-view--focus .lesson-view__info-btn,
-.lesson-view--focus .lesson-bookmarks,
-.lesson-view--focus .lesson-view__eyebrow,
-.lesson-view--focus .lesson-view__subtitle {
-  display: none;
-}
 
 .lesson-prefs__row--switch {
   justify-content: space-between;
@@ -1215,13 +1203,6 @@
   gap: 0.35rem;
 }
 
-.lesson-prefs__focus-mode {
-  width: 1.1rem;
-  height: 1.1rem;
-  accent-color: var(--color-primary);
-  cursor: pointer;
-}
-
 .lesson-quiz-ref__info {
   display: flex;
   flex-direction: column;
@@ -1359,10 +1340,6 @@
 .lesson-prefs__row select {
   min-width: 0;
   max-width: 11rem;
-}
-
-.lesson-prefs__focus-mode {
-  flex: 0 0 auto;
 }
 
 /* The old question reset is intentionally gone; this is the only global
@@ -2797,13 +2774,6 @@
   width: min(22rem, calc(100vw - 1rem));
 }
 
-/* ── Focus Mode Support ────────────────────────────────────────────────────── */
-.lesson-view--focus .lesson-view__header-topline,
-.lesson-view--focus .lesson-view__subtitle-wrap,
-.lesson-view--focus .lesson-view__info-btn,
-.lesson-view--focus .lesson-bookmarks {
-  display: none !important;
-}
 
 /* ── Responsive Refinements ────────────────────────────────────────────────── */
 @media (max-width: 768px) {

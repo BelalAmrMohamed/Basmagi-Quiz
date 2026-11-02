@@ -41,7 +41,6 @@ export function buildDefaultReaderPrefs() {
     ttsRate: 1,
     widthId: "comfortable",
     textSizeId: "medium",
-    focusMode: false,
   };
 }
 
@@ -54,7 +53,6 @@ function sanitizeReaderPrefs(value) {
   if (TEXT_SIZE_CHOICES.some((item) => item.id === raw.textSizeId)) result.textSizeId = raw.textSizeId;
   if (typeof raw.ttsVoiceURI === "string") result.ttsVoiceURI = raw.ttsVoiceURI;
   if (Number.isFinite(Number(raw.ttsRate))) result.ttsRate = Math.min(2, Math.max(0.5, Number(raw.ttsRate)));
-  if (typeof raw.focusMode === "boolean") result.focusMode = raw.focusMode;
 
   return result;
 }
@@ -109,7 +107,6 @@ export function equipReaderPrefs(root, lessonEl, authorDefaults = null) {
     root.querySelectorAll('[data-reader-pref="font"]').forEach((el) => { el.value = prefs.fontId; });
     root.querySelectorAll('[data-reader-pref="width"]').forEach((el) => { el.value = prefs.widthId; });
     root.querySelectorAll('[data-reader-pref="text-size"]').forEach((el) => { el.value = prefs.textSizeId; });
-    root.querySelectorAll('[data-reader-pref="focus"]').forEach((el) => { el.checked = Boolean(prefs.focusMode); });
     applyReaderPrefs(lessonEl, prefs);
   };
 
@@ -127,9 +124,7 @@ export function equipReaderPrefs(root, lessonEl, authorDefaults = null) {
   root.querySelectorAll('[data-reader-pref="text-size"]').forEach((el) => {
     el.addEventListener("change", (event) => setReaderPrefs({ textSizeId: event.target.value }, authorDefaults));
   });
-  root.querySelectorAll('[data-reader-pref="focus"]').forEach((el) => {
-    el.addEventListener("change", (event) => setReaderPrefs({ focusMode: Boolean(event.target.checked) }, authorDefaults));
-  });
+
 
   window.addEventListener(PREFS_EVENT, onPrefEvent);
   window.addEventListener("storage", onStorage);
@@ -154,5 +149,4 @@ export function applyReaderPrefs(container, prefs) {
   // colors; there is no reader-level highlight preference anymore.
   container.style.setProperty("--lesson-reading-width", width.value);
   container.style.setProperty("--lesson-reading-text-size", textSize.value);
-  container.classList.toggle("lesson-view--focus", Boolean(prefs?.focusMode));
 }

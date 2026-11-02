@@ -19,7 +19,7 @@
 // ============================================================================
 
 import { escapeHtml } from "./escape-html.js";
-import { buildInfoSkeletonHtml, buildCreatorSectionHtml, fetchCreatorById } from "./info-details.js";
+import { buildInfoSkeletonHtml, buildCreatorSectionHtml, fetchCreatorById, fetchLessonViewCount } from "./info-details.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 import { normalizeLessonContent } from "../lesson/lesson-schema.js";
 import { FONT_CHOICES } from "../lesson/lesson-reader-prefs.js";
@@ -179,6 +179,7 @@ export function buildLessonInfoBodyHtml(info) {
     return `
         <div class="quiz-info-hero">
           <h3>${escapeHtml(info.title)}</h3>
+          <div class="quiz-attempts-stat lesson-views-stat" data-lesson-views hidden title="عدد مشاهدات الدرس"><span class="quiz-attempts-stat__value" data-lesson-views-value></span><span class="quiz-attempts-stat__label">مشاهدة لهذا الدرس</span></div>
           <div class="quiz-metrics-row">${pills.join("")}</div>
         </div>
         <div class="quiz-info-section">
@@ -196,6 +197,14 @@ export function buildLessonInfoBodyHtml(info) {
  * @param {{createdBy?: string|null}} info
  */
 export function hydrateLessonCreator(root, info) {
+    const viewsEl = root.querySelector("[data-lesson-views]");
+    if (viewsEl && info?.id) {
+        fetchLessonViewCount(info.id).then((count) => {
+            if (typeof count !== "number" || !viewsEl.isConnected) return;
+            viewsEl.querySelector("[data-lesson-views-value]").textContent = count.toLocaleString("en-US");
+            viewsEl.hidden = false;
+        }).catch(() => {});
+    }
     const slot = root.querySelector("[data-lesson-creator-slot]");
     if (!slot || !info?.createdBy) return;
     fetchCreatorById(info.createdBy).then((creator) => {

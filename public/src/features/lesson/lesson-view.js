@@ -480,7 +480,6 @@ export function renderPrefsPopover(prefs, options = {}) {
     font: isEn ? "Font" : "الخط",
     width: isEn ? "Reading Width" : "عرض القراءة",
     textSize: isEn ? "Text Size" : "حجم النص",
-    focus: isEn ? "Focus Mode" : "وضع التركيز",
   };
 
   return (
@@ -493,8 +492,6 @@ export function renderPrefsPopover(prefs, options = {}) {
     `<select class="lesson-prefs__width" data-reader-pref="width">${widthOptions}</select></label>` +
     `<label class="lesson-prefs__row"><span>${escapeHtml(rowLabels.textSize)}</span>` +
     `<select class="lesson-prefs__text-size" data-reader-pref="text-size">${textSizeOptions}</select></label>` +
-    `<label class="lesson-prefs__row lesson-prefs__row--switch"><span>${escapeHtml(rowLabels.focus)}</span>` +
-    `<input type="checkbox" class="lesson-prefs__focus-mode" data-reader-pref="focus"${prefs.focusMode ? " checked" : ""}></label>` +
     `</div></div>`
   );
 }
@@ -982,7 +979,9 @@ export async function renderLessonView() {
   const ctx = { lessonId: lesson.id, quizLookup, lessonLookup, questionLabels };
 
   const lessonHref = `/lesson/${encodeURIComponent(lesson.slug || lesson.id)}`;
-  const tocHtml = renderLessonToc(normalized.sections, progress.visitedSections, {
+  // The side table of contents is intentionally not rendered (the reader layout is
+  // always the clean, focused one); sections stay reachable from the info modal.
+  const tocHtml = "" && renderLessonToc(normalized.sections, progress.visitedSections, {
     includeComments: !isUserCreated,
     lessonHref,
     hiddenSectionIds,
@@ -1023,29 +1022,15 @@ export async function renderLessonView() {
   container.innerHTML =
     `<article class="lesson-view lesson-view--reader" data-lesson-id="${escapeHtml(lesson.id)}" data-lesson-lang="${lessonLang}">` +
     `<header class="lesson-view__header lesson-view__header--${lessonLang}" data-lesson-lang="${lessonLang}" dir="${isEnglish ? "ltr" : "rtl"}" aria-labelledby="lessonViewTitle">` +
-    `<div class="lesson-view__header-topline">` +
-    `<div class="lesson-view__header-badges">` +
-    `<div class="lesson-view__eyebrow"><span class="lesson-view__eyebrow-icon">${lessonIcon("book")}</span><span class="lesson-view__eyebrow-label">${escapeHtml(strings.eyebrow)}</span></div>` +
-    `<div class="lesson-view__meta" aria-label="${escapeHtml(strings.quickFactsAria)}">` +
-    `<span class="lesson-view__meta-item" data-section-count-label><span class="lesson-view__meta-item-icon">${lessonIcon("layers")}</span><span class="lesson-view__meta-item-text">${escapeHtml(strings.sectionsCount(initialVisibleCount))}</span></span>` +
-    `<span class="lesson-view__meta-item lesson-view__meta-item--time"><span class="lesson-view__meta-item-icon">${lessonIcon("clock")}</span><span class="lesson-view__meta-item-text">${escapeHtml(strings.readingTime(readingMinutes))}</span></span>` +
-    (hasQuestions
-      ? `<span class="lesson-view__meta-item lesson-view__meta-item--quiz"><span class="lesson-view__meta-item-icon">${lessonIcon("sparkle")}</span><span class="lesson-view__meta-item-text">${escapeHtml(strings.quizBadge)}</span></span>`
-      : "") +
-    `</div>` +
-    `</div>` +
-    `</div>` +
     `<div class="lesson-view__heading">` +
     `<h1 id="lessonViewTitle" class="lesson-view__title" dir="${isEnglish ? "ltr" : "rtl"}">${escapeHtml(lesson.title || "")}</h1>` +
     (lesson.description?.trim() ? `<p class="lesson-view__description" dir="auto">${escapeHtml(lesson.description.trim())}</p>` : "") +
     `</div>` +
     `<div class="lesson-view__header-footer">` +
-    `<div class="lesson-view__subtitle-wrap"><span class="lesson-view__subtitle-icon">${lessonIcon("sparkle")}</span><p class="lesson-view__subtitle" dir="auto">${escapeHtml(strings.subtitle)}</p></div>` +
     `<div class="lesson-view__header-actions" role="group" aria-label="${escapeHtml(strings.toolsAria)}">` +
     `<button type="button" class="lesson-header__action lesson-view__info-btn" aria-label="${escapeHtml(strings.infoBtn)}" title="${escapeHtml(strings.infoBtn)}">${lessonIcon("info")}<span class="lesson-header__action-label">${escapeHtml(strings.infoBtn)}</span></button>` +
     `<button type="button" class="lesson-header__action lesson-view__download-btn" aria-label="${escapeHtml(strings.downloadBtn)}" title="${escapeHtml(strings.downloadBtn)}">${lessonIcon("download")}<span class="lesson-header__action-label">${escapeHtml(strings.downloadBtn)}</span></button>` +
     renderPrefsPopover(getReaderPrefs(lesson.reader_prefs_default), { lang: lessonLang }) +
-    renderLessonBookmarks(lesson.id, { lang: lessonLang }) +
     (hasQuestions
       ? `<button type="button" class="lesson-header__action lesson-reset-all" data-reset-all-questions aria-label="${escapeHtml(strings.resetBtn)}" title="${escapeHtml(strings.resetBtn)}">${lessonIcon("reset")}<span class="lesson-header__action-label">${escapeHtml(strings.resetBtn)}</span></button>`
       : "") +

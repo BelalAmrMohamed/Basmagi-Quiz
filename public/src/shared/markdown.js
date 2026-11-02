@@ -2332,6 +2332,18 @@ export function scanDirections(container = document) {
   let node;
   while ((node = walker.nextNode())) candidates.push(node);
   candidates.forEach(_processElement);
+
+  // Second pass. dir="auto" ignores descendants that carry their own dir, so a
+  // block whose text sits entirely inside such a child (e.g. `> **Arabic quote**`
+  // -> <blockquote><strong dir="auto">…) resolves to LTR and gets its accent bar
+  // and alignment on the wrong side. Children get their dir during the first
+  // pass, so this has to run after it: decide those blocks explicitly.
+  candidates.forEach((el) => {
+    if (!el.matches || !el.matches(_BLOCK_CHILD_SELECTOR) || el.matches("li")) return;
+    if (el.getAttribute("dir") !== "auto" || !el.querySelector(":scope > [dir]")) return;
+    const text = _ownText(el);
+    if (_FIRST_STRONG_CHAR_REGEX.test(text)) el.setAttribute("dir", detectDirection(text));
+  });
 }
 
 // ─── 8. Public renderMarkdown (with error boundary + direction scan) ──────────

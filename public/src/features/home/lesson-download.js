@@ -21,6 +21,7 @@ function updateProgress(callback, percent, label) {
 }
 
 const LESSON_INTERACTION_SCRIPT = `
+(function(){var d=document.querySelector(".lesson-export-info");if(!d)return;document.addEventListener("click",function(e){if(e.target.closest("[data-lesson-info-open]"))d.showModal();else if(e.target.closest("[data-lesson-info-close]")||e.target===d)d.close();});})();
 const gradeEssay = (${gradeEssay.toString()});
 const revealAdaptiveSection = (question, wasCorrect) => {
   const rules = JSON.parse(question.dataset.revealRule || "{}");
@@ -248,6 +249,8 @@ export function lessonPayload(lesson) {
     title: lesson?.title || lesson?.meta?.title || "درس بدون عنوان",
     description: lesson?.description || lesson?.meta?.description || "",
     source: lesson?.source || lesson?.meta?.source || "",
+    slug: lesson?.slug || "",
+    createdAt: lesson?.created_at || lesson?.createdAt || lesson?.meta?.createdAt || "",
     reader_prefs_default: lesson?.reader_prefs_default || lesson?.readerPrefsDefault || {},
     content,
   };
@@ -306,16 +309,44 @@ export async function buildStandaloneLessonHtml(payload, { signal, onProgress } 
     return `<section class="lesson-section" data-section-id="${escapeHtml(section.id)}"${section.defaultHidden ? " hidden" : ""}><div class="lesson-section__header"><h2 class="lesson-section__title">${escapeHtml(title)}</h2></div><div class="lesson-section__body">${blocks}</div></section>`;
   }).join("");
   const title = escapeHtml(payload.title || "درس بدون عنوان");
+  const descriptionHtml = payload.description
+    ? `<p class="lesson-view__description" dir="auto">${escapeHtml(payload.description)}</p>`
+    : "";
+  const questionTotal = allQuestions.length;
+  const blockTotal = normalized.sections.reduce((n, section) => n + section.blocks.length, 0);
+  let createdLabel = "";
+  if (payload.createdAt) {
+    const d = new Date(payload.createdAt);
+    if (!Number.isNaN(d.getTime())) createdLabel = d.toLocaleDateString("en-GB");
+  }
+  const onlineUrl = siteOrigin && payload.id ? `${siteOrigin}/lesson/${encodeURIComponent(payload.slug || payload.id)}` : "";
+  const infoRows = [
+    ["الأقسام", String(normalized.sections.length)],
+    ["الأسئلة المدمجة", questionTotal ? String(questionTotal) : ""],
+    ["عدد العناصر", String(blockTotal)],
+    ["التاريخ", createdLabel],
+    ["المصدر", payload.source || ""],
+  ].filter(([, v]) => v);
+  const infoDialogHtml = `<dialog class="lesson-export-info" dir="rtl"><div class="lesson-export-info__head"><h2>معلومات الدرس</h2><button type="button" data-lesson-info-close aria-label="إغلاق">✕</button></div><h3 dir="auto">${title}</h3>${payload.description ? `<p dir="auto">${escapeHtml(payload.description)}</p>` : ""}<dl>${infoRows.map(([k, v]) => `<dt>${escapeHtml(k)}</dt><dd dir="auto">${escapeHtml(v)}</dd>`).join("")}</dl>${onlineUrl ? `<a class="lesson-export-info__link" href="${escapeHtml(onlineUrl)}" target="_blank" rel="noopener">فتح الدرس على المنصة</a>` : ""}</dialog>`;
   return `<!doctype html>
 <html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${title}</title><style>${markdownCss}\n${lessonCss}
 :root{color-scheme:light;--color-primary:#2563eb;--color-primary-light:#dbeafe;--color-border:#d1d5db;--color-text-primary:#171717;--color-text-secondary:#52525b;--color-background:#fff;--color-background-secondary:#f4f4f5}
 body{max-width:900px;margin:0 auto;padding:24px;font-family:Tahoma,Arial,sans-serif;color:#171717;background:#fff}
-a.lesson-ref-card__action{text-decoration:none}.lesson-view__title{margin:0 0 1.5rem}.lesson-section[hidden]{display:none}
+a.lesson-ref-card__action{text-decoration:none}
+.lesson-view__description{margin:-.75rem 0 1rem;color:#52525b;line-height:1.7}
+.lesson-export-info-btn{margin:0 0 1rem;padding:.4rem .9rem;border:1px solid #d1d5db;border-radius:8px;background:#fff;font:inherit;cursor:pointer}
+.lesson-export-info{max-width:min(480px,92vw);border:0;border-radius:16px;padding:1.25rem;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.lesson-export-info::backdrop{background:rgba(0,0,0,.5)}
+.lesson-export-info__head{display:flex;justify-content:space-between;align-items:center}.lesson-export-info__head h2{margin:0;font-size:1.1rem}
+.lesson-export-info__head button{border:0;background:none;font-size:1.1rem;cursor:pointer}
+.lesson-export-info dl{display:grid;grid-template-columns:auto 1fr;gap:.4rem 1rem;margin:1rem 0}.lesson-export-info dt{color:#52525b;font-weight:700}.lesson-export-info dd{margin:0}
+.lesson-export-info__link{color:#2563eb}.lesson-view__title{margin:0 0 1.5rem}.lesson-section[hidden]{display:none}
 .lesson-question__essay-check-btn,.lesson-question__check-btn{margin-top:.75rem;padding:.5rem 1rem;border:0;border-radius:8px;background:#2563eb;color:#fff;font:inherit;cursor:pointer}
 @media(max-width:600px){body{padding:14px}}
 @media print{body{max-width:none;padding:0}.lesson-section[hidden]{display:block!important}.lesson-question__option{color:#111}.lesson-question__check-btn,.lesson-question__essay-check-btn{display:none}.lesson-question__feedback[hidden]{display:grid!important}.lesson-question__verdict:empty{display:none}}</style>
-</head><body><main class="lesson-view"><header class="lesson-view__header"><h1 class="lesson-view__title">${title}</h1></header><div class="lesson-view__body">${sections}</div></main>
+</head><body><main class="lesson-view"><header class="lesson-view__header"><h1 class="lesson-view__title">${title}</h1>${descriptionHtml}<button type="button" class="lesson-export-info-btn" data-lesson-info-open>معلومات الدرس</button></header><div class="lesson-view__body">${sections}</div></main>
+${infoDialogHtml}
 <script>${LESSON_INTERACTION_SCRIPT}</script></body></html>`;
 }
 
