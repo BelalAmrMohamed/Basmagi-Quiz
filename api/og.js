@@ -2839,13 +2839,13 @@ function loadProfileLogo() {
 }
 
 /**
- * Developer vs admin. A developer is an admin whose email is in OWNER_EMAILS
+ * Developer vs admin. A developer is an admin whose email is in DEVELOPERS_EMAILS
  * (same rule as api/admin.js getOwnerEmails / auth.js isOwner). The email is
  * read with the service key, compared here and never leaves this function.
  * Any failure (no env, no key, timeout) degrades to "admin".
  */
 async function fetchProfileRole(handle) {
-  const owners = (process.env.OWNER_EMAILS || "")
+  const owners = (process.env.DEVELOPERS_EMAILS || "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);

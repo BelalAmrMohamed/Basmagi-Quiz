@@ -86,7 +86,7 @@ export default async function handler(req, res) {
   const userEmail = user.email.toLowerCase();
 
   // Check if the user is an owner (env-configured emails).
-  const ownerEmails = (process.env.OWNER_EMAILS || "")
+  const ownerEmails = (process.env.DEVELOPERS_EMAILS || "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter((e) => e);

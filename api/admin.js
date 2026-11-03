@@ -67,7 +67,7 @@ const supabaseService = createClient(
 );
 
 function getOwnerEmails() {
-  return (process.env.OWNER_EMAILS || "")
+  return (process.env.DEVELOPERS_EMAILS || "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);

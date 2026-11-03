@@ -7,8 +7,24 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Global Issue with buttons
-* Hovering buttons on their border make cause them to flash in a buggy way, that issue is probably related to their transition changing their location or something similar.
+### Global Issue: Buggy Hover Interactions (Buttons & Cards)
+
+Investigate the entire project for buttons, cards, and other interactive elements that exhibit buggy or flickering behavior when hovered, particularly when the cursor moves near or along their borders.
+
+**Likely root cause:**
+Some hover effects may change an element's position, dimensions, or boundaries (e.g., translating it upward while simultaneously increasing its scale). This can cause the element to move away from the cursor, trigger `mouseleave`, and repeatedly toggle the hover state, resulting in a flickering or flashing effect.
+
+**Requirements:**
+1. Audit the entire project and identify all instances of problematic hover implementations.
+2. Investigate the actual root cause rather than blindly modifying CSS transitions.
+3. Fix each affected element using the most appropriate approach. Consider alternatives such as `transform`, `box-shadow`, background-color transitions, and other visual effects that don't unintentionally alter the element's hover boundaries.
+4. Preserve the original design intent and individuality of each element. **Do NOT apply one universal hover effect to every button or card.**
+5. Avoid unnecessary changes to elements that already have smooth, bug-free hover interactions.
+6. Check for similar issues involving nested elements, overlapping interactive areas, pseudo-elements, and conflicting hover states.
+
+**Objective:** Eliminate buggy hover behavior throughout the project while preserving the existing visual identity, design variety, and intended interaction effects of every component.
+
+Make the necessary changes directly in the existing codebase. Do not merely provide recommendations or a list of potential fixes.
 
 ### `api\og.js`
 * Special courses that get the (مادة مميزة) badge, since there is no info table displayed, the middle of the image becomes emtpy, I need to fill it with something, or ideas to improve it when it has the  (مادة مميزة) badge. 
@@ -62,8 +78,8 @@ Add dictation feature for essays in quizzes and lessons
 ### `public\about.html` Page
 * Suggestion: Add an open-source Angle (Since the repo is currently open source).
 * Suggestion: Add a short testimonial or review.
-* Suggestion: Add the number of views of the whole platform (try to integrate vercel insights if possible) to the `المنصة بالأرقام` section.
-* Extend the `كيف بُنيت المنصة؟` section to include `SEO (Search Engine Optimization)`, `GEO (Generative Engine Optimization)`, and MCP Server.
+* Suggestion: Add the number of views of the whole platform (try to integrate vercel insights if possible) to the `المنصة بالأرقام` section. Or create a custom one with new migrations in the `supabase/migrations` directory, and implement the live counter that counts all of the views to the platform + Advanced analytics. 
+* Extend the `كيف بُنيت المنصة؟` section to include `SEO (Search Engine Optimization)`, `GEO (Generative Engine Optimization)`, and MCP Server. And runtime Intrepreter for the notebook and create-notebook pages.
 
 ### Create Quiz Page
 `create-quiz.js` is 5000+ lines in one file — It's the right time to split it into modules.

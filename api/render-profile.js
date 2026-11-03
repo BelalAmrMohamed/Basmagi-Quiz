@@ -32,13 +32,13 @@ const supabase = createClient(
 );
 
 // Service-role client — used ONLY to read the admin's email server-side so we
-// can tell a developer (email in OWNER_EMAILS, same rule as api/admin.js) from
+// can tell a developer (email in DEVELOPERS_EMAILS, same rule as api/admin.js) from
 // a regular admin. The email is compared and discarded; it is never written
 // into the page. Absent key/env => everyone is simply an admin.
 const supabaseService = process.env.SUPABASE_SERVICE_KEY
   ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
   : null;
-const OWNER_EMAILS = (process.env.OWNER_EMAILS || "")
+const DEVELOPERS_EMAILS = (process.env.DEVELOPERS_EMAILS || "")
   .split(",")
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
@@ -144,14 +144,14 @@ export default async function handler(req, res) {
     .catch((err) => ({ data: null, error: err }));
 
   const rolePromise =
-    supabaseService && OWNER_EMAILS.length
+    supabaseService && DEVELOPERS_EMAILS.length
       ? supabaseService
           .from("admin_users")
           .select("email")
           .ilike("handle", normalizedHandle)
           .maybeSingle()
           .then(({ data }) =>
-            data?.email && OWNER_EMAILS.includes(String(data.email).trim().toLowerCase())
+            data?.email && DEVELOPERS_EMAILS.includes(String(data.email).trim().toLowerCase())
               ? "developer"
               : "admin",
           )
