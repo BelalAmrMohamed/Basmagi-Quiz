@@ -132,10 +132,10 @@ export class SearchManager {
       // Inside a course — search for quizzes
       const currentCategory = navStack[navStack.length - 1];
 
-      if (currentCategory.name === "امتحاناتك") {
+      if (currentCategory.name === "محتواي" || currentCategory.name === "امتحاناتك") {
         this.currentContext = "userQuizzes";
         if (this.elements.searchInput) {
-          this.elements.searchInput.placeholder = "ابحث في امتحاناتك...";
+          this.elements.searchInput.placeholder = "ابحث في محتواي...";
         }
         if (this.elements.headerSearchBtn) {
           this.elements.headerSearchBtn.style.display = "flex";

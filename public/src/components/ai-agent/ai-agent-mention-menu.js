@@ -15,7 +15,7 @@
 //   - Single-select: picking any row (Quick-Access or a database item)
 //     attaches it and immediately closes the menu — the same "click =
 //     done" behavior as every other dropdown in this app
-//     (.exam-dropdown-menu). A second `@` reopens it for another
+//     (.item-dropdown-menu). A second `@` reopens it for another
 //     attachment. Rows already in pendingAttachments render disabled
 //     (see isAttached/buildRow) so the same item can't be attached twice.
 //
@@ -262,7 +262,7 @@ export function createMentionMenu(options) {
     /**
      * Attaches the picked item and closes the menu immediately — same
      * "click = done" behavior as every other dropdown in this app
-     * (.exam-dropdown-menu). A second `@` reopens the menu for another
+     * (.item-dropdown-menu). A second `@` reopens the menu for another
      * attachment; isAttached (see buildRow's `checked`/`disabled` wiring)
      * keeps an already-picked item from being picked again in that next
      * session.

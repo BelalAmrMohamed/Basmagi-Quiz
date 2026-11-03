@@ -1,7 +1,7 @@
 // Platform notebook card (executable MATLAB-style notebook). Notebooks are
 // unscored leaves: no quiz-only actions (attempts, results, downloads of
 // quiz files) — just open, link/share, and admin management.
-import { openExamDropdownMenu, createActionGroupSubmenu } from "./exam-dropdown-menu.js";
+import { openItemDropdownMenu, createActionGroupSubmenu } from "./item-dropdown-menu.js";
 import { canManageItem, openSharedMoveToDialog, renameSharedItem, editSharedItemMetadata, deleteSharedItem } from "./admin-item-actions.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { appendNotebookMenuEntries, fetchPlatformNotebookRow, showNotebookDownloadModal } from "./notebook-actions.js";
@@ -35,18 +35,21 @@ export function createNotebookCard(notebook) {
   const icon = document.createElement("span");
   icon.className = "phone-only-emoji";
   icon.textContent = "💻";
+  icon.title = "دفتر تفاعلي";
   icon.setAttribute("aria-hidden", "true");
 
   const text = document.createElement("div");
   text.className = "card-text";
   const heading = document.createElement("h3");
   heading.textContent = notebook.title || "دفتر بدون عنوان";
+  heading.title = `دفتر تفاعلي · ${heading.textContent}`;
   text.appendChild(heading);
   const description = String(notebook.description || "").trim();
   if (description) {
     const desc = document.createElement("p");
     desc.className = "lesson-card-description";
     desc.textContent = description;
+    desc.title = description;
     text.appendChild(desc);
   }
   const meta = document.createElement("div");
@@ -109,7 +112,7 @@ export function createNotebookCard(notebook) {
 function openNotebookActionsMenu(notebook, trigger) {
   const url = `${window.location.origin}${notebookPath(notebook)}`;
   const item = { ...notebook, itemType: "notebook" };
-  openExamDropdownMenu(trigger, (menu, closeMenu, reposition) => {
+  openItemDropdownMenu(trigger, (menu, closeMenu, reposition) => {
     addMenuAction(menu, closeMenu, {
       label: "نسخ الرابط", icon: COPY_ICON_SVG,
       onClick: () => navigator.clipboard.writeText(url).then(() => showNotification("تم النسخ", "تم نسخ رابط الدفتر.", "success")),

@@ -1,6 +1,6 @@
 // ============================================================================
 // public/src/features/home/copy-to-my-quizzes.js
-// COPY TO MY QUIZZES — "نسخ لامتحاناتي": clones any manifest exam (static or
+// COPY TO MY CONTENT — "نسخ إلى محتواي": clones any manifest exam (static or
 // database-backed) into the visitor's own localStorage "user_quizzes" list,
 // exactly as if they'd re-imported its JSON via the create-quiz modal.
 // ============================================================================
@@ -8,7 +8,7 @@
 // Feature B). Unlike download, this never touches the network beyond the one
 // fetch already needed to read the quiz's questions (loadFullQuizData) — the
 // resulting entry is built with the same buildUserQuizEntry() the JSON-file
-// import path uses, so the two ways of getting a quiz into "امتحاناتك" stay
+// import path uses, so the two ways of getting a quiz into "محتواي" stay
 // schema-identical.
 // ============================================================================
 
@@ -28,7 +28,7 @@ function inFlightKey(type, parentId, title) {
 }
 
 /**
- * Shared loading-state wrapper for every "نسخ لامتحاناتي" button (root-view.js,
+ * Shared loading-state wrapper for every "نسخ إلى محتواي" button (root-view.js,
  * category-view.js, exam-card.js). Copying a whole course tree can take a
  * while (one loadFullQuizData() fetch per quiz, sequentially — see
  * copyCategoryTreeToUserQuizzes below), and the button previously only set
@@ -56,7 +56,7 @@ export async function withCopyButtonLoadingState(button, task) {
 
 /**
  * Copies a manifest exam (relative-path or DB-sourced) into the user's
- * local "امتحاناتك" list.
+ * local "محتواي" list.
  *
  * @param {object} exam - manifest exam entry (id, title, path, ...)
  * @returns {Promise<boolean>} true if a new copy was created
@@ -76,7 +76,7 @@ export async function copyQuizToUserQuizzes(exam) {
     if (hasSameLevelCollision(userQuizzes, { type: "quiz", title, parentId: null })) {
       showNotification(
         "موجود بالفعل",
-        "يوجد امتحان بنفس الاسم في المستوى الرئيسي من امتحاناتك بالفعل",
+        "يوجد امتحان بنفس الاسم في المستوى الرئيسي من محتواي بالفعل",
         "warning",
       );
       return false;
@@ -132,7 +132,7 @@ export async function copyQuizToUserQuizzes(exam) {
 
     showNotification(
       "تم النسخ",
-      `تم نسخ "${exam.title || exam.id}" إلى امتحاناتك`,
+      `تم نسخ "${exam.title || exam.id}" إلى محتواي`,
       "success",
     );
     return true;
@@ -141,7 +141,7 @@ export async function copyQuizToUserQuizzes(exam) {
   }
 }
 
-/** Copies a published lesson into the local lessons area in «امتحاناتك». */
+/** Copies a published lesson into the local lessons area in «محتواي». */
 export async function copyLessonToUserQuizzes(lesson) {
   const title = lesson?.title || lesson?.id || "درس";
   const key = inFlightKey("lesson", null, title);
@@ -150,7 +150,7 @@ export async function copyLessonToUserQuizzes(lesson) {
   try {
     const current = JSON.parse(getFromStorage("user_quizzes", "[]"));
     if (hasSameLevelCollision(current, { type: "lesson", title, parentId: null })) {
-      showNotification("موجود بالفعل", "يوجد درس بهذا الاسم في المستوى الرئيسي من امتحاناتك بالفعل.", "warning");
+      showNotification("موجود بالفعل", "يوجد درس بهذا الاسم في المستوى الرئيسي من محتواي بالفعل.", "warning");
       return false;
     }
 
@@ -212,14 +212,14 @@ export async function copyLessonToUserQuizzes(lesson) {
     };
     current.push(entry);
     if (!setInStorage("user_quizzes", JSON.stringify(current))) {
-      throw new Error("تعذّر حفظ الدرس في امتحاناتك. تحقق من مساحة التخزين.");
+      throw new Error("تعذّر حفظ الدرس في محتواي. تحقق من مساحة التخزين.");
     }
     // Refresh the root card's count without rendering either home view:
     // renderUserQuizzesView() pushes /#my-quizzes and would take the user
     // away from the lesson/course where they started the copy.
     const { refreshUserQuizzesCard } = await import("./course-count.js");
     refreshUserQuizzesCard();
-    showNotification("تم النسخ", `تم نسخ «${normalized.title}» إلى امتحاناتك.`, "success");
+    showNotification("تم النسخ", `تم نسخ «${normalized.title}» إلى محتواي.`, "success");
     return true;
   } catch (error) {
     console.error("[copy-to-my-quizzes] lesson copy failed:", error);
@@ -345,7 +345,7 @@ export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, root
     if (rootBlocked) {
       showNotification(
         "موجود بالفعل",
-        "يوجد عنصر بنفس الاسم والنوع في هذا المستوى من امتحاناتك بالفعل.",
+        "يوجد عنصر بنفس الاسم والنوع في هذا المستوى من محتواي بالفعل.",
         "warning",
       );
       return false;

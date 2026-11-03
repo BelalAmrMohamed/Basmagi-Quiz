@@ -16,8 +16,8 @@
  * instead of rendering below the list — exactly the "menu fails to display
  * above the greater parent .grid-container" bug. `position: fixed` is
  * positioned relative to the viewport instead, so it escapes that clipping
- * ancestor entirely — the same trick already used for `.exam-dropdown-menu`
- * (see openExamDropdownMenu above).
+ * ancestor entirely — the same trick already used for `.item-dropdown-menu`
+ * (see openItemDropdownMenu above).
  *
  * Anchors below-right of the trigger (RTL UI, right-edge aligned), flipping
  * above it if there isn't enough room below, and clamps to the viewport.

@@ -1,6 +1,6 @@
 // ============================================================================
 // public/src/features/home/user-quizzes-view.js
-// USER QUIZZES VIEW — the "امتحاناتك" (My Quizzes) screen: card grid,
+// USER CONTENT VIEW — the "محتواي" (My Content) screen: card grid,
 // admin sign-in/out bar, bulk selection + bulk action bar, and drag-and-drop
 // file import.
 // ============================================================================
@@ -14,7 +14,7 @@
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { isAdminAuthenticated, fullSignOut } from "../../shared/adminAuth.js";
 import { _prompt } from "../../components/notifications/notifications.js";
-import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
+import { openItemDropdownMenu } from "./item-dropdown-menu.js";
 import {
   currentFolderId,
   getChildren,
@@ -84,7 +84,7 @@ function userItemRoute(item, items) {
   if (kind === "quiz") return `/quiz/${encodeURIComponent(id)}?type=user`;
   if (kind === "lesson") return `/lesson/${encodeURIComponent(id)}`;
   if (kind === "notebook") return `/notebook/${encodeURIComponent(id)}?type=user`;
-  if (kind !== "folder" && kind !== "course") return "/#my-quizzes";
+  if (kind !== "folder" && kind !== "course") return "/#my-content";
 
   const byId = new Map(items.map((entry) => [entry.id || entry.meta?.id, entry]));
   const segments = [];
@@ -97,7 +97,7 @@ function userItemRoute(item, items) {
     if (title) segments.unshift(encodeURIComponent(toSlug(title)));
     current = current.meta?.parentId ? byId.get(current.meta.parentId) : null;
   }
-  return segments.length ? `/#my-quizzes/${segments.join("/")}` : "/#my-quizzes";
+  return segments.length ? `/#my-content/${segments.join("/")}` : "/#my-content";
 }
 
 function getUserItemDestination(item, items) {
@@ -112,7 +112,7 @@ function getUserItemDestination(item, items) {
     if (parent.meta?.title) ancestors.unshift(parent.meta.title);
     parentId = parent.meta?.parentId || null;
   }
-  return ancestors.length ? ancestors.join(" / ") : "امتحاناتك الرئيسية";
+  return ancestors.length ? ancestors.join(" / ") : "محتواي الرئيسية";
 }
 
 function createdItemResult(kind, item, items, detail) {
@@ -163,7 +163,7 @@ function handleCreateQuizToolCall(toolCall) {
   // `folder`, like create_folder's `parentFolder` / move_item's
   // `destinationFolder`, is an exact title matched against the folder-tree
   // listing already in the model's context — resolve it to an id with the
-  // same shared helper those tools use, so "امتحاناتك الرئيسية"/omitted
+  // same shared helper those tools use, so "محتواي الرئيسية"/omitted
   // both mean top-level consistently across every placement-aware tool.
   const folderResolution = resolveFolderTitleToId(input.folder);
   if (!folderResolution.ok) {
@@ -183,7 +183,7 @@ function handleCreateQuizToolCall(toolCall) {
 
   showNotification(
     "تم الإنشاء",
-    'تم إنشاء الامتحان وإضافته إلى "امتحاناتك"',
+    'تم إنشاء الامتحان وإضافته إلى "محتواي"',
     "success",
   );
   renderRootCategories();
@@ -214,7 +214,7 @@ function handleCreateLessonToolCall(toolCall) {
 
   const quizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
   if (hasSameLevelCollision(quizzes, { type: "lesson", title, parentId: null })) {
-    fail("يوجد درس بنفس الاسم في «امتحاناتك». اختر عنواناً مختلفاً.");
+    fail("يوجد درس بنفس الاسم في «محتواي». اختر عنواناً مختلفاً.");
   }
 
   const id = crypto.randomUUID();
@@ -241,7 +241,7 @@ function handleCreateLessonToolCall(toolCall) {
     fail("تعذّر حفظ الدرس محلياً. تحقق من مساحة التخزين وحاول مرة أخرى.");
   }
 
-  showNotification("تم إنشاء الدرس", 'تم إنشاء الدرس وإضافته إلى "امتحاناتك".', "success");
+  showNotification("تم إنشاء الدرس", 'تم إنشاء الدرس وإضافته إلى "محتواي".', "success");
   renderRootCategories();
   renderUserQuizzesView();
   const items = JSON.parse(getFromStorage("user_quizzes", "[]"));
@@ -364,7 +364,7 @@ function handleDeleteQuizToolCall(toolCall) {
 }
 
 /**
- * "امتحاناتك الرئيسية" (root) is how the folder-tree context prompt and
+ * "محتواي الرئيسية" (root) is how the folder-tree context prompt and
  * move_item's destinationFolder both refer to the top level — resolve that
  * literal label the same way for both create_folder's parentFolder and
  * move_item's destinationFolder so the model can use the exact string it
@@ -372,7 +372,7 @@ function handleDeleteQuizToolCall(toolCall) {
  * (which it won't reliably infer purely from the schema description).
  */
 function resolveFolderTitleToId(folderTitle) {
-  if (!folderTitle || folderTitle === "امتحاناتك الرئيسية" || folderTitle === "الرئيسية") {
+  if (!folderTitle || folderTitle === "محتواي الرئيسية" || folderTitle === "امتحاناتك الرئيسية" || folderTitle === "الرئيسية") {
     return { ok: true, id: null };
   }
   const found = findFolderByName(folderTitle);
@@ -430,7 +430,7 @@ function handleCreateCourseToolCall(toolCall) {
   renderUserQuizzesView();
   const items = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const saved = items.find((item) => (item.id || item.meta?.id) === result.id);
-  return createdItemResult("course", saved || { id: result.id, meta: { title: name.trim(), parentId: null } }, items, "مادة جديدة · مساحة مرتبة لدروسك وامتحاناتك");
+  return createdItemResult("course", saved || { id: result.id, meta: { title: name.trim(), parentId: null } }, items, "مادة جديدة · مساحة مرتبة لمحتواك");
 }
 
 function handleMoveItemToolCall(toolCall) {
@@ -465,7 +465,7 @@ function handleMoveItemToolCall(toolCall) {
   renderUserQuizzesView();
 
   if (moved > 0) {
-    return `✅ تم نقل "${itemName}" إلى ${destinationFolder || "امتحاناتك الرئيسية"}.`;
+    return `✅ تم نقل "${itemName}" إلى ${destinationFolder || "محتواي الرئيسية"}.`;
   }
   const err = new Error(`Move blocked/no-op for ${itemName}`);
   err.userMessage = saveFailed
@@ -478,7 +478,7 @@ function handleMoveItemToolCall(toolCall) {
 
 /**
  * Renders the user's folder/course tree as an indented plain-text list by
- * title (root "امتحاناتك الرئيسية" first, then each folder/course nested
+ * title (root "محتواي الرئيسية" first, then each folder/course nested
  * under its parent) for the AI agent's system-context — this is the only
  * way the model can resolve create_folder's parentFolder or move_item's
  * itemName/destinationFolder to a real location, since (like every other
@@ -490,7 +490,7 @@ function buildFolderTreeContextPrompt(userQuizzes) {
   const nodes = userQuizzes.filter(
     (q) => q.meta?.type === "folder" || q.meta?.type === "course",
   );
-  const lines = ["هيكل المجلدات والمواد الحالي للمستخدم:", "- امتحاناتك الرئيسية (المستوى الرئيسي)"];
+  const lines = ["هيكل المجلدات والمواد الحالي للمستخدم:", "- محتواي الرئيسية (المستوى الرئيسي)"];
 
   function appendChildren(parentId, depth) {
     nodes
@@ -567,13 +567,13 @@ export function renderUserQuizzesView() {
     // Update Navigation Stack — only push if we're not already sitting on
     // this same view. Without this guard, any re-render of this view while
     // already inside it (e.g. renderUserQuizzesView() called again after a
-    // bulk delete) pushes a second "امتحاناتك" frame, making the breadcrumb
+    // bulk delete) pushes a second "محتواي" frame, making the breadcrumb
     // read navigationStack[length - 2] (undefined) instead of the actual
     // parent, which broke both its label and its onclick handler.
     const navigationStack = getNavigationStack();
     const topOfStack = navigationStack[navigationStack.length - 1];
-    if (!topOfStack || topOfStack.name !== "امتحاناتك") {
-      navigationStack.push({ name: "امتحاناتك" });
+    if (!topOfStack || topOfStack.name !== "محتواي") {
+      navigationStack.push({ name: "محتواي" });
     }
     updateBreadcrumb();
 
@@ -587,7 +587,7 @@ export function renderUserQuizzesView() {
 
     // Fix the #breadcrumb back-button for nested user-quiz folders.
     // updateBreadcrumb() only knows about the navigationStack which holds
-    // a single "امتحاناتك" entry — it always renders "الرجوع إلى المواد ←"
+    // a single "محتواي" entry — it always renders "الرجوع إلى المواد ←"
     // regardless of how deep we are in the folder tree. Override it directly
     // based on the real folderPathStack.
     const pathStack = getCurrentFolderPathStack();
@@ -599,9 +599,9 @@ export function renderUserQuizzesView() {
       if (breadcrumbText) {
         if (pathStack.length === 1) {
           // Parent is the root of user-quizzes
-          breadcrumbText.textContent = "الرجوع إلى امتحاناتك ←";
+          breadcrumbText.textContent = "الرجوع إلى محتواي ←";
           breadcrumbEl.onclick = () => navigateToFolder(null, null);
-          breadcrumbEl.setAttribute("aria-label", "الرجوع إلى امتحاناتك ←");
+          breadcrumbEl.setAttribute("aria-label", "الرجوع إلى محتواي ←");
         } else {
           // Parent is the previous folder in the path stack
           const parentFolder = pathStack[pathStack.length - 2];
@@ -629,7 +629,7 @@ export function renderUserQuizzesView() {
     }
 
     // Update Title: use the smart collapsible breadcrumb in #Subjects-text.
-    // Build items from folderPathStack: root = "امتحاناتك", then each folder.
+    // Build items from folderPathStack: root = "محتواي", then each folder.
     if (title) {
       let userQuizzes = [];
       try {
@@ -643,8 +643,8 @@ export function renderUserQuizzesView() {
       // valid "move item here" drop target, not just the clickable ones.
       const bcItems = [
         {
-          label: "امتحاناتك",
-          icon: "📁",
+          label: "محتواي",
+          icon: "🗂️",
           onClick: pathStack.length > 0 ? () => navigateToFolder(null, null) : undefined,
           dropTargetId: null,
         },
@@ -726,7 +726,7 @@ export function renderUserQuizzesView() {
     createFolderBtn.setAttribute("aria-haspopup", "menu");
     createFolderBtn.onclick = (e) => {
       e.stopPropagation();
-      openExamDropdownMenu(createFolderBtn, (menu, closeMenu) => {
+      openItemDropdownMenu(createFolderBtn, (menu, closeMenu) => {
         // "امتحان جديد" — opens the same modal previously reachable
         // via the standalone .user-create-quiz-card in the quiz grid
         // (createInlineCreateQuizCard(), removed per docs/plans/
@@ -798,7 +798,7 @@ export function renderUserQuizzesView() {
           // silently-missing option here would look like a bug, the same
           // inconsistency Part 3 flags for the desktop context menu.
           courseOpt.disabled = true;
-          courseOpt.title = "يمكن إنشاء المواد في الصفحة الرئيسية لـ«امتحاناتك» فقط";
+          courseOpt.title = "يمكن إنشاء المواد في الصفحة الرئيسية لـ«محتواي» فقط";
           courseOpt.style.opacity = "0.5";
           courseOpt.style.cursor = "not-allowed";
         }
@@ -819,7 +819,7 @@ export function renderUserQuizzesView() {
           menu.appendChild(importOpt);
         }
 
-        // "سلة المهملات" — same gating as root-view.js's "امتحاناتك" card
+        // "سلة المهملات" — same gating as root-view.js's "محتواي" card
         // ⋮ menu and the #userQuizContextMenu global actions (see
         // user-quizzes-folders.js's showContextMenu): only shown once
         // there's at least one trashed item.
@@ -872,7 +872,7 @@ export function renderUserQuizzesView() {
 
     container.appendChild(actionsBar);
 
-    // Drag-and-drop JSON import on the whole امتحاناتك section
+    // Drag-and-drop JSON import on the whole user-content section
     wireJsonFileDropZone(container, (files) => importJsonQuizFiles(files), {
       isEnabled: () => container.classList.contains("user-quizzes-drop-zone"),
     });
@@ -906,7 +906,7 @@ export function renderUserQuizzesView() {
         icon: "folder",
         title: currentFolderId
           ? "هذا المجلد فارغ"
-          : "لم تقم بإنشاء أي امتحانات أو مجلدات حتى الآن",
+          : "لم تقم بإنشاء أي محتوى بعد",
         subtitle: "قم بإنشاء مادة ، أو مجلد ، أو امتحان ، أو درس ، أو دفتر",
       });
       quizzesContainer.appendChild(emptyState);

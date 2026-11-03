@@ -24,7 +24,7 @@ import { createExamCard } from "./exam-card.js";
 import { createLessonCard } from "./lesson-card.js";
 import { createNotebookCard } from "./notebook-card.js";
 import { buildContainerInfoRows } from "./info-details.js";
-import { openExamDropdownMenu, createActionGroupSubmenu, createExamInfoSubmenu } from "./exam-dropdown-menu.js";
+import { openItemDropdownMenu, createActionGroupSubmenu, createExamInfoSubmenu } from "./item-dropdown-menu.js";
 import { showFolderInfoModal } from "./folder-info-modal.js";
 import { userProfile } from "../../shared/userProfile.js";
 import {
@@ -344,7 +344,7 @@ export function createCategoryCard(
     moreBtn.setAttribute("aria-label", `خيارات ${name}`);
     moreBtn.onclick = (event) => {
       event.stopPropagation();
-      openExamDropdownMenu(moreBtn, (menu, closeMenu, reposition) => {
+      openItemDropdownMenu(moreBtn, (menu, closeMenu, reposition) => {
         // Build a shareable URL matching the real-path scheme used by
         // renderCategory(): /course/{courseSlug}/{subSlug}/{subSlug2}/...
         // (all real path segments now, not a #hash — see renderCategory()'s
@@ -385,7 +385,7 @@ export function createCategoryCard(
         const copyToMine = document.createElement("button");
         copyToMine.type = "button";
         copyToMine.className = "exam-action-btn";
-        copyToMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
+        copyToMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ إلى محتواي</span>`;
         copyToMine.onclick = async (e) => {
           e.stopPropagation();
           await withCopyButtonLoadingState(copyToMine, () =>

@@ -1,6 +1,6 @@
 // ============================================================================
 // public/src/features/home/root-view.js
-// ROOT VIEW — the home screen: "امتحاناتك" folder card + subscribed courses
+// ROOT VIEW — the home screen: "محتواي" card + subscribed courses
 // (or all courses, if none subscribed).
 // ============================================================================
 
@@ -29,8 +29,8 @@ import {
 } from "./course-count.js";
 
 import { createCategoryCard, renderCategory, getCategoriesLazy } from "./category-view.js";
-import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
-import { createExamInfoSubmenu, createActionGroupSubmenu } from "./exam-dropdown-menu.js";
+import { openItemDropdownMenu } from "./item-dropdown-menu.js";
+import { createExamInfoSubmenu, createActionGroupSubmenu } from "./item-dropdown-menu.js";
 import { showCourseInfoModal } from "./course-actions.js";
 import { buildCourseInfoRows } from "./course-info-fields.js";
 import { buildContainerInfoRows } from "./info-details.js";
@@ -71,7 +71,7 @@ function attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe =
   moreBtn.setAttribute("aria-label", `خيارات ${course.name}`);
   moreBtn.onclick = (event) => {
     event.stopPropagation();
-    openExamDropdownMenu(moreBtn, (menu, closeMenu, reposition) => {
+    openItemDropdownMenu(moreBtn, (menu, closeMenu, reposition) => {
       // Courses are always top-level (single-segment path), so this is
       // always just /course/{courseSlug} — matches renderCategory()'s
       // pathname scheme and render-course.js's slug-based canonical URL.
@@ -108,7 +108,7 @@ function attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe =
       const copyMine = document.createElement("button");
       copyMine.type = "button";
       copyMine.className = "exam-action-btn";
-      copyMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
+      copyMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ إلى محتواي</span>`;
       copyMine.onclick = async (e) => {
         e.stopPropagation();
         await withCopyButtonLoadingState(copyMine, () =>
@@ -236,7 +236,7 @@ export async function renderRootCategories() {
     navigationStack.length = 0; // clear in place — same effect as reassigning []
     updateBreadcrumb();
 
-    // Leaving the "امتحاناتك" view entirely — selection mode and the
+    // Leaving the "محتواي" view entirely — selection mode and the
     // floating bulk action bar belong to that view only. The bar lives on
     // document.body (not inside `container`), so it wouldn't otherwise get
     // cleaned up just because the view underneath it changed.
@@ -311,39 +311,45 @@ export async function renderRootCategories() {
 
     const fragment = document.createDocumentFragment();
 
-    // 1. Add "امتحاناتك" Folder Card
+    // 1. Add the locally stored user-content card.
     try {
       const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
       const breakdown = getUserQuizzesBreakdown(userQuizzes);
       const quizzesCard = createCategoryCard(
-        "امتحاناتك",
+        "محتواي",
         breakdown.total,
         true,
         null,
         false,
-        // Subtext shows only the quiz count (e.g. "8 امتحانات"), matching
-        // every other card's "N امتحان(ات)" convention — the full
-        // quizzes/courses/folders breakdown lives in this card's dropdown
-        // menu instead of being crammed into the subtext line. See
-        // formatUserQuizzesBreakdown() in course-count.js.
         formatUserQuizzesBreakdown(breakdown),
       );
       // Tagged so refreshUserQuizzesCard() can find this specific card by
       // attribute instead of assuming DOM order (it's always appended
       // first, but relying on that felt fragile for a targeted lookup).
       quizzesCard.setAttribute("data-user-quizzes-card", "true");
+      quizzesCard.setAttribute(
+        "title",
+        "الامتحانات والدروس والدفاتر والمواد التي أنشأتها أو حفظتها",
+      );
       // Custom icon
       const iconDiv = quizzesCard.querySelector(".icon");
       if (iconDiv) iconDiv.textContent = "✏️";
+      const cardSubtext = quizzesCard.querySelector(".card-text p");
+      if (cardSubtext) {
+        cardSubtext.title = formatUserQuizzesBreakdown(breakdown, {
+          includeCourses: true,
+          includeFolders: true,
+        });
+      }
 
       const rootMenuBtn = document.createElement("button");
       rootMenuBtn.type = "button";
       rootMenuBtn.className = "exam-more-btn exam-more-btn--lg";
       rootMenuBtn.innerHTML = MORE_DOTS_ICON_SVG;
-      rootMenuBtn.setAttribute("aria-label", "خيارات امتحاناتك");
+      rootMenuBtn.setAttribute("aria-label", "خيارات محتواي");
       rootMenuBtn.onclick = (event) => {
         event.stopPropagation();
-        openExamDropdownMenu(rootMenuBtn, (menu, closeMenu) => {
+        openItemDropdownMenu(rootMenuBtn, (menu, closeMenu) => {
           const askAi = document.createElement("button");
           askAi.type = "button";
           askAi.className = "exam-action-btn";
@@ -368,6 +374,7 @@ export async function renderRootCategories() {
           const breakdownRows = [
             { label: "الامتحانات", val: String(freshBreakdown.quizCount) },
             { label: "الدروس", val: String(freshBreakdown.lessonCount) },
+            { label: "الدفاتر", val: String(freshBreakdown.notebookCount) },
             { label: "المواد", val: String(freshBreakdown.courseCount) },
             { label: "المجلدات", val: String(freshBreakdown.folderCount) },
           ].filter((row) => row.val !== "0");
@@ -399,14 +406,14 @@ export async function renderRootCategories() {
           // get the raw "user_quizzes" data out, both for debugging (what
           // this session previously needed a manual console `copy(...)` for)
           // and as a manual backup before a destructive action like the
-          // Hidden entirely once "امتحاناتك" is already empty (freshBreakdown
+          // Hidden entirely once "محتواي" is already empty (freshBreakdown
           // computed above) — nothing to export, mirroring the "حذف الكل"
           // visibility rule right below it.
           if (freshBreakdown.total > 0) {
             const exportBtn = document.createElement("button");
             exportBtn.type = "button";
             exportBtn.className = "exam-action-btn";
-            exportBtn.innerHTML = `${DOWNLOAD_ICON_SVG}<span>تصدير بيانات امتحاناتك</span>`;
+            exportBtn.innerHTML = `${DOWNLOAD_ICON_SVG}<span>تصدير بيانات محتواي</span>`;
             exportBtn.onclick = (clickEvent) => {
               clickEvent.stopPropagation();
               closeMenu();
@@ -417,7 +424,7 @@ export async function renderRootCategories() {
 
           // "سلة المهملات" — local trash panel (see user-quizzes-trash.js
           // and plan §4/§8 Step 8). Shown whenever there's at least one
-          // trashed item, regardless of whether "امتحاناتك" itself
+          // trashed item, regardless of whether "محتواي" itself
           // currently has any live content — a fully-emptied collection can
           // still have recoverable items sitting in the trash.
           const trashCount = getTrashItemCount();
@@ -439,7 +446,7 @@ export async function renderRootCategories() {
           // own double-verification flow (button confirm + type-to-confirm,
           // see deleteAllUserQuizzes's doc comment) rather than the single
           // default _confirm wording used for single-item deletes elsewhere.
-          // Hidden entirely once "امتحاناتك" is already empty (freshBreakdown
+          // Hidden entirely once "محتواي" is already empty (freshBreakdown
           // computed above) — nothing left to wipe.
           if (freshBreakdown.total > 0) {
             const deleteAllBtn = document.createElement("button");

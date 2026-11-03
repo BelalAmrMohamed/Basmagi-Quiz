@@ -2,7 +2,7 @@
 import { downloadLesson } from "./lesson-download.js";
 import { EMBED_ICON_SVG, copyEmbedCode } from "./embed-code.js";
 import { fetchLessonViewCount, fetchCreatorName } from "./info-details.js";
-import { openExamDropdownMenu, createActionGroupSubmenu, createExamInfoSubmenu } from "./exam-dropdown-menu.js";
+import { openItemDropdownMenu, createActionGroupSubmenu, createExamInfoSubmenu } from "./item-dropdown-menu.js";
 import { showUserLessonInfoModal, collectLessonInfo } from "./lesson-info-modal.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 import { canManageItem, openSharedMoveToDialog, renameSharedItem, editSharedItemMetadata, deleteSharedItem } from "./admin-item-actions.js";
@@ -65,18 +65,21 @@ export function createLessonCard(lesson) {
   const icon = document.createElement("span");
   icon.className = "phone-only-emoji";
   icon.textContent = "📘";
+  icon.title = "درس";
   icon.setAttribute("aria-hidden", "true");
 
   const text = document.createElement("div");
   text.className = "card-text";
   const heading = document.createElement("h3");
   heading.textContent = lesson.title || "درس بدون عنوان";
+  heading.title = `درس · ${heading.textContent}`;
   text.appendChild(heading);
   const description = String(lesson.description || "").trim();
   if (description) {
     const desc = document.createElement("p");
     desc.className = "lesson-card-description";
     desc.textContent = description;
+    desc.title = description;
     text.appendChild(desc);
   }
   const sectionCount = Number(lesson.sectionIds?.length ?? lesson.sectionCount ?? 0);
@@ -149,9 +152,9 @@ export function createLessonCard(lesson) {
 }
 
 function openLessonActionsMenu(lesson, trigger) {
-  openExamDropdownMenu(trigger, (menu, closeMenu, reposition) => {
+  openItemDropdownMenu(trigger, (menu, closeMenu, reposition) => {
     addMenuAction(menu, closeMenu, {
-      label: "نسخ لامتحاناتي", icon: DUPLICATE_ICON_SVG,
+      label: "نسخ إلى محتواي", icon: DUPLICATE_ICON_SVG,
       onClick: () => { void copyLessonToUserQuizzes(lesson); },
     });
     addMenuAction(menu, closeMenu, {

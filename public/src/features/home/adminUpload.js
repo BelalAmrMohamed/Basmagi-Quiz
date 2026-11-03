@@ -674,7 +674,7 @@ async function renderStep2({ educationType, college, year, term }) {
       </div>
       <p class="adm-hint" id="adm-no-subjects-hint" style="display:none;">
         لا توجد مادة مطابقة هنا بعد. المواد والمجلدات تُنشأ الآن من صفحة
-        امتحاناتك مباشرة — أنشئ المادة هناك أولاً ثم عد لرفع الامتحان داخلها.
+        محتواي مباشرة — أنشئ المادة هناك أولاً ثم عد لرفع الامتحان داخلها.
       </p>
 
       <div class="adm-field">
@@ -1157,7 +1157,7 @@ function renderFolderUploadTargetStep(step1Vals) {
         </select>
       </div>
       <p class="adm-hint" id="adm-no-target-course-hint" style="display:none;">
-        لا توجد مادة مطابقة هنا بعد. أنشئ المادة أولاً من صفحة امتحاناتك (أو ارفعها عبر
+        لا توجد مادة مطابقة هنا بعد. أنشئ المادة أولاً من صفحة محتواي (أو ارفعها عبر
         "رفع المادة إلى المنصة") ثم عد لرفع هذا المجلد داخلها.
       </p>
 
@@ -1585,7 +1585,7 @@ async function _openWizard(quizzes) {
   if (nonQuizItems.length > 0) {
     showNotification(
       "لا يمكن رفع مادة أو مجلد هنا",
-      "هذه النافذة مخصصة لرفع الامتحانات فقط. المواد والمجلدات تُنشأ من صفحة امتحاناتك مباشرة.",
+      "هذه النافذة مخصصة لرفع الامتحانات فقط. المواد والمجلدات تُنشأ من صفحة محتواي مباشرة.",
       "error",
     );
     return;

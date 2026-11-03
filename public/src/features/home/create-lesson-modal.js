@@ -125,11 +125,11 @@ export function openInlineCreateLessonModal() {
     let userItems;
     try {
       const stored = JSON.parse(getFromStorage("user_quizzes", "[]"));
-      if (!Array.isArray(stored)) throw new Error("بيانات امتحاناتك ليست قائمة صالحة.");
+      if (!Array.isArray(stored)) throw new Error("بيانات محتواي ليست قائمة صالحة.");
       userItems = stored;
     } catch (error) {
       console.error("[create-lesson-modal] workspace read failed:", error);
-      showNotification("تعذّرت قراءة امتحاناتك", "تعذّر تحميل العناصر المحفوظة. أصلح البيانات ثم حاول مجدداً.", "error");
+      showNotification("تعذّرت قراءة محتواي", "تعذّر تحميل العناصر المحفوظة. أصلح البيانات ثم حاول مجدداً.", "error");
       return;
     }
 
@@ -139,7 +139,7 @@ export function openInlineCreateLessonModal() {
         "تعذّر إنشاء الدرس",
         targetParentId
           ? "يوجد درس بنفس الاسم في هذا المجلد بالفعل. اختر اسماً مختلفاً."
-          : "يوجد درس بالاسم نفسه في المستوى الرئيسي من امتحاناتك.",
+          : "يوجد درس بالاسم نفسه في المستوى الرئيسي من محتواي.",
         "warning",
       );
       return;
@@ -176,7 +176,7 @@ export function openInlineCreateLessonModal() {
       "تم إنشاء الدرس",
       targetParentId
         ? "تم إنشاء الدرس وإضافته إلى هذا المجلد بنجاح."
-        : 'يمكنك العثور عليه في "امتحاناتك".',
+        : 'يمكنك العثور عليه في "محتواي".',
       "success",
     );
   };

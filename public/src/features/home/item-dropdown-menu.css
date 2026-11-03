@@ -1,7 +1,7 @@
 /* ============================================================================
-   public/src/features/home/exam-dropdown-menu.css
-   Shared styles for the .exam-dropdown-menu popover built by
-   openExamDropdownMenu() (exam-dropdown-menu.js) and its .exam-action-btn
+   public/src/features/home/item-dropdown-menu.css
+   Shared styles for the .item-dropdown-menu popover built by
+   openItemDropdownMenu() (item-dropdown-menu.js) and its .exam-action-btn
    items. This popover is used by more than just the home page — the AI
    Agent's own "more" button (.ai-agent-more-btn) and its history item menu
    (.ai-agent-history-item-more) open one from create-quiz.html and
@@ -14,7 +14,7 @@
    use them. This file only contains what a bare {icon,label,onClick} menu
    (like the AI Agent's) needs to render correctly anywhere.
    ============================================================================ */
-.exam-dropdown-menu {
+.item-dropdown-menu {
     position: fixed;
     z-index: var(--z-tooltip);
     width: 240px;
@@ -29,10 +29,10 @@
     flex-direction: column;
     gap: 6px;
     direction: rtl;
-    animation: examDropdownIn 0.15s ease;
+    animation: itemDropdownIn 0.15s ease;
 }
 
-@keyframes examDropdownIn {
+@keyframes itemDropdownIn {
     from {
         opacity: 0;
         transform: translateY(-4px);
@@ -44,7 +44,7 @@
     }
 }
 
-.exam-dropdown-menu .exam-action-btn {
+.item-dropdown-menu .exam-action-btn {
     padding: 10px 12px;
     border-radius: 10px;
     font-size: 0.9rem;
@@ -102,7 +102,7 @@
 }
 
 @media (max-width: 768px) {
-    .exam-dropdown-menu .exam-action-btn {
+    .item-dropdown-menu .exam-action-btn {
         padding: 6px 10px;
         font-size: 0.9rem;
     }
@@ -130,7 +130,7 @@
    حذف) below the public ones inside the ⋮ dropdown — see
    docs/plans/Admin actions and deletion flow for quizzes.md §5. A thin,
    full-width hairline with hairline margins on both sides. */
-.exam-dropdown-menu .exam-action-divider {
+.item-dropdown-menu .exam-action-divider {
     height: 1px;
     margin: 4px -4px;
     background: var(--color-border);

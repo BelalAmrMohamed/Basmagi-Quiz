@@ -128,7 +128,7 @@ export function createHistoryPanel(options = {}) {
   /**
    * PHASE 5: the per-item "⋮" menu — حذف / إعادة تسمية / تثبيت·إلغاء
    * التثبيت. Uses openAgentDropdown (ai-agent-dropdown.js) — the agent's own
-   * self-contained anchored-dropdown engine, forked from exam-dropdown-menu.js
+   * self-contained anchored-dropdown engine, forked from item-dropdown-menu.js
    * so this module no longer depends on features/home.
    * @param {HTMLElement} triggerBtn
    * @param {import("./ai-agent-history-idb.js").Conversation} conv

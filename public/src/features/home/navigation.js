@@ -223,18 +223,24 @@ export function restoreViewFromURL() {
     return;
   }
 
-  // ── User-quizzes folder ────────────────────────────────────────────────────
-  if (hash === "my-quizzes") {
+  // ── Local user-content folders ────────────────────────────────────────────
+  const localContentRoute = hash === "my-content" || hash === "my-quizzes";
+  if (localContentRoute) {
     setNavigationStack([]); // reset so renderUserQuizzesView can push cleanly
     setFolderState([], null); // reset to root
     renderUserQuizzesView();
     return;
   }
 
-  // ── Nested user-quiz folder: #my-quizzes/slug1/slug2/... ─────────────────
-  if (hash.startsWith("my-quizzes/")) {
+  // Keep old #my-quizzes links working while using #my-content going forward.
+  const localContentPrefix = hash.startsWith("my-content/")
+    ? "my-content/"
+    : hash.startsWith("my-quizzes/")
+      ? "my-quizzes/"
+      : null;
+  if (localContentPrefix) {
     const segments = hash
-      .slice("my-quizzes/".length)
+      .slice(localContentPrefix.length)
       .split("/")
       .filter(Boolean)
       .map((s) => {
@@ -366,6 +372,16 @@ export function finalizeAppRender() {
  */
 export async function initApp() {
   migrateLegacyUserProfile();
+
+  if (/^#(?:my-content|my-quizzes)(?:\/|$)/.test(window.location.hash)) {
+    setRestoring(true);
+    try {
+      restoreViewFromURL();
+    } finally {
+      setRestoring(false);
+    }
+    return;
+  }
 
   let hasVisited = true;
   try {

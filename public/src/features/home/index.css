@@ -328,14 +328,14 @@ body.sidebar-expanded {
   position: static;
 }
 
-/* Styled as a visual clone of .exam-dropdown-menu (see
-   exam-dropdown-menu.js / floating-position.js) — same card chrome,
+/* Styled as a visual clone of .item-dropdown-menu (see
+   item-dropdown-menu.js / floating-position.js) — same card chrome,
    same entrance animation, same z-index tier — so the two "anchored
    popover" patterns in the app look and feel identical. Positioned
    entirely by JS: positionCourseInfoTooltip() (tooltip-position.js)
    always sets `position: fixed` plus explicit top/left pixel
    coordinates inline once it runs, same technique
-   positionExamDropdownMenu() uses for .exam-dropdown-menu. The
+   positionItemDropdownMenu() uses for .item-dropdown-menu. The
    .course-info-tooltip class itself only needs to exist (this base
    rule) for the brief instant before that JS call lands. */
 .course-info-tooltip {
@@ -405,7 +405,7 @@ body.sidebar-expanded {
 }
 
 /* Styled as a clone of .exam-action-btn--danger so the unsubscribe
-   action matches the delete action in .exam-dropdown-menu. */
+   action matches the delete action in .item-dropdown-menu. */
 .tooltip-delete-btn {
   display: flex;
   align-items: center;
@@ -493,7 +493,7 @@ body.sidebar-expanded {
    exam-actions-overlay — legacy full-screen wrapper, kept only for the
    unused/dead showCourseActionsOverlay(). The live "more actions" menus
    (showExamActionsOverlay / showUserQuizActionsOverlay) no longer use a
-   modal-overlay wrapper at all — see .exam-dropdown-menu below.
+   modal-overlay wrapper at all — see .item-dropdown-menu below.
    ============================================================================ */
 .exam-actions-overlay .modal-overlay,
 .exam-actions-overlay {
@@ -663,7 +663,7 @@ body.sidebar-expanded {
 }
 
 /* ============================================================================
-   Submenu — nested popover for "معلومات الامتحان" inside .exam-dropdown-menu.
+   Submenu — nested popover for "معلومات الامتحان" inside .item-dropdown-menu.
    Shows a quick info preview plus a "كل المعلومات" button that opens the
    full quiz-info-modal-card. Reveals on hover for real pointer/mouse
    devices, and toggles on tap/click everywhere else — see
@@ -870,7 +870,7 @@ body.sidebar-expanded {
   align-items: normal !important;
 }
 
-.exam-dropdown-menu .root-quizzes-breakdown:hover {
+.item-dropdown-menu .root-quizzes-breakdown:hover {
   background: none;
 }
 
@@ -3740,11 +3740,12 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   font-size: 1.1rem;
 }
 
-/* Desktop: truncate long quiz-card titles to 2 lines */
+/* Desktop: keep quiz-card titles on a single truncated line */
 .exam-card.user-quiz-card h3 {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: normal;
@@ -5263,7 +5264,8 @@ kbd {
   font-size: .84rem;
   line-height: 1.45;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -5279,7 +5281,7 @@ kbd {
 @media (min-width: 641px) {
   .exam-card.lesson-card,
   .exam-card.user-lesson-card {
-    min-height: 250px;
+    min-height: 210px;
     align-self: stretch;
   }
 
@@ -5301,7 +5303,8 @@ kbd {
     overflow-wrap: anywhere;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -5312,7 +5315,8 @@ kbd {
   text-align: start;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
     overflow: hidden;
     overflow-wrap: anywhere;
     text-overflow: ellipsis;
@@ -5437,9 +5441,10 @@ kbd {
     margin: 0 0 4px;
     direction: rtl;
     text-align: start;
-    white-space: normal;
+    white-space: nowrap;
     overflow-wrap: anywhere;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
   }
 
   .exam-card.user-lesson-card .exam-card-meta,
@@ -5467,13 +5472,13 @@ kbd {
   }
 }
 
-/* Quiz card titles are cut at two lines with an ellipsis, exactly like lesson
-   cards, so a long title can no longer spill over the badges/buttons below. */
+/* Quiz/lesson/notebook titles stay on one truncated line so mixed cards
+   share a stable height. Full title is on the element's title tooltip. */
 .exam-card .card-text > h3 {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
   overflow: hidden;
   overflow-wrap: anywhere;
   text-overflow: ellipsis;
@@ -5530,4 +5535,89 @@ kbd {
   margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; overflow-x: auto; text-align: left;
   font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace;
   background: var(--color-background); border: 1px solid var(--color-border); white-space: pre;
+}
+
+@media (min-width: 641px) {
+  .exam-card,
+  .exam-card.user-quiz-card {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    min-height: 210px;
+    text-align: start;
+    margin-top: 0;
+  }
+
+  .exam-card.lesson-card,
+  .exam-card.user-lesson-card,
+  .exam-card.notebook-card,
+  .exam-card.user-notebook-card {
+    min-height: 210px;
+  }
+
+  .exam-card .card-text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    text-align: start;
+  }
+
+  .exam-card .card-text > h3 {
+    margin: 0;
+  }
+
+  .exam-card.lesson-card,
+  .exam-card.user-lesson-card {
+    border-color: color-mix(in srgb, var(--color-success) 38%, var(--color-border));
+  }
+
+  .exam-card.notebook-card,
+  .exam-card.user-notebook-card {
+    border-color: color-mix(in srgb, var(--color-primary) 38%, var(--color-border));
+  }
+
+  .exam-card .exam-card-meta {
+    position: static;
+    inset: auto;
+    width: 100%;
+    margin: auto 0 0;
+    white-space: nowrap;
+  }
+
+  .exam-card .exam-card-actions-wrap {
+    position: static;
+    inset: auto;
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .exam-card:not(.user-quiz-card) .exam-card-actions-wrap {
+    width: 100%;
+  }
+}
+
+.exam-card .lesson-card-description {
+  margin: 0;
+  min-width: 0;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  unicode-bidi: plaintext;
+  text-align: start;
+}
+
+.category-card[data-user-quizzes-card="true"] .card-text p {
+  margin-bottom: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .exam-card .lesson-card-description {
+    display: none;
+  }
 }

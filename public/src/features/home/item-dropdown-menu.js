@@ -1,9 +1,9 @@
 // ============================================================================
-// public/src/features/home/exam-dropdown-menu.js
-// EXAM DROPDOWN MENU ENGINE
+// public/src/features/home/item-dropdown-menu.js
+// SHARED ITEM DROPDOWN MENU ENGINE
 // ============================================================================
 // Replaces the old full-screen .modal-overlay/.exam-actions-sheet bottom
-// sheet with a small anchored dropdown (.exam-dropdown-menu) attached to the
+// sheet with a small anchored dropdown (.item-dropdown-menu) attached to the
 // ⋮ trigger button. It's appended to <body> (not the card) and positioned
 // with getBoundingClientRect() so it's never clipped by a card's
 // overflow:hidden, then closed on outside click / Escape / scroll / resize.
@@ -17,7 +17,7 @@
 // copies of this pattern that didn't preserve that single-exit-point guarantee.
 // ============================================================================
 
-import { positionExamDropdownMenu } from "./floating-position.js";
+import { positionItemDropdownMenu } from "./floating-position.js";
 import { escapeHtml } from "./escape-html.js";
 import { INFO_ICON_SVG, COPY_CHECK_ICON_SVG } from "./icons.js";
 import { closeUserQuizContextMenu } from "./user-quizzes-folders.js";
@@ -27,14 +27,14 @@ import { closeUserQuizContextMenu } from "./user-quizzes-folders.js";
  * used directly by callers outside this module (e.g. the AI agent chat) to
  * force-close any open menu, so it clears openTriggerBtn itself rather than
  * relying on each menu's own closeMenu() to have run. */
-export function closeAllExamDropdownMenus() {
-  document.querySelectorAll(".exam-dropdown-menu").forEach((el) => el.remove());
+export function closeAllItemDropdownMenus() {
+  document.querySelectorAll(".item-dropdown-menu").forEach((el) => el.remove());
   openTriggerBtn = null;
 }
 
 /** Tracks the trigger button whose menu is currently open (if any), so a
  * second click on that SAME trigger can close it instead of reopening a
- * fresh copy — see the early-return in openExamDropdownMenu below. Reset
+ * fresh copy — see the early-return in openItemDropdownMenu below. Reset
  * to null on every close path since closeMenu() is this module's single
  * exit point (see file header). */
 let openTriggerBtn = null;
@@ -42,9 +42,9 @@ let openTriggerBtn = null;
 /** Anchors `menu` below (or, if there's no room, above) `triggerBtn`,
  * right-edge aligned (this is an RTL UI), clamped so it never runs off
  * either side of the viewport. */
-export function openExamDropdownMenu(triggerBtn, buildContent) {
+export function openItemDropdownMenu(triggerBtn, buildContent) {
   const wasOpenForThisTrigger = openTriggerBtn === triggerBtn;
-  closeAllExamDropdownMenus();
+  closeAllItemDropdownMenus();
 
   closeUserQuizContextMenu();
   if (wasOpenForThisTrigger) {
@@ -52,7 +52,7 @@ export function openExamDropdownMenu(triggerBtn, buildContent) {
   }
 
   const menu = document.createElement("div");
-  menu.className = "exam-dropdown-menu";
+  menu.className = "item-dropdown-menu";
   menu.setAttribute("role", "menu");
   menu.style.visibility = "hidden";
 
@@ -87,13 +87,13 @@ export function openExamDropdownMenu(triggerBtn, buildContent) {
   // viewports the submenu stacks inline below the trigger, growing the
   // menu tall enough to run off the bottom of the screen.
   function reposition() {
-    positionExamDropdownMenu(menu, triggerBtn);
+    positionItemDropdownMenu(menu, triggerBtn);
   }
 
   buildContent(menu, closeMenu, reposition);
 
   document.body.appendChild(menu);
-  positionExamDropdownMenu(menu, triggerBtn);
+  positionItemDropdownMenu(menu, triggerBtn);
   menu.style.visibility = "visible";
   openTriggerBtn = triggerBtn;
 
@@ -225,7 +225,7 @@ export function createExamInfoSubmenu(basicRows, onShowFull, closeDropdown, repo
         // of its trigger (RTL layout). If the trigger sits near the left
         // edge of the screen, that would run the submenu off-screen — so
         // clamp it back into the viewport, matching the outer dropdown's
-        // own clamping in positionExamDropdownMenu.
+        // own clamping in positionItemDropdownMenu.
         const rect = content.getBoundingClientRect();
         const gap = 6;
         if (rect.left < gap) {

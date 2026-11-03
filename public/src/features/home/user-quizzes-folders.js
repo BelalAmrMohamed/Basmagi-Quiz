@@ -10,7 +10,7 @@ import { getSubjectIcon } from "./subject-icons.js";
 import { MORE_DOTS_ICON_SVG } from "./icons.js";
 import { openMoveToDialogWithSource } from "./move-to-dialog.js";
 import { getTrashItemCount } from "./user-quizzes-trash.js";
-import { closeAllExamDropdownMenus } from "./exam-dropdown-menu.js";
+import { closeAllItemDropdownMenus } from "./item-dropdown-menu.js";
 
 // Current navigation state
 export let currentFolderId = null;
@@ -37,7 +37,7 @@ function readUserQuizzes() {
     console.error("[user-quizzes-folders] Corrupt user_quizzes data:", err);
     showNotification(
       "خطأ في البيانات",
-      "تعذّرت قراءة بيانات امتحاناتك المحفوظة محلياً. قد تكون تالفة.",
+      "تعذّرت قراءة بيانات محتواي المحفوظة محلياً. قد تكون تالفة.",
       "warning",
     );
     return [];
@@ -88,7 +88,7 @@ export function getChildren(userQuizzes, parentId) {
  * what "reachable from root" means.
  *
  * Used by:
- *  - pruneOrphanedRows() (course-count.js) — so the "امتحاناتك" card's
+ *  - pruneOrphanedRows() (course-count.js) — so the "محتواي" card's
  *    counts only include genuinely reachable rows.
  *  - hasSameLevelCollision() below — so a same-name/type/level clash
  *    against a row that's technically still in storage but unreachable
@@ -122,7 +122,7 @@ export function isRowReachable(row, userQuizzes, byId = null) {
 }
 
 /**
- * The one rule the whole "امتحاناتك" section must follow, enforced
+ * The one rule the whole "محتواي" section must follow, enforced
  * identically everywhere a new name can be introduced at a level: create
  * (createFolderOrCourseNamed), rename (renameItem), move
  * (moveItemsToFolder), single-quiz copy (copyQuizToUserQuizzes), and
@@ -242,12 +242,12 @@ export function navigateToFolder(folderId, folderTitle) {
 
 /**
  * Build the URL hash for the current folder path stack.
- * Root level = "#my-quizzes", nested = "#my-quizzes/slug1/slug2"
+ * Root level = "#my-content", nested = "#my-content/slug1/slug2"
  */
 export function buildFolderHash() {
-  if (folderPathStack.length === 0) return "#my-quizzes";
+  if (folderPathStack.length === 0) return "#my-content";
   const slugs = folderPathStack.map((f) => toSlug(f.title));
-  return "#my-quizzes/" + slugs.join("/");
+  return "#my-content/" + slugs.join("/");
 }
 
 /**
@@ -612,7 +612,7 @@ export function moveItemsToFolder(itemIds, targetFolderId) {
 
 /**
  * Builds the MoveSource adapter (see move-to-dialog.js's interface doc)
- * for the "امتحاناتك" localStorage tree. Kept in this file rather than
+ * for the "محتواي" localStorage tree. Kept in this file rather than
  * move-to-dialog.js since it's the only thing here that actually reads
  * `user_quizzes` — the dialog itself stays storage-agnostic.
  * @param {string[]} itemIds
@@ -660,7 +660,7 @@ function createLocalUserQuizzesMoveSource(itemIds) {
 
   return {
     itemLabel,
-    rootLabel: "امتحاناتك (الرئيسية)",
+    rootLabel: "محتواي (الرئيسية)",
     includeRoot: true,
     showNotification,
 
@@ -824,7 +824,7 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
     return;
   }
 
-  closeAllExamDropdownMenus();
+  closeAllItemDropdownMenus();
 
   e.preventDefault();
   contextMenuEl.innerHTML = "";

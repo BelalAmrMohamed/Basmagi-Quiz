@@ -10,12 +10,12 @@
 
    This used to reuse features/home/index.css's .modal-overlay/.modal-card/
    .modal-header/.close-btn base rules, and a SEPARATE stylesheet,
-   features/home/exam-dropdown-menu.css, for the small anchored popovers
-   (.exam-dropdown-menu/.exam-action-btn). Both were real bugs waiting to
+   features/home/item-dropdown-menu.css, for the small anchored popovers
+   (.item-dropdown-menu/.exam-action-btn). Both were real bugs waiting to
    happen: a page only gets correctly styled agent modals/dropdowns if it
    happens to also link those other stylesheets. index.html, create-quiz.html
    and result.html do; lesson.html and create-lesson.html do NOT load
-   exam-dropdown-menu.css, so every agent dropdown opened on those two pages
+   item-dropdown-menu.css, so every agent dropdown opened on those two pages
    rendered unstyled. The ".ai-agent-overlay/.ai-agent-modal-shell/
    .ai-agent-modal-header/.ai-agent-close-btn" and ".ai-agent-dropdown-menu/
    .ai-agent-dropdown-item" rules below are this file's own copies of that
@@ -112,7 +112,7 @@
 }
 
 /* ── Self-contained anchored-dropdown chrome ──
-   Direct copies of features/home/exam-dropdown-menu.css's .exam-dropdown-
+   Direct copies of features/home/item-dropdown-menu.css's .item-dropdown-
    menu/.exam-action-btn rules, renamed for ai-agent-dropdown.js's own
    openAgentDropdown() (which builds ".ai-agent-dropdown-menu" elements —
    see that module's header comment for the full rationale). Used by the
@@ -1932,7 +1932,7 @@
 }
 
 /* Self-contained button styles for the settings tab. Previously this panel
-   reused .exam-action-btn (from features/home/exam-dropdown-menu.css), which
+   reused .exam-action-btn (from features/home/item-dropdown-menu.css), which
    left these buttons unstyled on pages that didn't load that stylesheet.
    Defined here instead so the widget looks correct on any page it's mounted
    on, matching this file's own stated goal above. */

@@ -4,7 +4,7 @@
 // anchored dropdowns/menus (fixed-position, escapes clipping ancestors).
 // ============================================================================
 
-export function positionExamDropdownMenu(menu, triggerBtn) {
+export function positionItemDropdownMenu(menu, triggerBtn) {
   const rect = triggerBtn.getBoundingClientRect();
   const gap = 6;
   const vw = window.innerWidth;

@@ -214,7 +214,7 @@ export async function importJsonQuizFiles(files, { refresh = true } = {}) {
     setInStorage("user_quizzes", JSON.stringify(existingQuizzes));
     showNotification(
       "تم الإنشاء",
-      `تم إنشاء ${quizCountText} في "امتحاناتك"`,
+      `تم إنشاء ${quizCountText} في "محتواي"`,
       "success",
     );
     if (skippedNames.length) {
@@ -234,7 +234,7 @@ export async function importJsonQuizFiles(files, { refresh = true } = {}) {
   } else if (skippedNames.length) {
     showNotification(
       "موجود بالفعل",
-      `يوجد امتحان بنفس الاسم في المستوى الرئيسي من امتحاناتك بالفعل: ${skippedNames.join("، ")}`,
+      `يوجد امتحان بنفس الاسم في المستوى الرئيسي من محتواي بالفعل: ${skippedNames.join("، ")}`,
       "warning",
     );
   } else if (validFiles.length) {

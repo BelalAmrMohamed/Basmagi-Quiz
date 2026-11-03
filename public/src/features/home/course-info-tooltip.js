@@ -24,8 +24,8 @@
 // outside-click/Escape/scroll/resize.
 //
 // Replaced with the same click-toggle + single-exit-point dismiss lifecycle
-// already used (and already correct) for `.exam-dropdown-menu` in
-// exam-dropdown-menu.js: openExamDropdownMenu()/closeMenu(). Every close
+// already used (and already correct) for `.item-dropdown-menu` in
+// item-dropdown-menu.js: openItemDropdownMenu()/closeMenu(). Every close
 // route (outside click, Escape, scroll, resize, the trigger button itself)
 // goes through one closeTooltip() function, so listeners can never leak and
 // desktop/mobile behave identically — click/tap opens it, and anything that
@@ -33,7 +33,7 @@
 //
 // positionCourseInfoTooltip() (tooltip-position.js) is unchanged — it
 // already does the correct `position: fixed` + viewport-clamped placement,
-// same technique as positionExamDropdownMenu(). The bug was entirely in
+// same technique as positionItemDropdownMenu(). The bug was entirely in
 // *when* it got called and how the tooltip was shown/hidden, not in the
 // positioning math itself.
 
@@ -135,12 +135,12 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
   // element in DevTools while it visually vanished: nothing was hiding it,
   // it was being clipped/repositioned out of view by its own ancestor.
   // Appending it to <body> — the same approach already used for
-  // `.exam-dropdown-menu` — keeps it a sibling of the card instead of a
+  // `.item-dropdown-menu` — keeps it a sibling of the card instead of a
   // descendant, so the card's hover transform can never touch it.
   document.body.appendChild(tooltip);
 
   // ── Single-exit-point dismiss lifecycle ───────────────────────────────────
-  // Mirrors openExamDropdownMenu()/closeMenu() in exam-dropdown-menu.js:
+  // Mirrors openItemDropdownMenu()/closeMenu() in item-dropdown-menu.js:
   // exactly one close path, wired to outside click / Escape / scroll /
   // resize, so listeners are always cleaned up regardless of which of those
   // fires. Unlike the dropdown menu, this tooltip is a permanent child of

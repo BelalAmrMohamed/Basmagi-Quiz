@@ -346,8 +346,8 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── empty-state.js
 │   │   │   │   ├── escape-html.js
 │   │   │   │   ├── exam-card.js
-│   │   │   │   ├── exam-dropdown-menu.css
-│   │   │   │   ├── exam-dropdown-menu.js
+│   │   │   │   ├── item-dropdown-menu.css
+│   │   │   │   ├── item-dropdown-menu.js
 │   │   │   │   ├── floating-position.js
 │   │   │   │   ├── icons.js
 │   │   │   │   ├── index-entrypoint.js

@@ -1,10 +1,10 @@
-// Shared notebook card actions for BOTH local (امتحاناتك) and platform notebooks:
+// Shared notebook card actions for BOTH local (محتواي) and platform notebooks:
 //   • «معلومات الدفتر»  info dialog (same shell as the lesson info dialog)
 //   • downloads: .ipynb (Jupyter), .m (MATLAB script), HTML, print / save as PDF
 //   • «اسأل الباشـمبصمج»  attaches the whole notebook (as reading material) to the AI agent
 // The info/download logic lives in shared/notebook-export.js (pure, unit-tested).
 import { escapeHtml } from "./escape-html.js";
-import { createExamInfoSubmenu } from "./exam-dropdown-menu.js";
+import { createExamInfoSubmenu } from "./item-dropdown-menu.js";
 import { SPARKLE_ICON_SVG, DOWNLOAD_ICON_SVG, JSON_FILE_ICON_SVG } from "./icons.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 import { renderMarkdown } from "../../shared/markdown.js";
@@ -28,7 +28,7 @@ function infoBodyHtml(info, url) {
   if (info.description) add("الوصف", escapeHtml(info.description));
   if (info.source) add("المصدر", link(info.source));
   if (url) add("رابط الدفتر", link(url));
-  add("مكان الحفظ", info.local ? "على جهازك فقط (امتحاناتك)" : "منصة بصمجي (مشترك)");
+  add("مكان الحفظ", info.local ? "على جهازك فقط (محتواي)" : "منصة بصمجي (مشترك)");
   const created = formatDateForInfo(info.createdAt);
   if (created) add("تاريخ الإنشاء", `<span dir="ltr">${escapeHtml(created)}</span>`);
   const updated = formatDateForInfo(info.updatedAt && !Number.isNaN(Date.parse(info.updatedAt)) ? new Date(info.updatedAt).toLocaleString("en-US") : info.updatedAt);

@@ -1,4 +1,4 @@
-// "دفتر جديد" modal for امتحاناتك — creates a LOCAL notebook (browser only,
+// "دفتر جديد" modal for محتواي — creates a LOCAL notebook (browser only,
 // stored in user_quizzes with meta.type "notebook"). Accepts pasted notebook
 // JSON (see NOTEBOOK_CREATION_PROMPT), a pasted raw .ipynb JSON, or an
 // uploaded .ipynb / .m file. Uses the same shared validation as the admin
@@ -191,7 +191,7 @@ export function openInlineCreateNotebookModal() {
       userItems = stored;
     } catch (error) {
       console.error("[create-notebook-modal] workspace read failed:", error);
-      showFeedback("error", "تعذّرت قراءة امتحاناتك", ["تعذّر تحميل العناصر المحفوظة. أصلح البيانات ثم حاول مجدداً."]);
+      showFeedback("error", "تعذّرت قراءة محتواي", ["تعذّر تحميل العناصر المحفوظة. أصلح البيانات ثم حاول مجدداً."]);
       return;
     }
 
@@ -200,7 +200,7 @@ export function openInlineCreateNotebookModal() {
     if (hasSameLevelCollision(userItems, { type: "notebook", title, parentId: targetParentId })) {
       showFeedback("error", "تعذّر إنشاء الدفتر", [targetParentId
         ? `يوجد دفتر باسم «${title}» في هذا المجلد بالفعل. غيّر العنوان (title) في JSON.`
-        : `يوجد دفتر باسم «${title}» في المستوى الرئيسي من امتحاناتك. غيّر العنوان (title) في JSON.`]);
+        : `يوجد دفتر باسم «${title}» في المستوى الرئيسي من محتواي. غيّر العنوان (title) في JSON.`]);
       return;
     }
 
@@ -233,7 +233,7 @@ export function openInlineCreateNotebookModal() {
     const extra = [...rec.warnings, ...warnings];
     showNotification("تم إنشاء الدفتر",
       extra.length ? extra.slice(0, 2).join("\n")
-        : targetParentId ? "تم إنشاء الدفتر وإضافته إلى هذا المجلد بنجاح." : 'يمكنك العثور عليه في "امتحاناتك".',
+        : targetParentId ? "تم إنشاء الدفتر وإضافته إلى هذا المجلد بنجاح." : 'يمكنك العثور عليه في "محتواي".',
       "success");
   };
 

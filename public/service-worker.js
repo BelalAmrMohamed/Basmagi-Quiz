@@ -1,20 +1,90 @@
 // Service Worker for Basmagi Quiz Platform
 
-const CACHE_VERSION = "basmagi-v8.3.4";
+const CACHE_VERSION = "basmagi-v8.3.5";
 const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
 const OFFLINE_URL = "/offline";
 const OFFLINE_ASSETS = [OFFLINE_URL, "/favicon.png"];
 
+function isAppAsset(url) {
+  return url.origin === self.location.origin &&
+    !url.pathname.startsWith("/api/") &&
+    !url.pathname.startsWith("/supabase/");
+}
+
+async function cacheResponse(cache, key, response) {
+  try {
+    await cache.put(key, response);
+  } catch (error) {
+    console.warn("[SW] Could not store app resource:", key, error);
+  }
+}
+
+async function cacheAppShell(cache) {
+  const visited = new Set();
+
+  async function cacheResource(resourceUrl) {
+    const url = new URL(resourceUrl, self.location.origin);
+    if (!isAppAsset(url) || visited.has(url.href)) return;
+    visited.add(url.href);
+
+    let response;
+    try {
+      response = await fetch(new Request(url.href, { cache: "reload" }));
+    } catch (error) {
+      console.warn("[SW] Could not precache app resource:", url.pathname, error);
+      return;
+    }
+    if (!response.ok || response.type === "opaque") return;
+    await cacheResponse(cache, url.href, response.clone());
+
+    const contentType = response.headers.get("content-type") || "";
+    let source;
+    try {
+      if (contentType.includes("text/html") || /\.(?:html?)$/i.test(url.pathname)) {
+        source = await response.text();
+      } else if (contentType.includes("javascript") || /\.m?js$/i.test(url.pathname)) {
+        source = await response.text();
+      } else if (contentType.includes("text/css") || /\.css$/i.test(url.pathname)) {
+        source = await response.text();
+      }
+    } catch (error) {
+      console.warn("[SW] Could not inspect cached app resource:", url.pathname, error);
+      return;
+    }
+    if (!source) return;
+
+    const dependencies = [];
+    if (contentType.includes("text/html") || /\.(?:html?)$/i.test(url.pathname)) {
+      const tags = source.matchAll(/<(?:link|script)\b[^>]*?\b(?:href|src)=["']([^"']+)["'][^>]*>/gi);
+      for (const [, path] of tags) {
+        if (/\.(?:css|m?js)(?:[?#]|$)/i.test(path)) dependencies.push(path);
+      }
+    } else if (contentType.includes("javascript") || /\.m?js$/i.test(url.pathname)) {
+      const imports = source.matchAll(/(?:\bimport\s+(?:[^'"]*?\s+from\s+)?|\bimport\s*\()\s*["']([^"']+)["']/g);
+      for (const [, path] of imports) dependencies.push(new URL(path, url).href);
+    } else {
+      const imports = source.matchAll(/@import\s+(?:url\()?["']?([^"')\s;]+)|url\(["']?([^"')]+)["']?\)/gi);
+      for (const match of imports) {
+        const path = match[1] || match[2];
+        if (path) dependencies.push(new URL(path, url).href);
+      }
+    }
+
+    await Promise.all(dependencies.map(cacheResource));
+  }
+
+  await Promise.all([
+    cacheResource("/"),
+    ...OFFLINE_ASSETS.map(cacheResource),
+  ]);
+}
+
 self.addEventListener("install", (event) => {
-  console.log("[SW] Installing (offline-page only)...");
+  console.log("[SW] Installing app-shell and offline caches...");
   event.waitUntil(
     (async () => {
       const cache = await caches.open(OFFLINE_CACHE);
-      await Promise.all(
-        OFFLINE_ASSETS.map((url) =>
-          cache.add(new Request(url, { cache: "reload" })),
-        ),
-      );
+      await cacheAppShell(cache);
       await self.skipWaiting();
     })().catch((error) => {
       console.error("[SW] Install failed:", error);
@@ -59,22 +129,47 @@ async function offlinePageResponse() {
   );
 }
 
+async function offlineNavigationResponse(request) {
+  const url = new URL(request.url);
+  if (url.pathname === "/" || url.pathname === "/index.html") {
+    const appShell = await caches.match("/");
+    if (appShell) return appShell;
+  }
+  return offlinePageResponse();
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
   if (request.method !== "GET") return;
   if (request.url.startsWith("chrome-extension://")) return;
 
-  // Never serve cached app content — network only.
-  // Navigations fall back to the offline page when the network fails.
+  // Keep navigations fresh when online, but use the cached app shell for
+  // local-content routes when offline.
   if (isNavigationRequest(request)) {
-    event.respondWith(fetch(request).catch(() => offlinePageResponse()));
+    event.respondWith(
+      fetch(request).then(async (response) => {
+        const url = new URL(request.url);
+        if (response.ok && isAppAsset(url) && (url.pathname === "/" || url.pathname === "/index.html")) {
+          const cache = await caches.open(OFFLINE_CACHE);
+          await cacheResponse(cache, url.pathname, response.clone());
+        }
+        return response;
+      }).catch(() => offlineNavigationResponse(request)),
+    );
     return;
   }
 
-  // Assets: network first; allow the tiny offline asset set (favicon) from cache.
+  // Cache same-origin app assets as they are requested; never cache API data.
   event.respondWith(
-    fetch(request).catch(async () => {
+    fetch(request).then(async (response) => {
+      const url = new URL(request.url);
+      if (response.ok && isAppAsset(url)) {
+        const cache = await caches.open(OFFLINE_CACHE);
+        await cacheResponse(cache, request, response.clone());
+      }
+      return response;
+    }).catch(async () => {
       const cached = await caches.match(request, { ignoreSearch: true });
       if (cached) return cached;
       return new Response("Offline", {
@@ -158,4 +253,4 @@ self.addEventListener("message", (event) => {
   }
 });
 
-console.log("[SW] Service worker script loaded (offline-page only)");
+console.log("[SW] Service worker script loaded (app-shell offline support)");

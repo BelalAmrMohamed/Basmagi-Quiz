@@ -33,8 +33,8 @@ import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-ht
 import {
   createExamInfoSubmenu,
   createActionGroupSubmenu,
-  openExamDropdownMenu,
-} from "./exam-dropdown-menu.js";
+  openItemDropdownMenu,
+} from "./item-dropdown-menu.js";
 import {
   LOCK_ICON_SVG,
   DOWNLOAD_ICON_SVG,
@@ -65,16 +65,17 @@ export function createExamCard(exam) {
   const card = document.createElement("div");
   card.className = "card exam-card";
   card.setAttribute("role", "article");
-  card.setAttribute("title", `${exam.description || exam.title}`);
   card.setAttribute("aria-label", `امتحان: ${exam.title || exam.id}`);
 
   const h = document.createElement("h3");
   h.textContent = exam.title || exam.id;
+  h.title = `امتحان · ${h.textContent}`;
 
   // ── Phone-only leading emoji — sibling of .card-text, not nested inside
   const iconEl = document.createElement("span");
   iconEl.className = "phone-only-emoji";
-  iconEl.textContent = "📖";
+  iconEl.textContent = "📝";
+  iconEl.title = "امتحان";
   iconEl.setAttribute("aria-hidden", "true");
 
   if (isRecentlyAdded(exam.createdAt)) {
@@ -239,6 +240,14 @@ export function createExamCard(exam) {
   const textWrap = document.createElement("div");
   textWrap.className = "card-text";
   textWrap.appendChild(h);
+  const description = String(exam.description || "").trim();
+  if (description) {
+    const descriptionEl = document.createElement("p");
+    descriptionEl.className = "lesson-card-description";
+    descriptionEl.textContent = description;
+    descriptionEl.title = description;
+    textWrap.appendChild(descriptionEl);
+  }
 
   // Meta wrapper: holds types + count in a flex row on desktop, column on mobile
   const metaWrap = document.createElement("div");
@@ -299,7 +308,7 @@ export function createExamCard(exam) {
  *   format-picker popup (already password-gated by the caller)
  */
 function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
-  openExamDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
+  openItemDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
     const downloadOpt = document.createElement("button");
     downloadOpt.type = "button";
     downloadOpt.className = exam.password
@@ -362,15 +371,15 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     };
     menu.appendChild(shareOpt);
 
-    // ── "نسخ لامتحاناتي" — copies this quiz into the visitor's own
-    // localStorage "امتحاناتك" list. Visible on every quiz (static or DB),
+    // ── "نسخ إلى محتواي" — copies this quiz into the visitor's own
+    // localStorage list. Visible on every quiz (static or DB),
     // for every visitor, logged in or not — no visibility gate here (see
     // Phase 0 spec, Feature B). Uses DUPLICATE_ICON_SVG rather than
     // COPY_ICON_SVG so it doesn't share an icon with "نسخ الرابط" above.
     const copyToMineOpt = document.createElement("button");
     copyToMineOpt.type = "button";
     copyToMineOpt.className = "exam-action-btn";
-    copyToMineOpt.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
+    copyToMineOpt.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ إلى محتواي</span>`;
     copyToMineOpt.onclick = async (e) => {
       e.stopPropagation();
       await withCopyButtonLoadingState(copyToMineOpt, () =>

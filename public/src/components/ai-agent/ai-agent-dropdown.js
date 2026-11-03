@@ -4,15 +4,15 @@
 // engine (small "more" menu on the input, the history item's ⋮ menu, the
 // sidebar's export menu, and the `@` mention menu).
 //
-// This is a deliberate fork of features/home/exam-dropdown-menu.js's
-// openExamDropdownMenu/closeAllExamDropdownMenus, NOT a re-export of it.
+// This is a deliberate fork of features/home/item-dropdown-menu.js's
+// openItemDropdownMenu/closeAllItemDropdownMenus, NOT a re-export of it.
 // The agent used to import that module directly, which meant:
 //   - the agent depended on a component that lives under features/home,
 //     so it couldn't be dropped into a page without also wiring up that
 //     page's home-feature imports;
 //   - the agent's dropdowns only rendered correctly on pages that also
-//     happened to load features/home/exam-dropdown-menu.css (a SEPARATE
-//     stylesheet from exam-dropdown-menu.js) — index.html, create-quiz.html
+//     happened to load features/home/item-dropdown-menu.css (a SEPARATE
+//     stylesheet from item-dropdown-menu.js) — index.html, create-quiz.html
 //     and result.html do, but lesson.html and create-lesson.html do NOT,
 //     so every agent dropdown opened on those two pages rendered unstyled.
 // See ai-agent.css's own header comment for the CSS half of this fix — the
@@ -22,7 +22,7 @@
 //
 // Positioning is also self-contained (no import from
 // features/home/floating-position.js) — see positionAgentDropdown below,
-// a direct port of positionExamDropdownMenu's viewport-clamping math.
+// a direct port of positionItemDropdownMenu's viewport-clamping math.
 //
 // Behaviorally this is a 1:1 port: same anchored-below/flip-above/clamp
 // logic, same single-exit-point closeMenu() guarantee (every close route —
@@ -34,7 +34,7 @@
 
 /** Anchors `menu` below (or, if there's no room, above) `triggerBtn`,
  * right-edge aligned (this is an RTL UI), clamped so it never runs off
- * either side of the viewport. Direct port of positionExamDropdownMenu. */
+ * either side of the viewport. Direct port of positionItemDropdownMenu. */
 export function positionAgentDropdown(menu, triggerBtn) {
     const rect = triggerBtn.getBoundingClientRect();
     const gap = 6;
@@ -43,7 +43,7 @@ export function positionAgentDropdown(menu, triggerBtn) {
     const menuW = menu.offsetWidth;
     const menuH = menu.offsetHeight;
 
-    // Same bottom-nav-aware clamping as positionExamDropdownMenu — a mobile
+    // Same bottom-nav-aware clamping as positionItemDropdownMenu — a mobile
     // fixed bottom-nav bar (present on some host pages) would otherwise clip
     // the last item(s) of a menu opened near the bottom of the screen. This
     // is a plain DOM query (no CSS class contract with the agent itself), so
@@ -101,7 +101,7 @@ export function closeAllAgentDropdowns() {
  * Opens a small anchored dropdown below (or above, if clamped) `triggerBtn`.
  * `buildContent(menu, closeMenu, reposition)` is called once, synchronously,
  * to populate the (still-hidden) menu element before it's measured and
- * positioned — mirrors openExamDropdownMenu's own contract exactly, so
+ * positioned — mirrors openItemDropdownMenu's own contract exactly, so
  * every existing call site can switch over by only changing the import.
  *
  * @param {HTMLElement} triggerBtn

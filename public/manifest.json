@@ -91,6 +91,19 @@
       ]
     },
     {
+      "name": "محتواي",
+      "short_name": "محتواي",
+      "description": "عرض الامتحانات والدروس والدفاتر والمواد المحفوظة على جهازك",
+      "url": "/#my-content",
+      "icons": [
+        {
+          "src": "assets/images/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
       "name": "الحساب",
       "short_name": "الحساب",
       "description": "عرض تقدمك في الامتحانات والأوسمة التي حصلت عليها",

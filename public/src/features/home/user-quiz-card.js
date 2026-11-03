@@ -27,8 +27,8 @@ import { showUserLessonInfoModal, collectLessonInfo } from "./lesson-info-modal.
 import {
   createExamInfoSubmenu,
   createActionGroupSubmenu,
-  openExamDropdownMenu,
-} from "./exam-dropdown-menu.js";
+  openItemDropdownMenu,
+} from "./item-dropdown-menu.js";
 import { renderRootCategories } from "./root-view.js";
 import {
   renderUserQuizzesView,
@@ -84,10 +84,6 @@ export function createUserQuizCard(quiz, index) {
   card.className = "exam-card user-quiz-card";
   card.setAttribute("role", "article");
   card.setAttribute("aria-label", `امتحان: ${qz(quiz, "title")}`);
-  card.setAttribute(
-    "title",
-    `${qz(quiz, "description") ? `Description: ${qz(quiz, "description")}` : `Type: ${qz(quiz, "type")}`}`,
-  );
   card.style.position = "relative";
 
   const quizId = qz(quiz, "id") || quiz.id;
@@ -131,11 +127,13 @@ export function createUserQuizCard(quiz, index) {
   // closes the same stored-XSS gap the original innerHTML interpolation
   // had, just without needing an escaping step at all.
   h.textContent = qz(quiz, "title") || quizId;
+  h.title = `امتحان · ${h.textContent}`;
 
   // ── Phone-only leading emoji — sibling of .card-text, not nested inside
   const iconEl = document.createElement("span");
   iconEl.className = "user-quiz--phone-only-emoji";
-  iconEl.textContent = "👤";
+  iconEl.textContent = "📝";
+  iconEl.title = "امتحان";
   iconEl.setAttribute("aria-hidden", "true");
 
   const questionCountLine = document.createElement("p");
@@ -208,6 +206,14 @@ export function createUserQuizCard(quiz, index) {
   const textWrap = document.createElement("div");
   textWrap.className = "card-text";
   textWrap.appendChild(h);
+  const description = String(qz(quiz, "description") || "").trim();
+  if (description) {
+    const descriptionEl = document.createElement("p");
+    descriptionEl.className = "lesson-card-description";
+    descriptionEl.textContent = description;
+    descriptionEl.title = description;
+    textWrap.appendChild(descriptionEl);
+  }
 
   // Meta wrapper: holds types + count — same role as .exam-card-meta, but
   // keeps the uniquely-designed typesRow chips as a 👤 user-quiz indicator.
@@ -299,11 +305,13 @@ export function createUserLessonCard(lesson) {
   const icon = document.createElement("span");
   icon.className = "user-quiz--phone-only-emoji";
   icon.textContent = "📘";
+  icon.title = "درس";
   icon.setAttribute("aria-hidden", "true");
   const text = document.createElement("div");
   text.className = "card-text";
   const heading = document.createElement("h3");
   heading.textContent = title;
+  heading.title = `درس · ${title}`;
   const meta = document.createElement("div");
   meta.className = "exam-card-meta user-quiz-card-meta";
   const label = document.createElement("p");
@@ -326,6 +334,7 @@ export function createUserLessonCard(lesson) {
     const desc = document.createElement("p");
     desc.className = "lesson-card-description";
     desc.textContent = description;
+    desc.title = description;
     text.append(desc);
   }
   text.append(meta);
@@ -411,16 +420,19 @@ export function createUserNotebookCard(nb) {
   const icon = document.createElement("span");
   icon.className = "user-quiz--phone-only-emoji";
   icon.textContent = "💻";
+  icon.title = "دفتر تفاعلي";
   icon.setAttribute("aria-hidden", "true");
   const text = document.createElement("div");
   text.className = "card-text";
   const heading = document.createElement("h3");
   heading.textContent = title;
+  heading.title = `دفتر تفاعلي · ${title}`;
   text.append(heading);
   if (description) {
     const desc = document.createElement("p");
     desc.className = "lesson-card-description";
     desc.textContent = description;
+    desc.title = description;
     text.append(desc);
   }
   const meta = document.createElement("div");
@@ -471,7 +483,7 @@ export function createUserNotebookCard(nb) {
 export function showUserNotebookActionsOverlay(nb, triggerBtn) {
   const nbId = nb.id || nb.meta?.id;
   const title = nb.meta?.title || "دفتر بدون عنوان";
-  openExamDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
+  openItemDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
     appendSelectOption(menu, closeMenu, nbId);
     appendEditGroup(menu, closeMenu, reposition, [
       {
@@ -519,7 +531,7 @@ export function playUserNotebook(nb) {
 
 /**
  * Action Overlay for workspace lessons — the lesson twin of
- * showUserQuizActionsOverlay below, built from the same .exam-dropdown-menu /
+ * showUserQuizActionsOverlay below, built from the same .item-dropdown-menu /
  * .exam-action-btn classes so the two menus are visually identical.
  *
  * Every action reuses a type-generic helper rather than a lesson-specific
@@ -533,7 +545,7 @@ export function showUserLessonActionsOverlay(lesson, triggerBtn) {
   const lessonId = lesson.id || lesson.meta?.id;
   const title = lesson.meta?.title || "درس بدون عنوان";
 
-  openExamDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
+  openItemDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
     if (isAdminAuthenticated() || hasAdminSessionHint()) {
       const uploadBtn = createLessonUploadButton(lesson);
       uploadBtn.addEventListener("click", () => closeMenu());
@@ -671,14 +683,14 @@ export async function deleteUserQuiz(quizId) {
 
 /**
  * Action Overlay for user-made quizzes — styled identically to
- * showExamActionsOverlay (same .exam-dropdown-menu/.exam-action-btn
+ * showExamActionsOverlay (same .item-dropdown-menu/.exam-action-btn
  * classes), but with only the options that make sense for a locally-stored,
  * non-shareable quiz: edit, info, and delete. No copy-link/share here since
  * user quizzes aren't shareable (they live in localStorage, not on a
  * server), and Download already has its own dedicated button on the card.
  */
 export function showUserQuizActionsOverlay(quiz, triggerBtn) {
-  openExamDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
+  openItemDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
     // Admin upload — only rendered for authenticated admins. Shown inside
     // the dropdown on ALL screen sizes (desktop and mobile) now, styled
     // identically to Edit/Delete via createUploadButton()'s own
@@ -801,7 +813,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
 export function saveLocalItemMetadata(itemId, description, source) {
   const items = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const item = items.find((row) => (row.id || row.meta?.id) === itemId);
-  if (!item) throw new Error("لم يتم العثور على العنصر في «امتحاناتك».");
+  if (!item) throw new Error("لم يتم العثور على العنصر في «محتواي».");
   item.meta = { ...(item.meta || {}), description, source, updatedAt: new Date().toISOString() };
   if (!setInStorage("user_quizzes", JSON.stringify(items))) {
     throw new Error("تعذّر حفظ التغييرات في التخزين المحلي.");

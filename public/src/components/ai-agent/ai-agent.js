@@ -21,13 +21,13 @@
 // own modal overlay/card/header/close-button chrome and its own anchored-
 // dropdown popover engine (ai-agent-dropdown.js) both live inside
 // ai-agent/, rather than reusing features/home's .modal-overlay/.modal-card
-// (index.css) or openExamDropdownMenu (exam-dropdown-menu.js) the way this
+// (index.css) or openItemDropdownMenu (item-dropdown-menu.js) the way this
 // component used to. See ai-agent.css's own header comment and
 // ai-agent-dropdown.js's header comment for the full rationale — in short,
 // the old approach only rendered correctly on pages that happened to also
 // load those other stylesheets/modules, which wasn't true of every page
 // (lesson.html and create-lesson.html didn't load
-// features/home/exam-dropdown-menu.css, so the agent's small popovers
+// features/home/item-dropdown-menu.css, so the agent's small popovers
 // rendered unstyled there).
 //
 // PHASE 6 (this version): the old three-tab (Chat/History/Settings)

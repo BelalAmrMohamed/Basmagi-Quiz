@@ -2,7 +2,7 @@
 // public/src/features/home/create-quiz-modal.js
 // CREATE-QUIZ MODALS
 // ============================================================================
-// Two related flows, both reachable from the "امتحاناتك" (My Quizzes) view:
+// Two related flows, both reachable from the "محتواي" (My Content) view:
 //   1. openPromptSelectionModal() — pick one of the three AI prompt presets
 //      (see ai-prompts.js) and copy it to clipboard for use with an external AI.
 //   2. openInlineCreateQuizModal() — paste text or import a file, parse it
@@ -198,7 +198,7 @@ export function openInlineCreateQuizModal() {
   wireJsonFileDropZone(
     modalCard,
     async (files) => {
-      // Multiple files / multi-quiz payloads → import straight into امتحاناتك
+      // Multiple files / multi-quiz payloads → import straight into محتواي
       if (files.length > 1) {
         const count = await importJsonQuizFiles(files, { refresh: false });
         if (count > 0) {
@@ -340,7 +340,7 @@ export function openInlineCreateQuizModal() {
       "تم الإنشاء",
       currentFolderId
         ? "تم إنشاء الامتحان وإضافته إلى هذا المجلد"
-        : 'تم إنشاء الامتحان وإضافته إلى "امتحاناتك"',
+        : 'تم إنشاء الامتحان وإضافته إلى "محتواي"',
       "success",
     );
     renderRootCategories();

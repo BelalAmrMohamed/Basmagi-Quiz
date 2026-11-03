@@ -39,6 +39,8 @@ Example 2: The markdown engine was manually detecting the direction of sentences
 
 Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is common to all pages. Its JS and CSS are the same and are imported in all pages, but the HTML is duplicated, which means it's extremely hard to maintain and update. And it became to messy. And it's not even the same, the docuement pages don't have the HTML directly in them, it's inserted from a JS file. 
 
+So these are 3 examples of performance issues that I found and fixed, there are probably alot of other issues, too, some like the examples, others aren't.
+
 ## New Features
 
 ### Content Card Design
@@ -86,8 +88,10 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 
 ### Download Lessons as Python Manim (MCP Server Export)
 [plan](plans/lesson-video-export-plan.md).
-* Claude sometimes gets confused and doesn't know how to install Manim to render the code, so tell it context on how to do it.
+* Claude sometimes gets confused and doesn't know how to install Manim to render the code, so tell it context on how to do it. Or maybe Manim isn't even the best way to make videos, maybe chromium is.
 * Test the VO That can be downloaded in the Claude Sandbox.
+
+*The plan has been delayed until we implement this plan first: [Proper Voice-Over](plans/advanced-read-aloud.md). Because it's going to be reused for the videos' VO, too.*
 
 ### Translation and content expansion (Suggestion)
 * Native English translation support with native LTR pages.
@@ -105,14 +109,6 @@ Improve:
 
 DB Note:
 * Since we are expanding our usage of the DB based on that update, I want to put a limit on uploaded content to the DB (Like images, videos, etc...) [For all pages, not just the notebook page], this way notebooks, lessons, quizzes, and other items can still be uploaded and preserved even when the limit of the uploaded images and content is reached.
-
-#### What's not done (Maybe it's done):
-
-* Notebook-wide output clearing is now available from the runtime toolbar; per-cell output clearing remains in each cell menu.
-* Output-aware exports and the option to include visible outputs are implemented in the runtime. Outputs are session-only and are not saved with notebook content.
-* Jupyter command-mode shortcuts (A, B, D D, M, Y) are implemented in the runtime.
-* Not tested: the admin publish flow and a live Supabase.
-* The runtime bundle in public/assets/notebook-runtime/ was rebuilt from the changed source, so commit it along with the rest. The notes are in docs/NOTEBOOKS.md.
 
 #### Awaiting decision (not implemented)
 

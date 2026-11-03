@@ -61,66 +61,76 @@ function pruneOrphanedRows(userQuizzes) {
 
 /**
  * Breaks down the flat "user_quizzes" localStorage array into counts of
- * quizzes / folders / courses (by meta.type — entries without a meta.type
- * are plain quizzes). Used for the "امتحاناتك" root card, whose subtext
+ * quizzes, lessons, notebooks, folders, and courses (by meta.type — entries
+ * without a meta.type are plain quizzes). Used for the "محتواي" root card, whose subtext
  * previously just used the array's raw .length and labeled everything as
  * "exams", even when the list actually contained folders/courses too.
  *
  * Orphaned rows (see pruneOrphanedRows above) are excluded before counting,
  * so a partially-cascaded delete can't inflate these numbers past what's
- * actually visible in the "امتحاناتك" view.
+ * actually visible in the "محتواي" view.
  *
  * @param {Array} userQuizzes - raw entries from the "user_quizzes" key
- * @returns {{quizCount: number, lessonCount: number, folderCount: number, courseCount: number, total: number}}
+ * @returns {{quizCount: number, lessonCount: number, notebookCount: number, folderCount: number, courseCount: number, total: number}}
  */
 export function getUserQuizzesBreakdown(userQuizzes) {
   let quizCount = 0;
   let lessonCount = 0;
+  let notebookCount = 0;
   let folderCount = 0;
   let courseCount = 0;
   for (const row of pruneOrphanedRows(userQuizzes)) {
     if (row?.meta?.type === "course") courseCount += 1;
     else if (row?.meta?.type === "folder") folderCount += 1;
     else if (row?.meta?.type === "lesson") lessonCount += 1;
-    else if (row?.meta?.type === "notebook") lessonCount += 0;
+    else if (row?.meta?.type === "notebook") notebookCount += 1;
     else quizCount += 1;
   }
   return {
     quizCount,
     lessonCount,
+    notebookCount,
     folderCount,
     courseCount,
-    total: quizCount + lessonCount + folderCount + courseCount,
+    total: quizCount + lessonCount + notebookCount + folderCount + courseCount,
   };
 }
 
-/** Small internal Arabic-pluralization helper for a (singular, dual, plural,
- * plural11plus) label set: 1 → singular, 2 → dual, 3-10 → "N plural", 11+ →
- * "N plural11plus". */
-function pluralizeArabic(count, singular, dual, plural, plural11Plus = plural) {
-  if (count === 1) return singular;
-  if (count === 2) return dual;
-  if (count <= 10) return `${count} ${plural}`;
-  return `${count} ${plural11Plus}`;
-}
-
 /**
- * Arabic subtext for the "امتحاناتك" root card. Only counts actual quizzes
- * (not folders/courses) — the card's full breakdown (quizzes/courses/
- * folders) is already shown in its dropdown menu (see root-view.js), so the
- * subtext line just needs the headline "N امتحان" figure a user expects from
- * every other card on this page, not a repeat of the whole breakdown.
+ * Compact content counts for the "محتواي" root card.
+ *
+ * Courses and folders stay out of the visible line so it can remain one
+ * line; they still appear in the card tooltip and the ⋮ menu. If the
+ * workspace only has courses/folders, those counts become the visible
+ * fallback so the card does not look empty.
  */
-export function formatUserQuizzesBreakdown({ quizCount, lessonCount = 0, folderCount, courseCount, total }) {
+export function formatUserQuizzesBreakdown({
+  quizCount,
+  lessonCount = 0,
+  notebookCount = 0,
+  folderCount = 0,
+  courseCount = 0,
+  total,
+}, { includeCourses = false, includeFolders = false } = {}) {
   if (total === 0) return "لا يوجد محتوى بعد";
-  if (quizCount === 0 && lessonCount === 0) {
-    // Edge case: only folders/courses, no quizzes yet directly visible in
-    // the count — still say something rather than a blank "0 امتحان".
-    return "لا يوجد امتحانات بعد";
+  const countLabel = (count, one, two, plural, plural11Plus = plural) => {
+    if (count === 1) return one;
+    if (count === 2) return two;
+    if (count <= 10) return `${count} ${plural}`;
+    return `${count} ${plural11Plus}`;
+  };
+  const parts = [
+    quizCount ? countLabel(quizCount, "امتحان واحد", "امتحانان", "امتحانات", "امتحان") : "",
+    lessonCount ? countLabel(lessonCount, "درس واحد", "درسان", "دروس", "درس") : "",
+    notebookCount ? countLabel(notebookCount, "دفتر واحد", "دفتران", "دفاتر", "دفتر") : "",
+  ].filter(Boolean);
+  if ((includeCourses || parts.length === 0) && courseCount) {
+    parts.push(countLabel(courseCount, "مادة واحدة", "مادتان", "مواد", "مادة"));
   }
-  const quizLabel = quizCount ? pluralizeArabic(quizCount, "امتحان واحد", "امتحانان", "امتحانات", "امتحان") : "";
-  const lessonLabel = lessonCount ? pluralizeArabic(lessonCount, "درس واحد", "درسان", "دروس", "درس") : "";
-  return [quizLabel, lessonLabel].filter(Boolean).join(" و");
+  if ((includeFolders || parts.length === 0) && folderCount) {
+    parts.push(countLabel(folderCount, "مجلد واحد", "مجلدان", "مجلدات", "مجلد"));
+  }
+  return parts.join(" · ") || "لا يوجد محتوى بعد";
 }
 
 export function formatArabicQuestionCount(count) {
@@ -167,7 +177,7 @@ export function getUserQuizzesStorageWarning(rawValue) {
   return {
     warn: true,
     bytes,
-    message: `حجم بيانات "امتحاناتك" أصبح كبيراً (${mb} ميجابايت) وقد يتسبب ذلك في مشاكل عند الحفظ لاحقاً. يمكنك تصدير نسخة احتياطية أو حذف بعض العناصر غير المستخدمة.`,
+    message: `حجم بيانات "محتواي" أصبح كبيراً (${mb} ميجابايت) وقد يتسبب ذلك في مشاكل عند الحفظ لاحقاً. يمكنك تصدير نسخة احتياطية أو حذف بعض العناصر غير المستخدمة.`,
   };
 }
 
@@ -208,7 +218,7 @@ export function exportUserQuizzesAsJson() {
 }
 
 /**
- * Patches the already-rendered "امتحاناتك" card's subtext in place, instead
+ * Patches the already-rendered "محتواي" card's subtext in place, instead
  * of waiting for the next full renderRootCategories() call (root-view.js).
  *
  * Lives here (rather than in root-view.js, which creates the card) so both
@@ -225,4 +235,8 @@ export function refreshUserQuizzesCard() {
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const breakdown = getUserQuizzesBreakdown(userQuizzes);
   subtextEl.textContent = formatUserQuizzesBreakdown(breakdown);
+  subtextEl.title = formatUserQuizzesBreakdown(breakdown, {
+    includeCourses: true,
+    includeFolders: true,
+  });
 }
