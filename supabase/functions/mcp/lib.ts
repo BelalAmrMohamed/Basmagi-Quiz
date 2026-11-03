@@ -9,7 +9,7 @@
 
 export const SITE = "https://basmagi-quiz.vercel.app";
 
-import { LIMITS as RULE_LIMITS, checkQuiz, checkLesson } from "./content-rules.js";
+import { LIMITS as RULE_LIMITS, NOTEBOOK_RUNTIMES, checkQuiz, checkLesson, checkNotebook, normalizeNotebookContent } from "./content-rules.js";
 
 // Content limits come from the shared rules (single source of truth, same as the
 // editor pages and the upload API). `draftBytes` is the only MCP-specific cap.
@@ -88,6 +88,40 @@ export function validateQuiz(args: any) {
     errors,
     warnings,
     stats: { questions: questions.length, mcq, multiSelect: multi, essay, bytes },
+  };
+}
+
+// ── Notebook ────────────────────────────────────────────────────────────────
+
+// Same shared rules as the editor page and the upload API (checkNotebook).
+// Unknown/missing runtimes are errors — never defaulted.
+export function validateNotebook(args: any) {
+  const check = checkNotebook(args);
+  const errors: string[] = check.errors.map((e: any) => e.message);
+  const warnings: string[] = check.warnings.map((w: any) => w.message);
+  const rawCells = Array.isArray(args?.cells) ? args.cells : Array.isArray(args?.content?.cells) ? args.content.cells : null;
+  if (!rawCells || !rawCells.length || errors.length) {
+    return { ok: false, data: null, errors, warnings, stats: null };
+  }
+  const content = normalizeNotebookContent(rawCells);
+  const data = {
+    title: str(args?.title),
+    description: str(args?.description),
+    source: str(args?.source),
+    runtime: str(args?.runtime),
+    cells: content.cells,
+  };
+  const bytes = new TextEncoder().encode(JSON.stringify(data)).length;
+  if (bytes > LIMITS.draftBytes) {
+    errors.push(`حجم المسودة ${Math.round(bytes / 1000)}KB يتجاوز ${LIMITS.draftBytes / 1000}KB.`);
+    return { ok: false, data: null, errors, warnings, stats: null };
+  }
+  return {
+    ok: true,
+    data,
+    errors,
+    warnings,
+    stats: { cells: content.cells.length, code: content.cells.filter((c: any) => c.type === "code").length, markdown: content.cells.filter((c: any) => c.type === "markdown").length, bytes },
   };
 }
 
@@ -215,7 +249,7 @@ export function makeDraftCode(len = 10): string {
 export const DRAFT_CODE_RE = /^[2-9a-hj-km-np-z]{10}$/;
 export const DRAFT_TTL_HOURS = 72;
 
-export function draftUrl(kind: "quiz" | "lesson", code: string) {
+export function draftUrl(kind: "quiz" | "lesson" | "notebook", code: string) {
   return `${SITE}/create-${kind}?draft=${code}`;
 }
 
@@ -267,7 +301,7 @@ export const AUTHORING_GUIDE: Record<string, string> = {
   workflow: `# Basmagi — Claude's authoring workflow
 1. Call get_authoring_guide topic=quiz|lesson|markdown once per conversation (this text).
 2. Source material attached by the user → read it fully; do NOT invent facts. Unsolved questions → solve them carefully, then explain.
-3. Build the object, then call create_quiz_import_link / create_lesson_import_link.
+3. Build the object, then call create_quiz_import_link / create_lesson_import_link / create_notebook_import_link (topic=notebook for executable MATLAB-style notebooks).
    - Result is ONE short link: ${SITE}/create-quiz?draft=<code> (valid ${DRAFT_TTL_HOURS}h, no sign-in needed).
    - If the result lists ERRORS nothing was saved: fix exactly what it says and call again.
    - The errors are the SAME checks the editor page and the upload step run, so a draft that passes here will not fail later. Each error names the question/block and how to fix it.
@@ -310,6 +344,20 @@ Block types:
 - { type:"lesson-reference", lessonId, title?, slug? }
 
 Structure tips: one idea per section; a short markdown intro, the explanation, then 1–3 check-yourself questions at the end of each section; a final "ملخص / مراجعة" section; set defaultHidden:true for long optional material (e.g. worked solutions). Lessons are never scored — questions are for self-check. lesson-reference blocks need the UUID of a PUBLISHED lesson (get it from search_catalog). Math: every formula, variable, exponent, fraction, root, Greek letter or math symbol in q/options/answer/explanation/lesson bodies must be LaTeX: $...$ inline, $$...$$ display. Never plain text (x^2, sqrt(x), 1/2, x², √, ≤). Escape backslashes in JSON (\\\\frac).`,
+
+  notebook: `# Notebook schema (create_notebook_import_link)
+{ title (≤${LIMITS.notebookTitle}), description (≤${LIMITS.notebookDescription}), source ("https://…" or ""),
+  runtime: "${NOTEBOOK_RUNTIMES.join('" | "')}"  (REQUIRED — never defaulted; unknown values are rejected),
+  cells: [ { id?: "cell-1", type: "markdown" | "code", source: string } ]  (≤${LIMITS.notebookCells} cells, each source ≤${LIMITS.notebookCellSource} chars, whole notebook ≤${LIMITS.notebookBytes / 1000}KB) }
+
+Runtime limits (tell learners the truth): "matlab" is a browser-based EDUCATIONAL MATLAB-style subset (arrays, cells, structs, switch/if/for/while, functions, basic image processing: imread/imshow/imtool/imwrite/imfinfo/rgb2gray/rgb2hsv/rgb2ycbcr/imcrop/imresize/imrotate/imhist/histeq). It is NOT MathWorks MATLAB: no toolboxes, no Simulink, no file/network access, no server-side execution. Code runs only in the learner's browser (60 s limit). Do not promise Python/C++ — not available.
+
+Authoring tips:
+- Alternate short markdown explanations with small runnable code cells; one idea per cell; prefer 5–40 lines per code cell.
+- Markdown is Arabic-friendly (direction detected per block); code, comments in code and output are always left-to-right. Avoid raw HTML. Math in LaTeX ($...$ / $$...$$).
+- Image examples may only use the bundled sample images (test.png, testgray.png, pepper.png, Test2.png, GrayTest1.png, BinaryImage.png, GrayscaleImage.png, ColorImage.png, test_lookup.gif); learners can upload their own.
+- Only authored source is stored. Learner outputs/edits stay in the learner's browser (autosave) and are never graded or synced.
+- Notebooks are published only by an admin pressing save in the editor — MCP only creates a draft link.`,
 
   markdown: `# Markdown supported in lessons / quizzes
 Headings, **bold**/*italic*, lists (nested), blockquotes, links, GFM tables, fenced code blocks (with copy button), images, inline audio/video (\`![audio](url)\`, \`![video](url)\`, YouTube auto-embed), KaTeX math ($inline$, $$display$$), and reading passages:
@@ -379,7 +427,7 @@ function replaceTextDeep(node: any, find: string, rep: string, count: { n: numbe
 
 // Applies patch = { meta?, ops?[] } to stored draft data. Pure; returns the NEW raw data
 // (still to be validated by validateQuiz/validateLesson) or { error }.
-export function applyDraftPatch(kind: "quiz" | "lesson", data: any, patch: any): { data?: any; error?: string; applied?: string[] } {
+export function applyDraftPatch(kind: "quiz" | "lesson" | "notebook", data: any, patch: any): { data?: any; error?: string; applied?: string[] } {
   if (!patch || typeof patch !== "object") return { error: "patch يجب أن يكون كائناً: { meta?, ops? }." };
   const ops: any[] = Array.isArray(patch.ops) ? patch.ops : [];
   if (!ops.length && !patch.meta) return { error: "patch فارغ — أضف meta أو ops." };
@@ -387,12 +435,12 @@ export function applyDraftPatch(kind: "quiz" | "lesson", data: any, patch: any):
 
   let d = clone(data);
   const applied: string[] = [];
-  const list = kind === "quiz" ? "questions" : "sections";
+  const list = kind === "quiz" ? "questions" : kind === "notebook" ? "cells" : "sections";
   const arr = () => d[list] as any[];
 
   const metaTarget = kind === "quiz" ? (d.meta = d.meta || {}) : d;
   if (patch.meta) {
-    for (const k of ["title", "description", "source"]) {
+    for (const k of kind === "notebook" ? ["title", "description", "source", "runtime"] : ["title", "description", "source"]) {
       if (patch.meta[k] !== undefined) { metaTarget[k] = patch.meta[k]; applied.push(`meta.${k}`); }
     }
   }
@@ -414,7 +462,11 @@ export function applyDraftPatch(kind: "quiz" | "lesson", data: any, patch: any):
     ops.forEach((op, i) => {
       const at = `العملية ${i + 1} (${op?.op})`;
       try {
-        switch (op?.op) {
+        const opKind = /_(question|questions)$/.test(op?.op) ? "quiz"
+          : /_(cell|cells)$/.test(op?.op) ? "notebook"
+          : /_(section|sections|block|blocks)$/.test(op?.op) ? "lesson" : "any";
+        // An op that belongs to another content kind falls through to the default (unknown-op) error.
+        switch (opKind === "any" || opKind === kind ? op?.op : "__wrong_kind__") {
           case "replace_text": {
             if (typeof op.find !== "string" || !op.find) throw new Error("find مطلوب.");
             const c = { n: 0 };
@@ -429,6 +481,12 @@ export function applyDraftPatch(kind: "quiz" | "lesson", data: any, patch: any):
           case "append_questions": { if (!Array.isArray(op.questions)) throw new Error("questions مصفوفة مطلوبة."); arr().push(...op.questions); applied.push(`append_questions ×${op.questions.length}`); break; }
           case "delete_question": { const k = idx(op.at, arr().length, "at"); arr().splice(k, 1); applied.push(`delete_question ${k + 1}`); break; }
           case "move_question": { move(arr(), idx(op.at, arr().length, "at"), idx(op.to, arr().length, "to")); applied.push(`move_question`); break; }
+          // notebook cells
+          case "set_cell": { const k = idx(op.at, arr().length, "at"); arr()[k] = op.cell; applied.push(`set_cell ${k + 1}`); break; }
+          case "insert_cell": { const k = idx(op.at, arr().length, "at", true); arr().splice(k, 0, op.cell); applied.push(`insert_cell ${k + 1}`); break; }
+          case "append_cells": { if (!Array.isArray(op.cells)) throw new Error("cells مصفوفة مطلوبة."); arr().push(...op.cells); applied.push(`append_cells ×${op.cells.length}`); break; }
+          case "delete_cell": { const k = idx(op.at, arr().length, "at"); arr().splice(k, 1); applied.push(`delete_cell ${k + 1}`); break; }
+          case "move_cell": { move(arr(), idx(op.at, arr().length, "at"), idx(op.to, arr().length, "to")); applied.push(`move_cell`); break; }
           // lesson sections
           case "set_section": { const k = idx(op.at, arr().length, "at"); arr()[k] = op.section; applied.push(`set_section ${k + 1}`); break; }
           case "insert_section": { const k = idx(op.at, arr().length, "at", true); arr().splice(k, 0, op.section); applied.push(`insert_section ${k + 1}`); break; }
@@ -443,6 +501,8 @@ export function applyDraftPatch(kind: "quiz" | "lesson", data: any, patch: any):
           case "move_block": { const s = idx(op.section, arr().length, "section"); const b = blocksOf(s); move(b, idx(op.at, b.length, "at"), idx(op.to, b.length, "to")); applied.push(`move_block ${s + 1}`); break; }
           default: throw new Error(`عملية غير معروفة. المتاح: ${kind === "quiz"
             ? "set_question, insert_question, append_questions, delete_question, move_question, replace_text"
+            : kind === "notebook"
+            ? "set_cell, insert_cell, append_cells, delete_cell, move_cell, replace_text"
             : "set_section, insert_section, append_sections, delete_section, move_section, set_block, insert_block, append_blocks, delete_block, move_block, replace_text"}.`);
         }
       } catch (e: any) {
@@ -464,6 +524,22 @@ export function quizToDraftInput(quizData: any) {
     source: /^https?:\/\//i.test(m.source || "") ? m.source : "",
     questions: (quizData?.questions || []).map((q: any) => ({ ...q })),
   };
+}
+
+export function notebookToDraftInput(row: any) {
+  return {
+    title: row?.title || "",
+    description: row?.description || "",
+    source: /^https?:\/\//i.test(row?.source || "") ? row.source : "",
+    runtime: row?.runtime || "",
+    cells: (row?.content?.cells || []).map((c: any) => ({ type: c.type, source: c.source })),
+  };
+}
+
+export function outlineNotebook(data: any): string {
+  const cells: any[] = data?.cells || data?.content?.cells || [];
+  const lines = cells.map((c, i) => `${i + 1}. [${c.type}] ${clip(c.source, 80)}`);
+  return `title: ${data?.title || ""}\ndescription: ${clip(data?.description, 160)}\nsource: ${data?.source || "(none)"}\nruntime: ${data?.runtime || "(none)"}\ncells: ${cells.length}\n\n${lines.join("\n")}`;
 }
 
 export function lessonToDraftInput(row: any) {

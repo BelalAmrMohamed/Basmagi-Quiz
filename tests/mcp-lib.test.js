@@ -81,7 +81,7 @@ test("draft codes: unguessable format, URL shape", () => {
 });
 
 test("static content exposes the expected sections", () => {
-  assert.deepEqual(Object.keys(AUTHORING_GUIDE).sort(), ["lesson", "markdown", "quiz", "workflow"]);
+  assert.deepEqual(Object.keys(AUTHORING_GUIDE).sort(), ["lesson", "markdown", "notebook", "quiz", "workflow"]);
   assert.deepEqual(Object.keys(CREATOR_INFO).sort(), ["contact", "links", "pages", "platform", "profile"]);
   assert.match(CREATOR_INFO.contact, /belalamrofficial@gmail\.com/);
 });

@@ -73,7 +73,7 @@ function withTimeout(promise, ms, label) {
 // ── Local snapshot persistence ────────────────────────────────────────────────
 
 /** Stores the last-good catalog (slimmed: quiz metadata only, no quiz bodies). */
-function saveManifestCache({ quizzes, lessons, courses, folders }) {
+function saveManifestCache({ quizzes, lessons, notebooks, courses, folders }) {
   try {
     if (typeof localStorage === "undefined") return;
     const slimQuizzes = (quizzes || []).map((q) => ({
@@ -92,11 +92,12 @@ function saveManifestCache({ quizzes, lessons, courses, folders }) {
       // Lessons were added to the catalog in v2. An older snapshot cannot
       // provide an honest course-level lesson-progress total, so let it miss
       // the cache and fetch a current catalog instead.
-      v: 2,
+      v: 3,
       project: SUPABASE_URL,
       savedAt: new Date().toISOString(),
       quizzes: slimQuizzes,
       lessons,
+      notebooks: notebooks || [],
       courses,
       folders,
     });
@@ -122,7 +123,7 @@ function tryRestoreManifestCache() {
     const raw = localStorage.getItem(MANIFEST_CACHE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (!data || data.v !== 2 || data.project !== SUPABASE_URL) return null;
+    if (!data || data.v !== 3 || data.project !== SUPABASE_URL) return null;
     if (
       !Array.isArray(data.courses) ||
       !Array.isArray(data.folders) ||
@@ -164,8 +165,8 @@ export async function getManifest() {
   // live and the snapshot fallback paths can feed it.
   let foldersRaw;
   try {
-    const { quizzes, lessons, courses, folders } = await fetchDbManifest(liveTimeout);
-    saveManifestCache({ quizzes, lessons, courses, folders });
+    const { quizzes, lessons, notebooks, courses, folders } = await fetchDbManifest(liveTimeout);
+    saveManifestCache({ quizzes, lessons, notebooks, courses, folders });
     // buildSubjects() returns { subjects: [...] } (see its docstring/return
     // statement below) — unwrap here so `subjects` is the plain array
     // buildCompatStructures() expects (@param {Subject[]} subjects).
@@ -175,7 +176,7 @@ export async function getManifest() {
     // never surfaced during the Supabase outage itself (the throw/timeout
     // path was hit first every time).
     foldersRaw = folders;
-    ({ subjects } = await buildSubjects(quizzes, lessons, courses, folders));
+    ({ subjects } = await buildSubjects(quizzes, lessons, courses, folders, notebooks));
   } catch (err) {
     if (!snapshot) throw err;
     console.warn(
@@ -188,6 +189,7 @@ export async function getManifest() {
       snapshot.lessons,
       snapshot.courses,
       snapshot.folders,
+      snapshot.notebooks,
     ));
     fromCache = true;
   }
@@ -223,7 +225,7 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
   const supabase = await ensureSharedSupabaseClient();
   if (!supabase) throw new Error("Supabase client unavailable");
 
-  const [{ data: quizzes, error: quizzesError }, { data: lessons, error: lessonsError }, { data: courses, error: coursesError }, { data: folders, error: foldersError }] = await withTimeout(
+  const [{ data: quizzes, error: quizzesError }, { data: lessons, error: lessonsError }, { data: courses, error: coursesError }, { data: folders, error: foldersError }, { data: notebooks, error: notebooksError }] = await withTimeout(
     Promise.all([
       supabase
         .from("quizzes")
@@ -248,6 +250,12 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
         .from("folders")
         .select("id, course_id, name, parent_folder_id, created_by, created_at, icon")
         .order("name", { ascending: true }),
+      // Metadata only (never `content`): the catalog just needs to list notebooks.
+      supabase
+        .from("notebook_public")
+        .select("id, course_id, folder_id, title, slug, description, source, runtime, cell_count, sort_order, created_by, created_at, updated_at")
+        .order("sort_order", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true }),
     ]),
     timeoutMs,
     "quiz manifest",
@@ -257,8 +265,11 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
   if (lessonsError) throw lessonsError;
   if (coursesError) throw coursesError;
   if (foldersError) throw foldersError;
+  // The notebooks table/view arrives with its own migration. Until it is
+  // applied (or if it errors) the catalog must keep working without notebooks.
+  if (notebooksError) console.warn("[quizManifest] notebooks unavailable:", notebooksError.message);
 
-  return { quizzes, lessons, courses, folders };
+  return { quizzes, lessons, notebooks: notebooksError ? [] : notebooks || [], courses, folders };
 }
 
 /**
@@ -267,7 +278,7 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
  * and slimmed snapshot rows from saveManifestCache() (meta/stats hoisted to
  * the row top level) — see the `row.data ?? row` normalization below.
  */
-async function buildSubjects(quizzes, lessons, courses, folders) {
+async function buildSubjects(quizzes, lessons, courses, folders, notebooks = []) {
   const courseById = new Map((courses || []).map((course) => [course.id, course]));
   const folderById = new Map((folders || []).map((folder) => [folder.id, folder]));
 
@@ -305,6 +316,7 @@ async function buildSubjects(quizzes, lessons, courses, folders) {
       created_at: course.created_at || null,
       quizzes: [],
       lessons: [],
+      notebooks: [],
       folderPaths: [],
     };
     if (course.education_type === "University" && course.college) subject.faculty = course.college;
@@ -402,6 +414,39 @@ async function buildSubjects(quizzes, lessons, courses, folders) {
       description: row.description || "",
       source: row.source || "",
       passwordProtected: Boolean(row.password_protected),
+      courseId: row.course_id || null,
+      folderId: row.folder_id || null,
+      education_type: course.education_type || null,
+    });
+  }
+
+  for (const row of notebooks || []) {
+    const course = courseById.get(row.course_id);
+    if (!course) {
+      console.warn(`[quizManifest] Notebook ${row.id} has no valid course_id`);
+      continue;
+    }
+    let folderSegments;
+    try {
+      folderSegments = getFolderSegments(row.folder_id, row.course_id);
+    } catch (error) {
+      console.warn(`[quizManifest] ${error.message}`);
+      continue;
+    }
+    ensureSubject(course).notebooks.push({
+      itemType: "notebook",
+      id: row.id,
+      slug: row.slug || null,
+      title: row.title || "",
+      runtime: row.runtime || "",
+      folderSegments,
+      cellCount: Number(row.cell_count) || 0,
+      sortOrder: row.sort_order ?? null,
+      createdAt: row.created_at || null,
+      updatedAt: row.updated_at || null,
+      createdBy: row.created_by || null,
+      description: row.description || "",
+      source: row.source || "",
       courseId: row.course_id || null,
       folderId: row.folder_id || null,
       education_type: course.education_type || null,
@@ -511,6 +556,7 @@ function buildCompatStructures(subjects, folders) {
         subcategories: [],
         exams: [],
         lessons: [],
+        notebooks: [],
         source: subject.source,
         ...(subject.created_by && { created_by: subject.created_by }),
         ...(subject.created_at && { created_at: subject.created_at }),
@@ -595,7 +641,7 @@ function buildCompatStructures(subjects, folders) {
             const folderInfo = folderInfoByPath.get(subKey);
             categoryTree[subKey] = {
               key: subKey, name: segment, path: [...currentPathArr], parent: currentParentKey,
-              subcategories: [], exams: [], lessons: [], education_type: subject.education_type,
+              subcategories: [], exams: [], lessons: [], notebooks: [], education_type: subject.education_type,
               ...(folderInfo && { id: folderInfo.id }),
               ...(folderInfo?.course_id && { course_id: folderInfo.course_id }),
               ...(folderInfo?.parent_folder_id && { parent_folder_id: folderInfo.parent_folder_id }),
@@ -647,6 +693,7 @@ function buildCompatStructures(subjects, folders) {
           subcategories: [],
           exams: [],
           lessons: [],
+          notebooks: [],
           education_type: categoryTree[courseName].education_type,
         };
         categoryTree[parentKey].subcategories.push(subKey);
@@ -661,6 +708,22 @@ function buildCompatStructures(subjects, folders) {
         ...(folderRow.icon && { icon: folderRow.icon }),
       });
       parentKey = subKey;
+    }
+  }
+
+  // Notebooks: unscored leaves placed like lessons, but only now that every
+  // folder node (including ones that hold nothing else) exists.
+  for (const subject of subjects) {
+    const rootKey = subject.name;
+    if (!categoryTree[rootKey]) continue;
+    for (const notebook of subject.notebooks ?? []) {
+      let parentKey = rootKey;
+      for (const segment of Array.isArray(notebook.folderSegments) ? notebook.folderSegments : []) {
+        const subKey = `${parentKey}/${segment}`;
+        if (!categoryTree[subKey]) break;
+        parentKey = subKey;
+      }
+      (categoryTree[parentKey].notebooks ||= []).push({ ...notebook, category: parentKey });
     }
   }
 

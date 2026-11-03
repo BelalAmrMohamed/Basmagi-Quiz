@@ -6,10 +6,10 @@ import { keymap } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
 import { basicSetup, EditorView } from 'codemirror';
 
-declare const __WORKER_SRC__: string;
-declare const __ASSETS__: Record<string, { width: number; height: number; channels: 1 | 3; b64: string; bitDepth: number; format: string; fileSize: number; colorType: string; filename: string; fileModDate: string; colormap?: number[][] }>;
-interface Lesson { id: string; title: string; group: string; files: string[]; cells: { type: 'code' | 'md'; src: string }[] }
-declare const __LESSONS__: Lesson[];
+type AssetRec = { width: number; height: number; channels: 1 | 3; b64: string; bitDepth: number; format: string; fileSize: number; colorType: string; filename: string; fileModDate: string; colormap?: number[][] };
+export interface NotebookCellDoc { id: string; type: 'markdown' | 'code'; source: string }
+export interface NotebookDoc { id: string; title: string; schemaVersion: number; runtime: 'matlab'; cells: NotebookCellDoc[] }
+export interface MountOptions { root: HTMLElement; baseUrl: string; notebook: NotebookDoc; lang?: 'ar' | 'en'; onNotice?: (msg: string) => void }
 
 type Out = { k: 'text' | 'err' | 'warn'; s: string } | { k: 'img'; fig: number; w: number; h: number; rgb: Uint8Array; tool: boolean };
 interface Cell { id: number; type: 'code' | 'md'; src: string; outs: Out[]; count: number | null; running: boolean; mdEdit: boolean }
@@ -33,9 +33,14 @@ const store = {
   get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
   set: (k: string, v: string) => { try { localStorage.setItem(k, v); return true; } catch { return false; } }
 };
-const tr = (en: string, _ar: string) => en;
+let LANG: 'ar' | 'en' = 'ar';
+const tr = (en: string, ar: string) => (LANG === 'ar' ? ar : en);
+let mountRoot: HTMLElement;
+let opts: MountOptions;
+let baseUrl = '';
+let mountToken = 0;
+const $id = (id: string): HTMLElement | null => mountRoot.querySelector('#' + id);
 let refreshToolbar = () => {};
-let themePreference = store.get('mlweb.theme') ?? 'system';
 let noticeTimer = 0;
 let confirmResolve: ((accepted: boolean) => void) | null = null;
 const imageToolState: { canvas: HTMLCanvasElement | null; image: Extract<Out, { k: 'img' }> | null; zoom: number } = { canvas: null, image: null, zoom: 1 };
@@ -107,18 +112,19 @@ const editorTheme = EditorView.theme({
   '.cm-nonmatchingBracket': { color: 'var(--syntax-error)' }
 });
 function notify(message: string) {
-  const el = document.getElementById('notice');
-  const text = document.getElementById('noticeMessage');
+  if (opts.onNotice) { try { opts.onNotice(message); } catch { /* host handler failed */ } return; }
+  const el = $id('notice');
+  const text = $id('noticeMessage');
   if (!el || !text) return;
   text.textContent = message;
   el.hidden = false;
   window.clearTimeout(noticeTimer);
   noticeTimer = window.setTimeout(() => { el.hidden = true; }, 5000);
 }
-function confirmInApp(title: string, message: string, acceptLabel = 'Continue'): Promise<boolean> {
-  const dialog = document.getElementById('confirmDialog') as HTMLDialogElement;
-  document.getElementById('confirmTitle')!.textContent = title;
-  document.getElementById('confirmMessage')!.textContent = message;
+function confirmInApp(title: string, message: string, acceptLabel = tr('Continue', 'متابعة')): Promise<boolean> {
+  const dialog = $id('confirmDialog') as HTMLDialogElement;
+  $id('confirmTitle')!.textContent = title;
+  $id('confirmMessage')!.textContent = message;
   dialog.querySelector<HTMLButtonElement>('[data-confirm-accept]')!.textContent = acceptLabel;
   return new Promise(resolve => {
     confirmResolve = resolve;
@@ -126,15 +132,11 @@ function confirmInApp(title: string, message: string, acceptLabel = 'Continue'):
   });
 }
 function settleConfirm(accepted: boolean) {
-  const dialog = document.getElementById('confirmDialog') as HTMLDialogElement | null;
+  const dialog = $id('confirmDialog') as HTMLDialogElement | null;
   if (dialog?.open) dialog.close();
   const resolve = confirmResolve;
   confirmResolve = null;
   resolve?.(accepted);
-}
-function applyTheme() {
-  if (themePreference === 'dark' || themePreference === 'light') document.documentElement.dataset.theme = themePreference;
-  else delete document.documentElement.dataset.theme;
 }
 
 // ---------------- state ----------------
@@ -146,17 +148,29 @@ let vars: { name: string; size: string; cls: string; bytes: number }[] = [];
 let cmdHist: string[] = [];
 let execCount = 0;
 let worker: Worker; let workerReady = false;
+let publishedHash = '';
+const assetManifest = new Map<string, string>();
+const assetLoading = new Map<string, Promise<void>>();
+let manifestReady: Promise<void> = Promise.resolve();
 let curRun: { id: number; resolve: () => void; timer: number; fig: number } | null = null;
 
 const mkCell = (type: 'code' | 'md', src: string): Cell => ({ id: nextId++, type, src, outs: [], count: null, running: false, mdEdit: false });
 
 // ---------------- worker ----------------
+function makeWorker(): Worker {
+  const url = baseUrl + 'worker.js';
+  try { return new Worker(url); }
+  catch {
+    // Fallback: same-origin synchronous fetch of the worker source, run from a Blob (never leaves the browser).
+    const x = new XMLHttpRequest(); x.open('GET', url, false); x.send();
+    return new Worker(URL.createObjectURL(new Blob([x.responseText], { type: 'text/javascript' })));
+  }
+}
 function startWorker() {
   if (worker) worker.terminate();
-  const url = URL.createObjectURL(new Blob([__WORKER_SRC__], { type: 'text/javascript' }));
-  worker = new Worker(url); workerReady = false;
+  worker = makeWorker(); workerReady = false;
   worker.onmessage = onWorkerMsg;
-  worker.onerror = ev => { appendOut('err', 'Worker error: ' + ev.message); finishRun(); };
+  worker.onerror = ev => { appendOut('err', tr('Worker error: ', 'خطأ في المُنفِّذ: ') + ev.message); finishRun(); };
   for (const [name, img] of files) worker.postMessage({ t: 'putFile', name, img });
 }
 function appendOut(k: 'text' | 'err' | 'warn', s: string) {
@@ -202,62 +216,82 @@ function runCell(c: Cell): Promise<void> {
   return new Promise(resolve => {
     c.outs = []; c.running = true; c.count = ++execCount;
     for (const ln of c.src.split(/\r?\n/)) { const t = ln.trim(); if (t && !t.startsWith('%') && t !== 'end') cmdHist.push(t); }
-    cmdHist = cmdHist.slice(-300); store.set('mlweb.hist', JSON.stringify(cmdHist));
+    cmdHist = cmdHist.slice(-300); store.set(histKey(), JSON.stringify(cmdHist));
     const timer = window.setTimeout(() => {
-      appendOut('err', 'Execution stopped: time limit (60 s) exceeded. The workspace was reset.\n'); startWorker(); vars = []; finishRun(); renderSide();
+      appendOut('err', tr('Execution stopped: time limit (60 s) exceeded. The workspace was reset.\n', 'توقف التنفيذ: تجاوز الحد الزمني (60 ثانية). تمت إعادة ضبط مساحة العمل.\n')); startWorker(); vars = []; finishRun(); renderSide();
     }, 60000);
     curRun = { id: c.id, resolve, timer, fig: 0 };
     setStatus(tr('Running…', 'قيد التشغيل…')); render();
-    worker.postMessage({ t: 'run', id: c.id, src: c.src });
+    void ensureAssetsFor(c.src).then(() => { if (curRun && curRun.id === c.id) worker.postMessage({ t: 'run', id: c.id, src: c.src }); });
   });
 }
 function stopRun() {
-  if (!curRun) return; appendOut('err', 'Execution interrupted by user. The workspace was reset.\n'); startWorker(); vars = []; finishRun(); renderSide();
+  if (!curRun) return; appendOut('err', tr('Execution interrupted by user. The workspace was reset.\n', 'تم إيقاف التنفيذ بواسطة المستخدم. تمت إعادة ضبط مساحة العمل.\n')); startWorker(); vars = []; finishRun(); renderSide();
 }
 async function runAll() { for (const c of cells) { if (c.type === 'code') await runCell(c); if (c.outs.some(o => o.k === 'err')) break; } }
 function resetWorkspace() { if (curRun) return; worker.postMessage({ t: 'reset' }); vars = []; renderSide(); }
 
-// ---------------- lessons ----------------
-let curLesson: string | null = null;
-function loadAsset(name: string) {
-  if (files.has(name)) return; const s = __ASSETS__[name]; if (!s) return;
-  const bin = atob(s.b64), d = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) d[i] = bin.charCodeAt(i);
-  const { b64, ...rest } = s; void b64; files.set(name, { ...rest, data: d });
+// ---------------- assets (fetched per file from the host build) ----------------
+const baseName = (p: string) => p.split(/[\\/]/).pop() || p;
+function referencedAssets(src: string): string[] {
+  const out = new Set<string>();
+  for (const m of src.matchAll(/['"]([^'"\n]{1,200})['"]/g)) { const real = assetManifest.get(baseName(m[1]).toLowerCase()); if (real) out.add(real); }
+  return [...out];
 }
-async function openLesson(id: string, ask = true) {
-  const L = __LESSONS__.find(l => l.id === id); if (!L || curRun) return;
-  if (ask && !await confirmInApp('Open lesson?', `Open "${L.title}"? The current notebook will be replaced. Export it first if you want to keep a copy.`, 'Open lesson')) return;
-  L.files.forEach(loadAsset); cells = L.cells.map(c => mkCell(c.type, c.src)); sel = 0; curLesson = id;
-  store.set('mlweb.lesson', id); save(); startWorker(); vars = []; render(); renderSide(); window.scrollTo(0, 0);
-  history_.replaceState(null, '', '#' + id); const s = document.getElementById('lessons') as HTMLSelectElement | null; if (s) s.value = id;
-  document.title = L.title + ' – MLWeb | Belal Amr Mohamed';
+function loadAsset(name: string): Promise<void> {
+  if (files.has(name)) return Promise.resolve();
+  const inflight = assetLoading.get(name); if (inflight) return inflight;
+  const token = mountToken;
+  const p = fetch(baseUrl + 'assets/' + encodeURIComponent(name) + '.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json() as Promise<AssetRec>; }).then(s => {
+    if (token !== mountToken) return;
+    const bin = atob(s.b64), d = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) d[i] = bin.charCodeAt(i);
+    const { b64, ...rest } = s; void b64; const img = { ...rest, data: d }; files.set(name, img); worker?.postMessage({ t: 'putFile', name, img }); renderSide();
+  }).catch(err => { console.warn('MLWeb: could not load asset', name, err); }).finally(() => { assetLoading.delete(name); });
+  assetLoading.set(name, p); return p;
 }
-const history_ = window.history;
-function lessonNav(): HTMLElement | null {
-  const i = __LESSONS__.findIndex(l => l.id === curLesson); if (i < 0) return null;
-  const go = (d: number) => $('button', { disabled: !__LESSONS__[i + d], onclick: () => openLesson(__LESSONS__[i + d].id) }, d < 0 ? tr('← Previous lesson', '← الدرس السابق') : tr('Next lesson →', 'الدرس التالي →'));
-  return $('div', { class: 'lessonnav' }, go(-1), $('span', {}, tr(`Lesson ${i + 1} of ${__LESSONS__.length}: ${__LESSONS__[i].title}`, `الدرس ${i + 1} من ${__LESSONS__.length}: ${__LESSONS__[i].title}`)), go(1));
-}
+async function ensureAssetsFor(src: string) { await manifestReady; await Promise.all(referencedAssets(src).map(loadAsset)); }
 
-// ---------------- persistence ----------------
+// Local learner work lives only in this browser, namespaced per notebook id + schema version.
+// It never changes the published admin version and is never sent to a server.
+const nbKey = () => `mlweb.nb.${opts.notebook.id}.v${opts.notebook.schemaVersion}`;
+const histKey = () => `mlweb.hist.${opts.notebook.id}.v${opts.notebook.schemaVersion}`;
+const hashStr = (t: string) => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
+const snapOf = (list: { type: string; src: string }[]) => hashStr(JSON.stringify(list.map(c => [c.type, c.src])));
+const publishedCells = (): Cell[] => {
+  const list = (opts.notebook.cells || []).map(c => mkCell(c.type === 'code' ? 'code' : 'md', String(c.source ?? '')));
+  return list.length ? list : [mkCell('code', '')];
+};
+function updateSaveState() {
+  const el = $id('saveState'); if (!el) return;
+  const local = snapOf(cells) !== publishedHash;
+  el.textContent = local ? tr('Local edits · saved in this browser only', 'تعديلات محلية · محفوظة في هذا المتصفح فقط') : tr('Published version', 'النسخة المنشورة');
+  el.dataset.state = local ? 'local' : 'published';
+}
 const save = () => {
-  const saved = store.set('mlweb.nb', JSON.stringify(cells.map(c => ({ type: c.type, src: c.src }))));
-  const state = document.getElementById('saveState');
-  if (state) state.textContent = saved ? tr('Saved locally', 'تم الحفظ محلياً') : tr('Save failed', 'تعذر الحفظ');
+  const saved = store.set(nbKey(), JSON.stringify({ v: 1, pub: publishedHash, cells: cells.map(c => ({ type: c.type, src: c.src })) }));
+  updateSaveState();
   if (!saved) notify(tr('Notebook could not be saved in this browser. Export a copy to avoid losing changes.', 'تعذر حفظ دفتر العمل في هذا المتصفح. صدّر نسخة لتجنب فقدان التغييرات.'));
 };
 function load(): Cell[] | null {
-  const s = store.get('mlweb.nb'); if (!s) return null;
-  try { const a = JSON.parse(s); if (Array.isArray(a) && a.length) return a.map((x: any) => mkCell(x.type === 'md' ? 'md' : 'code', String(x.src ?? ''))); } catch { /* ignore */ }
+  const s = store.get(nbKey()); if (!s) return null;
+  try {
+    const j = JSON.parse(s);
+    const arr = Array.isArray(j) ? j : j && Array.isArray(j.cells) ? j.cells : null;
+    if (!arr || !arr.length) return null;
+    const list = arr.map((x: any) => ({ type: x?.type === 'code' ? 'code' : 'md', src: String(x?.src ?? '') }));
+    // If the learner never edited and the admin has since republished, show the new published version.
+    if (j && !Array.isArray(j) && j.pub && j.pub !== publishedHash && snapOf(list) === j.pub) return null;
+    if (j && !Array.isArray(j) && j.pub && j.pub !== publishedHash) setTimeout(() => notify(tr('This notebook was updated by the author. Your local edits were kept; use "Reset to published version" to see the new one.', 'حدّث المؤلف هذا الدفتر. تم الاحتفاظ بتعديلاتك المحلية؛ استخدم «العودة إلى النسخة المنشورة» لعرض الجديد.')), 0);
+    return list.map((x: any) => mkCell(x.type, x.src));
+  } catch { /* ignore corrupt local data */ }
   return null;
 }
-function defaultNotebook(): Cell[] {
-  return [
-    mkCell('code', "a = imread('test.png');\nsize(a)"),
-    mkCell('code', "imshow(a), figure, imshow(rgb2gray(a));"),
-    mkCell('code', "imfinfo('test.png')"),
-    mkCell('code', "x = uint8([200 200 200]);\n(x(1)+x(2)+x(3))/3      % saturates at 255 first\nx(1)/3+x(2)/3+x(3)/3"),
-  ];
+function resetToPublished() {
+  if (curRun) stopRun();
+  store.set(nbKey(), '');
+  for (const id of [...editorStates.keys()]) { editorStates.delete(id); editorScroll.delete(id); }
+  cells = publishedCells(); sel = 0; save(); startWorker(); vars = []; render(); renderSide();
+  void Promise.all(cells.map(c => ensureAssetsFor(c.src)));
 }
 
 const helpReference = [
@@ -272,24 +306,25 @@ const helpReference = [
   ['Compatibility', 'MLWeb implements an educational MATLAB-style subset; it is not a full MATLAB runtime.', 'يقدم MLWeb مجموعة تعليمية بأسلوب MATLAB وليس بيئة MATLAB كاملة.']
 ];
 function renderHelp() {
-  const dialog = document.getElementById('helpDialog') as HTMLDialogElement | null;
-  const items = document.getElementById('helpItems');
-  const search = document.getElementById('helpSearch') as HTMLInputElement | null;
+  const dialog = $id('helpDialog') as HTMLDialogElement | null;
+  const items = $id('helpItems');
+  const search = $id('helpSearch') as HTMLInputElement | null;
   if (!dialog || !items || !search) return;
   const query = search.value.trim().toLowerCase();
   items.replaceChildren();
   for (const [title, description, arabic] of helpReference) {
+    const shown = tr(description, arabic);
     if (query && !(title + ' ' + description + ' ' + arabic).toLowerCase().includes(query)) continue;
-    items.append($('article', { class: 'help-item' }, $('b', {}, title), $('p', {}, description)));
+    items.append($('article', { class: 'help-item' }, $('b', {}, title), $('p', {}, shown)));
   }
 }
 function openHelp() {
-  const dialog = document.getElementById('helpDialog') as HTMLDialogElement | null;
+  const dialog = $id('helpDialog') as HTMLDialogElement | null;
   if (!dialog) return;
-  document.getElementById('helpTitle')!.textContent = tr('MLWeb help', 'مساعدة MLWeb');
-  document.getElementById('closeHelp')!.textContent = tr('Close', 'إغلاق');
-  document.getElementById('helpIntro')!.textContent = tr('Search supported MATLAB-style commands and notebook shortcuts.', 'ابحث عن أوامر MATLAB المدعومة واختصارات دفتر العمل.');
-  const search = document.getElementById('helpSearch') as HTMLInputElement;
+  $id('helpTitle')!.textContent = tr('MLWeb help', 'مساعدة MLWeb');
+  $id('closeHelp')!.textContent = tr('Close', 'إغلاق');
+  $id('helpIntro')!.textContent = tr('Search supported MATLAB-style commands and notebook shortcuts.', 'ابحث عن أوامر MATLAB المدعومة واختصارات دفتر العمل.');
+  const search = $id('helpSearch') as HTMLInputElement;
   search.placeholder = tr('Search commands…', 'ابحث عن الأوامر…');
   search.value = '';
   renderHelp();
@@ -316,7 +351,7 @@ function md(src: string): string {
     else if (!ln.trim()) { flushP(); flushL(); } else { flushL(); para.push(ln.trim()); }
   }
   if (code) out.push('<pre>' + esc(code.join('\n')) + '</pre>'); flushP(); flushL(); flushT();
-  return out.join('\n');
+  return out.join('\n').replace(/<(p|h[1-3]|li)>/g, '<$1 dir="auto">');
 }
 
 // ---------------- image helpers ----------------
@@ -350,11 +385,11 @@ async function addUpload(f: File) {
 // ---------------- rendering ----------------
 let renderQ = 0;
 function scheduleRender() { if (!renderQ) renderQ = requestAnimationFrame(() => { renderQ = 0; render(); }); }
-const nb = () => document.getElementById('nb')!;
+const nb = () => $id('nb')!;
 function setStatus(s: string) {
-  const el = document.getElementById('status');
+  const el = $id('status');
   if (el) { el.textContent = s; el.title = s; el.setAttribute('aria-label', s); el.dataset.state = curRun ? 'running' : 'idle'; }
-  const stop = document.getElementById('stop');
+  const stop = $id('stop');
   stop?.toggleAttribute('disabled', !curRun);
   if (stop) stop.hidden = !curRun;
 }
@@ -366,11 +401,11 @@ function figureEl(o: Extract<Out, { k: 'img' }>): HTMLElement {
   cv.onmousemove = ev => {
     const r = cv.getBoundingClientRect(), x = Math.floor((ev.clientX - r.left) / r.width * o.w), y = Math.floor((ev.clientY - r.top) / r.height * o.h);
     if (x < 0 || y < 0 || x >= o.w || y >= o.h) return; const i = (y * o.w + x) * 3, d = o.rgb;
-    px.textContent = `Pixel info: (row ${y + 1}, col ${x + 1})  [${d[i]} ${d[i + 1]} ${d[i + 2]}]`;
+    px.textContent = `${tr('Pixel info', 'معلومات البكسل')}: (${tr('row', 'صف')} ${y + 1}, ${tr('col', 'عمود')} ${x + 1})  [${d[i]} ${d[i + 1]} ${d[i + 2]}]`;
   };
   cv.onmouseleave = () => { px.textContent = ' '; };
-  const cap = $('div', { class: 'cap' }, o.tool ? `Image Tool · ${o.w}×${o.h}` : `Figure ${o.fig} · ${o.w}×${o.h}`);
-  if (o.tool) cap.append($('button', { title: 'Reopen interactive Image Tool', onclick: () => openImageTool(o) }, 'Open viewer'));
+  const cap = $('div', { class: 'cap' }, o.tool ? `${tr('Image Tool', 'أداة الصورة')} · ${o.w}×${o.h}` : `${tr('Figure', 'شكل')} ${o.fig} · ${o.w}×${o.h}`);
+  if (o.tool) cap.append($('button', { title: tr('Reopen interactive Image Tool', 'إعادة فتح أداة الصورة التفاعلية'), onclick: () => openImageTool(o) }, tr('Open viewer', 'فتح العارض')));
   const zb = (t: string, f: () => void) => $('button', { title: tr('Zoom image', 'تكبير الصورة'), onclick: () => { f(); apply(); } }, t);
   cap.append(zb('+', () => { zoom *= 1.5; }), zb('−', () => { zoom /= 1.5; }), zb('100%', () => { zoom = 1; }));
   cap.append($('button', { onclick: async () => download(`figure${Math.abs(o.fig)}.png`, await toBlob(cv, 'image/png')) }, 'PNG'));
@@ -383,11 +418,11 @@ function setImageToolZoom(zoom: number) {
   canvas.style.width = `${image.w * imageToolState.zoom}px`;
   canvas.style.height = `${image.h * imageToolState.zoom}px`;
   canvas.style.imageRendering = imageToolState.zoom > 1 ? 'pixelated' : 'auto';
-  document.getElementById('imageToolMeta')!.textContent = `${image.w} × ${image.h} px · ${Math.round(imageToolState.zoom * 100)}%`;
+  $id('imageToolMeta')!.textContent = `${image.w} × ${image.h} px · ${Math.round(imageToolState.zoom * 100)}%`;
 }
 function fitImageTool() {
   const image = imageToolState.image;
-  const stage = document.getElementById('imageToolStage');
+  const stage = $id('imageToolStage');
   if (!image || !stage) return;
   const padding = 32;
   const zoom = Math.min(1, (stage.clientWidth - padding) / image.w, (stage.clientHeight - padding) / image.h);
@@ -395,22 +430,22 @@ function fitImageTool() {
   stage.scrollTo(0, 0);
 }
 function openImageTool(image: Extract<Out, { k: 'img' }>) {
-  const dialog = document.getElementById('imageTool') as HTMLDialogElement;
-  const stage = document.getElementById('imageToolStage')!;
+  const dialog = $id('imageTool') as HTMLDialogElement;
+  const stage = $id('imageToolStage')!;
   imageToolState.image = image;
   imageToolState.canvas = rgbToCanvas(image.w, image.h, image.rgb);
   const canvas = imageToolState.canvas;
-  canvas.setAttribute('aria-label', `Image ${image.w} by ${image.h} pixels. Move pointer to inspect pixels.`);
+  canvas.setAttribute('aria-label', tr(`Image ${image.w} by ${image.h} pixels. Move pointer to inspect pixels.`, `صورة ${image.w} × ${image.h} بكسل. حرّك المؤشر لفحص البكسلات.`));
   canvas.onmousemove = event => {
     const rect = canvas.getBoundingClientRect();
     const x = Math.min(image.w - 1, Math.max(0, Math.floor((event.clientX - rect.left) / rect.width * image.w)));
     const y = Math.min(image.h - 1, Math.max(0, Math.floor((event.clientY - rect.top) / rect.height * image.h)));
     const p = (y * image.w + x) * 3;
-    document.getElementById('imagePixelInfo')!.textContent = `Pixel info · X: ${x + 1}, Y: ${y + 1} · RGB: [${image.rgb[p]}, ${image.rgb[p + 1]}, ${image.rgb[p + 2]}]`;
+    $id('imagePixelInfo')!.textContent = `${tr('Pixel info', 'معلومات البكسل')} · X: ${x + 1}, Y: ${y + 1} · RGB: [${image.rgb[p]}, ${image.rgb[p + 1]}, ${image.rgb[p + 2]}]`;
   };
   stage.replaceChildren(canvas);
-  document.getElementById('imageToolTitle')!.textContent = 'Image Tool';
-  document.getElementById('imagePixelInfo')!.textContent = 'Pixel info: move over the image';
+  $id('imageToolTitle')!.textContent = tr('Image Tool', 'أداة الصورة');
+  $id('imagePixelInfo')!.textContent = tr('Pixel info: move over the image', 'معلومات البكسل: حرّك المؤشر فوق الصورة');
   if (!dialog.open) dialog.showModal();
   requestAnimationFrame(fitImageTool);
 }
@@ -446,22 +481,22 @@ function cellEl(c: Cell, i: number): HTMLElement {
   const duplicate = () => { const copy = mkCell(c.type, c.src); copy.mdEdit = c.type === 'md'; cells.splice(i + 1, 0, copy); sel = i + 1; save(); render(); if (copy.type === 'code') focusCell(copy.id); };
   const remove = () => { cells.splice(i, 1); if (!cells.length) cells.push(mkCell('code', '')); sel = Math.min(sel, cells.length - 1); save(); render(); };
   const options = $('details', { class: 'cell-menu' },
-    $('summary', { title: 'Cell options', 'aria-label': 'Cell options' }, '⋯'),
+    $('summary', { title: tr('Cell options', 'خيارات الخلية'), 'aria-label': tr('Cell options', 'خيارات الخلية') }, '⋯'),
     $('div', { class: 'cell-menu-items' },
-      menuItem('Insert code cell above', insertAt('code', 0)),
-      menuItem('Insert text cell above', insertAt('md', 0)),
-      menuItem('Duplicate cell', duplicate),
-      menuItem('Move cell up', mv(-1)),
-      menuItem('Move cell down', mv(1)),
-      ...(c.outs.length ? [menuItem('Clear cell output', () => { c.outs = []; c.count = null; render(); })] : []),
-      menuItem(c.type === 'md' ? 'Convert to code' : 'Convert to text', () => { c.type = c.type === 'md' ? 'code' : 'md'; c.outs = []; c.mdEdit = c.type === 'md'; save(); render(); }),
-      menuItem('Delete cell', remove)));
+      menuItem(tr('Insert code cell above', 'إدراج خلية كود أعلاه'), insertAt('code', 0)),
+      menuItem(tr('Insert text cell above', 'إدراج خلية نص أعلاه'), insertAt('md', 0)),
+      menuItem(tr('Duplicate cell', 'تكرار الخلية'), duplicate),
+      menuItem(tr('Move cell up', 'نقل الخلية لأعلى'), mv(-1)),
+      menuItem(tr('Move cell down', 'نقل الخلية لأسفل'), mv(1)),
+      ...(c.outs.length ? [menuItem(tr('Clear cell output', 'مسح مخرجات الخلية'), () => { c.outs = []; c.count = null; render(); })] : []),
+      menuItem(c.type === 'md' ? tr('Convert to code', 'تحويل إلى كود') : tr('Convert to text', 'تحويل إلى نص'), () => { c.type = c.type === 'md' ? 'code' : 'md'; c.outs = []; c.mdEdit = c.type === 'md'; save(); render(); }),
+      menuItem(tr('Delete cell', 'حذف الخلية'), remove)));
   tools.append($('span', { class: 'sp' }), options);
   const el = $('section', { class: 'cell' + (i === sel ? ' sel' : '') + (c.running ? ' running' : ''), 'aria-label': tr(`${c.type === 'md' ? 'Text' : 'Code'} cell ${i + 1}`, `خلية ${c.type === 'md' ? 'نص' : 'كود'} ${i + 1}`) }, tools);
-  el.addEventListener('focusin', () => { if (sel !== i) { sel = i; document.querySelectorAll('.cell').forEach((n, k) => n.classList.toggle('sel', k === i)); } });
+  el.addEventListener('focusin', () => { if (sel !== i) { sel = i; mountRoot.querySelectorAll('.cell').forEach((n, k) => n.classList.toggle('sel', k === i)); } });
   if (c.type === 'md' && !c.mdEdit) { const v = $('div', { class: 'md' }); v.innerHTML = md(c.src); v.ondblclick = () => { c.mdEdit = true; render(); }; el.append(v); }
   else if (c.type === 'md') {
-    const ta = $('textarea', { class: 'src', spellcheck: false, rows: 1, 'data-cell': c.id });
+    const ta = $('textarea', { class: 'src mdsrc', dir: 'auto', spellcheck: false, rows: 1, 'data-cell': c.id });
     ta.value = c.src; const fit = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 2 + 'px'; }; requestAnimationFrame(fit);
     ta.oninput = () => { c.src = ta.value; fit(); save(); };
     ta.onkeydown = ev => {
@@ -472,7 +507,7 @@ function cellEl(c: Cell, i: number): HTMLElement {
     };
     el.append(ta);
   } else {
-    const host = $('div', { class: 'code-editor', 'data-cell': c.id });
+    const host = $('div', { class: 'code-editor', dir: 'ltr', 'data-cell': c.id });
     el.append(host);
     const state = editorStates.get(c.id) ?? EditorState.create({
       doc: c.src,
@@ -506,9 +541,9 @@ function cellEl(c: Cell, i: number): HTMLElement {
   for (const o of c.outs) {
     if (o.k === 'img') outs.append(figureEl(o)); else outs.append($('pre', { class: 'o' + (o.k === 'text' ? '' : ' ' + o.k) }, o.s.replace(/\n+$/, '\n')));
   }
-  const insert = $('div', { class: 'cell-insert', role: 'group', 'aria-label': 'Insert a cell below' },
-    $('button', { onclick: insertAt('code', 1) }, '+ Code'),
-    $('button', { onclick: insertAt('md', 1) }, '+ Text'));
+  const insert = $('div', { class: 'cell-insert', role: 'group', 'aria-label': tr('Insert a cell below', 'إدراج خلية أدناه') },
+    $('button', { onclick: insertAt('code', 1) }, tr('+ Code', '+ كود')),
+    $('button', { onclick: insertAt('md', 1) }, tr('+ Text', '+ نص')));
   el.append(outs, insert); return el;
 }
 let focusId: number | null = null;
@@ -529,8 +564,7 @@ function render() {
     if (!codeIds.has(id)) { editorStates.delete(id); editorScroll.delete(id); }
   }
   root.replaceChildren();
-  const ln = lessonNav(); if (ln) root.append(ln);
-  cells.forEach((c, i) => root.append(cellEl(c, i)));
+    cells.forEach((c, i) => root.append(cellEl(c, i)));
   if (focusId !== null) {
     const view = editorViews.get(focusId);
     if (view) {
@@ -539,24 +573,24 @@ function render() {
       view.focus();
       view.scrollDOM.scrollTop = view.scrollDOM.scrollHeight;
     } else {
-      const t = document.querySelector<HTMLTextAreaElement>(`textarea[data-cell="${focusId}"]`);
+      const t = mountRoot.querySelector<HTMLTextAreaElement>(`textarea[data-cell="${focusId}"]`);
       if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); t.scrollIntoView({ block: 'nearest' }); }
     }
     focusId = null; keep = null; keepEditorId = null;
   }
-  if (keep) { const t = document.querySelector<HTMLTextAreaElement>(`textarea[data-cell="${keep.id}"]`); if (t) { t.focus({ preventScroll: true }); t.setSelectionRange(keep.s, keep.e); } }
+  if (keep) { const t = mountRoot.querySelector<HTMLTextAreaElement>(`textarea[data-cell="${keep.id}"]`); if (t) { t.focus({ preventScroll: true }); t.setSelectionRange(keep.s, keep.e); } }
   else if (keepEditorId !== null) {
     const view = editorViews.get(keepEditorId), scroll = editorScroll.get(keepEditorId);
     if (view) { view.focus(); if (scroll) view.scrollDOM.scrollTo(scroll.left, scroll.top); }
   }
   window.scrollTo(0, y);
-  const stop = document.getElementById('stop');
+  const stop = $id('stop');
   stop?.toggleAttribute('disabled', !curRun);
   if (stop) stop.hidden = !curRun;
 }
 function fmtBytes(n: number) { return n < 1024 ? n + ' B' : (n / 1024).toFixed(1) + ' KB'; }
 function renderSide() {
-  const side = document.getElementById('side')!; side.replaceChildren();
+  const side = $id('side')!; side.replaceChildren();
   const ws = $('div', { class: 'body' });
   if (!vars.length) ws.append($('div', { class: 'empty' }, tr('Run a cell to see variables here.', 'شغّل خلية لعرض المتغيرات هنا.')));
   else {
@@ -589,7 +623,7 @@ function renderSide() {
   const hb = $('div', { class: 'body hist' });
   if (!cmdHist.length) hb.append($('div', { class: 'empty' }, tr('Executed commands appear here. Select one to add it as a cell.', 'ستظهر الأوامر المنفذة هنا. اختر أمراً لإضافته كخلية.')));
   for (const h of cmdHist.slice().reverse().slice(0, 60)) hb.append($('div', { title: h, onclick: () => { cells.push(mkCell('code', h)); sel = cells.length - 1; save(); render(); } }, h));
-  side.append($('div', { class: 'panel' }, $('h3', {}, tr('Command History', 'سجل الأوامر'), $('button', { title: tr('Clear command history', 'مسح سجل الأوامر'), onclick: () => { cmdHist = []; store.set('mlweb.hist', '[]'); renderSide(); } }, tr('Clear', 'مسح'))), hb));
+  side.append($('div', { class: 'panel' }, $('h3', {}, tr('Command History', 'سجل الأوامر'), $('button', { title: tr('Clear command history', 'مسح سجل الأوامر'), onclick: () => { cmdHist = []; store.set(histKey(), '[]'); renderSide(); } }, tr('Clear', 'مسح'))), hb));
 }
 
 // ---------------- import / export ----------------
@@ -617,9 +651,9 @@ async function importFile(f: File) {
   const text = await f.text();
   if (/\.ipynb$/i.test(f.name)) {
     const j = JSON.parse(text);
-    if (!j || !Array.isArray(j.cells)) throw new Error('This .ipynb file has no valid cells array.');
+    if (!j || !Array.isArray(j.cells)) throw new Error(tr('This .ipynb file has no valid cells array.', 'ملف ‎.ipynb لا يحتوي على مصفوفة خلايا صالحة.'));
     const arr = j.cells.map((c: any) => {
-      if (!c || !['markdown', 'code', 'raw'].includes(c.cell_type)) throw new Error('This notebook contains an unsupported cell type.');
+      if (!c || !['markdown', 'code', 'raw'].includes(c.cell_type)) throw new Error(tr('This notebook contains an unsupported cell type.', 'يحتوي هذا الدفتر على نوع خلية غير مدعوم.'));
       return mkCell(c.cell_type === 'markdown' ? 'md' : 'code', Array.isArray(c.source) ? c.source.join('') : String(c.source ?? ''));
     });
     if (arr.length) cells = arr;
@@ -627,87 +661,147 @@ async function importFile(f: File) {
     const parts = text.replace(/\r\n?/g, '\n').split(/^%%.*$/m).map(s => s.replace(/^\n+|\n+$/g, '')).filter(s => s.trim());
     cells = (parts.length ? parts : ['']).map(p => mkCell('code', p));
   }
-  curLesson = null;
-  store.set('mlweb.lesson', '');
   sel = 0; save(); render(); renderSide();
   notify(tr(`Imported ${f.name}.`, `تم استيراد ${f.name}.`));
 }
 
-// ---------------- boot ----------------
-function boot() {
-  applyTheme();
-  ['test.png', 'testgray.png'].forEach(loadAsset);
-  try { cmdHist = JSON.parse(store.get('mlweb.hist') ?? '[]'); } catch { cmdHist = []; }
-  const hashId = decodeURIComponent(location.hash.slice(1)), saved = load();
-  curLesson = store.get('mlweb.lesson') || null;
-  if (curLesson) __LESSONS__.find(l => l.id === curLesson)?.files.forEach(loadAsset);
-  cells = saved ?? defaultNotebook();
-  if (cells[0]?.type === 'md' && cells[0].src.startsWith('# Welcome to MLWeb\n')) cells.shift();
-  if (!cells.length) cells = [mkCell('code', '')];
+// ---------------- mount ----------------
+let teardown: (() => void) | null = null;
+
+function buildShell(title: string) {
+  const r = mountRoot;
+  r.replaceChildren();
+  r.classList.add('mlweb');
+  r.setAttribute('dir', LANG === 'ar' ? 'rtl' : 'ltr');
+  r.setAttribute('lang', LANG);
+  const dlg = (id: string, labelledby: string, ...kids: (Node | string)[]) => $('dialog', { id, 'aria-labelledby': labelledby }, ...kids);
+  const header = $('header', { id: 'bar' }, $('div', { class: 'brand' }, $('b', { id: 'nbTitle' }, title)), $('div', { class: 'actions', id: 'actions' }));
+  const note = $('div', { class: 'local-note', id: 'localNote' },
+    tr('This is an educational MATLAB-style interpreter that runs entirely in your browser (not full MATLAB). Your edits are saved only on this device and never change the published notebook; your code is never sent to a server.',
+      'هذا مُفسِّر تعليمي بأسلوب MATLAB يعمل بالكامل داخل متصفحك (وليس MATLAB الكامل). تُحفظ تعديلاتك على هذا الجهاز فقط ولا تغيّر النسخة المنشورة، ولا يُرسَل الكود إلى أي خادم.'),
+    ' ', $('span', { id: 'saveState', role: 'status' }, ''));
+  const layout = $('div', { id: 'layout' }, $('main', { id: 'nb' }), $('aside', { id: 'side' }));
+  const helpDlg = dlg('helpDialog', 'helpTitle',
+    $('div', { class: 'help-head' }, $('h2', { id: 'helpTitle' }, ''), $('button', { id: 'closeHelp', type: 'button' }, '')),
+    $('div', { class: 'help-body' }, $('p', { id: 'helpIntro' }, ''), $('input', { id: 'helpSearch', type: 'search', autocomplete: 'off' }), $('div', { id: 'helpItems' })));
+  const confirmDlg = dlg('confirmDialog', 'confirmTitle',
+    $('div', { class: 'dialog-head' }, $('h2', { id: 'confirmTitle' }, ''), $('button', { type: 'button', 'data-confirm-cancel': true, 'aria-label': tr('Close dialog', 'إغلاق النافذة') }, '×')),
+    $('div', { class: 'dialog-body' }, $('p', { id: 'confirmMessage' }),
+      $('div', { class: 'dialog-actions' }, $('button', { type: 'button', 'data-confirm-cancel': true }, tr('Cancel', 'إلغاء')), $('button', { type: 'button', class: 'primary', 'data-confirm-accept': true }, ''))));
+  const toolBtn = (id: string, label: string, text: string) => $('button', { type: 'button', id, title: label, 'aria-label': label }, text);
+  const imageDlg = dlg('imageTool', 'imageToolTitle',
+    $('div', { class: 'dialog-head image-tool-head' }, $('div', {}, $('h2', { id: 'imageToolTitle' }, tr('Image Tool', 'أداة الصورة')), $('span', { id: 'imageToolMeta' })), $('button', { type: 'button', id: 'closeImageTool', 'aria-label': tr('Close Image Tool', 'إغلاق أداة الصورة') }, '×')),
+    $('div', { class: 'image-tool-controls' }, toolBtn('imageZoomOut', tr('Zoom out', 'تصغير'), '−'), toolBtn('imageZoomIn', tr('Zoom in', 'تكبير'), '+'),
+      $('button', { type: 'button', id: 'imageFit' }, tr('Fit', 'ملاءمة')), $('button', { type: 'button', id: 'imageActual' }, '100%'),
+      $('button', { type: 'button', id: 'imageDownload' }, tr('Download PNG', 'تنزيل PNG')), $('span', { class: 'image-tool-hint' }, tr('Move over the image to inspect pixel values', 'حرّك المؤشر فوق الصورة لفحص قيم البكسل'))),
+    $('div', { id: 'imageToolStage', tabindex: 0, 'aria-label': tr('Interactive image view', 'عرض تفاعلي للصورة') }),
+    $('div', { id: 'imagePixelInfo', role: 'status', 'aria-live': 'polite' }, ''));
+  const notice = $('div', { id: 'notice', role: 'status', 'aria-live': 'polite', hidden: true }, $('span', { id: 'noticeMessage' }), $('button', { type: 'button', id: 'dismissNotice', 'aria-label': tr('Dismiss notification', 'إغلاق الإشعار') }, '×'));
+  r.append(header, note, layout, helpDlg, confirmDlg, imageDlg, notice);
+}
+
+function mount(o: MountOptions): { destroy(): void; resetToPublished(): void } {
+  if (teardown) teardown();
+  if (!o || !(o.root instanceof HTMLElement)) throw new Error('MLWebNotebook.mount: opts.root must be an HTMLElement');
+  if (!o.notebook || !Array.isArray(o.notebook.cells)) throw new Error('MLWebNotebook.mount: opts.notebook.cells must be an array');
+  opts = o; LANG = o.lang === 'en' ? 'en' : 'ar'; mountRoot = o.root;
+  baseUrl = new URL(o.baseUrl || './', location.href).href.replace(/\/?$/, '/');
+  const token = ++mountToken;
+  nextId = 1; cells = []; sel = 0; files.clear(); vars = []; execCount = 0; curRun = null; focusId = null;
+  editorViews.clear(); editorStates.clear(); editorScroll.clear(); assetManifest.clear(); assetLoading.clear();
+
+  buildShell(o.notebook.title || '');
+  publishedHash = snapOf(publishedCells());
+  try { const h = JSON.parse(store.get(histKey()) ?? '[]'); cmdHist = Array.isArray(h) ? h.filter(x => typeof x === 'string') : []; } catch { cmdHist = []; }
+  cells = load() ?? publishedCells();
   save();
-  const act = document.getElementById('actions')!;
-  const imp = $('input', { type: 'file', accept: '.m,.ipynb', style: 'display:none' }); imp.onchange = () => { if (imp.files?.[0]) importFile(imp.files[0]).catch(error => notify(`Import failed: ${error instanceof Error ? error.message : String(error)}`)); imp.value = ''; };
-  const sl = $('select', { id: 'lessons', title: 'Ready-made lessons' }, $('option', { value: '' }, 'Lessons…'));
-  for (const g of ['Sections', 'Lectures']) { const og = $('optgroup', { label: g }); for (const l of __LESSONS__.filter(x => x.group === g)) og.append($('option', { value: l.id }, l.title)); sl.append(og); }
-  sl.value = curLesson ?? ''; sl.onchange = () => { if (sl.value) openLesson(sl.value); else sl.value = curLesson ?? ''; };
+
+  const act = $id('actions')!;
+  const imp = $('input', { type: 'file', accept: '.m,.ipynb', style: 'display:none' });
+  imp.onchange = () => { if (imp.files?.[0]) importFile(imp.files[0]).catch(error => notify(tr('Import failed: ', 'فشل الاستيراد: ') + (error instanceof Error ? error.message : String(error)))); imp.value = ''; };
   const renderToolbar = () => {
-    sl.setAttribute('aria-label', 'Choose a lesson');
-    sl.title = 'Choose a lesson';
-    sl.options[0].textContent = 'Lessons…';
-    const isDark = document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
     const menuButton = (label: string, action: () => void) => $('button', { role: 'menuitem', onclick: (event: MouseEvent) => { action(); (event.currentTarget as HTMLElement).closest('details')?.removeAttribute('open'); } }, label);
     const menu = $('details', { class: 'toolbar-menu' },
-      $('summary', { title: 'Notebook menu', 'aria-label': 'Notebook menu' }, 'More'),
+      $('summary', { title: tr('Notebook menu', 'قائمة الدفتر'), 'aria-label': tr('Notebook menu', 'قائمة الدفتر') }, tr('More', 'المزيد')),
       $('div', { class: 'toolbar-menu-items', role: 'menu' },
-        menuButton('New notebook', async () => {
-          if (curRun) { notify('Stop execution before creating a new notebook.'); return; }
-          if (!await confirmInApp('Create a new notebook?', 'The current notebook will be replaced. Export it first if you want to keep a copy.', 'Create notebook')) return;
-          cells = defaultNotebook(); sel = 0; curLesson = null; store.set('mlweb.lesson', ''); history_.replaceState(null, '', location.pathname); save(); render(); renderSide(); sl.value = '';
+        menuButton(tr('Reset to published version', 'العودة إلى النسخة المنشورة'), async () => {
+          if (curRun) { notify(tr('Stop execution before resetting the notebook.', 'أوقف التنفيذ قبل إعادة ضبط الدفتر.')); return; }
+          if (!await confirmInApp(tr('Reset to the published version?', 'العودة إلى النسخة المنشورة؟'), tr('Your local edits in this browser will be discarded. Export them first if you want to keep a copy.', 'ستُحذف تعديلاتك المحلية في هذا المتصفح. صدّرها أولاً إن أردت الاحتفاظ بنسخة.'), tr('Reset', 'إعادة ضبط'))) return;
+          resetToPublished();
         }),
-        menuButton('Import…', () => imp.click()),
-        menuButton('Export as .ipynb', exportIpynb),
-        menuButton('Export as .m', exportM),
-        menuButton('Help and shortcuts', openHelp),
-        menuButton(isDark ? 'Switch to light theme' : 'Switch to dark theme', () => { themePreference = isDark ? 'light' : 'dark'; store.set('mlweb.theme', themePreference); applyTheme(); refreshToolbar(); })));
-    act.replaceChildren(sl,
-      $('button', { class: 'primary', id: 'runall', title: 'Run all code cells', onclick: () => runAll() }, '▶ Run all'),
-      $('button', { id: 'stop', title: 'Stop execution and reset the workspace', hidden: !curRun, onclick: stopRun }, '■ Stop'),
-      $('span', { id: 'status', role: 'status', 'aria-label': curRun ? 'Running' : 'Ready', 'aria-live': 'polite', title: curRun ? 'Running' : 'Ready' }, ''),
+        menuButton(tr('Import…', 'استيراد…'), () => imp.click()),
+        menuButton(tr('Export as .ipynb', 'تصدير بصيغة ‎.ipynb'), exportIpynb),
+        menuButton(tr('Export as .m', 'تصدير بصيغة ‎.m'), exportM),
+        menuButton(tr('Help and shortcuts', 'المساعدة والاختصارات'), openHelp)));
+    act.replaceChildren(
+      $('button', { class: 'primary', id: 'runall', title: tr('Run all code cells', 'تشغيل كل خلايا الكود'), onclick: () => runAll() }, tr('▶ Run all', '▶ تشغيل الكل')),
+      $('button', { id: 'stop', title: tr('Stop execution and reset the workspace', 'إيقاف التنفيذ وإعادة ضبط مساحة العمل'), hidden: !curRun, onclick: stopRun }, tr('■ Stop', '■ إيقاف')),
+      $('span', { id: 'status', role: 'status', 'aria-label': curRun ? tr('Running', 'قيد التشغيل') : tr('Ready', 'جاهز'), 'aria-live': 'polite', title: curRun ? tr('Running', 'قيد التشغيل') : tr('Ready', 'جاهز') }, ''),
       menu, imp);
   };
   refreshToolbar = renderToolbar;
   refreshToolbar();
-  document.getElementById('helpSearch')?.addEventListener('input', renderHelp);
-  document.getElementById('closeHelp')?.addEventListener('click', () => (document.getElementById('helpDialog') as HTMLDialogElement).close());
-  document.getElementById('helpDialog')?.addEventListener('click', event => { if (event.target === event.currentTarget) (event.currentTarget as HTMLDialogElement).close(); });
-  document.querySelectorAll('[data-confirm-cancel]').forEach(button => button.addEventListener('click', () => settleConfirm(false)));
-  document.querySelector('[data-confirm-accept]')?.addEventListener('click', () => settleConfirm(true));
-  document.getElementById('confirmDialog')?.addEventListener('cancel', event => { event.preventDefault(); settleConfirm(false); });
-  document.getElementById('confirmDialog')?.addEventListener('click', event => { if (event.target === event.currentTarget) settleConfirm(false); });
-  document.getElementById('dismissNotice')?.addEventListener('click', () => { window.clearTimeout(noticeTimer); document.getElementById('notice')!.hidden = true; });
-  const imageDialog = document.getElementById('imageTool') as HTMLDialogElement;
-  document.getElementById('closeImageTool')?.addEventListener('click', () => imageDialog.close());
-  document.getElementById('imageZoomIn')?.addEventListener('click', () => setImageToolZoom(imageToolState.zoom * 1.25));
-  document.getElementById('imageZoomOut')?.addEventListener('click', () => setImageToolZoom(imageToolState.zoom / 1.25));
-  document.getElementById('imageFit')?.addEventListener('click', fitImageTool);
-  document.getElementById('imageActual')?.addEventListener('click', () => setImageToolZoom(1));
-  document.getElementById('imageDownload')?.addEventListener('click', async () => {
-    if (imageToolState.canvas) download('imtool.png', await toBlob(imageToolState.canvas, 'image/png'));
-  });
-  document.getElementById('imageToolStage')?.addEventListener('wheel', event => {
+  updateSaveState();
+
+  const listeners: [EventTarget, string, EventListener, any?][] = [];
+  const on = (t: EventTarget | null, ev: string, fn: (e: any) => void, optsArg?: any) => { if (!t) return; t.addEventListener(ev, fn, optsArg); listeners.push([t, ev, fn, optsArg]); };
+  on($id('helpSearch'), 'input', renderHelp);
+  on($id('closeHelp'), 'click', () => ($id('helpDialog') as HTMLDialogElement).close());
+  on($id('helpDialog'), 'click', event => { if (event.target === event.currentTarget) (event.currentTarget as HTMLDialogElement).close(); });
+  mountRoot.querySelectorAll('[data-confirm-cancel]').forEach(button => on(button, 'click', () => settleConfirm(false)));
+  on(mountRoot.querySelector('[data-confirm-accept]'), 'click', () => settleConfirm(true));
+  on($id('confirmDialog'), 'cancel', event => { event.preventDefault(); settleConfirm(false); });
+  on($id('confirmDialog'), 'click', event => { if (event.target === event.currentTarget) settleConfirm(false); });
+  on($id('dismissNotice'), 'click', () => { window.clearTimeout(noticeTimer); $id('notice')!.hidden = true; });
+  const imageDialog = $id('imageTool') as HTMLDialogElement;
+  on($id('closeImageTool'), 'click', () => imageDialog.close());
+  on($id('imageZoomIn'), 'click', () => setImageToolZoom(imageToolState.zoom * 1.25));
+  on($id('imageZoomOut'), 'click', () => setImageToolZoom(imageToolState.zoom / 1.25));
+  on($id('imageFit'), 'click', fitImageTool);
+  on($id('imageActual'), 'click', () => setImageToolZoom(1));
+  on($id('imageDownload'), 'click', async () => { if (imageToolState.canvas) download('imtool.png', await toBlob(imageToolState.canvas, 'image/png')); });
+  on($id('imageToolStage'), 'wheel', event => {
     if (!imageToolState.image) return;
     event.preventDefault();
     setImageToolZoom(imageToolState.zoom * (event.deltaY < 0 ? 1.1 : 1 / 1.1));
   }, { passive: false });
-  imageDialog.addEventListener('click', event => { if (event.target === imageDialog) imageDialog.close(); });
-  window.addEventListener('keydown', event => {
+  on(imageDialog, 'click', event => { if (event.target === imageDialog) imageDialog.close(); });
+  on(window, 'keydown', event => {
+    if (!mountRoot.contains(event.target as Node)) return;
     if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'p') { event.preventDefault(); openHelp(); }
-    else if (event.key === '?' && !['INPUT', 'TEXTAREA'].includes((event.target as HTMLElement)?.tagName ?? '')) { event.preventDefault(); openHelp(); }
+    else if (event.key === '?' && !['INPUT', 'TEXTAREA'].includes((event.target as HTMLElement)?.tagName ?? '') && !(event.target as HTMLElement)?.closest?.('.cm-editor')) { event.preventDefault(); openHelp(); }
   });
+
   startWorker(); render(); renderSide();
-  if (hashId && __LESSONS__.some(l => l.id === hashId) && hashId !== curLesson) openLesson(hashId, false);
-  else if (curLesson) document.title = (__LESSONS__.find(l => l.id === curLesson)?.title ?? 'MLWeb') + ' – MLWeb | Belal Amr Mohamed';
-  window.addEventListener('hashchange', () => { const h = decodeURIComponent(location.hash.slice(1)); if (h && h !== curLesson && __LESSONS__.some(l => l.id === h)) openLesson(h); });
+
+  // Asset manifest + preload: files named in any cell (plus the two default sample images).
+  manifestReady = fetch(baseUrl + 'assets/manifest.json').then(r => (r.ok ? r.json() : [])).then((names: unknown) => {
+    if (token !== mountToken || !Array.isArray(names)) return;
+    for (const n of names) if (typeof n === 'string') assetManifest.set(n.toLowerCase(), n);
+  }).catch(() => { /* no assets available; runs that need them report a normal MATLAB file error */ });
+  void manifestReady.then(async () => {
+    if (token !== mountToken) return;
+    const wanted = new Set<string>(['test.png', 'testgray.png']);
+    for (const c of publishedCells().concat(cells)) referencedAssets(c.src).forEach(n => wanted.add(n));
+    await Promise.all([...wanted].filter(n => assetManifest.has(n.toLowerCase())).map(loadAsset));
+  });
+
+  const destroy = () => {
+    if (teardown !== destroy) return;
+    teardown = null; mountToken++;
+    if (curRun) { clearTimeout(curRun.timer); curRun = null; }
+    for (const [, view] of editorViews) view.destroy();
+    editorViews.clear();
+    try { worker?.terminate(); } catch { /* ignore */ }
+    for (const [t, ev, fn, o2] of listeners) t.removeEventListener(ev, fn, o2);
+    window.clearTimeout(noticeTimer);
+    for (const d of Array.from(mountRoot.querySelectorAll('dialog'))) { try { (d as HTMLDialogElement).close(); } catch { /* ignore */ } }
+    mountRoot.replaceChildren(); mountRoot.classList.remove('mlweb'); mountRoot.removeAttribute('dir');
+    refreshToolbar = () => {};
+  };
+  teardown = destroy;
+  return { destroy, resetToPublished: () => resetToPublished() };
 }
-boot();
+
+(window as any).MLWebNotebook = { mount };
 (window as any).__mlweb = { get cells() { return cells; }, runAll, runCell, files };

@@ -49,9 +49,11 @@ import {
 } from "../scripts/lib/quizPath.js";
 import { resolveCourse, resolveFolderPath, validateBatchCourseRules } from "./_courseFolders.js";
 import { notifySearchEngines } from "./_seoNotify.js";
-import { quizUrl, lessonUrl } from "./_urls.js";
+import { quizUrl, lessonUrl, notebookUrl } from "./_urls.js";
 import { validateLessonContent, validateLessonDescription, validateLessonSource, validateLessonPasswordHash } from "./_validateLesson.js";
-import { validateItemName, hasLessonNameCollision } from "./_itemActions.js";
+import { validateItemName, hasLessonNameCollision, hasNotebookNameCollision } from "./_itemActions.js";
+import { validateNotebook } from "./_validateNotebook.js";
+import { notebookFromFile } from "../scripts/lib/notebook-convert.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -285,6 +287,10 @@ async function handleSingleUpload(req, res, adminPayload) {
 //   { type: "folder", name, folderSegments: ["CourseName"], rootName },
 //   { type: "quiz", folderSegments: ["CourseName","Unit1"], rootName, quiz },
 //   { type: "lesson", folderSegments: ["CourseName","Unit1"], rootName, lesson },
+//   { type: "notebook", folderSegments: [...], rootName, notebook },
+//       notebook is EITHER a JSON record { title, description?, source?, runtime, content }
+//       OR an imported file { fileName: "x.ipynb"|"x.m", text } converted
+//       deterministically (never executed). Each item succeeds/fails alone.
 //   ...
 // ]
 // Each item's `folderSegments` is the ordered chain of ancestor
@@ -401,9 +407,10 @@ async function handleFolderUpload(req, res, adminPayload) {
     return id;
   }
 
-  const results = { coursesCount: courseIdByName.size, foldersCreated: 0, quizzesUploaded: 0, lessonsUploaded: 0, failed: [] };
+  const results = { coursesCount: courseIdByName.size, foldersCreated: 0, quizzesUploaded: 0, lessonsUploaded: 0, notebooksUploaded: 0, failed: [] };
   const uploadedQuizUrls = []; // batched for one notifySearchEngines call after the loop (plan §7.2 rule of thumb)
   const uploadedLessonUrls = [];
+  const uploadedNotebookUrls = [];
 
   for (const item of items) {
     if (item.type === "course") continue; // already resolved above
@@ -464,6 +471,53 @@ async function handleFolderUpload(req, res, adminPayload) {
         }
         results.lessonsUploaded++;
         uploadedLessonUrls.push(lessonUrl(insertedLesson.slug || insertedLesson.id));
+        continue;
+      }
+
+      if (item.type === "notebook") {
+        const raw = item.notebook || {};
+        let record = raw;
+        const warnings = [];
+        if (typeof raw.fileName === "string") {
+          // Imported file: deterministic conversion, no execution.
+          const converted = notebookFromFile(raw.fileName, raw.text);
+          warnings.push(...converted.warnings);
+          record = {
+            title: raw.title || converted.title,
+            description: raw.description,
+            source: raw.source,
+            runtime: raw.runtime || converted.runtime,
+            content: converted.content,
+          };
+        }
+        const clean = validateNotebook({ ...record, title: record.title || item.name });
+        const folderId = await resolveFolderChain(targetCourseId, itemCourseName, item.folderSegments || []);
+        const collision = await hasNotebookNameCollision(supabase, { courseId: targetCourseId, folderId, title: clean.title });
+        if (collision) {
+          results.failed.push({ name: clean.title, reason: "يوجد دفتر بنفس الاسم في هذا المكان" });
+          continue;
+        }
+        const { data: insertedNotebook, error: insertNotebookErr } = await supabase
+          .from("notebooks")
+          .insert({
+            title: clean.title,
+            description: clean.description || null,
+            source: clean.source || null,
+            runtime: clean.runtime,
+            content: clean.content,
+            course_id: targetCourseId,
+            folder_id: folderId,
+            created_by: adminId,
+          })
+          .select("id, slug")
+          .single();
+        if (insertNotebookErr) {
+          results.failed.push({ name: clean.title, reason: insertNotebookErr.message });
+          continue;
+        }
+        results.notebooksUploaded++;
+        if (warnings.length) (results.notebookWarnings ||= []).push({ name: clean.title, warnings });
+        uploadedNotebookUrls.push(notebookUrl(insertedNotebook.slug || insertedNotebook.id));
         continue;
       }
 
@@ -559,8 +613,12 @@ async function handleFolderUpload(req, res, adminPayload) {
     notifySearchEngines({ add: uploadedLessonUrls, reason: "upload-quiz:folder-lessons" });
   }
 
-  const isSuccess = results.quizzesUploaded > 0 || results.lessonsUploaded > 0 || results.foldersCreated > 0 || courseIdByName.size > 0;
-  return res.status(results.failed.length > 0 && results.quizzesUploaded === 0 && results.lessonsUploaded === 0 && results.foldersCreated === 0 ? 207 : 201).json({
+  if (uploadedNotebookUrls.length > 0) {
+    notifySearchEngines({ add: uploadedNotebookUrls, reason: "upload-quiz:folder-notebooks" });
+  }
+
+  const isSuccess = results.quizzesUploaded > 0 || results.lessonsUploaded > 0 || results.notebooksUploaded > 0 || results.foldersCreated > 0 || courseIdByName.size > 0;
+  return res.status(results.failed.length > 0 && results.quizzesUploaded === 0 && results.lessonsUploaded === 0 && results.notebooksUploaded === 0 && results.foldersCreated === 0 ? 207 : 201).json({
     success: isSuccess,
     courseIds: Array.from(courseIdByName.values()),
     ...results,

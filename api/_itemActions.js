@@ -10,7 +10,7 @@
 // =============================================================================
 
 /**
- * @param {"quiz"|"lesson"|"folder"|"course"} itemType
+ * @param {"quiz"|"lesson"|"notebook"|"folder"|"course"} itemType
  * @param {string|null} targetFolderId
  * @returns {{ ok: boolean, error?: string }}
  */
@@ -21,6 +21,8 @@ export function canPlaceItemServer(itemType, targetFolderId) {
             error: "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن نقلها داخل مجلد.",
         };
     }
+    // Notebooks follow the same placement rule as lessons/quizzes (leaf under
+    // a course or any folder) — nothing extra to check here either.
     // Lessons follow the exact same placement rule as quizzes: can go
     // directly under a course (targetFolderId === null) or under any
     // folder, never top-level-only like a course. No extra check needed
@@ -124,6 +126,38 @@ export async function hasLessonNameCollision(supabase, { courseId, folderId, tit
     const { data, error } = await query.limit(1);
     if (error) {
         console.error("[hasLessonNameCollision] lookup failed:", error.message);
+        return false; // fail open — a lookup error shouldn't block a legitimate write
+    }
+    return Boolean(data && data.length);
+}
+
+/**
+ * Same-level naming rule for notebooks, mirroring hasLessonNameCollision
+ * (same course, same folder scope, `ilike` on title; the same
+ * pre-check-not-constraint race caveat applies).
+ *
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+ * @param {{ courseId: string, folderId: string|null, title: string, excludeId?: string }} params
+ * @returns {Promise<boolean>} true if another notebook already occupies this name at this spot
+ */
+export async function hasNotebookNameCollision(supabase, { courseId, folderId, title, excludeId = null }) {
+    const normalizedTitle = String(title || "").trim();
+    if (!normalizedTitle || !courseId) return false;
+
+    // `ilike` treats % and _ as wildcards; escape them so a title is matched literally.
+    const literal = normalizedTitle.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+    let query = supabase
+        .from("notebooks")
+        .select("id")
+        .eq("course_id", courseId)
+        .ilike("title", literal);
+
+    query = folderId ? query.eq("folder_id", folderId) : query.is("folder_id", null);
+    if (excludeId) query = query.neq("id", excludeId);
+
+    const { data, error } = await query.limit(1);
+    if (error) {
+        console.error("[hasNotebookNameCollision] lookup failed:", error.message);
         return false; // fail open — a lookup error shouldn't block a legitimate write
     }
     return Boolean(data && data.length);

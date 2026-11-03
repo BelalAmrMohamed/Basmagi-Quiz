@@ -22,7 +22,7 @@
 // =============================================================================
 import { applyCors, requireAdmin, handleAuthError } from "./_middleware.js";
 import { notifySearchEngines } from "./_seoNotify.js";
-import { toSlug, absUrl, quizUrl, lessonUrl } from "./_urls.js";
+import { toSlug, absUrl, quizUrl, lessonUrl, notebookUrl } from "./_urls.js";
 import { createClient } from "@supabase/supabase-js";
 import { slugifyHandle, validateHandleFormat, claimHandle } from "./_handle.js";
 import {
@@ -34,7 +34,7 @@ import {
   purgeQuizMedia,
   collectCascadeItems,
 } from "./_trash.js";
-import { canPlaceItemServer, validateItemName, hasQuizNameCollision, hasLessonNameCollision } from "./_itemActions.js";
+import { canPlaceItemServer, validateItemName, hasQuizNameCollision, hasLessonNameCollision, hasNotebookNameCollision } from "./_itemActions.js";
 import { validateQuizPayload, computeStats } from "./_validateQuiz.js";
 import {
   validateLessonContent,
@@ -43,6 +43,12 @@ import {
   validateLessonPasswordHash,
   collectLessonReferenceIds,
 } from "./_validateLesson.js";
+import {
+  validateNotebookContent,
+  validateNotebookDescription,
+  validateNotebookSource,
+  validateNotebookRuntime,
+} from "./_validateNotebook.js";
 import crypto from "crypto";
 
 const MAX_BIO_LENGTH = 280;
@@ -291,6 +297,11 @@ const ITEM_ACTIONS = new Set([
   "create-lesson",
   "update-lesson",
   "delete-lesson",
+  "list-notebooks",
+  "get-notebook",
+  "create-notebook",
+  "update-notebook",
+  "delete-notebook",
 ]);
 
 async function fetchItemForAuth(supabase, itemType, itemId) {
@@ -309,6 +320,17 @@ async function fetchItemForAuth(supabase, itemType, itemId) {
     // top-level-only) mirrors a quiz's, not a folder's.
     const { data } = await supabase
       .from("lessons")
+      .select("*, courses:course_id(education_type)")
+      .eq("id", itemId)
+      .maybeSingle();
+    return data
+      ? { row: data, creatorId: data.created_by, educationType: data.courses?.education_type || null }
+      : null;
+  }
+  if (itemType === "notebook") {
+    // Same inheritance as lessons: the education_type comes from the course.
+    const { data } = await supabase
+      .from("notebooks")
       .select("*, courses:course_id(education_type)")
       .eq("id", itemId)
       .maybeSingle();
@@ -420,7 +442,7 @@ async function handleTrashRestore(req, res, adminPayload, adminId, supabase) {
   // deleted_at, which was itself written parent-before-children by the
   // cascade-delete handlers below), then quizzes/lessons (order between
   // these two doesn't matter — neither is ever a parent of the other).
-  const order = { course: 0, folder: 1, quiz: 2, lesson: 2 };
+  const order = { course: 0, folder: 1, quiz: 2, lesson: 2, notebook: 2 };
   const sorted = [...batchRows].sort((a, b) => order[a.item_type] - order[b.item_type]);
 
   // Tracks which original ids were actually restored in this pass, so a
@@ -548,6 +570,40 @@ async function handleTrashRestore(req, res, adminPayload, adminId, supabase) {
         restoredIds.add(row.original_id);
         restoredNames.push(snap.title);
         if (snap.id) restoredUrls.push(lessonUrl(snap.slug || snap.id));
+      } else if (row.item_type === "notebook") {
+        // Same placement-fallback logic as lessons. The snapshot is the full
+        // notebooks row, so runtime + versioned content are restored intact.
+        const snap = { ...row.snapshot };
+        if (snap.folder_id) {
+          const parentStillGone = !restoredIds.has(snap.folder_id);
+          if (parentStillGone) {
+            const { data: folderExists } = await supabase
+              .from("folders")
+              .select("id")
+              .eq("id", snap.folder_id)
+              .maybeSingle();
+            if (!folderExists) snap.folder_id = null;
+          }
+        }
+        if (snap.course_id) {
+          const courseGone = !restoredIds.has(snap.course_id);
+          if (courseGone) {
+            const { data: courseExists } = await supabase
+              .from("courses")
+              .select("id")
+              .eq("id", snap.course_id)
+              .maybeSingle();
+            if (!courseExists) {
+              failures.push({ name: snap.title, reason: "المادة الأصلية لم تعد موجودة." });
+              continue;
+            }
+          }
+        }
+        const { error } = await supabase.from("notebooks").insert(snap);
+        if (error) throw new Error(error.message);
+        restoredIds.add(row.original_id);
+        restoredNames.push(snap.title);
+        if (snap.id) restoredUrls.push(notebookUrl(snap.slug || snap.id));
       }
     } catch (e) {
       failures.push({ name: row.snapshot?.name || row.snapshot?.title || "?", reason: e.message });
@@ -691,7 +747,7 @@ async function handleDeleteTree(req, res, adminPayload, adminId, supabase, itemT
     return res.status(403).json({ error: "ليس لديك صلاحية لحذف هذا العنصر." });
   }
 
-  const { folders, quizzes, lessons } =
+  const { folders, quizzes, lessons, notebooks } =
     itemType === "course"
       ? await collectCascadeItems(supabase, { courseId: id })
       : await collectCascadeItems(supabase, { folderId: id });
@@ -786,6 +842,22 @@ async function handleDeleteTree(req, res, adminPayload, adminId, supabase, itemT
     });
   }
 
+  // Notebooks cascade exactly like lessons (full row snapshot, so runtime and
+  // document content survive a restore).
+  for (const notebook of notebooks) {
+    trashRows.push({
+      item_type: "notebook",
+      original_id: notebook.id,
+      snapshot: notebook,
+      parent_folder_id: notebook.folder_id || null,
+      course_id: notebook.course_id || null,
+      education_type: fetched.educationType,
+      batch_id: batchId,
+      deleted_by: adminId,
+      expires_at: expiresAt,
+    });
+  }
+
   const { error: insertErr } = await supabase.from("trash_items").insert(trashRows);
   if (insertErr) {
     console.error(`[admin:delete-${itemType}] trash insert failed:`, insertErr.message);
@@ -796,6 +868,7 @@ async function handleDeleteTree(req, res, adminPayload, adminId, supabase, itemT
   // the course/parent folder), then the root item itself.
   const quizIds = quizzes.map((q) => q.id);
   const lessonIds = lessons.map((l) => l.id);
+  const notebookIds = notebooks.map((n) => n.id);
   const folderIds = folders.map((f) => f.id);
 
   if (quizIds.length) {
@@ -805,6 +878,10 @@ async function handleDeleteTree(req, res, adminPayload, adminId, supabase, itemT
   if (lessonIds.length) {
     const { error } = await supabase.from("lessons").delete().in("id", lessonIds);
     if (error) console.error(`[admin:delete-${itemType}] lesson cascade delete failed:`, error.message);
+  }
+  if (notebookIds.length) {
+    const { error } = await supabase.from("notebooks").delete().in("id", notebookIds);
+    if (error) console.error(`[admin:delete-${itemType}] notebook cascade delete failed:`, error.message);
   }
   if (folderIds.length) {
     // Delete deepest folders first so parent_folder_id FKs never point at an
@@ -834,7 +911,7 @@ async function handleDeleteTree(req, res, adminPayload, adminId, supabase, itemT
   return res.status(200).json({
     success: true,
     trashed: true,
-    cascaded: { folders: folders.length, quizzes: quizzes.length, lessons: lessons.length },
+    cascaded: { folders: folders.length, quizzes: quizzes.length, lessons: lessons.length, notebooks: notebooks.length },
   });
 }
 
@@ -849,7 +926,7 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
   if (!itemType || !itemId || !targetCourseId) {
     return res.status(400).json({ error: "بيانات النقل غير مكتملة." });
   }
-  if (itemType !== "quiz" && itemType !== "folder" && itemType !== "lesson") {
+  if (itemType !== "quiz" && itemType !== "folder" && itemType !== "lesson" && itemType !== "notebook") {
     return res.status(400).json({ error: "لا يمكن نقل هذا النوع من العناصر." });
   }
 
@@ -919,7 +996,19 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
     }
   }
 
-  const table = itemType === "quiz" ? "quizzes" : itemType === "lesson" ? "lessons" : "folders";
+  if (itemType === "notebook") {
+    const collision = await hasNotebookNameCollision(supabase, {
+      courseId: targetCourseId,
+      folderId: targetFolderId,
+      title: fetched.row.title,
+      excludeId: itemId,
+    });
+    if (collision) {
+      return res.status(400).json({ error: "يوجد دفتر آخر بهذا الاسم في المكان الوجهة." });
+    }
+  }
+
+  const table = itemType === "quiz" ? "quizzes" : itemType === "lesson" ? "lessons" : itemType === "notebook" ? "notebooks" : "folders";
   const updates =
     itemType === "folder"
       ? { course_id: targetCourseId, parent_folder_id: targetFolderId }
@@ -965,6 +1054,14 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
     }
   }
 
+  if (itemType === "notebook") {
+    // Like lessons, a notebook's URL doesn't change when it moves.
+    const { data: movedNotebook } = await supabase.from("notebooks").select("id, slug").eq("id", itemId).maybeSingle();
+    if (movedNotebook?.id) {
+      notifySearchEngines({ add: [notebookUrl(movedNotebook.slug || movedNotebook.id)], reason: "move-item:notebook" });
+    }
+  }
+
   // Moving a folder into a DIFFERENT course must cascade the new course_id
   // to every descendant folder and quiz. The DB consistency triggers
   // (folders_enforce_course_consistency / quizzes_enforce_course_consistency
@@ -980,7 +1077,7 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
   // re-reads the parent's course_id from the live table on every row write,
   // so a batch with unspecified row order could intermittently trip it.
   if (itemType === "folder") {
-    const { folders: childFolders, quizzes: childQuizzes, lessons: childLessons } =
+    const { folders: childFolders, quizzes: childQuizzes, lessons: childLessons, notebooks: childNotebooks } =
       await collectCascadeItems(supabase, { folderId: itemId });
 
     for (const childFolder of childFolders) {
@@ -1015,6 +1112,18 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
       if (lessonCascadeErr) {
         console.error("[admin:move-item] lesson course cascade failed:", lessonCascadeErr.message);
         return res.status(500).json({ error: "فشل نقل الدروس التابعة. حاول مجددًا." });
+      }
+    }
+
+    const childNotebookIds = childNotebooks.map((n) => n.id);
+    if (childNotebookIds.length) {
+      const { error: notebookCascadeErr } = await supabase
+        .from("notebooks")
+        .update({ course_id: targetCourseId })
+        .in("id", childNotebookIds);
+      if (notebookCascadeErr) {
+        console.error("[admin:move-item] notebook course cascade failed:", notebookCascadeErr.message);
+        return res.status(500).json({ error: "فشل نقل الدفاتر التابعة. حاول مجددًا." });
       }
     }
   }
@@ -1093,6 +1202,26 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
     // from title) — so this is an "add" (content changed at the same URL),
     // same reasoning as the quiz branch above.
     notifySearchEngines({ add: [lessonUrl(fetched.row.slug || itemId)], reason: "rename-item:lesson" });
+  } else if (itemType === "notebook") {
+    const collision = await hasNotebookNameCollision(supabase, {
+      courseId: fetched.row.course_id,
+      folderId: fetched.row.folder_id,
+      title: nameCheck.clean,
+      excludeId: itemId,
+    });
+    if (collision) {
+      return res.status(400).json({ error: "يوجد دفتر آخر بهذا الاسم في نفس المكان." });
+    }
+
+    const { error } = await supabase
+      .from("notebooks")
+      .update({ title: nameCheck.clean, updated_at: new Date().toISOString() })
+      .eq("id", itemId);
+    if (error) {
+      console.error("[admin:rename-item] notebook rename failed:", error.message);
+      return res.status(500).json({ error: "فشل إعادة تسمية الدفتر." });
+    }
+    notifySearchEngines({ add: [notebookUrl(fetched.row.slug || itemId)], reason: "rename-item:notebook" });
   } else {
     const table = itemType === "folder" ? "folders" : "courses";
     const { error } = await supabase
@@ -1136,7 +1265,7 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
 // updates only description/source, preserving the content and placement.
 async function handleUpdateItemMetadata(req, res, adminPayload, adminId, supabase) {
   const { itemType, itemId, description, source } = req.body || {};
-  if (!["quiz", "lesson"].includes(itemType) || !itemId) {
+  if (!["quiz", "lesson", "notebook"].includes(itemType) || !itemId) {
     return res.status(400).json({ error: "بيانات الوصف والمصدر غير مكتملة." });
   }
   let cleanDescription;
@@ -1162,6 +1291,12 @@ async function handleUpdateItemMetadata(req, res, adminPayload, adminId, supabas
       meta: { ...(data.meta || {}), description: cleanDescription, source: cleanSource },
     };
     query = supabase.from("quizzes").update({ data: updatedData }).eq("id", itemId);
+  } else if (itemType === "notebook") {
+    query = supabase.from("notebooks").update({
+      description: cleanDescription || null,
+      source: cleanSource || null,
+      updated_at: new Date().toISOString(),
+    }).eq("id", itemId);
   } else {
     query = supabase.from("lessons").update({
       description: cleanDescription || null,
@@ -1175,7 +1310,9 @@ async function handleUpdateItemMetadata(req, res, adminPayload, adminId, supabas
     console.error("[admin:update-item-metadata] failed:", error.message);
     return res.status(500).json({ error: "تعذّر حفظ الوصف والمصدر." });
   }
-  if (itemType === "lesson") {
+  if (itemType === "notebook") {
+    notifySearchEngines({ add: [notebookUrl(fetched.row.slug || itemId)], reason: "update-item-metadata:notebook" });
+  } else if (itemType === "lesson") {
     notifySearchEngines({ add: [lessonUrl(fetched.row.slug || itemId)], reason: "update-item-metadata:lesson" });
   } else if (fetched.row.data?.meta?.id && !fetched.row.password) {
     notifySearchEngines({ add: [quizUrl(fetched.row.data.meta.id)], reason: "update-item-metadata:quiz" });
@@ -1665,6 +1802,225 @@ async function handleGetLesson(req, res, adminPayload, adminId, supabase) {
   return res.status(200).json({ lesson: stripLessonSecrets(fetched.row) });
 }
 
+// =============================================================================
+// Notebook authoring actions (list/get/create/update/delete-notebook) — see
+// docs/plans/matlab-notebook-integration.md Phase 1. Same authorization model
+// as lessons (fetchItemForAuth + isAuthorizedForItem), validated through
+// _validateNotebook.js (shared content-rules), written only through this API.
+// Notebooks are never scored: nothing here touches points/levels/attempts.
+// =============================================================================
+
+async function validateNotebookSlug(supabase, rawSlug, excludeId = null) {
+  if (typeof rawSlug !== "string" || !rawSlug.trim()) return { ok: true, slug: null };
+  const slug = rawSlug.trim().toLowerCase();
+  if (slug.length > 80) return { ok: false, error: "الرابط المختصر طويل جدًا (الحد 80 حرفًا)." };
+  if (UUID_SHAPE_RE.test(slug) || !LESSON_SLUG_RE.test(slug)) {
+    return { ok: false, error: "الرابط المختصر يجب أن يتكون من حروف وأرقام وشرطات فقط." };
+  }
+  let query = supabase.from("notebooks").select("id").eq("slug", slug).limit(1);
+  if (excludeId) query = query.neq("id", excludeId);
+  const { data } = await query;
+  if (data && data.length > 0) return { ok: false, error: "هذا الرابط المختصر مستخدم لدفتر آخر." };
+  return { ok: true, slug };
+}
+
+// Body: { title, runtime, content, description?, source?, courseId, folderId?, slug? }
+async function handleCreateNotebook(req, res, adminPayload, adminId, supabase) {
+  const { title, runtime, content, description = "", source = "", courseId, folderId = null, slug = null } = req.body || {};
+
+  const nameCheck = validateItemName(title);
+  if (!nameCheck.ok) return res.status(400).json({ error: nameCheck.error });
+  if (!courseId) return res.status(400).json({ error: "المادة مطلوبة." });
+
+  const placement = canPlaceItemServer("notebook", folderId);
+  if (!placement.ok) return res.status(400).json({ error: placement.error });
+
+  const destinationCheck = await validateLessonPlacement(supabase, courseId, folderId);
+  if (!destinationCheck.ok) return res.status(404).json({ error: destinationCheck.error });
+
+  let cleanRuntime;
+  let cleanContent;
+  let cleanDescription;
+  let cleanSource;
+  try {
+    cleanRuntime = validateNotebookRuntime(runtime);
+    cleanContent = validateNotebookContent(content);
+    cleanDescription = validateNotebookDescription(description);
+    cleanSource = validateNotebookSource(source);
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+
+  // Creating content in a course requires the same authority as editing it.
+  const { data: course } = await supabase.from("courses").select("education_type").eq("id", courseId).maybeSingle();
+  // Same scope rule as upload-quiz.js: scoped admins may only create in their scopes.
+  if (!adminPayload.isOwner && adminPayload.allowed_scopes && !adminPayload.allowed_scopes.includes(course?.education_type)) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لإضافة دفتر في هذه المادة." });
+  }
+
+  const collision = await hasNotebookNameCollision(supabase, { courseId, folderId, title: nameCheck.clean });
+  if (collision) return res.status(400).json({ error: "يوجد دفتر آخر بهذا الاسم في هذا المكان." });
+
+  const slugCheck = await validateNotebookSlug(supabase, slug);
+  if (!slugCheck.ok) return res.status(400).json({ error: slugCheck.error });
+
+  const insertRow = {
+    title: nameCheck.clean,
+    description: cleanDescription || null,
+    source: cleanSource || null,
+    runtime: cleanRuntime,
+    content: cleanContent,
+    course_id: courseId,
+    folder_id: folderId,
+    slug: slugCheck.slug,
+    created_by: adminId,
+  };
+
+  const { data, error } = await supabase.from("notebooks").insert(insertRow).select("id, slug").maybeSingle();
+  if (error) {
+    if (error.code === "23505") return res.status(400).json({ error: "هذا الرابط المختصر مستخدم لدفتر آخر." });
+    console.error("[admin:create-notebook] failed:", error.message);
+    return res.status(500).json({ error: "فشل إنشاء الدفتر." });
+  }
+
+  notifySearchEngines({ add: [notebookUrl(data.slug || data.id)], reason: "create-notebook" });
+  return res.status(200).json({ success: true, id: data.id });
+}
+
+// Body: { id, title, runtime, content, description?, source?, slug? }
+// Placement is changed only via move-item, never as a side effect of a save.
+async function handleUpdateNotebook(req, res, adminPayload, adminId, supabase) {
+  const { id, title, runtime, content, description, source, slug } = req.body || {};
+  if (!id) return res.status(400).json({ error: "معرف الدفتر مطلوب." });
+
+  const nameCheck = validateItemName(title);
+  if (!nameCheck.ok) return res.status(400).json({ error: nameCheck.error });
+
+  const fetched = await fetchItemForAuth(supabase, "notebook", id);
+  if (!fetched) return res.status(404).json({ error: "الدفتر غير موجود." });
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لتعديل هذا الدفتر." });
+  }
+
+  let cleanRuntime;
+  let cleanContent;
+  let cleanDescription;
+  let cleanSource;
+  try {
+    cleanRuntime = validateNotebookRuntime(runtime);
+    cleanContent = validateNotebookContent(content);
+    if (description !== undefined) cleanDescription = validateNotebookDescription(description);
+    if (source !== undefined) cleanSource = validateNotebookSource(source);
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+
+  const collision = await hasNotebookNameCollision(supabase, {
+    courseId: fetched.row.course_id,
+    folderId: fetched.row.folder_id,
+    title: nameCheck.clean,
+    excludeId: id,
+  });
+  if (collision) return res.status(400).json({ error: "يوجد دفتر آخر بهذا الاسم في نفس المكان." });
+
+  const updates = {
+    title: nameCheck.clean,
+    runtime: cleanRuntime,
+    content: cleanContent,
+    updated_at: new Date().toISOString(),
+  };
+  if (cleanDescription !== undefined) updates.description = cleanDescription || null;
+  if (cleanSource !== undefined) updates.source = cleanSource || null;
+  if (typeof slug === "string") {
+    const slugCheck = await validateNotebookSlug(supabase, slug, id);
+    if (!slugCheck.ok) return res.status(400).json({ error: slugCheck.error });
+    updates.slug = slugCheck.slug;
+  }
+
+  const { error } = await supabase.from("notebooks").update(updates).eq("id", id);
+  if (error) {
+    if (error.code === "23505") return res.status(400).json({ error: "هذا الرابط المختصر مستخدم لدفتر آخر." });
+    console.error("[admin:update-notebook] failed:", error.message);
+    return res.status(500).json({ error: "فشل حفظ التعديلات." });
+  }
+
+  const finalSlug = updates.slug !== undefined ? updates.slug : fetched.row.slug;
+  notifySearchEngines({ add: [notebookUrl(finalSlug || id)], reason: "update-notebook" });
+  return res.status(200).json({ success: true, id });
+}
+
+// Body: { id } — single-row soft delete into trash_items (full row snapshot).
+async function handleDeleteNotebook(req, res, adminPayload, adminId, supabase) {
+  const { id } = req.body || {};
+  if (!id) return res.status(400).json({ error: "معرف الدفتر مطلوب." });
+
+  const fetched = await fetchItemForAuth(supabase, "notebook", id);
+  if (!fetched) return res.status(404).json({ error: "الدفتر غير موجود." });
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لحذف هذا الدفتر." });
+  }
+
+  const retentionDays = await getTrashRetentionDays(supabase);
+  const expiresAt = computeExpiresAt(retentionDays);
+
+  // The snapshot is the notebooks row as read (minus the joined `courses`
+  // helper object fetchItemForAuth adds), so restore re-inserts it verbatim.
+  const { courses: _courses, ...snapshot } = fetched.row;
+  const { error: insertErr } = await supabase.from("trash_items").insert({
+    item_type: "notebook",
+    original_id: snapshot.id,
+    snapshot,
+    parent_folder_id: snapshot.folder_id,
+    course_id: snapshot.course_id,
+    education_type: fetched.educationType,
+    batch_id: crypto.randomUUID(),
+    deleted_by: adminId,
+    expires_at: expiresAt,
+  });
+  if (insertErr) {
+    console.error("[admin:delete-notebook] trash insert failed:", insertErr.message);
+    return res.status(500).json({ error: "فشل نقل الدفتر إلى سلة المهملات." });
+  }
+
+  const { error: deleteErr } = await supabase.from("notebooks").delete().eq("id", id);
+  if (deleteErr) {
+    console.error("[admin:delete-notebook] delete failed:", deleteErr.message);
+    return res.status(500).json({ error: "فشل حذف الدفتر بعد نقله لسلة المهملات." });
+  }
+
+  notifySearchEngines({ remove: [notebookUrl(fetched.row.slug || id)], reason: "delete-notebook" });
+  return res.status(200).json({ success: true, trashed: true });
+}
+
+async function handleListNotebooks(req, res, adminPayload, adminId, supabase) {
+  const { data, error } = await supabase
+    .from("notebooks")
+    .select("id, slug, title, description, source, runtime, content, course_id, folder_id, sort_order, created_at, updated_at, created_by, courses:course_id(education_type)")
+    .order("updated_at", { ascending: false });
+  if (error) {
+    console.error("[admin:list-notebooks] failed:", error.message);
+    return res.status(500).json({ error: "فشل تحميل الدفاتر." });
+  }
+  // Same scoping as the rest of item management: owners see everything,
+  // others only what they created or what falls within their scopes.
+  const rows = (data || [])
+    .filter((row) => isAuthorizedForItem(adminPayload, adminId, { creatorId: row.created_by, educationType: row.courses?.education_type || null }))
+    .map(({ courses: _courses, ...row }) => row);
+  return res.status(200).json({ notebooks: rows });
+}
+
+async function handleGetNotebook(req, res, adminPayload, adminId, supabase) {
+  const id = req.body?.id;
+  if (!id) return res.status(400).json({ error: "معرف الدفتر مطلوب." });
+  const fetched = await fetchItemForAuth(supabase, "notebook", id);
+  if (!fetched) return res.status(404).json({ error: "الدفتر غير موجود." });
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لعرض هذا الدفتر." });
+  }
+  const { courses: _courses, ...row } = fetched.row;
+  return res.status(200).json({ notebook: row });
+}
+
 async function handleItemActions(req, res) {
   applyCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -1697,6 +2053,11 @@ async function handleItemActions(req, res) {
   if (action === "create-lesson") return handleCreateLesson(req, res, payload, adminId, supabase);
   if (action === "update-lesson") return handleUpdateLesson(req, res, payload, adminId, supabase);
   if (action === "delete-lesson") return handleDeleteLesson(req, res, payload, adminId, supabase);
+  if (action === "list-notebooks") return handleListNotebooks(req, res, payload, adminId, supabase);
+  if (action === "get-notebook") return handleGetNotebook(req, res, payload, adminId, supabase);
+  if (action === "create-notebook") return handleCreateNotebook(req, res, payload, adminId, supabase);
+  if (action === "update-notebook") return handleUpdateNotebook(req, res, payload, adminId, supabase);
+  if (action === "delete-notebook") return handleDeleteNotebook(req, res, payload, adminId, supabase);
 
   return res.status(400).json({ error: "Invalid action" });
 }

@@ -47,6 +47,14 @@ export function lessonUrl(lessonIdOrSlug) {
 }
 
 /**
+ * Notebooks resolve by slug when present, else id — same convention as
+ * lessons (the /notebook/:id route accepts either).
+ */
+export function notebookUrl(notebookIdOrSlug) {
+    return absUrl(`/notebook/${encodeURIComponent(notebookIdOrSlug)}`);
+}
+
+/**
  * Given the full course list, find every slug collision (two courses whose
  * toSlug(name) is identical), mirroring the disambiguation render-course.js
  * already performs via ?education_type=. Returns a Set of colliding slugs.

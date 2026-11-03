@@ -6,6 +6,7 @@
   "scripts": {
     "seo:check": "node scripts/seo-check.mjs",
     "sync:mcp": "node scripts/sync-mcp-rules.js",
+    "build:notebook-runtime": "npm ci --prefix online-matlab-compiler/apps/web && npm run build --prefix online-matlab-compiler/apps/web",
     "dev": "npm run dev:vercel",
     "dev:vercel": "concurrently -k -n vercel,sync -c blue,magenta \"npx vercel dev --local --listen 8081\" \"npx wait-on tcp:8081 && npx browser-sync start --proxy localhost:8081 --port 8080 --files 'public/**/*.html,public/src/**/*.js,public/src/**/*.css,api/**/*.js' --reload-delay 250 --no-open\"",
     "dev:static": "npx http-server public -p 8080 -o -c-1",

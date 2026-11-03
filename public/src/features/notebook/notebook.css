@@ -1,0 +1,23 @@
+/* /notebook/:id page chrome. The interactive UI itself is styled by the
+   runtime (assets/notebook-runtime/runtime.css, scoped under .mlweb). */
+.notebook-page-shell { max-width: 1180px; margin-inline: auto; padding: 16px; }
+.notebook-header h1 { margin: 0 0 6px; font-size: clamp(1.25rem, 2.4vw, 1.75rem); }
+.notebook-description { margin: 0 0 8px; color: var(--text-secondary, inherit); }
+.notebook-disclaimer {
+  margin: 0 0 14px; padding: 8px 12px; font-size: .88rem; line-height: 1.6;
+  border-inline-start: 3px solid var(--primary, #0088cc);
+  background: color-mix(in srgb, var(--primary, #0088cc) 8%, transparent);
+  border-radius: 6px;
+}
+.notebook-status { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 40px 12px; text-align: center; }
+.notebook-status--error { color: var(--error, #b42318); }
+.notebook-status[hidden] { display: none; }
+.notebook-spinner {
+  display: inline-block; width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid currentColor; border-top-color: transparent; animation: nb-spin .8s linear infinite;
+}
+@keyframes nb-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .notebook-spinner { animation: none; } }
+.notebook-retry, .notebook-home-link { font: inherit; cursor: pointer; }
+.notebook-root { min-width: 0; }
+@media (max-width: 640px) { .notebook-page-shell { padding: 10px; } }

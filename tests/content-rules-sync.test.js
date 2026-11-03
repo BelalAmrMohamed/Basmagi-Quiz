@@ -9,3 +9,11 @@ for (const copy of ["supabase/functions/mcp/content-rules.js", "scripts/lib/cont
     assert.equal(readFileSync(copy, "utf8"), source, "run `npm run sync:mcp`");
   });
 }
+
+test("notebook-convert copy is in sync", () => {
+  assert.equal(
+    readFileSync("scripts/lib/notebook-convert.js", "utf8"),
+    readFileSync("public/src/shared/notebook-convert.js", "utf8"),
+    "run `npm run sync:mcp`",
+  );
+});

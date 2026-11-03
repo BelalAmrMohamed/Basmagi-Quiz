@@ -18,3 +18,7 @@ for (const target of targets) {
   copyFileSync(source, join(root, target));
   console.log(`Synced content-rules.js -> ${target}`);
 }
+
+// notebook-convert.js: pure converters used by api/ (upload) and scripts/ (seed).
+copyFileSync(join(root, "public/src/shared/notebook-convert.js"), join(root, "scripts/lib/notebook-convert.js"));
+console.log("Synced notebook-convert.js -> scripts/lib/notebook-convert.js");

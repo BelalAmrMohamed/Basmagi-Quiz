@@ -191,7 +191,7 @@ export async function sweepExpiredTrash(supabase) {
 }
 
 /**
- * Cascade-collects every folder/quiz/lesson nested (to any depth) under a
+ * Cascade-collects every folder/quiz/lesson/notebook nested (to any depth) under a
  * given folder or course, so a folder/course delete can trash the whole
  * subtree in one batch. Returns raw rows (not yet snapshotted) grouped by
  * type.
@@ -206,12 +206,13 @@ export async function sweepExpiredTrash(supabase) {
  * makes lessons common enough for this gap to matter in practice.
  * @param {import('@supabase/supabase-js').SupabaseClient} supabase
  * @param {{courseId?: string, folderId?: string}} scope - exactly one of these
- * @returns {Promise<{folders: object[], quizzes: object[], lessons: object[]}>}
+ * @returns {Promise<{folders: object[], quizzes: object[], lessons: object[], notebooks: object[]}>}
  */
 export async function collectCascadeItems(supabase, { courseId, folderId }) {
     const folders = [];
     const quizzes = [];
     const lessons = [];
+    const notebooks = [];
 
     // Breadth-first walk of the folder tree under the given root (course or
     // a specific folder). folder_id/parent_folder_id are the only edges we
@@ -241,6 +242,13 @@ export async function collectCascadeItems(supabase, { courseId, folderId }) {
             .eq("course_id", courseId)
             .is("folder_id", null);
         (topLessons || []).forEach((l) => lessons.push(l));
+
+        const { data: topNotebooks } = await supabase
+            .from("notebooks")
+            .select("*")
+            .eq("course_id", courseId)
+            .is("folder_id", null);
+        (topNotebooks || []).forEach((n) => notebooks.push(n));
     } else if (folderId) {
         frontierFolderIds = [folderId];
     }
@@ -261,8 +269,14 @@ export async function collectCascadeItems(supabase, { courseId, folderId }) {
             .select("*")
             .in("folder_id", frontierFolderIds);
 
+        const { data: childNotebooks } = await supabase
+            .from("notebooks")
+            .select("*")
+            .in("folder_id", frontierFolderIds);
+
         (childQuizzes || []).forEach((q) => quizzes.push(q));
         (childLessons || []).forEach((l) => lessons.push(l));
+        (childNotebooks || []).forEach((n) => notebooks.push(n));
 
         const nextIds = (childFolders || []).map((f) => f.id);
         (childFolders || []).forEach((f) => folders.push(f));
@@ -284,7 +298,13 @@ export async function collectCascadeItems(supabase, { courseId, folderId }) {
             .select("*")
             .eq("folder_id", folderId);
         (directLessons || []).forEach((l) => lessons.push(l));
+
+        const { data: directNotebooks } = await supabase
+            .from("notebooks")
+            .select("*")
+            .eq("folder_id", folderId);
+        (directNotebooks || []).forEach((n) => notebooks.push(n));
     }
 
-    return { folders, quizzes, lessons };
+    return { folders, quizzes, lessons, notebooks };
 }

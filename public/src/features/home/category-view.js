@@ -22,6 +22,7 @@ import { isRecentlyAdded } from "./date-utils.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { createExamCard } from "./exam-card.js";
 import { createLessonCard } from "./lesson-card.js";
+import { createNotebookCard } from "./notebook-card.js";
 import { buildContainerInfoRows } from "./info-details.js";
 import { openExamDropdownMenu, createActionGroupSubmenu, createExamInfoSubmenu } from "./exam-dropdown-menu.js";
 import { showFolderInfoModal } from "./folder-info-modal.js";
@@ -195,10 +196,14 @@ export function renderCategory(category) {
       fragment.appendChild(createLessonCard(lesson));
     });
 
+    (category.notebooks || []).forEach((notebook) => {
+      fragment.appendChild(createNotebookCard(notebook));
+    });
+
     container.appendChild(fragment);
 
     // Show empty state if no content
-    if ((category.subcategories || []).length === 0 && (category.exams || []).length === 0 && (category.lessons || []).length === 0) {
+    if ((category.subcategories || []).length === 0 && (category.exams || []).length === 0 && (category.lessons || []).length === 0 && (category.notebooks || []).length === 0) {
       container.innerHTML = `
         <div class="empty-state" role="status">
           <div class="empty-state-icon" aria-hidden="true">🔭</div>
@@ -475,22 +480,25 @@ function getCategoryContentsStats(category) {
   const tree = getCategoryTree() || {};
   let quizCount = 0;
   let lessonCount = 0;
+  let notebookCount = 0;
   let subfolderCount = 0;
   const visit = (node, isChild = false) => {
     if (!node) return;
     if (isChild) subfolderCount += 1;
     quizCount += Array.isArray(node.exams) ? node.exams.length : 0;
     lessonCount += Array.isArray(node.lessons) ? node.lessons.length : 0;
+    notebookCount += Array.isArray(node.notebooks) ? node.notebooks.length : 0;
     (node.subcategories || []).forEach((key) => visit(tree[key], true));
   };
   visit(category);
-  return { quizCount, lessonCount, subfolderCount };
+  return { quizCount, lessonCount, notebookCount, subfolderCount };
 }
 
-function formatCategoryContents({ quizCount, lessonCount, subfolderCount }) {
+function formatCategoryContents({ quizCount, lessonCount, notebookCount = 0, subfolderCount }) {
   const parts = [];
   if (quizCount) parts.push(`${quizCount} ${quizCount === 1 ? "امتحان" : "امتحانات"}`);
   if (lessonCount) parts.push(`${lessonCount} ${lessonCount === 1 ? "درس" : "دروس"}`);
+  if (notebookCount) parts.push(`${notebookCount} ${notebookCount === 1 ? "دفتر" : "دفاتر"}`);
   if (subfolderCount) parts.push(`${subfolderCount} ${subfolderCount === 1 ? "مجلد" : "مجلدات"}`);
   return parts.join(" · ") || "لا يوجد محتوى بعد";
 }

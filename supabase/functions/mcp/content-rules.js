@@ -38,7 +38,20 @@ export const LIMITS = {
   explanationMax: 20000,
   optionsMax: 8, // lesson MCQ options
   lessonBytes: 200_000,
+  notebookTitle: 200,
+  notebookDescription: 1200,
+  notebookSource: 500,
+  notebookCells: 200,
+  notebookCellSource: 20000,
+  notebookCellId: 64,
+  notebookBytes: 300_000,
 };
+
+/** Runtimes a notebook may declare. Unknown values are REJECTED (never defaulted).
+ *  Python/C++ are future adapters, intentionally not listed. */
+export const NOTEBOOK_RUNTIMES = ["matlab"];
+export const NOTEBOOK_SCHEMA_VERSION = 1;
+export const NOTEBOOK_CELL_TYPES = ["markdown", "code"];
 
 const HTTP_URL_RE = /^https?:\/\/\S+$/i;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -402,6 +415,124 @@ export function checkLesson(input, opts = {}) {
     const bytes = new TextEncoder().encode(JSON.stringify({ sections: rawSections })).length;
     if (bytes > LIMITS.lessonBytes) {
       c.err("LESSON_TOO_LARGE", "sections", `حجم الدرس ${Math.round(bytes / 1000)}KB يتجاوز ${LIMITS.lessonBytes / 1000}KB — قسّمه إلى دروس.`);
+    }
+  } catch (_) { /* non-serializable input is caught elsewhere */ }
+
+  return c;
+}
+
+// ── Notebook ────────────────────────────────────────────────────────────────
+const NOTEBOOK_CELL_ID_RE = /^[A-Za-z0-9_-]+$/;
+
+/**
+ * Builds the canonical stored document { schemaVersion, cells } from raw cells,
+ * assigning stable ids (`cell-N`) to cells that have none. It does NOT fix
+ * invalid data (unknown types stay as given so checkNotebook can reject them).
+ */
+export function normalizeNotebookContent(rawCells) {
+  const cells = Array.isArray(rawCells) ? rawCells : [];
+  const used = new Set(cells.map((c) => str(c?.id)).filter(Boolean));
+  let n = 0;
+  const nextId = () => {
+    let id;
+    do { id = `cell-${++n}`; } while (used.has(id));
+    used.add(id);
+    return id;
+  };
+  return {
+    schemaVersion: NOTEBOOK_SCHEMA_VERSION,
+    cells: cells.map((c) => ({
+      id: str(c?.id) || nextId(),
+      type: typeof c?.type === "string" ? c.type : "",
+      source: typeof c?.source === "string" ? c.source : c?.source == null ? "" : String(c.source),
+    })),
+  };
+}
+
+/**
+ * @param {object} input  { title, description, source, runtime, content:{schemaVersion,cells} | cells }
+ * @param {{contentOnly?: boolean}} [opts]
+ *   contentOnly=true → skip title/description/source (callers that validate them separately)
+ */
+export function checkNotebook(input, opts = {}) {
+  const c = makeCollector();
+
+  if (!opts.contentOnly) {
+    const title = str(input?.title);
+    if (!title) c.err("NOTEBOOK_TITLE_REQUIRED", "title", "title مطلوب: أضف عنواناً للدفتر.");
+    else if (title.length > LIMITS.notebookTitle) {
+      c.err("NOTEBOOK_TITLE_TOO_LONG", "title", `title أطول من ${LIMITS.notebookTitle} حرف (الحالي ${title.length}).`);
+    }
+    const description = str(input?.description);
+    if (description.length > LIMITS.notebookDescription) {
+      c.err("NOTEBOOK_DESCRIPTION_TOO_LONG", "description", `description أطول من ${LIMITS.notebookDescription} حرف (الحالي ${description.length}).`);
+    }
+    if (!description) c.warn("NOTEBOOK_DESCRIPTION_EMPTY", "description", "description فارغ.");
+    const source = str(input?.source);
+    if (source && !isHttpUrl(source)) {
+      c.err("NOTEBOOK_SOURCE_INVALID", "source", 'source يجب أن يكون رابطاً كاملاً يبدأ بـ https:// ولا شيء غيره — إن لم يوجد رابط اتركه "" (فارغاً).');
+    }
+    if (source.length > LIMITS.notebookSource) {
+      c.err("NOTEBOOK_SOURCE_TOO_LONG", "source", `source أطول من ${LIMITS.notebookSource} حرف.`);
+    }
+    const runtime = str(input?.runtime);
+    if (!runtime) {
+      c.err("RUNTIME_REQUIRED", "runtime", `runtime مطلوب (المسموح: ${NOTEBOOK_RUNTIMES.join(", ")}) — لا يتم افتراض قيمة.`);
+    } else if (!NOTEBOOK_RUNTIMES.includes(runtime)) {
+      c.err("RUNTIME_UNSUPPORTED", "runtime", `runtime="${runtime}" غير مدعوم (المسموح: ${NOTEBOOK_RUNTIMES.join(", ")}).`);
+    }
+  }
+
+  const doc = input?.content && typeof input.content === "object" && !Array.isArray(input.content) ? input.content : null;
+  if (doc && doc.schemaVersion !== undefined && doc.schemaVersion !== NOTEBOOK_SCHEMA_VERSION) {
+    c.err("SCHEMA_VERSION_UNSUPPORTED", "content.schemaVersion", `schemaVersion=${JSON.stringify(doc.schemaVersion)} غير مدعوم (المدعوم: ${NOTEBOOK_SCHEMA_VERSION}).`);
+  }
+  const rawCells = Array.isArray(input?.cells) ? input.cells : Array.isArray(doc?.cells) ? doc.cells : null;
+  if (!rawCells || !rawCells.length) {
+    c.err("NO_CELLS", "cells", "cells يجب أن تكون مصفوفة غير فارغة (خلية واحدة على الأقل).");
+    return c;
+  }
+  if (rawCells.length > LIMITS.notebookCells) {
+    c.err("TOO_MANY_CELLS", "cells", `عدد الخلايا ${rawCells.length} يتجاوز الحد الأقصى ${LIMITS.notebookCells}.`);
+  }
+
+  const seenIds = new Set();
+  let codeCells = 0;
+  rawCells.forEach((cell, i) => {
+    const n = i + 1;
+    const path = `cells[${i}]`;
+    if (!cell || typeof cell !== "object" || Array.isArray(cell)) {
+      c.err("CELL_NOT_OBJECT", path, `الخلية ${n}: يجب أن تكون كائناً { id, type, source }.`);
+      return;
+    }
+    const type = cell.type;
+    if (!NOTEBOOK_CELL_TYPES.includes(type)) {
+      c.err("UNKNOWN_CELL_TYPE", path, `الخلية ${n}: type=${JSON.stringify(type)} غير معروف (المسموح: ${NOTEBOOK_CELL_TYPES.join(", ")}).`);
+    }
+    if (typeof cell.source !== "string") {
+      c.err("CELL_SOURCE_NOT_STRING", path, `الخلية ${n}: source يجب أن يكون نصاً.`);
+    } else {
+      if (cell.source.length > LIMITS.notebookCellSource) {
+        c.err("CELL_TOO_LONG", path, `الخلية ${n}: ${cell.source.length} حرف وتتجاوز ${LIMITS.notebookCellSource} — قسّمها إلى عدة خلايا.`);
+      }
+      if (!cell.source.trim()) c.warn("CELL_EMPTY", path, `الخلية ${n}: فارغة.`);
+    }
+    if (type === "code") codeCells++;
+    const id = cell.id;
+    if (id !== undefined && id !== null && id !== "") {
+      if (typeof id !== "string" || id.length > LIMITS.notebookCellId || !NOTEBOOK_CELL_ID_RE.test(id)) {
+        c.err("CELL_ID_INVALID", path, `الخلية ${n}: id يجب أن يكون حروفاً/أرقاماً/_/- فقط وبطول ≤ ${LIMITS.notebookCellId}.`);
+      } else if (seenIds.has(id)) {
+        c.err("CELL_ID_DUPLICATE", path, `الخلية ${n}: id="${id}" مكرر.`);
+      } else seenIds.add(id);
+    }
+  });
+  if (!codeCells) c.warn("NO_CODE_CELLS", "cells", "لا توجد أي خلية كود — الدفتر يحتوي نصاً فقط.");
+
+  try {
+    const bytes = new TextEncoder().encode(JSON.stringify({ cells: rawCells })).length;
+    if (bytes > LIMITS.notebookBytes) {
+      c.err("NOTEBOOK_TOO_LARGE", "cells", `حجم الدفتر ${Math.round(bytes / 1000)}KB يتجاوز ${LIMITS.notebookBytes / 1000}KB — قسّمه إلى دفاتر.`);
     }
   } catch (_) { /* non-serializable input is caught elsewhere */ }
 

@@ -517,7 +517,7 @@ function showOverviewView() {
   document.getElementById("trashNavBtn").hidden = false;
 }
 
-const TRASH_TYPE_LABELS = { quiz: "امتحان", folder: "مجلد", course: "مادة" };
+const TRASH_TYPE_LABELS = { quiz: "امتحان", lesson: "درس", notebook: "دفتر", folder: "مجلد", course: "مادة" };
 
 function formatTrashDate(iso) {
   if (!iso) return "—";

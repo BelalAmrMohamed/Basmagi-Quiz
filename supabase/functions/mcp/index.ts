@@ -22,14 +22,17 @@
 //   - New tools: list_courses, list_colleges, get_course_contents, get_folder_contents,
 //     list_folder_tree, get_quiz, get_quiz_by_url, get_lesson, get_lesson_content,
 //     list_recent_content, get_platform_stats, search_catalog, get_prompts,
-//     create_quiz_import_link, create_lesson_import_link, get_creator_info
+//     create_quiz_import_link, create_lesson_import_link, get_creator_info,
+//     get_notebook, get_notebook_content, create_notebook_import_link (notebooks are NEVER
+//     published or mutated by MCP — only a short-lived draft link is created)
 // =============================================================================
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   AUTHORING_GUIDE, CREATOR_INFO, DRAFT_CODE_RE, DRAFT_TTL_HOURS, SITE,
-  draftUrl, makeDraftCode, validateLesson, validateQuiz,
+  draftUrl, makeDraftCode, validateLesson, validateQuiz, validateNotebook,
   applyDraftPatch, lessonToDraftInput, outlineLesson, outlineQuiz, quizToDraftInput,
+  notebookToDraftInput, outlineNotebook,
 } from "./lib.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
@@ -92,6 +95,10 @@ Schema and content rules:
 - Media is written inline with Markdown syntax: ![description](url) for image, ![audio](url) for audio, ![video](url) for video.`;
 
 const PROMPTS_REGISTRY: Record<string, { description: string; text: string }> = {
+  matlab_notebook: {
+    description: "Prompt for turning lecture/lab material into an executable MATLAB-style notebook draft (create_notebook_import_link)",
+    text: `Call get_authoring_guide(topic="notebook") first, then build a notebook and call create_notebook_import_link (use dry_run first if unsure).\n- runtime MUST be "matlab" — a browser-based EDUCATIONAL MATLAB-style subset, not MathWorks MATLAB (no toolboxes/Simulink/files/network). Never promise Python or C++.\n- Alternate short Arabic-friendly Markdown explanations (math in LaTeX, no raw HTML) with small runnable code cells (code/comments/output stay left-to-right).\n- Use only the bundled sample images (test.png, testgray.png, pepper.png, Test2.png, GrayTest1.png, BinaryImage.png, GrayscaleImage.png, ColorImage.png, test_lookup.gif).\n- Respect limits: ≤200 cells, ≤20000 chars per cell, ≤300KB total.\n- Tell the user the link only opens a draft: an admin must review and save to publish.\n\nNow convert the material I provide:`,
+  },
   general_purpose_quiz: {
     description: "Standard prompt for generating quizzes from raw study material",
     text: `${QUIZ_JSON_INSTRUCTIONS}\n\nAdapt the question types and difficulty to the supplied subject and audience. For unsolved questions, solve them carefully and explain the reasoning. The "source" MUST be a direct link/URL (e.g. Google Drive link to lecture slides or PDF), not plain text.\n\nNow convert the source material I provide:`,
@@ -116,12 +123,12 @@ const TOOLS = [
   {
     name: "search_catalog",
     annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Search public educational content on Basmagi Platform: courses, folders, quizzes, and lessons by keyword with optional scope filter.",
+    description: "Search public educational content on Basmagi Platform: courses, folders, quizzes, lessons, and notebooks by keyword with optional scope filter.",
     inputSchema: {
       type: "object",
       properties: {
         query: { type: "string", description: "Keyword or topic to search for" },
-        scope: { type: "string", enum: ["all", "quizzes", "lessons", "courses", "folders"], description: "Optional scope filter. Defaults to 'all'." },
+        scope: { type: "string", enum: ["all", "quizzes", "lessons", "notebooks", "courses", "folders"], description: "Optional scope filter. Defaults to 'all'." },
       },
       required: ["query"],
     },
@@ -250,14 +257,37 @@ const TOOLS = [
     },
   },
   {
+    name: "get_notebook",
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    description: "Fetch metadata (title, description, source, runtime, cell count) of a PUBLISHED executable notebook by ID or slug. Notebooks run only in the learner's browser (an educational MATLAB-style subset, not MathWorks MATLAB).",
+    inputSchema: {
+      type: "object",
+      properties: { notebookId: { type: "string", description: "The UUID or slug of the notebook." } },
+      required: ["notebookId"],
+    },
+  },
+  {
+    name: "get_notebook_content",
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    description: "Fetch the authored content of a PUBLISHED notebook: ordered markdown/code cells. Read-only; learner outputs are never stored. format: 'text' (default) · 'json' raw {schemaVersion, cells} · 'outline' numbered cell list.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        notebookId: { type: "string", description: "The UUID or slug of the notebook." },
+        format: { type: "string", enum: ["text", "json", "outline"] },
+      },
+      required: ["notebookId"],
+    },
+  },
+  {
     name: "list_recent_content",
     annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Retrieve recently published or updated public quizzes and lessons on Basmagi Platform.",
+    description: "Retrieve recently published or updated public quizzes, lessons and notebooks on Basmagi Platform.",
     inputSchema: {
       type: "object",
       properties: {
         limit: { type: "integer", description: "Number of recent items to return (1-50). Defaults to 15." },
-        type: { type: "string", enum: ["all", "quizzes", "lessons"], description: "Filter by content type. Defaults to 'all'." },
+        type: { type: "string", enum: ["all", "quizzes", "lessons", "notebooks"], description: "Filter by content type. Defaults to 'all'." },
       },
       required: [],
     },
@@ -265,7 +295,7 @@ const TOOLS = [
   {
     name: "get_platform_stats",
     annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Retrieve high-level platform statistics: total count of public quizzes, lessons, courses, folders, and colleges.",
+    description: "Retrieve high-level platform statistics: total count of public quizzes, lessons, notebooks, courses, folders, and colleges.",
     inputSchema: {
       type: "object",
       properties: {},
@@ -388,6 +418,35 @@ const TOOLS = [
     },
   },
   {
+    name: "create_notebook_import_link",
+    annotations: { title: "Create notebook (short import link)", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    description: "Validate an executable notebook and return ONE SHORT link (…/create-notebook?draft=CODE, valid 72h, no sign-in) that opens the Notebook Creator pre-filled for an admin to review. NOTHING is published by this tool — an admin must review and save in the editor. Uses the SAME validation as the editor and upload API; returns ERRORS (nothing saved) or a link plus WARNINGS. runtime is REQUIRED (only \"matlab\": a browser-based educational MATLAB-style subset, not MathWorks MATLAB). Call get_authoring_guide(topic='notebook') first.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        dry_run: { type: "boolean", description: "Validate only: return errors/warnings/stats and save NO draft." },
+        title: { type: "string", description: "Notebook title (1-200 chars)." },
+        description: { type: "string", description: "Short summary (max 1200 chars)." },
+        source: { type: "string", description: "https:// link to the source material, or \"\"." },
+        runtime: { type: "string", enum: ["matlab"], description: "Required. Never defaulted." },
+        cells: {
+          type: "array",
+          description: "Ordered cells (1-200).",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string", description: "Optional unique id ([A-Za-z0-9_-], ≤64)." },
+              type: { type: "string", enum: ["markdown", "code"] },
+              source: { type: "string", description: "Cell text (≤20000 chars)." },
+            },
+            required: ["type", "source"],
+          },
+        },
+      },
+      required: ["title", "runtime", "cells"],
+    },
+  },
+  {
     name: "update_import_draft",
     annotations: { title: "Edit a draft in place", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     description: "Edit an existing draft instead of re-sending it whole. The SAME link keeps working (expiry is renewed); the user just reloads/opens it again. Atomic: the whole patch is validated and, on any error, nothing changes. patch = { meta?: {title?, description?, source?}, ops?: [...] }. 1-based positions. Quiz ops: set_question{at,question} insert_question{at,question} append_questions{questions} delete_question{at} move_question{at,to}. Lesson ops: set_section/insert_section{at,section} append_sections{sections} delete_section{at} move_section{at,to}; set_block/insert_block{section,at,block} append_blocks{section,blocks} delete_block{section,at} move_block{section,at,to}. Both: replace_text{find,replace} (every string, e.g. fix a term everywhere). Questions/blocks use the same shape as the create tools.",
@@ -407,8 +466,8 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        type: { type: "string", enum: ["quiz", "lesson"] },
-        id: { type: "string", description: "Quiz id / URL, or lesson id / slug." },
+        type: { type: "string", enum: ["quiz", "lesson", "notebook"] },
+        id: { type: "string", description: "Quiz id / URL, lesson id / slug, or notebook id / slug." },
       },
       required: ["type", "id"],
     },
@@ -416,11 +475,11 @@ const TOOLS = [
   {
     name: "get_authoring_guide",
     annotations: { title: "Authoring guide for Claude", readOnlyHint: true, openWorldHint: false },
-    description: "Read-me for creating quizzes and lessons: workflow, exact schemas, limits, quality rules and supported Markdown. Call once before create_quiz_import_link / create_lesson_import_link.",
+    description: "Read-me for creating quizzes, lessons and notebooks: workflow, exact schemas, limits, quality rules and supported Markdown. Call once before create_quiz_import_link / create_lesson_import_link.",
     inputSchema: {
       type: "object",
       properties: {
-        topic: { type: "string", enum: ["all", "workflow", "quiz", "lesson", "markdown"], description: "Defaults to 'all'." },
+        topic: { type: "string", enum: ["all", "workflow", "quiz", "lesson", "notebook", "markdown"], description: "Defaults to 'all'." },
       },
     },
   },
@@ -484,6 +543,21 @@ async function handleSearchCatalog(args: { query: string; scope?: string }) {
         `  - 📖 [درس] ${l.title} — id: ${l.id}\n    رابط: https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`
       );
       sections.push(`### دروس مطابقة (${lessons.length}):\n${lines.join("\n")}`);
+    }
+  }
+
+  if (scope === "all" || scope === "notebooks") {
+    const { data: notebooks } = await supabase
+      .from("notebook_public")
+      .select("id, slug, title, description, runtime")
+      .or(`title.ilike.${searchPattern},description.ilike.${searchPattern}`)
+      .limit(10);
+
+    if (notebooks && notebooks.length > 0) {
+      const lines = notebooks.map((n: any) =>
+        `  - 💻 [دفتر ${n.runtime}] ${n.title} — id: ${n.id}\n    رابط: https://basmagi-quiz.vercel.app/notebook/${n.slug || n.id}`
+      );
+      sections.push(`### دفاتر مطابقة (${notebooks.length}):\n${lines.join("\n")}`);
     }
   }
 
@@ -578,7 +652,7 @@ async function handleListColleges(args: { education_type?: string }) {
   return `# قائمة الكليات والمؤسسات التعليمية (${data.length}):\n\n${lines.join("\n")}`;
 }
 
-async function handleGetCourseContents(args: {
+async function handleGetCourseContentsBase(args: {
   courseId: string;
   recursive?: boolean;
   include_quizzes?: boolean;
@@ -777,7 +851,7 @@ async function handleGetCourseContents(args: {
   return output.join("\n\n");
 }
 
-async function handleGetFolderContents(args: {
+async function handleGetFolderContentsBase(args: {
   folderId: string;
   recursive?: boolean;
   include_quizzes?: boolean;
@@ -981,6 +1055,33 @@ async function handleGetFolderContents(args: {
 
   output.push("💡 *ملاحظة: لجلب جميع الامتحانات والدروس داخل كل المجلدات المتفرعة تحت هذا المجلد، مرر recursive: true.*");
   return output.join("\n\n");
+}
+
+// Notebooks are a third leaf type next to quizzes and lessons. The summary
+// output of the course/folder readers gets an appended notebook inventory
+// (json format is left untouched to keep its documented shape).
+async function notebookInventory(scope: { courseId?: string; folderId?: string }, recursive: boolean): Promise<string> {
+  let q = supabase.from("notebook_public").select("id, slug, title, runtime, folder_id, cell_count");
+  if (scope.folderId) q = q.eq("folder_id", scope.folderId);
+  else if (scope.courseId) q = recursive ? q.eq("course_id", scope.courseId) : q.eq("course_id", scope.courseId).is("folder_id", null);
+  const { data } = await q.order("sort_order", { ascending: true, nullsFirst: false }).limit(200);
+  if (!data || !data.length) return "";
+  const lines = data.map((n: any) => `  - 💻 ${n.title} (${n.runtime}، ${n.cell_count || 0} خلايا) — id: ${n.id} — https://basmagi-quiz.vercel.app/notebook/${n.slug || n.id}`);
+  return `## الدفاتر التفاعلية (${data.length}):\n${lines.join("\n")}`;
+}
+
+async function handleGetCourseContents(args: any) {
+  const base = await handleGetCourseContentsBase(args);
+  if (args?.format === "json" || args?.include_notebooks === false) return base;
+  const extra = await notebookInventory({ courseId: String(args?.courseId || "").trim() }, args?.recursive === true);
+  return extra ? `${base}\n\n${extra}` : base;
+}
+
+async function handleGetFolderContents(args: any) {
+  const base = await handleGetFolderContentsBase(args);
+  if (args?.format === "json" || args?.include_notebooks === false) return base;
+  const extra = await notebookInventory({ folderId: String(args?.folderId || "").trim() }, args?.recursive === true);
+  return extra ? `${base}\n\n${extra}` : base;
 }
 
 async function handleListFolderTree(args: { courseId: string }) {
@@ -1260,15 +1361,32 @@ async function handleListRecentContent(args: { limit?: number; type?: string }) 
     }
   }
 
+  if (type === "all" || type === "notebooks") {
+    const { data: notebooks } = await supabase
+      .from("notebook_public")
+      .select("id, slug, title, runtime, created_at, cell_count")
+      .order("created_at", { ascending: false })
+      .limit(cap);
+
+    if (notebooks && notebooks.length > 0) {
+      const lines = notebooks.map((n: any) => {
+        const date = n.created_at ? new Date(n.created_at).toLocaleDateString("ar-EG") : "";
+        return `- 💻 ${n.title} (${n.runtime}، ${n.cell_count || 0} خلايا) ${date ? `[${date}]` : ""}\n  id: ${n.id} — https://basmagi-quiz.vercel.app/notebook/${n.slug || n.id}`;
+      });
+      output.push(`## أحدث الدفاتر:\n${lines.join("\n")}`);
+    }
+  }
+
   return output.join("\n\n");
 }
 
 async function handleGetPlatformStats() {
-  const [coursesCount, foldersCount, quizzesCount, lessonsCount, collegesCount] = await Promise.all([
+  const [coursesCount, foldersCount, quizzesCount, lessonsCount, notebooksCount, collegesCount] = await Promise.all([
     supabase.from("courses").select("*", { count: "exact", head: true }),
     supabase.from("folders").select("*", { count: "exact", head: true }),
     supabase.from("quizzes").select("*", { count: "exact", head: true }).is("password", null),
     supabase.from("lesson_public").select("*", { count: "exact", head: true }),
+    supabase.from("notebook_public").select("*", { count: "exact", head: true }),
     supabase.from("colleges").select("*", { count: "exact", head: true }),
   ]);
 
@@ -1277,6 +1395,7 @@ async function handleGetPlatformStats() {
 - 📁 إجمالي المجلدات: ${foldersCount.count ?? "غير متوفر"}
 - 📝 إجمالي الامتحانات العامة: ${quizzesCount.count ?? "غير متوفر"}
 - 📖 إجمالي الدروس العامة: ${lessonsCount.count ?? "غير متوفر"}
+- 💻 إجمالي الدفاتر التفاعلية العامة: ${notebooksCount.count ?? "غير متوفر"}
 - 🏛️ إجمالي الكليات والمؤسسات: ${collegesCount.count ?? "غير متوفر"}
 
 المنصة مجانية ومفتوحة لجميع الطلاب والمعلمين: https://basmagi-quiz.vercel.app`;
@@ -1301,7 +1420,7 @@ function formatIssues(what: string, v: { errors: string[]; warnings: string[] })
   return lines.join("\n\n");
 }
 
-function base64Link(kind: "quiz" | "lesson", data: unknown) {
+function base64Link(kind: "quiz" | "lesson" | "notebook", data: unknown) {
   const bytes = new TextEncoder().encode(JSON.stringify(data));
   const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join("");
   const b64 = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_");
@@ -1309,7 +1428,7 @@ function base64Link(kind: "quiz" | "lesson", data: unknown) {
 }
 
 // Stores the validated payload and returns the short link (or a base64 fallback).
-async function saveDraft(kind: "quiz" | "lesson", data: unknown): Promise<{ url: string; short: boolean }> {
+async function saveDraft(kind: "quiz" | "lesson" | "notebook", data: unknown): Promise<{ url: string; short: boolean }> {
   try {
     const nowIso = new Date().toISOString();
     await supabase.from("import_drafts").delete().lt("expires_at", nowIso); // opportunistic cleanup
@@ -1326,6 +1445,55 @@ async function saveDraft(kind: "quiz" | "lesson", data: unknown): Promise<{ url:
     }
   } catch (_) { /* fall through */ }
   return { url: base64Link(kind, data), short: false };
+}
+
+const NOTEBOOK_NOTE = "ملاحظة: يعمل الدفتر داخل متصفح المتعلم فقط (مفسّر تعليمي بأسلوب MATLAB وليس MATLAB الأصلي)، ولا يُحفظ عمل المتعلم على الخادم.";
+
+async function fetchNotebook(ref: string) {
+  const id = String(ref || "").trim();
+  const slug = id.match(/\/notebook\/([^/?#]+)/)?.[1] || id;
+  // Only the public view is read: unavailable/non-public data is never returned.
+  const { data, error } = await supabase.from("notebook_public")
+    .select("id, slug, title, description, source, runtime, content, cell_count")
+    .or(`id.eq.${slug},slug.eq.${slug}`).maybeSingle();
+  if (error || !data) return null;
+  return data;
+}
+
+async function handleGetNotebook(args: { notebookId: string }) {
+  if (!String(args?.notebookId || "").trim()) return "الرجاء تحديد معرف الدفتر (notebookId).";
+  const d = await fetchNotebook(args.notebookId);
+  if (!d) return `لم يتم العثور على الدفتر بالمعرف "${args.notebookId}".`;
+  return `# 💻 ${d.title}\n\n${d.description || ""}\n\nالمصدر: ${d.source || "منصة بصمجي"}\nبيئة التشغيل: ${d.runtime}\nعدد الخلايا: ${d.cell_count ?? "غير محدد"}\n\n${NOTEBOOK_NOTE}\n💡 للمحتوى الكامل استخدم get_notebook_content.\nرابط الدفتر: https://basmagi-quiz.vercel.app/notebook/${d.slug || d.id}`;
+}
+
+async function handleGetNotebookContent(args: { notebookId: string; format?: string }) {
+  if (!String(args?.notebookId || "").trim()) return "الرجاء تحديد معرف الدفتر (notebookId).";
+  const d = await fetchNotebook(args.notebookId);
+  if (!d) return `لم يتم العثور على الدفتر بالمعرف "${args.notebookId}".`;
+  const url = `https://basmagi-quiz.vercel.app/notebook/${d.slug || d.id}`;
+  if (!d.content?.cells) return `# ${d.title}\n\nلا يوجد محتوى متاح لهذا الدفتر.\nرابط الدفتر: ${url}`;
+  if (args?.format === "outline") return outlineNotebook({ ...d, cells: d.content.cells });
+  if (args?.format === "json") {
+    return JSON.stringify({ id: d.id, slug: d.slug, title: d.title, description: d.description, source: d.source, runtime: d.runtime, url, content: d.content }, null, 2);
+  }
+  const body = d.content.cells.map((c: any, i: number) =>
+    c.type === "code" ? `\`\`\`matlab\n${c.source}\n\`\`\`` : c.source
+  ).join("\n\n");
+  return `# 💻 ${d.title}\n\n${d.description ? d.description + "\n\n" : ""}بيئة التشغيل: ${d.runtime}\nرابط الدفتر: ${url}\n\n${body}`;
+}
+
+async function handleCreateNotebookImportLink(args: any) {
+  const v = validateNotebook(args);
+  if (!v.ok) return formatIssues("الدفتر", v);
+  if (args?.dry_run) return [`✅ (تجربة فقط — لم يُحفظ شيء) الدفتر صالح: ${JSON.stringify(v.stats)}`, formatIssues("الدفتر", v)].filter(Boolean).join("\n\n");
+  const { url, short } = await saveDraft("notebook", v.data);
+  const s = v.stats!;
+  const head = `✅ تم التحقق من الدفتر: ${s.cells} خلية (كود ${s.code} · نص ${s.markdown}).`;
+  const how = short
+    ? `🔗 رابط قصير صالح ${DRAFT_TTL_HOURS} ساعة (بلا تسجيل دخول). يفتح محرر الدفاتر معبّأً للمراجعة؛ لن يُنشر شيء قبل أن يحفظه مشرف:\n${url}`
+    : `🔗 تعذّر إنشاء رابط قصير فاستُخدم رابط الاستيراد الطويل (انسخه كاملاً دون تعديل):\n${url}`;
+  return [head, how, formatIssues("الدفتر", v)].filter(Boolean).join("\n\n");
 }
 
 async function handleCreateQuizImportLink(args: any) {
@@ -1363,7 +1531,7 @@ function extractCode(raw: string): string {
 async function loadDraft(code: string) {
   const { data, error } = await supabase.from("import_drafts").select("kind, payload, expires_at").eq("code", code).maybeSingle();
   if (error || !data || new Date(data.expires_at).getTime() < Date.now()) return null;
-  return data as { kind: "quiz" | "lesson"; payload: any; expires_at: string };
+  return data as { kind: "quiz" | "lesson" | "notebook"; payload: any; expires_at: string };
 }
 
 const NO_DRAFT = "❌ المسودة غير موجودة أو انتهت صلاحيتها (72 ساعة). أنشئ مسودة جديدة بـ create_*_import_link أو clone_to_draft.";
@@ -1375,7 +1543,9 @@ async function handleGetImportDraft(args: { code: string; format?: string }) {
   if (!d) return NO_DRAFT;
   const link = draftUrl(d.kind, code);
   if (args?.format === "json") return JSON.stringify({ kind: d.kind, link, expires_at: d.expires_at, content: d.payload }, null, 2);
-  return `# مسودة ${d.kind === "quiz" ? "امتحان" : "درس"} — ${link}\nتنتهي: ${d.expires_at}\n\n${d.kind === "quiz" ? outlineQuiz(d.payload) : outlineLesson(d.payload)}`;
+  const label = d.kind === "quiz" ? "امتحان" : d.kind === "notebook" ? "دفتر" : "درس";
+  const outline = d.kind === "quiz" ? outlineQuiz(d.payload) : d.kind === "notebook" ? outlineNotebook(d.payload) : outlineLesson(d.payload);
+  return `# مسودة ${label} — ${link}\nتنتهي: ${d.expires_at}\n\n${outline}`;
 }
 
 async function handleUpdateImportDraft(args: { code: string; patch: any }) {
@@ -1386,7 +1556,8 @@ async function handleUpdateImportDraft(args: { code: string; patch: any }) {
 
   const res = applyDraftPatch(d.kind, d.payload, args?.patch);
   if (res.error) return `❌ لم يتغير شيء — ${res.error}`;
-  const v: any = d.kind === "quiz" ? validateQuiz({ ...res.data.meta, questions: res.data.questions }) : validateLesson(res.data);
+  const v: any = d.kind === "quiz" ? validateQuiz({ ...res.data.meta, questions: res.data.questions })
+    : d.kind === "notebook" ? validateNotebook(res.data) : validateLesson(res.data);
   if (!v.ok) return formatIssues("المسودة بعد التعديل", v);
 
   const { error } = await supabase.from("import_drafts").update({
@@ -1396,7 +1567,7 @@ async function handleUpdateImportDraft(args: { code: string; patch: any }) {
   if (error) return "❌ تعذّر حفظ التعديل، حاول مجدداً.";
 
   const link = draftUrl(d.kind, code);
-  const stats = d.kind === "quiz" ? `${v.stats.questions} سؤال` : `${v.stats.sections} قسم، ${v.stats.questions} سؤال`;
+  const stats = d.kind === "quiz" ? `${v.stats.questions} سؤال` : d.kind === "notebook" ? `${v.stats.cells} خلية` : `${v.stats.sections} قسم، ${v.stats.questions} سؤال`;
   return [
     `✅ تم تطبيق ${res.applied!.length} تعديل (${res.applied!.join("، ")}). المسودة الآن: ${stats}.`,
     `🔗 نفس الرابط (صلاحيته جُدّدت ${DRAFT_TTL_HOURS} ساعة) — على المستخدم إعادة فتحه/تحديث الصفحة ليرى التعديل:\n${link}`,
@@ -1407,7 +1578,7 @@ async function handleUpdateImportDraft(args: { code: string; patch: any }) {
 async function handleCloneToDraft(args: { type: string; id: string }) {
   const id = String(args?.id || "").trim();
   if (!id) return "الرجاء تحديد id.";
-  let input: any, kind: "quiz" | "lesson";
+  let input: any, kind: "quiz" | "lesson" | "notebook";
   if (args?.type === "quiz") {
     kind = "quiz";
     const m = id.match(/\/(?:quiz|q)\/([^/?#]+)/);
@@ -1423,16 +1594,21 @@ async function handleCloneToDraft(args: { type: string; id: string }) {
     if (error || !data) return `لم يتم العثور على الدرس "${id}".`;
     if (data.password_protected) return "هذا الدرس محمي بكلمة مرور ولا يمكن نسخه.";
     input = lessonToDraftInput(data);
-  } else return "type يجب أن يكون quiz أو lesson.";
+  } else if (args?.type === "notebook") {
+    kind = "notebook";
+    const data = await fetchNotebook(id);
+    if (!data) return `لم يتم العثور على الدفتر "${id}".`;
+    input = notebookToDraftInput(data);
+  } else return "type يجب أن يكون quiz أو lesson أو notebook.";
 
-  const v: any = kind === "quiz" ? validateQuiz(input) : validateLesson(input);
+  const v: any = kind === "quiz" ? validateQuiz(input) : kind === "notebook" ? validateNotebook(input) : validateLesson(input);
   if (!v.ok) return `❌ المحتوى الأصلي لا يجتاز التحقق الحالي، لذا لم تُنشأ مسودة:\n${v.errors.map((e: string) => `  - ${e}`).join("\n")}`;
   const { url, short } = await saveDraft(kind, v.data);
   return [
-    `✅ نُسخ ${kind === "quiz" ? "الامتحان" : "الدرس"} إلى مسودة جديدة (الأصل لم يتغيّر).`,
+    `✅ نُسخ ${kind === "quiz" ? "الامتحان" : kind === "notebook" ? "الدفتر" : "الدرس"} إلى مسودة جديدة (الأصل لم يتغيّر — MCP لا يعدّل الدفاتر المنشورة).`,
     short ? `🔗 ${url}` : `🔗 (رابط طويل) ${url}`,
     "عدّل بـ update_import_draft أو راجع المحتوى بـ get_import_draft.",
-    "الملخص:\n" + (kind === "quiz" ? outlineQuiz(v.data) : outlineLesson(v.data)),
+    "الملخص:\n" + (kind === "quiz" ? outlineQuiz(v.data) : kind === "notebook" ? outlineNotebook(v.data) : outlineLesson(v.data)),
     formatIssues("المسودة", v),
   ].filter(Boolean).join("\n\n");
 }
@@ -1514,6 +1690,9 @@ async function handleRpcRequest(reqBody: any) {
           case "get_prompts":               resultText = handleGetPrompts(toolArgs);                break;
           case "create_quiz_import_link":   resultText = await handleCreateQuizImportLink(toolArgs);  break;
           case "create_lesson_import_link": resultText = await handleCreateLessonImportLink(toolArgs); break;
+          case "create_notebook_import_link": resultText = await handleCreateNotebookImportLink(toolArgs); break;
+          case "get_notebook":              resultText = await handleGetNotebook(toolArgs);         break;
+          case "get_notebook_content":      resultText = await handleGetNotebookContent(toolArgs);  break;
           case "get_creator_info":          resultText = handleGetCreatorInfo(toolArgs);            break;
           case "get_import_draft":          resultText = await handleGetImportDraft(toolArgs);      break;
           case "update_import_draft":       resultText = await handleUpdateImportDraft(toolArgs);   break;
