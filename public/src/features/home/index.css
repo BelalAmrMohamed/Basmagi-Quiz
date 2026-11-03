@@ -5353,6 +5353,37 @@ kbd {
   color: #fff;
 }
 
+.exam-card.notebook-card .desktop-download-btn {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .exam-card.notebook-card .start-btn.desktop-download-btn,
+  .exam-card.user-notebook-card .start-btn.desktop-download-btn {
+    display: flex !important;
+    font-size: 0 !important;
+    background: var(--color-primary) !important;
+    box-shadow: none !important;
+  }
+
+  .exam-card.notebook-card .start-btn.desktop-download-btn::after,
+  .exam-card.user-notebook-card .start-btn.desktop-download-btn::after {
+    content: none !important;
+  }
+
+  .exam-card.notebook-card .desktop-download-btn svg,
+  .exam-card.user-notebook-card .desktop-download-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .exam-card.notebook-card .desktop-download-btn span,
+  .exam-card.user-notebook-card .desktop-download-btn span {
+    display: none;
+  }
+}
+
 /* Folder/course info modal: the card already has its own padding, so drop the
    section's extra padding and let the creator card shrink/wrap on phones. */
 .course-info-modal-card .quiz-info-section {

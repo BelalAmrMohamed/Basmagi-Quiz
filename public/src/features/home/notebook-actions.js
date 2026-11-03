@@ -190,13 +190,6 @@ function printNotebook(nb) {
   showNotification("PDF", "اختر «حفظ كملف PDF» من نافذة الطباعة.", "info");
 }
 
-export const DOWNLOAD_FORMATS = [
-  { kind: "ipynb", label: "Jupyter Notebook (.ipynb)" },
-  { kind: "m", label: "سكريبت MATLAB (.m)" },
-  { kind: "html", label: "صفحة HTML (.html)" },
-  { kind: "pdf", label: "PDF (طباعة / حفظ كـ PDF)" },
-];
-
 /** Opens the AI agent with the notebook attached (local row or platform notebook). */
 export async function askAboutNotebook(row, { platform = false } = {}) {
   const launcher = await import("../../components/ai-agent/ai-agent-attach-launcher.js");
@@ -224,7 +217,7 @@ export async function fetchPlatformNotebookRow(summary) {
 }
 
 /**
- * Appends «معلومات الدفتر», the download dialog, and «اسأل الباشـمبصمج» to a card's ⋮ menu.
+ * Appends «معلومات الدفتر» and «اسأل الباشـمبصمج» to a card's ⋮ menu.
  * Local rows carry their content; platform summaries (home manifest) are fetched on demand.
  */
 export function appendNotebookMenuEntries(menu, closeMenu, reposition, row, { platform = false } = {}) {
@@ -243,18 +236,6 @@ export function appendNotebookMenuEntries(menu, closeMenu, reposition, row, { pl
     ...(platform ? [] : [{ label: "كود / نص", val: `${info.codeCount} / ${info.markdownCount}` }, { label: "اللغة", val: info.language === "ar" ? "العربية" : "English" }]),
   ].filter((r) => r.val || r.val === 0);
   menu.appendChild(createExamInfoSubmenu(basicRows, async () => { const full = await loadRow(); if (full) showNotebookInfoModal(full); }, closeMenu, reposition, "معلومات الدفتر"));
-
-  const download = document.createElement("button");
-  download.type = "button";
-  download.className = "exam-action-btn";
-  download.innerHTML = `${DOWNLOAD_ICON_SVG}<span>تنزيل الدفتر</span>`;
-  download.addEventListener("click", async (event) => {
-    event.stopPropagation();
-    closeMenu();
-    const full = await loadRow();
-    if (full) showNotebookDownloadModal(full);
-  });
-  menu.appendChild(download);
 
   const ask = document.createElement("button");
   ask.type = "button";

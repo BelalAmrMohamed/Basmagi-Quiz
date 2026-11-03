@@ -138,6 +138,7 @@ export function buildPlatformNotebookAttachment(nb) {
   const row = { id: nb?.id, meta: { title: nb?.title, description: nb?.description, source: nb?.source }, notebook: { runtime: nb?.runtime, content: nb?.content } };
   return {
     kind: "lesson",
+    itemType: "notebook",
     id: nb?.id,
     title: nb?.title || nb?.id || "Notebook",
     source: "platform",
@@ -204,23 +205,25 @@ export function openAIAgentWithAttachment(attachment, pageOptions = {}) {
       }
       if (attachment.kind === "lesson") {
         if (toolCall?.name !== "fetch_attached_lesson") throw new Error("Unknown attachment tool");
+        const attachmentLabel = attachment.itemType === "notebook" ? "الدفتر" : "الدرس";
         const requestedId = String(toolCall.input?.lessonId || "");
         if (![attachment.id].some((id) => String(id || "") === requestedId)) {
           const local = resolveUserItemById(requestedId, readUserQuizzes());
           if (!local || local.kind !== "lesson") throw new Error("الدرس المطلوب غير موجود في المرفق الحالي.");
-          return `بيانات الدرس ${local.title} (المعرّف ${requestedId}):\n${JSON.stringify(local.payload || {})}`;
+          const localLabel = local.itemType === "notebook" ? "الدفتر" : "الدرس";
+          return `بيانات ${localLabel} ${local.title} (المعرّف ${requestedId}):\n${JSON.stringify(local.payload || {})}`;
         }
         if (attachment.payload?.content) {
-          return `بيانات الدرس ${attachment.title} (المعرّف ${requestedId}):\n${JSON.stringify(attachment.payload)}`;
+          return `بيانات ${attachmentLabel} ${attachment.title} (المعرّف ${requestedId}):\n${JSON.stringify(attachment.payload)}`;
         }
         if (attachment.payload?.passwordProtected) {
-          return `الدرس ${attachment.title} محمي بكلمة مرور. لا يمكن لأداة المرفق تجاوز الحماية أو طلب كلمة المرور. افتح الدرس وأدخِل كلمة المرور أولاً، ثم أعد المحاولة.`;
+          return `${attachmentLabel} ${attachment.title} محمي بكلمة مرور. لا يمكن لأداة المرفق تجاوز الحماية أو طلب كلمة المرور. افتح العنصر وأدخِل كلمة المرور أولاً، ثم أعد المحاولة.`;
         }
         const remote = await unlockRemoteLesson(requestedId, "");
         if (remote?.content) {
-          return `بيانات الدرس ${attachment.title} (المعرّف ${requestedId}):\n${JSON.stringify({ description: remote.description || "", content: remote.content })}`;
+          return `بيانات ${attachmentLabel} ${attachment.title} (المعرّف ${requestedId}):\n${JSON.stringify({ description: remote.description || "", content: remote.content })}`;
         }
-        return `معلومات الدرس ${attachment.title} (المعرّف ${requestedId}): لا يتوفر محتوى الدرس في المرفق الحالي.`;
+        return `معلومات ${attachmentLabel} ${attachment.title} (المعرّف ${requestedId}): لا يتوفر محتوى العنصر في المرفق الحالي.`;
       }
       if (toolCall?.name !== "fetch_attached_quiz") {
         throw new Error("Unknown attachment tool");

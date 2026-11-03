@@ -539,6 +539,8 @@ export function createChatPanel(options = {}) {
     '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>';
   const ATTACHMENT_LESSON_ICON_SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>';
+  const ATTACHMENT_NOTEBOOK_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>';
   const ATTACHMENT_REMOVE_ICON_SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
 
@@ -562,6 +564,7 @@ export function createChatPanel(options = {}) {
         ...(toolName ? { toolName } : {}),
         ...(firstLabel ? { attachmentName: firstLabel } : {}),
         ...(first?.kind ? { attachmentKind: first.kind } : {}),
+        ...(first?.itemType ? { attachmentItemType: first.itemType } : {}),
         ...(first?.summary ? { attachmentSummary: first.summary } : {}),
       };
     });
@@ -579,10 +582,12 @@ export function createChatPanel(options = {}) {
    * per its own header comment) — falls back to just the title if no
    * summary was supplied (e.g. a server-hosted course whose quiz list
    * isn't loaded client-side at attach time).
-   * @param {{kind: "quiz"|"lesson"|"course"|"folder", title: string, summary?: string}} att
+   * @param {{kind: "quiz"|"lesson"|"course"|"folder", itemType?: string, title: string, summary?: string}} att
    */
   function expandPlatformAttachment(att) {
-    const kindLabelAr = { quiz: "امتحان", lesson: "درس", course: "مادة", folder: "مجلد" }[att.kind] || att.kind;
+    const kindLabelAr = att.itemType === "notebook"
+      ? "دفتر"
+      : { quiz: "امتحان", lesson: "درس", course: "مادة", folder: "مجلد" }[att.kind] || att.kind;
     const body = att.payload
       ? JSON.stringify(att.payload)
       : att.summary || "(لا تفاصيل إضافية متاحة عن هذا العنصر)";
@@ -591,6 +596,7 @@ export function createChatPanel(options = {}) {
 
   function iconForAttachment(att) {
     if (att.kind === "quiz") return ATTACHMENT_QUIZ_ICON_SVG;
+    if (att.itemType === "notebook") return ATTACHMENT_NOTEBOOK_ICON_SVG;
     if (att.kind === "lesson") return ATTACHMENT_LESSON_ICON_SVG;
     if (att.kind === "course") return ATTACHMENT_COURSE_ICON_SVG;
     if (att.kind === "folder") return ATTACHMENT_FOLDER_ICON_SVG;
@@ -601,7 +607,7 @@ export function createChatPanel(options = {}) {
     return att.kind === "file" ? att.name : att.title;
   }
 
-  const ATTACHMENT_KIND_LABEL_AR = { quiz: "امتحان", lesson: "درس", course: "مادة", folder: "مجلد", file: "ملف" };
+  const ATTACHMENT_KIND_LABEL_AR = { quiz: "امتحان", lesson: "درس", notebook: "دفتر", course: "مادة", folder: "مجلد", file: "ملف" };
 
   /**
    * Standard fade-out-then-remove dismiss animation (opacity + translateY
@@ -670,7 +676,7 @@ export function createChatPanel(options = {}) {
 
     const kindBadge = document.createElement("div");
     kindBadge.className = "ai-agent-attachment-preview-kind";
-    kindBadge.textContent = ATTACHMENT_KIND_LABEL_AR[att.kind] || att.kind || "مرفق";
+    kindBadge.textContent = ATTACHMENT_KIND_LABEL_AR[att.itemType] || ATTACHMENT_KIND_LABEL_AR[att.kind] || att.kind || "مرفق";
     card.appendChild(kindBadge);
 
     const titleEl = document.createElement("h2");
@@ -2958,7 +2964,7 @@ export function createChatPanel(options = {}) {
     conversationCreatedAt = conversation.createdAt || Date.now();
     history.length = 0;
     // Reconstruct the `attachments` shape appendMessage/openAttachmentPreviewModal
-    // expect from the persisted attachmentName/attachmentKind/attachmentSummary
+    // expect from the persisted attachmentName/attachmentKind/attachmentItemType/attachmentSummary
     // (see toPersistedMessages' own comment on why kind+summary are now
     // saved too, not just the name) — no base64 data available after a
     // reload for a real file, but everything the PREVIEW actually shows
@@ -2967,11 +2973,12 @@ export function createChatPanel(options = {}) {
     // branches on att.kind === "file") keeps working the same way it does
     // for a live, never-reloaded attachment.
     history.push(
-      ...conversation.messages.map(({ role, content, attachmentName, attachmentKind, attachmentSummary, type, toolName }) => {
+      ...conversation.messages.map(({ role, content, attachmentName, attachmentKind, attachmentItemType, attachmentSummary, type, toolName }) => {
         const kind = attachmentKind || "file"; // older saved records predate attachmentKind — file was the only kind that ever existed before platform-item attachments
         const attachment = attachmentName
           ? {
             kind,
+            ...(attachmentItemType ? { itemType: attachmentItemType } : {}),
             ...(kind === "file" ? { name: attachmentName } : { title: attachmentName }),
             ...(attachmentSummary ? { summary: attachmentSummary } : {}),
           }

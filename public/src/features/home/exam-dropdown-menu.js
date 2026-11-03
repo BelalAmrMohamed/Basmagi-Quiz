@@ -280,6 +280,7 @@ export function createExamInfoSubmenu(basicRows, onShowFull, closeDropdown, repo
  * calls `closeDropdown()` for the caller after `onClick` runs, so
  * individual action handlers don't each need to do it — mirrors
  * createExamInfoSubmenu's "كل المعلومات" button, which does the same.
+ * The optional `triggerIcon` is shown beside the submenu label.
  *
  * Reuses the exact same .submenu-container/.submenu-trigger/.submenu-content
  * CSS and hover/tap-toggle behavior as createExamInfoSubmenu above (same
@@ -287,14 +288,14 @@ export function createExamInfoSubmenu(basicRows, onShowFull, closeDropdown, repo
  * only difference is the content is a stack of .exam-action-btn rows
  * instead of read-only tooltip rows plus a single "more" button.
  */
-export function createActionGroupSubmenu(actions, closeDropdown, reposition, triggerLabel = "إدارة") {
+export function createActionGroupSubmenu(actions, closeDropdown, reposition, triggerLabel = "إدارة", triggerIcon = "") {
   const container = document.createElement("div");
   container.className = "submenu-container";
 
   const trigger = document.createElement("button");
   trigger.type = "button";
   trigger.className = "exam-action-btn submenu-trigger";
-  trigger.innerHTML = `<span class="submenu-trigger-label">${escapeHtml(triggerLabel)}</span><svg class="submenu-caret" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>`;
+  trigger.innerHTML = `${triggerIcon}<span class="submenu-trigger-label">${escapeHtml(triggerLabel)}</span><svg class="submenu-caret" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>`;
 
   const content = document.createElement("div");
   content.className = "submenu-content submenu-content--actions";

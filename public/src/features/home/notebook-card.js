@@ -4,8 +4,8 @@
 import { openExamDropdownMenu, createActionGroupSubmenu } from "./exam-dropdown-menu.js";
 import { canManageItem, openSharedMoveToDialog, renameSharedItem, editSharedItemMetadata, deleteSharedItem } from "./admin-item-actions.js";
 import { showNotification } from "../../components/notifications/notifications.js";
-import { appendNotebookMenuEntries } from "./notebook-actions.js";
-import { MORE_DOTS_ICON_SVG, COPY_ICON_SVG, SHARE_ICON_SVG, EDIT_ICON_SVG, MOVE_TO_ICON_SVG, RENAME_ICON_SVG, TRASH_ICON_SVG } from "./icons.js";
+import { appendNotebookMenuEntries, fetchPlatformNotebookRow, showNotebookDownloadModal } from "./notebook-actions.js";
+import { MORE_DOTS_ICON_SVG, COPY_ICON_SVG, SHARE_ICON_SVG, DOWNLOAD_ICON_SVG, EDIT_ICON_SVG, MOVE_TO_ICON_SVG, RENAME_ICON_SVG, TRASH_ICON_SVG } from "./icons.js";
 
 const RUNTIME_LABELS = { matlab: "MATLAB (تعليمي)" };
 
@@ -85,7 +85,23 @@ export function createNotebookCard(notebook) {
     window.location.href = notebookPath(notebook);
   });
 
-  actions.append(more, start);
+  const download = document.createElement("button");
+  download.type = "button";
+  download.className = "start-btn desktop-download-btn";
+  download.style.flex = "1";
+  download.style.minWidth = "0";
+  download.innerHTML = `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
+  download.setAttribute("aria-label", `تحميل دفتر ${notebook.title || ""}`);
+  download.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    try {
+      showNotebookDownloadModal(await fetchPlatformNotebookRow(notebook), download);
+    } catch {
+      showNotification("تعذّر تحميل الدفتر", "تحقق من اتصالك ثم حاول مرة أخرى.", "error");
+    }
+  });
+
+  actions.append(more, start, download);
   card.append(icon, text, actions);
   return card;
 }

@@ -127,7 +127,7 @@ function buildItemTree(userQuizzes, parentId) {
  * @param {object[]} [userQuizzes] - pass a pre-fetched list to avoid a
  *   redundant localStorage read when a caller (see listRecentUserItems)
  *   already has one on hand.
- * @returns {{kind: "quiz"|"lesson"|"course"|"folder", id: string, title: string, summary: string, source: "local"} | null}
+ * @returns {{kind: "quiz"|"lesson"|"course"|"folder", itemType?: "notebook", id: string, title: string, summary: string, source: "local"} | null}
  */
 export function resolveUserItemById(id, userQuizzes = readUserQuizzes()) {
   const item = userQuizzes.find((q) => (q.meta?.id || q.id) === id);
@@ -149,6 +149,7 @@ export function resolveUserItemById(id, userQuizzes = readUserQuizzes()) {
     // Attached as a "lesson" so the agent's existing fetch_attached_lesson tool returns the whole notebook.
     return {
       kind: "lesson",
+      itemType: "notebook",
       id,
       title,
       summary: summarizeNotebook(item),
@@ -160,6 +161,7 @@ export function resolveUserItemById(id, userQuizzes = readUserQuizzes()) {
   if (kind === "quiz") {
     return {
       kind,
+      ...(metaType === "notebook" ? { itemType: "notebook" } : {}),
       id,
       title,
       summary: summarizeQuiz(item),
@@ -195,7 +197,7 @@ export function resolveUserItemById(id, userQuizzes = readUserQuizzes()) {
  *   against the item's title, case-insensitively. Empty/omitted returns
  *   the most recent items unfiltered.
  * @param {number} [limit=8]
- * @returns {Array<{kind: "quiz"|"course"|"folder", id: string, title: string, summary: string, source: "local"}>}
+ * @returns {Array<{kind: "quiz"|"lesson"|"course"|"folder", itemType?: "notebook", id: string, title: string, summary: string, source: "local"}>}
  */
 export function listRecentUserItems(query = "", limit = 8) {
   const userQuizzes = readUserQuizzes();
