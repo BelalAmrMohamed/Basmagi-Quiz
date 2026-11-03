@@ -679,9 +679,11 @@ body.sidebar-expanded {
 
 .submenu-trigger-label {
   display: flex;
+  flex: 1;
   align-items: center;
   gap: 12px;
   min-width: 0;
+  text-align: right;
 }
 
 .submenu-caret {

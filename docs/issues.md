@@ -7,11 +7,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### `.exam-dropdown-menu`
-* Some of its buttons don't have icons like ("تعديل", "نقل"), give them proper matching icons.
-
-### Update OG Titles & Descriptions
-Folders and Courses OG titles & desciptions weren't updated to include lessons. 
+### Update OG Titles & Descriptions (`api/og.js`)
+Folders and Courses' OG titles & OG desciptions should updated to include lessons and notebooks. 
 
 ### Quiz Passwords are exposed
 The home page downloads every quiz’s password to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be fixed.
@@ -34,6 +31,13 @@ Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is com
 
 ### Tooltips
 * Standing on a quiz card, lesson card, or notebook card, and hovering the title or description should show a tooltip with their full content (since long title/descriptions get truncated).
+
+### Content Card Design
+* The current design of notebook cards, lesson cards, and quiz cards on the whome page is a mess.
+* Notebooks and lessons basically cannot be told apart from each other.
+* The naming of things is messed up, because of how much things were reused when implementing new features, for example, the dropdown menu used on all 3 of them is called (exam-dropdown-menu), even though exams on the platform are typically called `quizzes`, and this UI element isn't used on quizzes only anyways. The code quality needs to be improved.
+* When lessons & notebooks are mixed with quizzes in a course, it looks like a mess with some cards taller than others. ![screenshot](image.png), we need to redeisgn the hight, width, and how much of the title & description can be shown to control the card styles better.
+* The user content section is named (امتحانك), aside from the platform now supporting lessons and notebooks, too, so not only quizzes, but even that name was confusing when it was only quizzes, because users thought it was the history not content they create, name it something expressive like (إنشاء) or (إنشاء محتوى) or your recommendation.
 
 ### Online MatLab Compiler
 I recently built an online jupytor-notebook-style matlab compiler website specializing in the fundametals of MatLab: [exact copy of its code](../online-matlab-compiler)
@@ -96,27 +100,11 @@ Improve:
 ### `api\og.js`
 * Special courses that get the (مادة مميزة) badge, since there is no info table displayed, the middle of the image becomes emtpy, I need to fill it with something, or ideas to improve it when it has the  (مادة مميزة) badge. 
 
-## Notebook
+### Notebooks
 
-### What’s not done:
+#### What’s not done:
 
 * Shortcuts: Jupyter command-mode shortcuts (A, B, D D, M, Y) are not built—Shift+Enter, Ctrl+Enter, and the toolbar work.
 * Exports: they contain no cell outputs, because outputs aren’t stored. Exporting from within a notebook should give the user the option to include the outputs.
 * Not tested: the admin publish flow and a live Supabase.
 * The runtime bundle in public/assets/notebook-runtime/ was rebuilt from the changed source, so commit it along with the rest. The notes are in docs/NOTEBOOKS.md.
-
-### UI Issues
-* Create-notebook page shouldn't use the browser's built-in notifications for warnings, errors, etc. It should use the platform's notifications:
-  ```js
-    import {
-        showNotification,
-        _confirm,
-        _prompt,
-    } from "../../components/notifications/notifications.js";
-  ```
-* The download options from the user content section (امتحاناتك) should be implemented like lessons/quizzes:
-  * A download button next to the 'افتح الدفتر' button.
-  * The download button opens the download modal with all the options including the source (source like styled similarly to the one in the quiz download modal, both should be updated to allow: copying or opening the link. It should also be added to the lesson download modal, because it doesn't have it).
-* Simplify the notebook page by removing useless UI and making the page more seemless.
-  * The `.notebook-root` looks bad because of one of these 2 reasons:
-    * It looks like a slightly smaller window with slightly different colors on the page, there are borders around it, I want the design between `.notebook-root` and the actual page to be seemless.

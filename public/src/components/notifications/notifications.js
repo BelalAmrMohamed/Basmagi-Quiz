@@ -64,8 +64,8 @@ export function showNotification(
       <div class="notification-content" title="${escapeHtml(title)}">
         ${iconHTML}
         <div>
-          <strong>${escapeHtml(title)}</strong>
-          <p>${escapeHtml(message)}</p>
+          <strong dir="auto">${escapeHtml(title)}</strong>
+          <p dir="auto">${escapeHtml(message)}</p>
         </div>
         <button class="close-btn-notification">×</button>
       </div>
