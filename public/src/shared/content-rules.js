@@ -51,6 +51,7 @@ export const LIMITS = {
  *  Python/C++ are future adapters, intentionally not listed. */
 export const NOTEBOOK_RUNTIMES = ["matlab"];
 export const NOTEBOOK_SCHEMA_VERSION = 1;
+export const NOTEBOOK_LANGUAGES = ["en", "ar"];
 export const NOTEBOOK_CELL_TYPES = ["markdown", "code"];
 
 const HTTP_URL_RE = /^https?:\/\/\S+$/i;
@@ -429,7 +430,7 @@ const NOTEBOOK_CELL_ID_RE = /^[A-Za-z0-9_-]+$/;
  * assigning stable ids (`cell-N`) to cells that have none. It does NOT fix
  * invalid data (unknown types stay as given so checkNotebook can reject them).
  */
-export function normalizeNotebookContent(rawCells) {
+export function normalizeNotebookContent(rawCells, language) {
   const cells = Array.isArray(rawCells) ? rawCells : [];
   const used = new Set(cells.map((c) => str(c?.id)).filter(Boolean));
   let n = 0;
@@ -439,8 +440,10 @@ export function normalizeNotebookContent(rawCells) {
     used.add(id);
     return id;
   };
+  const lang = NOTEBOOK_LANGUAGES.includes(language) ? language : undefined;
   return {
     schemaVersion: NOTEBOOK_SCHEMA_VERSION,
+    ...(lang ? { language: lang } : {}),
     cells: cells.map((c) => ({
       id: str(c?.id) || nextId(),
       type: typeof c?.type === "string" ? c.type : "",
@@ -486,6 +489,10 @@ export function checkNotebook(input, opts = {}) {
   const doc = input?.content && typeof input.content === "object" && !Array.isArray(input.content) ? input.content : null;
   if (doc && doc.schemaVersion !== undefined && doc.schemaVersion !== NOTEBOOK_SCHEMA_VERSION) {
     c.err("SCHEMA_VERSION_UNSUPPORTED", "content.schemaVersion", `schemaVersion=${JSON.stringify(doc.schemaVersion)} غير مدعوم (المدعوم: ${NOTEBOOK_SCHEMA_VERSION}).`);
+  }
+  const language = input?.language !== undefined ? input.language : doc?.language;
+  if (language !== undefined && language !== "" && !NOTEBOOK_LANGUAGES.includes(language)) {
+    c.err("NOTEBOOK_LANGUAGE_INVALID", "language", `language=${JSON.stringify(language)} غير مدعوم (المسموح: ${NOTEBOOK_LANGUAGES.join(", ")}).`);
   }
   const rawCells = Array.isArray(input?.cells) ? input.cells : Array.isArray(doc?.cells) ? doc.cells : null;
   if (!rawCells || !rawCells.length) {

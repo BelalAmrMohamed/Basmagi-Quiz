@@ -103,12 +103,13 @@ export function validateNotebook(args: any) {
   if (!rawCells || !rawCells.length || errors.length) {
     return { ok: false, data: null, errors, warnings, stats: null };
   }
-  const content = normalizeNotebookContent(rawCells);
+  const content = normalizeNotebookContent(rawCells, args?.language ?? args?.content?.language);
   const data = {
     title: str(args?.title),
     description: str(args?.description),
     source: str(args?.source),
     runtime: str(args?.runtime),
+    ...(content.language ? { language: content.language } : {}),
     cells: content.cells,
   };
   const bytes = new TextEncoder().encode(JSON.stringify(data)).length;

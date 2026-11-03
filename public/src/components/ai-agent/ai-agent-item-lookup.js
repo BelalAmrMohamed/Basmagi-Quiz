@@ -22,6 +22,7 @@ import { getFromStorage } from "../../shared/storage-helpers.js";
 import { qz } from "../../features/home/quiz-schema.js";
 import { getFolderContentsCount } from "../../features/home/user-quizzes-folders.js";
 import { normalizeLessonContent } from "../../features/lesson/lesson-schema.js";
+import { summarizeNotebook, notebookAttachmentPayload } from "../../shared/notebook-export.js";
 
 /**
  * Reads the flat user_quizzes array from localStorage. Failure-safe (bad
@@ -109,10 +110,10 @@ function buildItemTree(userQuizzes, parentId) {
       const id = item.meta?.id || item.id;
       const kind = item.meta?.type === "course" || item.meta?.type === "folder" || item.meta?.type === "lesson"
         ? item.meta.type
-        : "quiz";
+        : item.meta?.type === "notebook" ? "lesson" : "quiz"; // notebooks travel as reading material
       const node = { kind, id, title: qz(item, "title") || item.meta?.title || "بدون عنوان" };
       if (kind === "quiz") node.questionCount = qz(item, "count");
-      else if (kind === "lesson") node.sectionCount = item.stats?.sectionCount ?? 0;
+      else if (kind === "lesson") node.sectionCount = item.stats?.sectionCount ?? (item.meta?.type === "notebook" ? item.stats?.cellCount ?? 0 : 0);
       else node.children = buildItemTree(userQuizzes, id);
       return node;
     });
@@ -142,6 +143,17 @@ export function resolveUserItemById(id, userQuizzes = readUserQuizzes()) {
       summary: summarizeLesson(item),
       source: "local",
       payload: lessonPayload(item),
+    };
+  }
+  if (metaType === "notebook") {
+    // Attached as a "lesson" so the agent's existing fetch_attached_lesson tool returns the whole notebook.
+    return {
+      kind: "lesson",
+      id,
+      title,
+      summary: summarizeNotebook(item),
+      source: "local",
+      payload: notebookAttachmentPayload(item),
     };
   }
   const kind = metaType === "folder" || metaType === "course" ? metaType : "quiz";
@@ -196,7 +208,7 @@ export function listRecentUserItems(query = "", limit = 8) {
       const title = qz(item, "title") || item.meta?.title || "بدون عنوان";
       if (q && !title.toLowerCase().includes(q)) return null;
       const metaType = item.meta?.type;
-      const kind = metaType === "folder" || metaType === "course" || metaType === "lesson" ? metaType : "quiz";
+      const kind = metaType === "folder" || metaType === "course" || metaType === "lesson" ? metaType : metaType === "notebook" ? "lesson" : "quiz";
       return {
         kind,
         id,

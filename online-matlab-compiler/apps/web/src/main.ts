@@ -9,7 +9,9 @@ import { basicSetup, EditorView } from 'codemirror';
 type AssetRec = { width: number; height: number; channels: 1 | 3; b64: string; bitDepth: number; format: string; fileSize: number; colorType: string; filename: string; fileModDate: string; colormap?: number[][] };
 export interface NotebookCellDoc { id: string; type: 'markdown' | 'code'; source: string }
 export interface NotebookDoc { id: string; title: string; schemaVersion: number; runtime: 'matlab'; cells: NotebookCellDoc[] }
-export interface MountOptions { root: HTMLElement; baseUrl: string; notebook: NotebookDoc; lang?: 'ar' | 'en'; onNotice?: (msg: string) => void }
+export interface MountOptions { root: HTMLElement; baseUrl: string; notebook: NotebookDoc; lang?: 'ar' | 'en'; onNotice?: (msg: string) => void; mode?: 'view' | 'edit'; onChange?: (cells: NotebookCellDoc[]) => void }
+const isEdit = () => opts?.mode === 'edit';
+const cellDocs = (): NotebookCellDoc[] => cells.map((c, i) => ({ id: 'cell-' + (i + 1), type: c.type === 'code' ? 'code' : 'markdown', source: c.src }));
 
 type Out = { k: 'text' | 'err' | 'warn'; s: string } | { k: 'img'; fig: number; w: number; h: number; rgb: Uint8Array; tool: boolean };
 interface Cell { id: number; type: 'code' | 'md'; src: string; outs: Out[]; count: number | null; running: boolean; mdEdit: boolean }
@@ -262,12 +264,13 @@ const publishedCells = (): Cell[] => {
   return list.length ? list : [mkCell('code', '')];
 };
 function updateSaveState() {
-  const el = $id('saveState'); if (!el) return;
+  const el = $id('saveState'); if (!el || isEdit()) return;
   const local = snapOf(cells) !== publishedHash;
   el.textContent = local ? tr('Local edits · saved in this browser only', 'تعديلات محلية · محفوظة في هذا المتصفح فقط') : tr('Published version', 'النسخة المنشورة');
   el.dataset.state = local ? 'local' : 'published';
 }
 const save = () => {
+  if (isEdit()) { try { opts.onChange?.(cellDocs()); } catch { /* host handler failed */ } return; }
   const saved = store.set(nbKey(), JSON.stringify({ v: 1, pub: publishedHash, cells: cells.map(c => ({ type: c.type, src: c.src })) }));
   updateSaveState();
   if (!saved) notify(tr('Notebook could not be saved in this browser. Export a copy to avoid losing changes.', 'تعذر حفظ دفتر العمل في هذا المتصفح. صدّر نسخة لتجنب فقدان التغييرات.'));
@@ -333,7 +336,21 @@ function openHelp() {
 }
 // ---------------- markdown (tiny) ----------------
 const esc = (s: string) => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]!));
+function renderTex(tex: string, display: boolean): string {
+  const k = (window as any).katex;
+  if (!k) return esc((display ? '$$' : '$') + tex + (display ? '$$' : '$'));
+  try { return k.renderToString(tex, { displayMode: display, throwOnError: false, strict: 'ignore' }); } catch { return esc(tex); }
+}
 function md(src: string): string {
+  // Math ($…$ / $$…$$) is rendered with the host page's KaTeX; code spans/fences are left untouched.
+  const codes: string[] = [], maths: string[] = [];
+  src = src.replace(/```[\s\S]*?```|`[^`\n]+`/g, m => `\uE002${codes.push(m) - 1}\uE003`)
+    .replace(/\$\$([\s\S]+?)\$\$/g, (_m, t) => `\uE000${maths.push(renderTex(t.trim(), true)) - 1}\uE001`)
+    .replace(/\$([^$\n]+?)\$/g, (_m, t) => `\uE000${maths.push(renderTex(t.trim(), false)) - 1}\uE001`)
+    .replace(/\uE002(\d+)\uE003/g, (_m, i) => codes[+i]);
+  return mdBase(src).replace(/\uE000(\d+)\uE001/g, (_m, i) => maths[+i]);
+}
+function mdBase(src: string): string {
   const inline = (t: string) => esc(t).replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\*([^*]+)\*/g, '<i>$1</i>');
   const out: string[] = []; let list: 'ul' | 'ol' | null = null, para: string[] = [], code: string[] | null = null, tbl: string[][] | null = null;
   const flushT = () => { if (tbl) { out.push('<table>' + tbl.map((r, i) => '<tr>' + r.map(c => (i === 0 ? '<th>' : '<td>') + inline(c) + (i === 0 ? '</th>' : '</td>')).join('') + '</tr>').join('') + '</table>'); tbl = null; } };
@@ -464,7 +481,8 @@ function runFromEditor(cell: Cell, advance: boolean) {
 }
 function cellEl(c: Cell, i: number): HTMLElement {
   const mv = (d: number) => () => { const j = i + d; if (j < 0 || j >= cells.length) return; [cells[i], cells[j]] = [cells[j], cells[i]]; sel = j; save(); render(); };
-  const tools = $('div', { class: 'tools' }, $('span', { class: 'idx' }, c.type === 'md' ? 'md' : c.running ? '[*]' : `[${c.count ?? ' '}]`));
+  const tools = $('div', { class: 'tools' });
+  const prompt = $('span', { class: 'idx', 'aria-hidden': true }, c.type === 'md' ? '' : c.running ? 'In [*]:' : `In [${c.count ?? ' '}]:`);
   if (c.type === 'code') tools.append($('button', { class: 'primary', disabled: !!curRun, title: tr('Run cell · Shift+Enter', 'تشغيل الخلية · Shift+Enter'), onclick: () => runCell(c) }, tr('▶ Run', '▶ تشغيل')));
   else tools.append($('button', { title: tr('Edit text cell', 'تحرير خلية النص'), onclick: () => { c.mdEdit = !c.mdEdit; render(); } }, c.mdEdit ? tr('Done', 'تم') : tr('Edit', 'تحرير')));
   const insertAt = (type: 'code' | 'md', offset: number) => () => {
@@ -492,7 +510,7 @@ function cellEl(c: Cell, i: number): HTMLElement {
       menuItem(c.type === 'md' ? tr('Convert to code', 'تحويل إلى كود') : tr('Convert to text', 'تحويل إلى نص'), () => { c.type = c.type === 'md' ? 'code' : 'md'; c.outs = []; c.mdEdit = c.type === 'md'; save(); render(); }),
       menuItem(tr('Delete cell', 'حذف الخلية'), remove)));
   tools.append($('span', { class: 'sp' }), options);
-  const el = $('section', { class: 'cell' + (i === sel ? ' sel' : '') + (c.running ? ' running' : ''), 'aria-label': tr(`${c.type === 'md' ? 'Text' : 'Code'} cell ${i + 1}`, `خلية ${c.type === 'md' ? 'نص' : 'كود'} ${i + 1}`) }, tools);
+  const el = $('section', { class: 'cell' + (i === sel ? ' sel' : '') + (c.running ? ' running' : ''), 'aria-label': tr(`${c.type === 'md' ? 'Text' : 'Code'} cell ${i + 1}`, `خلية ${c.type === 'md' ? 'نص' : 'كود'} ${i + 1}`) }, prompt, tools);
   el.addEventListener('focusin', () => { if (sel !== i) { sel = i; mountRoot.querySelectorAll('.cell').forEach((n, k) => n.classList.toggle('sel', k === i)); } });
   if (c.type === 'md' && !c.mdEdit) { const v = $('div', { class: 'md' }); v.innerHTML = md(c.src); v.ondblclick = () => { c.mdEdit = true; render(); }; el.append(v); }
   else if (c.type === 'md') {
@@ -675,11 +693,9 @@ function buildShell(title: string) {
   r.setAttribute('dir', LANG === 'ar' ? 'rtl' : 'ltr');
   r.setAttribute('lang', LANG);
   const dlg = (id: string, labelledby: string, ...kids: (Node | string)[]) => $('dialog', { id, 'aria-labelledby': labelledby }, ...kids);
-  const header = $('header', { id: 'bar' }, $('div', { class: 'brand' }, $('b', { id: 'nbTitle' }, title)), $('div', { class: 'actions', id: 'actions' }));
-  const note = $('div', { class: 'local-note', id: 'localNote' },
-    tr('This is an educational MATLAB-style interpreter that runs entirely in your browser (not full MATLAB). Your edits are saved only on this device and never change the published notebook; your code is never sent to a server.',
-      'هذا مُفسِّر تعليمي بأسلوب MATLAB يعمل بالكامل داخل متصفحك (وليس MATLAB الكامل). تُحفظ تعديلاتك على هذا الجهاز فقط ولا تغيّر النسخة المنشورة، ولا يُرسَل الكود إلى أي خادم.'),
-    ' ', $('span', { id: 'saveState', role: 'status' }, ''));
+  const header = $('header', { id: 'bar' }, $('div', { class: 'brand' }, $('b', { id: 'nbTitle' }, isEdit() ? '' : '')), $('div', { class: 'actions', id: 'actions' }));
+  const note = $('div', { class: 'local-note', id: 'localNote', hidden: isEdit() },
+    $('span', { id: 'saveState', role: 'status' }, ''));
   const layout = $('div', { id: 'layout' }, $('main', { id: 'nb' }), $('aside', { id: 'side' }));
   const helpDlg = dlg('helpDialog', 'helpTitle',
     $('div', { class: 'help-head' }, $('h2', { id: 'helpTitle' }, ''), $('button', { id: 'closeHelp', type: 'button' }, '')),
@@ -700,11 +716,11 @@ function buildShell(title: string) {
   r.append(header, note, layout, helpDlg, confirmDlg, imageDlg, notice);
 }
 
-function mount(o: MountOptions): { destroy(): void; resetToPublished(): void } {
+function mount(o: MountOptions): { destroy(): void; resetToPublished(): void; getCells(): NotebookCellDoc[]; setCells(list: NotebookCellDoc[]): void } {
   if (teardown) teardown();
   if (!o || !(o.root instanceof HTMLElement)) throw new Error('MLWebNotebook.mount: opts.root must be an HTMLElement');
   if (!o.notebook || !Array.isArray(o.notebook.cells)) throw new Error('MLWebNotebook.mount: opts.notebook.cells must be an array');
-  opts = o; LANG = o.lang === 'en' ? 'en' : 'ar'; mountRoot = o.root;
+  opts = o; LANG = o.lang === 'ar' ? 'ar' : 'en'; mountRoot = o.root;
   baseUrl = new URL(o.baseUrl || './', location.href).href.replace(/\/?$/, '/');
   const token = ++mountToken;
   nextId = 1; cells = []; sel = 0; files.clear(); vars = []; execCount = 0; curRun = null; focusId = null;
@@ -713,8 +729,8 @@ function mount(o: MountOptions): { destroy(): void; resetToPublished(): void } {
   buildShell(o.notebook.title || '');
   publishedHash = snapOf(publishedCells());
   try { const h = JSON.parse(store.get(histKey()) ?? '[]'); cmdHist = Array.isArray(h) ? h.filter(x => typeof x === 'string') : []; } catch { cmdHist = []; }
-  cells = load() ?? publishedCells();
-  save();
+  cells = isEdit() ? publishedCells() : (load() ?? publishedCells());
+  if (!isEdit()) save();
 
   const act = $id('actions')!;
   const imp = $('input', { type: 'file', accept: '.m,.ipynb', style: 'display:none' });
@@ -724,19 +740,27 @@ function mount(o: MountOptions): { destroy(): void; resetToPublished(): void } {
     const menu = $('details', { class: 'toolbar-menu' },
       $('summary', { title: tr('Notebook menu', 'قائمة الدفتر'), 'aria-label': tr('Notebook menu', 'قائمة الدفتر') }, tr('More', 'المزيد')),
       $('div', { class: 'toolbar-menu-items', role: 'menu' },
-        menuButton(tr('Reset to published version', 'العودة إلى النسخة المنشورة'), async () => {
+        ...(isEdit() ? [] : [menuButton(tr('Reset to published version', 'العودة إلى النسخة المنشورة'), async () => {
           if (curRun) { notify(tr('Stop execution before resetting the notebook.', 'أوقف التنفيذ قبل إعادة ضبط الدفتر.')); return; }
           if (!await confirmInApp(tr('Reset to the published version?', 'العودة إلى النسخة المنشورة؟'), tr('Your local edits in this browser will be discarded. Export them first if you want to keep a copy.', 'ستُحذف تعديلاتك المحلية في هذا المتصفح. صدّرها أولاً إن أردت الاحتفاظ بنسخة.'), tr('Reset', 'إعادة ضبط'))) return;
           resetToPublished();
-        }),
+        })]),
         menuButton(tr('Import…', 'استيراد…'), () => imp.click()),
         menuButton(tr('Export as .ipynb', 'تصدير بصيغة ‎.ipynb'), exportIpynb),
         menuButton(tr('Export as .m', 'تصدير بصيغة ‎.m'), exportM),
         menuButton(tr('Help and shortcuts', 'المساعدة والاختصارات'), openHelp)));
+    const addBelow = (type: 'code' | 'md') => () => {
+      const added = mkCell(type, type === 'md' ? '' : ''); added.mdEdit = type === 'md';
+      const at = Math.min(sel + 1, cells.length); cells.splice(at, 0, added); sel = at; save(); render();
+      if (added.type === 'code') focusCell(added.id);
+    };
     act.replaceChildren(
+      $('button', { id: 'addcode', title: tr('Insert a code cell below the selected cell', 'إدراج خلية كود أسفل الخلية المحددة'), onclick: addBelow('code') }, tr('+ Code', '+ كود')),
+      $('button', { id: 'addtext', title: tr('Insert a text (Markdown) cell below the selected cell', 'إدراج خلية نص أسفل الخلية المحددة'), onclick: addBelow('md') }, tr('+ Text', '+ نص')),
       $('button', { class: 'primary', id: 'runall', title: tr('Run all code cells', 'تشغيل كل خلايا الكود'), onclick: () => runAll() }, tr('▶ Run all', '▶ تشغيل الكل')),
       $('button', { id: 'stop', title: tr('Stop execution and reset the workspace', 'إيقاف التنفيذ وإعادة ضبط مساحة العمل'), hidden: !curRun, onclick: stopRun }, tr('■ Stop', '■ إيقاف')),
       $('span', { id: 'status', role: 'status', 'aria-label': curRun ? tr('Running', 'قيد التشغيل') : tr('Ready', 'جاهز'), 'aria-live': 'polite', title: curRun ? tr('Running', 'قيد التشغيل') : tr('Ready', 'جاهز') }, ''),
+      $('button', { id: 'toggleside', title: tr('Show variables, files and history', 'إظهار المتغيرات والملفات والسجل'), 'aria-pressed': String($id('layout')?.classList.contains('side-open') ?? false), onclick: (e: MouseEvent) => { const l = $id('layout')!; const on = l.classList.toggle('side-open'); (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(on)); } }, tr('Workspace', 'مساحة العمل')),
       menu, imp);
   };
   refreshToolbar = renderToolbar;
@@ -800,7 +824,19 @@ function mount(o: MountOptions): { destroy(): void; resetToPublished(): void } {
     refreshToolbar = () => {};
   };
   teardown = destroy;
-  return { destroy, resetToPublished: () => resetToPublished() };
+  return {
+    destroy,
+    resetToPublished: () => resetToPublished(),
+    getCells: () => cellDocs(),
+    setCells: (list: NotebookCellDoc[]) => {
+      if (curRun) stopRun();
+      for (const id of [...editorStates.keys()]) { editorStates.delete(id); editorScroll.delete(id); }
+      cells = (list || []).map(c => mkCell(c.type === 'code' ? 'code' : 'md', String(c.source ?? '')));
+      if (!cells.length) cells.push(mkCell('code', ''));
+      sel = 0; save(); render(); renderSide();
+      void Promise.all(cells.map(c => ensureAssetsFor(c.src)));
+    }
+  };
 }
 
 (window as any).MLWebNotebook = { mount };

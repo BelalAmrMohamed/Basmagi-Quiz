@@ -102,6 +102,7 @@
   <link rel="stylesheet" href="/src/styles/markdown.css">
   <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
   <link rel="stylesheet" href="src/components/notifications/notifications.css">
+  <link rel="stylesheet" href="/assets/notebook-runtime/runtime.css">
   <link rel="stylesheet" href="/src/features/create-notebook/create-notebook.css">
 
   <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
@@ -617,54 +618,33 @@
   <!-- End of Bottom Navigation Bar -->
 
 
-  <main id="contentArea" class="cnb-shell container" aria-live="polite">
-    <h1>إنشاء دفتر تفاعلي</h1>
-    <p id="cnbLead" class="cnb-lead">دفتر MATLAB تعليمي يعمل داخل متصفح المتعلم (مفسّر بأسلوب MATLAB وليس MATLAB الأصلي). لا يُنشر أي شيء قبل مراجعته وحفظه من مشرف.</p>
-    <div id="cnbGate" class="cnb-gate" hidden></div>
-    <form id="cnbForm" class="cnb-form" novalidate hidden>
-      <section class="cnb-card" aria-labelledby="cnbMetaHeading">
-        <h2 id="cnbMetaHeading">البيانات الأساسية</h2>
-        <label>العنوان <input id="cnbTitle" type="text" maxlength="200" required></label>
-        <label>الوصف <textarea id="cnbDescription" rows="2" maxlength="1200"></textarea></label>
-        <label>المصدر (رابط https:// أو فارغ) <input id="cnbSource" type="url" dir="ltr" placeholder="https://"></label>
-        <div class="cnb-row">
-          <label>بيئة التشغيل
-            <select id="cnbRuntime" required>
-              <option value="matlab">MATLAB (مفسّر تعليمي داخل المتصفح)</option>
-            </select>
-          </label>
-          <label>الرابط المختصر (اختياري) <input id="cnbSlug" type="text" dir="ltr" maxlength="80"></label>
-        </div>
-        <div class="cnb-row" id="cnbPlacementRow">
-          <label>المادة <select id="cnbCourse"></select></label>
-          <label>المجلد <select id="cnbFolder"></select></label>
-        </div>
-      </section>
-
-      <section class="cnb-card" aria-labelledby="cnbCellsHeading">
-        <div class="cnb-cells-head">
-          <h2 id="cnbCellsHeading">الخلايا</h2>
-          <div class="cnb-actions">
-            <button type="button" id="cnbAddMd">+ نص</button>
-            <button type="button" id="cnbAddCode">+ كود</button>
-            <button type="button" id="cnbImport">استيراد .ipynb / .m</button>
-            <input id="cnbImportInput" type="file" accept=".ipynb,.m" hidden>
-          </div>
-        </div>
-        <ol id="cnbCells" class="cnb-cells"></ol>
-      </section>
-
-      <section class="cnb-card" aria-labelledby="cnbReviewHeading">
-        <h2 id="cnbReviewHeading">المراجعة</h2>
-        <div id="cnbIssues" class="cnb-issues" role="status" aria-live="polite"></div>
-        <div id="cnbPreview" class="cnb-preview" hidden></div>
-        <div class="cnb-actions">
-          <button type="button" id="cnbReview">معاينة ومراجعة</button>
-          <button type="submit" id="cnbSave" class="cnb-primary" disabled>حفظ ونشر</button>
-        </div>
-        <p class="cnb-hint">لا يمكن الحفظ إلا بعد المعاينة والمراجعة وخلو الدفتر من الأخطاء.</p>
-      </section>
+  <main id="contentArea" class="cnb-shell container" dir="ltr" lang="en" aria-live="polite">
+    <header class="cnb-top">
+      <h1 id="cnbHeading">Create notebook</h1>
+      <div class="cnb-top-actions">
+        <button type="button" id="cnbImport" class="cnb-btn">Import .ipynb / .m</button>
+        <button type="button" id="cnbSave" class="cnb-btn cnb-btn--primary">Save to My Content</button>
+        <input type="file" id="cnbImportInput" accept=".ipynb,.m" hidden>
+      </div>
+    </header>
+    <form id="cnbForm" class="cnb-meta" novalidate>
+      <label class="cnb-field cnb-field--title"><span id="cnbLblTitle">Title</span>
+        <input id="cnbTitle" type="text" maxlength="200" autocomplete="off" required></label>
+      <label class="cnb-field cnb-field--lang"><span id="cnbLblLang">Notebook language</span>
+        <select id="cnbLanguage"><option value="en">English (LTR)</option><option value="ar">العربية (RTL)</option></select></label>
+      <label class="cnb-field cnb-field--desc"><span id="cnbLblDesc">Description</span>
+        <textarea id="cnbDescription" rows="2" maxlength="1200"></textarea></label>
+      <label class="cnb-field cnb-field--src"><span id="cnbLblSrc">Source link (optional)</span>
+        <input id="cnbSource" type="url" dir="ltr" placeholder="https://"></label>
+      <div id="cnbPlacementRow" class="cnb-field cnb-field--place" hidden>
+        <label><span>Course</span><select id="cnbCourse"></select></label>
+        <label><span>Folder</span><select id="cnbFolder"></select></label>
+        <label><span>Slug</span><input id="cnbSlug" type="text" dir="ltr" maxlength="80"></label>
+      </div>
+      <select id="cnbRuntime" hidden><option value="matlab">MATLAB</option></select>
     </form>
+    <div id="cnbIssues" class="cnb-issues" role="alert" aria-live="assertive" hidden></div>
+    <div id="cnbEditor" class="cnb-editor" aria-busy="true"><div class="cnb-loading">Loading editor…</div></div>
   </main>
 
   <script type="module" src="/src/features/create-notebook/create-notebook.js"></script>

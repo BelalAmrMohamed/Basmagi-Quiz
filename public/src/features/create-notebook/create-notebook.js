@@ -1,18 +1,45 @@
-// /create-notebook — admin-only notebook editor. Saves ONLY through /api/admin
-// (create-notebook / update-notebook); loads ?draft= (MCP) and ?edit=<id>.
+// /create-notebook — JupyterLab-style notebook editor, open to everyone.
+// Cells are edited/run by the notebook runtime in edit mode (assets/notebook-runtime);
+// this file owns the details form, validation and saving. Everyone saves to the
+// local "My Content" (امتحاناتك). Only an admin arriving with ?draft= (MCP) or
+// ?edit=<platform id> publishes through /api/admin.
 import { getToken, isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { fetchImportDraft } from "../../shared/import-draft.js";
-import { renderMarkdown } from "../../shared/markdown.js";
 import { escapeHtml } from "../home/escape-html.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { normalizeNotebookLang } from "../../shared/notebook-lang.js";
 import * as M from "./notebook-editor-model.js";
 
+const RUNTIME_BASE = "/assets/notebook-runtime/";
 const $ = (id) => document.getElementById(id);
 let state = M.emptyNotebook();
 let editId = null;
-let reviewed = false;
-let localMode = false; // non-admin: notebooks are saved in the browser (امتحاناتك), never published
+let localMode = true; // false only for admin platform publishing
+let handle = null; // runtime mount handle
+let mountedLang = "";
+let dirtyFlag = false;
+let saving = false;
+
+const STR = {
+  en: {
+    heading: "Create notebook", headingEdit: "Edit notebook", title: "Title", lang: "Notebook language", desc: "Description", src: "Source link (optional)",
+    import: "Import .ipynb / .m", save: "Save to My Content", savePlatform: "Save and publish", loading: "Loading editor…",
+    saved: "Saved", savedMsg: "The notebook was saved to My Content.", publishedMsg: "The notebook was published.",
+    fail: "Could not save", problems: (n) => `Fix ${n} problem${n === 1 ? "" : "s"} before saving`, importFail: "Import failed", importNotes: "Import notes",
+    loadFail: "Could not load", runtimeFail: "Could not load the notebook editor. Check your connection and reload the page.", dup: "A notebook with this title already exists here. Choose a different title.",
+    discard: "You have unsaved changes.",
+  },
+  ar: {
+    heading: "إنشاء دفتر", headingEdit: "تعديل الدفتر", title: "العنوان", lang: "لغة الدفتر", desc: "الوصف", src: "رابط المصدر (اختياري)",
+    import: "استيراد .ipynb / .m", save: "حفظ في امتحاناتك", savePlatform: "حفظ ونشر", loading: "جاري تحميل المحرر…",
+    saved: "تم الحفظ", savedMsg: "تم حفظ الدفتر في «امتحاناتك».", publishedMsg: "تم نشر الدفتر.",
+    fail: "تعذر الحفظ", problems: (n) => `أصلح ${n} من المشاكل قبل الحفظ`, importFail: "فشل الاستيراد", importNotes: "ملاحظات الاستيراد",
+    loadFail: "تعذر التحميل", runtimeFail: "تعذر تحميل محرر الدفاتر. تحقق من اتصالك وأعد تحميل الصفحة.", dup: "يوجد دفتر بنفس العنوان هنا بالفعل. اختر عنواناً مختلفاً.",
+    discard: "لديك تغييرات غير محفوظة.",
+  },
+};
+const t = (k, ...a) => { const v = STR[state.language]?.[k] ?? STR.en[k]; return typeof v === "function" ? v(...a) : v; };
 
 const readLocal = () => { try { const a = JSON.parse(localStorage.getItem("user_quizzes") || "[]"); return Array.isArray(a) ? a : []; } catch { return []; } };
 
@@ -22,7 +49,7 @@ function saveLocal(payload) {
   const i = editId ? items.findIndex((r) => (r.id || r.meta?.id) === editId && r.meta?.type === "notebook") : -1;
   const dup = items.some((r, k) => k !== i && r.meta?.type === "notebook" && (r.meta?.parentId || null) === (i >= 0 ? items[i].meta?.parentId || null : null)
     && (r.meta?.title || "").trim().toLowerCase() === payload.title.toLowerCase());
-  if (dup) return "يوجد دفتر بنفس الاسم في هذا المكان بالفعل. اختر اسماً مختلفاً.";
+  if (dup) return "dup";
   const body = { description: payload.description, source: payload.source, notebook: { runtime: payload.runtime, content: payload.content }, stats: { cellCount: payload.content.cells.length } };
   if (i >= 0) {
     const old = items[i];
@@ -42,58 +69,110 @@ const api = (body) => fetch("/api/admin", {
   body: JSON.stringify(body),
 }).then(async (r) => ({ ok: r.ok, body: await r.json().catch(() => ({})) }));
 
-function dirty() { reviewed = false; $("cnbPreview").hidden = true; refresh(); }
 
-function refresh() {
-  const v = M.validateState(state);
-  $("cnbIssues").innerHTML =
-    v.errors.map((e) => `<div class="err">❌ ${escapeHtml(e)}</div>`).join("") +
-    v.warnings.map((w) => `<div class="warn">⚠️ ${escapeHtml(w)}</div>`).join("") ||
-    "<div>✅ لا توجد مشاكل.</div>";
-  $("cnbSave").disabled = !(reviewed && !v.errors.length && (localMode || $("cnbCourse").value || editId));
+function applyChrome() {
+  const lang = state.language === "ar" ? "ar" : "en";
+  const area = $("contentArea");
+  area.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
+  area.setAttribute("lang", lang);
+  $("cnbHeading").textContent = editId ? t("headingEdit") : t("heading");
+  $("cnbLblTitle").textContent = t("title");
+  $("cnbLblLang").textContent = t("lang");
+  $("cnbLblDesc").textContent = t("desc");
+  $("cnbLblSrc").textContent = t("src");
+  $("cnbImport").textContent = t("import");
+  $("cnbSave").textContent = localMode ? t("save") : t("savePlatform");
+  document.title = `${t("heading")} | Basmagi Quiz`;
 }
 
-function renderCells() {
-  const ol = $("cnbCells");
-  ol.replaceChildren();
-  state.cells.forEach((c, i) => {
-    const li = document.createElement("li");
-    li.className = "cnb-cell";
-    li.innerHTML = `<div class="cnb-cell-bar"><strong>${i + 1}</strong>
-      <select data-act="type"><option value="markdown">نص</option><option value="code">كود</option></select>
-      <button type="button" data-act="up">↑</button><button type="button" data-act="down">↓</button>
-      <button type="button" data-act="del">حذف</button></div>
-      <textarea data-type="${c.type}" dir="${c.type === "code" ? "ltr" : "auto"}"></textarea>`;
-    li.querySelector("select").value = c.type;
-    const ta = li.querySelector("textarea");
-    ta.value = c.source;
-    ta.addEventListener("input", () => { state = M.setCell(state, i, { source: ta.value }); dirty(); });
-    li.addEventListener("click", (e) => {
-      const act = e.target?.dataset?.act;
-      if (!act || act === "type") return;
-      state = act === "del" ? M.deleteCell(state, i) : M.moveCell(state, i, act === "up" ? -1 : 1);
-      renderCells(); dirty();
-    });
-    li.querySelector("select").addEventListener("change", (e) => { state = M.setCell(state, i, { type: e.target.value }); renderCells(); dirty(); });
-    ol.append(li);
-  });
+function showIssues(headline, items, kind = "error") {
+  const box = $("cnbIssues");
+  box.className = "cnb-issues" + (kind === "warn" ? " cnb-issues--warn" : "");
+  box.replaceChildren();
+  const h = document.createElement("strong");
+  h.textContent = headline;
+  box.append(h);
+  if (items.length) {
+    const ul = document.createElement("ul");
+    for (const it of items.slice(0, 8)) { const li = document.createElement("li"); li.textContent = it; ul.append(li); }
+    if (items.length > 8) { const li = document.createElement("li"); li.textContent = `… +${items.length - 8}`; ul.append(li); }
+    box.append(ul);
+  }
+  box.hidden = false;
+  box.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
+const clearIssues = () => { $("cnbIssues").hidden = true; };
 
 function readMeta() {
-  state = { ...state, title: $("cnbTitle").value, description: $("cnbDescription").value, source: $("cnbSource").value, slug: $("cnbSlug").value, runtime: $("cnbRuntime").value };
+  state = { ...state, title: $("cnbTitle").value, description: $("cnbDescription").value, source: $("cnbSource").value, slug: $("cnbSlug").value, runtime: $("cnbRuntime").value, language: $("cnbLanguage").value };
 }
 function writeMeta() {
   $("cnbTitle").value = state.title; $("cnbDescription").value = state.description; $("cnbSource").value = state.source;
-  $("cnbSlug").value = state.slug; $("cnbRuntime").value = state.runtime;
+  $("cnbSlug").value = state.slug; $("cnbRuntime").value = state.runtime; $("cnbLanguage").value = state.language;
+}
+const markDirty = () => { dirtyFlag = true; };
+
+let runtimePromise = null;
+function loadRuntime() {
+  if (window.MLWebNotebook?.mount) return Promise.resolve(window.MLWebNotebook);
+  if (!runtimePromise) {
+    runtimePromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = `${RUNTIME_BASE}runtime.js`; s.async = true;
+      s.onload = () => (window.MLWebNotebook?.mount ? resolve(window.MLWebNotebook) : reject(new Error("runtime missing")));
+      s.onerror = () => { runtimePromise = null; reject(new Error("runtime failed to load")); };
+      document.head.append(s);
+    });
+  }
+  return runtimePromise;
 }
 
-function preview() {
+async function mountEditor() {
+  const runtime = await loadRuntime();
+  if (handle) { try { handle.destroy(); } catch { /* ignore */ } }
+  const host = $("cnbEditor");
+  host.replaceChildren();
+  host.setAttribute("aria-busy", "false");
+  mountedLang = state.language;
+  handle = runtime.mount({
+    root: host,
+    baseUrl: RUNTIME_BASE,
+    mode: "edit",
+    lang: state.language,
+    notebook: { id: editId || "draft", title: state.title, schemaVersion: 1, runtime: "matlab", cells: state.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, type: c.type, source: c.source })) },
+    onChange: (cells) => { state = { ...state, cells: cells.map((c) => ({ type: c.type, source: c.source })) }; markDirty(); },
+    onNotice: (m) => showNotification("", m, "info"),
+  });
+}
+
+function currentCells() { return handle ? handle.getCells().map((c) => ({ type: c.type, source: c.source })) : state.cells; }
+
+async function save() {
+  if (saving) return;
   readMeta();
-  const html = state.cells.map((c) => c.type === "code"
-    ? `<pre><code>${escapeHtml(c.source)}</code></pre>` : `<div>${renderMarkdown(c.source)}</div>`).join("");
-  $("cnbPreview").innerHTML = `<h3>${escapeHtml(state.title)}</h3>${html}`;
-  $("cnbPreview").hidden = false;
-  reviewed = true; refresh();
+  state = { ...state, cells: currentCells() };
+  const v = M.validateState(state, state.language);
+  if (v.errors.length) { showIssues(t("problems", v.errors.length), v.errors); return; }
+  clearIssues();
+  const payload = M.buildPayload(state);
+  saving = true; $("cnbSave").disabled = true;
+  try {
+    if (localMode) {
+      const err = saveLocal(payload);
+      if (err) { showIssues(t("fail"), [err === "dup" ? t("dup") : err]); return; }
+      dirtyFlag = false;
+      showNotification(t("saved"), t("savedMsg"), "success");
+      setTimeout(() => { location.href = `/notebook/${encodeURIComponent(editId)}?type=user`; }, 700);
+      return;
+    }
+    const res = editId
+      ? await api({ action: "update-notebook", id: editId, ...payload })
+      : await api({ action: "create-notebook", ...payload, courseId: $("cnbCourse").value, folderId: $("cnbFolder").value || null });
+    if (!res.ok) { showIssues(t("fail"), [res.body.error || "Unknown error"]); return; }
+    dirtyFlag = false;
+    showNotification(t("saved"), t("publishedMsg"), "success");
+    setTimeout(() => { location.href = `/notebook/${encodeURIComponent(res.body.id || editId)}`; }, 700);
+  } finally { saving = false; $("cnbSave").disabled = false; }
 }
 
 async function loadPlacement() {
@@ -109,80 +188,56 @@ async function loadPlacement() {
     fs.innerHTML = `<option value="">— مباشرة تحت المادة —</option>` +
       (folders || []).filter((f) => f.course_id === cs.value).map((f) => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join("");
   };
-  cs.addEventListener("change", () => { fill(); refresh(); });
+  cs.addEventListener("change", fill);
   fill();
 }
 
-async function save(e) {
-  e.preventDefault();
-  readMeta();
-  const v = M.validateState(state);
-  if (!reviewed || v.errors.length) return;
-  const payload = M.buildPayload(state);
-  if (localMode) {
-    const err = saveLocal(payload);
-    if (err) return showNotification("تعذر الحفظ", err, "error");
-    showNotification("تم الحفظ", 'تم حفظ الدفتر في "امتحاناتك".', "success");
-    setTimeout(() => { location.href = `/notebook/${encodeURIComponent(editId)}?type=user`; }, 800);
-    return;
-  }
-  const res = editId
-    ? await api({ action: "update-notebook", id: editId, ...payload })
-    : await api({ action: "create-notebook", ...payload, courseId: $("cnbCourse").value, folderId: $("cnbFolder").value || null });
-  if (!res.ok) return showNotification("تعذر الحفظ", res.body.error || "خطأ غير معروف", "error");
-  showNotification("تم الحفظ", "تم نشر الدفتر.", "success");
-  setTimeout(() => { location.href = `/notebook/${encodeURIComponent(res.body.id || editId)}`; }, 800);
-}
-
-function applyLocalUi() {
-  $("cnbPlacementRow").hidden = true;
-  $("cnbSlug").closest("label").hidden = true;
-  $("cnbSave").textContent = "حفظ في امتحاناتك";
-  $("cnbLead").textContent = "دفتر MATLAB تعليمي يعمل داخل متصفحك (مفسّر بأسلوب MATLAB وليس MATLAB الأصلي). يُحفظ في «امتحاناتك» على جهازك، ويمكنك استيراد ملف .ipynb أو .m. تُنشأ الدفاتر للجميع دائماً.";
-}
 
 async function init() {
-  // Open to everyone, like create-quiz / create-lesson: notebooks are saved
-  // locally in امتحاناتك. The platform-publish path is only used by an admin who
-  // arrives with an MCP ?draft= link or edits a published notebook (?edit=<uuid>).
   const params = new URLSearchParams(location.search);
   const edit = params.get("edit");
   const admin = isAdminAuthenticated();
   const editIsLocal = !!edit && /^user_notebook_/.test(edit);
   localMode = !(admin && ((edit && !editIsLocal) || params.get("draft")));
-  $("cnbForm").hidden = false;
-  if (localMode) applyLocalUi(); else await loadPlacement();
+  if (!localMode) { $("cnbPlacementRow").hidden = false; await loadPlacement(); }
   try {
     const draft = await fetchImportDraft("notebook");
     if (draft) state = M.notebookFromPayload(JSON.parse(draft));
     else if (edit && localMode) {
       const row = readLocal().find((r) => (r.id || r.meta?.id) === edit && r.meta?.type === "notebook");
-      if (!row) throw new Error("الدفتر غير موجود في امتحاناتك.");
-      state = M.notebookFromPayload({ ...row.notebook, title: row.meta?.title, description: row.meta?.description, source: row.meta?.source, slug: "" });
+      if (!row) throw new Error("Notebook not found in My Content.");
+      state = M.notebookFromPayload({ ...row.notebook, content: row.notebook?.content, title: row.meta?.title, description: row.meta?.description, source: row.meta?.source, slug: "" });
       editId = edit;
     } else if (edit) {
       const r = await api({ action: "get-notebook", id: edit });
-      if (!r.ok) throw new Error(r.body.error || "تعذر تحميل الدفتر.");
+      if (!r.ok) throw new Error(r.body.error || "Could not load the notebook.");
       state = M.notebookFromPayload(r.body.notebook); editId = edit;
       $("cnbPlacementRow").hidden = true;
     }
-  } catch (err) { showNotification("تعذر التحميل", err.message, "error"); }
-  writeMeta(); renderCells(); refresh();
-  $("cnbForm").addEventListener("input", (e) => { if (e.target.closest("#cnbCells")) return; readMeta(); dirty(); });
-  $("cnbAddMd").onclick = () => { state = M.addCell(state, "markdown"); renderCells(); dirty(); };
-  $("cnbAddCode").onclick = () => { state = M.addCell(state, "code"); renderCells(); dirty(); };
+  } catch (err) { showNotification(t("loadFail"), err.message, "error"); }
+  writeMeta(); applyChrome();
+  try { await mountEditor(); } catch { showIssues(t("loadFail"), [t("runtimeFail")]); }
+  dirtyFlag = false;
+
+  $("cnbForm").addEventListener("input", () => { readMeta(); markDirty(); if (!$("cnbIssues").hidden) clearIssues(); });
+  $("cnbForm").addEventListener("submit", (e) => e.preventDefault());
+  $("cnbLanguage").addEventListener("change", async () => {
+    state = { ...state, cells: currentCells() }; readMeta(); applyChrome(); markDirty();
+    try { await mountEditor(); } catch { /* shown on next save */ }
+  });
+  $("cnbSave").addEventListener("click", save);
   $("cnbImport").onclick = () => $("cnbImportInput").click();
   $("cnbImportInput").onchange = async (e) => {
     const f = e.target.files[0]; if (!f) return;
     try {
-      readMeta();
+      readMeta(); state = { ...state, cells: currentCells() };
       const r = M.importFileInto(state, f.name, await f.text());
-      state = r.state; writeMeta(); renderCells(); dirty();
-      if (r.warnings.length) showNotification("ملاحظات الاستيراد", r.warnings.join("\n"), "warning", 10);
-    } catch (err) { showNotification("فشل الاستيراد", err.message, "error"); }
+      state = r.state; writeMeta(); applyChrome(); markDirty(); clearIssues();
+      if (handle && mountedLang === state.language) handle.setCells(state.cells); else await mountEditor();
+      if (r.warnings.length) showIssues(t("importNotes"), r.warnings, "warn");
+    } catch (err) { showIssues(t("importFail"), [err.message]); }
     e.target.value = "";
   };
-  $("cnbReview").onclick = preview;
-  $("cnbForm").addEventListener("submit", save);
+  window.addEventListener("beforeunload", (e) => { if (dirtyFlag) { e.preventDefault(); e.returnValue = t("discard"); } });
 }
 void init();

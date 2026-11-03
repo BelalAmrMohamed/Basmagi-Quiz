@@ -8,6 +8,7 @@
 // =============================================================================
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { parseNotebookRef, isUuid, prepareNotebook } from "./notebook-data.js";
+import { resolveNotebookLang, notebookText } from "../../shared/notebook-lang.js";
 
 const RUNTIME_BASE = "/assets/notebook-runtime/";
 const LOAD_TIMEOUT_MS = 15000;
@@ -49,7 +50,7 @@ async function fetchNotebookRow(ref) {
   if (!supabase) throw new Error("تعذر الاتصال بالخادم.");
   const query = supabase
     .from("notebook_public")
-    .select("id, slug, title, description, source, runtime, content, updated_at");
+    .select("*");
   const request = isUuid(ref) ? query.eq("id", ref).maybeSingle() : query.eq("slug", ref).maybeSingle();
   const { data, error } = await withTimeout(request, LOAD_TIMEOUT_MS, "انتهت مهلة تحميل الدفتر.");
   if (error) throw new Error("تعذر تحميل الدفتر. حاول مجدداً.");
@@ -84,7 +85,16 @@ function readLocalNotebookRow(ref) {
     description: r.meta?.description,
     runtime: r.notebook?.runtime,
     content: r.notebook?.content,
+    language: r.notebook?.language || r.meta?.language || "",
   };
+}
+
+function applyPageLang(lang) {
+  const area = $("contentArea");
+  area.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
+  area.setAttribute("lang", lang);
+  const d = document.querySelector(".notebook-disclaimer");
+  if (d) d.textContent = notebookText(lang, "disclaimer");
 }
 
 async function init() {
@@ -106,6 +116,8 @@ async function init() {
   const prepared = prepareNotebook(row);
   if (!prepared.ok) return showError(prepared.message);
   const { notebook } = prepared;
+  const lang = resolveNotebookLang(row.language || row.content?.language, notebook);
+  applyPageLang(lang);
 
   document.title = `${notebook.title} | دفتر تفاعلي | منصة امتحانات بصمجي`;
   $("notebookTitle").textContent = notebook.title;
@@ -117,7 +129,7 @@ async function init() {
   try {
     runtime = await loadRuntime();
   } catch {
-    return showError("تعذر تحميل بيئة تشغيل الدفتر. تحقق من اتصالك ثم أعد المحاولة.", { retry: init });
+    return showError(notebookText(lang, "runtimeFailed"), { retry: init });
   }
 
   try {
@@ -125,12 +137,12 @@ async function init() {
       root: $("notebookRoot"),
       baseUrl: RUNTIME_BASE,
       notebook,
-      lang: "ar",
+      lang,
       onNotice: (message) => window.dispatchEvent(new CustomEvent("notebook:notice", { detail: message })),
     });
   } catch (e) {
     console.error("[notebook-page] mount failed:", e);
-    return showError("تعذر تشغيل الدفتر في هذا المتصفح.");
+    return showError(notebookText(lang, "mountFailed"));
   }
   $("notebookStatus").hidden = true;
   $("contentArea").setAttribute("aria-busy", "false");

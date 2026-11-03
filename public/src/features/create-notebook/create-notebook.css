@@ -1,17 +1,37 @@
-.cnb-shell{max-width:980px;margin-inline:auto;padding:16px}
-.cnb-card{border:1px solid var(--border,#ddd);border-radius:10px;padding:14px;margin-bottom:14px}
-.cnb-card label{display:block;margin-bottom:10px}
-.cnb-card input,.cnb-card textarea,.cnb-card select{width:100%;font:inherit;box-sizing:border-box}
-.cnb-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.cnb-cells{list-style:none;padding:0;margin:0}
-.cnb-cell{border:1px solid var(--border,#ddd);border-radius:8px;padding:8px;margin-bottom:8px}
-.cnb-cell textarea{min-height:90px}
-.cnb-cell textarea[data-type=code]{direction:ltr;text-align:left;font-family:ui-monospace,Menlo,Consolas,monospace}
-.cnb-cell-bar,.cnb-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.cnb-cells-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-.cnb-issues .err{color:var(--error,#b42318)}.cnb-issues .warn{color:#b54708}
-.cnb-preview{border:1px dashed var(--border,#ccc);padding:10px;margin:10px 0}
-.cnb-preview pre{direction:ltr;text-align:left;overflow:auto}
-.cnb-primary{font-weight:700}
-.cnb-hint{font-size:.85rem;opacity:.8}
-@media(max-width:640px){.cnb-row{grid-template-columns:1fr}}
+/* /create-notebook — JupyterLab-style editor shell. Cells come from the runtime (assets/notebook-runtime). */
+.cnb-shell { max-width: 1100px; margin-inline: auto; padding: 8px 4px 32px; width: 100%; }
+.cnb-shell[dir="rtl"] { font-family: inherit; }
+.cnb-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 0 14px; }
+.cnb-top h1 { margin: 0; font-size: clamp(1.35rem, 3vw, 1.8rem); letter-spacing: -.02em; }
+.cnb-top-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.cnb-btn { min-height: 38px; padding: 6px 16px; border-radius: 6px; font: inherit; font-weight: 600; font-size: .9rem; cursor: pointer;
+  border: 1px solid var(--color-border, #d0d5dd); background: var(--color-surface, #fff); color: var(--color-text-primary, #1a1a1a); }
+.cnb-btn:hover:not(:disabled) { border-color: #3367d6; }
+.cnb-btn:disabled { opacity: .5; cursor: not-allowed; }
+.cnb-btn--primary { background: #3367d6; border-color: #3367d6; color: #fff; }
+.cnb-btn--primary:hover:not(:disabled) { background: #2a56b3; border-color: #2a56b3; }
+.cnb-meta { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 10px 14px; padding: 14px; margin-bottom: 12px;
+  border: 1px solid var(--color-border, #d0d5dd); border-radius: 8px; background: var(--color-surface, #fff); }
+.cnb-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: .82rem; font-weight: 600; color: var(--color-text-secondary, #667085); }
+.cnb-field input, .cnb-field textarea, .cnb-field select { width: 100%; min-height: 38px; padding: 7px 10px; box-sizing: border-box; font: inherit; font-weight: 400; font-size: .95rem;
+  color: var(--color-text-primary, #1a1a1a); background: var(--color-background, #fff); border: 1px solid var(--color-border, #d0d5dd); border-radius: 6px; }
+.cnb-field textarea { resize: vertical; min-height: 56px; }
+.cnb-field input:focus, .cnb-field textarea:focus, .cnb-field select:focus { outline: 2px solid #3367d6; outline-offset: 0; border-color: transparent; }
+.cnb-field--title input { font-size: 1.1rem; font-weight: 700; }
+.cnb-field--desc, .cnb-field--src, .cnb-field--place { grid-column: 1 / -1; }
+.cnb-field--place { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cnb-field--place label { display: flex; flex-direction: column; gap: 4px; }
+.cnb-field--place[hidden] { display: none; }
+.cnb-issues { margin: 0 0 12px; padding: 10px 14px; border-radius: 8px; font-size: .9rem; line-height: 1.6; border: 1px solid #dc2626; background: color-mix(in srgb, #dc2626 9%, var(--color-surface, #fff)); color: var(--color-text-primary, #1a1a1a); }
+.cnb-issues[hidden] { display: none; }
+.cnb-issues strong { display: block; margin-bottom: 2px; }
+.cnb-issues ul { margin: 0; padding-inline-start: 20px; }
+.cnb-issues--warn { border-color: #d97706; background: color-mix(in srgb, #d97706 9%, var(--color-surface, #fff)); }
+.cnb-editor { min-height: 320px; }
+.cnb-loading { padding: 40px; text-align: center; color: var(--color-text-secondary, #667085); }
+@media (max-width: 640px) {
+  .cnb-meta { grid-template-columns: minmax(0, 1fr); padding: 10px; }
+  .cnb-field--place { grid-template-columns: minmax(0, 1fr); }
+  .cnb-top-actions { width: 100%; }
+  .cnb-top-actions .cnb-btn { flex: 1; }
+}

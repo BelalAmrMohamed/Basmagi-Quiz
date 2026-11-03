@@ -193,7 +193,7 @@ select#lessons { min-width: 210px; max-width: min(360px, 70vw); }
   overflow: visible;
   box-shadow: var(--shadow);
 }
-.cell.sel { border-color: color-mix(in srgb, var(--accent) 72%, var(--line)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent), var(--shadow); }
+.cell.sel { border-color: color-mix(in srgb, var(--accent) 72%, var(--line)); box-shadow: none; }
 .cell .tools {
   position: absolute;
   z-index: 3;
@@ -443,3 +443,71 @@ textarea.src.mdsrc { direction: inherit; text-align: start; white-space: pre-wra
 .local-note { max-width: 1700px; margin: 12px auto 0; padding: 9px clamp(14px, 2.5vw, 36px); color: var(--mute); font-size: 13px; line-height: 1.6; }
 #saveState { display: inline-block; margin-inline-start: 6px; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 12px; font-weight: 600; }
 #saveState[data-state="local"] { border-color: var(--accent); color: var(--accent); }
+
+/* ===================== JupyterLab-style layout (overrides) ===================== */
+:root { }
+& { --jp-prompt: 74px; --jp-sel: #3367d6; --jp-edit: #2e9e5b; --jp-radius: 4px; background: transparent; font-size: 15px; }
+#bar { position: sticky; top: 0; padding: 6px clamp(8px, 1.5vw, 20px); gap: 6px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px 6px 0 0; backdrop-filter: none; justify-content: flex-start; }
+.brand { display: none; }
+.actions { gap: 4px; width: 100%; }
+.actions button, .toolbar-menu > summary { min-height: 32px; padding: 3px 11px; border-radius: 4px; font-size: 13px; background: var(--panel); }
+.actions button.primary { background: var(--jp-sel); border-color: var(--jp-sel); color: #fff; }
+.actions button.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--jp-sel) 85%, #000); border-color: transparent; }
+.actions button[aria-pressed="true"] { background: color-mix(in srgb, var(--jp-sel) 14%, var(--panel)); border-color: var(--jp-sel); }
+.actions .toolbar-menu { margin-inline-start: auto; }
+#status { margin-inline: 4px; }
+.local-note { max-width: none; margin: 0; padding: 4px 12px; background: var(--panel-soft); border: 1px solid var(--line); border-top: 0; font-size: 12px; text-align: end; }
+.local-note[hidden] { display: none; }
+#layout { display: block; max-width: none; margin: 0; padding: 0; border: 1px solid var(--line); border-top: 0; background: var(--panel); border-radius: 0 0 6px 6px; }
+#nb { padding: 14px clamp(6px, 1.5vw, 20px) 40px; min-height: 240px; }
+#side { display: none; position: static; padding: 10px clamp(8px, 1.5vw, 20px) 4px; border-bottom: 1px solid var(--line); background: var(--panel-soft); }
+#layout.side-open { display: flex; flex-direction: column-reverse; }
+#layout.side-open #side { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+#side .panel { margin: 0; box-shadow: none; border-radius: 6px; }
+.panel .body { max-height: 220px; }
+
+/* cells: prompt gutter + flat body, blue bar when selected (command), green when editing */
+.cell { margin: 0 0 6px; padding-inline-start: var(--jp-prompt); border: 1px solid transparent; border-radius: var(--jp-radius); background: transparent; box-shadow: none; position: relative; }
+.cell::before { content: ""; position: absolute; inset-block: 0; inset-inline-start: 0; width: 5px; border-radius: 3px 0 0 3px; background: transparent; }
+.cell:hover { border-color: color-mix(in srgb, var(--line) 80%, transparent); }
+.cell.sel { border-color: color-mix(in srgb, var(--jp-sel) 55%, var(--line)); }
+.cell.sel::before { background: var(--jp-sel); }
+.cell:focus-within::before { background: var(--jp-edit); }
+.cell:focus-within { border-color: color-mix(in srgb, var(--jp-edit) 50%, var(--line)); }
+.cell.running::before { background: var(--accent); }
+.cell .idx { display: block; position: absolute; inset-inline-start: 6px; top: 8px; width: calc(var(--jp-prompt) - 12px); text-align: end; font: 12.5px/1.6 ui-monospace, "Cascadia Code", Menlo, Consolas, monospace; color: #307fc1; direction: ltr; user-select: none; white-space: nowrap; }
+.cell.running .idx { color: var(--accent); font-weight: 700; }
+.cell .tools { top: -15px; inset-inline-end: 8px; gap: 3px; padding: 2px; border: 1px solid var(--line); border-radius: 5px; box-shadow: var(--shadow); }
+.cell .tools button, .cell-menu > summary { min-height: 28px; height: 28px; padding: 2px 9px; font-size: 12px; border-radius: 4px; }
+.cell-menu > summary { width: 30px; padding: 0; }
+.code-editor { border: 1px solid var(--line); border-radius: var(--jp-radius); background: var(--code); }
+.cell.sel .code-editor, .cell:focus-within .code-editor { border-color: color-mix(in srgb, var(--jp-edit) 60%, var(--line)); }
+textarea.src { border: 1px solid var(--line); border-radius: var(--jp-radius); padding: 10px 12px; }
+.md { padding: 6px 14px; }
+.outs { padding: 2px 0 8px; }
+pre.o { margin: 4px 0 0; border-radius: 3px; background: transparent; padding: 6px 4px; }
+pre.o.err { background: var(--errbg); padding: 8px 12px; }
+pre.o.warn { background: var(--warnbg); padding: 8px 12px; }
+.fig { border-radius: 4px; }
+.cell-insert { bottom: -13px; }
+@media (max-width: 760px) {
+  & { --jp-prompt: 0px; }
+  .cell { padding-inline-start: 0; padding-top: 20px; }
+  .cell::before { width: 4px; }
+  .cell .idx { top: 2px; inset-inline-start: 10px; width: auto; text-align: start; font-size: 11.5px; }
+  .cell .tools { position: absolute; top: -13px; min-height: 0; padding: 2px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); opacity: 1; pointer-events: auto; justify-content: flex-start; }
+  .cell .tools .sp { display: none; }
+  .actions { gap: 4px; }
+  .actions button { min-height: 36px; }
+  .cell-insert, .cell:hover .cell-insert, .cell:focus-within .cell-insert { display: none; }
+  #layout.side-open #side { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  #bar { display: flex; padding: 6px; }
+  .actions { display: flex; flex-wrap: wrap; width: 100%; }
+  .actions > #runall { grid-column: auto; }
+  #status { display: inline-block; }
+}
+
+.md .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.md .katex { font-size: 1.05em; }

@@ -4,6 +4,7 @@
 import { openExamDropdownMenu, createActionGroupSubmenu } from "./exam-dropdown-menu.js";
 import { canManageItem, openSharedMoveToDialog, renameSharedItem, editSharedItemMetadata, deleteSharedItem } from "./admin-item-actions.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { appendNotebookMenuEntries } from "./notebook-actions.js";
 import { MORE_DOTS_ICON_SVG, COPY_ICON_SVG, SHARE_ICON_SVG, EDIT_ICON_SVG, MOVE_TO_ICON_SVG, RENAME_ICON_SVG, TRASH_ICON_SVG } from "./icons.js";
 
 const RUNTIME_LABELS = { matlab: "MATLAB (تعليمي)" };
@@ -104,6 +105,7 @@ function openNotebookActionsMenu(notebook, trigger) {
         else void navigator.clipboard.writeText(url).then(() => showNotification("تم النسخ", "تم نسخ رابط الدفتر.", "success"));
       },
     });
+    appendNotebookMenuEntries(menu, closeMenu, reposition, notebook, { platform: true });
     if (canManageItem(item)) {
       menu.appendChild(createActionGroupSubmenu([
         { label: "تعديل التفاصيل", icon: EDIT_ICON_SVG, onClick: () => editSharedItemMetadata(item) },

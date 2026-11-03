@@ -29,6 +29,9 @@ Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is com
 
 ## New Features
 
+### Tooltips
+* Standing on a quiz card, lesson card, or notebook card, and hovering the title or description should show a tooltip with their full content (since long title/descriptions get truncated).
+
 ### Online MatLab Compiler
 I recently built an online jupytor-notebook-style matlab compiler website specializing in the fundametals of MatLab: [exact copy of its code](../online-matlab-compiler)
 * And before improving it further, I figured it would be better and more dynamic if I integrate it inside Basmagi-Quiz (this website) instead of being a seperate website.
@@ -89,3 +92,33 @@ Improve:
 
 ### `api\og.js`
 * Special courses that get the (مادة مميزة) badge, since there is no info table displayed, the middle of the image becomes emtpy, I need to fill it with something, or ideas to improve it when it has the  (مادة مميزة) badge. 
+
+## Notebook
+
+### What’s not done:
+
+* Shortcuts: Jupyter command-mode shortcuts (A, B, D D, M, Y) are not built—Shift+Enter, Ctrl+Enter, and the toolbar work.
+* Exports: they contain no cell outputs, because outputs aren’t stored. Exporting from within a notebook should give the user the option to include the outputs.
+* Not tested: the admin publish flow and a live Supabase.
+* The runtime bundle in public/assets/notebook-runtime/ was rebuilt from the changed source, so commit it along with the rest. The notes are in docs/NOTEBOOKS.md.
+
+### UI Issues
+* The help modal, ![screenshot](image.png):
+  * It has 2 scrollbars, one of them is useless.
+  * It's not centered.
+* The `Workspace` should always be visible, like the real MATLAB program. See this good design of it: ![screenshot](image-1.png). Everything is visible on the side and reachable; that would also use the unused width of the page.
+* Implement autocomplete for code (will be expanded later to support multiple runtimes when we add multiple runtimes).
+* Create-notebook page shouldn't use the browser's built-in notifications for warnings, errors, etc. It should use the platform's notifications:
+  ```js
+    import {
+        showNotification,
+        _confirm,
+        _prompt,
+    } from "../../components/notifications/notifications.js";
+  ```
+* The download options from the user content section (امتحاناتك) should be implemented like lessons/quizzes:
+  * A download button next to the 'افتح الدفتر' button.
+  * The download button opens the download modal with all the options including the source (source like styled similarly to the one in the quiz download modal, both should be updated to allow: copying or opening the link. It should also be added to the lesson download modal, because it doesn't have it).
+* Implement proper lines when indexing:
+  * Description: In VS Code, when I write a code block, each indentation shows a line. 
+  * Example (This code block has 3 indentations, so there are 3 lines): ![screenshot](image-2.png)

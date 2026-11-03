@@ -47,6 +47,7 @@ export function prepareNotebook(row) {
       title: String(row.title || ""),
       description: String(row.description || ""),
       schemaVersion: content.schemaVersion,
+      language: content.language || "",
       runtime: row.runtime,
       cells: content.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, type: c.type, source: c.source })),
     },

@@ -2,6 +2,7 @@
 // input parser (notebook JSON / raw .ipynb JSON / .ipynb / .m file) and the
 // shared-rules validator. Unit-tested in tests/notebook-input.test.js.
 import { checkNotebook, normalizeNotebookContent } from "../../shared/content-rules.js";
+import { normalizeNotebookLang, detectNotebookLang } from "../../shared/notebook-lang.js";
 import { notebookFromFile, notebookFromIpynb } from "../../shared/notebook-convert.js";
 
 export const NOTEBOOK_CREATION_PROMPT = `Create an interactive executable notebook as valid JSON. Write the Markdown explanations in the language requested by the user or the language of the material; if no language is specified, use the language of the request.
@@ -13,6 +14,7 @@ Use this exact structure:
   "description": "Short optional description",
   "source": "https://... (Direct URL to the source lecture/drive/book, or an empty string)",
   "runtime": "matlab",
+  "language": "en",
   "cells": [
     { "type": "markdown", "source": "## Explanation in Markdown..." },
     { "type": "code", "source": "x = 1:5;\\ny = x.^2\\nplot(x, y)" }
@@ -20,6 +22,7 @@ Use this exact structure:
 }
 \`\`\`
 Rules:
+- "language" is "en" (English, left-to-right UI) or "ar" (Arabic, right-to-left UI): the language of the Markdown explanations.
 - "runtime" MUST be "matlab": a browser-based EDUCATIONAL MATLAB-style subset (not MathWorks MATLAB: no toolboxes, Simulink, files or network). Never use Python or C++.
 - Alternate short Markdown cells (explanations) with small, runnable code cells. Each code cell must be self-contained enough to run top-to-bottom, and code/comments/output stay left-to-right.
 - Cell "type" is only "markdown" or "code". "source" is a single string. NEVER put a literal line break inside a JSON string: write every line break as the two characters \\n, and escape double quotes (\\") and backslashes (\\\\).
@@ -183,6 +186,7 @@ export function parseNotebookInput({ text = "", fileName = "" } = {}) {
   let content;
   let warnings = [];
   let notes = [];
+  let explicitLang = "";
 
   if (fileName) {
     if (!raw) throw new NotebookInputError("الملف فارغ", [`${fileName} لا يحتوي أي نص.`]);
@@ -224,9 +228,12 @@ export function parseNotebookInput({ text = "", fileName = "" } = {}) {
       runtime = typeof data?.runtime === "string" ? data.runtime : "";
       const cells = Array.isArray(data?.cells) ? data.cells : data.content.cells;
       content = normalizeNotebookContent(cells);
+      explicitLang = data?.language ?? data?.content?.language;
     }
   }
-  return { title, description, source, runtime, content, warnings: [...notes, ...warnings] };
+  const language = normalizeNotebookLang(explicitLang) || detectNotebookLang({ title, description, cells: content?.cells || [] });
+  if (content) content = { ...content, language };
+  return { title, description, source, runtime, language, content, warnings: [...notes, ...warnings] };
 }
 
 export function validateNotebookRecord(rec) {

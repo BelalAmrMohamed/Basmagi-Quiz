@@ -23,3 +23,10 @@ Implements docs/plans/matlab-notebook-integration.md.
 - `create-notebook.html` / `notebook.html` had a truncated bottom-nav block (unclosed `<svg>`), so `<main>` was parsed inside the SVG and rendered 0×0. Restored the block; verified in Chromium.
 - `/create-notebook` is open to everyone and saves to امتحاناتك. Only an admin arriving with `?draft=` or `?edit=<platform id>` gets the publish flow.
 - `notebook-input.js`: lenient JSON parser (repairs raw line breaks in strings, bad escapes, trailing commas, wrapping fences/prose) with line/column/snippet errors; the modal shows an inline error panel, a file chip, and "رفع ملف" beside "إنشاء الدفتر"; the scroll now lives in an inner wrapper so the scrollbar stays inside the rounded card.
+
+### Round 4 (UI overhaul)
+- **Runtime** (`online-matlab-compiler/apps/web/src/main.ts`, `style.css`; rebuild with `npm run build:notebook-runtime`): JupyterLab look (`In [n]:` gutter, blue/green active bars, flat toolbar, collapsible Workspace panel), KaTeX math in text cells (uses the host page's `window.katex`), English by default, and `mode:"edit"` with `onChange(cells)` plus `getCells()` / `setCells()` on the mount handle.
+- **/create-notebook**: details form + the runtime in edit mode (cells are runnable). No course/folder fields for normal users; language selector (en/ar) drives the page direction/strings and is stored in `content.language`.
+- **Language**: `content.language` ("en"|"ar", optional; inferred from text when missing — `shared/notebook-lang.js`). Accepted by `checkNotebook`, `api/_validateNotebook.js` and the MCP; no DB migration needed.
+- **Cards (local and platform)**: «معلومات الدفتر», «تنزيل» (.ipynb, .m, HTML, PDF via print) and «اسأل الباشـمبصمج» in `features/home/notebook-actions.js`; pure logic in `shared/notebook-export.js` (tests: `tests/notebook-export.test.js`). Notebooks are attached to the AI agent through the lesson path (`fetch_attached_lesson` returns all cells).
+- Not done: Jupyter command-mode keyboard shortcuts (A/B/D D/M/Y); outputs are not stored, so exports contain no outputs; end-to-end test against a live Supabase and the admin publish flow.

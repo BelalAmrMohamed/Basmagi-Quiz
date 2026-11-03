@@ -53,6 +53,8 @@ import {
  * @param {string} id
  * @returns {{kind: "quiz"|"course"|"folder", id: string, title: string, summary: string, source: "local"} | null}
  */
+import { summarizeNotebook, notebookAttachmentPayload } from "../../shared/notebook-export.js";
+
 export function resolveUserItemAttachment(id) {
   return resolveUserItemById(id);
 }
@@ -128,6 +130,19 @@ export function buildPlatformLessonAttachment(lesson) {
       ...(lesson?.content ? { content: lesson.content } : {}),
       passwordProtected: protectedContent,
     },
+  };
+}
+
+/** A published (platform) notebook row from notebook_public, attached like a lesson. */
+export function buildPlatformNotebookAttachment(nb) {
+  const row = { id: nb?.id, meta: { title: nb?.title, description: nb?.description, source: nb?.source }, notebook: { runtime: nb?.runtime, content: nb?.content } };
+  return {
+    kind: "lesson",
+    id: nb?.id,
+    title: nb?.title || nb?.id || "Notebook",
+    source: "platform",
+    summary: summarizeNotebook(row),
+    payload: notebookAttachmentPayload(row),
   };
 }
 

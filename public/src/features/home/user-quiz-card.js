@@ -70,6 +70,7 @@ import {
 import { openAIAgentWithAttachment, resolveUserItemAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 import { downloadLesson } from "./lesson-download.js";
 import { openDescriptionSourceModal } from "./description-source-modal.js";
+import { appendNotebookMenuEntries } from "./notebook-actions.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { SPARKLE_ICON_SVG } from "./icons.js";
 
@@ -480,6 +481,7 @@ export function showUserNotebookActionsOverlay(nb, triggerBtn) {
       },
       { label: "إعادة تسمية", icon: RENAME_ICON_SVG, onClick: () => renameItem(nbId, title) },
     ]);
+    appendNotebookMenuEntries(menu, closeMenu, reposition, nb);
     appendMoveGroup(menu, closeMenu, reposition, nbId);
     const deleteOpt = document.createElement("button");
     deleteOpt.type = "button";
