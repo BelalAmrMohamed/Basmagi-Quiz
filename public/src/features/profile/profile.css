@@ -778,7 +778,7 @@ body.sidebar-expanded {
 
 /* Applied (alongside hiding .profile-rail) on a visited /@handle profile,
    where the rail never has anything visitor-visible in it (badges,
-   next-badges, and stats are owner-only; the local leaderboard hides
+   next-badges, and stats are developer-only; the local leaderboard hides
    itself too) — collapses the grid to a single full-width column instead
    of leaving the 340px rail track reserved as blank space. */
 .profile-layout.no-rail {

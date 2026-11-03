@@ -151,7 +151,7 @@ async function withButtonLoading(button, asyncFn) {
 // Platform stats (quizzes/categories/admins) used to render here too, but
 // they're now shown publicly on about.html (via GET /api/admin?platformStats=true,
 // which reuses the same underlying counts through the anon client) instead
-// of being locked behind this owner-only page — see about.html/about-stats.js.
+// of being locked behind this developer-only page — see about.html/about-stats.js.
 function renderPlatformStats(stats) {
   if (!stats) return;
   const ownerEmailDisplay = document.getElementById("ownerEmailDisplay");
@@ -623,7 +623,7 @@ async function loadTrash() {
 
   if (currentLoadId !== trashLoadId) return;
 
-  // Retention setting box — owner-only (server also enforces this on write;
+  // Retention setting box — developer-only (server also enforces this on write;
   // this just avoids showing a control that would 403 for anyone else).
   const roleInfo = getAdminRoleInfo();
   const retentionBox = document.getElementById("trashRetentionBox");

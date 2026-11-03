@@ -79,7 +79,6 @@ Add dictation feature for essays in quizzes and lessons
 * Suggestion: Add an open-source Angle (Since the repo is currently open source).
 * Suggestion: Add a short testimonial or review.
 * Suggestion: Add the number of views of the whole platform (try to integrate vercel insights if possible) to the `المنصة بالأرقام` section. Or create a custom one with new migrations in the `supabase/migrations` directory, and implement the live counter that counts all of the views to the platform + Advanced analytics. 
-* Extend the `كيف بُنيت المنصة؟` section to include `SEO (Search Engine Optimization)`, `GEO (Generative Engine Optimization)`, and MCP Server. And runtime Intrepreter for the notebook and create-notebook pages.
 
 ### Create Quiz Page
 `create-quiz.js` is 5000+ lines in one file — It's the right time to split it into modules.

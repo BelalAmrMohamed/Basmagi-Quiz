@@ -2845,12 +2845,12 @@ function loadProfileLogo() {
  * Any failure (no env, no key, timeout) degrades to "admin".
  */
 async function fetchProfileRole(handle) {
-  const owners = (process.env.DEVELOPERS_EMAILS || "")
+  const developers = (process.env.DEVELOPERS_EMAILS || "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
   const serviceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!owners.length || !serviceKey || !SUPABASE_URL) return "admin";
+  if (!developers.length || !serviceKey || !SUPABASE_URL) return "admin";
   try {
     const url = new URL(`${SUPABASE_URL}/rest/v1/admin_users`);
     url.searchParams.set("select", "email");
@@ -2864,7 +2864,7 @@ async function fetchProfileRole(handle) {
     if (!res.ok) return "admin";
     const rows = await res.json();
     const email = String(rows?.[0]?.email || "").trim().toLowerCase();
-    return email && owners.includes(email) ? "developer" : "admin";
+    return email && developers.includes(email) ? "developer" : "admin";
   } catch (err) {
     console.error("[og] profile role lookup failed:", err?.message || err);
     return "admin";

@@ -141,7 +141,7 @@ function renderFeaturedGrid(mode) {
     });
   });
 
-  // Async fetch and append Gravatar for admins/owners — avatar mode only;
+  // Async fetch and append Gravatar for admins/developers — avatar mode only;
   // a Gravatar is a face photo, which doesn't make sense as a banner thumbnail.
   if (mode === "avatar") {
     const roleInfo = getAdminRoleInfo();

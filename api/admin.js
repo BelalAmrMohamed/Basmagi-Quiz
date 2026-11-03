@@ -1,6 +1,6 @@
 // =============================================================================
 // api/admin.js
-// Merged endpoint: admin-control (owner-only admin management) +
+// Merged endpoint: admin-control (developer-only admin management) +
 // admin-stats (public/admin stats, leaderboard, uploads history, sync).
 //
 // Routing: admin-control's GET/POST always require an admin JWT and operate
@@ -78,7 +78,7 @@ function normalizeCollegeName(name) {
 }
 
 // =============================================================================
-// admin-control handlers (owner-only admin management)
+// admin-control handlers (developer-only admin management)
 // =============================================================================
 
 async function handleControlGet(req, res, payload, supabase) {
@@ -254,7 +254,7 @@ async function handleControl(req, res) {
     return res.status(500).json({ error: "Internal server error" });
   }
 
-  // Only owners can access this API.
+  // Only developers can access this API.
   if (!payload.isOwner) {
     return res.status(403).json({ error: "You do not have owner privileges" });
   }
@@ -275,11 +275,11 @@ async function handleControl(req, res) {
 // soft-delete, move-item, rename-item) — see docs/plans/Admin actions and
 // deletion flow for quizzes.md §2.
 //
-// Unlike handleControl (owner-only), these reuse the exact 3-tier
+// Unlike handleControl (developer-only), these reuse the exact 3-tier
 // authorization already proven out in college-quiz.js's handleDeleteQuiz
 // (owner -> creator/uploader -> scope match), generalized to
 // folders/courses via isAuthorizedForItem() in api/_trash.js. Only
-// trash-settings (retention days) stays owner-only, since it's a
+// trash-settings (retention days) stays developer-only, since it's a
 // platform-wide knob, not a per-item action.
 // =============================================================================
 
@@ -699,7 +699,7 @@ async function handleTrashEmpty(req, res, adminPayload, adminId, supabase) {
 
 // ── action=trash-settings ────────────────────────────────────────────────────
 // GET-like (no body beyond action) returns the current retention window;
-// providing { retentionDays } updates it. Owner-only — a platform-wide knob,
+// providing { retentionDays } updates it. developer-only — a platform-wide knob,
 // not a per-item action.
 async function handleTrashSettings(req, res, adminPayload, adminId, supabase) {
   const { retentionDays } = req.body || {};
@@ -2001,7 +2001,7 @@ async function handleListNotebooks(req, res, adminPayload, adminId, supabase) {
     console.error("[admin:list-notebooks] failed:", error.message);
     return res.status(500).json({ error: "فشل تحميل الدفاتر." });
   }
-  // Same scoping as the rest of item management: owners see everything,
+  // Same scoping as the rest of item management: developers see everything,
   // others only what they created or what falls within their scopes.
   const rows = (data || [])
     .filter((row) => isAuthorizedForItem(adminPayload, adminId, { creatorId: row.created_by, educationType: row.courses?.education_type || null }))
@@ -2300,7 +2300,7 @@ async function handleStats(req, res) {
   // ── Public platform stats (about.html) ──────────────────────────────────
   // Same underlying counts as handleControlGet's platformStats, but
   // computed with the anon client (public/RLS-governed reads only) and
-  // stripped of anything owner-only: no ownerEmail, and "creators" is a
+  // stripped of anything developer-only: no ownerEmail, and "creators" is a
   // plain count rather than the admin_users management list. This is the
   // only stats shape meant to be shown to every visitor, not just the
   // signed-in owner.
@@ -2463,7 +2463,7 @@ async function handleStats(req, res) {
     ownerEmails.includes(adminUser.email.trim().toLowerCase())
   );
   // Every row in admin_users is, by schema/naming, an admin — see
-  // Database-Schema.sql. Owners are additionally admins.
+  // Database-Schema.sql. Developers are additionally admins.
   const role = "admin";
 
   if (isUploads) {
@@ -2633,7 +2633,7 @@ async function handleStats(req, res) {
 // =============================================================================
 
 // save_college/delete_college route here too — added to handleControlPost
-// (owner-only college management, alongside admin management) without this
+// (developer-only college management, alongside admin management) without this
 // set being updated to match, which meant POST /api/admin-control with
 // either action fell through to handleStats/handleStatsSync (the catch-all
 // for anything not in CONTROL_ACTIONS or ITEM_ACTIONS below) and 400'd

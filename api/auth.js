@@ -137,7 +137,7 @@ export default async function handler(req, res) {
       // it already does for quizzes via handle/email — those tables carry a
       // DB uuid in created_by that quizzes' author_handle/author_email
       // fields don't have, so without this the JWT had nothing to compare
-      // it against. null for owner-only admins with no admin_users row
+      // it against. null for developer-only admins with no admin_users row
       // (they already pass via isOwner, Tier 1, so this is unused for them).
       id: adminData?.id || null,
     },

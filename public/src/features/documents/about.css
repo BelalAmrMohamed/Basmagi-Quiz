@@ -384,27 +384,113 @@ html[data-theme="dark-slate"] .about-page {
   list-style: none;
 }
 
-#techStackPills>.tech-badge {
+/* Technology story cards */
+.about-page .stack-eyebrow {
   display: inline-flex;
-  width: auto;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 10px;
-  background: var(--about-card);
-  border: 1px solid var(--about-line);
-  border-radius: 999px;
-  font-size: .72rem;
-  line-height: 1.3;
-  color: var(--about-ink);
-  white-space: nowrap;
+  margin-bottom: 12px;
+  color: var(--about-coral);
+  font-size: .76rem;
+  font-weight: 700;
+  letter-spacing: .08em;
 }
 
-#techStackPills>.tech-badge svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
+.about-page .stack-showcase {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.about-page .stack-feature-card {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid var(--about-line);
+  border-radius: 20px;
+  background: var(--about-card);
+}
+
+.about-page .stack-feature-card::after {
+  content: "";
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  left: -76px;
+  bottom: -94px;
+  border: 1px solid var(--about-line);
+  border-radius: 50%;
+  box-shadow: 0 0 0 18px color-mix(in srgb, var(--about-coral) 8%, transparent), 0 0 0 38px color-mix(in srgb, var(--about-sage) 8%, transparent);
+  pointer-events: none;
+}
+
+.about-page .stack-index {
+  display: block;
+  margin-bottom: 22px;
   color: var(--about-coral);
+  font: 700 .65rem/1.2 "IBM Plex Sans Arabic", sans-serif;
+  letter-spacing: .1em;
+}
+
+.about-page .stack-feature-card h3 {
+  margin: 0 0 9px;
+  color: var(--about-ink);
+  font-size: 1.28rem;
+}
+
+.about-page .stack-feature-card p {
+  max-width: 54ch;
+  margin: 0;
+  color: var(--about-muted);
+  line-height: 1.85;
+}
+
+.about-page .stack-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 20px;
+}
+
+.about-page .stack-tags span {
+  padding: 5px 10px;
+  border: 1px solid var(--about-line);
+  border-radius: 999px;
+  color: var(--about-ink);
+  font-size: .73rem;
+}
+
+.about-page .stack-feature-card--dark {
+  background: var(--about-highlight-bg);
+  border-color: transparent;
+}
+
+.about-page .stack-feature-card--dark h3 {
+  color: var(--about-highlight-ink);
+}
+
+.about-page .stack-feature-card--dark p,
+.about-page .stack-feature-card--dark .stack-tags span {
+  color: var(--about-highlight-muted);
+}
+
+.about-page .stack-feature-card--dark .stack-tags span {
+  border-color: var(--about-line);
+}
+
+.about-page .stack-feature-card--admin {
+  grid-column: 1/-1;
+  background: linear-gradient(125deg, color-mix(in srgb, var(--about-sage) 24%, var(--about-card)), var(--about-card) 70%);
+}
+
+@media (max-width:640px) {
+  .about-page .stack-showcase {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .about-page .stack-feature-card--admin,
+  .about-page {
+    grid-column: auto;
+  }
 }
 
 .about-page .creator {
@@ -622,7 +708,8 @@ html[data-theme="dark-slate"] .about-page {
 }
 
 .about-page .featured-link-profile-name {
-  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  unicode-bidi: plaintext;
+  /* truncate by the name's own direction */
   text-align: start;
   font-size: .88rem;
   overflow: hidden;
@@ -934,7 +1021,20 @@ html[data-motion="reduced"] {
     transform: none;
   }
 }
+
 /* Telegram showcase section */
-.telegram-showcase-section .about-telegram-container { display: flex; justify-content: center; padding-block: 8px; }
-.telegram-kicker { color: #24A1DE; }
-@media (max-width: 480px) { .telegram-showcase-section .about-telegram-container { padding-inline: 0; } }
+.telegram-showcase-section .about-telegram-container {
+  display: flex;
+  justify-content: center;
+  padding-block: 8px;
+}
+
+.telegram-kicker {
+  color: #24A1DE;
+}
+
+@media (max-width: 480px) {
+  .telegram-showcase-section .about-telegram-container {
+    padding-inline: 0;
+  }
+}

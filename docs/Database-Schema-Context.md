@@ -161,7 +161,7 @@ Soft-deleted quizzes/folders/courses for the shared (Supabase-backed) area. One 
 
 ## Table `admin_settings`
 
-Singleton row (id is always true) of admin-editable global settings. Currently just trash_retention_days. Read/written exclusively through api/admin.js action=trash-settings, owner-only for writes.
+Singleton row (id is always true) of admin-editable global settings. Currently just trash_retention_days. Read/written exclusively through api/admin.js action=trash-settings, developer-only for writes.
 
 ### Columns
 

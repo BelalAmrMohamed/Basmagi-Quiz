@@ -201,7 +201,7 @@ export function refreshUI(options = {}) {
 }
 
 // Sets the activity-card heading text based on role: "نشاط المشرف" for
-// admins, "نشاط المطور" for owners/devs, plain "نشاطك" for everyone else
+// admins, "نشاط المطور" for developers/devs, plain "نشاطك" for everyone else
 // (regular users, or before role info has resolved).
 function setActivityLabel(roleInfo) {
   // Text lives in a dedicated inner span (not the h3 itself) so this can
@@ -775,7 +775,7 @@ async function setupVisitorView(handle) {
   if (masteryCard) masteryCard.style.display = "none";
 
   // .profile-rail on a visited /@handle profile carries nothing a visitor
-  // can see: badges, next-badges, and stats are all owner-only, and the
+  // can see: badges, next-badges, and stats are all developer-only, and the
   // local leaderboard hides itself for visitors too (renderLeaderboard's
   // isVisitor check). Rather than leave the rail's 340px column visible
   // but empty, hide the whole rail and collapse the grid to one column.
@@ -790,7 +790,7 @@ async function setupVisitorView(handle) {
   document.getElementById("avatarEditBtn").style.display = "none";
   document.getElementById("thumbnailEditBtn").style.display = "none";
   document.getElementById("weeklyRecap").style.display = "none";
-  // Bio/handle editing is owner-only — visitor view only ever shows the
+  // Bio/handle editing is developer-only — visitor view only ever shows the
   // read-only bio text (populated below once fetchAndRenderAdminStats
   // resolves) and never renders the edit affordances at all.
   const editBioBtn = document.getElementById("editBioBtn");
@@ -1204,7 +1204,7 @@ function hydrateManifest({ isVisitorView = false } = {}) {
       setExamList(manifest.examList || []);
       window.__examListCache = examList;
 
-      // Visitor view (/@handle) hides every owner-only section — history,
+      // Visitor view (/@handle) hides every developer-only section — history,
       // bookmarks, flagged questions, category mastery — because they're
       // sourced from the VIEWER's own localStorage, not the visited user's.
       // Re-rendering them here would quietly repopulate those hidden
