@@ -220,18 +220,6 @@ Public lesson discussion. New comments appear immediately; deleted comments rema
 | `author_bio` | `text` |  Nullable |
 | `author_actor_key` | `text` |  Nullable |
 
-## Table `lesson_progress`
-
-Cross-device completion sync for lessons. One row per (profile, lesson) once every section has been visited on any device. Never wired into passed_quizzes_count/current_level/points — lessons are not scored.
-
-### Columns
-
-| Name | Type | Constraints |
-|------|------|-------------|
-| `profile_id` | `uuid` | Primary |
-| `lesson_id` | `uuid` | Primary |
-| `completed_at` | `timestamptz` |  |
-
 ## Table `lesson_comment_reactions`
 
 One "helpful" reaction per (comment, profile). Toggled by re-submitting (insert if absent, delete if present) — see api/college-quiz.js.
