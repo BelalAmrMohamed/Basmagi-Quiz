@@ -5,7 +5,7 @@ import { normalizeLessonContent } from "../lesson/lesson-schema.js";
 import { escapeHtml } from "./escape-html.js";
 import { gradeEssay } from "../../shared/rate-answers.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
-import { buildExportCard } from "../../components/download-quiz-modal/export-card.js";
+import { buildExportCard, buildSourceActions } from "../../components/download-quiz-modal/export-card.js";
 import { JSON_FILE_ICON_SVG } from "./icons.js";
 
 const HTML_FILE_ICON = '<img src="/assets/images/HTML_Icon.png" alt="" class="icon" aria-hidden="true">';
@@ -481,6 +481,8 @@ function openLessonDownloadOptions(lesson, triggerBtn) {
       },
     }));
   }
+  const sourceActions = buildSourceActions(lesson?.source || lesson?.meta?.source);
+  if (sourceActions) grid.appendChild(sourceActions);
 
   modal.append(header, subtitle, grid, progressPanel);
   overlay.appendChild(modal);

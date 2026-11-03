@@ -241,6 +241,19 @@
   flex-shrink: 0;
 }
 
+.download-source-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.download-source-actions .mode-btn {
+  grid-column: auto;
+  min-width: 0;
+  text-decoration: none;
+}
+
 [data-theme="dark"] .export-card,
 [data-theme="dark-slate"] .export-card,
 [data-theme="dark"] .mode-btn,
@@ -282,6 +295,10 @@
 
   .lesson-dl-grid .export-card {
     min-height: 126px;
+  }
+
+  .download-source-actions {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -20,9 +20,9 @@ import { exportToPptx } from "../../features/export-quiz/export-to-pptx.js";
 import { exportToMarkdown } from "../../features/export-quiz/export-to-markdown.js";
 import {
   JSON_FILE_ICON_SVG,
-  DOWNLOAD_SOURCE_ICON_SVG,
 } from "../../features/home/icons.js";
 import { showNotification } from "../notifications/notifications.js";
+import { buildSourceActions } from "./export-card.js";
 import { buildStandaloneQuizHtml } from "../../features/export-quiz/export-to-quiz.js";
 import { buildQuizMarkdown } from "../../features/export-quiz/export-to-markdown.js";
 import { buildJsonQuizExport } from "../../shared/quiz-json.js";
@@ -927,21 +927,8 @@ export function showDownloadModal({
     grid.appendChild(card);
   });
 
-  // Show source button if the quiz has a source URL
-  const quizSource = config.source;
-  if (quizSource && typeof quizSource === "string" && quizSource.trim()) {
-    const sourceBtn = document.createElement("button");
-    sourceBtn.className = "mode-btn";
-    sourceBtn.type = "button";
-    sourceBtn.setAttribute("aria-label", "Download Source");
-    sourceBtn.innerHTML = `${DOWNLOAD_SOURCE_ICON_SVG}<strong>Download Source</strong>`;
-    sourceBtn.onclick = (ev) => {
-      ev.stopPropagation();
-      window.open(quizSource, "_blank");
-      modal.remove();
-    };
-    grid.appendChild(sourceBtn);
-  }
+  const sourceActions = buildSourceActions(config.source);
+  if (sourceActions) grid.appendChild(sourceActions);
 
   modalCard.appendChild(header);
   modalCard.appendChild(grid);

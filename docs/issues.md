@@ -7,6 +7,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### `.exam-dropdown-menu`
+* Some of its buttons don't have icons like ("تعديل", "نقل"), give them proper matching icons.
+
 ### Update OG Titles & Descriptions
 Folders and Courses OG titles & desciptions weren't updated to include lessons. 
 

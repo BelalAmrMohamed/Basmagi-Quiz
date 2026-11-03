@@ -70,7 +70,7 @@ import {
 import { openAIAgentWithAttachment, resolveUserItemAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 import { downloadLesson } from "./lesson-download.js";
 import { openDescriptionSourceModal } from "./description-source-modal.js";
-import { appendNotebookMenuEntries } from "./notebook-actions.js";
+import { appendNotebookMenuEntries, showNotebookDownloadModal } from "./notebook-actions.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { SPARKLE_ICON_SVG } from "./icons.js";
 
@@ -452,7 +452,18 @@ export function createUserNotebookCard(nb) {
     event.stopPropagation();
     playUserNotebook(nb);
   };
-  actions.append(more, start);
+  const download = document.createElement("button");
+  download.className = "start-btn desktop-download-btn";
+  download.type = "button";
+  download.style.flex = "1";
+  download.style.minWidth = "0";
+  download.textContent = "تحميل";
+  download.setAttribute("aria-label", `تحميل دفتر ${title}`);
+  download.onclick = (event) => {
+    event.stopPropagation();
+    showNotebookDownloadModal(nb, download);
+  };
+  actions.append(more, start, download);
   card.append(checkbox, icon, text, actions);
   return card;
 }

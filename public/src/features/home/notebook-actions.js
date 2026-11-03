@@ -4,11 +4,12 @@
 //   • «اسأل الباشـمبصمج»  attaches the whole notebook (as reading material) to the AI agent
 // The info/download logic lives in shared/notebook-export.js (pure, unit-tested).
 import { escapeHtml } from "./escape-html.js";
-import { createExamInfoSubmenu, createActionGroupSubmenu } from "./exam-dropdown-menu.js";
-import { SPARKLE_ICON_SVG, DOWNLOAD_ICON_SVG } from "./icons.js";
+import { createExamInfoSubmenu } from "./exam-dropdown-menu.js";
+import { SPARKLE_ICON_SVG, DOWNLOAD_ICON_SVG, JSON_FILE_ICON_SVG } from "./icons.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 import { renderMarkdown } from "../../shared/markdown.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { buildExportCard, buildSourceActions } from "../../components/download-quiz-modal/export-card.js";
 import {
   rowToNotebook, collectNotebookInfo, notebookToIpynb, notebookToMScript, notebookToHtml, safeFileName,
 } from "../../shared/notebook-export.js";
@@ -96,10 +97,81 @@ export function downloadNotebook(row, kind) {
     else if (kind === "html") saveBlob(`${base}.html`, new Blob([htmlOf(nb)], { type: "text/html;charset=utf-8" }));
     else if (kind === "pdf") printNotebook(nb);
     else throw new Error(`unknown format ${kind}`);
+    return true;
   } catch (error) {
     console.error("[notebook-actions] download failed:", error);
     showNotification("تعذّر التنزيل", "حدث خطأ أثناء تجهيز الملف. حاول مرة أخرى.", "error");
+    return false;
   }
+}
+
+export function showNotebookDownloadModal(row, triggerBtn = null) {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay download-modal-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "notebookDownloadTitle");
+
+  const modal = document.createElement("div");
+  modal.className = "modal-card dl-modal-card lesson-dl-modal-card";
+
+  const header = document.createElement("div");
+  header.className = "modal-header";
+  header.innerHTML = `
+    <h2 id="notebookDownloadTitle">${DOWNLOAD_ICON_SVG}<span>تنزيل الدفتر</span></h2>
+    <button type="button" class="close-btn dl-close" aria-label="إغلاق">×</button>`;
+
+  const subtitle = document.createElement("p");
+  subtitle.className = "lesson-dl-subtitle";
+  subtitle.textContent = "اختر صيغة الدفتر أو افتح رابطه المصدر.";
+
+  const grid = document.createElement("div");
+  grid.className = "mode-grid lesson-dl-grid";
+  grid.setAttribute("role", "group");
+  grid.setAttribute("aria-label", "خيارات تنزيل الدفتر");
+
+  const formats = [
+    { kind: "ipynb", label: "Jupyter Notebook", extension: ".ipynb", icon: JSON_FILE_ICON_SVG },
+    { kind: "m", label: "MATLAB", extension: ".m", icon: '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 17-5-5 5-5"/><path d="m16 7 5 5-5 5"/><path d="m14 4-4 16"/></svg>' },
+    { kind: "html", label: "HTML", extension: ".html", icon: '<img src="/assets/images/HTML_Icon.png" alt="" aria-hidden="true">' },
+    { kind: "pdf", label: "PDF", extension: "طباعة / حفظ كـ PDF", icon: '<img src="/assets/images/PDF_Icon.png" alt="" aria-hidden="true">' },
+  ];
+
+  const close = () => {
+    document.removeEventListener("keydown", onKeyDown);
+    overlay.remove();
+    if (triggerBtn?.isConnected) triggerBtn.focus({ preventScroll: true });
+  };
+  const onKeyDown = (event) => {
+    if (event.key === "Escape") close();
+  };
+
+  for (const option of formats) {
+    grid.appendChild(buildExportCard({
+      format: option.kind,
+      label: option.label,
+      extension: option.extension,
+      icon: option.icon,
+      canCopy: false,
+      onDownload: () => {
+        if (downloadNotebook(row, option.kind)) close();
+      },
+    }));
+  }
+
+  const sourceActions = buildSourceActions(row?.source || row?.meta?.source);
+  if (sourceActions) grid.appendChild(sourceActions);
+
+  modal.append(header, subtitle, grid);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  document.addEventListener("keydown", onKeyDown);
+  header.querySelector(".dl-close").addEventListener("click", close);
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) close();
+  });
+  header.querySelector(".dl-close").focus();
+  return overlay;
 }
 
 function printNotebook(nb) {
@@ -152,7 +224,7 @@ export async function fetchPlatformNotebookRow(summary) {
 }
 
 /**
- * Appends «معلومات الدفتر», «تنزيل» (formats submenu) and «اسأل الباشـمبصمج» to a card's ⋮ menu.
+ * Appends «معلومات الدفتر», the download dialog, and «اسأل الباشـمبصمج» to a card's ⋮ menu.
  * Local rows carry their content; platform summaries (home manifest) are fetched on demand.
  */
 export function appendNotebookMenuEntries(menu, closeMenu, reposition, row, { platform = false } = {}) {
@@ -172,10 +244,17 @@ export function appendNotebookMenuEntries(menu, closeMenu, reposition, row, { pl
   ].filter((r) => r.val || r.val === 0);
   menu.appendChild(createExamInfoSubmenu(basicRows, async () => { const full = await loadRow(); if (full) showNotebookInfoModal(full); }, closeMenu, reposition, "معلومات الدفتر"));
 
-  menu.appendChild(createActionGroupSubmenu(
-    DOWNLOAD_FORMATS.map(({ kind, label }) => ({ label, icon: DOWNLOAD_ICON_SVG, onClick: async () => { const full = await loadRow(); if (full) downloadNotebook(full, kind); } })),
-    closeMenu, reposition, "تنزيل",
-  ));
+  const download = document.createElement("button");
+  download.type = "button";
+  download.className = "exam-action-btn";
+  download.innerHTML = `${DOWNLOAD_ICON_SVG}<span>تنزيل الدفتر</span>`;
+  download.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    closeMenu();
+    const full = await loadRow();
+    if (full) showNotebookDownloadModal(full);
+  });
+  menu.appendChild(download);
 
   const ask = document.createElement("button");
   ask.type = "button";
