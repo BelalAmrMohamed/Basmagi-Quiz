@@ -32,6 +32,7 @@ const $ = <K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, 
   }
   if (e instanceof HTMLButtonElement && props.title) {
     e.dataset.tooltip = String(props.title);
+    e.removeAttribute('title');
     if (!props['aria-label']) e.setAttribute('aria-label', String(props.title));
   }
   for (const c of kids) e.append(c);
@@ -892,6 +893,49 @@ function mount(o: MountOptions): { destroy(): void; resetToPublished(): void; ge
 
   const listeners: [EventTarget, string, EventListener, any?][] = [];
   const on = (t: EventTarget | null, ev: string, fn: (e: any) => void, optsArg?: any) => { if (!t) return; t.addEventListener(ev, fn, optsArg); listeners.push([t, ev, fn, optsArg]); };
+  const tooltip = document.createElement('div');
+  tooltip.className = 'mlweb-tooltip';
+  tooltip.setAttribute('role', 'tooltip');
+  tooltip.hidden = true;
+  document.body.append(tooltip);
+  let tooltipTarget: HTMLButtonElement | null = null;
+  const hideTooltip = () => { tooltip.hidden = true; tooltipTarget = null; };
+  const positionTooltip = () => {
+    if (!tooltipTarget || !mountRoot.contains(tooltipTarget)) { hideTooltip(); return; }
+    const targetRect = tooltipTarget.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const margin = 8;
+    const left = Math.max(margin, Math.min(
+      targetRect.left + (targetRect.width - tooltipRect.width) / 2,
+      window.innerWidth - tooltipRect.width - margin,
+    ));
+    const below = targetRect.bottom + margin;
+    const top = below + tooltipRect.height <= window.innerHeight - margin
+      ? below
+      : Math.max(margin, targetRect.top - tooltipRect.height - margin);
+    tooltip.style.left = `${Math.round(left)}px`;
+    tooltip.style.top = `${Math.round(top)}px`;
+  };
+  const showTooltip = (target: EventTarget | null) => {
+    const button = target instanceof Element ? target.closest<HTMLButtonElement>('button[data-tooltip]') : null;
+    if (!button?.dataset.tooltip) return;
+    tooltipTarget = button;
+    tooltip.textContent = button.dataset.tooltip;
+    tooltip.hidden = false;
+    positionTooltip();
+  };
+  on(mountRoot, 'pointerover', event => showTooltip(event.target));
+  on(mountRoot, 'pointerout', event => {
+    const button = event.target instanceof Element ? event.target.closest('button[data-tooltip]') : null;
+    if (button && button === tooltipTarget && !(event.relatedTarget instanceof Node && button.contains(event.relatedTarget))) hideTooltip();
+  });
+  on(mountRoot, 'focusin', event => showTooltip(event.target));
+  on(mountRoot, 'focusout', event => {
+    const button = event.target instanceof Element ? event.target.closest('button[data-tooltip]') : null;
+    if (button && button === tooltipTarget && !(event.relatedTarget instanceof Node && button.contains(event.relatedTarget))) hideTooltip();
+  });
+  on(window, 'scroll', positionTooltip, true);
+  on(window, 'resize', positionTooltip);
   on($id('nb'), 'keydown', onCommandKey);
   on($id('helpSearch'), 'input', renderHelp);
   on($id('closeHelp'), 'click', () => ($id('helpDialog') as HTMLDialogElement).close());
@@ -945,6 +989,7 @@ function mount(o: MountOptions): { destroy(): void; resetToPublished(): void; ge
     editorViews.clear();
     try { worker?.terminate(); } catch { /* ignore */ }
     for (const [t, ev, fn, o2] of listeners) t.removeEventListener(ev, fn, o2);
+    tooltip.remove();
     window.clearTimeout(noticeTimer);
     for (const d of Array.from(mountRoot.querySelectorAll('dialog'))) { try { (d as HTMLDialogElement).close(); } catch { /* ignore */ } }
     mountRoot.replaceChildren(); mountRoot.classList.remove('mlweb'); mountRoot.removeAttribute('dir');

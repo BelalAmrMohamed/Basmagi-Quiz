@@ -7,6 +7,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Globa Issue with buttons
+* Hovering buttons on their border make cause them to flash in a buggy way, that issue is probably related to their transition changing their location or something similar.
+
 ### Update OG Titles & Descriptions (`api/og.js`)
 Folders and Courses' OG titles & OG desciptions should updated to include lessons and notebooks. 
 
@@ -101,6 +104,10 @@ Improve:
 * Special courses that get the (مادة مميزة) badge, since there is no info table displayed, the middle of the image becomes emtpy, I need to fill it with something, or ideas to improve it when it has the  (مادة مميزة) badge. 
 
 ### Notebooks
+
+#### Improve the Image Tool modal
+* 
+* It shouldn't be a modal that has a set location/width/height, it should be a draggable and resizable window, just like the actual MATLAB Program
 
 #### What’s not done:
 

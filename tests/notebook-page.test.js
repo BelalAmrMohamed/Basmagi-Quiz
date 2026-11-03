@@ -6,6 +6,7 @@ import * as M from "../public/src/features/create-notebook/notebook-editor-model
 test("parseNotebookRef", () => {
   assert.equal(parseNotebookRef("/notebook/matlab-section-1"), "matlab-section-1");
   assert.equal(parseNotebookRef("/notebook", "?id=abc"), "abc");
+  assert.equal(parseNotebookRef("/notebook", "?id=user_notebook_123&type=user"), "user_notebook_123");
   assert.equal(parseNotebookRef("/notebook/"), null);
 });
 test("prepareNotebook: missing/malformed/unsupported are explicit", () => {

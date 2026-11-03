@@ -555,7 +555,7 @@ async function handleSearchCatalog(args: { query: string; scope?: string }) {
 
     if (notebooks && notebooks.length > 0) {
       const lines = notebooks.map((n: any) =>
-        `  - 💻 [دفتر ${n.runtime}] ${n.title} — id: ${n.id}\n    رابط: https://basmagi-quiz.vercel.app/notebook/${n.slug || n.id}`
+        `  - 💻 [دفتر ${n.runtime}] ${n.title} — id: ${n.id}\n    رابط: https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(n.slug || n.id)}`
       );
       sections.push(`### دفاتر مطابقة (${notebooks.length}):\n${lines.join("\n")}`);
     }
@@ -1066,7 +1066,7 @@ async function notebookInventory(scope: { courseId?: string; folderId?: string }
   else if (scope.courseId) q = recursive ? q.eq("course_id", scope.courseId) : q.eq("course_id", scope.courseId).is("folder_id", null);
   const { data } = await q.order("sort_order", { ascending: true, nullsFirst: false }).limit(200);
   if (!data || !data.length) return "";
-  const lines = data.map((n: any) => `  - 💻 ${n.title} (${n.runtime}، ${n.cell_count || 0} خلايا) — id: ${n.id} — https://basmagi-quiz.vercel.app/notebook/${n.slug || n.id}`);
+  const lines = data.map((n: any) => `  - 💻 ${n.title} (${n.runtime}، ${n.cell_count || 0} خلايا) — id: ${n.id} — https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(n.slug || n.id)}`);
   return `## الدفاتر التفاعلية (${data.length}):\n${lines.join("\n")}`;
 }
 
@@ -1371,7 +1371,7 @@ async function handleListRecentContent(args: { limit?: number; type?: string }) 
     if (notebooks && notebooks.length > 0) {
       const lines = notebooks.map((n: any) => {
         const date = n.created_at ? new Date(n.created_at).toLocaleDateString("ar-EG") : "";
-        return `- 💻 ${n.title} (${n.runtime}، ${n.cell_count || 0} خلايا) ${date ? `[${date}]` : ""}\n  id: ${n.id} — https://basmagi-quiz.vercel.app/notebook/${n.slug || n.id}`;
+        return `- 💻 ${n.title} (${n.runtime}، ${n.cell_count || 0} خلايا) ${date ? `[${date}]` : ""}\n  id: ${n.id} — https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(n.slug || n.id)}`;
       });
       output.push(`## أحدث الدفاتر:\n${lines.join("\n")}`);
     }
@@ -1464,14 +1464,14 @@ async function handleGetNotebook(args: { notebookId: string }) {
   if (!String(args?.notebookId || "").trim()) return "الرجاء تحديد معرف الدفتر (notebookId).";
   const d = await fetchNotebook(args.notebookId);
   if (!d) return `لم يتم العثور على الدفتر بالمعرف "${args.notebookId}".`;
-  return `# 💻 ${d.title}\n\n${d.description || ""}\n\nالمصدر: ${d.source || "منصة بصمجي"}\nبيئة التشغيل: ${d.runtime}\nعدد الخلايا: ${d.cell_count ?? "غير محدد"}\n\n${NOTEBOOK_NOTE}\n💡 للمحتوى الكامل استخدم get_notebook_content.\nرابط الدفتر: https://basmagi-quiz.vercel.app/notebook/${d.slug || d.id}`;
+  return `# 💻 ${d.title}\n\n${d.description || ""}\n\nالمصدر: ${d.source || "منصة بصمجي"}\nبيئة التشغيل: ${d.runtime}\nعدد الخلايا: ${d.cell_count ?? "غير محدد"}\n\n${NOTEBOOK_NOTE}\n💡 للمحتوى الكامل استخدم get_notebook_content.\nرابط الدفتر: https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(d.slug || d.id)}`;
 }
 
 async function handleGetNotebookContent(args: { notebookId: string; format?: string }) {
   if (!String(args?.notebookId || "").trim()) return "الرجاء تحديد معرف الدفتر (notebookId).";
   const d = await fetchNotebook(args.notebookId);
   if (!d) return `لم يتم العثور على الدفتر بالمعرف "${args.notebookId}".`;
-  const url = `https://basmagi-quiz.vercel.app/notebook/${d.slug || d.id}`;
+  const url = `https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(d.slug || d.id)}`;
   if (!d.content?.cells) return `# ${d.title}\n\nلا يوجد محتوى متاح لهذا الدفتر.\nرابط الدفتر: ${url}`;
   if (args?.format === "outline") return outlineNotebook({ ...d, cells: d.content.cells });
   if (args?.format === "json") {

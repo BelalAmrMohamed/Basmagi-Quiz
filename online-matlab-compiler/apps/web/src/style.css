@@ -104,6 +104,21 @@
   }
 }
 @keyframes notice-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.mlweb-tooltip {
+  position: fixed;
+  z-index: 20000;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 16px));
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: #171b24;
+  color: #fff;
+  font: 500 12px/1.35 system-ui, sans-serif;
+  white-space: normal;
+  box-shadow: 0 4px 16px #0005;
+  pointer-events: none;
+}
+.mlweb-tooltip[hidden] { display: none; }
 /*SCOPED*/
 
 * { box-sizing: border-box; }
@@ -125,27 +140,6 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
 }
 button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
 button.primary:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
-button[data-tooltip] { position: relative; }
-button[data-tooltip]:hover::after, button[data-tooltip]:focus-visible::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: min(260px, 70vw);
-  padding: 6px 9px;
-  border-radius: 7px;
-  background: #171b24;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.35;
-  white-space: normal;
-  box-shadow: var(--shadow);
-  pointer-events: none;
-}
 #bar {
   position: sticky;
   top: 0;
