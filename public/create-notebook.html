@@ -41,7 +41,8 @@
   <meta name="twitter:creator" content="@BelalAmrDev">
   <meta name="twitter:title" content="إنشاء دفتر تفاعلي | منصة امتحانات بصمجي">
   <meta name="twitter:description" content="دفتر تفاعلي بأسلوب MATLAB يعمل داخل المتصفح على منصة امتحانات بصمجي">
-  <meta name="twitter:image" content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/lesson-thumbnail.jpg?v=1">
+  <meta name="twitter:image"
+    content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/lesson-thumbnail.jpg?v=1">
   <meta name="twitter:image:alt" content="إنشاء دفتر تفاعلي | منصة امتحانات بصمجي">
 
   <!-- PWA Meta Tags -->
@@ -127,7 +128,7 @@
 
   <!-- Canvas Animation Script - Only loads if user enabled animations -->
   <script type="module" src="src/shared/flow-field.js"></script>
-<script src="/src/shared/embed-mode.js"></script>
+  <script src="/src/shared/embed-mode.js"></script>
   <link rel="stylesheet" href="/src/styles/embed-mode.css">
 </head>
 
@@ -276,15 +277,14 @@
         <span class="menu-label">إنشاء دروس</span>
       </a>
 
-            <a href="create-notebook" title="إنشاء دفاتر" class="menu-item active" data-tooltip="إنشاء دفاتر">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    aria-hidden="true">
-                    <polyline points="16 18 22 12 16 6" />
-                    <polyline points="8 6 2 12 8 18" />
-                </svg>
-                <span class="menu-label">إنشاء دفاتر</span>
-            </a>
+      <a href="create-notebook" title="إنشاء دفاتر" class="menu-item active" data-tooltip="إنشاء دفاتر">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="16 18 22 12 16 6" />
+          <polyline points="8 6 2 12 8 18" />
+        </svg>
+        <span class="menu-label">إنشاء دفاتر</span>
+      </a>
 
       <div class="menu-item-dropdown-wrap">
         <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
@@ -590,7 +590,7 @@
       <span class="bottom-nav-label">درس</span>
     </a>
 
-    <a href="settings" class="bottom-nav-item" data-bottom-nav="settings" >
+    <a href="settings" class="bottom-nav-item" data-bottom-nav="settings">
       <span class="bottom-nav-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -618,7 +618,7 @@
   <!-- End of Bottom Navigation Bar -->
 
 
-  <main id="contentArea" class="cnb-shell container" dir="ltr" lang="en" aria-live="polite">
+  <main id="contentArea" class="cnb-shell" dir="ltr" lang="en" aria-live="polite">
     <header class="cnb-top">
       <h1 id="cnbHeading">Create notebook</h1>
       <div class="cnb-top-actions">
@@ -631,7 +631,10 @@
       <label class="cnb-field cnb-field--title"><span id="cnbLblTitle">Title</span>
         <input id="cnbTitle" type="text" maxlength="200" autocomplete="off" required></label>
       <label class="cnb-field cnb-field--lang"><span id="cnbLblLang">Notebook language</span>
-        <select id="cnbLanguage"><option value="en">English (LTR)</option><option value="ar">العربية (RTL)</option></select></label>
+        <select id="cnbLanguage">
+          <option value="en">English (LTR)</option>
+          <option value="ar">العربية (RTL)</option>
+        </select></label>
       <label class="cnb-field cnb-field--desc"><span id="cnbLblDesc">Description</span>
         <textarea id="cnbDescription" rows="2" maxlength="1200"></textarea></label>
       <label class="cnb-field cnb-field--src"><span id="cnbLblSrc">Source link (optional)</span>
@@ -641,10 +644,14 @@
         <label><span>Folder</span><select id="cnbFolder"></select></label>
         <label><span>Slug</span><input id="cnbSlug" type="text" dir="ltr" maxlength="80"></label>
       </div>
-      <select id="cnbRuntime" hidden><option value="matlab">MATLAB</option></select>
+      <select id="cnbRuntime" hidden>
+        <option value="matlab">MATLAB</option>
+      </select>
     </form>
     <div id="cnbIssues" class="cnb-issues" role="alert" aria-live="assertive" hidden></div>
-    <div id="cnbEditor" class="cnb-editor" aria-busy="true"><div class="cnb-loading">Loading editor…</div></div>
+    <div id="cnbEditor" class="cnb-editor" aria-busy="true">
+      <div class="cnb-loading">Loading editor…</div>
+    </div>
   </main>
 
   <script type="module" src="/src/features/create-notebook/create-notebook.js"></script>

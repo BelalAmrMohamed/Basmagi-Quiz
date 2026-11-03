@@ -41,7 +41,8 @@
   <meta name="twitter:creator" content="@BelalAmrDev">
   <meta name="twitter:title" content="دفتر تفاعلي | منصة امتحانات بصمجي">
   <meta name="twitter:description" content="دفتر تفاعلي بأسلوب MATLAB يعمل داخل المتصفح على منصة امتحانات بصمجي">
-  <meta name="twitter:image" content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/lesson-thumbnail.jpg?v=1">
+  <meta name="twitter:image"
+    content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/lesson-thumbnail.jpg?v=1">
   <meta name="twitter:image:alt" content="دفتر تفاعلي | منصة امتحانات بصمجي">
 
   <!-- PWA Meta Tags -->
@@ -127,7 +128,7 @@
 
   <!-- Canvas Animation Script - Only loads if user enabled animations -->
   <script type="module" src="src/shared/flow-field.js"></script>
-<script src="/src/shared/embed-mode.js"></script>
+  <script src="/src/shared/embed-mode.js"></script>
   <link rel="stylesheet" href="/src/styles/embed-mode.css">
 </head>
 
@@ -276,15 +277,14 @@
         <span class="menu-label">إنشاء دروس</span>
       </a>
 
-            <a href="create-notebook" title="إنشاء دفاتر" class="menu-item" data-tooltip="إنشاء دفاتر">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    aria-hidden="true">
-                    <polyline points="16 18 22 12 16 6" />
-                    <polyline points="8 6 2 12 8 18" />
-                </svg>
-                <span class="menu-label">إنشاء دفاتر</span>
-            </a>
+      <a href="create-notebook" title="إنشاء دفاتر" class="menu-item" data-tooltip="إنشاء دفاتر">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="16 18 22 12 16 6" />
+          <polyline points="8 6 2 12 8 18" />
+        </svg>
+        <span class="menu-label">إنشاء دفاتر</span>
+      </a>
 
       <div class="menu-item-dropdown-wrap">
         <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
@@ -590,7 +590,7 @@
       <span class="bottom-nav-label">درس</span>
     </a>
 
-    <a href="settings" class="bottom-nav-item" data-bottom-nav="settings" >
+    <a href="settings" class="bottom-nav-item" data-bottom-nav="settings">
       <span class="bottom-nav-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -618,12 +618,13 @@
   <!-- End of Bottom Navigation Bar -->
 
 
-  <main id="contentArea" class="notebook-page-shell container" aria-live="polite" aria-busy="true">
+  <main id="contentArea" class="notebook-page-shell" aria-live="polite" aria-busy="true">
     <header class="notebook-header" id="notebookHeader" hidden>
       <h1 id="notebookTitle"></h1>
       <p id="notebookDescription" class="notebook-description"></p>
       <p class="notebook-disclaimer">
-        يعمل هذا الدفتر داخل متصفحك فقط بمفسّر تعليمي بأسلوب MATLAB — وليس MATLAB الأصلي. عملك محفوظ محلياً على جهازك ولا يُرسل إلى أي خادم ولا يُحتسب في الدرجات.
+        يعمل هذا الدفتر داخل متصفحك فقط بمفسّر تعليمي بأسلوب MATLAB — وليس MATLAB الأصلي. عملك محفوظ محلياً على جهازك
+        ولا يُرسل إلى أي خادم ولا يُحتسب في الدرجات.
       </p>
     </header>
     <div id="notebookStatus" class="notebook-status" role="status">

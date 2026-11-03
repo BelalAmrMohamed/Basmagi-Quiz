@@ -103,11 +103,6 @@ Improve:
 * The runtime bundle in public/assets/notebook-runtime/ was rebuilt from the changed source, so commit it along with the rest. The notes are in docs/NOTEBOOKS.md.
 
 ### UI Issues
-* The help modal, ![screenshot](image.png):
-  * It has 2 scrollbars, one of them is useless.
-  * It's not centered.
-* The `Workspace` should always be visible, like the real MATLAB program. See this good design of it: ![screenshot](image-1.png). Everything is visible on the side and reachable; that would also use the unused width of the page.
-* Implement autocomplete for code (will be expanded later to support multiple runtimes when we add multiple runtimes).
 * Create-notebook page shouldn't use the browser's built-in notifications for warnings, errors, etc. It should use the platform's notifications:
   ```js
     import {
@@ -119,6 +114,9 @@ Improve:
 * The download options from the user content section (امتحاناتك) should be implemented like lessons/quizzes:
   * A download button next to the 'افتح الدفتر' button.
   * The download button opens the download modal with all the options including the source (source like styled similarly to the one in the quiz download modal, both should be updated to allow: copying or opening the link. It should also be added to the lesson download modal, because it doesn't have it).
-* Implement proper lines when indexing:
-  * Description: In VS Code, when I write a code block, each indentation shows a line. 
-  * Example (This code block has 3 indentations, so there are 3 lines): ![screenshot](image-2.png)
+* Simplify the notebook page by removing useless UI and making the page more seemless.
+  * Remove the whole `.notebook-header` section, it just says the title and description, those could easity be written in the first markdown cell.
+  * Make the info modal of the notebook accessible from the notebook page itself. 
+  * The `.notebook-root` looks bad because of one of these 2 reasons:
+    * It looks like a slightly smaller window with slightly different colors on the page, there are borders around it, I want the design between `.notebook-root` and the actual page to be seemless.
+    * It doesn't adabt between dark and dark-slate themes.

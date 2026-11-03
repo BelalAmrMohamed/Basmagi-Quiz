@@ -297,6 +297,16 @@ table.ws button:hover { text-decoration: underline; }
 .lessonnav { display: flex; gap: 10px; justify-content: space-between; align-items: center; margin: 0 0 14px; color: var(--mute); }
 .lessonnav button { min-height: 38px; }
 .lessonnav span { flex: 1; text-align: center; }
+/* Modal dialogs: centred in the viewport (explicit, so host-page resets can't pin them to a corner) and
+   they never scroll themselves; only their body does, so there is a single scrollbar. */
+#helpDialog, #confirmDialog, #imageTool, #exportDialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  overflow: hidden;
+}
+#helpDialog[open], #exportDialog[open] { display: flex; flex-direction: column; }
 #helpDialog {
   width: min(780px, calc(100vw - 28px));
   max-height: min(82vh, 760px);
@@ -307,7 +317,7 @@ table.ws button:hover { text-decoration: underline; }
   border-radius: 16px;
   box-shadow: 0 24px 80px #0005;
 }
-#confirmDialog, #imageTool {
+#confirmDialog, #imageTool, #exportDialog {
   width: min(760px, calc(100vw - 28px));
   max-height: min(88vh, 900px);
   padding: 0;
@@ -317,8 +327,8 @@ table.ws button:hover { text-decoration: underline; }
   border-radius: 16px;
   box-shadow: 0 24px 80px #0005;
 }
-#confirmDialog { width: min(480px, calc(100vw - 28px)); }
-#helpDialog::backdrop, #confirmDialog::backdrop, #imageTool::backdrop { background: #0b101bb3; backdrop-filter: blur(3px); }
+#confirmDialog, #exportDialog { width: min(480px, calc(100vw - 28px)); }
+#helpDialog::backdrop, #confirmDialog::backdrop, #imageTool::backdrop, #exportDialog::backdrop { background: #0b101bb3; backdrop-filter: blur(3px); }
 .dialog-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
 .dialog-head h2 { flex: 1; margin: 0; }
 .dialog-head button { min-width: 40px; font-size: 20px; }
@@ -331,9 +341,16 @@ table.ws button:hover { text-decoration: underline; }
 #imageToolStage { display: grid; place-items: center; min-height: 220px; max-height: 60vh; overflow: auto; padding: 16px; background: var(--out); }
 #imageToolStage canvas { display: block; max-width: none; background: repeating-conic-gradient(#8883 0 25%, transparent 0 50%) 0 0/12px 12px; }
 #imagePixelInfo { min-height: 42px; padding: 10px 16px; color: var(--mute); font: 12px ui-monospace, Menlo, monospace; }
-.help-head { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.help-head { flex: none; display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
 .help-head h2 { flex: 1; margin: 0; }
-.help-body { padding: 16px 20px 22px; overflow: auto; max-height: calc(82vh - 75px); }
+.help-body { flex: 1 1 auto; min-height: 0; padding: 16px 20px 22px; overflow: auto; }
+.export-formats { margin: 0 0 12px; padding: 0; border: 0; display: grid; gap: 6px; }
+.export-formats legend { padding: 0; margin-bottom: 6px; font-weight: 700; }
+.export-opt { display: flex; align-items: center; gap: 9px; min-height: 36px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.export-opt:has(input:checked) { border-color: var(--accent); background: var(--panel-soft); }
+.export-opt input { margin: 0; accent-color: var(--accent); }
+.export-outputs { margin-top: 4px; }
+.export-note { margin: 6px 2px 0; color: var(--mute); font-size: 12.5px; }
 #helpSearch { width: 100%; min-height: 44px; padding: 9px 12px; background: var(--code); border: 1px solid var(--line); border-radius: 9px; }
 #helpItems { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 14px; }
 .help-item { padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-soft); }
@@ -416,11 +433,10 @@ table.ws button:hover { text-decoration: underline; }
   .lessonnav { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
   .lessonnav span { grid-column: 1 / -1; grid-row: 1; text-align: left; }
   .lessonnav button { min-height: 42px; }
-  #helpDialog, #confirmDialog, #imageTool {
+  #helpDialog, #confirmDialog, #imageTool, #exportDialog {
     max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     border-radius: 14px;
   }
-  .help-body { max-height: calc(100dvh - 130px); }
   #imageToolStage { min-height: 160px; max-height: calc(100dvh - 260px); }
   .image-tool-hint { flex-basis: 100%; margin-left: 0; }
   #notice { right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); left: 12px; max-width: none; }
@@ -466,6 +482,18 @@ textarea.src.mdsrc { direction: inherit; text-align: start; white-space: pre-wra
 #side .panel { margin: 0; box-shadow: none; border-radius: 6px; }
 .panel .body { max-height: 220px; }
 
+/* Workspace / Current Folder / Command History stay visible beside the notebook on wide screens (like MATLAB). */
+@media (min-width: 900px) {
+  #layout, #layout.side-open { display: grid; grid-template-columns: minmax(0, 1fr) clamp(260px, 24vw, 340px); align-items: start; }
+  #nb { grid-column: 1; grid-row: 1; }
+  #side, #layout.side-open #side {
+    display: flex; flex-direction: column; gap: 10px; grid-column: 2; grid-row: 1;
+    position: sticky; top: 48px; max-height: calc(100vh - 56px); overflow: auto; overscroll-behavior: contain;
+    padding: 10px; border-bottom: 0; border-inline-start: 1px solid var(--line); background: var(--panel-soft);
+  }
+  #side .panel { flex: none; }
+  #toggleside { display: none; }
+}
 /* cells: prompt gutter + flat body, blue bar when selected (command), green when editing */
 .cell { margin: 0 0 6px; padding-inline-start: var(--jp-prompt); border: 1px solid transparent; border-radius: var(--jp-radius); background: transparent; box-shadow: none; position: relative; }
 .cell::before { content: ""; position: absolute; inset-block: 0; inset-inline-start: 0; width: 5px; border-radius: 3px 0 0 3px; background: transparent; }
@@ -511,3 +539,12 @@ pre.o.warn { background: var(--warnbg); padding: 8px 12px; }
 
 .md .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
 .md .katex { font-size: 1.05em; }
+
+& { --ig-color: color-mix(in srgb, var(--mute) 38%, transparent); }
+.cm-tooltip.mlweb-complete { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); overflow: hidden; }
+.cm-tooltip.mlweb-complete > ul { font: 13px/1.4 ui-monospace, "Cascadia Code", Menlo, Consolas, monospace; max-height: 14em; }
+.cm-tooltip.mlweb-complete > ul > li { padding: 2px 8px; }
+.cm-tooltip.mlweb-complete > ul > li[aria-selected] { background: color-mix(in srgb, var(--accent) 22%, var(--panel)); color: var(--ink); }
+.cm-tooltip.mlweb-complete .cm-completionDetail { margin-inline-start: 10px; color: var(--mute); font-style: normal; }
+.cm-tooltip.mlweb-complete .cm-completionMatchedText { color: var(--accent); text-decoration: none; font-weight: 700; }
+.cm-tooltip.cm-completionInfo { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font: 12.5px/1.45 system-ui, sans-serif; max-width: 280px; padding: 6px 9px; }

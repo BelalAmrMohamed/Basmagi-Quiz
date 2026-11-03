@@ -1,15 +1,20 @@
 import { indentWithTab } from '@codemirror/commands';
-import { HighlightStyle, StreamLanguage, syntaxHighlighting } from '@codemirror/language';
+import { HighlightStyle, StreamLanguage, indentUnit, syntaxHighlighting } from '@codemirror/language';
 import { octave } from '@codemirror/legacy-modes/mode/octave';
 import { EditorState, Prec } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
 import { basicSetup, EditorView } from 'codemirror';
+import { completionExtension } from './completion';
+import type { CompletionHost } from './completion';
+import { indentGuides } from './indent-guides';
 
 type AssetRec = { width: number; height: number; channels: 1 | 3; b64: string; bitDepth: number; format: string; fileSize: number; colorType: string; filename: string; fileModDate: string; colormap?: number[][] };
 export interface NotebookCellDoc { id: string; type: 'markdown' | 'code'; source: string }
 export interface NotebookDoc { id: string; title: string; schemaVersion: number; runtime: 'matlab'; cells: NotebookCellDoc[] }
-export interface MountOptions { root: HTMLElement; baseUrl: string; notebook: NotebookDoc; lang?: 'ar' | 'en'; onNotice?: (msg: string) => void; mode?: 'view' | 'edit'; onChange?: (cells: NotebookCellDoc[]) => void }
+export interface MountOptions { root: HTMLElement; baseUrl: string; notebook: NotebookDoc; lang?: 'ar' | 'en'; onNotice?: (msg: string) => void; mode?: 'view' | 'edit'; onChange?: (cells: NotebookCellDoc[]) => void;
+  /** Host replacement for the built-in confirm dialog (resolve true to accept). */
+  onConfirm?: (title: string, message: string, acceptLabel?: string) => Promise<boolean> }
 const isEdit = () => opts?.mode === 'edit';
 const cellDocs = (): NotebookCellDoc[] => cells.map((c, i) => ({ id: 'cell-' + (i + 1), type: c.type === 'code' ? 'code' : 'markdown', source: c.src }));
 
@@ -46,6 +51,11 @@ let refreshToolbar = () => {};
 let noticeTimer = 0;
 let confirmResolve: ((accepted: boolean) => void) | null = null;
 const imageToolState: { canvas: HTMLCanvasElement | null; image: Extract<Out, { k: 'img' }> | null; zoom: number } = { canvas: null, image: null, zoom: 1 };
+const completionHost: CompletionHost = {
+  workspace: () => vars.map(v => ({ name: v.name, cls: v.cls, size: v.size })),
+  codeSources: () => cells.filter(c => c.type === 'code').map(c => c.src),
+  fileNames: () => [...files.keys()]
+};
 const editorViews = new Map<number, EditorView>();
 const editorStates = new Map<number, EditorState>();
 const editorScroll = new Map<number, { top: number; left: number }>();
@@ -124,6 +134,7 @@ function notify(message: string) {
   noticeTimer = window.setTimeout(() => { el.hidden = true; }, 5000);
 }
 function confirmInApp(title: string, message: string, acceptLabel = tr('Continue', 'متابعة')): Promise<boolean> {
+  if (opts.onConfirm) return Promise.resolve(opts.onConfirm(title, message, acceptLabel)).then(Boolean, () => false);
   const dialog = $id('confirmDialog') as HTMLDialogElement;
   $id('confirmTitle')!.textContent = title;
   $id('confirmMessage')!.textContent = message;
@@ -299,6 +310,8 @@ function resetToPublished() {
 
 const helpReference = [
   ['Notebook', 'Shift+Enter runs and advances; Ctrl+Enter runs in place; Ctrl+Shift+P or ? opens help.', 'يشغّل Shift+Enter الخلية وينتقل للتالية؛ يشغّل Ctrl+Enter في مكانه؛ ويفتح Ctrl+Shift+P أو ? المساعدة.'],
+  ['Command mode', 'Press Esc to leave the editor, then: A insert above, B insert below, D D delete, M to text, Y to code, Up/Down or K/J move, Enter edit, Shift+Enter run and select next.', 'اضغط Esc للخروج من المحرر ثم: A إدراج أعلاه، B إدراج أسفله، D D حذف، M إلى نص، Y إلى كود، الأسهم أو K/J للتنقل، Enter للتحرير، Shift+Enter للتشغيل والانتقال للتالية.'],
+  ['Editor', 'Ctrl+Space opens autocomplete; Tab/Enter accepts a suggestion; Tab indents; Esc closes suggestions.', 'يفتح Ctrl+Space الإكمال التلقائي؛ يقبل Tab/Enter الاقتراح؛ يزيد Tab المسافة البادئة؛ ويغلق Esc الاقتراحات.'],
   ['switch / case', 'Choose one branch with switch value, case value, otherwise, and end.', 'اختر فرعاً باستخدام switch وcase وotherwise وend.'],
   ['Arrays and cells', 'Create numeric arrays with [1 2; 3 4] and cell arrays with {1, "text"}.', 'أنشئ مصفوفة رقمية مثل [1 2; 3 4] أو خلية مثل {1, "text"}.'],
   ['Structs', "Read and assign fields with s.name; create values with struct('name', value).", 'اقرأ وعيّن الحقول باستخدام s.name؛ وأنشئ البنية عبر struct.'],
@@ -466,7 +479,7 @@ function openImageTool(image: Extract<Out, { k: 'img' }>) {
   if (!dialog.open) dialog.showModal();
   requestAnimationFrame(fitImageTool);
 }
-function runFromEditor(cell: Cell, advance: boolean) {
+function runFromEditor(cell: Cell, advance: boolean, command = false) {
   if (curRun) return true;
   void runCell(cell).then(() => {
     if (!advance) return;
@@ -475,7 +488,7 @@ function runFromEditor(cell: Cell, advance: boolean) {
     if (index === cells.length - 1) cells.push(mkCell('code', ''));
     sel = index + 1;
     save();
-    focusCell(cells[sel].id);
+    if (command) focusCommand(cells[sel].id); else focusCell(cells[sel].id);
   });
   return true;
 }
@@ -510,7 +523,7 @@ function cellEl(c: Cell, i: number): HTMLElement {
       menuItem(c.type === 'md' ? tr('Convert to code', 'تحويل إلى كود') : tr('Convert to text', 'تحويل إلى نص'), () => { c.type = c.type === 'md' ? 'code' : 'md'; c.outs = []; c.mdEdit = c.type === 'md'; save(); render(); }),
       menuItem(tr('Delete cell', 'حذف الخلية'), remove)));
   tools.append($('span', { class: 'sp' }), options);
-  const el = $('section', { class: 'cell' + (i === sel ? ' sel' : '') + (c.running ? ' running' : ''), 'aria-label': tr(`${c.type === 'md' ? 'Text' : 'Code'} cell ${i + 1}`, `خلية ${c.type === 'md' ? 'نص' : 'كود'} ${i + 1}`) }, prompt, tools);
+  const el = $('section', { class: 'cell' + (i === sel ? ' sel' : '') + (c.running ? ' running' : ''), tabindex: -1, 'aria-label': tr(`${c.type === 'md' ? 'Text' : 'Code'} cell ${i + 1}`, `خلية ${c.type === 'md' ? 'نص' : 'كود'} ${i + 1}`) }, prompt, tools);
   el.addEventListener('focusin', () => { if (sel !== i) { sel = i; mountRoot.querySelectorAll('.cell').forEach((n, k) => n.classList.toggle('sel', k === i)); } });
   if (c.type === 'md' && !c.mdEdit) { const v = $('div', { class: 'md' }); v.innerHTML = md(c.src); v.ondblclick = () => { c.mdEdit = true; render(); }; el.append(v); }
   else if (c.type === 'md') {
@@ -536,9 +549,13 @@ function cellEl(c: Cell, i: number): HTMLElement {
         editorTheme,
         EditorView.lineWrapping,
         EditorState.tabSize.of(4),
+        indentUnit.of('    '),
+        indentGuides(),
+        completionExtension(opts.notebook.runtime || 'matlab', completionHost),
         Prec.highest(keymap.of([
           { key: 'Shift-Enter', run: () => runFromEditor(c, true) },
           { key: 'Mod-Enter', run: () => runFromEditor(c, false) },
+          { key: 'Escape', run: () => enterCommandMode(c) },
           indentWithTab
         ])),
         EditorView.updateListener.of(update => {
@@ -565,11 +582,62 @@ function cellEl(c: Cell, i: number): HTMLElement {
   el.append(outs, insert); return el;
 }
 let focusId: number | null = null;
+let cmdFocusId: number | null = null;
 function focusCell(id: number) { focusId = id; render(); }
+/** Command mode (Jupyter): focus is on the cell itself, not inside its editor. */
+function focusCommand(id: number) { cmdFocusId = id; render(); }
+function enterCommandMode(c: Cell) {
+  const i = cells.indexOf(c); if (i < 0) return false;
+  sel = i;
+  const el = mountRoot.querySelectorAll<HTMLElement>('.cell')[i];
+  (document.activeElement as HTMLElement | null)?.blur?.();
+  el?.focus();
+  return true;
+}
+let pendingD = 0;
+function onCommandKey(ev: KeyboardEvent) {
+  const target = ev.target as HTMLElement | null;
+  if (!target || !target.classList?.contains('cell')) return;
+  const i = Array.from(mountRoot.querySelectorAll('.cell')).indexOf(target);
+  const c = cells[i]; if (!c) return;
+  const key = ev.key.length === 1 ? ev.key.toLowerCase() : ev.key;
+  const go = (j: number) => { j = Math.max(0, Math.min(cells.length - 1, j)); sel = j; focusCommand(cells[j].id); };
+  if (ev.key === 'Enter' && (ev.shiftKey || ev.ctrlKey || ev.metaKey)) {
+    ev.preventDefault();
+    if (c.type === 'code') runFromEditor(c, ev.shiftKey, true);
+    else if (ev.shiftKey) go(i + 1);
+    return;
+  }
+  if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  const insert = (at: number) => { const added = mkCell('code', ''); cells.splice(at, 0, added); sel = at; save(); focusCommand(added.id); };
+  switch (key) {
+    case 'Enter': ev.preventDefault(); if (c.type === 'md') { c.mdEdit = true; } focusCell(c.id); break;
+    case 'ArrowUp': case 'k': ev.preventDefault(); go(i - 1); break;
+    case 'ArrowDown': case 'j': ev.preventDefault(); go(i + 1); break;
+    case 'a': ev.preventDefault(); insert(i); break;
+    case 'b': ev.preventDefault(); insert(i + 1); break;
+    case 'm': ev.preventDefault(); if (c.type !== 'md') { c.type = 'md'; c.outs = []; c.count = null; c.mdEdit = false; save(); focusCommand(c.id); } break;
+    case 'y': ev.preventDefault(); if (c.type !== 'code') { c.type = 'code'; c.mdEdit = false; save(); focusCommand(c.id); } break;
+    case 'd': {
+      ev.preventDefault();
+      const now = Date.now();
+      if (now - pendingD < 900) {
+        pendingD = 0;
+        cells.splice(i, 1); if (!cells.length) cells.push(mkCell('code', ''));
+        const j = Math.min(i, cells.length - 1); sel = j; save(); focusCommand(cells[j].id);
+      } else pendingD = now;
+      break;
+    }
+    default: return;
+  }
+  if (key !== 'd') pendingD = 0;
+}
+
 function render() {
   const root = nb(), y = window.scrollY, active = document.activeElement as HTMLTextAreaElement | null;
   let keep: { id: string; s: number; e: number } | null = active && active.dataset?.cell ? { id: active.dataset.cell, s: active.selectionStart, e: active.selectionEnd } : null;
   let keepEditorId: number | null = null;
+  const keepCommand = active instanceof HTMLElement && active.classList.contains('cell') ? Array.from(root.children).indexOf(active) : -1;
   for (const [id, view] of editorViews) {
     if (view.hasFocus) keepEditorId = id;
     editorStates.set(id, view.state);
@@ -600,6 +668,13 @@ function render() {
   else if (keepEditorId !== null) {
     const view = editorViews.get(keepEditorId), scroll = editorScroll.get(keepEditorId);
     if (view) { view.focus(); if (scroll) view.scrollDOM.scrollTo(scroll.left, scroll.top); }
+  }
+  if (cmdFocusId !== null) {
+    const idx = cells.findIndex(x => x.id === cmdFocusId);
+    mountRoot.querySelectorAll<HTMLElement>('.cell')[idx]?.focus();
+    cmdFocusId = null;
+  } else if (keepCommand >= 0 && focusId === null && !document.activeElement?.closest?.('.cell')) {
+    mountRoot.querySelectorAll<HTMLElement>('.cell')[Math.min(keepCommand, cells.length - 1)]?.focus({ preventScroll: true });
   }
   window.scrollTo(0, y);
   const stop = $id('stop');
@@ -645,25 +720,64 @@ function renderSide() {
 }
 
 // ---------------- import / export ----------------
-function exportIpynb() {
+const fileBase = () => (opts.notebook.title || 'notebook').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'notebook';
+const linesOf = (t: string) => t.split('\n').map((l, i, a) => (i < a.length - 1 ? l + '\n' : l));
+const hasOutputs = () => cells.some(c => c.type === 'code' && c.outs.length > 0);
+const figPng = (o: Extract<Out, { k: 'img' }>) => rgbToCanvas(o.w, o.h, o.rgb).toDataURL('image/png');
+function exportIpynb(withOutputs: boolean) {
   const nbk = { nbformat: 4, nbformat_minor: 5, metadata: { kernelspec: { name: 'mlweb', display_name: 'MLWeb (MATLAB subset)', language: 'matlab' }, language_info: { name: 'matlab', file_extension: '.m' } },
     cells: cells.map(c => {
-      const lines = c.src.split('\n').map((l, i, a) => (i < a.length - 1 ? l + '\n' : l));
+      const lines = linesOf(c.src);
       if (c.type === 'md') return { cell_type: 'markdown', metadata: {}, source: lines };
       const outputs: any[] = []; let txt = '';
-      for (const o of c.outs) {
-        if (o.k === 'img') outputs.push({ output_type: 'display_data', metadata: {}, data: { 'image/png': rgbToCanvas(o.w, o.h, o.rgb).toDataURL('image/png').split(',')[1], 'text/plain': ['<image>'] } });
+      if (withOutputs) for (const o of c.outs) {
+        if (o.k === 'img') outputs.push({ output_type: 'display_data', metadata: {}, data: { 'image/png': figPng(o).split(',')[1], 'text/plain': ['<image>'] } });
         else if (o.k === 'text') txt += o.s;
-        else outputs.push({ output_type: 'stream', name: 'stderr', text: [o.s] });
+        else outputs.push({ output_type: 'stream', name: 'stderr', text: linesOf(o.s) });
       }
-      if (txt) outputs.unshift({ output_type: 'stream', name: 'stdout', text: txt.split('\n').map((l, i, a) => (i < a.length - 1 ? l + '\n' : l)) });
-      return { cell_type: 'code', metadata: {}, execution_count: c.count, source: lines, outputs };
+      if (txt) outputs.unshift({ output_type: 'stream', name: 'stdout', text: linesOf(txt) });
+      return { cell_type: 'code', metadata: {}, execution_count: withOutputs ? c.count : null, source: lines, outputs };
     }) };
-  download('notebook.ipynb', new Blob([JSON.stringify(nbk, null, 1)], { type: 'application/json' }));
+  download(fileBase() + '.ipynb', new Blob([JSON.stringify(nbk, null, 1)], { type: 'application/json' }));
 }
-function exportM() {
-  const s = cells.map(c => c.type === 'md' ? c.src.split('\n').map(l => '% ' + l).join('\n') : c.src).join('\n\n%%\n');
-  download('notebook.m', new Blob([('% Exported from MLWeb - Belal Amr Mohamed\n\n' + s).replace(/\n/g, '\r\n')], { type: 'text/plain' }));
+function exportM(withOutputs: boolean) {
+  const outputComment = (c: Cell) => {
+    const text = c.outs.filter(o => o.k !== 'img').map(o => (o as { s: string }).s).join('').replace(/\s+$/, '');
+    const figs = c.outs.filter(o => o.k === 'img').length;
+    const out = text ? text.split('\n').map(l => '%   ' + l) : [];
+    if (figs) out.push(`%   [${figs} figure${figs === 1 ? '' : 's'} not included]`);
+    return out.length ? '\n% Output:\n' + out.join('\n') : '';
+  };
+  const s = cells.map(c => c.type === 'md' ? c.src.split('\n').map(l => '% ' + l).join('\n') : c.src + (withOutputs ? outputComment(c) : '')).join('\n\n%%\n');
+  download(fileBase() + '.m', new Blob([('% Exported from MLWeb - Belal Amr Mohamed\n\n' + s).replace(/\n/g, '\r\n')], { type: 'text/plain' }));
+}
+function exportHtml(withOutputs: boolean) {
+  let n = 0;
+  const body = cells.map(c => {
+    if (c.type === 'md') return `<section class="md">${md(c.src)}</section>`;
+    n += 1;
+    const outs = withOutputs ? c.outs.map(o => (o.k === 'img' ? `<img alt="figure ${o.fig}" src="${figPng(o)}">` : `<pre class="o${o.k === 'text' ? '' : ' ' + o.k}">${esc(o.s.replace(/\n+$/, ''))}</pre>`)).join('') : '';
+    return `<section class="code"><span class="prompt">In [${withOutputs && c.count ? c.count : n}]:</span><div><pre class="src" dir="ltr">${esc(c.src)}</pre>${outs}</div></section>`;
+  }).join('\n');
+  const html = `<!doctype html>\n<html lang="${LANG}" dir="${LANG === 'ar' ? 'rtl' : 'ltr'}">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>${esc(opts.notebook.title || 'Notebook')}</title>\n<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">\n<style>\n body{font:16px/1.65 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:#1d2433;max-width:900px;margin:0 auto;padding:28px 18px 60px}\n .md img{max-width:100%} .md code{background:#f0f2f7;border-radius:4px;padding:1px 5px} .md pre{background:#f0f2f7;border-radius:4px;padding:10px 12px;overflow:auto;direction:ltr;text-align:left}\n .code{display:grid;grid-template-columns:74px minmax(0,1fr);gap:8px;margin:10px 0;direction:ltr}\n .prompt{color:#307fc1;font:12.5px/1.8 ui-monospace,Menlo,Consolas,monospace;text-align:right;padding-top:8px}\n pre.src{margin:0;padding:10px 12px;background:#f6f7fb;border:1px solid #dce2ed;border-radius:4px;font:13.5px/1.6 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}\n pre.o{margin:6px 0 0;padding:6px 4px;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap} pre.o.err{background:#fff1f0;color:#b42318;padding:8px 12px} pre.o.warn{background:#fffaeb;color:#93370d;padding:8px 12px}\n .code img{display:block;max-width:100%;margin-top:8px;border:1px solid #dce2ed}\n @media print{body{padding:0} pre.src{break-inside:avoid}}\n</style>\n</head>\n<body>\n<h1>${esc(opts.notebook.title || '')}</h1>\n${body}\n</body>\n</html>\n`;
+  download(fileBase() + '.html', new Blob([html], { type: 'text/html;charset=utf-8' }));
+}
+type ExportFormat = 'ipynb' | 'm' | 'html';
+function openExport() {
+  const dialog = $id('exportDialog') as HTMLDialogElement | null; if (!dialog) return;
+  const withOut = dialog.querySelector<HTMLInputElement>('#exportOutputs')!;
+  const available = hasOutputs();
+  withOut.checked = available; withOut.disabled = !available;
+  $id('exportOutputsNote')!.textContent = available ? tr('Text results and figures currently shown under the cells.', 'النتائج النصية والأشكال الظاهرة حالياً أسفل الخلايا.') : tr('No outputs yet: run the cells first. Outputs are not saved with the notebook, only what is on screen can be exported.', 'لا توجد مخرجات بعد: شغّل الخلايا أولاً. المخرجات لا تُحفظ مع الدفتر، ويمكن تصدير ما هو ظاهر على الشاشة فقط.');
+  if (!dialog.open) dialog.showModal();
+}
+function runExport() {
+  const dialog = $id('exportDialog') as HTMLDialogElement; if (!dialog) return;
+  const format = (dialog.querySelector<HTMLInputElement>('input[name="exportFormat"]:checked')?.value || 'ipynb') as ExportFormat;
+  const withOutputs = dialog.querySelector<HTMLInputElement>('#exportOutputs')!.checked && hasOutputs();
+  dialog.close();
+  try { (format === 'm' ? exportM : format === 'html' ? exportHtml : exportIpynb)(withOutputs); }
+  catch (error) { notify(tr('Export failed: ', 'فشل التصدير: ') + (error instanceof Error ? error.message : String(error))); }
 }
 async function importFile(f: File) {
   const text = await f.text();
@@ -704,6 +818,14 @@ function buildShell(title: string) {
     $('div', { class: 'dialog-head' }, $('h2', { id: 'confirmTitle' }, ''), $('button', { type: 'button', 'data-confirm-cancel': true, 'aria-label': tr('Close dialog', 'إغلاق النافذة') }, '×')),
     $('div', { class: 'dialog-body' }, $('p', { id: 'confirmMessage' }),
       $('div', { class: 'dialog-actions' }, $('button', { type: 'button', 'data-confirm-cancel': true }, tr('Cancel', 'إلغاء')), $('button', { type: 'button', class: 'primary', 'data-confirm-accept': true }, ''))));
+  const radio = (value: string, label: string, checked = false) => $('label', { class: 'export-opt' }, $('input', { type: 'radio', name: 'exportFormat', value, checked }), $('span', {}, label));
+  const exportDlg = dlg('exportDialog', 'exportTitle',
+    $('div', { class: 'dialog-head' }, $('h2', { id: 'exportTitle' }, tr('Export notebook', 'تصدير الدفتر')), $('button', { type: 'button', 'data-export-cancel': true, 'aria-label': tr('Close dialog', 'إغلاق النافذة') }, '×')),
+    $('div', { class: 'dialog-body' },
+      $('fieldset', { class: 'export-formats' }, $('legend', {}, tr('Format', 'الصيغة')), radio('ipynb', tr('Jupyter Notebook (.ipynb)', 'Jupyter Notebook ‎(.ipynb)'), true), radio('m', tr('MATLAB script (.m)', 'سكريبت MATLAB ‎(.m)')), radio('html', tr('Web page (.html)', 'صفحة ويب ‎(.html)'))),
+      $('label', { class: 'export-opt export-outputs' }, $('input', { type: 'checkbox', id: 'exportOutputs' }), $('span', {}, tr('Include cell outputs', 'تضمين مخرجات الخلايا'))),
+      $('p', { id: 'exportOutputsNote', class: 'export-note' }),
+      $('div', { class: 'dialog-actions' }, $('button', { type: 'button', 'data-export-cancel': true }, tr('Cancel', 'إلغاء')), $('button', { type: 'button', class: 'primary', 'data-export-accept': true }, tr('Export', 'تصدير')))));
   const toolBtn = (id: string, label: string, text: string) => $('button', { type: 'button', id, title: label, 'aria-label': label }, text);
   const imageDlg = dlg('imageTool', 'imageToolTitle',
     $('div', { class: 'dialog-head image-tool-head' }, $('div', {}, $('h2', { id: 'imageToolTitle' }, tr('Image Tool', 'أداة الصورة')), $('span', { id: 'imageToolMeta' })), $('button', { type: 'button', id: 'closeImageTool', 'aria-label': tr('Close Image Tool', 'إغلاق أداة الصورة') }, '×')),
@@ -713,7 +835,7 @@ function buildShell(title: string) {
     $('div', { id: 'imageToolStage', tabindex: 0, 'aria-label': tr('Interactive image view', 'عرض تفاعلي للصورة') }),
     $('div', { id: 'imagePixelInfo', role: 'status', 'aria-live': 'polite' }, ''));
   const notice = $('div', { id: 'notice', role: 'status', 'aria-live': 'polite', hidden: true }, $('span', { id: 'noticeMessage' }), $('button', { type: 'button', id: 'dismissNotice', 'aria-label': tr('Dismiss notification', 'إغلاق الإشعار') }, '×'));
-  r.append(header, note, layout, helpDlg, confirmDlg, imageDlg, notice);
+  r.append(header, note, layout, helpDlg, confirmDlg, exportDlg, imageDlg, notice);
 }
 
 function mount(o: MountOptions): { destroy(): void; resetToPublished(): void; getCells(): NotebookCellDoc[]; setCells(list: NotebookCellDoc[]): void } {
@@ -746,8 +868,7 @@ function mount(o: MountOptions): { destroy(): void; resetToPublished(): void; ge
           resetToPublished();
         })]),
         menuButton(tr('Import…', 'استيراد…'), () => imp.click()),
-        menuButton(tr('Export as .ipynb', 'تصدير بصيغة ‎.ipynb'), exportIpynb),
-        menuButton(tr('Export as .m', 'تصدير بصيغة ‎.m'), exportM),
+        menuButton(tr('Export…', 'تصدير…'), openExport),
         menuButton(tr('Help and shortcuts', 'المساعدة والاختصارات'), openHelp)));
     const addBelow = (type: 'code' | 'md') => () => {
       const added = mkCell(type, type === 'md' ? '' : ''); added.mdEdit = type === 'md';
@@ -769,9 +890,13 @@ function mount(o: MountOptions): { destroy(): void; resetToPublished(): void; ge
 
   const listeners: [EventTarget, string, EventListener, any?][] = [];
   const on = (t: EventTarget | null, ev: string, fn: (e: any) => void, optsArg?: any) => { if (!t) return; t.addEventListener(ev, fn, optsArg); listeners.push([t, ev, fn, optsArg]); };
+  on($id('nb'), 'keydown', onCommandKey);
   on($id('helpSearch'), 'input', renderHelp);
   on($id('closeHelp'), 'click', () => ($id('helpDialog') as HTMLDialogElement).close());
   on($id('helpDialog'), 'click', event => { if (event.target === event.currentTarget) (event.currentTarget as HTMLDialogElement).close(); });
+  mountRoot.querySelectorAll('[data-export-cancel]').forEach(button => on(button, 'click', () => ($id('exportDialog') as HTMLDialogElement).close()));
+  on(mountRoot.querySelector('[data-export-accept]'), 'click', runExport);
+  on($id('exportDialog'), 'click', event => { if (event.target === event.currentTarget) (event.currentTarget as HTMLDialogElement).close(); });
   mountRoot.querySelectorAll('[data-confirm-cancel]').forEach(button => on(button, 'click', () => settleConfirm(false)));
   on(mountRoot.querySelector('[data-confirm-accept]'), 'click', () => settleConfirm(true));
   on($id('confirmDialog'), 'cancel', event => { event.preventDefault(); settleConfirm(false); });
