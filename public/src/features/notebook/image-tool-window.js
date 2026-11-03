@@ -94,6 +94,15 @@ let cascadeCounter = 0;
 let topZIndex = 10000; // Above sidebar (4000) and bottom-nav (4001)
 const openWindows = new Map();
 
+function layoutMinimizedWindows() {
+  let index = 0;
+  for (const [win] of openWindows) {
+    if (!win.classList.contains('is-minimized')) continue;
+    win.style.setProperty('--mlweb-minimized-offset', `${index * 58}px`);
+    index += 1;
+  }
+}
+
 /**
  * Creates an offscreen canvas containing the raw RGB image
  * @param {number} w
@@ -197,6 +206,11 @@ class ImageToolWindow {
 
     win.innerHTML = `
       <div class="mlweb-imtool-titlebar">
+        <div class="mlweb-imtool-win-controls">
+          <button type="button" class="mlweb-imtool-win-btn btn-close" title="${t.close}" aria-label="${t.close}"><span aria-hidden="true"></span></button>
+          <button type="button" class="mlweb-imtool-win-btn btn-min" title="${t.minimize}" aria-label="${t.minimize}"><span aria-hidden="true"></span></button>
+          <button type="button" class="mlweb-imtool-win-btn btn-max" title="${t.maximize}" aria-label="${t.maximize}"><span aria-hidden="true"></span></button>
+        </div>
         <div class="mlweb-imtool-title-wrap">
           <svg class="mlweb-imtool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
@@ -206,11 +220,7 @@ class ImageToolWindow {
           <span class="mlweb-imtool-title">${titleText}</span>
           <span class="mlweb-imtool-badge">${w} × ${h}</span>
         </div>
-        <div class="mlweb-imtool-win-controls">
-          <button type="button" class="mlweb-imtool-win-btn btn-min" title="${t.minimize}" aria-label="${t.minimize}">−</button>
-          <button type="button" class="mlweb-imtool-win-btn btn-max" title="${t.maximize}" aria-label="${t.maximize}">□</button>
-          <button type="button" class="mlweb-imtool-win-btn btn-close" title="${t.close}" aria-label="${t.close}">×</button>
-        </div>
+        <span class="mlweb-imtool-titlebar-spacer" aria-hidden="true"></span>
       </div>
       <div class="mlweb-imtool-toolbar">
         <div class="mlweb-imtool-tb-group">
@@ -348,7 +358,7 @@ class ImageToolWindow {
     // Titlebar dragging (disabled when maximized)
     this.titlebar.addEventListener('pointerdown', (e) => {
       if (e.target.closest('button')) return;
-      if (this.isMaximized) return; // Not draggable when fullscreen
+      if (this.isMaximized || this.isMinimized) return;
       e.preventDefault();
       this.bringToFront();
       const startMouseX = e.clientX;
@@ -383,10 +393,16 @@ class ImageToolWindow {
       this.titlebar.addEventListener('pointerup', onUp);
       this.titlebar.addEventListener('pointercancel', onUp);
     });
+    this.titlebar.addEventListener('click', (e) => {
+      if (this.isMinimized && !e.target.closest('button')) this.toggleMinimize();
+    });
 
     // Window controls
     win.querySelector('.btn-close').addEventListener('click', () => this.close());
-    win.querySelector('.btn-max').addEventListener('click', () => this.toggleMaximize());
+    win.querySelector('.btn-max').addEventListener('click', () => {
+      if (this.isMinimized) this.toggleMinimize();
+      else this.toggleMaximize();
+    });
     win.querySelector('.btn-min').addEventListener('click', () => this.toggleMinimize());
 
     // Toolbar controls
@@ -629,8 +645,8 @@ class ImageToolWindow {
         this.win.style.width = this.savedRect.width;
         this.win.style.height = this.savedRect.height;
       }
-      maxBtn.textContent = '□';
       maxBtn.title = this.t.maximize;
+      maxBtn.setAttribute('aria-label', this.t.maximize);
     } else {
       // Maximize
       this.isMaximized = true;
@@ -646,18 +662,24 @@ class ImageToolWindow {
       this.win.style.top = '0px';
       this.win.style.width = '100vw';
       this.win.style.height = '100vh';
-      maxBtn.textContent = '❐';
       maxBtn.title = this.t.restore;
+      maxBtn.setAttribute('aria-label', this.t.restore);
     }
     requestAnimationFrame(() => this.render());
   }
 
   toggleMinimize() {
-    const minBtn = this.win.querySelector('.btn-min');
+    const maxBtn = this.win.querySelector('.btn-max');
+    if (this.isMaximized) this.toggleMaximize();
+
     this.isMinimized = !this.isMinimized;
     this.win.classList.toggle('is-minimized', this.isMinimized);
-    minBtn.textContent = this.isMinimized ? '+' : '−';
-    minBtn.title = this.isMinimized ? this.t.restore : this.t.minimize;
+    maxBtn.title = this.isMinimized ? this.t.restore : this.t.maximize;
+    maxBtn.setAttribute('aria-label', maxBtn.title);
+
+    layoutMinimizedWindows();
+
+    if (!this.isMinimized) requestAnimationFrame(() => this.render());
   }
 
   render() {
@@ -807,6 +829,7 @@ class ImageToolWindow {
     if (this.ro) this.ro.disconnect();
     openWindows.delete(this.win);
     this.win.remove();
+    layoutMinimizedWindows();
   }
 }
 

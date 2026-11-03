@@ -18,7 +18,7 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease, transform 0.22s ease;
   z-index: 10000; /* Above sidebar (4000) and bottom-nav (4001) */
 }
 
@@ -45,11 +45,13 @@ html[data-theme="dark-slate"] .mlweb-imtool-win {
 /* Maximized (Full screen): sits above EVERYTHING, no dragging or resizing */
 .mlweb-imtool-win.is-maximized {
   z-index: 12000 !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: 100vw !important;
-  max-height: 100vh !important;
+  inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px) !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
   border-radius: 0 !important;
   border: none !important;
   box-shadow: none !important;
@@ -66,14 +68,30 @@ html[data-theme="dark-slate"] .mlweb-imtool-win {
 
 /* Minimized (collapsed to titlebar) */
 .mlweb-imtool-win.is-minimized {
+  position: fixed !important;
+  inset: auto auto calc(16px + env(safe-area-inset-bottom, 0px) + var(--mlweb-minimized-offset, 0px))
+    max(16px, env(safe-area-inset-left, 0px)) !important;
+  width: min(280px, calc(100vw - 32px)) !important;
+  height: 48px !important;
+  min-width: 0 !important;
   min-height: 0 !important;
-  height: auto !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  max-width: calc(100vw - 32px) !important;
+  max-height: 48px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+  transform: scale(.98);
+  transform-origin: bottom left;
+  touch-action: auto;
+  transition: inset 0.22s ease, width 0.22s ease, height 0.22s ease, transform 0.22s ease, box-shadow 0.18s ease;
 }
 .mlweb-imtool-win.is-minimized .mlweb-imtool-toolbar,
 .mlweb-imtool-win.is-minimized .mlweb-imtool-body,
 .mlweb-imtool-win.is-minimized .mlweb-imtool-statusbar,
-.mlweb-imtool-win.is-minimized .mlweb-imtool-resizer {
+.mlweb-imtool-win.is-minimized .mlweb-imtool-resizer,
+.mlweb-imtool-win.is-minimized .mlweb-imtool-grip,
+.mlweb-imtool-win.is-minimized .mlweb-imtool-titlebar-spacer,
+.mlweb-imtool-win.is-minimized .mlweb-imtool-badge,
+.mlweb-imtool-win.is-minimized .mlweb-imtool-win-btn.btn-min {
   display: none !important;
 }
 
@@ -81,13 +99,15 @@ html[data-theme="dark-slate"] .mlweb-imtool-win {
 .mlweb-imtool-titlebar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  position: relative;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px 90px;
   background: var(--color-background-secondary, #f4f6fb);
   border-bottom: 1px solid var(--color-border, #dce2ed);
   cursor: move;
   flex-shrink: 0;
+  min-height: 42px;
 }
 
 html[data-theme="dark"] .mlweb-imtool-titlebar,
@@ -99,10 +119,12 @@ html[data-theme="dark-slate"] .mlweb-imtool-titlebar {
 .mlweb-imtool-title-wrap {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   overflow: hidden;
   white-space: nowrap;
   pointer-events: none;
+  min-width: 0;
 }
 
 .mlweb-imtool-icon {
@@ -138,34 +160,140 @@ html[data-theme="dark-slate"] .mlweb-imtool-title {
 .mlweb-imtool-win-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  position: absolute;
+  inset-inline-start: 14px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .mlweb-imtool-win-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 13px;
+  height: 13px;
   padding: 0;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  color: var(--color-text-secondary, #667085);
+  background: #ff5f57;
+  border: 1px solid rgba(0, 0, 0, .12);
+  border-radius: 50%;
+  color: #69201c;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 8px;
   line-height: 1;
-  transition: background 0.15s ease, color 0.15s ease;
+  flex: 0 0 auto;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.mlweb-imtool-win-btn.btn-min {
+  background: #febc2e;
+  color: #76530a;
+}
+
+.mlweb-imtool-win-btn.btn-max {
+  background: #28c840;
+  color: #145a21;
 }
 
 .mlweb-imtool-win-btn:hover {
+  filter: brightness(.92);
+  transform: scale(1.08);
+}
+
+.mlweb-imtool-win-btn.btn-close-info {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-text-secondary, #667085);
+  font-size: 18px;
+}
+
+.mlweb-imtool-win-btn.btn-close-info:hover {
   background: rgba(128, 128, 128, 0.18);
   color: var(--color-text-primary, #1d2433);
 }
 
-html[data-theme="dark"] .mlweb-imtool-win-btn:hover,
-html[data-theme="dark-slate"] .mlweb-imtool-win-btn:hover {
-  color: #ffffff;
+.mlweb-imtool-win-btn span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.mlweb-imtool-win-btn.btn-close span::before {
+  content: "×";
+  position: absolute;
+  inset: -2px 0 0;
+  opacity: 0;
+  text-align: center;
+  font: 700 10px/13px Arial, sans-serif;
+}
+
+.mlweb-imtool-win-btn.btn-min span::before {
+  content: "−";
+  position: absolute;
+  inset: -1px 0 0;
+  opacity: 0;
+  text-align: center;
+  font: 700 10px/13px Arial, sans-serif;
+}
+
+.mlweb-imtool-win-btn.btn-max span::before {
+  content: "↗";
+  position: absolute;
+  inset: -1px 0 0;
+  opacity: 0;
+  text-align: center;
+  font: 700 9px/13px Arial, sans-serif;
+}
+
+.mlweb-imtool-win-controls:hover .mlweb-imtool-win-btn span::before {
+  opacity: 1;
+}
+
+.mlweb-imtool-win.is-maximized .mlweb-imtool-win-btn.btn-max span::before {
+  content: "↙";
+  opacity: 1;
+}
+
+.mlweb-imtool-win.is-minimized .mlweb-imtool-win-btn.btn-max span::before {
+  content: "↗";
+  opacity: 1;
+}
+
+.mlweb-imtool-win.is-minimized .mlweb-imtool-win-controls {
+  inset-inline-start: 12px;
+  gap: 7px;
+}
+
+.mlweb-imtool-win.is-minimized .mlweb-imtool-win-btn.btn-close {
+  display: inline-flex !important;
+}
+
+.mlweb-imtool-win.is-minimized .mlweb-imtool-win-btn.btn-max {
+  display: inline-flex !important;
+}
+
+.mlweb-imtool-win.is-minimized .mlweb-imtool-titlebar {
+  min-height: 46px;
+  height: 46px;
+  justify-content: flex-start;
+  padding-inline-start: 78px;
+  padding-inline-end: 10px;
+  cursor: pointer;
+  border: 0;
+  background: var(--color-surface, #fff);
+}
+
+.mlweb-imtool-win.is-minimized .mlweb-imtool-title-wrap {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.mlweb-imtool-win.is-minimized.is-focused {
+  transform: scale(1);
 }
 
 .mlweb-imtool-win-btn.btn-close:hover {
@@ -347,20 +475,21 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
 /* --- Info Overlay Card --- */
 .mlweb-imtool-info-card {
   position: absolute;
+  box-sizing: border-box;
   top: 12px;
   inset-inline-end: 12px;
   width: min(320px, calc(100% - 24px));
   max-height: calc(100% - 24px);
   overflow-y: auto;
-  background: rgba(22, 26, 36, 0.94);
+  background: color-mix(in srgb, var(--color-surface, #161922) 96%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.16));
   border-radius: 10px;
   padding: 12px 14px;
-  color: #f0f3f8;
+  color: var(--color-text-primary, #f0f3f8);
   font-size: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
   z-index: 10;
 }
 
@@ -370,14 +499,14 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
   justify-content: space-between;
   margin-bottom: 10px;
   padding-bottom: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
 }
 
 .mlweb-imtool-info-head h4 {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--color-text-primary, #ffffff);
 }
 
 .mlweb-imtool-info-grid {
@@ -388,14 +517,15 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
 }
 
 .mlweb-imtool-info-label {
-  color: #8b949e;
+  color: var(--color-text-secondary, #8b949e);
 }
 
 .mlweb-imtool-info-val {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 600;
-  color: #58a6ff;
+  color: var(--color-primary-text, var(--color-primary, #58a6ff));
   text-align: end;
+  overflow-wrap: anywhere;
 }
 
 /* --- Resize Handles (8 directions + corner grip) --- */
@@ -481,9 +611,206 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
 /* Responsive adjustments */
 @media (max-width: 600px) {
   .mlweb-imtool-win {
-    min-width: 320px;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 0;
+    max-width: calc(100vw - 40px);
+    max-height: calc(100dvh - 40px);
   }
+
+  .mlweb-imtool-body {
+    min-height: 0;
+  }
+
   .mlweb-imtool-tb-hint {
     display: none;
+  }
+
+  .mlweb-imtool-toolbar {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .mlweb-imtool-tb-group,
+  .mlweb-imtool-tb-sep,
+  .mlweb-imtool-tb-btn,
+  .mlweb-imtool-zoom-display {
+    flex: 0 0 auto;
+  }
+
+  .mlweb-imtool-statusbar {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+
+  .mlweb-imtool-status-pixel {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .mlweb-imtool-status-meta {
+    white-space: normal;
+    text-align: end;
+  }
+
+  .mlweb-imtool-info-card {
+    top: 8px;
+    inset-inline-end: 8px;
+    width: min(320px, calc(100% - 16px));
+    max-height: calc(100% - 16px);
+  }
+}
+
+@media (max-width: 760px) {
+  .mlweb #layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 14px 10px calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mlweb #nb,
+  .mlweb #side {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .mlweb #side {
+    position: static;
+  }
+
+  .mlweb .cell {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .mlweb .cell .tools {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .mlweb .fig,
+  .mlweb .fig .scroll {
+    max-width: 100%;
+  }
+
+  .mlweb #nb .cell:has(.cell-menu[open]) {
+    z-index: 30;
+  }
+
+  .mlweb .cell-menu[open] {
+    z-index: 31;
+  }
+
+  .mlweb .cell-menu-items,
+  .mlweb .toolbar-menu-items {
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    border-color: var(--line);
+    z-index: 1000;
+  }
+
+  .mlweb .cell-menu-items button,
+  .mlweb .toolbar-menu-items button {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 520px) {
+  .mlweb #bar {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    padding: calc(6px + env(safe-area-inset-top, 0px)) 8px 6px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .mlweb #bar .brand {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .mlweb #bar .actions {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    width: max-content;
+    max-width: none;
+    gap: 6px;
+  }
+
+  .mlweb #bar .actions > :is(button, select, .toolbar-menu) {
+    flex: 0 0 auto;
+    max-width: 58vw;
+  }
+
+  .mlweb #bar select#lessons {
+    width: auto;
+    min-width: 110px;
+    max-width: 42vw;
+  }
+
+  .mlweb #bar .toolbar-menu-items {
+    position: fixed;
+    inset-block-start: calc(env(safe-area-inset-top, 0px) + 52px);
+    inset-inline-end: 8px;
+    max-height: calc(100dvh - 64px - env(safe-area-inset-top, 0px));
+    overflow-y: auto;
+  }
+
+  .mlweb #layout {
+    gap: 12px;
+    padding-inline: 8px;
+  }
+
+  .mlweb #nb {
+    padding-inline: 0;
+  }
+
+  .mlweb #side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mlweb .cell .tools {
+    gap: 5px;
+    padding-inline: 6px;
+  }
+
+  .mlweb .cell .tools button {
+    min-width: 0;
+    padding-inline: 7px;
+  }
+
+  .mlweb .lessonnav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .mlweb-imtool-win.is-minimized {
+    inset-block-end: calc(var(--bottom-nav-height, 54px) + 12px + env(safe-area-inset-bottom, 0px) + var(--mlweb-minimized-offset, 0px)) !important;
+    inset-inline-start: max(8px, env(safe-area-inset-left, 0px)) !important;
+    width: min(280px, calc(100vw - 16px)) !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mlweb-imtool-win,
+  .mlweb-imtool-win.is-minimized {
+    transition: none;
+    transform: none;
   }
 }

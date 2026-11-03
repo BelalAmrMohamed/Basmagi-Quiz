@@ -11,6 +11,8 @@ import { showNotification } from "../../components/notifications/notifications.j
 import { normalizeNotebookLang } from "../../shared/notebook-lang.js";
 import * as M from "./notebook-editor-model.js";
 import "../notebook/image-tool-window.js";
+import "../notebook/notebook-output-controls.js";
+import "../notebook/notebook-menu-controls.js";
 
 const RUNTIME_BASE = "/assets/notebook-runtime/";
 const $ = (id) => document.getElementById(id);

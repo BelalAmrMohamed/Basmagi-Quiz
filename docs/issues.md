@@ -7,13 +7,16 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Globa Issue with buttons
+### Global Issue with buttons
 * Hovering buttons on their border make cause them to flash in a buggy way, that issue is probably related to their transition changing their location or something similar.
 
 ### Update OG Titles & Descriptions (`api/og.js`)
 Folders and Courses' OG titles & OG desciptions should updated to include lessons and notebooks. 
 
 Update SEO and GEO, too, they haven't been updated in a long while and are probably missing alot.
+
+### `api\og.js`
+* Special courses that get the (مادة مميزة) badge, since there is no info table displayed, the middle of the image becomes emtpy, I need to fill it with something, or ideas to improve it when it has the  (مادة مميزة) badge. 
 
 ### Bottom Nav on phones
 * Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.
@@ -38,9 +41,6 @@ Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is com
 
 ## New Features
 
-### Tooltips
-* Standing on a quiz card, lesson card, or notebook card, and hovering the title or description should show a tooltip with their full content (since long title/descriptions get truncated).
-
 ### Content Card Design
 * The current design of notebook cards, lesson cards, and quiz cards on the whome page is a mess.
 * Notebooks and lessons basically cannot be told apart from each other.
@@ -49,12 +49,13 @@ Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is com
 * The user content section is named (امتحانك), aside from the platform now supporting lessons and notebooks, too, so not only quizzes, but even that name was confusing when it was only quizzes, because users thought it was the history not content they create, name it something expressive like (إنشاء) or (إنشاء محتوى) or your recommendation.
 * The user content section can't be accessed offline, because it's inside the content area of the other courses too, I need an idea on how to solve that to make that area accessible, since it depends on localStorage, so it doesn't need to be online, specially for people who have the app installed.
 * The user content card doesn't display the number of notebooks or courses.
+* Standing on a quiz card, lesson card, or notebook card, and hovering the title or description should show a tooltip with their full content (since long title/descriptions get truncated).
 
 ### Update the MCP Server
 * Improve the MCP Server for usages similar to this: 
   * A user connects Basmagi Quiz + Google Drive to Claude, shares a specific drive folder, and tells Claude to convert its content onto the Basmaig Quiz Platform.
   * Expected Behavior: Claude recognises which of them can be converted into quizz, or lessons, or notebooks (with which runtime), and converts them properly. 
-  * Optional: Claude asks the user what content to convert to what for verification before deciding.
+  * Optional: Claude asks the user what content to convert to what type for verification before deciding.
 
 ### Dictation for Essay Questions (Lesson & Quiz Pages)
 Add dictation feature for essays in quizzes and lessons
@@ -95,9 +96,6 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 Improve:
 * It's theme Should match the theme of the platform (see themes.css and theme-controller.js), but it shouldn't import these files, it should be independent. It should also default to the default theme of the platform.
 
-### `api\og.js`
-* Special courses that get the (مادة مميزة) badge, since there is no info table displayed, the middle of the image becomes emtpy, I need to fill it with something, or ideas to improve it when it has the  (مادة مميزة) badge. 
-
 ### Notebooks
 
 #### Workspace
@@ -110,7 +108,13 @@ DB Note:
 
 #### What's not done (Maybe it's done):
 
-* Shortcuts: Jupyter command-mode shortcuts (A, B, D D, M, Y) are not built—Shift+Enter, Ctrl+Enter, and the toolbar work.
-* Exports: they contain no cell outputs, because outputs aren’t stored. Exporting from within a notebook should give the user the option to include the outputs.
+* Notebook-wide output clearing is now available from the runtime toolbar; per-cell output clearing remains in each cell menu.
+* Output-aware exports and the option to include visible outputs are implemented in the runtime. Outputs are session-only and are not saved with notebook content.
+* Jupyter command-mode shortcuts (A, B, D D, M, Y) are implemented in the runtime.
 * Not tested: the admin publish flow and a live Supabase.
 * The runtime bundle in public/assets/notebook-runtime/ was rebuilt from the changed source, so commit it along with the rest. The notes are in docs/NOTEBOOKS.md.
+
+#### Awaiting decision (not implemented)
+
+4. **Notebook image asset lifecycle:** Define how images added to the workspace are carried through local save, import drafts, and publication. Decide how to restrict platform uploads to admins, clean up uncommitted draft assets, support MCP-created workspace assets, and enforce shared storage limits before implementing this.
+5. **Notebook reliability and end-to-end coverage:** Test local and published notebook flows in a browser, including the admin publish path against staging/live Supabase. Review execution interruption and worker-error reporting, and add coverage for failures and recovery. Do not change runtime behavior until this scope is approved.

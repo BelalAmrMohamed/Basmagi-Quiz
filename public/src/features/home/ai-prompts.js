@@ -3,6 +3,7 @@
 const QUIZ_JSON_INSTRUCTIONS = `Create a quiz from the material I provide. Return one valid JSON object only.
 
 The object must use this shape:
+\`\`\`
 {
   "meta": {
     "title": "A clear, specific quiz title",
@@ -30,6 +31,7 @@ The object must use this shape:
     }
   ]
 }
+\`\`\`
 
 Schema and content rules:
 - Always provide a meaningful meta.title and meta.description.

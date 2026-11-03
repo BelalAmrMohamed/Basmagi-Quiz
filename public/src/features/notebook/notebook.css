@@ -24,6 +24,9 @@ body.sidebar-expanded {
 .notebook-page-shell {
   margin: 0;
   padding: 0;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .notebook-status {
@@ -77,4 +80,12 @@ body.sidebar-expanded {
 
 .notebook-root.mlweb #layout {
   max-width: none;
+}
+
+@media (max-width: 760px) {
+  .notebook-page-shell,
+  .notebook-root {
+    min-width: 0;
+    max-width: 100%;
+  }
 }

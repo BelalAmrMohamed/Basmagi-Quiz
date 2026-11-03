@@ -2,8 +2,11 @@
 
 .cnb-shell {
   margin-inline: auto;
-  padding: 8px 4px 32px;
+  padding: 8px 4px calc(32px + env(safe-area-inset-bottom, 0px));
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .cnb-shell[dir="rtl"] {
@@ -29,6 +32,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
 }
 
 .cnb-btn {
@@ -70,6 +74,8 @@
   gap: 10px 14px;
   padding: 14px;
   margin-bottom: 12px;
+  min-width: 0;
+  box-sizing: border-box;
   border: 1px solid var(--color-border, #d0d5dd);
   border-radius: 8px;
   background: var(--color-surface, #fff);
@@ -173,6 +179,8 @@
 
 .cnb-editor {
   min-height: 320px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .cnb-loading {
@@ -197,5 +205,32 @@
 
   .cnb-top-actions .cnb-btn {
     flex: 1;
+    min-width: 0;
+    padding-inline: 8px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 380px) {
+  .cnb-shell {
+    padding-inline: 8px;
+  }
+
+  .cnb-top {
+    align-items: stretch;
+  }
+
+  .cnb-top-actions {
+    gap: 6px;
+  }
+
+  .cnb-top-actions .cnb-btn {
+    font-size: .82rem;
+  }
+
+  .cnb-meta {
+    gap: 8px;
+    padding: 8px;
   }
 }
