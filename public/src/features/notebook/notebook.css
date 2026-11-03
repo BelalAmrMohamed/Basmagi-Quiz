@@ -1,5 +1,26 @@
 /* /notebook/:id page chrome. The interactive UI itself is styled by the
-   runtime (assets/notebook-runtime/runtime.css, scoped under .mlweb). */
+  runtime (assets/notebook-runtime/runtime.css, scoped under .mlweb). */
+
+/* Still haven't decided. */
+/* body {
+  padding: 0;
+  padding-right: var(--sidebar-collapsed-width);
+}
+
+body.sidebar-expanded {
+  padding-right: var(--sidebar-expanded-width);
+}
+
+
+@media (max-width: 768px) {
+  body {
+    padding-top: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: var(--bottom-nav-height, 54px);
+  }
+} */
+
 .notebook-page-shell {
   margin: 0;
   padding: 0;

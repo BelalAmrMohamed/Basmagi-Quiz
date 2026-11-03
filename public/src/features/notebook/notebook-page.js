@@ -10,6 +10,7 @@ import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.
 import { parseNotebookRef, isUuid, prepareNotebook } from "./notebook-data.js";
 import { resolveNotebookLang, notebookText } from "../../shared/notebook-lang.js";
 import { showNotebookInfoModal } from "../home/notebook-actions.js";
+import "./image-tool-window.js";
 
 const RUNTIME_BASE = "/assets/notebook-runtime/";
 const LOAD_TIMEOUT_MS = 15000;

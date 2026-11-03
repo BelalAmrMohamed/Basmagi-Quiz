@@ -100,12 +100,6 @@ Improve:
 
 ### Notebooks
 
-#### Improve the Image Tool modal
-* There are many missing functionalities, even if they are too hard to add, add the important ones like that feature that zooming into the pixels shows their info.
-* It shouldn't be a modal that has a set location/width/height, it should be a draggable and resizable window, just like the actual MATLAB Program.
-* Scrolling into the image and zooming is really bad, it's unexpectable, not intuitive to the user.
-* When Pressing "Run All" or using image tool multiple times at once, the image tool windows shouldn't be exactly on top of each other.
-
 #### Workspace
 * When creating a new notebook, adding new images, saving the notebook, and uploading it to the platform, the notebook doesn't include the uploaded images.
 * I don't want all users to be able to upload images to the platform (I'm on Supabase free-tier), only admins should, and also admins shouldn't do it all the time, because not all notebooks they create are going to be published. I haven't thought of a way to solve this issue.
@@ -114,7 +108,7 @@ Improve:
 DB Note:
 * Since we are expanding our usage of the DB based on that update, I want to put a limit on uploaded content to the DB (Like images, videos, etc...) [For all pages, not just the notebook page], this way notebooks, lessons, quizzes, and other items can still be uploaded and preserved even when the limit of the uploaded images and content is reached.
 
-#### What’s not done:
+#### What's not done (Maybe it's done):
 
 * Shortcuts: Jupyter command-mode shortcuts (A, B, D D, M, Y) are not built—Shift+Enter, Ctrl+Enter, and the toolbar work.
 * Exports: they contain no cell outputs, because outputs aren’t stored. Exporting from within a notebook should give the user the option to include the outputs.

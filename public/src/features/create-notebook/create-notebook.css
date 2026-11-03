@@ -1,4 +1,5 @@
 /* /create-notebook — JupyterLab-style editor shell. Cells come from the runtime (assets/notebook-runtime). */
+
 .cnb-shell {
   margin-inline: auto;
   padding: 8px 4px 32px;

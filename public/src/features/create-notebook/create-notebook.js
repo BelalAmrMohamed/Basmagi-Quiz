@@ -10,6 +10,7 @@ import { escapeHtml } from "../home/escape-html.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { normalizeNotebookLang } from "../../shared/notebook-lang.js";
 import * as M from "./notebook-editor-model.js";
+import "../notebook/image-tool-window.js";
 
 const RUNTIME_BASE = "/assets/notebook-runtime/";
 const $ = (id) => document.getElementById(id);

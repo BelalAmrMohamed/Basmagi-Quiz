@@ -1,0 +1,843 @@
+// =============================================================================
+// public/src/features/notebook/image-tool-window.js
+// MATLAB-Style Floating Image Tool Window (imtool)
+// Features:
+// - Multi-window manager with staggered cascade (+32px offset)
+// - Draggable titlebar & 8-direction resizable frame
+// - Maximize (Fullscreen) / Minimize / Restore
+// - Cursor-centered mouse wheel zoom (5% to 12800%)
+// - Direct drag-to-pan (hand tool with grab / grabbing cursor)
+// - In-pixel numerical intensity values & pixel grid at high zoom
+// - Dynamic contrast text (white on dark, black on light with crisp outline)
+// - 1-based MATLAB coordinate tracking (X: col, Y: row)
+// - Image information properties card (min/max/mean, class, size)
+// - Download PNG
+// - Full English & Arabic localization
+// =============================================================================
+
+/**
+ * @typedef {Object} ImtoolImage
+ * @property {'img'} k
+ * @property {number} fig
+ * @property {number} w
+ * @property {number} h
+ * @property {Uint8Array} rgb
+ * @property {boolean} [tool]
+ */
+
+const I18N = {
+  en: {
+    title: 'Image Tool',
+    figure: 'Figure',
+    minimize: 'Minimize',
+    maximize: 'Maximize',
+    restore: 'Restore',
+    close: 'Close',
+    zoomIn: 'Zoom in (+)',
+    zoomOut: 'Zoom out (−)',
+    fit: 'Fit',
+    actual: '100%',
+    toggleValues: 'Values',
+    toggleValuesTitle: 'Toggle numerical pixel values on zoom',
+    info: 'Info',
+    infoTitle: 'Image properties & statistics',
+    download: 'PNG',
+    downloadTitle: 'Download full-resolution PNG',
+    hint: 'Scroll to zoom · Drag to pan',
+    pixelPrompt: 'Pixel info: Move over image',
+    pixelFmt: (x, y, val) => `Pixel: (X: ${x}, Y: ${y})  ${val}`,
+    grayscale: 'Grayscale (1-channel)',
+    rgb: 'RGB Truecolor (3-channel)',
+    class: 'Class',
+    size: 'Dimensions',
+    totalPixels: 'Total Pixels',
+    colorType: 'Color Type',
+    minVal: 'Min Intensity',
+    maxVal: 'Max Intensity',
+    meanVal: 'Mean Intensity',
+    memory: 'Data Size',
+  },
+  ar: {
+    title: 'أداة الصورة',
+    figure: 'شكل',
+    minimize: 'تصغير',
+    maximize: 'تكبير',
+    restore: 'استعادة',
+    close: 'إغلاق',
+    zoomIn: 'تكبير (+)',
+    zoomOut: 'تصغير (−)',
+    fit: 'ملاءمة',
+    actual: '100%',
+    toggleValues: 'القيم',
+    toggleValuesTitle: 'إظهار / إخفاء أرقام البكسل عند التقريب',
+    info: 'معلومات',
+    infoTitle: 'خصائص وإحصاءات الصورة',
+    download: 'PNG',
+    downloadTitle: 'تنزيل الصورة بصيغة PNG',
+    hint: 'مرر للتكبير · اسحب للتحريك',
+    pixelPrompt: 'معلومات البكسل: حرّك المؤشر فوق الصورة',
+    pixelFmt: (x, y, val) => `البكسل: (س: ${x}، ص: ${y})  ${val}`,
+    grayscale: 'تدرج رمادي (قناة واحدة)',
+    rgb: 'ألوان حقيقية RGB (3 قنوات)',
+    class: 'الفئة',
+    size: 'الأبعاد',
+    totalPixels: 'إجمالي البكسلات',
+    colorType: 'نوع الألوان',
+    minVal: 'أقل قيمة إضاءة',
+    maxVal: 'أعلى قيمة إضاءة',
+    meanVal: 'متوسط الإضاءة',
+    memory: 'حجم البيانات',
+  }
+};
+
+let cascadeCounter = 0;
+let topZIndex = 10000; // Above sidebar (4000) and bottom-nav (4001)
+const openWindows = new Map();
+
+/**
+ * Creates an offscreen canvas containing the raw RGB image
+ * @param {number} w
+ * @param {number} h
+ * @param {Uint8Array} rgb
+ */
+function createOffscreenCanvas(w, h, rgb) {
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: false });
+  if (!ctx) return canvas;
+  const imgData = ctx.createImageData(w, h);
+  const data = imgData.data;
+  for (let i = 0, j = 0; i < rgb.length; i += 3, j += 4) {
+    data[j] = rgb[i];
+    data[j + 1] = rgb[i + 1];
+    data[j + 2] = rgb[i + 2];
+    data[j + 3] = 255;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return canvas;
+}
+
+class ImageToolWindow {
+  /**
+   * @param {ImtoolImage} image
+   * @param {Object} [options]
+   * @param {'ar' | 'en'} [options.lang]
+   * @param {HTMLElement} [options.container]
+   */
+  constructor(image, options = {}) {
+    this.image = image;
+    this.lang = options.lang === 'ar' ? 'ar' : 'en';
+    this.t = I18N[this.lang];
+    this.container = options.container || document.body;
+
+    // Analyze grayscale vs RGB and min/max/mean stats
+    this.analyzeStats();
+
+    // Zoom & Pan state
+    this.zoom = 1.0;
+    this.panX = 0;
+    this.panY = 0;
+    this.showPixelValues = true;
+    this.isPanning = false;
+    this.isDragging = false;
+    this.isResizing = false;
+    this.isMaximized = false;
+    this.isMinimized = false;
+    this.savedRect = null;
+
+    // Create offscreen source
+    this.offscreen = createOffscreenCanvas(image.w, image.h, image.rgb);
+
+    // Build DOM
+    this.build();
+
+    // Staggered positioning
+    this.applyInitialCascade();
+
+    // Fit image initially
+    requestAnimationFrame(() => {
+      this.fitToWindow();
+      this.render();
+    });
+  }
+
+  analyzeStats() {
+    const { w, h, rgb } = this.image;
+    let isGray = true;
+    let min = 255;
+    let max = 0;
+    let sum = 0;
+    const len = rgb.length;
+    for (let i = 0; i < len; i += 3) {
+      const r = rgb[i], g = rgb[i + 1], b = rgb[i + 2];
+      if (isGray && (r !== g || r !== b)) isGray = false;
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      if (lum < min) min = lum;
+      if (lum > max) max = lum;
+      sum += lum;
+    }
+    this.isGrayscale = isGray;
+    this.minVal = Math.round(min);
+    this.maxVal = Math.round(max);
+    this.meanVal = sum / (w * h);
+  }
+
+  build() {
+    const { w, h, fig } = this.image;
+    const t = this.t;
+
+    const win = document.createElement('div');
+    win.className = 'mlweb-imtool-win is-focused';
+    win.tabIndex = -1;
+    win.style.zIndex = String(++topZIndex);
+
+    const figNum = Math.abs(fig || 1);
+    const titleText = `${t.title} — ${t.figure} ${figNum}`;
+
+    win.innerHTML = `
+      <div class="mlweb-imtool-titlebar">
+        <div class="mlweb-imtool-title-wrap">
+          <svg class="mlweb-imtool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+            <circle cx="9" cy="9" r="2"/>
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+          </svg>
+          <span class="mlweb-imtool-title">${titleText}</span>
+          <span class="mlweb-imtool-badge">${w} × ${h}</span>
+        </div>
+        <div class="mlweb-imtool-win-controls">
+          <button type="button" class="mlweb-imtool-win-btn btn-min" title="${t.minimize}" aria-label="${t.minimize}">−</button>
+          <button type="button" class="mlweb-imtool-win-btn btn-max" title="${t.maximize}" aria-label="${t.maximize}">□</button>
+          <button type="button" class="mlweb-imtool-win-btn btn-close" title="${t.close}" aria-label="${t.close}">×</button>
+        </div>
+      </div>
+      <div class="mlweb-imtool-toolbar">
+        <div class="mlweb-imtool-tb-group">
+          <button type="button" class="mlweb-imtool-tb-btn btn-zoom-out" title="${t.zoomOut}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button type="button" class="mlweb-imtool-tb-btn btn-zoom-in" title="${t.zoomIn}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <span class="mlweb-imtool-zoom-display">100%</span>
+        </div>
+        <div class="mlweb-imtool-tb-sep"></div>
+        <div class="mlweb-imtool-tb-group">
+          <button type="button" class="mlweb-imtool-tb-btn btn-fit">${t.fit}</button>
+          <button type="button" class="mlweb-imtool-tb-btn btn-actual">${t.actual}</button>
+        </div>
+        <div class="mlweb-imtool-tb-sep"></div>
+        <div class="mlweb-imtool-tb-group">
+          <button type="button" class="mlweb-imtool-tb-btn btn-toggle-values is-active" title="${t.toggleValuesTitle}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 10h16M4 16h16M10 4v16M16 4v16"/></svg>
+            ${t.toggleValues}
+          </button>
+          <button type="button" class="mlweb-imtool-tb-btn btn-info" title="${t.infoTitle}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            ${t.info}
+          </button>
+          <button type="button" class="mlweb-imtool-tb-btn btn-download" title="${t.downloadTitle}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            ${t.download}
+          </button>
+        </div>
+        <span class="mlweb-imtool-tb-hint">${t.hint}</span>
+      </div>
+      <div class="mlweb-imtool-body">
+        <div class="mlweb-imtool-stage" tabindex="0">
+          <canvas class="mlweb-imtool-canvas"></canvas>
+          <div class="mlweb-imtool-info-card" hidden>
+            <div class="mlweb-imtool-info-head">
+              <h4>${t.title} · ${t.figure} ${figNum}</h4>
+              <button type="button" class="mlweb-imtool-win-btn btn-close-info">×</button>
+            </div>
+            <div class="mlweb-imtool-info-grid">
+              <span class="mlweb-imtool-info-label">${t.size}</span>
+              <span class="mlweb-imtool-info-val">${w} × ${h} px</span>
+              <span class="mlweb-imtool-info-label">${t.totalPixels}</span>
+              <span class="mlweb-imtool-info-val">${(w * h).toLocaleString()}</span>
+              <span class="mlweb-imtool-info-label">${t.colorType}</span>
+              <span class="mlweb-imtool-info-val">${this.isGrayscale ? t.grayscale : t.rgb}</span>
+              <span class="mlweb-imtool-info-label">${t.class}</span>
+              <span class="mlweb-imtool-info-val">uint8</span>
+              <span class="mlweb-imtool-info-label">${t.minVal}</span>
+              <span class="mlweb-imtool-info-val">${this.minVal}</span>
+              <span class="mlweb-imtool-info-label">${t.maxVal}</span>
+              <span class="mlweb-imtool-info-val">${this.maxVal}</span>
+              <span class="mlweb-imtool-info-label">${t.meanVal}</span>
+              <span class="mlweb-imtool-info-val">${this.meanVal.toFixed(1)}</span>
+              <span class="mlweb-imtool-info-label">${t.memory}</span>
+              <span class="mlweb-imtool-info-val">${((w * h * (this.isGrayscale ? 1 : 3)) / 1024).toFixed(1)} KB</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mlweb-imtool-statusbar">
+        <div class="mlweb-imtool-status-pixel">${t.pixelPrompt}</div>
+        <div class="mlweb-imtool-status-meta">${w}×${h} · uint8 · ${this.isGrayscale ? 'Grayscale' : 'RGB'}</div>
+      </div>
+      <!-- Resizers -->
+      <div class="mlweb-imtool-resizer r-e" data-dir="e"></div>
+      <div class="mlweb-imtool-resizer r-s" data-dir="s"></div>
+      <div class="mlweb-imtool-resizer r-w" data-dir="w"></div>
+      <div class="mlweb-imtool-resizer r-n" data-dir="n"></div>
+      <div class="mlweb-imtool-resizer r-se" data-dir="se"></div>
+      <div class="mlweb-imtool-resizer r-sw" data-dir="sw"></div>
+      <div class="mlweb-imtool-resizer r-ne" data-dir="ne"></div>
+      <div class="mlweb-imtool-resizer r-nw" data-dir="nw"></div>
+      <div class="mlweb-imtool-grip"></div>
+    `;
+
+    this.win = win;
+    this.titlebar = win.querySelector('.mlweb-imtool-titlebar');
+    this.stage = win.querySelector('.mlweb-imtool-stage');
+    this.canvas = win.querySelector('.mlweb-imtool-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.zoomDisplay = win.querySelector('.mlweb-imtool-zoom-display');
+    this.pixelStatus = win.querySelector('.mlweb-imtool-status-pixel');
+    this.infoCard = win.querySelector('.mlweb-imtool-info-card');
+    this.valuesBtn = win.querySelector('.btn-toggle-values');
+
+    this.hookEvents();
+    this.container.appendChild(win);
+    openWindows.set(win, this);
+  }
+
+  applyInitialCascade() {
+    const idx = cascadeCounter++;
+    const defaultW = Math.min(680, window.innerWidth - 40);
+    const defaultH = Math.min(520, window.innerHeight - 80);
+
+    const step = 32;
+    const maxOffset = 7;
+    const offset = (idx % (maxOffset + 1)) * step;
+
+    const baseLeft = 60;
+    const baseTop = 70;
+
+    let left = baseLeft + offset;
+    let top = baseTop + offset;
+
+    // Bounds safety
+    if (left + defaultW > window.innerWidth - 20) left = Math.max(20, window.innerWidth - defaultW - 20);
+    if (top + defaultH > window.innerHeight - 20) top = Math.max(40, window.innerHeight - defaultH - 20);
+
+    this.win.style.width = `${defaultW}px`;
+    this.win.style.height = `${defaultH}px`;
+    this.win.style.left = `${left}px`;
+    this.win.style.top = `${top}px`;
+  }
+
+  bringToFront() {
+    if (this.isMaximized) {
+      this.win.style.zIndex = '12000';
+    } else {
+      this.win.style.zIndex = String(++topZIndex);
+    }
+    for (const [w] of openWindows) w.classList.remove('is-focused');
+    this.win.classList.add('is-focused');
+  }
+
+  hookEvents() {
+    const win = this.win;
+
+    // Focus on click
+    win.addEventListener('pointerdown', () => this.bringToFront());
+
+    // Titlebar dragging (disabled when maximized)
+    this.titlebar.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button')) return;
+      if (this.isMaximized) return; // Not draggable when fullscreen
+      e.preventDefault();
+      this.bringToFront();
+      const startMouseX = e.clientX;
+      const startMouseY = e.clientY;
+      const startWinLeft = this.win.offsetLeft;
+      const startWinTop = this.win.offsetTop;
+      this.titlebar.setPointerCapture(e.pointerId);
+
+      const onMove = (moveEv) => {
+        if (this.isMaximized) return;
+        const dx = moveEv.clientX - startMouseX;
+        const dy = moveEv.clientY - startMouseY;
+        let newLeft = startWinLeft + dx;
+        let newTop = startWinTop + dy;
+
+        // Keep header visible in viewport
+        newLeft = Math.max(-win.offsetWidth + 100, Math.min(window.innerWidth - 100, newLeft));
+        newTop = Math.max(0, Math.min(window.innerHeight - 40, newTop));
+
+        win.style.left = `${newLeft}px`;
+        win.style.top = `${newTop}px`;
+      };
+
+      const onUp = (upEv) => {
+        this.titlebar.releasePointerCapture(upEv.pointerId);
+        this.titlebar.removeEventListener('pointermove', onMove);
+        this.titlebar.removeEventListener('pointerup', onUp);
+        this.titlebar.removeEventListener('pointercancel', onUp);
+      };
+
+      this.titlebar.addEventListener('pointermove', onMove);
+      this.titlebar.addEventListener('pointerup', onUp);
+      this.titlebar.addEventListener('pointercancel', onUp);
+    });
+
+    // Window controls
+    win.querySelector('.btn-close').addEventListener('click', () => this.close());
+    win.querySelector('.btn-max').addEventListener('click', () => this.toggleMaximize());
+    win.querySelector('.btn-min').addEventListener('click', () => this.toggleMinimize());
+
+    // Toolbar controls
+    win.querySelector('.btn-zoom-in').addEventListener('click', () => this.zoomRelative(1.25));
+    win.querySelector('.btn-zoom-out').addEventListener('click', () => this.zoomRelative(1 / 1.25));
+    win.querySelector('.btn-fit').addEventListener('click', () => { this.fitToWindow(); this.render(); });
+    win.querySelector('.btn-actual').addEventListener('click', () => { this.actualSize(); this.render(); });
+
+    this.valuesBtn.addEventListener('click', () => {
+      this.showPixelValues = !this.showPixelValues;
+      this.valuesBtn.classList.toggle('is-active', this.showPixelValues);
+      this.render();
+    });
+
+    const infoBtn = win.querySelector('.btn-info');
+    infoBtn.addEventListener('click', () => {
+      this.infoCard.hidden = !this.infoCard.hidden;
+      infoBtn.classList.toggle('is-active', !this.infoCard.hidden);
+    });
+    this.infoCard.querySelector('.btn-close-info').addEventListener('click', () => {
+      this.infoCard.hidden = true;
+      infoBtn.classList.remove('is-active');
+    });
+
+    win.querySelector('.btn-download').addEventListener('click', () => this.downloadPng());
+
+    // Resize handles (disabled when maximized)
+    win.querySelectorAll('.mlweb-imtool-resizer').forEach(handle => {
+      handle.addEventListener('pointerdown', (e) => {
+        if (this.isMaximized) return;
+        e.preventDefault();
+        e.stopPropagation();
+        this.bringToFront();
+        const dir = handle.dataset.dir;
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startW = win.offsetWidth;
+        const startH = win.offsetHeight;
+        const startL = win.offsetLeft;
+        const startT = win.offsetTop;
+        handle.setPointerCapture(e.pointerId);
+
+        const onResizeMove = (mEv) => {
+          if (this.isMaximized) return;
+          const dx = mEv.clientX - startX;
+          const dy = mEv.clientY - startY;
+          let newW = startW, newH = startH, newL = startL, newT = startT;
+          const minW = 380, minH = 260;
+
+          if (dir.includes('e')) newW = Math.max(minW, startW + dx);
+          if (dir.includes('s')) newH = Math.max(minH, startH + dy);
+          if (dir.includes('w')) {
+            const wClamped = Math.max(minW, startW - dx);
+            newL = startL + (startW - wClamped);
+            newW = wClamped;
+          }
+          if (dir.includes('n')) {
+            const hClamped = Math.max(minH, startH - dy);
+            newT = startT + (startH - hClamped);
+            newH = hClamped;
+          }
+
+          win.style.width = `${newW}px`;
+          win.style.height = `${newH}px`;
+          win.style.left = `${newL}px`;
+          win.style.top = `${newT}px`;
+          this.render();
+        };
+
+        const onResizeUp = (uEv) => {
+          handle.releasePointerCapture(uEv.pointerId);
+          handle.removeEventListener('pointermove', onResizeMove);
+          handle.removeEventListener('pointerup', onResizeUp);
+          handle.removeEventListener('pointercancel', onResizeUp);
+          this.render();
+        };
+
+        handle.addEventListener('pointermove', onResizeMove);
+        handle.addEventListener('pointerup', onResizeUp);
+        handle.addEventListener('pointercancel', onResizeUp);
+      });
+    });
+
+    // ResizeObserver on stage to redraw canvas
+    this.ro = new ResizeObserver(() => this.render());
+    this.ro.observe(this.stage);
+
+    // Mouse wheel cursor-centered zoom (supports up to 12800%)
+    this.stage.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = this.stage.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const factor = e.deltaY < 0 ? 1.25 : 1 / 1.25;
+      this.zoomAt(mouseX, mouseY, factor);
+    }, { passive: false });
+
+    // Stage direct drag-to-pan (hand tool)
+    this.stage.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.mlweb-imtool-info-card')) return;
+      e.preventDefault();
+      this.bringToFront();
+      this.isPanning = true;
+      this.stage.classList.add('is-panning');
+      const startMouseX = e.clientX;
+      const startMouseY = e.clientY;
+      const startPanX = this.panX;
+      const startPanY = this.panY;
+      this.stage.setPointerCapture(e.pointerId);
+
+      const onPanMove = (mEv) => {
+        if (!this.isPanning) return;
+        this.panX = startPanX + (mEv.clientX - startMouseX);
+        this.panY = startPanY + (mEv.clientY - startMouseY);
+        this.render();
+        this.trackCursorPixel(mEv);
+      };
+
+      const onPanUp = (uEv) => {
+        this.isPanning = false;
+        this.stage.classList.remove('is-panning');
+        this.stage.releasePointerCapture(uEv.pointerId);
+        this.stage.removeEventListener('pointermove', onPanMove);
+        this.stage.removeEventListener('pointerup', onPanUp);
+        this.stage.removeEventListener('pointercancel', onPanUp);
+      };
+
+      this.stage.addEventListener('pointermove', onPanMove);
+      this.stage.addEventListener('pointerup', onPanUp);
+      this.stage.addEventListener('pointercancel', onPanUp);
+    });
+
+    // Cursor tracking for real-time pixel info
+    this.stage.addEventListener('pointermove', (e) => {
+      if (!this.isPanning) this.trackCursorPixel(e);
+    });
+
+    this.stage.addEventListener('pointerleave', () => {
+      if (!this.isPanning) {
+        this.pixelStatus.textContent = this.t.pixelPrompt;
+      }
+    });
+
+    // Keyboard shortcuts while window is focused
+    win.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (this.isMaximized) {
+          this.toggleMaximize();
+        } else {
+          this.close();
+        }
+      } else if (e.key === '+' || e.key === '=') {
+        this.zoomRelative(1.25);
+      } else if (e.key === '-') {
+        this.zoomRelative(1 / 1.25);
+      } else if (e.key === '0') {
+        this.fitToWindow();
+        this.render();
+      } else if (e.key === '1') {
+        this.actualSize();
+        this.render();
+      }
+    });
+  }
+
+  trackCursorPixel(e) {
+    const rect = this.stage.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const px = Math.floor((mx - this.panX) / this.zoom);
+    const py = Math.floor((my - this.panY) / this.zoom);
+    const { w, h, rgb } = this.image;
+
+    if (px >= 0 && px < w && py >= 0 && py < h) {
+      const idx = (py * w + px) * 3;
+      const r = rgb[idx], g = rgb[idx + 1], b = rgb[idx + 2];
+      const valStr = this.isGrayscale ? `Val: ${r}` : `RGB: [${r}, ${g}, ${b}]`;
+      // 1-based indexing for MATLAB
+      this.pixelStatus.textContent = this.t.pixelFmt(px + 1, py + 1, valStr);
+    } else {
+      this.pixelStatus.textContent = this.t.pixelPrompt;
+    }
+  }
+
+  zoomAt(stageX, stageY, factor) {
+    const oldZoom = this.zoom;
+    // Extended max zoom to 128.0 (12800%) so pixel values are huge and easily readable
+    const newZoom = Math.max(0.05, Math.min(128.0, oldZoom * factor));
+    if (Math.abs(newZoom - oldZoom) < 0.0001) return;
+
+    // Image coordinates under the cursor
+    const imgX = (stageX - this.panX) / oldZoom;
+    const imgY = (stageY - this.panY) / oldZoom;
+
+    // Adjust pan so the image coordinate under the cursor remains fixed
+    this.panX = stageX - imgX * newZoom;
+    this.panY = stageY - imgY * newZoom;
+    this.zoom = newZoom;
+
+    this.render();
+  }
+
+  zoomRelative(factor) {
+    const stageW = this.stage.clientWidth;
+    const stageH = this.stage.clientHeight;
+    this.zoomAt(stageW / 2, stageH / 2, factor);
+  }
+
+  fitToWindow() {
+    const { w, h } = this.image;
+    const stageW = this.stage.clientWidth;
+    const stageH = this.stage.clientHeight;
+    const pad = 36;
+    // Scales image up or down to fill available space nicely with padding
+    const scale = Math.min((stageW - pad) / w, (stageH - pad) / h);
+    this.zoom = Math.max(0.05, Math.min(128.0, scale));
+    this.panX = (stageW - w * this.zoom) / 2;
+    this.panY = (stageH - h * this.zoom) / 2;
+  }
+
+  actualSize() {
+    const { w, h } = this.image;
+    const stageW = this.stage.clientWidth;
+    const stageH = this.stage.clientHeight;
+    this.zoom = 1.0; // Strictly 1:1 pixel representation
+    this.panX = (stageW - w) / 2;
+    this.panY = (stageH - h) / 2;
+  }
+
+  toggleMaximize() {
+    const maxBtn = this.win.querySelector('.btn-max');
+    if (this.isMaximized) {
+      // Restore
+      this.isMaximized = false;
+      this.win.classList.remove('is-maximized');
+      this.win.style.zIndex = String(++topZIndex);
+      if (this.savedRect) {
+        this.win.style.left = this.savedRect.left;
+        this.win.style.top = this.savedRect.top;
+        this.win.style.width = this.savedRect.width;
+        this.win.style.height = this.savedRect.height;
+      }
+      maxBtn.textContent = '□';
+      maxBtn.title = this.t.maximize;
+    } else {
+      // Maximize
+      this.isMaximized = true;
+      this.savedRect = {
+        left: this.win.style.left,
+        top: this.win.style.top,
+        width: this.win.style.width,
+        height: this.win.style.height,
+      };
+      this.win.classList.add('is-maximized');
+      this.win.style.zIndex = '12000'; // Sits above all UI, sidebar, and bottom-nav
+      this.win.style.left = '0px';
+      this.win.style.top = '0px';
+      this.win.style.width = '100vw';
+      this.win.style.height = '100vh';
+      maxBtn.textContent = '❐';
+      maxBtn.title = this.t.restore;
+    }
+    requestAnimationFrame(() => this.render());
+  }
+
+  toggleMinimize() {
+    const minBtn = this.win.querySelector('.btn-min');
+    this.isMinimized = !this.isMinimized;
+    this.win.classList.toggle('is-minimized', this.isMinimized);
+    minBtn.textContent = this.isMinimized ? '+' : '−';
+    minBtn.title = this.isMinimized ? this.t.restore : this.t.minimize;
+  }
+
+  render() {
+    if (!this.ctx || this.isMinimized) return;
+    const stageW = this.stage.clientWidth;
+    const stageH = this.stage.clientHeight;
+    if (stageW === 0 || stageH === 0) return;
+
+    // High-DPI support
+    const dpr = window.devicePixelRatio || 1;
+    const canvas = this.canvas;
+    if (canvas.width !== stageW * dpr || canvas.height !== stageH * dpr) {
+      canvas.width = stageW * dpr;
+      canvas.height = stageH * dpr;
+    }
+
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, stageW, stageH);
+
+    const { w, h, rgb } = this.image;
+    const zoom = this.zoom;
+    const panX = this.panX;
+    const panY = this.panY;
+
+    // Nearest-neighbor / pixelated when zoomed in
+    ctx.imageSmoothingEnabled = zoom < 1.5;
+
+    // Draw main image
+    ctx.drawImage(this.offscreen, panX, panY, w * zoom, h * zoom);
+
+    // Update zoom readout badge
+    this.zoomDisplay.textContent = `${Math.round(zoom * 100)}%`;
+
+    // High zoom: Pixel Grid and In-Pixel Numeric Values
+    if (zoom >= 8.0) {
+      // Find visible pixel bounds in stage coords
+      const colStart = Math.max(0, Math.floor(-panX / zoom));
+      const colEnd = Math.min(w, Math.ceil((stageW - panX) / zoom));
+      const rowStart = Math.max(0, Math.floor(-panY / zoom));
+      const rowEnd = Math.min(h, Math.ceil((stageH - panY) / zoom));
+
+      // Draw subtle pixel grid
+      ctx.strokeStyle = 'rgba(128, 128, 128, 0.45)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let col = colStart; col <= colEnd; col++) {
+        const x = Math.round(panX + col * zoom) + 0.5;
+        ctx.moveTo(x, Math.max(0, panY + rowStart * zoom));
+        ctx.lineTo(x, Math.min(stageH, panY + rowEnd * zoom));
+      }
+      for (let row = rowStart; row <= rowEnd; row++) {
+        const y = Math.round(panY + row * zoom) + 0.5;
+        ctx.moveTo(Math.max(0, panX + colStart * zoom), y);
+        ctx.lineTo(Math.min(stageW, panX + colEnd * zoom), y);
+      }
+      ctx.stroke();
+
+      // Render In-Pixel Numerical Values
+      if (this.showPixelValues && zoom >= 10.0) {
+        const isGray = this.isGrayscale;
+
+        for (let row = rowStart; row < rowEnd; row++) {
+          for (let col = colStart; col < colEnd; col++) {
+            const idx = (row * w + col) * 3;
+            const r = rgb[idx], g = rgb[idx + 1], b = rgb[idx + 2];
+            const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+            const isLight = lum > 130;
+            const textColor = isLight ? '#000000' : '#ffffff';
+            const strokeColor = isLight ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)';
+
+            const cx = panX + (col + 0.5) * zoom;
+            const cy = panY + (row + 0.5) * zoom;
+
+            if (isGray) {
+              const fontSize = Math.min(24, Math.max(8, Math.floor(zoom * 0.26)));
+              ctx.font = `700 ${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+
+              ctx.lineWidth = 2.5;
+              ctx.strokeStyle = strokeColor;
+              ctx.strokeText(String(r), cx, cy);
+
+              ctx.fillStyle = textColor;
+              ctx.fillText(String(r), cx, cy);
+            } else {
+              if (zoom >= 24.0) {
+                // Stacked 3 RGB channel values with contrast and colored tint
+                const fontSize = Math.min(16, Math.max(8, Math.floor(zoom * 0.15)));
+                const lineH = fontSize * 1.3;
+                ctx.font = `700 ${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.lineWidth = 2;
+
+                const drawLine = (text, yPos, colorDark, colorLight) => {
+                  ctx.strokeStyle = strokeColor;
+                  ctx.strokeText(text, cx, yPos);
+                  ctx.fillStyle = isLight ? colorDark : colorLight;
+                  ctx.fillText(text, cx, yPos);
+                };
+
+                drawLine(`R: ${r}`, cy - lineH, '#a80000', '#ff9494');
+                drawLine(`G: ${g}`, cy, '#007800', '#88ff88');
+                drawLine(`B: ${b}`, cy + lineH, '#0033cc', '#94b8ff');
+              } else {
+                // Single scalar luminance when cell size is between 10px and 24px
+                const fontSize = Math.min(14, Math.max(8, Math.floor(zoom * 0.26)));
+                ctx.font = `700 ${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = strokeColor;
+                ctx.strokeText(String(Math.round(lum)), cx, cy);
+
+                ctx.fillStyle = textColor;
+                ctx.fillText(String(Math.round(lum)), cx, cy);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    ctx.restore();
+  }
+
+  downloadPng() {
+    const { w, h, fig } = this.image;
+    this.offscreen.toBlob(blob => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `imtool-figure${Math.abs(fig || 1)}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }, 'image/png');
+  }
+
+  close() {
+    if (this.ro) this.ro.disconnect();
+    openWindows.delete(this.win);
+    this.win.remove();
+  }
+}
+
+/**
+ * Public singleton manager
+ */
+export const ImageToolManager = {
+  /**
+   * Opens an image tool window
+   * @param {ImtoolImage} image
+   * @param {Object} [options]
+   */
+  open(image, options = {}) {
+    if (!image || !image.rgb || !image.w || !image.h) return null;
+    return new ImageToolWindow(image, options);
+  },
+
+  /**
+   * Closes all active image tool windows
+   */
+  closeAll() {
+    for (const [, winInstance] of openWindows) {
+      winInstance.close();
+    }
+    openWindows.clear();
+  }
+};
+
+// Expose globally for runtime.js
+if (typeof window !== 'undefined') {
+  window.MLWebImageTool = ImageToolManager;
+}
+
+export default ImageToolManager;
