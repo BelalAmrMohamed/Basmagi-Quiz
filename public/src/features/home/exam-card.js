@@ -69,13 +69,14 @@ export function createExamCard(exam) {
 
   const h = document.createElement("h3");
   h.textContent = exam.title || exam.id;
-  h.title = `امتحان · ${h.textContent}`;
+  h.setAttribute("data-tooltip-badge", "📝 امتحان");
+  h.setAttribute("data-tooltip-text", h.textContent);
 
   // ── Phone-only leading emoji — sibling of .card-text, not nested inside
   const iconEl = document.createElement("span");
   iconEl.className = "phone-only-emoji";
   iconEl.textContent = "📝";
-  iconEl.title = "امتحان";
+
   iconEl.setAttribute("aria-hidden", "true");
 
   if (isRecentlyAdded(exam.createdAt)) {
@@ -245,7 +246,8 @@ export function createExamCard(exam) {
     const descriptionEl = document.createElement("p");
     descriptionEl.className = "lesson-card-description";
     descriptionEl.textContent = description;
-    descriptionEl.title = description;
+    descriptionEl.setAttribute("data-tooltip-badge", "📄 وصف الامتحان");
+    descriptionEl.setAttribute("data-tooltip-text", description);
     textWrap.appendChild(descriptionEl);
   }
 

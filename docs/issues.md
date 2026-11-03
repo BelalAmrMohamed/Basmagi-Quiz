@@ -10,11 +10,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ### Global Issue with buttons
 * Hovering buttons on their border make cause them to flash in a buggy way, that issue is probably related to their transition changing their location or something similar.
 
-### Update OG Titles & Descriptions (`api/og.js`)
-Folders and Courses' OG titles & OG desciptions should updated to include lessons and notebooks. 
-
-Update SEO and GEO, too, they haven't been updated in a long while and are probably missing alot.
-
 ### `api\og.js`
 * Special courses that get the (مادة مميزة) badge, since there is no info table displayed, the middle of the image becomes emtpy, I need to fill it with something, or ideas to improve it when it has the  (مادة مميزة) badge. 
 
@@ -42,16 +37,6 @@ Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is com
 So these are 3 examples of performance issues that I found and fixed, there are probably alot of other issues, too, some like the examples, others aren't.
 
 ## New Features
-
-### Content Card Design
-* The current design of notebook cards, lesson cards, and quiz cards on the whome page is a mess.
-* Notebooks and lessons basically cannot be told apart from each other.
-* The naming of things is messed up, because of how much things were reused when implementing new features, for example, the dropdown menu used on all 3 of them is called (exam-dropdown-menu), even though exams on the platform are typically called `quizzes`, and this UI element isn't used on quizzes only anyways. The code quality needs to be improved.
-* When lessons & notebooks are mixed with quizzes in a course, it looks like a mess with some cards taller than others. ![screenshot](image.png), we need to redeisgn the hight, width, and how much of the title & description can be shown to control the card styles better.
-* The user content section is named (امتحانك), aside from the platform now supporting lessons and notebooks, too, so not only quizzes, but even that name was confusing when it was only quizzes, because users thought it was the history not content they create, name it something expressive like (إنشاء) or (إنشاء محتوى) or your recommendation.
-* The user content section can't be accessed offline, because it's inside the content area of the other courses too, I need an idea on how to solve that to make that area accessible, since it depends on localStorage, so it doesn't need to be online, specially for people who have the app installed.
-* The user content card doesn't display the number of notebooks or courses.
-* Standing on a quiz card, lesson card, or notebook card, and hovering the title or description should show a tooltip with their full content (since long title/descriptions get truncated).
 
 ### Update the MCP Server
 * Improve the MCP Server for usages similar to this: 

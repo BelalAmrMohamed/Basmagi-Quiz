@@ -24,10 +24,13 @@ import { initPWA } from "../../shared/pwa-manager.js";
 import { syncAdminSessionWithSupabase } from "./session-sync.js";
 import { initApp, restoreViewFromURL } from "./navigation.js";
 import { renderRootCategories } from "./root-view.js";
+import { renderUserQuizzesView } from "./user-quizzes-view.js";
+import { setFolderState } from "./user-quizzes-folders.js";
+import { initCustomTooltips } from "../../components/tooltip/tooltip.js";
 import { startQuiz } from "./quiz-navigation.js";
 import { updateWelcomeMessage } from "./welcome-message.js";
 import { showShortcutsOverlay } from "./shortcuts-overlay.js";
-import { getCategoryTree, setRestoring } from "./app-state.js";
+import { getCategoryTree, setRestoring, setNavigationStack } from "./app-state.js";
 import { escapeHtml } from "./escape-html.js";
 import { getFromStorage } from "../../shared/storage-helpers.js";
 import { showNotification } from "../../components/notifications/notifications.js";
@@ -38,6 +41,16 @@ import { showNotification } from "../../components/notifications/notifications.j
 // Original lines 4741-4742.
 window.startQuiz = startQuiz;
 window.renderRootCategories = renderRootCategories;
+window.renderUserQuizzesView = renderUserQuizzesView;
+window.navigateToMyContent = () => {
+  setNavigationStack([]);
+  setFolderState([], null);
+  renderUserQuizzesView();
+};
+window.navigateToRootHome = () => {
+  setNavigationStack([]);
+  renderRootCategories();
+};
 
 // ── Global click listener: close course-info tooltips on outside click ───────
 // Ported verbatim from original lines 5499-5513 (the last lines of index.js).
@@ -76,6 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Must come before the isIndexPage guard so SW registration and the offline
   // banner are active regardless of which page the user is on.
   initPWA();
+  initCustomTooltips();
 
   // ── Page guard ────────────────────────────────────────────────────────────
   // index-entrypoint.js is imported as an ES module by side-menu.js (for the
@@ -102,6 +116,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const isIndexPage =
     p === "/" ||
     p.endsWith("/index") ||
+    p === "/my-content" ||
+    p.startsWith("/my-content/") ||
     /^\/course\/[^/]+(\/[^/]+)*\/?$/.test(p) ||
     // /lesson/:id — Phase 1 skeleton, renders inside this same SPA shell
     // (see render-course.js's contentType=lesson branch); same reasoning

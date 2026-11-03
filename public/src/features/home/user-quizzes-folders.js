@@ -244,7 +244,17 @@ export function navigateToFolder(folderId, folderTitle) {
  * Build the URL hash for the current folder path stack.
  * Root level = "#my-content", nested = "#my-content/slug1/slug2"
  */
+export function buildFolderPath() {
+  if (folderPathStack.length === 0) return "/my-content";
+  const slugs = folderPathStack.map((f) => toSlug(f.title));
+  return "/my-content/" + slugs.join("/");
+}
+
 export function buildFolderHash() {
+  return buildFolderPath();
+}
+
+function _legacyBuildFolderHash() {
   if (folderPathStack.length === 0) return "#my-content";
   const slugs = folderPathStack.map((f) => toSlug(f.title));
   return "#my-content/" + slugs.join("/");
@@ -1803,6 +1813,8 @@ export function createFolderOrCourseCard(item) {
 
   const h = document.createElement("h3");
   h.textContent = item.meta?.title || "";
+  h.setAttribute("data-tooltip-text", h.textContent);
+  h.setAttribute("data-tooltip-clamped-only", "true");
   textWrap.appendChild(h);
 
   // Subtext: total number of subfolders and quizzes (recursive)
@@ -1817,7 +1829,7 @@ export function createFolderOrCourseCard(item) {
 
   card.appendChild(textWrap);
 
-  card.setAttribute("title", item.meta?.title || "");
+
   card.setAttribute("aria-label", `${item.meta?.title || ""}, ${subtextStr}`);
 
   // Actions wrap with ⋮ more button for touch & quick access

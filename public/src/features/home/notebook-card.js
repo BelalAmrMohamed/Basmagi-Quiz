@@ -35,21 +35,23 @@ export function createNotebookCard(notebook) {
   const icon = document.createElement("span");
   icon.className = "phone-only-emoji";
   icon.textContent = "💻";
-  icon.title = "دفتر تفاعلي";
+
   icon.setAttribute("aria-hidden", "true");
 
   const text = document.createElement("div");
   text.className = "card-text";
   const heading = document.createElement("h3");
   heading.textContent = notebook.title || "دفتر بدون عنوان";
-  heading.title = `دفتر تفاعلي · ${heading.textContent}`;
+  heading.setAttribute("data-tooltip-badge", "💻 دفتر تفاعلي");
+  heading.setAttribute("data-tooltip-text", heading.textContent);
   text.appendChild(heading);
   const description = String(notebook.description || "").trim();
   if (description) {
     const desc = document.createElement("p");
     desc.className = "lesson-card-description";
     desc.textContent = description;
-    desc.title = description;
+    desc.setAttribute("data-tooltip-badge", "📄 وصف الدفتر");
+    desc.setAttribute("data-tooltip-text", description);
     text.appendChild(desc);
   }
   const meta = document.createElement("div");

@@ -251,8 +251,10 @@ export async function renderRootCategories() {
     const rootPath = `/${window.location.search}`;
     if (isRestoring()) {
       history.replaceState({ view: "root" }, "", rootPath);
+      if (typeof window.syncActiveNavState === "function") window.syncActiveNavState();
     } else {
       history.pushState({ view: "root" }, "", rootPath);
+      if (typeof window.syncActiveNavState === "function") window.syncActiveNavState();
     }
 
     // Update search context when returning to root
@@ -264,13 +266,23 @@ export async function renderRootCategories() {
     if (!title || !container) return;
 
     const subscribedIds = userProfile.getSubscribedCourseIds();
-    const categoryTree = getCategoryTree();
+    let categoryTree = getCategoryTree();
 
-    // ── Manifest-load failure guard ────────────────────────────────────────
-    // categoryTree is null (not {}) when the manifest failed to load (see
-    // initApp/retryLoadManifest in navigation.js). Show the retry error state
-    // instead of falling through to the misleading "لا توجد مواد متاحة"
-    // empty state or throwing inside getSubscribedCourses().
+    // If categoryTree isn't populated yet (e.g. user loaded /my-content directly
+    // and clicked back before manifest finished fetching in background), try awaiting getManifest()
+    if (!categoryTree) {
+      try {
+        const { getManifest } = await import("../../shared/quizManifest.js");
+        const manifest = await getManifest();
+        if (manifest?.categoryTree) {
+          setCategoryTree(manifest.categoryTree);
+          categoryTree = manifest.categoryTree;
+        }
+      } catch (err) {
+        console.warn("[renderRootCategories] On-demand manifest fetch failed:", err);
+      }
+    }
+
     if (!categoryTree) {
       renderManifestLoadError();
       return;
@@ -327,10 +339,6 @@ export async function renderRootCategories() {
       // attribute instead of assuming DOM order (it's always appended
       // first, but relying on that felt fragile for a targeted lookup).
       quizzesCard.setAttribute("data-user-quizzes-card", "true");
-      quizzesCard.setAttribute(
-        "title",
-        "الامتحانات والدروس والدفاتر والمواد التي أنشأتها أو حفظتها",
-      );
       // Custom icon
       const iconDiv = quizzesCard.querySelector(".icon");
       if (iconDiv) iconDiv.textContent = "✏️";

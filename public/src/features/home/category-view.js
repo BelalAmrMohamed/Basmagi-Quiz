@@ -109,8 +109,10 @@ export function renderCategory(category) {
       try {
         if (!isRestoring()) {
           history.pushState({ view: "category", catKey }, "", url);
+          if (typeof window.syncActiveNavState === "function") window.syncActiveNavState();
         } else {
           history.replaceState({ view: "category", catKey }, "", url);
+          if (typeof window.syncActiveNavState === "function") window.syncActiveNavState();
         }
       } catch (pushErr) {
         // Genuine error handling (kept) — history.pushState/replaceState can
@@ -297,7 +299,7 @@ export function createCategoryCard(
   card.className = "card category-card";
   card.setAttribute("role", "button");
   card.setAttribute("tabindex", "0");
-  card.setAttribute("title", `${name}`);
+
   card.setAttribute(
     "aria-label",
     `${name}, ${subtextOverride || `${itemCount} ${getItemText(itemCount)}`}`,
@@ -320,6 +322,8 @@ export function createCategoryCard(
 
   const h3 = document.createElement("h3");
   h3.textContent = name;
+  h3.setAttribute("data-tooltip-text", name);
+  h3.setAttribute("data-tooltip-clamped-only", "true");
 
   const p = document.createElement("p");
 

@@ -131,7 +131,7 @@ async function offlinePageResponse() {
 
 async function offlineNavigationResponse(request) {
   const url = new URL(request.url);
-  if (url.pathname === "/" || url.pathname === "/index.html") {
+  if (url.pathname === "/" || url.pathname === "/index.html" || url.pathname.startsWith("/my-content")) {
     const appShell = await caches.match("/");
     if (appShell) return appShell;
   }
@@ -150,7 +150,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request).then(async (response) => {
         const url = new URL(request.url);
-        if (response.ok && isAppAsset(url) && (url.pathname === "/" || url.pathname === "/index.html")) {
+        if (response.ok && isAppAsset(url) && (url.pathname === "/" || url.pathname === "/index.html" || url.pathname.startsWith("/my-content"))) {
           const cache = await caches.open(OFFLINE_CACHE);
           await cacheResponse(cache, url.pathname, response.clone());
         }

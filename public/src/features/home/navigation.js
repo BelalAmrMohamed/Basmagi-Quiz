@@ -217,6 +217,49 @@ export function restoreViewFromURL() {
     return;
   }
 
+    // ── User content view — pathname-based: /my-content or /my-content/:subSlug/... ──
+  const userContentMatch = pathname.match(/^\/my-content((?:\/[^/]+)*)\/?$/);
+  if (userContentMatch) {
+    const extraSegments = userContentMatch[1]
+      .split("/")
+      .filter(Boolean)
+      .map((s) => {
+        try { return decodeURIComponent(s); } catch { return s; }
+      });
+
+    if (extraSegments.length > 0) {
+      const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      const stack = [];
+      let parentId = null;
+      let resolved = true;
+
+      for (const slug of extraSegments) {
+        const match = userQuizzes.find(
+          (q) =>
+            (q.meta?.parentId || null) === parentId &&
+            (q.meta?.type === "folder" || q.meta?.type === "course") &&
+            toSlug(q.meta?.title || "") === slug
+        );
+        if (!match) { resolved = false; break; }
+        const itemId = match.id || match.meta?.id;
+        stack.push({ id: itemId, title: match.meta?.title });
+        parentId = itemId;
+      }
+
+      if (resolved && stack.length > 0) {
+        setNavigationStack([]);
+        setFolderState(stack, stack[stack.length - 1].id);
+        renderUserQuizzesView();
+        return;
+      }
+    }
+
+    setNavigationStack([]);
+    setFolderState([], null);
+    renderUserQuizzesView();
+    return;
+  }
+
   // ── Root view ──────────────────────────────────────────────────────────────
   if (!hash) {
     renderRootCategories();
@@ -373,14 +416,17 @@ export function finalizeAppRender() {
 export async function initApp() {
   migrateLegacyUserProfile();
 
-  if (/^#(?:my-content|my-quizzes)(?:\/|$)/.test(window.location.hash)) {
+  const isLocalContentView =
+    /^#(?:my-content|my-quizzes)(?:\/|$)/.test(window.location.hash) ||
+    window.location.pathname.startsWith("/my-content");
+
+  if (isLocalContentView) {
     setRestoring(true);
     try {
       restoreViewFromURL();
     } finally {
       setRestoring(false);
     }
-    return;
   }
 
   let hasVisited = true;
@@ -420,6 +466,11 @@ export async function initApp() {
     // retry error state instead of a misleading "توجد مواد غير متاحة" empty
     // state — {} remains reserved for a genuinely empty catalog.
     setCategoryTree(null);
+  }
+
+  // ── If already rendered local content, stop here (manifest is loaded in background)
+  if (isLocalContentView) {
+    return;
   }
 
   // ── If first-time visitor, show landing layout instead of default content

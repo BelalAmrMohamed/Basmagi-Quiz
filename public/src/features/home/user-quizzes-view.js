@@ -84,7 +84,7 @@ function userItemRoute(item, items) {
   if (kind === "quiz") return `/quiz/${encodeURIComponent(id)}?type=user`;
   if (kind === "lesson") return `/lesson/${encodeURIComponent(id)}`;
   if (kind === "notebook") return `/notebook/${encodeURIComponent(id)}?type=user`;
-  if (kind !== "folder" && kind !== "course") return "/#my-content";
+  if (kind !== "folder" && kind !== "course") return "/my-content";
 
   const byId = new Map(items.map((entry) => [entry.id || entry.meta?.id, entry]));
   const segments = [];
@@ -97,7 +97,7 @@ function userItemRoute(item, items) {
     if (title) segments.unshift(encodeURIComponent(toSlug(title)));
     current = current.meta?.parentId ? byId.get(current.meta.parentId) : null;
   }
-  return segments.length ? `/#my-content/${segments.join("/")}` : "/#my-content";
+  return segments.length ? `/my-content/${segments.join("/")}` : "/my-content";
 }
 
 function getUserItemDestination(item, items) {
@@ -580,9 +580,11 @@ export function renderUserQuizzesView() {
     // Build the correct URL hash for the current folder depth
     const folderHash = buildFolderHash();
     if (!isRestoring()) {
-      history.pushState({ view: "my-quizzes" }, "", folderHash);
+      history.pushState({ view: "my-content" }, "", folderHash);
+      if (typeof window.syncActiveNavState === "function") window.syncActiveNavState();
     } else {
-      history.replaceState({ view: "my-quizzes" }, "", folderHash);
+      history.replaceState({ view: "my-content" }, "", folderHash);
+      if (typeof window.syncActiveNavState === "function") window.syncActiveNavState();
     }
 
     // Fix the #breadcrumb back-button for nested user-quiz folders.

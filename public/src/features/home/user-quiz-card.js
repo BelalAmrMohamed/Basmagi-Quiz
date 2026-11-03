@@ -127,13 +127,14 @@ export function createUserQuizCard(quiz, index) {
   // closes the same stored-XSS gap the original innerHTML interpolation
   // had, just without needing an escaping step at all.
   h.textContent = qz(quiz, "title") || quizId;
-  h.title = `امتحان · ${h.textContent}`;
+  h.setAttribute("data-tooltip-badge", "📝 امتحان");
+  h.setAttribute("data-tooltip-text", h.textContent);
 
   // ── Phone-only leading emoji — sibling of .card-text, not nested inside
   const iconEl = document.createElement("span");
   iconEl.className = "user-quiz--phone-only-emoji";
   iconEl.textContent = "📝";
-  iconEl.title = "امتحان";
+
   iconEl.setAttribute("aria-hidden", "true");
 
   const questionCountLine = document.createElement("p");
@@ -211,7 +212,8 @@ export function createUserQuizCard(quiz, index) {
     const descriptionEl = document.createElement("p");
     descriptionEl.className = "lesson-card-description";
     descriptionEl.textContent = description;
-    descriptionEl.title = description;
+    descriptionEl.setAttribute("data-tooltip-badge", "📄 وصف الامتحان");
+    descriptionEl.setAttribute("data-tooltip-text", description);
     textWrap.appendChild(descriptionEl);
   }
 
@@ -305,13 +307,14 @@ export function createUserLessonCard(lesson) {
   const icon = document.createElement("span");
   icon.className = "user-quiz--phone-only-emoji";
   icon.textContent = "📘";
-  icon.title = "درس";
+
   icon.setAttribute("aria-hidden", "true");
   const text = document.createElement("div");
   text.className = "card-text";
   const heading = document.createElement("h3");
   heading.textContent = title;
-  heading.title = `درس · ${title}`;
+  heading.setAttribute("data-tooltip-badge", "📘 درس");
+  heading.setAttribute("data-tooltip-text", title);
   const meta = document.createElement("div");
   meta.className = "exam-card-meta user-quiz-card-meta";
   const label = document.createElement("p");
@@ -334,7 +337,8 @@ export function createUserLessonCard(lesson) {
     const desc = document.createElement("p");
     desc.className = "lesson-card-description";
     desc.textContent = description;
-    desc.title = description;
+    desc.setAttribute("data-tooltip-badge", "📄 وصف الدرس");
+    desc.setAttribute("data-tooltip-text", description);
     text.append(desc);
   }
   text.append(meta);
@@ -420,19 +424,21 @@ export function createUserNotebookCard(nb) {
   const icon = document.createElement("span");
   icon.className = "user-quiz--phone-only-emoji";
   icon.textContent = "💻";
-  icon.title = "دفتر تفاعلي";
+
   icon.setAttribute("aria-hidden", "true");
   const text = document.createElement("div");
   text.className = "card-text";
   const heading = document.createElement("h3");
   heading.textContent = title;
-  heading.title = `دفتر تفاعلي · ${title}`;
+  heading.setAttribute("data-tooltip-badge", "💻 دفتر تفاعلي");
+  heading.setAttribute("data-tooltip-text", title);
   text.append(heading);
   if (description) {
     const desc = document.createElement("p");
     desc.className = "lesson-card-description";
     desc.textContent = description;
-    desc.title = description;
+    desc.setAttribute("data-tooltip-badge", "📄 وصف الدفتر");
+    desc.setAttribute("data-tooltip-text", description);
     text.append(desc);
   }
   const meta = document.createElement("div");

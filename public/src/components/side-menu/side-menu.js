@@ -166,7 +166,69 @@ initMenuIconDrawing();
    * pages (like the quiz page) that don't have a matching bottom-nav tab,
    * in which case nothing is marked active.
    */
+  function syncActiveNavState() {
+    const pathname = window.location.pathname;
+    const hash = (window.location.hash || "").replace(/^#/, "");
+    const isMyContent =
+      pathname === "/my-content" ||
+      pathname.startsWith("/my-content/") ||
+      hash === "my-content" ||
+      hash === "my-quizzes" ||
+      hash.startsWith("my-content/") ||
+      hash.startsWith("my-quizzes/");
+
+    if (sidebar) {
+      const menuLinks = sidebar.querySelectorAll("nav a.menu-item[href]");
+      menuLinks.forEach((link) => {
+        const href = link.getAttribute("href");
+        const tooltip = link.getAttribute("data-tooltip");
+        let isActive = false;
+
+        if (isMyContent) {
+          isActive = href === "/my-content" || href === "/#my-content" || tooltip === "محتواي";
+        } else if (href === "/" || tooltip === "الصفحة الرئيسية") {
+          isActive = !isMyContent && (pathname === "/" || pathname === "/index.html" || pathname.startsWith("/course/") || !pathname.includes("/"));
+        } else if (href) {
+          const cleanHref = href.replace(/^\//, "").replace(/\.html$/, "");
+          const cleanPath = pathname.replace(/^\//, "").replace(/\.html$/, "");
+          isActive = cleanHref === cleanPath;
+        }
+
+        link.classList.toggle("active", isActive);
+        if (isActive) link.setAttribute("aria-current", "page");
+        else link.removeAttribute("aria-current");
+      });
+    }
+
+    if (bottomNav) {
+      const items = bottomNav.querySelectorAll(".bottom-nav-item[href]");
+      items.forEach((item) => {
+        const href = item.getAttribute("href");
+        let isActive = false;
+        if (isMyContent) {
+          isActive = href === "/my-content" || href === "/#my-content" || item.dataset.bottomNav === "my-content";
+        } else if (href === "/" || href === "/index.html") {
+          isActive = !isMyContent && (pathname === "/" || pathname === "/index.html" || pathname.startsWith("/course/"));
+        } else if (href) {
+          const cleanHref = href.replace(/^\//, "").replace(/\.html$/, "");
+          const cleanPath = pathname.replace(/^\//, "").replace(/\.html$/, "");
+          isActive = cleanHref === cleanPath;
+        }
+        item.classList.toggle("active", isActive);
+        if (isActive) item.setAttribute("aria-current", "page");
+        else item.removeAttribute("aria-current");
+      });
+    }
+  }
+
   function syncBottomNavActiveState() {
+    syncActiveNavState();
+  }
+  window.syncActiveNavState = syncActiveNavState;
+  window.addEventListener("popstate", syncActiveNavState);
+  window.addEventListener("app:nav-change", syncActiveNavState);
+
+  function _legacySyncBottomNavActiveState() {
     if (!bottomNav) return;
     const path = window.location.pathname.split("/").pop() || "index.html";
     const items = bottomNav.querySelectorAll(".bottom-nav-item[href]");
@@ -337,6 +399,81 @@ initMenuIconDrawing();
 
     // Collapsed-rail hover tooltips (desktop only; no-ops safely on mobile)
     setupHoverTooltips();
+
+    // SPA link interceptor: smoothly navigate without reload
+    if (sidebar) {
+      sidebar.addEventListener("click", (e) => {
+        const link = e.target.closest("a.menu-item[href]");
+        if (!link) return;
+        const href = link.getAttribute("href");
+        const p = window.location.pathname;
+        const isSpaShell =
+          p === "/" ||
+          p.endsWith("/index") ||
+          p === "/my-content" ||
+          p.startsWith("/my-content/") ||
+          p.startsWith("/course/") ||
+          p.startsWith("/lesson/");
+
+        if (isSpaShell) {
+          if (href === "/my-content" || href === "/#my-content" || link.dataset.tooltip === "محتواي") {
+            e.preventDefault();
+            if (isMobile()) closeMobileSidebar();
+            if (typeof window.navigateToMyContent === "function") {
+              window.navigateToMyContent();
+            } else if (typeof window.renderUserQuizzesView === "function") {
+              window.renderUserQuizzesView();
+            } else {
+              window.location.href = "/my-content";
+            }
+          } else if (href === "/" || href === "/index.html" || link.dataset.tooltip === "الصفحة الرئيسية") {
+            e.preventDefault();
+            if (isMobile()) closeMobileSidebar();
+            if (typeof window.navigateToRootHome === "function") {
+              window.navigateToRootHome();
+            } else if (typeof window.renderRootCategories === "function") {
+              window.renderRootCategories();
+            } else {
+              window.location.href = "/";
+            }
+          }
+        }
+      });
+    }
+
+    if (bottomNav) {
+      bottomNav.addEventListener("click", (e) => {
+        const link = e.target.closest("a.bottom-nav-item[href]");
+        if (!link) return;
+        const href = link.getAttribute("href");
+        const p = window.location.pathname;
+        const isSpaShell =
+          p === "/" ||
+          p.endsWith("/index") ||
+          p === "/my-content" ||
+          p.startsWith("/my-content/") ||
+          p.startsWith("/course/") ||
+          p.startsWith("/lesson/");
+
+        if (isSpaShell) {
+          if (href === "/my-content" || href === "/#my-content" || link.dataset.bottomNav === "my-content") {
+            e.preventDefault();
+            if (typeof window.navigateToMyContent === "function") {
+              window.navigateToMyContent();
+            } else if (typeof window.renderUserQuizzesView === "function") {
+              window.renderUserQuizzesView();
+            }
+          } else if (href === "/" || href === "/index.html" || link.dataset.bottomNav === "home") {
+            e.preventDefault();
+            if (typeof window.navigateToRootHome === "function") {
+              window.navigateToRootHome();
+            } else if (typeof window.renderRootCategories === "function") {
+              window.renderRootCategories();
+            }
+          }
+        }
+      });
+    }
   }
 
   // ── Desktop Expand/Collapse Toggles ────────────────────────────────────────

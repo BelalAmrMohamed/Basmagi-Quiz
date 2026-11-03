@@ -1,4 +1,4 @@
-﻿// Platform lesson card and its shared actions menu.
+// Platform lesson card and its shared actions menu.
 import { downloadLesson } from "./lesson-download.js";
 import { EMBED_ICON_SVG, copyEmbedCode } from "./embed-code.js";
 import { fetchLessonViewCount, fetchCreatorName } from "./info-details.js";
@@ -65,21 +65,23 @@ export function createLessonCard(lesson) {
   const icon = document.createElement("span");
   icon.className = "phone-only-emoji";
   icon.textContent = "📘";
-  icon.title = "درس";
+
   icon.setAttribute("aria-hidden", "true");
 
   const text = document.createElement("div");
   text.className = "card-text";
   const heading = document.createElement("h3");
   heading.textContent = lesson.title || "درس بدون عنوان";
-  heading.title = `درس · ${heading.textContent}`;
+  heading.setAttribute("data-tooltip-badge", "📘 درس تفاعلي");
+  heading.setAttribute("data-tooltip-text", heading.textContent);
   text.appendChild(heading);
   const description = String(lesson.description || "").trim();
   if (description) {
     const desc = document.createElement("p");
     desc.className = "lesson-card-description";
     desc.textContent = description;
-    desc.title = description;
+    desc.setAttribute("data-tooltip-badge", "📄 وصف الدرس");
+    desc.setAttribute("data-tooltip-text", description);
     text.appendChild(desc);
   }
   const sectionCount = Number(lesson.sectionIds?.length ?? lesson.sectionCount ?? 0);
