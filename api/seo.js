@@ -59,6 +59,9 @@ function buildSitemapXml(catalog) {
     for (const l of (catalog.lessons || [])) {
         urlEntries.push({ loc: l.url, lastmod: l.lastmod, changefreq: "weekly", priority: "0.8" });
     }
+    for (const n of (catalog.notebooks || [])) {
+        urlEntries.push({ loc: n.url, lastmod: n.lastmod, changefreq: "weekly", priority: "0.8" });
+    }
     for (const p of catalog.profiles) {
         urlEntries.push({ loc: p.url, lastmod: p.lastmod, changefreq: "monthly", priority: "0.5" });
     }
@@ -143,6 +146,17 @@ function collectFeedEntries(catalog) {
             date: l.lastmod || l.createdAt,
             category: l.courseName || null,
             ogImage: absUrl(`/api/og?lesson=${encodeURIComponent(l.id)}&v=1`),
+        });
+    }
+    for (const n of (catalog.notebooks || [])) {
+        entries.push({
+            kind: "notebook",
+            title: n.title,
+            description: n.description || (n.courseName ? `دفتر تفاعلي بأسلوب MATLAB في مقرر ${n.courseName}` : "دفتر تفاعلي بأسلوب MATLAB"),
+            url: n.url,
+            date: n.lastmod || n.createdAt,
+            category: n.courseName || null,
+            ogImage: null,
         });
     }
 
@@ -275,12 +289,53 @@ function buildLlmsFullTxt(catalog) {
         }
     }
 
+    const lessonsByCourse = new Map();
+    const lessonsByFolder = new Map();
+    for (const l of (catalog.lessons || [])) {
+        if (l.folderId) {
+            if (!lessonsByFolder.has(l.folderId)) lessonsByFolder.set(l.folderId, []);
+            lessonsByFolder.get(l.folderId).push(l);
+        } else if (l.courseId) {
+            if (!lessonsByCourse.has(l.courseId)) lessonsByCourse.set(l.courseId, []);
+            lessonsByCourse.get(l.courseId).push(l);
+        }
+    }
+
+    const notebooksByCourse = new Map();
+    const notebooksByFolder = new Map();
+    for (const n of (catalog.notebooks || [])) {
+        if (n.folderId) {
+            if (!notebooksByFolder.has(n.folderId)) notebooksByFolder.set(n.folderId, []);
+            notebooksByFolder.get(n.folderId).push(n);
+        } else if (n.courseId) {
+            if (!notebooksByCourse.has(n.courseId)) notebooksByCourse.set(n.courseId, []);
+            notebooksByCourse.get(n.courseId).push(n);
+        }
+    }
+
     function quizLine(q) {
         const typesLabel = formatQuestionTypesLabel(q.questionTypes);
         const countLabel = q.questionCount != null ? `${q.questionCount} سؤال` : null;
         const details = [countLabel, typesLabel].filter(Boolean).join(", ");
         const descPart = q.description ? `, ${q.description}` : "";
         return `  - [امتحان ${q.title}](${q.url})${details ? ` — ${details}` : ""}${descPart}`;
+    }
+
+    function lessonLine(l) {
+        return `  - [درس تفاعلي: ${l.title}](${l.url})`;
+    }
+
+    function notebookLine(n) {
+        const descPart = n.description ? ` — ${n.description}` : "";
+        return `  - [دفتر برمجي تفاعلي: ${n.title}](${n.url})${descPart}`;
+    }
+
+    function formatSummaryCounts(quizzes, lessons, notebooks) {
+        const parts = [];
+        if (quizzes > 0) parts.push(`${quizzes} امتحان`);
+        if (lessons > 0) parts.push(`${lessons} درس`);
+        if (notebooks > 0) parts.push(`${notebooks} دفتر`);
+        return parts.length > 0 ? parts.join(" · ") : "فارغ";
     }
 
     for (const [college, courses] of byCollege.entries()) {
@@ -292,11 +347,22 @@ function buildLlmsFullTxt(catalog) {
             const directQuizzes = quizzesByCourse.get(course.id) || [];
             for (const q of directQuizzes) lines.push(quizLine(q));
 
+            const directLessons = lessonsByCourse.get(course.id) || [];
+            for (const l of directLessons) lines.push(lessonLine(l));
+
+            const directNotebooks = notebooksByCourse.get(course.id) || [];
+            for (const n of directNotebooks) lines.push(notebookLine(n));
+
             const childFolders = foldersByCourse.get(course.id) || [];
             for (const folder of childFolders) {
                 const folderQuizzes = quizzesByFolder.get(folder.id) || [];
-                lines.push(`- مجلد ${folder.name}: ${folderQuizzes.length} امتحان`);
+                const folderLessons = lessonsByFolder.get(folder.id) || [];
+                const folderNotebooks = notebooksByFolder.get(folder.id) || [];
+                const summary = formatSummaryCounts(folderQuizzes.length, folderLessons.length, folderNotebooks.length);
+                lines.push(`- مجلد ${folder.name} (${summary})`);
                 for (const q of folderQuizzes) lines.push(`  ${quizLine(q)}`);
+                for (const l of folderLessons) lines.push(`  ${lessonLine(l)}`);
+                for (const n of folderNotebooks) lines.push(`  ${notebookLine(n)}`);
             }
             lines.push("");
         }
@@ -354,6 +420,7 @@ async function handleCron(req, res) {
         ...recent.folders.map((f) => f.url),
         ...recent.quizzes.map((q) => q.url),
         ...((recent.lessons || []).map((l) => l.url)),
+        ...((recent.notebooks || []).map((n) => n.url)),
         ...recent.profiles.map((p) => p.url),
     ];
 
@@ -365,6 +432,7 @@ async function handleCron(req, res) {
         "folders:", recent.folders.length,
         "quizzes:", recent.quizzes.length,
         "lessons:", (recent.lessons || []).length,
+        "notebooks:", (recent.notebooks || []).length,
         "profiles:", recent.profiles.length,
     );
 
@@ -376,6 +444,7 @@ async function handleCron(req, res) {
             folders: recent.folders.length,
             quizzes: recent.quizzes.length,
             lessons: (recent.lessons || []).length,
+            notebooks: (recent.notebooks || []).length,
             profiles: recent.profiles.length,
         },
     });

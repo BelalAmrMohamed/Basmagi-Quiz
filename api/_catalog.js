@@ -17,7 +17,7 @@
 // =============================================================================
 
 import { createClient } from "@supabase/supabase-js";
-import { toSlug, courseUrl, quizUrl, lessonUrl, profileUrl, buildFolderPaths, findCollidingSlugs, absUrl } from "./_urls.js";
+import { toSlug, courseUrl, quizUrl, lessonUrl, notebookUrl, profileUrl, buildFolderPaths, findCollidingSlugs, absUrl } from "./_urls.js";
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
@@ -93,7 +93,7 @@ async function fetchAllQuizzes() {
  * }>}
  */
 export async function loadPublicCatalog() {
-    const [coursesRes, foldersRes, quizzesRes, lessonsRes, profilesRes] = await Promise.all([
+    const [coursesRes, foldersRes, quizzesRes, lessonsRes, notebooksRes, profilesRes] = await Promise.all([
         supabase.from("courses").select("id, name, education_type, college, year, term, created_at, updated_at"),
         supabase.from("folders").select("id, course_id, parent_folder_id, name, created_at, updated_at"),
         fetchAllQuizzes(),
@@ -101,6 +101,7 @@ export async function loadPublicCatalog() {
         // not upload-volume-sized) — one unbounded SELECT, no pagination
         // needed the way fetchAllQuizzes() needs it.
         supabase.from("lesson_public").select("id, slug, title, description, source, password_protected, course_id, folder_id, created_at, updated_at"),
+        supabase.from("notebooks").select("id, slug, title, description, source, runtime, course_id, folder_id, created_at, updated_at"),
         // admin_users has no updated_at column (confirmed live: 42703 "column
         // admin_users.updated_at does not exist") — created_at is the only
         // timestamp available, so profile lastmod is necessarily "when the
@@ -118,12 +119,13 @@ export async function loadPublicCatalog() {
     if (foldersRes.error) console.error("[catalog] folders query failed:", foldersRes.error.message);
     if (quizzesRes.error) console.error("[catalog] quizzes query failed:", quizzesRes.error.message);
     if (lessonsRes.error) console.error("[catalog] lessons query failed:", lessonsRes.error.message);
+    if (notebooksRes.error) console.error("[catalog] notebooks query failed:", notebooksRes.error.message);
     if (profilesRes.error) console.error("[catalog] admin_users query failed:", profilesRes.error.message);
 
     // Only truly bail (return null -> callers fall back to an empty/static
     // response) when EVERY query failed — a total Supabase outage. Any
     // partial success still produces a partial-but-real catalog.
-    if (coursesRes.error && foldersRes.error && quizzesRes.error && lessonsRes.error && profilesRes.error) {
+    if (coursesRes.error && foldersRes.error && quizzesRes.error && lessonsRes.error && notebooksRes.error && profilesRes.error) {
         return null;
     }
 
@@ -131,6 +133,7 @@ export async function loadPublicCatalog() {
     const rawFolders = foldersRes.error ? [] : (foldersRes.data || []);
     const rawQuizzes = quizzesRes.error ? [] : (quizzesRes.data || []);
     const rawLessons = lessonsRes.error ? [] : (lessonsRes.data || []);
+    const rawNotebooks = notebooksRes.error ? [] : (notebooksRes.data || []);
     const rawProfiles = profilesRes.error ? [] : (profilesRes.data || []);
 
     // ── Courses ────────────────────────────────────────────────────────────
@@ -218,6 +221,26 @@ export async function loadPublicCatalog() {
         });
     }
 
+    // ── Notebooks ──────────────────────────────────────────────────────────
+    const notebooks = [];
+    for (const n of rawNotebooks) {
+        if (!n.id) continue;
+        if (!n.title) continue;
+        notebooks.push({
+            id: n.id,
+            url: notebookUrl(n.slug || n.id),
+            title: n.title,
+            description: n.description || null,
+            runtime: n.runtime || "matlab",
+            lastmod: n.updated_at || n.created_at || null,
+            createdAt: n.created_at || null,
+            courseId: n.course_id || null,
+            folderId: n.folder_id || null,
+            courseName: n.course_id ? (rawCourses.find((c) => c.id === n.course_id)?.name ?? null) : null,
+            folderName: n.folder_id ? (folderById.get(n.folder_id)?.name ?? null) : null,
+        });
+    }
+
     // ── Public profiles ────────────────────────────────────────────────────
     const profiles = [];
     for (const p of rawProfiles) {
@@ -230,7 +253,7 @@ export async function loadPublicCatalog() {
         });
     }
 
-    return { courses, folders, quizzes, lessons, profiles };
+    return { courses, folders, quizzes, lessons, notebooks, profiles };
 }
 
 /**
@@ -251,7 +274,8 @@ export function filterRecentlyChanged(catalog, hours = 24) {
         courses: catalog.courses.filter((c) => isRecent(c.lastmod)),
         folders: catalog.folders.filter((f) => isRecent(f.lastmod)),
         quizzes: catalog.quizzes.filter((q) => isRecent(q.lastmod) || isRecent(q.createdAt)),
-        lessons: catalog.lessons.filter((l) => isRecent(l.lastmod) || isRecent(l.createdAt)),
+        lessons: (catalog.lessons || []).filter((l) => isRecent(l.lastmod) || isRecent(l.createdAt)),
+        notebooks: (catalog.notebooks || []).filter((n) => isRecent(n.lastmod) || isRecent(n.createdAt)),
         profiles: catalog.profiles.filter((p) => isRecent(p.lastmod)),
     };
 }

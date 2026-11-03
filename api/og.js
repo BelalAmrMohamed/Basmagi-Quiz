@@ -1224,6 +1224,9 @@ async function renderCourseImage(courseId, folderPath) {
           "·",
           String(meta.lessonCount ?? 0),
           "درس",
+          "·",
+          String(meta.notebookCount ?? 0),
+          "دفتر",
         ]
       : [
           String(meta.folderCount),
@@ -1234,6 +1237,9 @@ async function renderCourseImage(courseId, folderPath) {
           "·",
           String(meta.lessonCount ?? 0),
           "Lessons",
+          "·",
+          String(meta.notebookCount ?? 0),
+          "Notebooks",
         ]
     : null;
 
@@ -1948,11 +1954,13 @@ async function fetchCourseMeta(courseId, folderPath) {
         countFor("folders", "parent_folder_id"),
         countFor("quizzes", "folder_id"),
         countFor("lesson_public", "folder_id"),
+        countFor("notebooks", "folder_id"),
       ])
       : Promise.all([
         countFor("folders", "course_id"),
         countFor("quizzes", "course_id"),
         countFor("lesson_public", "course_id"),
+        countFor("notebooks", "course_id"),
       ]);
 
     // Best-effort extra stats (question count total, last-updated date) —
@@ -1991,7 +1999,7 @@ async function fetchCourseMeta(courseId, folderPath) {
       return { questionCount, lastUpdated };
     })();
 
-    const [[folderCount, quizCount, lessonCount], { questionCount, lastUpdated }] =
+    const [[folderCount, quizCount, lessonCount, notebookCount], { questionCount, lastUpdated }] =
       await Promise.all([countsPromise, extraStatsPromise]);
 
     return {
@@ -2022,6 +2030,7 @@ async function fetchCourseMeta(courseId, folderPath) {
       folderCount,
       quizCount,
       lessonCount,
+      notebookCount,
       questionCount,
       lastUpdated,
     };

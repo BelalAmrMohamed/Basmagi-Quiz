@@ -80,7 +80,7 @@ const LESSON_TEMPLATE_PATH = path.join(process.cwd(), "public", "lesson.html");
 // year (immutable, max-age=31536000) under the v=2 URL, so this bump is
 // required for every folder image already shared anywhere to actually
 // Bumped to 4: added lesson count to course and folder OG images.
-const OG_IMAGE_VERSION = 4;
+const OG_IMAGE_VERSION = 5;
 
 // Bump when /api/og's LESSON-image layout changes (renderLessonImage). The
 // image URL also carries the lesson's updated_at, so editing a lesson busts
@@ -555,7 +555,7 @@ async function handleCourseRequest(req, res) {
     // counts already computed above. Best-effort: a failure here degrades to
     // "no children listed" rather than failing the whole page render, since
     // this is supplementary discoverability, not the SPA's core content.
-    let rawChildren = { folders: [], quizzes: [] };
+    let rawChildren = { folders: [], quizzes: [], lessons: [], notebooks: [] };
     try {
         rawChildren = await fetchImmediateChildren(folderMeta ? folderMeta.id : meta.id, !!folderMeta);
     } catch (err) {
@@ -567,11 +567,13 @@ async function handleCourseRequest(req, res) {
         ? `${courseSlugPath}/${folderMeta.path.map((seg) => toSlug(seg)).join("/")}`
         : courseSlugPath;
     const children = {
-        folders: rawChildren.folders.map((f) => ({
+        folders: (rawChildren.folders || []).map((f) => ({
             name: f.name,
             url: `/course/${encodeURIComponent(childFolderBase)}/${encodeURIComponent(toSlug(f.name))}`,
         })),
-        quizzes: rawChildren.quizzes,
+        quizzes: rawChildren.quizzes || [],
+        lessons: rawChildren.lessons || [],
+        notebooks: rawChildren.notebooks || [],
     };
 
     const breadcrumbItems = [{ name: "الرئيسية", url: SITE_ORIGIN }];
@@ -598,6 +600,8 @@ async function handleCourseRequest(req, res) {
     const childItems = [
         ...children.folders.map((f) => ({ name: f.name, url: `${SITE_ORIGIN}${f.url}` })),
         ...children.quizzes.map((q) => ({ name: q.title, url: `${SITE_ORIGIN}${q.url}` })),
+        ...children.lessons.map((l) => ({ name: l.title, url: `${SITE_ORIGIN}${l.url}` })),
+        ...children.notebooks.map((n) => ({ name: n.title, url: `${SITE_ORIGIN}${n.url}` })),
     ];
 
     const collectionJsonLd = {
@@ -692,26 +696,42 @@ async function fetchCourseMeta(courseSlug, educationType) {
         (educationType && candidates.find((c) => c.education_type === educationType)) ||
         candidates[0];
 
-    const [{ count: folderCount, error: folderErr }, { count: quizCount, error: quizErr }] =
-        await Promise.all([
-            getSupabase()
-                .from("folders")
-                .select("id", { count: "exact", head: true })
-                .eq("course_id", course.id),
-            getSupabase()
-                .from("quizzes")
-                .select("id", { count: "exact", head: true })
-                .eq("course_id", course.id),
-        ]);
+    const [
+        { count: folderCount, error: folderErr },
+        { count: quizCount, error: quizErr },
+        { count: lessonCount, error: lessonErr },
+        { count: notebookCount, error: notebookErr },
+    ] = await Promise.all([
+        getSupabase()
+            .from("folders")
+            .select("id", { count: "exact", head: true })
+            .eq("course_id", course.id),
+        getSupabase()
+            .from("quizzes")
+            .select("id", { count: "exact", head: true })
+            .eq("course_id", course.id),
+        getSupabase()
+            .from("lesson_public")
+            .select("id", { count: "exact", head: true })
+            .eq("course_id", course.id),
+        getSupabase()
+            .from("notebooks")
+            .select("id", { count: "exact", head: true })
+            .eq("course_id", course.id),
+    ]);
 
     if (folderErr) console.error("[render-course] folder count error:", folderErr.message);
     if (quizErr) console.error("[render-course] quiz count error:", quizErr.message);
+    if (lessonErr) console.error("[render-course] lesson count error:", lessonErr.message);
+    if (notebookErr) console.error("[render-course] notebook count error:", notebookErr.message);
 
     return {
         id: course.id,
         name: course.name,
         folderCount: folderCount || 0,
         quizCount: quizCount || 0,
+        lessonCount: lessonCount || 0,
+        notebookCount: notebookCount || 0,
     };
 }
 
@@ -762,20 +782,34 @@ async function fetchFolderPath(courseId, pathSlugs) {
 
     if (!folder) return null;
 
-    const [{ count: folderCount, error: folderErr }, { count: quizCount, error: quizErr }] =
-        await Promise.all([
-            getSupabase()
-                .from("folders")
-                .select("id", { count: "exact", head: true })
-                .eq("parent_folder_id", folder.id),
-            getSupabase()
-                .from("quizzes")
-                .select("id", { count: "exact", head: true })
-                .eq("folder_id", folder.id),
-        ]);
+    const [
+        { count: folderCount, error: folderErr },
+        { count: quizCount, error: quizErr },
+        { count: lessonCount, error: lessonErr },
+        { count: notebookCount, error: notebookErr },
+    ] = await Promise.all([
+        getSupabase()
+            .from("folders")
+            .select("id", { count: "exact", head: true })
+            .eq("parent_folder_id", folder.id),
+        getSupabase()
+            .from("quizzes")
+            .select("id", { count: "exact", head: true })
+            .eq("folder_id", folder.id),
+        getSupabase()
+            .from("lesson_public")
+            .select("id", { count: "exact", head: true })
+            .eq("folder_id", folder.id),
+        getSupabase()
+            .from("notebooks")
+            .select("id", { count: "exact", head: true })
+            .eq("folder_id", folder.id),
+    ]);
 
     if (folderErr) console.error("[render-course] folder-count error:", folderErr.message);
     if (quizErr) console.error("[render-course] folder quiz-count error:", quizErr.message);
+    if (lessonErr) console.error("[render-course] folder lesson-count error:", lessonErr.message);
+    if (notebookErr) console.error("[render-course] folder notebook-count error:", notebookErr.message);
 
     return {
         id: folder.id,
@@ -783,6 +817,8 @@ async function fetchFolderPath(courseId, pathSlugs) {
         path: resolvedNames,
         folderCount: folderCount || 0,
         quizCount: quizCount || 0,
+        lessonCount: lessonCount || 0,
+        notebookCount: notebookCount || 0,
     };
 }
 
@@ -806,20 +842,30 @@ async function fetchImmediateChildren(parentId, isFolder) {
     const quizQuery = isFolder
         ? getSupabase().from("quizzes").select("data, password").eq("folder_id", parentId)
         : getSupabase().from("quizzes").select("data, password").eq("course_id", parentId).is("folder_id", null);
+    const lessonQuery = isFolder
+        ? getSupabase().from("lesson_public").select("id, slug, title, password_protected").eq("folder_id", parentId)
+        : getSupabase().from("lesson_public").select("id, slug, title, password_protected").eq("course_id", parentId).is("folder_id", null);
+    const notebookQuery = isFolder
+        ? getSupabase().from("notebooks").select("id, slug, title").eq("folder_id", parentId)
+        : getSupabase().from("notebooks").select("id, slug, title").eq("course_id", parentId).is("folder_id", null);
 
-    const [{ data: folderRows, error: folderErr }, { data: quizRows, error: quizErr }] = await Promise.all([
+    const [
+        { data: folderRows, error: folderErr },
+        { data: quizRows, error: quizErr },
+        { data: lessonRows, error: lessonErr },
+        { data: notebookRows, error: notebookErr },
+    ] = await Promise.all([
         folderQuery,
         quizQuery,
+        lessonQuery,
+        notebookQuery,
     ]);
 
     if (folderErr) console.error("[render-course] children folder lookup error:", folderErr.message);
     if (quizErr) console.error("[render-course] children quiz lookup error:", quizErr.message);
+    if (lessonErr) console.error("[render-course] children lesson lookup error:", lessonErr.message);
+    if (notebookErr) console.error("[render-course] children notebook lookup error:", notebookErr.message);
 
-    // Folder URLs need the full slug chain back to the course root, which
-    // this function's caller already knows (courseSlugPath/folderMeta.path)
-    // but a child folder one level down doesn't — resolved here by walking
-    // up via the same shape fetchFolderPath() uses, kept local and simple
-    // since this is one extra level, not an arbitrary-depth walk.
     const folders = (folderRows || []).map((f) => ({ name: f.name }));
 
     const quizzes = [];
@@ -831,7 +877,19 @@ async function fetchImmediateChildren(parentId, isFolder) {
         quizzes.push({ title, url: `/quiz/${encodeURIComponent(metaId)}` });
     }
 
-    return { folders, quizzes };
+    const lessons = [];
+    for (const l of lessonRows || []) {
+        if (!l.id || !l.title) continue;
+        lessons.push({ title: l.title, url: `/lesson/${encodeURIComponent(l.slug || l.id)}` });
+    }
+
+    const notebooks = [];
+    for (const n of notebookRows || []) {
+        if (!n.id || !n.title) continue;
+        notebooks.push({ title: n.title, url: `/notebook/${encodeURIComponent(n.slug || n.id)}` });
+    }
+
+    return { folders, quizzes, lessons, notebooks };
 }
 
 // =============================================================================
@@ -858,30 +916,84 @@ function displayPath(courseName, meta) {
     return [courseName, ...meta.path].join(" / ");
 }
 
+function formatArCount(count, one, two, few, many) {
+    if (count === 1) return one;
+    if (count === 2) return two;
+    if (count >= 3 && count <= 10) return `${count} ${few}`;
+    return `${count} ${many}`;
+}
+
+function formatEnCount(count, singular, plural) {
+    return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function formatConjunctionList(items, isArabic) {
+    if (!items || items.length === 0) return "";
+    if (items.length === 1) return items[0];
+    if (isArabic) {
+        return items.slice(0, -1).join(" و") + " و" + items[items.length - 1];
+    }
+    return items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
+}
+
 function buildTitle(meta, courseName) {
     const label = displayPath(courseName, meta);
     const isArabic = isArabicText(meta.name);
-    const folderLabel = isArabic ? "مجلد" : "Folders";
-    const quizLabel = isArabic ? "امتحان" : "Quizzes";
-    return `${label}: ${meta.folderCount} ${folderLabel} · ${meta.quizCount} ${quizLabel}`;
+    const tokens = isArabic
+        ? [
+            `${meta.folderCount} مجلد`,
+            `${meta.quizCount} امتحان`,
+            `${meta.lessonCount ?? 0} درس`,
+            `${meta.notebookCount ?? 0} دفتر`,
+        ]
+        : [
+            `${meta.folderCount} Folders`,
+            `${meta.quizCount} Quizzes`,
+            `${meta.lessonCount ?? 0} Lessons`,
+            `${meta.notebookCount ?? 0} Notebooks`,
+        ];
+    return `${label}: ${tokens.join(" · ")}`;
 }
 
 function buildDescription(meta, courseName) {
     const label = displayPath(courseName, meta);
     const isArabic = isArabicText(meta.name);
-    // Branch on folderCount rather than always saying "across N folders" —
-    // "across 0 folders" reads like an error rather than a legitimate
-    // count of zero, so a course/folder with no subfolders gets its own
-    // sentence shape instead of the folder clause being force-filled with
-    // "0".
-    if (meta.folderCount === 0) {
-        return isArabic
-            ? `تصفح ${meta.quizCount} امتحان في ${label} على منصة امتحانات بصمجي.`
-            : `Browse ${meta.quizCount} quizzes in ${label} on Basmagi Quiz Platform.`;
+    const quizC = meta.quizCount || 0;
+    const lessonC = meta.lessonCount || 0;
+    const notebookC = meta.notebookCount || 0;
+    const folderC = meta.folderCount || 0;
+
+    if (isArabic) {
+        const contentTokens = [];
+        if (quizC > 0) contentTokens.push(formatArCount(quizC, "امتحان", "امتحانان", "امتحانات", "امتحان"));
+        if (lessonC > 0) contentTokens.push(formatArCount(lessonC, "درس", "درسان", "دروس", "درس"));
+        if (notebookC > 0) contentTokens.push(formatArCount(notebookC, "دفتر", "دفتران", "دفاتر", "دفتر"));
+
+        const contentClause = contentTokens.length > 0
+            ? formatConjunctionList(contentTokens, true)
+            : "محتوى تعليمي";
+
+        if (folderC > 0) {
+            const folderClause = formatArCount(folderC, "مجلد", "مجلدان", "مجلدات", "مجلد");
+            return `تصفح ${contentClause} ضمن ${folderClause} في ${label} على منصة امتحانات بصمجي.`;
+        }
+        return `تصفح ${contentClause} في ${label} على منصة امتحانات بصمجي.`;
     }
-    return isArabic
-        ? `تصفح ${meta.quizCount} امتحان ضمن ${meta.folderCount} مجلد في ${label} على منصة امتحانات بصمجي.`
-        : `Browse ${meta.quizCount} quizzes across ${meta.folderCount} folders in ${label} on Basmagi Quiz Platform.`;
+
+    const contentTokensEn = [];
+    if (quizC > 0) contentTokensEn.push(formatEnCount(quizC, "quiz", "quizzes"));
+    if (lessonC > 0) contentTokensEn.push(formatEnCount(lessonC, "lesson", "lessons"));
+    if (notebookC > 0) contentTokensEn.push(formatEnCount(notebookC, "notebook", "notebooks"));
+
+    const contentClauseEn = contentTokensEn.length > 0
+        ? formatConjunctionList(contentTokensEn, false)
+        : "educational content";
+
+    if (folderC > 0) {
+        const folderClauseEn = formatEnCount(folderC, "folder", "folders");
+        return `Browse ${contentClauseEn} across ${folderClauseEn} in ${label} on Basmagi Quiz Platform.`;
+    }
+    return `Browse ${contentClauseEn} in ${label} on Basmagi Quiz Platform.`;
 }
 
 // =============================================================================
