@@ -82,6 +82,7 @@ export function getUserQuizzesBreakdown(userQuizzes) {
     if (row?.meta?.type === "course") courseCount += 1;
     else if (row?.meta?.type === "folder") folderCount += 1;
     else if (row?.meta?.type === "lesson") lessonCount += 1;
+    else if (row?.meta?.type === "notebook") lessonCount += 0;
     else quizCount += 1;
   }
   return {

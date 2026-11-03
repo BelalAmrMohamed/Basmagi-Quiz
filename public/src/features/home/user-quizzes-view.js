@@ -51,7 +51,7 @@ import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
-import { createUserQuizCard, createUserLessonCard } from "./user-quiz-card.js";
+import { createUserQuizCard, createUserLessonCard, createUserNotebookCard } from "./user-quiz-card.js";
 import { openInlineCreateQuizModal } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
@@ -83,6 +83,7 @@ function userItemRoute(item, items) {
   const id = item.id || item.meta?.id;
   if (kind === "quiz") return `/quiz/${encodeURIComponent(id)}?type=user`;
   if (kind === "lesson") return `/lesson/${encodeURIComponent(id)}`;
+  if (kind === "notebook") return `/notebook/${encodeURIComponent(id)}?type=user`;
   if (kind !== "folder" && kind !== "course") return "/#my-quizzes";
 
   const byId = new Map(items.map((entry) => [entry.id || entry.meta?.id, entry]));
@@ -757,6 +758,20 @@ export function renderUserQuizzesView() {
         };
         menu.appendChild(lessonOpt);
 
+        // "دفتر جديد" — local executable MATLAB-style notebook (.ipynb / .m / JSON).
+        const notebookOpt = document.createElement("button");
+        notebookOpt.type = "button";
+        notebookOpt.className = "exam-action-btn";
+        notebookOpt.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m8 10 3 2-3 2"/><path d="M13 15h3"/></svg><span>دفتر جديد</span>`;
+        notebookOpt.onclick = (e) => {
+          e.stopPropagation();
+          closeMenu();
+          import("./create-notebook-modal.js").then(({ openInlineCreateNotebookModal }) => {
+            openInlineCreateNotebookModal();
+          });
+        };
+        menu.appendChild(notebookOpt);
+
         const folderOpt = document.createElement("button");
         folderOpt.type = "button";
         folderOpt.className = "exam-action-btn";
@@ -892,7 +907,7 @@ export function renderUserQuizzesView() {
         title: currentFolderId
           ? "هذا المجلد فارغ"
           : "لم تقم بإنشاء أي امتحانات أو مجلدات حتى الآن",
-        subtitle: "قم بإنشاء مادة ، أو مجلد ، أو امتحان ، أو درس",
+        subtitle: "قم بإنشاء مادة ، أو مجلد ، أو امتحان ، أو درس ، أو دفتر",
       });
       quizzesContainer.appendChild(emptyState);
     } else {
@@ -903,7 +918,9 @@ export function renderUserQuizzesView() {
         } else {
           const quizCard = item.meta?.type === "lesson"
             ? createUserLessonCard(item)
-            : createUserQuizCard(item, index);
+            : item.meta?.type === "notebook"
+              ? createUserNotebookCard(item)
+              : createUserQuizCard(item, index);
           // Attach drag and context menu to quiz card
           quizCard.draggable = true;
           quizCard.addEventListener("dragstart", (e) => handleDragStart(e, item.id || item.meta?.id));
@@ -1028,6 +1045,7 @@ function classifyBulkSelection(rows) {
     if (row?.meta?.type === "course") courses.push(row);
     else if (row?.meta?.type === "folder") folders.push(row);
     else if (row?.meta?.type === "lesson") lessons.push(row);
+    else if (row?.meta?.type === "notebook") continue; // local-only: never uploaded/bulk-handled as quizzes
     else quizzes.push(row);
   }
 

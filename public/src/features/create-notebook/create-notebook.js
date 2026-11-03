@@ -12,6 +12,29 @@ const $ = (id) => document.getElementById(id);
 let state = M.emptyNotebook();
 let editId = null;
 let reviewed = false;
+let localMode = false; // non-admin: notebooks are saved in the browser (امتحاناتك), never published
+
+const readLocal = () => { try { const a = JSON.parse(localStorage.getItem("user_quizzes") || "[]"); return Array.isArray(a) ? a : []; } catch { return []; } };
+
+function saveLocal(payload) {
+  const items = readLocal();
+  const now = new Date().toISOString();
+  const i = editId ? items.findIndex((r) => (r.id || r.meta?.id) === editId && r.meta?.type === "notebook") : -1;
+  const dup = items.some((r, k) => k !== i && r.meta?.type === "notebook" && (r.meta?.parentId || null) === (i >= 0 ? items[i].meta?.parentId || null : null)
+    && (r.meta?.title || "").trim().toLowerCase() === payload.title.toLowerCase());
+  if (dup) return "يوجد دفتر بنفس الاسم في هذا المكان بالفعل. اختر اسماً مختلفاً.";
+  const body = { description: payload.description, source: payload.source, notebook: { runtime: payload.runtime, content: payload.content }, stats: { cellCount: payload.content.cells.length } };
+  if (i >= 0) {
+    const old = items[i];
+    items[i] = { ...old, ...body, meta: { ...old.meta, title: payload.title, description: payload.description, source: payload.source, updatedAt: now } };
+  } else {
+    editId = `user_notebook_${crypto.randomUUID()}`;
+    items.push({ id: editId, meta: { type: "notebook", title: payload.title, parentId: null, createdAt: new Date().toLocaleString("en-US"), updatedAt: now, description: payload.description, source: payload.source, passwordProtected: false },
+      stats: body.stats, notebook: body.notebook, passwordHash: null, questions: [] });
+  }
+  try { localStorage.setItem("user_quizzes", JSON.stringify(items)); } catch { return "تعذّر الحفظ محلياً. قد تكون مساحة التخزين ممتلئة."; }
+  return null;
+}
 
 const api = (body) => fetch("/api/admin", {
   method: "POST",
@@ -27,7 +50,7 @@ function refresh() {
     v.errors.map((e) => `<div class="err">❌ ${escapeHtml(e)}</div>`).join("") +
     v.warnings.map((w) => `<div class="warn">⚠️ ${escapeHtml(w)}</div>`).join("") ||
     "<div>✅ لا توجد مشاكل.</div>";
-  $("cnbSave").disabled = !(reviewed && !v.errors.length && ($("cnbCourse").value || editId));
+  $("cnbSave").disabled = !(reviewed && !v.errors.length && (localMode || $("cnbCourse").value || editId));
 }
 
 function renderCells() {
@@ -96,6 +119,13 @@ async function save(e) {
   const v = M.validateState(state);
   if (!reviewed || v.errors.length) return;
   const payload = M.buildPayload(state);
+  if (localMode) {
+    const err = saveLocal(payload);
+    if (err) return showNotification("تعذر الحفظ", err, "error");
+    showNotification("تم الحفظ", 'تم حفظ الدفتر في "امتحاناتك".', "success");
+    setTimeout(() => { location.href = `/notebook/${encodeURIComponent(editId)}?type=user`; }, 800);
+    return;
+  }
   const res = editId
     ? await api({ action: "update-notebook", id: editId, ...payload })
     : await api({ action: "create-notebook", ...payload, courseId: $("cnbCourse").value, folderId: $("cnbFolder").value || null });
@@ -104,19 +134,33 @@ async function save(e) {
   setTimeout(() => { location.href = `/notebook/${encodeURIComponent(res.body.id || editId)}`; }, 800);
 }
 
+function applyLocalUi() {
+  $("cnbPlacementRow").hidden = true;
+  $("cnbSlug").closest("label").hidden = true;
+  $("cnbSave").textContent = "حفظ في امتحاناتك";
+  $("cnbLead").textContent = "دفتر MATLAB تعليمي يعمل داخل متصفحك (مفسّر بأسلوب MATLAB وليس MATLAB الأصلي). يُحفظ في «امتحاناتك» على جهازك، ويمكنك استيراد ملف .ipynb أو .m. تُنشأ الدفاتر للجميع دائماً.";
+}
+
 async function init() {
-  if (!isAdminAuthenticated()) {
-    $("cnbGate").hidden = false;
-    $("cnbGate").textContent = "هذه الصفحة للمشرفين فقط. سجّل الدخول كمشرف ثم أعد فتح الرابط.";
-    return;
-  }
+  // Open to everyone, like create-quiz / create-lesson: notebooks are saved
+  // locally in امتحاناتك. The platform-publish path is only used by an admin who
+  // arrives with an MCP ?draft= link or edits a published notebook (?edit=<uuid>).
+  const params = new URLSearchParams(location.search);
+  const edit = params.get("edit");
+  const admin = isAdminAuthenticated();
+  const editIsLocal = !!edit && /^user_notebook_/.test(edit);
+  localMode = !(admin && ((edit && !editIsLocal) || params.get("draft")));
   $("cnbForm").hidden = false;
-  await loadPlacement();
+  if (localMode) applyLocalUi(); else await loadPlacement();
   try {
     const draft = await fetchImportDraft("notebook");
-    const edit = new URLSearchParams(location.search).get("edit");
     if (draft) state = M.notebookFromPayload(JSON.parse(draft));
-    else if (edit) {
+    else if (edit && localMode) {
+      const row = readLocal().find((r) => (r.id || r.meta?.id) === edit && r.meta?.type === "notebook");
+      if (!row) throw new Error("الدفتر غير موجود في امتحاناتك.");
+      state = M.notebookFromPayload({ ...row.notebook, title: row.meta?.title, description: row.meta?.description, source: row.meta?.source, slug: "" });
+      editId = edit;
+    } else if (edit) {
       const r = await api({ action: "get-notebook", id: edit });
       if (!r.ok) throw new Error(r.body.error || "تعذر تحميل الدفتر.");
       state = M.notebookFromPayload(r.body.notebook); editId = edit;

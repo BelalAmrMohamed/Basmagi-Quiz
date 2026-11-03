@@ -72,15 +72,35 @@ function loadRuntime() {
   return runtimePromise;
 }
 
+/** Workspace (browser-only) notebook from امتحاناتك: /notebook/<user_notebook_…>?type=user */
+function readLocalNotebookRow(ref) {
+  let items;
+  try { items = JSON.parse(localStorage.getItem("user_quizzes") || "[]"); } catch { return null; }
+  const r = Array.isArray(items) ? items.find((i) => (i.id || i.meta?.id) === ref && i.meta?.type === "notebook") : null;
+  if (!r) return null;
+  return {
+    id: r.id || r.meta?.id,
+    title: r.meta?.title,
+    description: r.meta?.description,
+    runtime: r.notebook?.runtime,
+    content: r.notebook?.content,
+  };
+}
+
 async function init() {
   const ref = parseNotebookRef(location.pathname, location.search);
   if (!ref) return showError("رابط الدفتر غير صالح.");
 
   let row;
-  try {
-    row = await fetchNotebookRow(ref);
-  } catch (e) {
-    return showError(e.message || "تعذر تحميل الدفتر.", { retry: init });
+  const isLocal = new URLSearchParams(location.search).get("type") === "user" || /^user_notebook_/.test(ref);
+  if (isLocal) {
+    row = readLocalNotebookRow(ref);
+  } else {
+    try {
+      row = await fetchNotebookRow(ref);
+    } catch (e) {
+      return showError(e.message || "تعذر تحميل الدفتر.", { retry: init });
+    }
   }
 
   const prepared = prepareNotebook(row);

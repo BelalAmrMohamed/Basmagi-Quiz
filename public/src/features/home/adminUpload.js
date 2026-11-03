@@ -841,6 +841,8 @@ function renderThreadTree(items, root, rootChain) {
           walk([...(item.folderSegments || []), item.name].join("/"));
         } else if (item.type === "lesson") {
           lessons++;
+        } else if (item.type === "notebook") {
+          // counted by the upload API (notebooksUploaded), not in these buckets
         } else {
           quizzes++;
         }

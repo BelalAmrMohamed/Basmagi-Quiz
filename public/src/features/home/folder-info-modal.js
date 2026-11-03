@@ -96,6 +96,7 @@ export function showLocalFolderInfoModal(itemId) {
         subfolderCount += 1;
         queue.push(r.id || r.meta?.id);
       } else if (type === "lesson") lessonCount += 1;
+      else if (type === "notebook") continue;
       else quizCount += 1;
     }
   }

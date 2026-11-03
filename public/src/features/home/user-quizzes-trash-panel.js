@@ -19,11 +19,11 @@ import { refreshUserQuizzesCard } from "./course-count.js";
 import { _confirm, _confirmTyped, showNotification } from "../../components/notifications/notifications.js";
 import { TRASH_ICON_SVG, RESTORE_ICON_SVG } from "./icons.js";
 
-const TYPE_LABELS = { quiz: "امتحان", lesson: "درس", folder: "مجلد", course: "مادة" };
+const TYPE_LABELS = { quiz: "امتحان", lesson: "درس", notebook: "دفتر", folder: "مجلد", course: "مادة" };
 
 function itemTypeOf(rootItem) {
     const t = rootItem?.meta?.type;
-    return t === "course" || t === "folder" || t === "lesson" ? t : "quiz";
+    return t === "course" || t === "folder" || t === "lesson" || t === "notebook" ? t : "quiz";
 }
 
 function formatTrashDate(iso) {

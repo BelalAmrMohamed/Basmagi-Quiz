@@ -972,6 +972,14 @@ function buildGlobalMenuItems() {
         },
       },
       {
+        icon: CREATE_LESSON_SVG,
+        label: "إنشاء دفتر",
+        onClick: async () => {
+          const { openInlineCreateNotebookModal } = await import("./create-notebook-modal.js");
+          openInlineCreateNotebookModal();
+        },
+      },
+      {
         icon: CREATE_FOLDER_SVG,
         label: "إنشاء مجلد",
         onClick: () => createNewFolderOrCourse("folder"),
@@ -1535,6 +1543,22 @@ function appendSubtree(userQuizzes, node, ancestorNames, rootName, items) {
       });
       continue;
     }
+    if (child.meta?.type === "notebook") {
+      items.push({
+        type: "notebook",
+        name: childName || "دفتر بدون عنوان",
+        folderSegments: [...ancestorNames],
+        rootName,
+        notebook: {
+          title: childName || "دفتر بدون عنوان",
+          description: child.meta?.description || "",
+          source: child.meta?.source || "",
+          runtime: child.notebook?.runtime || "matlab",
+          content: child.notebook?.content || { schemaVersion: 1, cells: [] },
+        },
+      });
+      continue;
+    }
     if (child.meta?.type === "folder") {
       items.push({
         type: "folder",
@@ -1679,6 +1703,8 @@ export function getFolderContentsCount(userQuizzes, folderId) {
         // Lessons used to fall into the `else` below and be reported as
         // quizzes ("3 امتحانات" for a folder holding 1 quiz + 2 lessons).
         lessonCount++;
+      } else if (type === "notebook") {
+        // notebooks are neither quizzes nor lessons in the counts
       } else {
         quizCount++;
       }

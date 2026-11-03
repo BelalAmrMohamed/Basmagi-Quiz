@@ -5447,3 +5447,54 @@ kbd {
   unicode-bidi: plaintext;
   text-align: start;
 }
+
+/* ---- "دفتر جديد" modal (create-notebook-modal.js) --------------------------
+   The card clips (rounded corners) and an inner wrapper scrolls, so the
+   scrollbar sits inside the rounded border instead of overflowing it. */
+.create-notebook-modal.create-quiz-inline-modal {
+  padding: 0;
+  overflow: hidden;
+}
+.create-notebook-modal__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 28px;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable both-edges;
+}
+@media (max-width: 640px) { .create-notebook-modal__scroll { padding: 20px; } }
+@media (max-width: 480px) { .create-notebook-modal__scroll { padding: 14px 16px; } }
+.create-notebook-modal .create-quiz-modal__subtitle code { direction: ltr; unicode-bidi: isolate; }
+.create-notebook-modal__file {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 10px; padding: 8px 12px; border-radius: 10px; font-size: .85rem;
+  border: 1px dashed var(--color-border); background: var(--color-background-secondary);
+  color: var(--color-text-primary); overflow-wrap: anywhere; text-align: start;
+}
+.create-notebook-modal__file[hidden], .create-notebook-modal__feedback[hidden] { display: none; }
+.create-notebook-modal__file button {
+  flex: none; border: 0; background: transparent; color: inherit; cursor: pointer;
+  font: inherit; font-weight: 600; text-decoration: underline;
+}
+.create-notebook-modal__feedback {
+  margin: 0 0 16px; padding: 12px 14px; border-radius: 12px; text-align: start;
+  font-size: .9rem; line-height: 1.6; min-width: 0; overflow-wrap: anywhere;
+  border: 1.5px solid var(--color-border); background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+}
+.create-notebook-modal__feedback--error {
+  border-color: #dc2626; background: color-mix(in srgb, #dc2626 9%, var(--color-surface));
+}
+.create-notebook-modal__feedback--info {
+  border-color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+}
+.create-notebook-modal__feedback strong { display: block; margin-bottom: 4px; }
+.create-notebook-modal__feedback ul { margin: 0; padding-inline-start: 20px; }
+.create-notebook-modal__feedback pre {
+  margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; overflow-x: auto; text-align: left;
+  font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace;
+  background: var(--color-background); border: 1px solid var(--color-border); white-space: pre;
+}

@@ -376,6 +376,134 @@ export function createUserLessonCard(lesson) {
   return card;
 }
 
+/** A local notebook: an executable MATLAB-style notebook stored in the workspace (browser only). */
+export function createUserNotebookCard(nb) {
+  const nbId = nb.id || nb.meta?.id;
+  const title = nb.meta?.title || "دفتر بدون عنوان";
+  const description = nb.meta?.description || "";
+  const cells = nb.stats?.cellCount ?? nb.notebook?.content?.cells?.length ?? 0;
+  const card = document.createElement("div");
+  card.className = "exam-card user-quiz-card user-lesson-card user-notebook-card";
+  card.setAttribute("role", "article");
+  card.setAttribute("aria-label", `دفتر: ${title}`);
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.className = "user-quiz-select-checkbox";
+  checkbox.dataset.quizId = nbId;
+  const selected = getSelectedUserQuizzes();
+  checkbox.checked = selected.has(nbId);
+  checkbox.onclick = (event) => {
+    event.stopPropagation();
+    checkbox.checked ? selected.add(nbId) : selected.delete(nbId);
+    updateBulkActionBar();
+  };
+  card.addEventListener("click", (e) => {
+    if (e.target === checkbox) return;
+    const container = document.querySelector(".user-quizzes-container");
+    if (container?.classList.contains("selection-mode-active")) {
+      e.stopPropagation();
+      checkbox.click();
+    }
+  });
+
+  const icon = document.createElement("span");
+  icon.className = "user-quiz--phone-only-emoji";
+  icon.textContent = "💻";
+  icon.setAttribute("aria-hidden", "true");
+  const text = document.createElement("div");
+  text.className = "card-text";
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  text.append(heading);
+  if (description) {
+    const desc = document.createElement("p");
+    desc.className = "lesson-card-description";
+    desc.textContent = description;
+    text.append(desc);
+  }
+  const meta = document.createElement("div");
+  meta.className = "exam-card-meta user-quiz-card-meta";
+  const label = document.createElement("p");
+  label.className = "exam-question-count";
+  label.textContent = `الخلايا: ${cells}`;
+  meta.append(label);
+  text.append(meta);
+
+  const actions = document.createElement("div");
+  actions.className = "exam-card-actions-wrap";
+  const more = document.createElement("button");
+  more.className = "exam-more-btn";
+  more.type = "button";
+  more.innerHTML = MORE_DOTS_ICON_SVG;
+  more.setAttribute("aria-label", `خيارات إضافية لـ ${title}`);
+  more.onclick = (event) => {
+    event.stopPropagation();
+    showUserNotebookActionsOverlay(nb, more);
+  };
+  const start = document.createElement("button");
+  start.className = "start-btn";
+  start.type = "button";
+  start.style.flex = "1";
+  start.style.minWidth = "0";
+  start.textContent = "افتح الدفتر";
+  start.onclick = (event) => {
+    event.stopPropagation();
+    playUserNotebook(nb);
+  };
+  actions.append(more, start);
+  card.append(checkbox, icon, text, actions);
+  return card;
+}
+
+export function showUserNotebookActionsOverlay(nb, triggerBtn) {
+  const nbId = nb.id || nb.meta?.id;
+  const title = nb.meta?.title || "دفتر بدون عنوان";
+  openExamDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
+    appendSelectOption(menu, closeMenu, nbId);
+    appendEditGroup(menu, closeMenu, reposition, [
+      {
+        label: "تعديل الدفتر",
+        icon: EDIT_ICON_SVG,
+        onClick: () => { window.location.href = `/create-notebook?edit=${encodeURIComponent(nbId)}`; },
+      },
+      {
+        label: "تعديل التفاصيل",
+        icon: EDIT_ICON_SVG,
+        onClick: () =>
+          openDescriptionSourceModal({
+            title,
+            description: nb.meta?.description || "",
+            source: nb.meta?.source || "",
+            onSave: ({ description, source }) => saveLocalItemMetadata(nbId, description, source),
+          }),
+      },
+      { label: "إعادة تسمية", icon: RENAME_ICON_SVG, onClick: () => renameItem(nbId, title) },
+    ]);
+    appendMoveGroup(menu, closeMenu, reposition, nbId);
+    const deleteOpt = document.createElement("button");
+    deleteOpt.type = "button";
+    deleteOpt.className = "exam-action-btn exam-action-btn--danger";
+    deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف الدفتر</span>`;
+    deleteOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      deleteFolder(nbId);
+    };
+    menu.appendChild(deleteOpt);
+  });
+}
+
+export function playUserNotebook(nb) {
+  const nbId = nb.id || nb.meta?.id;
+  try {
+    window.location.href = `/notebook/${encodeURIComponent(nbId)}?type=user`;
+  } catch (error) {
+    console.error("Error opening user notebook:", error);
+    _alert("حدث خطأ أثناء فتح الدفتر. حاول مرة أخرى.");
+  }
+}
+
 /**
  * Action Overlay for workspace lessons — the lesson twin of
  * showUserQuizActionsOverlay below, built from the same .exam-dropdown-menu /
