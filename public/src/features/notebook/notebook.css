@@ -1,28 +1,8 @@
 /* /notebook/:id page chrome. The interactive UI itself is styled by the
    runtime (assets/notebook-runtime/runtime.css, scoped under .mlweb). */
 .notebook-page-shell {
-  margin-inline: auto;
-  padding: 16px;
-}
-
-.notebook-header h1 {
-  margin: 0 0 6px;
-  font-size: clamp(1.25rem, 2.4vw, 1.75rem);
-}
-
-.notebook-description {
-  margin: 0 0 8px;
-  color: var(--text-secondary, inherit);
-}
-
-.notebook-disclaimer {
-  margin: 0 0 14px;
-  padding: 8px 12px;
-  font-size: .88rem;
-  line-height: 1.6;
-  border-inline-start: 3px solid var(--primary, #0088cc);
-  background: color-mix(in srgb, var(--primary, #0088cc) 8%, transparent);
-  border-radius: 6px;
+  margin: 0;
+  padding: 0;
 }
 
 .notebook-status {
@@ -74,8 +54,6 @@
   min-width: 0;
 }
 
-@media (max-width: 640px) {
-  .notebook-page-shell {
-    padding: 10px;
-  }
+.notebook-root.mlweb #layout {
+  max-width: none;
 }

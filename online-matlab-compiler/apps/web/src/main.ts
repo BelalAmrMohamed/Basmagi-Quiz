@@ -13,6 +13,7 @@ type AssetRec = { width: number; height: number; channels: 1 | 3; b64: string; b
 export interface NotebookCellDoc { id: string; type: 'markdown' | 'code'; source: string }
 export interface NotebookDoc { id: string; title: string; schemaVersion: number; runtime: 'matlab'; cells: NotebookCellDoc[] }
 export interface MountOptions { root: HTMLElement; baseUrl: string; notebook: NotebookDoc; lang?: 'ar' | 'en'; onNotice?: (msg: string) => void; mode?: 'view' | 'edit'; onChange?: (cells: NotebookCellDoc[]) => void;
+  onInfo?: () => void;
   /** Host replacement for the built-in confirm dialog (resolve true to accept). */
   onConfirm?: (title: string, message: string, acceptLabel?: string) => Promise<boolean> }
 const isEdit = () => opts?.mode === 'edit';
@@ -882,6 +883,7 @@ function mount(o: MountOptions): { destroy(): void; resetToPublished(): void; ge
       $('button', { id: 'stop', title: tr('Stop execution and reset the workspace', 'إيقاف التنفيذ وإعادة ضبط مساحة العمل'), hidden: !curRun, onclick: stopRun }, tr('■ Stop', '■ إيقاف')),
       $('span', { id: 'status', role: 'status', 'aria-label': curRun ? tr('Running', 'قيد التشغيل') : tr('Ready', 'جاهز'), 'aria-live': 'polite', title: curRun ? tr('Running', 'قيد التشغيل') : tr('Ready', 'جاهز') }, ''),
       $('button', { id: 'toggleside', title: tr('Show variables, files and history', 'إظهار المتغيرات والملفات والسجل'), 'aria-pressed': String($id('layout')?.classList.contains('side-open') ?? false), onclick: (e: MouseEvent) => { const l = $id('layout')!; const on = l.classList.toggle('side-open'); (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(on)); } }, tr('Workspace', 'مساحة العمل')),
+      ...(opts.onInfo ? [$('button', { type: 'button', title: tr('Notebook information', 'معلومات الدفتر'), 'aria-label': tr('Notebook information', 'معلومات الدفتر'), onclick: () => opts.onInfo?.() }, tr('ⓘ Info', 'ⓘ معلومات'))] : []),
       menu, imp);
   };
   refreshToolbar = renderToolbar;

@@ -115,8 +115,5 @@ Improve:
   * A download button next to the 'افتح الدفتر' button.
   * The download button opens the download modal with all the options including the source (source like styled similarly to the one in the quiz download modal, both should be updated to allow: copying or opening the link. It should also be added to the lesson download modal, because it doesn't have it).
 * Simplify the notebook page by removing useless UI and making the page more seemless.
-  * Remove the whole `.notebook-header` section, it just says the title and description, those could easity be written in the first markdown cell.
-  * Make the info modal of the notebook accessible from the notebook page itself. 
   * The `.notebook-root` looks bad because of one of these 2 reasons:
     * It looks like a slightly smaller window with slightly different colors on the page, there are borders around it, I want the design between `.notebook-root` and the actual page to be seemless.
-    * It doesn't adabt between dark and dark-slate themes.

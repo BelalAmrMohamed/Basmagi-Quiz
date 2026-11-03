@@ -9,6 +9,7 @@
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { parseNotebookRef, isUuid, prepareNotebook } from "./notebook-data.js";
 import { resolveNotebookLang, notebookText } from "../../shared/notebook-lang.js";
+import { showNotebookInfoModal } from "../home/notebook-actions.js";
 
 const RUNTIME_BASE = "/assets/notebook-runtime/";
 const LOAD_TIMEOUT_MS = 15000;
@@ -80,6 +81,7 @@ function readLocalNotebookRow(ref) {
   const r = Array.isArray(items) ? items.find((i) => (i.id || i.meta?.id) === ref && i.meta?.type === "notebook") : null;
   if (!r) return null;
   return {
+    ...r,
     id: r.id || r.meta?.id,
     title: r.meta?.title,
     description: r.meta?.description,
@@ -93,8 +95,6 @@ function applyPageLang(lang) {
   const area = $("contentArea");
   area.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
   area.setAttribute("lang", lang);
-  const d = document.querySelector(".notebook-disclaimer");
-  if (d) d.textContent = notebookText(lang, "disclaimer");
 }
 
 async function init() {
@@ -120,10 +120,6 @@ async function init() {
   applyPageLang(lang);
 
   document.title = `${notebook.title} | دفتر تفاعلي | منصة امتحانات بصمجي`;
-  $("notebookTitle").textContent = notebook.title;
-  $("notebookDescription").textContent = notebook.description;
-  $("notebookDescription").hidden = !notebook.description;
-  $("notebookHeader").hidden = false;
 
   let runtime;
   try {
@@ -138,6 +134,7 @@ async function init() {
       baseUrl: RUNTIME_BASE,
       notebook,
       lang,
+      onInfo: () => showNotebookInfoModal(row),
       onNotice: (message) => window.dispatchEvent(new CustomEvent("notebook:notice", { detail: message })),
     });
   } catch (e) {
