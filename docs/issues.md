@@ -13,6 +13,12 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ### Update OG Titles & Descriptions (`api/og.js`)
 Folders and Courses' OG titles & OG desciptions should updated to include lessons and notebooks. 
 
+Update SEO and GEO, too, they haven't been updated in a long while and are probably missing alot.
+
+### Bottom Nav on phones
+* Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.
+* I honestly don't know what is the best decision, maybe keeping settings 
+
 ### Quiz Passwords are exposed
 The home page downloads every quiz’s password to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be fixed.
 
@@ -41,25 +47,14 @@ Example 3 (The Sidebar/Side-menu's): The sidebar component is a part that is com
 * The naming of things is messed up, because of how much things were reused when implementing new features, for example, the dropdown menu used on all 3 of them is called (exam-dropdown-menu), even though exams on the platform are typically called `quizzes`, and this UI element isn't used on quizzes only anyways. The code quality needs to be improved.
 * When lessons & notebooks are mixed with quizzes in a course, it looks like a mess with some cards taller than others. ![screenshot](image.png), we need to redeisgn the hight, width, and how much of the title & description can be shown to control the card styles better.
 * The user content section is named (امتحانك), aside from the platform now supporting lessons and notebooks, too, so not only quizzes, but even that name was confusing when it was only quizzes, because users thought it was the history not content they create, name it something expressive like (إنشاء) or (إنشاء محتوى) or your recommendation.
+* The user content section can't be accessed offline, because it's inside the content area of the other courses too, I need an idea on how to solve that to make that area accessible, since it depends on localStorage, so it doesn't need to be online, specially for people who have the app installed.
+* The user content card doesn't display the number of notebooks or courses.
 
-### Online MatLab Compiler
-I recently built an online jupytor-notebook-style matlab compiler website specializing in the fundametals of MatLab: [exact copy of its code](../online-matlab-compiler)
-* And before improving it further, I figured it would be better and more dynamic if I integrate it inside Basmagi-Quiz (this website) instead of being a seperate website.
-  * So it would be a new different one or two types next to quizzes and lessons: (notebooks with matlab-compiler engine). And admins can make new notebooks for matlab. 
-  * That would make it great and expandable feature (I can add C++ or Python compiler for the fundamentals in the future).
-
-Objective: 
-* Implement the online matlab compiler in this website.
-* Recomment types: 
-  * Since I want this to be expandable should this be just a third type (notebook) next to quizzes and lessons? 
-  * Or should it be different types (matlab, c++, python, etc...)?
-  * Should I add the new notebook type only? Or should I also add code-editor or something similar?
-
-Some parts of the platform will need to be like:
-* The markdown engine to add proper coloring for the matlab code.
-* The امتحاناتك section: to support the new types of content we will add. With proper creation modals + ready-to-use prompts.
-* Admins should be able to upload whatever new types we will add.
-* The MCP Server should be updated to support them, too.
+### Update the MCP Server
+* Improve the MCP Server for usages similar to this: 
+  * A user connects Basmagi Quiz + Google Drive to Claude, shares a specific drive folder, and tells Claude to convert its content onto the Basmaig Quiz Platform.
+  * Expected Behavior: Claude recognises which of them can be converted into quizz, or lessons, or notebooks (with which runtime), and converts them properly. 
+  * Optional: Claude asks the user what content to convert to what for verification before deciding.
 
 ### Dictation for Essay Questions (Lesson & Quiz Pages)
 Add dictation feature for essays in quizzes and lessons
@@ -106,8 +101,18 @@ Improve:
 ### Notebooks
 
 #### Improve the Image Tool modal
-* 
-* It shouldn't be a modal that has a set location/width/height, it should be a draggable and resizable window, just like the actual MATLAB Program
+* There are many missing functionalities, even if they are too hard to add, add the important ones like that feature that zooming into the pixels shows their info.
+* It shouldn't be a modal that has a set location/width/height, it should be a draggable and resizable window, just like the actual MATLAB Program.
+* Scrolling into the image and zooming is really bad, it's unexpectable, not intuitive to the user.
+* When Pressing "Run All" or using image tool multiple times at once, the image tool windows shouldn't be exactly on top of each other.
+
+#### Workspace
+* When creating a new notebook, adding new images, saving the notebook, and uploading it to the platform, the notebook doesn't include the uploaded images.
+* I don't want all users to be able to upload images to the platform (I'm on Supabase free-tier), only admins should, and also admins shouldn't do it all the time, because not all notebooks they create are going to be published. I haven't thought of a way to solve this issue.
+* MCP Server should be able to add images to the workspace, too, but if the draft isn't saved, they should be deleted.
+
+DB Note:
+* Since we are expanding our usage of the DB based on that update, I want to put a limit on uploaded content to the DB (Like images, videos, etc...) [For all pages, not just the notebook page], this way notebooks, lessons, quizzes, and other items can still be uploaded and preserved even when the limit of the uploaded images and content is reached.
 
 #### What’s not done:
 
