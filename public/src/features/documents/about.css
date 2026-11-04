@@ -372,6 +372,167 @@ html[data-theme="dark-slate"] .about-page {
   }
 }
 
+/* ── Live platform views (counter · online now · today · 30-day sparkline) ──
+   Data: GET /api/admin?liveStats=true, polled every ~15 s (about-stats.js).
+   Reuses the .platform-stat-* look and the same shimmer while loading. */
+.about-page .live-stats {
+  display: grid;
+  grid-template-columns: 1.15fr .65fr 1.6fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.about-page .live-stats-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding: 22px 20px;
+  background: var(--about-card);
+  border: 1px solid var(--about-line);
+  text-align: center;
+}
+
+.about-page .live-stats-label {
+  color: var(--about-muted);
+  font-size: .82rem;
+}
+
+.about-page .live-stats-total {
+  font-size: clamp(2.4rem, 5vw, 3.2rem);
+}
+
+.about-page .live-online {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  align-self: center;
+  padding: 5px 12px;
+  border: 1px solid var(--about-line);
+  border-radius: 999px;
+  color: var(--about-muted);
+  font-size: .82rem;
+}
+
+.about-page .live-online b {
+  color: var(--about-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.about-page .live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2fb26b;
+  animation: about-live-pulse 2s ease-out infinite;
+}
+
+@keyframes about-live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(47, 178, 107, .55);
+  }
+
+  70% {
+    box-shadow: 0 0 0 9px rgba(47, 178, 107, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(47, 178, 107, 0);
+  }
+}
+
+.about-page .live-stats-block--trend {
+  align-items: stretch;
+  text-align: start;
+}
+
+.about-page .live-spark-wrap {
+  position: relative;
+  height: 72px;
+  margin-top: 6px;
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+.about-page .live-spark {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  color: var(--about-coral);
+}
+
+.about-page .live-spark-line--draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: about-live-draw 1.1s ease-out forwards;
+}
+
+.about-page .live-spark-area--fade {
+  opacity: 0;
+  animation: about-live-fade .9s ease-out .35s forwards;
+}
+
+@keyframes about-live-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes about-live-fade {
+  to {
+    opacity: 1;
+  }
+}
+
+.about-page .live-spark-tip {
+  position: absolute;
+  top: -8px;
+  z-index: 2;
+  padding: 4px 9px;
+  border-radius: 4px;
+  background: var(--about-highlight-bg);
+  color: var(--about-highlight-ink);
+  font-size: .75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+}
+
+@media (max-width: 900px) {
+  .about-page .live-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .about-page .live-stats-block--trend {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .about-page .live-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-page .live-dot {
+    animation: none;
+  }
+
+  .about-page .live-spark-line--draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .about-page .live-spark-area--fade {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 /* ── Tech Stack ────────────────────────────────────────────────────────────── */
 #techStackPills {
   display: flex;

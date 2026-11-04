@@ -183,6 +183,26 @@
                         <span class="platform-stat-label">صانع محتوى</span>
                     </div>
                 </div>
+
+                <div class="live-stats" id="liveStats" aria-live="off">
+                    <div class="live-stats-block live-stats-block--total platform-stat-loading" id="liveCardTotal">
+                        <span class="live-stats-label">إجمالي مشاهدات المنصة</span>
+                        <strong class="platform-stat-value live-stats-total" id="liveTotalViews">—</strong>
+                        <span class="live-online" id="liveOnline"><span class="live-dot" aria-hidden="true"></span><b id="liveOnlineCount">—</b> متصل الآن</span>
+                    </div>
+                    <div class="live-stats-block live-stats-block--today platform-stat-loading" id="liveCardToday">
+                        <span class="live-stats-label">اليوم</span>
+                        <strong class="platform-stat-value" id="liveTodayViews">—</strong>
+                        <span class="platform-stat-label">مشاهدة</span>
+                    </div>
+                    <figure class="live-stats-block live-stats-block--trend" id="liveCardTrend">
+                        <figcaption class="live-stats-label">المشاهدات في آخر ٣٠ يومًا</figcaption>
+                        <div class="live-spark-wrap" id="liveSparkWrap">
+                            <svg class="live-spark" id="liveSpark" role="img" aria-label="رسم بياني لمشاهدات آخر ٣٠ يومًا"></svg>
+                            <div class="live-spark-tip" id="liveSparkTip" hidden></div>
+                        </div>
+                    </figure>
+                </div>
             </section>
 
             <section class="about-section" aria-labelledby="stack-heading">
@@ -404,6 +424,7 @@
     import { mountTelegramBotCard } from "./src/components/telegram-bot-card/telegram-bot-card.js";
     mountTelegramBotCard(document.getElementById("aboutTelegramCardMount"), { variant: "showcase" });
 </script>
+<script src="/src/shared/analytics-beacon.js" defer></script>
 </body>
 
 </html>

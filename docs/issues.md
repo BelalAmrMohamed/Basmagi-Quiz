@@ -72,7 +72,11 @@ Add dictation feature for essays in quizzes and lessons
 ### `public\about.html` Page
 * Suggestion: Add an open-source Angle (Since the repo is currently open source).
 * Suggestion: Add a short testimonial or review.
-* Add the number of views of the whole platform (try to integrate vercel insights if possible) to the `المنصة بالأرقام` section. Or create a custom one with new migrations in the `supabase/migrations` directory, and implement the live counter that counts all of the views to the platform + Advanced analytics. 
+* **The `المنصة بالأرقام` section:**
+  * The number "كلية ومرحلة تعليمية" is incorrect, it's showing 1, even though its supposed to be 2: CS College (Exists on the platform with many courses and content) and High Schools (Exists on the platform with a course and its content)
+  * The section only shows the number of published quizzes, it doesn't show lessons or notebooks.
+  * It says that "مادة وتصنيف" is `5`, but there is no way, a single term of CS College on the platform probably has more than 5 courses. It's no way that the whole platform has 5, or maybe the label wasn't intended for "courses", douple check and fix.
+
 
 ### Create Quiz Page
 `create-quiz.js` is 5000+ lines in one file — It's the right time to split it into modules.

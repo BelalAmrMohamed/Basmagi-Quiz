@@ -1,5 +1,5 @@
 # What is this file?
-This file is for context only. It's copied from supabase directly after running the latest migration `supabase\migrations\20261027143000_lesson_comment_staff_actor_key.sql`.
+This file is for context only. It's copied from the Supabase dashboard directly after running the latest migration: `supabase\migrations\20261027143000_lesson_comment_staff_actor_key.sql`.
 
 # Database 
 
@@ -272,6 +272,29 @@ Reports against a lesson comment, reviewed by admins. Independent of the comment
 |------|------|-------------|
 | `update_id` | `int8` | Primary |
 | `created_at` | `timestamptz` |  |
+
+
+## Table `analytics_daily`
+
+Page views per Cairo calendar day for the whole platform. Written only by analytics_track_view() (service_role), read only through analytics_live_stats(). Powers the live counter and 30-day sparkline on about.html. RLS enabled with no policies.
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `day` | `date` | Primary |
+| `views` | `int8` |  |
+
+## Table `analytics_presence`
+
+Anonymous, daily-rotating visitor hashes with their last activity time, used only for the "online now" count (visitors active in the last 5 minutes). Rows older than 1 hour are purged opportunistically by analytics_track_view(). No raw IPs, no cookies. RLS enabled with no policies.
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `visitor` | `text` | Primary |
+| `last_seen` | `timestamptz` |  |
 
 ## RLS Policies
 

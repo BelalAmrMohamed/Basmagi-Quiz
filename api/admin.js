@@ -50,6 +50,7 @@ import {
   validateNotebookRuntime,
 } from "./_validateNotebook.js";
 import crypto from "crypto";
+import { handleAnalyticsTrack, handleAnalyticsLive } from "./_analytics.js";
 
 const MAX_BIO_LENGTH = 280;
 
@@ -2661,6 +2662,7 @@ function isStatsGet(req) {
 export default async function handler(req, res) {
   // GET: route by query params — control has none of these.
   if (req.method === "GET") {
+    if (req.query && req.query.liveStats === "true") return handleAnalyticsLive(req, res, supabaseAnon);
     if (isStatsGet(req)) return handleStats(req, res);
     return handleControl(req, res);
   }
@@ -2670,6 +2672,7 @@ export default async function handler(req, res) {
   // everything else (progress/avatar/profile sync) goes to stats.
   if (req.method === "POST") {
     const action = req.body && req.body.action;
+    if (action === "track" || action === "ping") return handleAnalyticsTrack(req, res, supabaseService);
     if (CONTROL_ACTIONS.has(action)) return handleControl(req, res);
     if (ITEM_ACTIONS.has(action)) return handleItemActions(req, res);
     return handleStats(req, res);
