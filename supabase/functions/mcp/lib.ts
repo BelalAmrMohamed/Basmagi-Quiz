@@ -301,7 +301,7 @@ export const CREATOR_INFO: Record<string, string> = {
 export const AUTHORING_GUIDE: Record<string, string> = {
   workflow: `# Basmagi — Claude's authoring workflow
 1. Call get_authoring_guide topic=quiz|lesson|markdown once per conversation (this text).
-2. Source material attached by the user → read it fully; do NOT invent facts. Unsolved questions → solve them carefully, then explain.
+2. Source material attached by the user → read it fully; do NOT invent facts. Unsolved questions → solve them carefully, then explain.\n   - User gave a FOLDER or several files to convert (e.g. a shared Google Drive folder)? Call get_authoring_guide topic=convert first: it says how to decide quiz vs lesson vs notebook per file, when to confirm with the user, and how to report.
 3. Build the object, then call create_quiz_import_link / create_lesson_import_link / create_notebook_import_link (topic=notebook for executable MATLAB-style notebooks).
    - Result is ONE short link: ${SITE}/create-quiz?draft=<code> (valid ${DRAFT_TTL_HOURS}h, no sign-in needed).
    - If the result lists ERRORS nothing was saved: fix exactly what it says and call again.
@@ -359,6 +359,37 @@ Authoring tips:
 - Image examples may only use the bundled sample images (test.png, testgray.png, pepper.png, Test2.png, GrayTest1.png, BinaryImage.png, GrayscaleImage.png, ColorImage.png, test_lookup.gif); learners can upload their own.
 - Only authored source is stored. Learner outputs/edits stay in the learner's browser (autosave) and are never graded or synced.
 - Notebooks are published only by an admin pressing save in the editor — MCP only creates a draft link.`,
+
+  convert: `# Converting existing files / a whole folder (Google Drive, uploads, links)
+Use this when the user shares a folder or several files (usually from Google Drive) and asks to convert / upload / move them to Basmagi. YOU decide what each file becomes — never push everything into one type.
+
+## 1. Inventory (read-only, nothing created yet)
+- List the folder RECURSIVELY with the Drive tools (search by parent folder, then each sub-folder). Keep for every item: name, mimeType, its own link (webViewLink) and folder path.
+- Read each file's real content (Google Docs/Slides/Sheets and PDFs through the Drive read/download tools; scanned PDFs and images visually). If a file cannot be read (no text, no access, video/audio without a transcript) do NOT guess from its name: mark it "skipped" with the reason.
+- Run search_catalog on the titles to spot content already on Basmagi (avoid duplicates; offer quizRef / lesson-reference links instead).
+
+## 2. Classify every item
+- Questions with choices/answers: past exams, midterms, question banks, worksheets, MCQ / true-false / essay sets (solved or unsolved) → QUIZ (create_quiz_import_link).
+- Explanatory material: lecture slides, notes, summaries, book chapters, study guides, articles, solved examples → LESSON (create_lesson_import_link), each section ending with 1–3 check questions.
+- Runnable MATLAB code: .m scripts, MATLAB lab sheets / live scripts, image-processing labs → NOTEBOOK with runtime "matlab" (create_notebook_import_link).
+- Lecture or lab that mixes explanation with MANY questions → a lesson for the explanation + a separate quiz for the questions (after the quiz is published, a quizRef block can link it); only a few questions → keep them inside the lesson as question blocks. Ask when unsure.
+- Code in any other language (Python, C/C++, Java, JavaScript, SQL, .ipynb …) → NOT a notebook: the only runtime is "matlab". Offer a lesson with the code in fenced code blocks and say clearly that it will not be runnable.
+- Videos, audio, images only, zips, raw-data sheets, duplicates, drafts → skip, listed under "skipped" with the reason (a public https video/audio/image URL may be embedded as a media block inside a lesson).
+- Rules of thumb: one exam file = one quiz; one lecture = one lesson; never merge unrelated files; split very large files into several drafts instead of truncating (respect the schema limits).
+- Keep the source language (usually Arabic). Never invent questions, facts or code that are not in the file (solving unsolved questions and writing explanations is expected).
+- source = the file's own Drive link (webViewLink); use the folder link only when one draft is built from several files.
+
+## 3. Verify with the user BEFORE creating (ask ONCE)
+- Send one compact table: file → proposed type (+ runtime) → proposed title → short reason. Ask only about what is ambiguous or unsupported and say which items you will do as proposed.
+- Ask first when: the folder has more than about 5 items, an item fits two types, an item is unsupported (non-MATLAB code), or the user did not say which types they want.
+- Do not ask (convert, then show the table) when the user already specified the types, said "just do it / convert everything", or the folder is small and every item is clearly one type.
+
+## 4. Create
+- One item at a time: read the file → build → dry_run if unsure → create_*_import_link → keep the link. Fix ERRORS and retry; mention important WARNINGS. For big results create the draft, then refine with update_import_draft instead of re-sending.
+- Each item gets its own draft link; drafts live ${DRAFT_TTL_HOURS}h, so tell the user to open them soon. Nothing is published until the user saves in the editor (notebooks: an admin must save).
+
+## 5. Final report
+One table: file → type → draft link → warnings. Then "skipped" (with reasons) and anything needing the user's decision. Never say something was published.`,
 
   markdown: `# Markdown supported in lessons / quizzes
 Headings, **bold**/*italic*, lists (nested), blockquotes, links, GFM tables, fenced code blocks (with copy button), images, inline audio/video (\`![audio](url)\`, \`![video](url)\`, YouTube auto-embed), KaTeX math ($inline$, $$display$$), and reading passages:
