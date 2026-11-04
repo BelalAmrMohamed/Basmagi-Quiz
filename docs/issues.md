@@ -60,6 +60,8 @@ So these are 3 examples of performance issues that I found and fixed, there are 
   * Expected Behavior: Claude recognises which of them can be converted into quizz, or lessons, or notebooks (with which runtime), and converts them properly. 
   * Optional: Claude asks the user what content to convert to what type for verification before deciding.
 
+*If you believe the MCP Server already works good for that, leave it as it is.*
+
 ### Dictation for Essay Questions (Lesson & Quiz Pages)
 Add dictation feature for essays in quizzes and lessons
 
