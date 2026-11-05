@@ -26,23 +26,33 @@ Some hover effects may change an element's position, dimensions, or boundaries (
 
 Make the necessary changes directly in the existing codebase. Do not merely provide recommendations or a list of potential fixes.
 
-### `api\og.js`
-* ![screenshot](image.png): Info displayed on the OG Thumbnail itself is different from the OG Title & Description, the OG Thumbnail itself is probably the correct one.
-* Currently, the table of info displays: "التعليم", "الكلية", "العام", & "الترم" (or the "مادة مميزة" badge) inside of a table, and under the table it displays: Number of lessons, quizzes, notebooks, & folders. 
-  * These should be swapped, The Number of lessons, quizzes, notebooks, & folders should be displayed in the table because it's more important, and the other info/badge should be under the table.
+### Home Page Issues
 
-### Drag-and-drop in `/my-content`
+#### Drag-and-drop in `/my-content`
 Drag-and-drop in `/my-content` wasn't updated to support Notebook extensions (`.m`, `.ipynb`, `.zip`). I tried dropping 5 files to create 5 notebooks, it didn't allow me.
 
-### Parts of the platform that weren't updated for Notebooks
+#### Parts of the platform that weren't updated for Notebooks
 * The admin upload modal wasn't updated ![screenshot](image-1.png).
 * ![Folders in my content weren't updated](image-2.png) 
 
-### Cards Design
+#### Cards Design
 * Notebook Cards and Lesson cards are similar to each other, give each a different border color and a different download button color both on the platform and inside (`/my-content`)
+* Some cards like the Notebook cards are not the same between the main page and user content, they are supposed to be exactly the same, so if implementing one shared design system for them is a good practise do it. Because notebook cards in user content isn't showing the runtime on the card like the main page does (ex: `MATLAB (تعليمي)`).
 
-### معلومات الدفتر
+#### Dropdown Menus
+* Rearrage the items in dropdown menus to make sure they are expectable on all types, because it's currently slightly confusing:
+  * Notebooks have the "إدارة" at the bottom, then "اسأل الباشـمبصمج" then "معلومات الدفتر", then "مشاركة الرابط", then "نسخ الرابط".
+  * While on quizzes it's: "معلومات الامتحان", then "إدارة", then "اسأل الباشـمبصمج", then "نسخ إلى محتواي", then "مشاركة الرابط", then "نسخ كود التضمين", then "نسخ الرابط"
+  * Also Notebooks are now missing some features like "نسخ إلى محتواي".
+
+#### معلومات الدفتر
 * The "معلومات الدفتر" modal doesn't include the uploader of the notebook, quizzes do include it, notebooks should include it, too.
+
+#### Info Modals
+* Info modals for quizzes, lessons, and notebooks, should use the drive icon when the source is from Google Drive
+  * ("public\assets\images\google-drive-icon.webp")
+
+---
 
 ### Notebook Page
 * The `Edit a copy` button should be moved into the `.toolbar-menu-items`.
