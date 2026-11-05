@@ -85,6 +85,8 @@ export async function purgeQuizMedia(supabase, quizDataList) {
             .remove(Array.from(allKeys));
         if (error) {
             console.error("[trash] media cleanup failed:", error.message);
+        } else {
+            await supabase.rpc("storage_release", { p_bucket: STORAGE_BUCKET, p_paths: Array.from(allKeys) }).catch(() => {});
         }
     } catch (err) {
         console.error("[trash] media cleanup threw:", err.message || err);

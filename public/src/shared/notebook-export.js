@@ -35,6 +35,7 @@ export function rowToNotebook(row) {
     updatedAt: (local ? row.meta?.updatedAt : row?.updated_at) || null,
     local,
     cells,
+    assets: Array.isArray(content.assets) ? content.assets : [],
   };
 }
 

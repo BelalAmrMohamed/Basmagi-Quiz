@@ -207,6 +207,15 @@
     </div>
 
     <!-- TRASH VIEW (shared/admin quizzes/folders/courses soft-delete area) -->
+    <style>.storage-banner{margin:0 0 10px;padding:8px 12px;border-radius:10px;font-size:.88rem;border:1px solid rgba(128,128,128,.35)}.storage-banner--warn{background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.6);font-weight:600}</style>
+    <section id="storageSection" class="main-grid" hidden>
+        <div class="panel-header"><h2>مخزن الوسائط</h2></div>
+        <div id="storageMeter" class="storage-banner" hidden></div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0">
+            <button type="button" id="storageCleanBtn" class="btn-nav">حذف الملفات غير المستخدمة</button>
+            <span id="storageCleanMsg" role="status"></span>
+        </div>
+    </section>
     <div class="main-grid" id="trashSection" hidden>
         <div class="panel" style="grid-column: 1 / -1;">
             <div class="panel-header trash-panel-header">
@@ -305,6 +314,7 @@
     </div>
 
     <script type="module" src="src/features/control/control.js"></script>
+    <script type="module" src="src/features/control/storage-panel.js"></script>
 
     <script defer src="/_vercel/insights/script.js"></script>
 </body>

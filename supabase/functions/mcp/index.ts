@@ -38,6 +38,10 @@ import {
   applyDraftPatch, lessonToDraftInput, outlineLesson, outlineQuiz, quizToDraftInput,
   notebookToDraftInput, outlineNotebook,
 } from "./lib.ts";
+import {
+  DRAFT_ASSET_BUCKET, DRAFT_ASSET_MAX_BYTES, DRAFT_REASONS, UPLOAD_TOKEN_TTL_MIN,
+  sanitizeAssetName, sniffImageMime, signUploadToken, verifyUploadToken, safeFetchUrl, driveDirectUrl,
+} from "./draft-assets-lib.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_KEY =
@@ -49,7 +53,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers":
     "Authorization, Content-Type, Accept, X-Requested-With, mcp-session-id",
   "Access-Control-Expose-Headers": "Content-Type",
@@ -428,7 +432,7 @@ const TOOLS = [
   {
     name: "create_notebook_import_link",
     annotations: { title: "Create notebook (short import link)", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    description: "Validate an executable notebook and return ONE SHORT link (…/create-notebook?draft=CODE, valid 72h, no sign-in) that opens the Notebook Creator pre-filled for an admin to review. NOTHING is published by this tool — an admin must review and save in the editor. Uses the SAME validation as the editor and upload API; returns ERRORS (nothing saved) or a link plus WARNINGS. runtime is REQUIRED (only \"matlab\": a browser-based educational MATLAB-style subset, not MathWorks MATLAB). Call get_authoring_guide(topic='notebook') first.",
+    description: "Validate an executable notebook and return ONE SHORT link (…/notebook/new?draft=CODE, valid 72h, no sign-in) that opens the Notebook Creator pre-filled for an admin to review. NOTHING is published by this tool — an admin must review and save in the editor. Uses the SAME validation as the editor and upload API; returns ERRORS (nothing saved) or a link plus WARNINGS. runtime is REQUIRED (only \"matlab\": a browser-based educational MATLAB-style subset, not MathWorks MATLAB). Call get_authoring_guide(topic='notebook') first.",
     inputSchema: {
       type: "object",
       properties: {
@@ -453,6 +457,24 @@ const TOOLS = [
       },
       required: ["title", "runtime", "cells"],
     },
+  },
+  {
+    name: "add_workspace_asset",
+    annotations: { title: "Add a small image to a notebook draft (base64)", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    description: "Attach ONE image (png/jpg/webp/gif, ≤10 MB, ≤20 MB per draft) to a NOTEBOOK draft's workspace so cells can use it (imread('cat.png'), ![](cat.png)). Use ONLY for small files (≤ ~200 KB): you must write every base64 character yourself. For bigger files prefer add_workspace_asset_from_url or request_asset_upload. Files wait in temporary storage, expire with the draft (72h) and are NOT published unless the admin publishes the notebook. Same filename = replace.",
+    inputSchema: { type: "object", properties: { code: { type: "string", description: "Draft code (10 chars) or its full link." }, filename: { type: "string", description: "Exact name the cells use, with extension, e.g. cat.png (never rename)." }, base64: { type: "string", description: "File bytes, base64 (no data: prefix)." } }, required: ["code", "filename", "base64"] },
+  },
+  {
+    name: "add_workspace_asset_from_url",
+    annotations: { title: "Add an image to a notebook draft from a public URL", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    description: "Server-side download of ONE image from a public https URL (≤10 MB) into a NOTEBOOK draft's workspace — no base64 needed. Works for direct image links and Google Drive files shared as 'Anyone with the link' (paste the share link; it is converted). Private/login-protected URLs fail. Same limits and lifetime as add_workspace_asset.",
+    inputSchema: { type: "object", properties: { code: { type: "string" }, url: { type: "string", description: "Public https URL or Drive share link." }, filename: { type: "string", description: "Name with extension the cells use; defaults to the URL's last segment." } }, required: ["code", "url"] },
+  },
+  {
+    name: "request_asset_upload",
+    annotations: { title: "Get a one-file upload command for a notebook draft", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    description: "For LARGE files that exist on a disk you can run commands on (e.g. user-attached files under /mnt/user-data/uploads, or Claude Code/Cowork local files). Returns a short-lived (15 min) one-file upload URL and a ready curl command: run it with the bash tool, the file is stored in the draft's workspace (≤10 MB). Requires network access to *.supabase.co (in claude.ai add it in network settings; if the command cannot connect, tell the user to add the file manually in the notebook workspace or from Google Drive).",
+    inputSchema: { type: "object", properties: { code: { type: "string" }, filename: { type: "string", description: "Name with extension the cells use." } }, required: ["code", "filename"] },
   },
   {
     name: "update_import_draft",
@@ -1440,6 +1462,7 @@ async function saveDraft(kind: "quiz" | "lesson" | "notebook", data: unknown): P
   try {
     const nowIso = new Date().toISOString();
     await supabase.from("import_drafts").delete().lt("expires_at", nowIso); // opportunistic cleanup
+    await purgeDraftAssets(); // …and of their temporary files
     const { count } = await supabase.from("import_drafts").select("*", { count: "exact", head: true });
     if ((count ?? 0) > 5000) throw new Error("draft store is full");
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -1642,7 +1665,139 @@ async function handleDraftRequest(code: string, kind: string | null) {
   if (error) return json({ error: "lookup_failed" }, 500);
   if (!data || new Date(data.expires_at).getTime() < Date.now()) return json({ error: "not_found_or_expired" }, 404);
   if (kind && data.kind !== kind) return json({ error: "wrong_kind", kind: data.kind }, 409);
-  return json({ kind: data.kind, payload: data.payload, expires_at: data.expires_at }, 200);
+  let assets: unknown[] = [];
+  if (data.kind === "notebook") {
+    const files = await listDraftAssets(code);
+    if (files.length) {
+      const { data: signed } = await supabase.storage.from(DRAFT_ASSET_BUCKET).createSignedUrls(files.map((f) => `${code}/${f.name}`), 3600);
+      assets = files.map((f, i) => ({ path: f.name, size: f.size, mime: sanitizeAssetName(f.name).ok ? (sanitizeAssetName(f.name) as any).mime : "", url: signed?.[i]?.signedUrl || "" })).filter((a) => a.url);
+    }
+  }
+  return json({ kind: data.kind, payload: data.payload, expires_at: data.expires_at, assets }, 200);
+}
+
+// ── Notebook draft workspace files (temporary Storage, expire with the draft) ──
+
+type AssetResult = { ok: true; name: string; size: number } | { ok: false; error: string };
+
+async function liveNotebookDraft(code: string): Promise<boolean> {
+  if (!DRAFT_CODE_RE.test(code)) return false;
+  const { data } = await supabase.from("import_drafts").select("kind, expires_at").eq("code", code).maybeSingle();
+  return !!data && data.kind === "notebook" && new Date(data.expires_at).getTime() > Date.now();
+}
+
+async function listDraftAssets(code: string): Promise<{ name: string; size: number }[]> {
+  const { data } = await supabase.from("storage_objects").select("path, size").eq("bucket", DRAFT_ASSET_BUCKET).like("path", `${code}/%`);
+  return (data || []).map((r: any) => ({ name: String(r.path).slice(code.length + 1), size: Number(r.size) }));
+}
+
+async function storeDraftAsset(code: string, rawName: string, bytes: Uint8Array): Promise<AssetResult> {
+  if (!(await liveNotebookDraft(code))) return { ok: false, error: "Draft not found, expired, or not a notebook draft." };
+  const n = sanitizeAssetName(rawName);
+  if (!n.ok) return n;
+  if (bytes.length < 1) return { ok: false, error: DRAFT_REASONS.empty_file };
+  if (bytes.length > DRAFT_ASSET_MAX_BYTES) return { ok: false, error: DRAFT_REASONS.file_too_large };
+  if (sniffImageMime(bytes) !== n.mime) return { ok: false, error: `The file content is not a real ${n.mime} image.` };
+  const path = `${code}/${n.name}`;
+  await supabase.rpc("storage_release", { p_bucket: DRAFT_ASSET_BUCKET, p_paths: [path] }); // same name = replace
+  await supabase.storage.from(DRAFT_ASSET_BUCKET).remove([path]);
+  const { data: r, error } = await supabase.rpc("storage_reserve", { p_bucket: DRAFT_ASSET_BUCKET, p_path: path, p_size: bytes.length, p_kind: "draft", p_owner: "mcp" });
+  if (error) return { ok: false, error: "Storage is temporarily unavailable." };
+  if (!r.ok) return { ok: false, error: DRAFT_REASONS[r.reason] || "Could not reserve storage." };
+  const up = await supabase.storage.from(DRAFT_ASSET_BUCKET).upload(path, bytes, { contentType: n.mime, upsert: true });
+  if (up.error) {
+    await supabase.rpc("storage_release", { p_bucket: DRAFT_ASSET_BUCKET, p_paths: [path] });
+    return { ok: false, error: "Upload failed." };
+  }
+  return { ok: true, name: n.name, size: bytes.length };
+}
+
+async function assetSummary(code: string, added: AssetResult) {
+  if (!added.ok) return `❌ ${added.error}`;
+  const all = await listDraftAssets(code);
+  const total = all.reduce((s, a) => s + a.size, 0);
+  return `✅ ${added.name} (${Math.round(added.size / 1024)} KB) added to the draft workspace. Files now: ${all.map((a) => a.name).join(", ")} (${(total / 1048576).toFixed(1)} MB of 20 MB). They are temporary (expire with the draft) and are uploaded to the platform only if the admin publishes a notebook that references them.`;
+}
+
+async function handleAddAssetB64(args: { code: string; filename: string; base64: string }) {
+  const code = extractCode(args?.code);
+  if (!code) return "الرجاء تمرير كود المسودة.";
+  let bytes: Uint8Array;
+  try { bytes = Uint8Array.from(atob(String(args?.base64 || "").replace(/^data:[^,]*,/, "").replace(/\s+/g, "")), (c) => c.charCodeAt(0)); }
+  catch { return "❌ base64 is not valid."; }
+  return assetSummary(code, await storeDraftAsset(code, args?.filename, bytes));
+}
+
+async function handleAddAssetUrl(args: { code: string; url: string; filename?: string }) {
+  const code = extractCode(args?.code);
+  if (!code) return "الرجاء تمرير كود المسودة.";
+  let url = safeFetchUrl(driveDirectUrl(String(args?.url || "")));
+  if (!url) return "❌ URL must be a public https link (no localhost / IP addresses).";
+  const name = args?.filename || decodeURIComponent(url.pathname.split("/").pop() || "");
+  let res: Response | null = null;
+  for (let hop = 0; hop < 4 && url; hop++) {
+    try { res = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(20_000), headers: { "User-Agent": "BasmagiMCP/1.0" } }); }
+    catch { return "❌ Could not download the URL."; }
+    if (res.status >= 300 && res.status < 400 && res.headers.get("location")) { url = safeFetchUrl(new URL(res.headers.get("location")!, url).toString()); res = null; continue; }
+    break;
+  }
+  if (!res || !url) return "❌ Download blocked (unsafe redirect) or failed.";
+  if (!res.ok) return `❌ The URL returned HTTP ${res.status} (is it public?).`;
+  if (Number(res.headers.get("content-length") || 0) > DRAFT_ASSET_MAX_BYTES) return `❌ ${DRAFT_REASONS.file_too_large}`;
+  const reader = res.body!.getReader();
+  const chunks: Uint8Array[] = []; let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.length;
+    if (total > DRAFT_ASSET_MAX_BYTES) { await reader.cancel(); return `❌ ${DRAFT_REASONS.file_too_large}`; }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total); let o = 0; for (const c of chunks) { bytes.set(c, o); o += c.length; }
+  return assetSummary(code, await storeDraftAsset(code, name, bytes));
+}
+
+async function handleRequestUpload(args: { code: string; filename: string }) {
+  const code = extractCode(args?.code);
+  if (!code) return "الرجاء تمرير كود المسودة.";
+  if (!(await liveNotebookDraft(code))) return "❌ Draft not found, expired, or not a notebook draft.";
+  const n = sanitizeAssetName(args?.filename);
+  if (!n.ok) return `❌ ${n.error}`;
+  const token = await signUploadToken(Deno.env.get("MCP_UPLOAD_SECRET") || SUPABASE_KEY, { code, name: n.name });
+  const url = `${SUPABASE_URL}/functions/v1/mcp/upload?t=${token}`;
+  return `Run this in a shell where the file exists (valid ${UPLOAD_TOKEN_TTL_MIN} min, ONE file named ${n.name}, ≤10 MB):\n\ncurl -sS -X PUT --data-binary @/path/to/${n.name} "${url}"\n\nExpected reply: {"ok":true,...}. If curl cannot connect (network blocked), tell the user to add the file in the notebook workspace manually or import it from Google Drive.`;
+}
+
+async function handleUploadPut(req: Request): Promise<Response> {
+  const json = (obj: unknown, status: number) => new Response(JSON.stringify(obj), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  const t = await verifyUploadToken(Deno.env.get("MCP_UPLOAD_SECRET") || SUPABASE_KEY, new URL(req.url).searchParams.get("t") || "");
+  if (!t) return json({ ok: false, error: "invalid_or_expired_token" }, 401);
+  if (Number(req.headers.get("content-length") || 0) > DRAFT_ASSET_MAX_BYTES) return json({ ok: false, error: DRAFT_REASONS.file_too_large }, 413);
+  const bytes = new Uint8Array(await req.arrayBuffer());
+  const r = await storeDraftAsset(t.code, t.name, bytes);
+  return r.ok ? json({ ok: true, name: r.name, size: r.size }, 200) : json({ ok: false, error: r.error }, 400);
+}
+
+/** Deletes a draft with its files (called by the editor after the notebook was saved/published). */
+async function handleDraftDelete(code: string): Promise<Response> {
+  const json = (obj: unknown, status: number) => new Response(JSON.stringify(obj), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  if (!DRAFT_CODE_RE.test(code)) return json({ error: "invalid_code" }, 400);
+  const { data } = await supabase.from("import_drafts").select("kind").eq("code", code).maybeSingle();
+  if (!data || data.kind !== "notebook") return json({ ok: true }, 200);
+  const files = await listDraftAssets(code);
+  const paths = files.map((f) => `${code}/${f.name}`);
+  if (paths.length) { await supabase.storage.from(DRAFT_ASSET_BUCKET).remove(paths); await supabase.rpc("storage_release", { p_bucket: DRAFT_ASSET_BUCKET, p_paths: paths }); }
+  await supabase.from("import_drafts").delete().eq("code", code);
+  return json({ ok: true, removed: paths.length }, 200);
+}
+
+/** Expired/orphaned draft files (also run by the daily cron in api/admin.js). */
+async function purgeDraftAssets() {
+  const { data } = await supabase.rpc("draft_assets_to_purge");
+  const paths = (data || []).map((r: any) => r.path);
+  if (!paths.length) return;
+  await supabase.storage.from(DRAFT_ASSET_BUCKET).remove(paths);
+  await supabase.rpc("storage_release", { p_bucket: DRAFT_ASSET_BUCKET, p_paths: paths });
 }
 
 // ── MCP JSON-RPC Handler ────────────────────────────────────────────────────
@@ -1704,6 +1859,9 @@ async function handleRpcRequest(reqBody: any) {
           case "get_notebook_content":      resultText = await handleGetNotebookContent(toolArgs);  break;
           case "get_creator_info":          resultText = handleGetCreatorInfo(toolArgs);            break;
           case "get_import_draft":          resultText = await handleGetImportDraft(toolArgs);      break;
+          case "add_workspace_asset":       resultText = await handleAddAssetB64(toolArgs);         break;
+          case "add_workspace_asset_from_url": resultText = await handleAddAssetUrl(toolArgs);      break;
+          case "request_asset_upload":      resultText = await handleRequestUpload(toolArgs);       break;
           case "update_import_draft":       resultText = await handleUpdateImportDraft(toolArgs);   break;
           case "clone_to_draft":            resultText = await handleCloneToDraft(toolArgs);        break;
           case "get_authoring_guide":       resultText = handleGetAuthoringGuide(toolArgs);         break;
@@ -1762,6 +1920,15 @@ async function handleRpcRequest(reqBody: any) {
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  {
+    const u = new URL(req.url);
+    if ((req.method === "PUT" || req.method === "POST") && /\/upload\/?$/.test(u.pathname)) return await handleUploadPut(req);
+    if (req.method === "DELETE") {
+      const dm = u.pathname.match(/\/draft\/([^/]+)\/?$/);
+      if (dm) return await handleDraftDelete(dm[1]);
+    }
   }
 
   if (req.method === "GET") {

@@ -279,7 +279,7 @@
         <span class="menu-label">إنشاء دروس</span>
       </a>
 
-      <a href="create-notebook" class="menu-item" data-tooltip="إنشاء دفاتر">
+      <a href="/notebook/new" class="menu-item" data-tooltip="إنشاء دفاتر">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="16 18 22 12 16 6" />
@@ -625,6 +625,42 @@
       <span class="notebook-spinner" aria-hidden="true"></span> جاري تحميل الدفتر…
     </div>
     <div id="notebookRoot" class="notebook-root"></div>
+    <section id="cnbShell" class="cnb-shell" dir="ltr" lang="en" hidden>
+    <header class="cnb-top">
+      <h1 id="cnbHeading">Create notebook</h1>
+      <div class="cnb-top-actions">
+        <button type="button" id="cnbSave" class="cnb-btn cnb-btn--primary">Save to My Content</button>
+      </div>
+    </header>
+    <form id="cnbForm" class="cnb-meta" novalidate>
+      <label class="cnb-field cnb-field--title"><span id="cnbLblTitle">Title</span>
+        <input id="cnbTitle" type="text" maxlength="200" autocomplete="off" required></label>
+      <label class="cnb-field cnb-field--lang"><span id="cnbLblLang">Notebook language</span>
+        <select id="cnbLanguage">
+          <option value="en">English (LTR)</option>
+          <option value="ar">العربية (RTL)</option>
+        </select></label>
+      <label class="cnb-field cnb-field--desc"><span id="cnbLblDesc">Description</span>
+        <textarea id="cnbDescription" rows="2" maxlength="1200"></textarea></label>
+      <label class="cnb-field cnb-field--src"><span id="cnbLblSrc">Source link (optional)</span>
+        <input id="cnbSource" type="url" dir="ltr" placeholder="https://"></label>
+      <div id="cnbPlacementRow" class="cnb-field cnb-field--place" hidden>
+        <label><span>Course</span><select id="cnbCourse"></select></label>
+        <label><span>Folder</span><select id="cnbFolder"></select></label>
+        <label><span>Slug</span><input id="cnbSlug" type="text" dir="ltr" maxlength="80"></label>
+      </div>
+      <label id="cnbCompressRow" class="cnb-field cnb-field--place" hidden><span id="cnbCompressLbl"></span>
+        <input id="cnbCompress" type="checkbox"></label>
+      <select id="cnbRuntime" hidden>
+        <option value="matlab">MATLAB</option>
+      </select>
+    </form>
+    <div id="cnbStorage" class="storage-banner" hidden></div>
+    <div id="cnbIssues" class="cnb-issues" role="alert" aria-live="assertive" hidden></div>
+    <div id="cnbEditor" class="cnb-editor" aria-busy="true">
+      <div class="cnb-loading">Loading editor…</div>
+    </div>
+    </section>
   </main>
 
   <script type="module" src="/src/features/notebook/notebook-page.js"></script>

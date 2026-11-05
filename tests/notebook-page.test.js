@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parseNotebookRef, prepareNotebook } from "../public/src/features/notebook/notebook-data.js";
-import * as M from "../public/src/features/create-notebook/notebook-editor-model.js";
+import * as M from "../public/src/features/notebook/notebook-editor-model.js";
 
 test("parseNotebookRef", () => {
   assert.equal(parseNotebookRef("/notebook/matlab-section-1"), "matlab-section-1");

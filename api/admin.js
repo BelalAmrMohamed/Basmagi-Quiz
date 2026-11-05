@@ -51,6 +51,7 @@ import {
 } from "./_validateNotebook.js";
 import crypto from "crypto";
 import { handleAnalyticsTrack, handleAnalyticsLive } from "./_analytics.js";
+import { STORAGE_ACTIONS, handleStorageAction, handleCronPurge } from "./_storageGuard.js";
 
 const MAX_BIO_LENGTH = 280;
 
@@ -303,6 +304,7 @@ const ITEM_ACTIONS = new Set([
   "create-notebook",
   "update-notebook",
   "delete-notebook",
+  ...STORAGE_ACTIONS,
 ]);
 
 async function fetchItemForAuth(supabase, itemType, itemId) {
@@ -2059,6 +2061,7 @@ async function handleItemActions(req, res) {
   if (action === "create-notebook") return handleCreateNotebook(req, res, payload, adminId, supabase);
   if (action === "update-notebook") return handleUpdateNotebook(req, res, payload, adminId, supabase);
   if (action === "delete-notebook") return handleDeleteNotebook(req, res, payload, adminId, supabase);
+  if (STORAGE_ACTIONS.has(action)) return handleStorageAction(req, res, action, adminId, supabase);
 
   return res.status(400).json({ error: "Invalid action" });
 }
@@ -2662,6 +2665,12 @@ function isStatsGet(req) {
 export default async function handler(req, res) {
   // GET: route by query params — control has none of these.
   if (req.method === "GET") {
+    if (req.query && req.query.config === "google") {
+      // Public (browser-side) Google OAuth values; the client ID / API key / project number are not secrets.
+      res.setHeader("Cache-Control", "public, max-age=300");
+      return res.status(200).json({ clientId: process.env.GOOGLE_DRIVE_CLIENT_ID || "", apiKey: process.env.GOOGLE_PICKER_API_KEY || "", projectNumber: process.env.GOOGLE_PROJECT_NUMBER || "" });
+    }
+    if (req.query && req.query.cron === "purge-drafts") return handleCronPurge(req, res, supabaseService);
     if (req.query && req.query.liveStats === "true") return handleAnalyticsLive(req, res, supabaseAnon);
     if (isStatsGet(req)) return handleStats(req, res);
     return handleControl(req, res);

@@ -34,6 +34,7 @@
 
 import "../../shared/text-direction-sync.js";
 import { getToken, isAdminAuthenticated } from "../../shared/adminAuth.js";
+import { reserveStorage, releaseStorage } from "../../shared/storage-guard.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.js";
 import { renderMarkdown } from "../../shared/markdown.js";
@@ -1848,10 +1849,11 @@ async function uploadMediaFile(file, mediaType) {
     const random = Math.random().toString(36).slice(2, 9);
     const storagePath = `${mediaType}s/${uid}/${Date.now()}-${random}.${ext}`;
 
+    await reserveStorage("quiz-media", storagePath, workingFile.size, mediaType);
     const { error: uploadError } = await client.storage
         .from("quiz-media")
         .upload(storagePath, workingFile, { contentType: workingFile.type, upsert: false });
-    if (uploadError) throw new Error(uploadError.message);
+    if (uploadError) { await releaseStorage("quiz-media", [storagePath]); throw new Error(uploadError.message); }
 
     const { data: urlData } = client.storage.from("quiz-media").getPublicUrl(storagePath);
     if (!urlData?.publicUrl) throw new Error("تم الرفع لكن فشل توليد الرابط.");

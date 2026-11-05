@@ -23,6 +23,7 @@
 //   Batch quizzes - opened via openAdminUploadModal(quizzes[]) from bulk action bar
 // =============================================================================
 
+import { prepareNotebookAssets, rollbackAssets } from "../../shared/notebook-publish-assets.js";
 import { getToken, isAdminAuthenticated, signOut } from "../../shared/adminAuth.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { userProfile } from "../../shared/userProfile.js";
@@ -344,9 +345,21 @@ function isSessionError(err) {
 }
 
 async function postUpload(payload) {
-  const res = await fetch("/api/upload-quiz", {
-    method: "POST", headers: authHeaders(), body: JSON.stringify(payload),
-  });
+  // Local notebooks keep their images in the browser: publish the referenced ones first.
+  const reserved = [];
+  for (const item of payload?.items || []) {
+    if (item.type !== "notebook" || !item.localId || !item.notebook?.content) continue;
+    const up = await prepareNotebookAssets({ workspaceKey: item.localId, cells: item.notebook.content.cells || [] });
+    reserved.push(...up.reserved);
+    item.notebook = { ...item.notebook, content: { ...item.notebook.content, cells: up.cells, ...(up.assets.length ? { assets: up.assets } : {}) } };
+  }
+  let res;
+  try {
+    res = await fetch("/api/upload-quiz", {
+      method: "POST", headers: authHeaders(), body: JSON.stringify(payload),
+    });
+  } catch (e) { await rollbackAssets(reserved); throw e; }
+  if (!res.ok) await rollbackAssets(reserved);
   let body = {};
   try { body = await res.json(); } catch (_) { }
   if (!res.ok) throw new Error(body.error || "فشل الرفع");

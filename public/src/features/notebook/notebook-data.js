@@ -20,6 +20,23 @@ export function parseNotebookRef(pathname, search = "") {
   return ref || null;
 }
 
+/**
+ * Route of the single notebook page: /notebook/new, /notebook/edit/<id>, /notebook/<ref>.
+ * (Vercel rewrites keep the original pathname; ?mode= is only the rewrite target and is honoured too.)
+ * @returns {{ mode: "view"|"new"|"edit", ref: string|null }}
+ */
+export function parseNotebookRoute(pathname, search = "") {
+  const dec = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
+  const path = String(pathname || "");
+  if (/^\/notebook\/new\/?$/.test(path)) return { mode: "new", ref: null };
+  const e = path.match(/^\/notebook\/edit\/([^/?#]+)\/?$/);
+  if (e) return { mode: "edit", ref: dec(e[1]).trim() || null };
+  const q = new URLSearchParams(search);
+  if (q.get("mode") === "new") return { mode: "new", ref: null };
+  if (q.get("mode") === "edit") return { mode: "edit", ref: (q.get("id") || "").trim() || null };
+  return { mode: "view", ref: parseNotebookRef(path, search) };
+}
+
 export const isUuid = (s) => UUID_RE.test(String(s || ""));
 
 /**
@@ -50,6 +67,8 @@ export function prepareNotebook(row) {
       language: content.language || "",
       runtime: row.runtime,
       cells: content.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, type: c.type, source: c.source })),
+      // published workspace files [{path,mime,size,sha256,url}], fetched into the virtual folder after mount
+      assets: Array.isArray(content.assets) ? content.assets : [],
     },
   };
 }

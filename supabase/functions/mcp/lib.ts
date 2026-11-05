@@ -251,7 +251,7 @@ export const DRAFT_CODE_RE = /^[2-9a-hj-km-np-z]{10}$/;
 export const DRAFT_TTL_HOURS = 72;
 
 export function draftUrl(kind: "quiz" | "lesson" | "notebook", code: string) {
-  return `${SITE}/create-${kind}?draft=${code}`;
+  return kind === "notebook" ? `${SITE}/notebook/new?draft=${code}` : `${SITE}/create-${kind}?draft=${code}`;
 }
 
 // ── Static content ──────────────────────────────────────────────────────────
@@ -357,6 +357,7 @@ Authoring tips:
 - Alternate short markdown explanations with small runnable code cells; one idea per cell; prefer 5–40 lines per code cell.
 - Markdown is Arabic-friendly (direction detected per block); code, comments in code and output are always left-to-right. Avoid raw HTML. Math in LaTeX ($...$ / $$...$$).
 - Image examples may only use the bundled sample images (test.png, testgray.png, pepper.png, Test2.png, GrayTest1.png, BinaryImage.png, GrayscaleImage.png, ColorImage.png, test_lookup.gif); learners can upload their own.
+- Your own images (png/jpg/webp/gif; names are used exactly as written, never renamed): after create_notebook_import_link, attach each file the cells use to the SAME draft code — cells then use imread("cat.png") / ![](cat.png). Pick by size: ≤ ~200 KB → add_workspace_asset (base64: you must write every character, so never for bigger files); a public image link or a Drive file shared "Anyone with the link" → add_workspace_asset_from_url (server downloads it, any size ≤10 MB); a file on a disk you can run commands on (user attachment under /mnt/user-data/uploads, Claude Code / Cowork) → request_asset_upload and run the curl it returns. If none works (private Drive file, blocked network), do NOT skip silently: tell the user which images to add themselves (workspace panel → Upload, or Import from Google Drive in the editor). Limits: 10 MB per file, 20 MB per draft; files are temporary (they expire with the 72h draft) and reach platform storage only if an admin publishes the notebook, and only the ones the cells reference.
 - Only authored source is stored. Learner outputs/edits stay in the learner's browser (autosave) and are never graded or synced.
 - Notebooks are published only by an admin pressing save in the editor — MCP only creates a draft link.`,
 
@@ -386,6 +387,7 @@ Use this when the user shares a folder or several files (usually from Google Dri
 
 ## 4. Create
 - One item at a time: read the file → build → dry_run if unsure → create_*_import_link → keep the link. Fix ERRORS and retry; mention important WARNINGS. For big results create the draft, then refine with update_import_draft instead of re-sending.
+- A notebook that uses images from the folder: attach them with the asset tools described in the notebook guide (add_workspace_asset_from_url works with the Drive share link when the file is shared \"Anyone with the link\"); list in the final report any image the user must add by hand.
 - Each item gets its own draft link; drafts live ${DRAFT_TTL_HOURS}h, so tell the user to open them soon. Nothing is published until the user saves in the editor (notebooks: an admin must save).
 
 ## 5. Final report

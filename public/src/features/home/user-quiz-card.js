@@ -495,7 +495,7 @@ export function showUserNotebookActionsOverlay(nb, triggerBtn) {
       {
         label: "تعديل الدفتر",
         icon: EDIT_ICON_SVG,
-        onClick: () => { window.location.href = `/create-notebook?edit=${encodeURIComponent(nbId)}`; },
+        onClick: () => { window.location.href = `/notebook/edit/${encodeURIComponent(nbId)}`; },
       },
       {
         label: "تعديل التفاصيل",

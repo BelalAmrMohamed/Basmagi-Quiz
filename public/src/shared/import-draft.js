@@ -4,6 +4,8 @@
 // decoded to), or null when there is no ?draft= param. Throws a user-facing
 // Error when the draft is missing/expired.
 
+let lastDraft = null; // last fetched draft response ({ payload, assets })
+
 const DRAFT_RE = /^[2-9a-hj-km-np-z]{10}$/;
 
 export function getDraftCodeFromUrl() {
@@ -29,5 +31,16 @@ export async function fetchImportDraft(kind) {
   if (res.status === 409) throw new Error("هذا الرابط يخص نوعاً آخر من المحتوى (امتحان/درس).");
   if (!res.ok) throw new Error("تعذّر تحميل الرابط المباشر.");
   const body = await res.json();
+  lastDraft = body;
   return JSON.stringify(body.payload);
+}
+
+/** Temporary workspace files attached to the draft opened by fetchImportDraft: [{ path, mime, size, url }] (signed URLs, ~1 h). */
+export const getDraftAssets = () => (Array.isArray(lastDraft?.assets) ? lastDraft.assets : []);
+
+/** Removes the draft and its temporary files once the notebook was saved/published from it. Never throws. */
+export async function consumeImportDraft() {
+  const code = getDraftCodeFromUrl();
+  if (!code) return;
+  try { await fetch(`/api/mcp/draft/${code}`, { method: "DELETE" }); } catch (_) { /* expires on its own after 72 h */ }
 }

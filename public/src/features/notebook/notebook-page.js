@@ -7,9 +7,11 @@
 // version. Notebooks are unscored (no attempts / points / profile sync).
 // =============================================================================
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
-import { parseNotebookRef, isUuid, prepareNotebook } from "./notebook-data.js";
+import { parseNotebookRoute, isUuid, prepareNotebook } from "./notebook-data.js";
 import { resolveNotebookLang, notebookText } from "../../shared/notebook-lang.js";
 import { showNotebookInfoModal } from "../home/notebook-actions.js";
+import { createWorkspaceBridge } from "../../shared/workspace-bridge.js";
+import { exportNotebookZip } from "../../shared/notebook-bundle.js";
 import "./image-tool-window.js";
 import "./notebook-output-controls.js";
 import "./notebook-menu-controls.js";
@@ -101,7 +103,9 @@ function applyPageLang(lang) {
 }
 
 async function init() {
-  const ref = parseNotebookRef(location.pathname, location.search);
+  const route = parseNotebookRoute(location.pathname, location.search);
+  if (route.mode !== "view") return startEditorMode(route);
+  const ref = route.ref;
   if (!ref) return showError("رابط الدفتر غير صالح.");
 
   let row;
@@ -131,8 +135,9 @@ async function init() {
     return showError(notebookText(lang, "runtimeFailed"), { retry: init });
   }
 
+  let handle;
   try {
-    runtime.mount({
+    handle = runtime.mount({
       root: $("notebookRoot"),
       baseUrl: RUNTIME_BASE,
       notebook,
@@ -146,6 +151,68 @@ async function init() {
   }
   $("notebookStatus").hidden = true;
   $("contentArea").setAttribute("aria-busy", "false");
+  const wsKey = isLocal ? ref : `pub_${notebook.id}`;
+  window.__mlwebExport = {
+    zip: () => exportNotebookZip({
+      title: notebook.title, description: notebook.description, source: row.source || row.meta?.source || "", runtime: notebook.runtime, language: lang,
+      cells: (handle?.getCells?.() || notebook.cells).map((c) => ({ type: c.type, source: c.source })), keys: [wsKey], assets: notebook.assets,
+    }).catch((e) => window.dispatchEvent(new CustomEvent("notebook:notice", { detail: e.message || "Export failed" }))),
+  };
+  if (!isLocal) addCopyBar({ title: notebook.title, description: notebook.description, source: row.source || "", runtime: notebook.runtime, assets: notebook.assets }, lang, () => (handle?.getCells?.() || notebook.cells).map((c) => ({ type: c.type, source: c.source })), wsKey);
+  restoreFiles(wsKey, notebook.assets).then((bridge) => bridge && import("./notebook-files-strip.js").then(({ mountFilesStrip }) => mountFilesStrip({
+    before: $("notebookRoot"), lang, bridge,
+    getMeta: () => ({ title: notebook.title, description: notebook.description, source: row.source || "", runtime: notebook.runtime, language: lang, cells: (handle?.getCells?.() || notebook.cells).map((c) => ({ type: c.type, source: c.source })), assets: notebook.assets }),
+  }))).catch((e) => console.warn("[notebook-page] files strip failed:", e));
+}
+
+/** /notebook/new and /notebook/edit/<id>: the editor (and, for admins, publishing) loads on demand. */
+async function startEditorMode(route) {
+  if (route.mode === "edit" && !route.ref) return showError("رابط الدفتر غير صالح.");
+  $("notebookStatus").hidden = true;
+  $("notebookRoot").hidden = true;
+  $("cnbShell").hidden = false;
+  $("contentArea").classList.remove("notebook-page-shell");
+  $("contentArea").setAttribute("aria-busy", "false");
+  document.title = `${route.mode === "new" ? "إنشاء دفتر تفاعلي" : "تعديل دفتر تفاعلي"} | منصة امتحانات بصمجي`;
+  document.querySelector('meta[name="robots"]')?.setAttribute("content", "noindex, nofollow");
+  document.querySelector('link[rel="canonical"]')?.remove();
+  document.querySelector('.menu-item[href="/notebook/new"]')?.classList.add("active");
+  const { startEditor } = await import("./notebook-editor.js");
+  await startEditor(route.mode === "edit" ? route.ref : null);
+}
+
+/** "Edit a copy" bar for published notebooks (copy lives only in this browser's My Content). */
+function addCopyBar(nb, lang, getCells, wsKey) {
+  const bar = document.createElement("div");
+  bar.className = "notebook-copy-bar";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.textContent = lang === "ar" ? "تعديل نسخة خاصة بي" : "Edit a copy";
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    try {
+      const { copyNotebookToLocal } = await import("./notebook-copy.js");
+      const id = await copyNotebookToLocal({ ...nb, language: lang, cells: getCells(), sourceKey: wsKey });
+      location.href = `/notebook/edit/${encodeURIComponent(id)}`;
+    } catch (e) {
+      btn.disabled = false;
+      window.dispatchEvent(new CustomEvent("notebook:notice", { detail: e.message || "Could not create a copy" }));
+    }
+  });
+  bar.append(btn);
+  $("notebookRoot").before(bar);
+}
+
+/** Workspace files: the visitor's own saved files first, then the published manifest (missing names only). */
+async function restoreFiles(key, assets) {
+  try {
+    const bridge = createWorkspaceBridge(key, { onWarn: (m) => window.dispatchEvent(new CustomEvent("notebook:notice", { detail: m })) });
+    await bridge.restore();
+    const have = new Set((await bridge.list()).map((f) => f.path));
+    const missing = (assets || []).filter((a) => !have.has(a.path));
+    if (missing.length) await bridge.loadManifest(missing);
+    return bridge;
+  } catch (e) { console.warn("[notebook-page] workspace restore failed:", e); return null; }
 }
 
 void init();

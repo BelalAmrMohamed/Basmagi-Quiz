@@ -1559,6 +1559,7 @@ function appendSubtree(userQuizzes, node, ancestorNames, rootName, items) {
         name: childName || "دفتر بدون عنوان",
         folderSegments: [...ancestorNames],
         rootName,
+        localId: child.id, // workspace key: lets the upload step publish this notebook's images
         notebook: {
           title: childName || "دفتر بدون عنوان",
           description: child.meta?.description || "",

@@ -130,7 +130,7 @@ function openNotebookActionsMenu(notebook, trigger) {
     if (canManageItem(item)) {
       menu.appendChild(createActionGroupSubmenu([
         { label: "تعديل التفاصيل", icon: EDIT_ICON_SVG, onClick: () => editSharedItemMetadata(item) },
-        { label: "تعديل", icon: EDIT_ICON_SVG, onClick: () => { window.location.href = `/create-notebook?edit=${encodeURIComponent(notebook.id)}`; } },
+        { label: "تعديل", icon: EDIT_ICON_SVG, onClick: () => { window.location.href = `/notebook/edit/${encodeURIComponent(notebook.id)}`; } },
         { label: "نقل", icon: MOVE_TO_ICON_SVG, onClick: () => openSharedMoveToDialog(item) },
         { label: "إعادة تسمية", icon: RENAME_ICON_SVG, onClick: () => renameSharedItem(item) },
         { label: "حذف الدفتر", icon: TRASH_ICON_SVG, danger: true, onClick: () => deleteSharedItem(item) },

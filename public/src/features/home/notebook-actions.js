@@ -9,6 +9,7 @@ import { SPARKLE_ICON_SVG, DOWNLOAD_ICON_SVG, JSON_FILE_ICON_SVG } from "./icons
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 import { renderMarkdown } from "../../shared/markdown.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { exportNotebookZip } from "../../shared/notebook-bundle.js";
 import { buildExportCard, buildSourceActions } from "../../components/download-quiz-modal/export-card.js";
 import {
   rowToNotebook, collectNotebookInfo, notebookToIpynb, notebookToMScript, notebookToHtml, safeFileName,
@@ -91,6 +92,14 @@ const htmlOf = (nb) => notebookToHtml(nb, { renderMarkdown: (s) => renderMarkdow
 export function downloadNotebook(row, kind) {
   const nb = rowToNotebook(row);
   const base = safeFileName(nb.title);
+  if (kind === "zip") {
+    // Async: workspace files come from IndexedDB (local) or the published manifest (platform).
+    return exportNotebookZip({ ...nb, keys: [nb.local ? nb.id : `pub_${nb.id}`] }).then(() => true).catch((error) => {
+      console.error("[notebook-actions] zip failed:", error);
+      showNotification("تعذّر التنزيل", "حدث خطأ أثناء تجهيز الملف. حاول مرة أخرى.", "error");
+      return false;
+    });
+  }
   try {
     if (kind === "ipynb") saveBlob(`${base}.ipynb`, new Blob([JSON.stringify(notebookToIpynb(nb), null, 1)], { type: "application/x-ipynb+json" }));
     else if (kind === "m") saveBlob(`${base}.m`, new Blob([notebookToMScript(nb).replace(/\n/g, "\r\n")], { type: "text/plain;charset=utf-8" }));
@@ -134,6 +143,7 @@ export function showNotebookDownloadModal(row, triggerBtn = null) {
     { kind: "ipynb", label: "Jupyter Notebook", extension: ".ipynb", icon: JSON_FILE_ICON_SVG },
     { kind: "m", label: "MATLAB", extension: ".m", icon: '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 17-5-5 5-5"/><path d="m16 7 5 5-5 5"/><path d="m14 4-4 16"/></svg>' },
     { kind: "html", label: "HTML", extension: ".html", icon: '<img src="/assets/images/HTML_Icon.png" alt="" aria-hidden="true">' },
+    { kind: "zip", label: "Notebook + Files", extension: ".zip", icon: '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>' },
     { kind: "pdf", label: "PDF", extension: "طباعة / حفظ كـ PDF", icon: '<img src="/assets/images/PDF_Icon.png" alt="" aria-hidden="true">' },
   ];
 
@@ -154,7 +164,9 @@ export function showNotebookDownloadModal(row, triggerBtn = null) {
       icon: option.icon,
       canCopy: false,
       onDownload: () => {
-        if (downloadNotebook(row, option.kind)) close();
+        const r = downloadNotebook(row, option.kind);
+        if (r && typeof r.then === "function") r.then((ok) => { if (ok) close(); });
+        else if (r) close();
       },
     }));
   }

@@ -16,7 +16,8 @@
     "release": "node scripts/release.js",
     "zip": "node scripts/commit.js && git archive --format=zip --output=basmagi-quiz.zip HEAD && echo basmagi-quiz.zip is ready",
     "push": "git switch production && git merge main && git push && git switch main",
-    "push:all": "npm run zip && git push && npm run push"
+    "push:all": "npm run zip && git push && npm run push",
+    "revert": "git reset --soft HEAD~1"
   },
   "keywords": [
     "examination",

@@ -28,6 +28,7 @@ import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar
 import { applyMarkdownToolbarAction } from "../../shared/markdown-toolbar-actions.js";
 import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
 import { fetchImportDraft } from "../../shared/import-draft.js";
+import { reserveStorage, releaseStorage } from "../../shared/storage-guard.js";
 import { checkQuiz, cleanSource, stripLegacySource } from "../../shared/content-rules.js";
 
 observeRichInputHighlighters({ selector: ".md-source" });
@@ -2718,13 +2719,14 @@ async function uploadMediaFileForMarkdown(file, mediaType) {
   const random = Math.random().toString(36).slice(2, 9);
   const storagePath = `${mediaType}s/${uid}/${Date.now()}-${random}.${ext}`;
 
+  await reserveStorage("quiz-media", storagePath, workingFile.size, mediaType);
   const { error: uploadError } = await client.storage
     .from("quiz-media")
     .upload(storagePath, workingFile, {
       contentType: workingFile.type,
       upsert: false,
     });
-  if (uploadError) throw new Error(uploadError.message);
+  if (uploadError) { await releaseStorage("quiz-media", [storagePath]); throw new Error(uploadError.message); }
 
   const { data: urlData } = client.storage
     .from("quiz-media")

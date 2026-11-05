@@ -68,6 +68,14 @@
       "destination": "/api/render-course?contentType=lesson&id=:id"
     },
     {
+      "source": "/notebook/new",
+      "destination": "/notebook?mode=new"
+    },
+    {
+      "source": "/notebook/edit/:id",
+      "destination": "/notebook?mode=edit&id=:id"
+    },
+    {
       "source": "/notebook/:id",
       "destination": "/notebook?id=:id"
     },
@@ -112,7 +120,7 @@
       "destination": "https://esdfdzhtavraczrhxnmp.supabase.co/functions/v1/mcp/$1"
     },
     {
-      "source": "/((?!api/|_vercel/|assets/|src/|favicon\\.|manifest\\.json|robots\\.txt|sitemap\\.xml|sitemap-static\\.xml|llms\\.txt|service-worker\\.js|about$|control$|create-quiz$|create-lesson$|create-notebook$|notebook$|lesson-comments$|how-to-create-a-quiz$|how-to-upload-a-quiz$|how-to-use-ai-agent$|oauth-callback$|offline$|onboarding$|privacy-policy$|profile$|quiz$|reports$|result$|settings$|terms-of-service$|.*\\.[a-zA-Z0-9]+$).*)",
+      "source": "/((?!api/|_vercel/|assets/|src/|favicon\\.|manifest\\.json|robots\\.txt|sitemap\\.xml|sitemap-static\\.xml|llms\\.txt|service-worker\\.js|about$|control$|create-quiz$|create-lesson$|notebook$|lesson-comments$|how-to-create-a-quiz$|how-to-upload-a-quiz$|how-to-use-ai-agent$|oauth-callback$|offline$|onboarding$|privacy-policy$|profile$|quiz$|reports$|result$|settings$|terms-of-service$|.*\\.[a-zA-Z0-9]+$).*)",
       "destination": "/"
     }
   ],
@@ -120,6 +128,10 @@
     {
       "path": "/api/seo?type=cron",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/admin?cron=purge-drafts",
+      "schedule": "30 4 * * *"
     }
   ]
 }

@@ -45,6 +45,8 @@ export const LIMITS = {
   notebookCellSource: 20000,
   notebookCellId: 64,
   notebookBytes: 300_000,
+  notebookAssets: 100, // max files in a notebook's asset manifest
+  notebookAssetBytes: 2 * 1024 * 1024, // per published file (never compressed unless the admin opts in)
 };
 
 /** Runtimes a notebook may declare. Unknown values are REJECTED (never defaulted).
@@ -53,6 +55,10 @@ export const NOTEBOOK_RUNTIMES = ["matlab"];
 export const NOTEBOOK_SCHEMA_VERSION = 1;
 export const NOTEBOOK_LANGUAGES = ["en", "ar"];
 export const NOTEBOOK_CELL_TYPES = ["markdown", "code"];
+
+/** File types a notebook workspace may publish. Extend (e.g. csv/txt/mat) when new runtimes need data files. */
+export const NOTEBOOK_ASSET_MIME = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif" };
+export const NOTEBOOK_ASSET_URL_MARKER = "/storage/v1/object/public/notebook-assets/";
 
 const HTTP_URL_RE = /^https?:\/\/\S+$/i;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -453,6 +459,57 @@ export function normalizeNotebookContent(rawCells, language) {
 }
 
 /**
+ * Asset manifest entry: { path, mime, size, sha256, url }. `path` is the flat file name the
+ * notebook code uses (imread("cat.png"), ![](cat.png)); `url` is the public Storage URL.
+ * Returns clean entries (unknown keys dropped); invalid input is reported by checkNotebookAssets.
+ */
+export function normalizeNotebookAssets(assets) {
+  if (!Array.isArray(assets)) return [];
+  return assets.map((a) => ({
+    path: str(a?.path),
+    mime: str(a?.mime),
+    size: Number(a?.size),
+    sha256: str(a?.sha256).toLowerCase(),
+    url: str(a?.url),
+  }));
+}
+
+const ASSET_PATH_RE = /^[^\\/:*?"<>|\u0000-\u001f.][^\\/:*?"<>|\u0000-\u001f]{0,99}$/;
+
+/** @param {object} c issue collector from checkNotebook */
+export function checkNotebookAssets(assets, c) {
+  if (!Array.isArray(assets)) { c.err("ASSETS_INVALID", "assets", "assets يجب أن تكون مصفوفة."); return; }
+  if (assets.length > LIMITS.notebookAssets) {
+    c.err("TOO_MANY_ASSETS", "assets", `عدد الملفات ${assets.length} يتجاوز الحد الأقصى ${LIMITS.notebookAssets}.`);
+  }
+  const seen = new Set();
+  assets.forEach((a, i) => {
+    const n = i + 1;
+    const p = `assets[${i}]`;
+    const ext = String(a?.path || "").split(".").pop().toLowerCase();
+    if (!ASSET_PATH_RE.test(String(a?.path || ""))) c.err("ASSET_PATH_INVALID", p, `الملف ${n}: اسم الملف غير صالح.`);
+    else if (seen.has(a.path.toLowerCase())) c.err("ASSET_DUPLICATE", p, `الملف ${n}: الاسم "${a.path}" مكرر.`);
+    else seen.add(a.path.toLowerCase());
+    if (!NOTEBOOK_ASSET_MIME[ext] || NOTEBOOK_ASSET_MIME[ext] !== a?.mime) {
+      c.err("ASSET_TYPE_INVALID", p, `الملف ${n}: النوع غير مسموح (المسموح: ${Object.keys(NOTEBOOK_ASSET_MIME).join(", ")}).`);
+    }
+    if (!Number.isInteger(a?.size) || a.size < 1 || a.size > LIMITS.notebookAssetBytes) {
+      c.err("ASSET_SIZE_INVALID", p, `الملف ${n}: الحجم يجب أن يكون بين 1 بايت و${LIMITS.notebookAssetBytes / 1048576}MB.`);
+    }
+    if (!/^[0-9a-f]{64}$/.test(String(a?.sha256 || ""))) c.err("ASSET_HASH_INVALID", p, `الملف ${n}: sha256 غير صالح.`);
+    if (!HTTP_URL_RE.test(String(a?.url || "")) || !String(a.url).includes(NOTEBOOK_ASSET_URL_MARKER)) {
+      c.err("ASSET_URL_INVALID", p, `الملف ${n}: الرابط يجب أن يكون من مخزن notebook-assets.`);
+    }
+  });
+}
+
+/** Names from `paths` that cell sources actually reference (case-insensitive substring; over-matching is harmless). */
+export function referencedNotebookAssets(cells, paths) {
+  const text = (Array.isArray(cells) ? cells : []).map((c) => String(c?.source || "")).join("\n").toLowerCase();
+  return paths.filter((p) => text.includes(String(p).toLowerCase()));
+}
+
+/**
  * @param {object} input  { title, description, source, runtime, content:{schemaVersion,cells} | cells }
  * @param {{contentOnly?: boolean}} [opts]
  *   contentOnly=true → skip title/description/source (callers that validate them separately)
@@ -534,6 +591,8 @@ export function checkNotebook(input, opts = {}) {
       } else seenIds.add(id);
     }
   });
+  const assetsRaw = input && input.content && input.content.assets;
+  if (assetsRaw !== undefined) checkNotebookAssets(assetsRaw, c);
   if (!codeCells) c.warn("NO_CODE_CELLS", "cells", "لا توجد أي خلية كود — الدفتر يحتوي نصاً فقط.");
 
   try {

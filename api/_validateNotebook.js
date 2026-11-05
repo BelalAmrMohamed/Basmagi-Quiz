@@ -19,9 +19,10 @@ import {
     checkNotebook,
     formatIssueList,
     normalizeNotebookContent,
+    normalizeNotebookAssets,
 } from "../scripts/lib/content-rules.js";
 
-const ALLOWED_DOCUMENT_KEYS = new Set(["schemaVersion", "language", "cells"]);
+const ALLOWED_DOCUMENT_KEYS = new Set(["schemaVersion", "language", "cells", "assets"]);
 // `_localId` is editor bookkeeping that may ride along in drafts/exports; it is dropped.
 const ALLOWED_CELL_KEYS = new Set(["id", "type", "source", "_localId"]);
 
@@ -89,7 +90,10 @@ export function validateNotebookContent(content) {
     const check = checkNotebook({ content }, { contentOnly: true });
     if (check.errors.length) throw new Error(formatIssueList(check.errors));
 
-    return normalizeNotebookContent(content.cells, content.language);
+    const clean = normalizeNotebookContent(content.cells, content.language);
+    // Published file manifest (validated above by checkNotebook); omitted when empty.
+    const assets = normalizeNotebookAssets(content.assets);
+    return assets.length ? { ...clean, assets } : clean;
 }
 
 /**
