@@ -29,12 +29,12 @@
 // curriculum structure rather than upload volume and remain small.
 // =============================================================================
 
+import { ogVersion, stampFromDate } from "./_og/version.js";
 import { loadPublicCatalog, filterRecentlyChanged } from "./_catalog.js";
 import { escapeXml, absUrl } from "./_urls.js";
 import { notifySearchEngines } from "./_seoNotify.js";
 
 const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
-const OG_IMAGE_VERSION = 4; // keep in sync with render-quiz.js / render-course.js
 
 // Cache-Control shared by every read-only discovery document here (plan §6.3,
 // user-adjustment #3): 1h fresh, 24h stale-while-revalidate. Vercel's Edge
@@ -112,7 +112,7 @@ function collectFeedEntries(catalog) {
             url: q.url,
             date: q.lastmod || q.createdAt,
             category: q.courseName || null,
-            ogImage: absUrl(`/api/og?type=quiz&id=${encodeURIComponent(q.metaId)}&v=${OG_IMAGE_VERSION}`),
+            ogImage: absUrl(`/api/og?quizId=${encodeURIComponent(q.metaId)}&v=${ogVersion("quiz", stampFromDate(q.createdAt))}`),
         });
     }
     for (const c of catalog.courses) {
@@ -145,7 +145,7 @@ function collectFeedEntries(catalog) {
             url: l.url,
             date: l.lastmod || l.createdAt,
             category: l.courseName || null,
-            ogImage: absUrl(`/api/og?lesson=${encodeURIComponent(l.id)}&v=1`),
+            ogImage: absUrl(`/api/og?lesson=${encodeURIComponent(l.id)}&v=${ogVersion("lesson", stampFromDate(l.lastmod))}`),
         });
     }
     for (const n of (catalog.notebooks || [])) {

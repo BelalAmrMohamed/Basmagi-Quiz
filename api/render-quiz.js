@@ -19,6 +19,7 @@
 //   or shared link — see vercel.json.)
 // =============================================================================
 
+import { ogVersion, stampFromDate } from "./_og/version.js";
 import fs from "fs";
 import path from "path";
 import { createClient } from "@supabase/supabase-js";
@@ -47,7 +48,7 @@ const TEMPLATE_PATH = path.join(process.cwd(), "public", "quiz.html");
  */
 // ── OG image version bump ────────────────────────────────────────────────────
 // Increment this when you change the /api/og layout to bust platforms' cache.
-const OG_IMAGE_VERSION = 4;
+
 
 // ── Canonical site origin ────────────────────────────────────────────────────
 const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
@@ -151,7 +152,7 @@ export default async function handler(req, res) {
     const title = buildTitle(meta);
     const description = meta.description || "";
     const canonicalUrl = `${SITE_ORIGIN}/quiz/${encodeURIComponent(quizId)}`;
-    const ogImageUrl = `${SITE_ORIGIN}/api/og?quizId=${encodeURIComponent(quizId)}&v=${OG_IMAGE_VERSION}`;
+    const ogImageUrl = `${SITE_ORIGIN}/api/og?quizId=${encodeURIComponent(quizId)}&v=${ogVersion("quiz", stampFromDate(meta.createdAt))}`;
 
     // <title>
     html = html.replace(

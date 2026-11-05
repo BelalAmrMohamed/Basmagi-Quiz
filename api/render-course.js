@@ -36,6 +36,7 @@
 //   the right view without a hash.
 // =============================================================================
 
+import { ogVersion, stampFromDate } from "./_og/version.js";
 import fs from "fs";
 import path from "path";
 import { createClient } from "@supabase/supabase-js";
@@ -68,31 +69,7 @@ const TEMPLATE_PATH = path.join(process.cwd(), "public", "index.html");
 const LESSON_TEMPLATE_PATH = path.join(process.cwd(), "public", "lesson.html");
 const NOTEBOOK_TEMPLATE_PATH = path.join(process.cwd(), "public", "notebook.html");
 
-// Bump when /api/og's course-image layout changes, to bust platforms' cache.
-// Bumped to 2: course/folder OG images were redesigned (icon card + course-
-// info rows layout, see api/og.js renderCourseImage) and the description's
-// "across 0 folders" wording was fixed below — both need every platform
-// (Facebook/LinkedIn/X, and any CDN edge) to refetch rather than serve a
-// year-old cached image/description under the same URL.
-// Bumped to 3: fixed the course-info table's key/value alignment and the
-// Arabic title's reversed/spaced-out rendering on folder images (see
-// buildInfoTable + the title block in api/og.js renderCourseImage) — old
-// folder images were rendered under buggy code and are cached for a full
-// year (immutable, max-age=31536000) under the v=2 URL, so this bump is
-// required for every folder image already shared anywhere to actually
-// Bumped to 4: added lesson count to course and folder OG images.
-// Bumped to 6: counts moved into the table, course info moved under it.
-const OG_IMAGE_VERSION = 6;
-
-// Bump when the NOTEBOOK image layout changes (renderNotebookImage). The URL
-// also carries updated_at, so editing a notebook busts the cache by itself.
-const OG_NOTEBOOK_IMAGE_VERSION = 1;
-
-// Bump when /api/og's LESSON-image layout changes (renderLessonImage). The
-// image URL also carries the lesson's updated_at, so editing a lesson busts
-// the immutable 1-year cache on its own — this constant is only for design
-// changes that affect every lesson at once.
-const OG_LESSON_IMAGE_VERSION = 1;
+// OG image versions live in api/_og/version.js (layout version + content stamp).
 
 const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
 
@@ -177,10 +154,9 @@ async function handleNotebookRequest(req, res) {
     const fullTitle = `${nb.title} | منصة امتحانات بصمجي`;
     const desc = (nb.description || "").trim() || "دفتر تفاعلي بأسلوب MATLAB يعمل داخل المتصفح على منصة امتحانات بصمجي";
     const canonicalUrl = `${SITE_ORIGIN}/notebook/${encodeURIComponent(nb.slug || nb.id)}`;
-    const stamp = nb.updated_at ? Date.parse(nb.updated_at) : NaN;
     const ogImageUrl =
         `${SITE_ORIGIN}/api/og?notebook=${encodeURIComponent(nb.id)}` +
-        `&v=${OG_NOTEBOOK_IMAGE_VERSION}${Number.isFinite(stamp) ? `-${stamp}` : ""}`;
+        `&v=${ogVersion("notebook", stampFromDate(nb.updated_at))}`;
 
     html = html.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(fullTitle)}</title>`);
     html = replaceLinkHref(html, "canonical", canonicalUrl);
@@ -372,10 +348,9 @@ async function handleLessonRequest(req, res) {
     // the shared Edge OG function; see api/og.js renderLessonImage). The
     // updated_at stamp changes the URL whenever the lesson is edited, so
     // platforms/CDNs refetch instead of serving a year-old immutable image.
-    const stamp = lesson.updated_at ? Date.parse(lesson.updated_at) : NaN;
     const ogImageUrl =
         `${SITE_ORIGIN}/api/og?lesson=${encodeURIComponent(lesson.id)}` +
-        `&v=${OG_LESSON_IMAGE_VERSION}${Number.isFinite(stamp) ? `-${stamp}` : ""}`;
+        `&v=${ogVersion("lesson", stampFromDate(lesson.updated_at))}`;
     html = replaceMetaContent(html, "property", "og:image", ogImageUrl);
     html = replaceMetaContent(html, "property", "og:image:alt", lesson.title);
     html = replaceMetaContent(html, "name", "twitter:image", ogImageUrl);
@@ -606,11 +581,10 @@ async function handleCourseRequest(req, res) {
     // The counts are part of the version: the image is cached for a year per
     // URL, so when content is added/removed the URL must change or the image
     // would keep showing old counts while title/description show new ones.
-    const countsStamp = [pageMeta.folderCount, pageMeta.quizCount, pageMeta.lessonCount, pageMeta.notebookCount]
-        .map((n) => n || 0).join("-");
+    const countsStamp = [pageMeta.folderCount, pageMeta.quizCount, pageMeta.lessonCount, pageMeta.notebookCount].map((n) => n || 0);
     const ogImageUrl = folderMeta
-        ? `${SITE_ORIGIN}/api/og?course=${encodeURIComponent(meta.id)}&folder=${encodeURIComponent(folderMeta.path.join("/"))}&v=${OG_IMAGE_VERSION}-${countsStamp}`
-        : `${SITE_ORIGIN}/api/og?course=${encodeURIComponent(meta.id)}&v=${OG_IMAGE_VERSION}-${countsStamp}`;
+        ? `${SITE_ORIGIN}/api/og?course=${encodeURIComponent(meta.id)}&folder=${encodeURIComponent(folderMeta.path.join("/"))}&v=${ogVersion("course", countsStamp)}`
+        : `${SITE_ORIGIN}/api/og?course=${encodeURIComponent(meta.id)}&v=${ogVersion("course", countsStamp)}`;
 
     html = html.replace(
         /<title>[^<]*<\/title>/i,

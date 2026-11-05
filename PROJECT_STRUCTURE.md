@@ -47,7 +47,12 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── admin.js
 │   ├── auth.js
 │   ├── college-quiz.js
-│   ├── og.js
+│   ├── og.js                 (thin Edge dispatcher for all OG images)
+│   ├── _og/                  (OG renderers — underscore folder is not a Vercel function)
+│   │   ├── common.js         (self-hosted font, Arabic/bidi text, icons, Supabase REST, safe PNG render)
+│   │   ├── blocks.js         (shared card layout blocks: breadcrumb/title/desc/chips)
+│   │   ├── version.js        (OG cache-busting: layout version + content stamp)
+│   │   ├── quiz.js  course.js  lesson.js  notebook.js  profile.js
 │   ├── render-course.js
 │   ├── render-profile.js
 │   ├── render-quiz.js

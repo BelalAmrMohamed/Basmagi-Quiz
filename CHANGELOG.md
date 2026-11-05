@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+### Added
+- Notebook OG thumbnail (`/api/og?notebook=`) and server-rendered `/notebook/:id` meta tags.
+- `tests/og-render.test.js`, `npm run og:test`, `npm run og:snapshot`.
+### Changed
+- Course/folder OG image: counts in the table, course info + Featured badge under it; SVG icons instead of emoji.
+- `api/og.js` split into `api/_og/*` modules; shared card blocks; self-hosted Tajawal (`public/assets/fonts`).
+- OG versions centralised in `api/_og/version.js` with content stamps; course page cache shortened.
+### Fixed
+- `seo.js` built quiz OG URLs as `?type=quiz&id=` (unsupported); now `?quizId=`.
+- OG render failures redirect to a static thumbnail instead of a 500.
+
+---
+
 ## [8.3.4] - 2026-09-16
 ### Changed
 - Updated ackage.json
