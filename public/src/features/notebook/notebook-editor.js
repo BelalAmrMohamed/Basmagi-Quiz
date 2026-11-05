@@ -37,7 +37,7 @@ const STR = {
   en: {
     heading: "Create notebook", headingEdit: "Edit notebook", title: "Title", lang: "Notebook language", desc: "Description", src: "Source link (optional)",
     import: "Import .ipynb / .m", save: "Save to My Content", savePlatform: "Save and publish", loading: "Loading editor…",
-    saved: "Saved", savedMsg: "The notebook was saved to My Content.", publishedMsg: "The notebook was published.",
+    saved: "Saved", savedMsg: "The notebook was saved to My Content.", driveDone: (n, f) => `Also backed up to Google Drive: “${n}” in “${f}”.`, publishedMsg: "The notebook was published.",
     fail: "Could not save", problems: (n) => `Fix ${n} problem${n === 1 ? "" : "s"} before saving`, importFail: "Import failed", importNotes: "Import notes",
     loadFail: "Could not load", runtimeFail: "Could not load the notebook editor. Check your connection and reload the page.", dup: "A notebook with this title already exists here. Choose a different title.",
     discard: "You have unsaved changes.", exportZip: "Export .zip", compress: "Compress images to WebP on publish (renames files and updates references)",
@@ -47,7 +47,7 @@ const STR = {
   ar: {
     heading: "إنشاء دفتر", headingEdit: "تعديل الدفتر", title: "العنوان", lang: "لغة الدفتر", desc: "الوصف", src: "رابط المصدر (اختياري)",
     import: "استيراد .ipynb / .m", save: "حفظ في امتحاناتك", savePlatform: "حفظ ونشر", loading: "جاري تحميل المحرر…",
-    saved: "تم الحفظ", savedMsg: "تم حفظ الدفتر في «امتحاناتك».", publishedMsg: "تم نشر الدفتر.",
+    saved: "تم الحفظ", savedMsg: "تم حفظ الدفتر في «امتحاناتك».", driveDone: (n, f) => `ونُسخ احتياطياً إلى Google Drive: «${n}» داخل «${f}».`, publishedMsg: "تم نشر الدفتر.",
     fail: "تعذر الحفظ", problems: (n) => `أصلح ${n} من المشاكل قبل الحفظ`, importFail: "فشل الاستيراد", importNotes: "ملاحظات الاستيراد",
     loadFail: "تعذر التحميل", runtimeFail: "تعذر تحميل محرر الدفاتر. تحقق من اتصالك وأعد تحميل الصفحة.", dup: "يوجد دفتر بنفس العنوان هنا بالفعل. اختر عنواناً مختلفاً.",
     discard: "لديك تغييرات غير محفوظة.", exportZip: "تصدير .zip", compress: "ضغط الصور إلى WebP عند النشر (يغيّر أسماء الملفات ويحدّث الإشارات إليها)",
@@ -204,9 +204,11 @@ async function save() {
       dirtyFlag = false;
       await wsStore.renameWorkspace(bridge?.key || "draft", editId).catch(() => {});
       void consumeImportDraft();
-      void window.__nbFilesStrip?.backup({ silent: true }); // only when Drive is already connected (never opens a popup)
-      showNotification(t("saved"), t("savedMsg"), "success");
-      setTimeout(() => { location.href = "/my-content"; }, 700);
+      // Only when Drive is already connected (never opens a popup). Awaited (max 10 s) so the redirect cannot cancel the upload;
+      // the workspace now lives under the new id, so the key is passed explicitly (bridge.key is still "draft").
+      const drive = await Promise.race([window.__nbFilesStrip?.backup({ silent: true, key: editId, fromDraft: true }), new Promise((r) => setTimeout(() => r(null), 10000))]);
+      showNotification(t("saved"), drive ? `${t("savedMsg")} ${t("driveDone", drive.name, drive.folderName)}` : t("savedMsg"), "success");
+      setTimeout(() => { location.href = "/my-content"; }, drive ? 1800 : 700);
       return;
     }
     let up;

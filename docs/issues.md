@@ -28,6 +28,7 @@ Make the necessary changes directly in the existing codebase. Do not merely prov
 
 ### `api\og.js`
 * Special courses that get the (مادة مميزة) badge, since there is no info table displayed, the middle of the image becomes emtpy, I need to fill it with something, or ideas to improve it when it has the  (مادة مميزة) badge. 
+* ![screenshot](image.png): Info displayed on the OG Thumbnail itself is different from the OG Title & Description, the OG Thumbnail itself is probably the correct one.
 
 ### Bottom Nav on phones
 * Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.

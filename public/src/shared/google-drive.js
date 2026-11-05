@@ -71,7 +71,7 @@ export async function pickDriveFiles() {
     new g.PickerBuilder()
       .addView(mine).addView(shared)
       .enableFeature(g.Feature.MULTISELECT_ENABLED)
-      .setAppId(cfg.projectNumber).setDeveloperKey(cfg.apiKey).setOAuthToken(token)
+      .setAppId(cfg.projectNumber).setDeveloperKey(cfg.apiKey).setOAuthToken(token).setOrigin(`${location.protocol}//${location.host}`)
       .setCallback((d) => {
         if (d.action === g.Action.PICKED) resolve((d.docs || []).map((x) => ({ id: x.id, name: x.name, mimeType: x.mimeType, size: Number(x.sizeBytes || 0) })));
         else if (d.action === g.Action.CANCEL) resolve([]);
@@ -102,18 +102,45 @@ function multipart(metadata, blob) {
   return { body, type: `multipart/related; boundary=${boundary}` };
 }
 
-/** Uploads (or updates, when `fileId` is known) one bundle zip. Returns the Drive file id. */
+export const driveFolderUrl = (id) => `https://drive.google.com/drive/folders/${id}`;
+export const BACKUP_FOLDER_NAME = BACKUP_FOLDER;
+const FILE_FIELDS = "id,name,webViewLink,parents,trashed";
+const info = (f, created) => ({
+  id: f.id, name: f.name, created,
+  link: f.webViewLink || `https://drive.google.com/file/d/${f.id}/view`,
+  folderName: BACKUP_FOLDER, folderLink: f.parents?.[0] ? driveFolderUrl(f.parents[0]) : "https://drive.google.com/drive/my-drive",
+});
+
+/**
+ * Uploads (or updates, when `fileId` is known) one bundle zip.
+ * Returns { id, name, link, folderName, folderLink, created } so the UI can say exactly what was done and where.
+ */
 export async function backupToDrive({ blob, fileName, fileId }) {
   if (!driveConnected()) throw new Error("NOT_CONNECTED");
   if (fileId) {
     const m = multipart({ name: fileName }, blob);
-    const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart&fields=id`, { method: "PATCH", headers: { ...auth(), "Content-Type": m.type }, body: m.body });
-    if (res.ok) return (await res.json()).id;
-    if (res.status !== 404 && res.status !== 403) throw new Error(`Drive ${res.status}`); // 404/403: file gone or from another account -> create anew
+    const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart&fields=${FILE_FIELDS}`, { method: "PATCH", headers: { ...auth(), "Content-Type": m.type }, body: m.body });
+    if (res.ok) {
+      const f = await res.json();
+      if (!f.trashed) return info(f, false); // a file the user moved to the bin is not a usable backup -> create anew
+    } else if (res.status !== 404 && res.status !== 403) throw new Error(`Drive ${res.status}`); // 404/403: file gone or from another account -> create anew
   }
   const parent = await findOrCreateFolder();
   const m = multipart({ name: fileName, parents: [parent] }, blob);
-  const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id", { method: "POST", headers: { ...auth(), "Content-Type": m.type }, body: m.body });
+  const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=${FILE_FIELDS}`, { method: "POST", headers: { ...auth(), "Content-Type": m.type }, body: m.body });
   if (!res.ok) throw new Error(`Drive ${res.status}`);
-  return (await res.json()).id;
+  return info(await res.json(), true);
+}
+
+/**
+ * Zip files this app can already see (scope drive.file = files it created, i.e. its own backups).
+ * Needs only the access token, so it works without the Google Picker (which needs a Google session cookie).
+ * Resolves to [{ id, name, mimeType, size, modifiedTime }], newest first.
+ */
+export async function listDriveBackups() {
+  if (!driveConnected()) throw new Error("NOT_CONNECTED");
+  const q = encodeURIComponent("trashed=false and mimeType!='application/vnd.google-apps.folder'");
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=modifiedTime%20desc&pageSize=200&fields=files(id,name,size,modifiedTime,mimeType)&spaces=drive`, { headers: auth() });
+  if (!res.ok) throw new Error(`Drive ${res.status}`);
+  return ((await res.json()).files || []).filter((f) => /\.zip$/i.test(f.name)).map((f) => ({ id: f.id, name: f.name, mimeType: f.mimeType, size: Number(f.size || 0), modifiedTime: f.modifiedTime }));
 }
