@@ -66,6 +66,7 @@ function getServiceSupabase() {
 // separate template (see quiz.html for contrast with render-quiz.js).
 const TEMPLATE_PATH = path.join(process.cwd(), "public", "index.html");
 const LESSON_TEMPLATE_PATH = path.join(process.cwd(), "public", "lesson.html");
+const NOTEBOOK_TEMPLATE_PATH = path.join(process.cwd(), "public", "notebook.html");
 
 // Bump when /api/og's course-image layout changes, to bust platforms' cache.
 // Bumped to 2: course/folder OG images were redesigned (icon card + course-
@@ -80,7 +81,12 @@ const LESSON_TEMPLATE_PATH = path.join(process.cwd(), "public", "lesson.html");
 // year (immutable, max-age=31536000) under the v=2 URL, so this bump is
 // required for every folder image already shared anywhere to actually
 // Bumped to 4: added lesson count to course and folder OG images.
-const OG_IMAGE_VERSION = 5;
+// Bumped to 6: counts moved into the table, course info moved under it.
+const OG_IMAGE_VERSION = 6;
+
+// Bump when the NOTEBOOK image layout changes (renderNotebookImage). The URL
+// also carries updated_at, so editing a notebook busts the cache by itself.
+const OG_NOTEBOOK_IMAGE_VERSION = 1;
 
 // Bump when /api/og's LESSON-image layout changes (renderLessonImage). The
 // image URL also carries the lesson's updated_at, so editing a lesson busts
@@ -111,6 +117,10 @@ function toSlug(str) {
 // responsibilities easy to read independently instead of accumulating the
 // same kind of scar tissue create-quiz.js has.
 export default async function handler(req, res) {
+    if (req.query.contentType === "notebook") {
+        if (req.method === "GET" || req.method === "HEAD") return handleNotebookRequest(req, res);
+        return res.status(405).end();
+    }
     if (req.query.contentType === "lesson") {
         if (req.method === "POST") return handleLessonUnlockRequest(req, res);
         if (req.method === "GET" || req.method === "HEAD") return handleLessonRequest(req, res);
@@ -120,6 +130,73 @@ export default async function handler(req, res) {
         return res.status(405).end();
     }
     return handleCourseRequest(req, res);
+}
+
+// =============================================================================
+// Notebook resolution — /notebook/:id
+// =============================================================================
+// vercel.json: { "source": "/notebook/:id", "destination":
+// "/api/render-course?contentType=notebook&id=:id" }. Reuses this function
+// (Hobby's 12-function cap). Serves public/notebook.html with notebook-specific
+// title / description / og:image (-> /api/og?notebook=). The browser URL stays
+// /notebook/:id, which is what the client's parseNotebookRoute() reads.
+async function handleNotebookRequest(req, res) {
+    const rawId = typeof req.query.id === "string" ? req.query.id : "";
+    if (!rawId) return res.redirect(302, "/");
+    let ref;
+    try { ref = decodeURIComponent(rawId); } catch { ref = rawId; }
+
+    let html;
+    try {
+        html = fs.readFileSync(NOTEBOOK_TEMPLATE_PATH, "utf8");
+    } catch (err) {
+        console.error("[render-course] Could not read notebook.html:", err);
+        return res.status(500).send("Internal Server Error");
+    }
+
+    let nb = null;
+    try {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ref);
+        const query = getSupabase().from("notebook_public").select("id, slug, title, description, updated_at");
+        const { data, error } = isUuid
+            ? await query.eq("id", ref).maybeSingle()
+            : await query.eq("slug", ref).maybeSingle();
+        if (error) console.error("[render-course] notebook lookup error:", error.message);
+        nb = data || null;
+    } catch (err) {
+        console.error("[render-course] notebook lookup failed:", err);
+    }
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    if (!nb) {
+        // Unknown/failed lookup: serve the generic shell, never cache a miss.
+        res.setHeader("Cache-Control", "no-store");
+        return res.status(200).send(html);
+    }
+
+    const fullTitle = `${nb.title} | منصة امتحانات بصمجي`;
+    const desc = (nb.description || "").trim() || "دفتر تفاعلي بأسلوب MATLAB يعمل داخل المتصفح على منصة امتحانات بصمجي";
+    const canonicalUrl = `${SITE_ORIGIN}/notebook/${encodeURIComponent(nb.slug || nb.id)}`;
+    const stamp = nb.updated_at ? Date.parse(nb.updated_at) : NaN;
+    const ogImageUrl =
+        `${SITE_ORIGIN}/api/og?notebook=${encodeURIComponent(nb.id)}` +
+        `&v=${OG_NOTEBOOK_IMAGE_VERSION}${Number.isFinite(stamp) ? `-${stamp}` : ""}`;
+
+    html = html.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(fullTitle)}</title>`);
+    html = replaceLinkHref(html, "canonical", canonicalUrl);
+    html = replaceMetaContent(html, "property", "og:title", fullTitle);
+    html = replaceMetaContent(html, "property", "og:url", canonicalUrl);
+    html = replaceMetaContent(html, "property", "og:description", desc);
+    html = replaceMetaContent(html, "property", "og:image", ogImageUrl);
+    html = replaceMetaContent(html, "property", "og:image:alt", nb.title);
+    html = replaceMetaContent(html, "name", "twitter:title", fullTitle);
+    html = replaceMetaContent(html, "name", "twitter:description", desc);
+    html = replaceMetaContent(html, "name", "twitter:image", ogImageUrl);
+    html = replaceMetaContent(html, "name", "twitter:image:alt", nb.title);
+    html = replaceMetaContent(html, "name", "description", desc);
+
+    res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
+    return res.status(200).send(html);
 }
 
 // =============================================================================
@@ -526,9 +603,14 @@ async function handleCourseRequest(req, res) {
     // /api/og handles quizId=, course=, and course=+folder= — see that
     // file's handler() dispatch comment for why these Edge OG generators
     // share one function.
+    // The counts are part of the version: the image is cached for a year per
+    // URL, so when content is added/removed the URL must change or the image
+    // would keep showing old counts while title/description show new ones.
+    const countsStamp = [pageMeta.folderCount, pageMeta.quizCount, pageMeta.lessonCount, pageMeta.notebookCount]
+        .map((n) => n || 0).join("-");
     const ogImageUrl = folderMeta
-        ? `${SITE_ORIGIN}/api/og?course=${encodeURIComponent(meta.id)}&folder=${encodeURIComponent(folderMeta.path.join("/"))}&v=${OG_IMAGE_VERSION}`
-        : `${SITE_ORIGIN}/api/og?course=${encodeURIComponent(meta.id)}&v=${OG_IMAGE_VERSION}`;
+        ? `${SITE_ORIGIN}/api/og?course=${encodeURIComponent(meta.id)}&folder=${encodeURIComponent(folderMeta.path.join("/"))}&v=${OG_IMAGE_VERSION}-${countsStamp}`
+        : `${SITE_ORIGIN}/api/og?course=${encodeURIComponent(meta.id)}&v=${OG_IMAGE_VERSION}-${countsStamp}`;
 
     html = html.replace(
         /<title>[^<]*<\/title>/i,
@@ -652,7 +734,7 @@ async function handleCourseRequest(req, res) {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader(
         "Cache-Control",
-        "public, s-maxage=3600, stale-while-revalidate=86400",
+        "public, s-maxage=300, stale-while-revalidate=3600",
     );
     return res.status(200).send(html);
 }

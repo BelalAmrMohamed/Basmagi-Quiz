@@ -77,7 +77,7 @@
     },
     {
       "source": "/notebook/:id",
-      "destination": "/notebook?id=:id"
+      "destination": "/api/render-course?contentType=notebook&id=:id"
     },
     {
       "source": "/course/:full(.*)",

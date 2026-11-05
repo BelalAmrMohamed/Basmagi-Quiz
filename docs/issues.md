@@ -45,7 +45,8 @@ Drag-and-drop in `/my-content` wasn't updated to support Notebook extensions (`.
 * The "معلومات الدفتر" modal doesn't include the uploader of the notebook, quizzes do include it, notebooks should include it, too.
 
 ### Notebook Page
-The `Edit a copy` button should be moved into the `.toolbar-menu-items`.
+* The `Edit a copy` button should be moved into the `.toolbar-menu-items`.
+* Saving to my content shouldn're redirect me to (my-content), it should keep me in the notebook page, but in the saved notebook itself not in (`/notebook/new`).
 
 ### Bottom Nav on phones
 * Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.

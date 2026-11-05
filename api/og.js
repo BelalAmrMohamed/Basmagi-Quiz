@@ -7,6 +7,7 @@
 // Usage:  /api/og?quizId=ABCD1234
 //         /api/og?course=<id>[&folder=A/B]   (course / folder thumbnails)
 //         /api/og?lesson=<id|slug>           (lesson thumbnails)
+//         /api/og?notebook=<id|slug>         (notebook thumbnails — dark code-editor card)
 //         /api/og?profile=<handle>[&v=hash]  (admin profile cards — see the
 //                                             "Profile OG image" section at the
 //                                             bottom of this file)
@@ -356,7 +357,8 @@ export default async function handler(req) {
   const lessonId = searchParams.get("lesson");
   if (lessonId) return renderLessonImage(lessonId);
 
-  // ?notebook=<id|slug> — notebook thumbnail
+  // ?notebook=<id|slug> — notebook thumbnail (renderNotebookImage, bottom of
+  // this file). Same shared-function rationale: no new Hobby function slot.
   const notebookId = searchParams.get("notebook");
   if (notebookId) return renderNotebookImage(notebookId);
 
@@ -1212,40 +1214,22 @@ async function renderCourseImage(courseId, folderPath) {
   const parentCourseLine =
     isFolder && meta && meta.courseName ? meta.courseName : null;
 
-  // Token array, not a joined string — "70 مجلد" mixes a digit with an
-  // Arabic word, which hits the space-collapse bug documented on
-  // renderBidiText() ("70سؤال" with zero visible gap). Rendered as sibling
-  // flex children with a `gap` at the call site instead (see
-  // renderBidiChildren's doc comment).
-  const countsTokens = meta
-    ? isArabic
-      ? [
-        String(meta.folderCount),
-        "مجلد",
-        "·",
-        String(meta.quizCount),
-        "امتحان",
-        "·",
-        String(meta.lessonCount ?? 0),
-        "درس",
-        "·",
-        String(meta.notebookCount ?? 0),
-        "دفتر",
+  // Counts go in the TABLE (the most important info), course-info
+  // (education / college / year / term + Featured badge) goes UNDER it as
+  // chips. Labels are always Arabic, same as the old info table.
+  const countsRows = meta
+    ? [
+        { label: "المجلدات", val: String(meta.folderCount ?? 0), dim: !meta.folderCount },
+        { label: "الامتحانات", val: String(meta.quizCount ?? 0), dim: !meta.quizCount },
+        { label: "الدروس", val: String(meta.lessonCount ?? 0), dim: !meta.lessonCount },
+        { label: "الدفاتر", val: String(meta.notebookCount ?? 0), dim: !meta.notebookCount },
       ]
-      : [
-        String(meta.folderCount),
-        "Folders",
-        "·",
-        String(meta.quizCount),
-        "Quizzes",
-        "·",
-        String(meta.lessonCount ?? 0),
-        "Lessons",
-        "·",
-        String(meta.notebookCount ?? 0),
-        "Notebooks",
-      ]
-    : null;
+    : [];
+  const infoChips = [
+    ...(!isFolder && isFeatured ? [{ featured: true }] : []),
+    ...infoRows,
+  ];
+
 
   // Human-readable link line, mirroring the actual /course/:slug[/...] URL
   // shape render-course.js builds (course name -> slug via toSlug(), then
@@ -1287,6 +1271,43 @@ async function renderCourseImage(courseId, folderPath) {
     fullLinkPath.length > LINK_MAX_CHARS
       ? "…" + fullLinkPath.slice(fullLinkPath.length - (LINK_MAX_CHARS - 1))
       : fullLinkPath;
+
+  // Chips under the table — one pill per course-info field, or the amber
+  // "مادة مميزة" badge for Featured courses. RTL: label on the right.
+  function buildInfoChips(chips) {
+    const pill = (children, extra = {}) => ({
+      type: "div",
+      props: {
+        style: {
+          display: "flex", flexDirection: "row-reverse", alignItems: "center", gap: "8px",
+          borderRadius: "10px", padding: "6px 13px", direction: "ltr",
+          background: "rgba(0,136,204,0.10)", border: "1px solid rgba(0,136,204,0.25)",
+          ...extra,
+        },
+        children,
+      },
+    });
+    return {
+      type: "div",
+      props: {
+        style: {
+          display: "flex", flexDirection: "row-reverse", flexWrap: "wrap",
+          justifyContent: "flex-start", gap: "8px", width: "100%", marginTop: "22px",
+        },
+        children: chips.map((c) =>
+          c.featured
+            ? pill(
+                [lessonTextRun(EDU_TYPE_AR.Featured, true, { fontSize: "20px", fontWeight: "700", color: "#b45309" })],
+                { background: "rgba(245,158,11,0.14)", border: "1px solid rgba(245,158,11,0.4)" },
+              )
+            : pill([
+                lessonTextRun(c.label, true, { fontSize: "19px", color: "#6b7280", fontWeight: "400" }),
+                lessonTextRun(String(c.val), !!detectArabic(String(c.val)), { fontSize: "19px", color: BRAND_BLUE, fontWeight: "700" }),
+              ]),
+        ),
+      },
+    };
+  }
 
   const contentWidth = COURSE_CONTENT.right - COURSE_CONTENT.left;
 
@@ -1368,8 +1389,8 @@ async function renderCourseImage(courseId, folderPath) {
                     width: `${INFO_TABLE_VALUE_COL_WIDTH}px`,
                     justifyContent: "flex-start",
                     alignItems: "center",
-                    padding: "14px 22px",
-                    color: "#111827",
+                    padding: "12px 22px",
+                    color: row.dim ? "#9ca3af" : "#111827",
                     fontWeight: "700",
                     fontSize: "24px",
                     borderRight: "1px solid rgba(15,23,42,0.08)",
@@ -1426,7 +1447,7 @@ async function renderCourseImage(courseId, folderPath) {
                     width: `${INFO_TABLE_KEY_COL_WIDTH}px`,
                     justifyContent: "flex-end",
                     alignItems: "center",
-                    padding: "14px 22px",
+                    padding: "12px 22px",
                     color: "#6b7280",
                     fontWeight: "400",
                     fontSize: "24px",
@@ -1604,37 +1625,6 @@ async function renderCourseImage(courseId, folderPath) {
                                 : isArabic ? "مقرر دراسي" : "COURSE"),
                             },
                           },
-                          // "مادة مميزة" badge — Featured courses only.
-                          // Previously this file omitted the التعليم row
-                          // for Featured courses (see
-                          // buildCourseInfoRowsFromRow) but never
-                          // actually surfaced the "featured" status
-                          // anywhere else on the image, so it silently
-                          // disappeared instead of being shown as a
-                          // badge. Folder images never show this — a
-                          // folder isn't itself Featured, only its
-                          // parent course can be, and the course-level
-                          // badge would be ambiguous attached to a
-                          // folder's own name.
-                          !isFolder && isFeatured
-                            ? {
-                              type: "div",
-                              props: {
-                                style: {
-                                  display: "flex",
-                                  fontSize: "16px",
-                                  fontWeight: "700",
-                                  color: "#b45309",
-                                  background: "rgba(245,158,11,0.14)",
-                                  border: "1px solid rgba(245,158,11,0.4)",
-                                  borderRadius: "8px",
-                                  padding: "4px 12px",
-                                  direction: "ltr",
-                                },
-                                children: txt(EDU_TYPE_AR.Featured),
-                              },
-                            }
-                            : null,
                         ],
                       },
                     },
@@ -1729,67 +1719,19 @@ async function renderCourseImage(courseId, folderPath) {
                       },
                     },
 
-                    // Course-info rows — التعليم / الكلية / العام /
-                    // الترم, same label set + ordering as the in-app
-                    // "معلومات المادة" modal (minus التعليم for
-                    // Featured courses — see buildCourseInfoRowsFromRow).
-                    // Each row is two separate flex children, not a
-                    // word-reversed joined string — see
-                    // buildInfoRowChildren's doc comment for why.
-                    infoRows.length > 0
+                    // Counts TABLE — folders / quizzes / lessons / notebooks.
+                    countsRows.length > 0
                       ? {
                         type: "div",
                         props: {
-                          style: {
-                            display: "flex",
-                            flexDirection: "column",
-                            width: "100%",
-                            marginTop: "28px",
-                          },
-                          children: [buildInfoTable(infoRows)],
+                          style: { display: "flex", flexDirection: "column", width: "100%", marginTop: "24px" },
+                          children: [buildInfoTable(countsRows)],
                         },
                       }
                       : null,
 
-                    // Counts pill — reuses the quiz thumbnail badge
-                    // styling for visual consistency between quiz and
-                    // course/folder previews. Bumped up in size to match
-                    // the larger text used everywhere else in this
-                    // layout. Rendered as sibling tokens (renderBidiChildren)
-                    // + flexDirection: row-reverse rather than one
-                    // pre-mirrored string — "70 مجلد" mixes a digit with
-                    // an Arabic word, which hits the space-collapse bug
-                    // documented on renderBidiText() (paints as "70مجلد"
-                    // with no visible gap). See renderBidiChildren's doc
-                    // comment.
-                    countsTokens
-                      ? {
-                        type: "div",
-                        props: {
-                          style: {
-                            display: "flex",
-                            flexDirection: isArabic ? "row-reverse" : "row",
-                            marginTop: "32px",
-                            alignItems: "center",
-                            gap: "8px",
-                            background: "rgba(0,136,204,0.12)",
-                            border: "1px solid rgba(0,136,204,0.3)",
-                            borderRadius: "12px",
-                            padding: "12px 26px",
-                            fontSize: "26px",
-                            color: BRAND_BLUE,
-                            fontWeight: "700",
-                            direction: "ltr",
-                          },
-                          children: hasArabic(countsTokens.join(" "))
-                            ? [shapedRun(countsTokens.join(" "))]
-                            : countsTokens.map((tok) => ({
-                              type: "div",
-                              props: { style: { display: "flex" }, children: tok },
-                            })),
-                        },
-                      }
-                      : null,
+                    // Course-info chips + Featured badge, UNDER the table.
+                    infoChips.length > 0 ? buildInfoChips(infoChips) : null,
                   ].filter(Boolean),
                 },
               },
@@ -2851,7 +2793,7 @@ async function renderNotebookImage(notebookId) {
   const linkPath = fullLink.length > 90 ? "…" + fullLink.slice(fullLink.length - 89) : fullLink;
 
   // ── Left: tilted editor window ───────────────────────────────────────
-  const CODE_MAX = 31;
+  const CODE_MAX = 25;
   const codeLines = (meta?.preview || []).map((l) => (l.length > CODE_MAX ? l.slice(0, CODE_MAX - 1) + "…" : l));
   const skeleton = (w, o = 1) => ({
     type: "div",
@@ -2859,15 +2801,15 @@ async function renderNotebookImage(notebookId) {
   });
   const codeBody = codeLines.length
     ? codeLines.map((line) => ({
-      type: "div",
-      props: {
-        style: { display: "flex", flexDirection: "row", whiteSpace: "pre", direction: "ltr", fontSize: "20px", height: "28px", alignItems: "center" },
-        children: nbTokenizeCode(line).map((t) => ({
-          type: "div",
-          props: { style: { display: "flex", color: t.color, whiteSpace: "pre" }, children: t.text },
-        })),
-      },
-    }))
+        type: "div",
+        props: {
+          style: { display: "flex", flexDirection: "row", whiteSpace: "pre", direction: "ltr", overflow: "hidden", width: "100%", fontSize: "19px", height: "28px", alignItems: "center" },
+          children: nbTokenizeCode(line).map((t) => ({
+            type: "div",
+            props: { style: { display: "flex", color: t.color, whiteSpace: "pre" }, children: t.text.replace(/ /g, "\u00a0") },
+          })),
+        },
+      }))
     : [skeleton("88%"), skeleton("64%", 0.8), skeleton("78%"), skeleton("52%", 0.8)];
 
   // Decorative sine "plot" — purely visual, never claims to be real output.
@@ -3567,7 +3509,7 @@ function buildProfileElement({ meta, avatar, banner, logo }) {
     position: "absolute", left: "60px", right: "60px", top: "490px", flexDirection: "row-reverse", gap: "20px",
   }, [
     tile(PROFILE_ICONS.upload, BRAND_BLUE, // Quizzes + lessons in one tile: a 4th tile would not fit the card width.
-      profileFormatCount((Number(meta.uploaded_quizzes) || 0) + (Number(meta.uploaded_lessons) || 0)), "المحتوى المرفوع"),
+    profileFormatCount((Number(meta.uploaded_quizzes) || 0) + (Number(meta.uploaded_lessons) || 0)), "المحتوى المرفوع"),
     tile(PROFILE_ICONS.zap, "#d97706", profileFormatCount(meta.total_points), "النقاط"),
     tile(PROFILE_ICONS.award, "#7c3aed", profileFormatCount(meta.total_badges), "الشارات"),
   ]);
