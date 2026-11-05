@@ -356,6 +356,10 @@ export default async function handler(req) {
   const lessonId = searchParams.get("lesson");
   if (lessonId) return renderLessonImage(lessonId);
 
+  // ?notebook=<id|slug> — notebook thumbnail
+  const notebookId = searchParams.get("notebook");
+  if (notebookId) return renderNotebookImage(notebookId);
+
   // ?profile=<handle> — /@handle share card (renderProfileImage, bottom of
   // this file). Merged here instead of a new api/og-profile.js so it does not
   // consume one of Hobby's 12 function slots.
@@ -1216,31 +1220,31 @@ async function renderCourseImage(courseId, folderPath) {
   const countsTokens = meta
     ? isArabic
       ? [
-          String(meta.folderCount),
-          "مجلد",
-          "·",
-          String(meta.quizCount),
-          "امتحان",
-          "·",
-          String(meta.lessonCount ?? 0),
-          "درس",
-          "·",
-          String(meta.notebookCount ?? 0),
-          "دفتر",
-        ]
+        String(meta.folderCount),
+        "مجلد",
+        "·",
+        String(meta.quizCount),
+        "امتحان",
+        "·",
+        String(meta.lessonCount ?? 0),
+        "درس",
+        "·",
+        String(meta.notebookCount ?? 0),
+        "دفتر",
+      ]
       : [
-          String(meta.folderCount),
-          "Folders",
-          "·",
-          String(meta.quizCount),
-          "Quizzes",
-          "·",
-          String(meta.lessonCount ?? 0),
-          "Lessons",
-          "·",
-          String(meta.notebookCount ?? 0),
-          "Notebooks",
-        ]
+        String(meta.folderCount),
+        "Folders",
+        "·",
+        String(meta.quizCount),
+        "Quizzes",
+        "·",
+        String(meta.lessonCount ?? 0),
+        "Lessons",
+        "·",
+        String(meta.notebookCount ?? 0),
+        "Notebooks",
+      ]
     : null;
 
   // Human-readable link line, mirroring the actual /course/:slug[/...] URL
@@ -2701,6 +2705,422 @@ async function renderLessonImage(lessonId) {
 }
 
 // =============================================================================
+// Notebook OG image  —  /api/og?notebook=<id|slug>&v=<n>
+// =============================================================================
+// Fifth generator in this file (quiz + course/folder + lesson + profile +
+// notebook) so the project stays inside Vercel Hobby's 12-function cap.
+//
+// Deliberately NOT like the light course/lesson/quiz cards: a DARK "code
+// editor" look. A tilted editor window on the left shows the notebook's REAL
+// first code cell (syntax-coloured, Arabic-free lines only) plus a decorative
+// plot panel; the right column shows kind + runtime badge, course › folder
+// breadcrumb, title, description and chips (cells / code cells / runs in
+// browser). Privacy: only published `notebook_public` data is read.
+// =============================================================================
+
+const NB_ACCENT = "#8b5cf6"; // violet — notebook identity colour
+const NB_BG = "#0b1220";
+const NB_COLUMN = { left: 470, right: 1130 };
+const NB_COLUMN_WIDTH = NB_COLUMN.right - NB_COLUMN.left;
+const NB_RUNTIME_LABEL = { matlab: "MATLAB" };
+const NB_FILE_LABEL = { matlab: "script.m" };
+const NB_KEYWORDS = new Set([
+  "for", "end", "if", "else", "elseif", "while", "function", "return", "break",
+  "continue", "switch", "case", "otherwise", "try", "catch",
+]);
+
+const NB_ICONS = {
+  code: ["M16 18l6-6-6-6", "M8 6l-6 6 6 6"],
+  layers: LESSON_ICONS.layers,
+  play: ["M7 4l13 8-13 8z"],
+  folder: LESSON_ICONS.folder,
+};
+
+/** Splits one code line into coloured tokens (MATLAB-flavoured, good enough for a thumbnail). */
+function nbTokenizeCode(line) {
+  const out = [];
+  const re = /(%.*$)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?(?:e[+-]?\d+)?\b)|([A-Za-z_]\w*)|(\s+)|(.)/gi;
+  let m;
+  while ((m = re.exec(line)) !== null) {
+    const [tok, comment, str, num, word, space] = m;
+    let color = "#e2e8f0";
+    if (comment) color = "#64748b";
+    else if (str) color = "#fbbf24";
+    else if (num) color = "#60a5fa";
+    else if (word && NB_KEYWORDS.has(word)) color = "#c084fc";
+    else if (word && line.slice(m.index + tok.length).startsWith("(")) color = "#34d399";
+    out.push({ text: tok, color, space: !!space });
+  }
+  return out;
+}
+
+async function fetchNotebookOgMeta(idOrSlug) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error("[og] Missing SUPABASE_URL or SUPABASE_ANON_KEY");
+    return null;
+  }
+  const headers = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
+  const get = async (table, params) => {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+    for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+    const res = await fetch(url.toString(), { headers });
+    if (!res.ok) { console.error(`[og] ${table} lookup returned ${res.status}`); return null; }
+    const rows = await res.json();
+    return Array.isArray(rows) && rows.length ? rows[0] : null;
+  };
+  try {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+    const nb = await get("notebook_public", {
+      select: "id,slug,title,description,runtime,course_id,folder_id,content,updated_at",
+      [isUuid ? "id" : "slug"]: `eq.${idOrSlug}`,
+      limit: "1",
+    });
+    if (!nb) return null;
+    const [course, folder] = await Promise.all([
+      nb.course_id ? get("courses", { select: "name", id: `eq.${nb.course_id}`, limit: "1" }) : null,
+      nb.folder_id ? get("folders", { select: "name", id: `eq.${nb.folder_id}`, limit: "1" }) : null,
+    ]);
+    const cells = Array.isArray(nb.content?.cells) ? nb.content.cells : [];
+    const codeCells = cells.filter((c) => c && c.type === "code");
+    // First code cell with at least one Arabic-free, non-empty line → preview.
+    let preview = [];
+    for (const c of codeCells) {
+      const lines = String(c.source || "")
+        .split(/\r?\n/)
+        .map((l) => l.replace(/\t/g, "  ").trimEnd())
+        .filter((l) => l.trim() && !/[\u0600-\u06FF\u0750-\u077F]/.test(l));
+      if (lines.length) { preview = lines.slice(0, 6); break; }
+    }
+    return {
+      id: nb.id,
+      slug: nb.slug || null,
+      title: nb.title || "",
+      description: (nb.description || "").trim(),
+      runtime: nb.runtime || "",
+      courseName: course?.name || null,
+      folderName: folder?.name || null,
+      cellCount: cells.length,
+      codeCount: codeCells.length,
+      preview,
+    };
+  } catch (err) {
+    console.error("[og] fetchNotebookOgMeta error:", err);
+    return null;
+  }
+}
+
+async function renderNotebookImage(notebookId) {
+  const [fontData, meta] = await Promise.all([
+    loadFont().catch((err) => { console.error("[og] notebook font load error:", err); return null; }),
+    fetchNotebookOgMeta(notebookId),
+  ]);
+
+  const rawTitle = meta?.title || "دفتر تفاعلي على منصة بصمجي";
+  const isArabic = !!detectArabic(rawTitle);
+  const tFont = rawTitle.length <= 14 ? 68 : rawTitle.length <= 34 ? 56 : 46;
+  const tCpl = Math.floor(NB_COLUMN_WIDTH / (tFont * (isArabic ? 0.62 : 0.6)));
+  const titleLines = lessonWrap(rawTitle, tCpl, 2);
+
+  const descRaw = meta?.description || "";
+  const dFont = 26;
+  const descIsArabic = !!detectArabic(descRaw || "ا");
+  const descLines = descRaw
+    ? lessonWrap(descRaw, Math.floor(NB_COLUMN_WIDTH / (dFont * (descIsArabic ? 0.72 : 0.58))), titleLines.length > 1 ? 2 : 3)
+    : [];
+
+  const runtimeKey = (meta?.runtime || "matlab").toLowerCase();
+  const runtimeLabel = NB_RUNTIME_LABEL[runtimeKey] || runtimeKey.toUpperCase();
+  const fileLabel = NB_FILE_LABEL[runtimeKey] || "main";
+
+  // ── Chips ────────────────────────────────────────────────────────────
+  const chips = [];
+  if (meta && meta.cellCount > 0) {
+    chips.push({
+      icon: "layers", color: "#a78bfa",
+      tokens: lessonCount(meta.cellCount, { one: ["خلية", "واحدة"], two: "خليتان", few: "خلايا", many: "خلية" }),
+    });
+    if (meta.codeCount > 0) {
+      chips.push({ icon: "code", color: "#34d399", tokens: [String(meta.codeCount), "كود"] });
+    }
+  }
+  chips.push({ icon: "play", color: "#38bdf8", tokens: ["يعمل", "في", "المتصفح"] });
+
+  const crumbParts = [meta?.courseName, meta?.folderName].filter(Boolean).map((p) => lessonClamp(p, 20));
+  const slugSeg = meta ? renderBidiSlugSegment(meta.slug || meta.id) : "";
+  const fullLink = `basmagi-quiz.vercel.app/notebook/${slugSeg}`;
+  const linkPath = fullLink.length > 90 ? "…" + fullLink.slice(fullLink.length - 89) : fullLink;
+
+  // ── Left: tilted editor window ───────────────────────────────────────
+  const CODE_MAX = 31;
+  const codeLines = (meta?.preview || []).map((l) => (l.length > CODE_MAX ? l.slice(0, CODE_MAX - 1) + "…" : l));
+  const skeleton = (w, o = 1) => ({
+    type: "div",
+    props: { style: { display: "flex", height: "12px", width: w, borderRadius: "6px", background: `rgba(148,163,184,${0.22 * o})` } },
+  });
+  const codeBody = codeLines.length
+    ? codeLines.map((line) => ({
+      type: "div",
+      props: {
+        style: { display: "flex", flexDirection: "row", whiteSpace: "pre", direction: "ltr", fontSize: "20px", height: "28px", alignItems: "center" },
+        children: nbTokenizeCode(line).map((t) => ({
+          type: "div",
+          props: { style: { display: "flex", color: t.color, whiteSpace: "pre" }, children: t.text },
+        })),
+      },
+    }))
+    : [skeleton("88%"), skeleton("64%", 0.8), skeleton("78%"), skeleton("52%", 0.8)];
+
+  // Decorative sine "plot" — purely visual, never claims to be real output.
+  const plotPts = Array.from({ length: 40 }, (_, i) => {
+    const x = 8 + (i * 296) / 39;
+    const y = 46 - Math.sin((i / 39) * Math.PI * 3) * 28;
+    return `${i === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
+  }).join(" ");
+
+  const dot = (c) => ({ type: "div", props: { style: { display: "flex", width: "14px", height: "14px", borderRadius: "7px", background: c } } });
+  const windowCard = {
+    type: "div",
+    props: {
+      style: {
+        display: "flex", flexDirection: "column", position: "absolute",
+        left: `${ICON_CARD.left + 6}px`, top: `${ICON_CARD.top + 6}px`,
+        width: `${ICON_CARD.width}px`, height: `${ICON_CARD.height}px`,
+        borderRadius: "26px", backgroundColor: "#111a2e", overflow: "hidden",
+        boxShadow: "0 30px 70px rgba(0,0,0,0.55)", border: "1px solid rgba(255,255,255,0.10)",
+        transform: `rotate(${ICON_CARD.rotationDeg}deg)`,
+      },
+      children: [
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+              height: "54px", padding: "0 20px", background: "rgba(255,255,255,0.05)",
+              borderBottom: "1px solid rgba(255,255,255,0.08)",
+            },
+            children: [
+              { type: "div", props: { style: { display: "flex", flexDirection: "row", gap: "8px" }, children: [dot("#ef4444"), dot("#f59e0b"), dot("#22c55e")] } },
+              { type: "div", props: { style: { display: "flex", fontSize: "18px", color: "#94a3b8", fontWeight: "700", direction: "ltr" }, children: fileLabel } },
+            ],
+          },
+        },
+        {
+          type: "div",
+          props: {
+            style: { display: "flex", flexDirection: "column", padding: "20px 22px 0", gap: "14px", width: "100%" },
+            children: [
+              { type: "div", props: { style: { display: "flex", fontSize: "17px", color: NB_ACCENT, fontWeight: "700", direction: "ltr" }, children: "In [1]:" } },
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex", flexDirection: "column", width: "100%", gap: "0px",
+                    padding: "14px 16px", borderRadius: "12px", background: "#0b1324",
+                    border: "1px solid rgba(139,92,246,0.35)", minHeight: "120px",
+                    justifyContent: codeLines.length ? "flex-start" : "center",
+                  },
+                  children: codeBody,
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex", width: "100%", height: "92px", borderRadius: "12px",
+                    background: "rgba(56,189,248,0.07)", border: "1px solid rgba(56,189,248,0.22)",
+                  },
+                  children: {
+                    type: "svg",
+                    props: {
+                      width: 312, height: 92, viewBox: "0 0 312 92", fill: "none",
+                      children: [
+                        { type: "path", props: { d: "M8 46H304", stroke: "rgba(148,163,184,0.25)", strokeWidth: 1 } },
+                        { type: "path", props: { d: plotPts, stroke: "#38bdf8", strokeWidth: 3, strokeLinecap: "round", strokeLinejoin: "round" } },
+                      ],
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
+  };
+
+  const backSheet = {
+    type: "div",
+    props: {
+      style: {
+        display: "flex", position: "absolute",
+        left: `${ICON_CARD.left - 8}px`, top: `${ICON_CARD.top + 4}px`,
+        width: `${ICON_CARD.width}px`, height: `${ICON_CARD.height}px`,
+        borderRadius: "26px", backgroundColor: "rgba(139,92,246,0.16)",
+        border: "1px solid rgba(139,92,246,0.35)",
+        transform: `rotate(${ICON_CARD.rotationDeg + 7}deg)`,
+      },
+    },
+  };
+
+  // ── Right column ─────────────────────────────────────────────────────
+  const kindRow = {
+    type: "div",
+    props: {
+      style: { display: "flex", flexDirection: "row-reverse", alignItems: "center", gap: "12px" },
+      children: [
+        lessonTextRun("دفتر تفاعلي", true, { fontSize: "26px", color: "#a78bfa", fontWeight: "700" }),
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex", flexDirection: "row", alignItems: "center", gap: "8px", direction: "ltr",
+              background: "rgba(139,92,246,0.18)", border: "1px solid rgba(139,92,246,0.5)",
+              borderRadius: "8px", padding: "4px 12px", fontSize: "18px", fontWeight: "700", color: "#ddd6fe",
+            },
+            children: [
+              { type: "div", props: { style: { display: "flex", width: "9px", height: "9px", borderRadius: "5px", background: "#22c55e" } } },
+              { type: "div", props: { style: { display: "flex" }, children: runtimeLabel } },
+            ],
+          },
+        },
+      ],
+    },
+  };
+
+  const crumbRow = crumbParts.length
+    ? {
+      type: "div",
+      props: {
+        style: { display: "flex", flexDirection: "row-reverse", alignItems: "center", gap: "10px", marginTop: "14px" },
+        children: [
+          { type: "div", props: { style: { display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", flexShrink: 0 }, children: lessonIcon(NB_ICONS.folder, 24, "#64748b", 2) } },
+          ...crumbParts.flatMap((p, i) => [
+            i > 0 ? { type: "div", props: { style: { display: "flex", fontSize: "24px", color: "#475569" }, children: "/" } } : null,
+            lessonTextRun(p, !!detectArabic(p), { fontSize: "24px", color: i === crumbParts.length - 1 ? "#cbd5e1" : "#94a3b8", fontWeight: "700" }),
+          ]).filter(Boolean),
+        ],
+      },
+    }
+    : null;
+
+  const titleBlock = {
+    type: "div",
+    props: {
+      style: { display: "flex", flexDirection: "column", alignItems: "flex-end", marginTop: crumbRow ? "18px" : "22px", width: "100%" },
+      children: titleLines.map((line) =>
+        lessonTextRun(line, isArabic, { fontSize: `${tFont}px`, fontWeight: "700", color: "#ffffff", lineHeight: "1.25", width: "100%" }),
+      ),
+    },
+  };
+
+  const descBlock = descLines.length
+    ? {
+      type: "div",
+      props: {
+        style: {
+          display: "flex", flexDirection: "column", alignItems: "flex-end", marginTop: "20px", width: "100%",
+          paddingRight: "18px", borderRight: `4px solid ${NB_ACCENT}`, gap: "2px",
+        },
+        children: descLines.map((line) =>
+          lessonTextRun(line, descIsArabic, { fontSize: `${dFont}px`, color: "#cbd5e1", fontWeight: "400", lineHeight: "1.4", width: "100%" }),
+        ),
+      },
+    }
+    : null;
+
+  const chipsRow = {
+    type: "div",
+    props: {
+      style: { display: "flex", flexDirection: "row-reverse", alignItems: "center", gap: "14px", marginTop: "30px" },
+      children: chips.map((c) => ({
+        type: "div",
+        props: {
+          style: {
+            display: "flex", flexDirection: "row-reverse", alignItems: "center", gap: "10px",
+            backgroundColor: "rgba(255,255,255,0.06)", border: `1.5px solid ${c.color}55`, borderRadius: "14px",
+            padding: "11px 20px",
+          },
+          children: [
+            lessonIcon(NB_ICONS[c.icon], 28, c.color, 2.2),
+            {
+              type: "div",
+              props: {
+                style: { display: "flex", flexDirection: "row-reverse", gap: "8px", fontSize: "26px", fontWeight: "700", color: "#f1f5f9", direction: "ltr", whiteSpace: "nowrap" },
+                children: hasArabic(c.tokens.join(" "))
+                  ? [shapedRun(c.tokens.join(" "))]
+                  : c.tokens.map((t) => ({ type: "div", props: { style: { display: "flex" }, children: t } })),
+              },
+            },
+          ],
+        },
+      })),
+    },
+  };
+
+  const element = {
+    type: "div",
+    props: {
+      style: {
+        display: "flex", width: "100%", height: "100%", position: "relative",
+        fontFamily: FONT_FAMILY_STACK, backgroundColor: NB_BG,
+        backgroundImage:
+          "radial-gradient(circle at 0% 0%, rgba(139,92,246,0.30) 0%, rgba(139,92,246,0) 50%), radial-gradient(circle at 100% 100%, rgba(0,136,204,0.22) 0%, rgba(0,136,204,0) 45%)",
+      },
+      children: [
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex", position: "absolute", right: "0px", top: "0px", width: "14px", height: "630px",
+              backgroundImage: `linear-gradient(180deg, ${NB_ACCENT} 0%, ${BRAND_BLUE} 100%)`,
+            },
+          },
+        },
+        { type: "div", props: { style: { display: "flex", position: "absolute", right: "40px", top: "24px", fontSize: "16px", color: "#64748b", direction: "ltr" }, children: "basmagi-quiz.vercel.app" } },
+        backSheet,
+        windowCard,
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", position: "absolute",
+              left: `${NB_COLUMN.left}px`, top: "0px", height: "570px", width: `${NB_COLUMN_WIDTH}px`,
+              direction: "ltr", textAlign: "right",
+            },
+            children: [kindRow, crumbRow, titleBlock, descBlock, chipsRow].filter(Boolean),
+          },
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex", position: "absolute", left: "40px", right: "54px", bottom: "36px",
+              justifyContent: "center", fontSize: "20px", color: "#64748b", fontWeight: "400",
+              whiteSpace: "nowrap", overflow: "hidden", direction: "ltr",
+            },
+            children: txt(linkPath),
+          },
+        },
+      ],
+    },
+  };
+
+  const renderIsComplete = fontData !== null && meta !== null;
+  return new ImageResponse(element, {
+    width: 1200,
+    height: 630,
+    fonts: fontData
+      ? fontData.map((entry) => ({ name: entry.name, data: entry.data, weight: 700, style: "normal" }))
+      : [],
+    headers: {
+      "Cache-Control": renderIsComplete
+        ? "public, immutable, no-transform, max-age=31536000, s-maxage=31536000"
+        : "public, s-maxage=300, stale-while-revalidate=3600",
+    },
+  });
+}
+
+// =============================================================================
 // Profile OG image  —  /api/og?profile=<handle>[&v=<hash>]
 // =============================================================================
 // 1200×630 share card for /@handle. Layout (RTL):
@@ -3147,7 +3567,7 @@ function buildProfileElement({ meta, avatar, banner, logo }) {
     position: "absolute", left: "60px", right: "60px", top: "490px", flexDirection: "row-reverse", gap: "20px",
   }, [
     tile(PROFILE_ICONS.upload, BRAND_BLUE, // Quizzes + lessons in one tile: a 4th tile would not fit the card width.
-    profileFormatCount((Number(meta.uploaded_quizzes) || 0) + (Number(meta.uploaded_lessons) || 0)), "المحتوى المرفوع"),
+      profileFormatCount((Number(meta.uploaded_quizzes) || 0) + (Number(meta.uploaded_lessons) || 0)), "المحتوى المرفوع"),
     tile(PROFILE_ICONS.zap, "#d97706", profileFormatCount(meta.total_points), "النقاط"),
     tile(PROFILE_ICONS.award, "#7c3aed", profileFormatCount(meta.total_badges), "الشارات"),
   ]);

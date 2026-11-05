@@ -32,7 +32,7 @@ Make the necessary changes directly in the existing codebase. Do not merely prov
   * These should be swapped, The Number of lessons, quizzes, notebooks, & folders should be displayed in the table because it's more important, and the other info/badge should be under the table.
 
 ### Drag-and-drop in `/my-content`
-Drag-and-drop in `/my-content` wasn't updated to support Notebook extensions (`.m`, `.ipynb`, `.zip`).
+Drag-and-drop in `/my-content` wasn't updated to support Notebook extensions (`.m`, `.ipynb`, `.zip`). I tried dropping 5 files to create 5 notebooks, it didn't allow me.
 
 ### Parts of the platform that weren't updated for Notebooks
 * The admin upload modal wasn't updated ![screenshot](image-1.png).
