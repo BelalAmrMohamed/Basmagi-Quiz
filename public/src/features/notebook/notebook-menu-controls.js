@@ -17,6 +17,24 @@ function resetMenuPosition(details) {
   }
 }
 
+/** Vertical band the menu may use: below a stuck toolbar and above the phone bottom nav. */
+function safeBand(details, viewportHeight, edge) {
+  let top = edge, bottom = viewportHeight - edge;
+  const nav = document.getElementById("bottomNav") || document.querySelector(".bottom-nav");
+  if (nav && getComputedStyle(nav).display !== "none") {
+    const r = nav.getBoundingClientRect();
+    if (r.height && r.top < viewportHeight) bottom = Math.min(bottom, r.top - edge);
+  }
+  if (details.matches(".cell-menu")) {
+    const bar = document.querySelector(".mlweb #bar");
+    if (bar && getComputedStyle(bar).position === "sticky") {
+      const r = bar.getBoundingClientRect();
+      if (r.height && r.top <= edge + 1 && r.bottom > 0) top = Math.max(top, r.bottom + edge);
+    }
+  }
+  return { top, bottom: Math.max(top + 80, bottom) };
+}
+
 function positionMenu(details) {
   if (!details?.open || !details.isConnected) return;
   const summary = details.querySelector(":scope > summary");
@@ -36,14 +54,15 @@ function positionMenu(details) {
   content.style.bottom = "auto";
   content.style.zIndex = "1000";
   content.style.maxWidth = `${Math.max(120, viewportWidth - edge * 2)}px`;
-  content.style.maxHeight = `${Math.max(80, viewportHeight - edge * 2)}px`;
+  const band = safeBand(details, viewportHeight, edge);
+  content.style.maxHeight = `${Math.max(80, band.bottom - band.top)}px`;
   content.style.overflowY = "auto";
   content.style.visibility = "hidden";
 
   const natural = content.getBoundingClientRect();
   const width = Math.min(natural.width, viewportWidth - edge * 2);
-  const below = viewportHeight - anchor.bottom - MENU_GAP - edge;
-  const above = anchor.top - MENU_GAP - edge;
+  const below = band.bottom - anchor.bottom - MENU_GAP;
+  const above = anchor.top - MENU_GAP - band.top;
   const rtl = getComputedStyle(details).direction === "rtl";
   const clampX = (x) => Math.max(edge, Math.min(viewportWidth - width - edge, x));
   const xCandidates = viewportWidth <= 760
@@ -58,9 +77,9 @@ function positionMenu(details) {
     { top: anchor.bottom + MENU_GAP, available: below, preference: 0 },
     { top: anchor.top - MENU_GAP, available: above, preference: 1 },
   ].flatMap(({ top, available, preference }) => xs.map((left) => {
-    const height = Math.min(natural.height, Math.max(0, Math.min(viewportHeight - edge * 2, available)));
+    const height = Math.min(natural.height, Math.max(0, Math.min(band.bottom - band.top, available)));
     const rawTop = preference === 0 ? top : top - height;
-    const y = Math.max(edge, Math.min(viewportHeight - height - edge, rawTop));
+    const y = Math.max(band.top, Math.min(band.bottom - height, rawTop));
     const overlap = triggers.reduce((area, rect) => {
       const widthOverlap = Math.max(0, Math.min(left + width, rect.right) - Math.max(left, rect.left));
       const heightOverlap = Math.max(0, Math.min(y + height, rect.bottom) - Math.max(y, rect.top));

@@ -207,18 +207,17 @@ class ImageToolWindow {
     win.innerHTML = `
       <div class="mlweb-imtool-titlebar">
         <div class="mlweb-imtool-win-controls">
-          <button type="button" class="mlweb-imtool-win-btn btn-close" title="${t.close}" aria-label="${t.close}"><span aria-hidden="true"></span></button>
-          <button type="button" class="mlweb-imtool-win-btn btn-min" title="${t.minimize}" aria-label="${t.minimize}"><span aria-hidden="true"></span></button>
-          <button type="button" class="mlweb-imtool-win-btn btn-max" title="${t.maximize}" aria-label="${t.maximize}"><span aria-hidden="true"></span></button>
+          <button type="button" class="mlweb-imtool-win-btn btn-close" title="${t.close}" aria-label="${t.close}"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button>
+          <button type="button" class="mlweb-imtool-win-btn btn-min" title="${t.minimize}" aria-label="${t.minimize}"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6h7"/></svg></button>
+          <button type="button" class="mlweb-imtool-win-btn btn-max" title="${t.maximize}" aria-label="${t.maximize}"><svg class="ic-max" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 9.5v-7h7v7z"/></svg><svg class="ic-restore" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 4V2.5h5.5V8H8M2.5 4H8v5.5H2.5z"/></svg></button>
         </div>
         <div class="mlweb-imtool-title-wrap">
+          <span class="mlweb-imtool-title">${titleText}</span>
           <svg class="mlweb-imtool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
             <circle cx="9" cy="9" r="2"/>
             <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
           </svg>
-          <span class="mlweb-imtool-title">${titleText}</span>
-          <span class="mlweb-imtool-badge">${w} × ${h}</span>
         </div>
         <span class="mlweb-imtool-titlebar-spacer" aria-hidden="true"></span>
       </div>
@@ -500,45 +499,55 @@ class ImageToolWindow {
       this.zoomAt(mouseX, mouseY, factor);
     }, { passive: false });
 
-    // Stage direct drag-to-pan (hand tool)
+    // Stage gestures: one pointer pans, two pointers pinch-zoom (and pan with the midpoint).
+    // Pointers are tracked in one map, so a second finger can never start a second, competing pan.
+    this.pointers = new Map();
+    let pinch = null;
+    const stagePt = (e) => { const r = this.stage.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const pair = () => { const [a, b] = [...this.pointers.values()]; return { dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } }; };
+
     this.stage.addEventListener('pointerdown', (e) => {
       if (e.target.closest('.mlweb-imtool-info-card')) return;
       e.preventDefault();
       this.bringToFront();
+      if (this.pointers.size >= 2) return;
+      this.pointers.set(e.pointerId, stagePt(e));
+      try { this.stage.setPointerCapture(e.pointerId); } catch { /* ignore */ }
       this.isPanning = true;
       this.stage.classList.add('is-panning');
-      const startMouseX = e.clientX;
-      const startMouseY = e.clientY;
-      const startPanX = this.panX;
-      const startPanY = this.panY;
-      this.stage.setPointerCapture(e.pointerId);
-
-      const onPanMove = (mEv) => {
-        if (!this.isPanning) return;
-        this.panX = startPanX + (mEv.clientX - startMouseX);
-        this.panY = startPanY + (mEv.clientY - startMouseY);
-        this.render();
-        this.trackCursorPixel(mEv);
-      };
-
-      const onPanUp = (uEv) => {
-        this.isPanning = false;
-        this.stage.classList.remove('is-panning');
-        this.stage.releasePointerCapture(uEv.pointerId);
-        this.stage.removeEventListener('pointermove', onPanMove);
-        this.stage.removeEventListener('pointerup', onPanUp);
-        this.stage.removeEventListener('pointercancel', onPanUp);
-      };
-
-      this.stage.addEventListener('pointermove', onPanMove);
-      this.stage.addEventListener('pointerup', onPanUp);
-      this.stage.addEventListener('pointercancel', onPanUp);
+      if (this.pointers.size === 2) pinch = pair();
     });
 
-    // Cursor tracking for real-time pixel info
     this.stage.addEventListener('pointermove', (e) => {
-      if (!this.isPanning) this.trackCursorPixel(e);
+      const prev = this.pointers.get(e.pointerId);
+      if (!prev) { this.trackCursorPixel(e); return; }
+      const cur = stagePt(e);
+      this.pointers.set(e.pointerId, cur);
+      if (this.pointers.size === 2 && pinch) {
+        const now = pair();
+        this.panX += now.mid.x - pinch.mid.x;
+        this.panY += now.mid.y - pinch.mid.y;
+        const before = this.zoom;
+        this.zoomAt(now.mid.x, now.mid.y, now.dist / pinch.dist); // renders when the zoom changed
+        if (this.zoom === before) this.render(); // zoom limit reached: still follow the fingers
+        pinch = now;
+      } else {
+        this.panX += cur.x - prev.x;
+        this.panY += cur.y - prev.y;
+        this.render();
+        this.trackCursorPixel(e);
+      }
     });
+
+    const endPointer = (e) => {
+      if (!this.pointers.delete(e.pointerId)) return;
+      try { this.stage.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+      pinch = null;
+      if (!this.pointers.size) { this.isPanning = false; this.stage.classList.remove('is-panning'); }
+    };
+    this.stage.addEventListener('pointerup', endPointer);
+    this.stage.addEventListener('pointercancel', endPointer);
+    this.stage.addEventListener('lostpointercapture', endPointer);
 
     this.stage.addEventListener('pointerleave', () => {
       if (!this.isPanning) {
@@ -682,11 +691,20 @@ class ImageToolWindow {
     if (!this.isMinimized) requestAnimationFrame(() => this.render());
   }
 
+  /** Keeps at least a margin of the image inside the stage (a glitchy gesture can no longer lose it). */
+  clampPan(stageW, stageH) {
+    const { w, h } = this.image;
+    const m = Math.min(48, stageW / 2, stageH / 2);
+    this.panX = Math.min(stageW - m, Math.max(m - w * this.zoom, this.panX));
+    this.panY = Math.min(stageH - m, Math.max(m - h * this.zoom, this.panY));
+  }
+
   render() {
     if (!this.ctx || this.isMinimized) return;
     const stageW = this.stage.clientWidth;
     const stageH = this.stage.clientHeight;
     if (stageW === 0 || stageH === 0) return;
+    this.clampPan(stageW, stageH);
 
     // High-DPI support
     const dpr = window.devicePixelRatio || 1;

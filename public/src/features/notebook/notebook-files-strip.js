@@ -53,8 +53,8 @@ export function mountFilesStrip(ctx) {
   // ── feedback card: what was done, and where ──
   const card = document.createElement("div");
   card.className = "nb-files-card"; card.hidden = true; card.setAttribute("role", "status"); card.setAttribute("aria-live", "polite");
-  let driveOff = null, folderBtn = null, folderOff = null;
-  const refresh = () => { el.hidden = !(folderBtn || (driveOff && !driveOff.hidden) || !card.hidden); };
+  let folderBtn = null, folderOff = null;
+  const refresh = () => { el.hidden = !(folderBtn || !card.hidden); };
   /** @param {null|{kind?: "info"|"ok"|"err", title?: string, text?: string, links?: {href: string, label: string}[]}} m */
   const show = (m) => {
     card.replaceChildren();
@@ -112,13 +112,18 @@ export function mountFilesStrip(ctx) {
   }
 
   // ── Google Drive ──
-  driveOff = mk(t.driveOff, async () => { (await import("../../shared/google-drive.js")).disconnectDrive(); driveOff.hidden = true; say(""); });
-  driveOff.hidden = true;
+  let connected = false;
+  const syncDisconnect = () => document.querySelectorAll('[data-nb-drive="disconnect"]').forEach((b) => { b.hidden = !connected; });
   const ensureDrive = async () => {
     const g = await import("../../shared/google-drive.js");
-    if (!g.driveConnected()) { show({ kind: "info", text: t.connecting }); await g.connectDrive(); driveOff.hidden = false; }
+    if (!g.driveConnected()) { show({ kind: "info", text: t.connecting }); await g.connectDrive(); }
+    connected = true; syncDisconnect();
     return g;
   };
+  async function disconnect() {
+    (await import("../../shared/google-drive.js")).disconnectDrive();
+    connected = false; syncDisconnect(); say("");
+  }
 
   /**
    * Backs the notebook up as one .notebook.zip in the "Basmagi Notebooks" Drive folder.
@@ -130,6 +135,7 @@ export function mountFilesStrip(ctx) {
   async function backup({ silent = false, key, fromDraft = false } = {}) {
     const g = silent ? await import("../../shared/google-drive.js") : await ensureDrive();
     if (!g.driveConnected()) return null;
+    if (!connected) { connected = true; syncDisconnect(); }
     const k = key || ctx.bridge.key;
     if (!silent) show({ kind: "info", text: t.backingUp });
     const m = ctx.getMeta();
@@ -245,6 +251,7 @@ export function mountFilesStrip(ctx) {
   const items = [
     { id: "import", label: t.drive, run: openImport },
     { id: "backup", label: t.backup, run: () => backup({ silent: false }) },
+    { id: "disconnect", label: t.driveOff, run: disconnect },
   ];
   let queued = false;
   const inject = () => {
@@ -256,6 +263,7 @@ export function mountFilesStrip(ctx) {
       const b = document.createElement("button");
       b.type = "button"; b.setAttribute("role", "menuitem"); b.dataset.nbDrive = it.id;
       if (i === 0) b.dataset.nbDriveFirst = "";
+      if (it.id === "disconnect") b.hidden = !connected; // only offered while connected
       const img = Object.assign(new Image(), { src: ICON, alt: "", width: 18, height: 18 }); img.setAttribute("aria-hidden", "true");
       b.append(img, Object.assign(document.createElement("span"), { textContent: it.label }));
       b.addEventListener("click", async () => {
@@ -272,7 +280,7 @@ export function mountFilesStrip(ctx) {
   new MutationObserver(() => { if (!queued) { queued = true; requestAnimationFrame(inject); } }).observe(ctx.before, { childList: true, subtree: true });
   inject();
 
-  el.append(driveOff, card);
+  el.append(card);
   ctx.before.before(el);
   window.__nbFilesStrip = { backup: (o) => backup(o || { silent: true }).catch((e) => { console.warn("[drive] backup failed:", e); return null; }) };
   refresh();

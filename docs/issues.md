@@ -27,8 +27,25 @@ Some hover effects may change an element's position, dimensions, or boundaries (
 Make the necessary changes directly in the existing codebase. Do not merely provide recommendations or a list of potential fixes.
 
 ### `api\og.js`
-* Special courses that get the (مادة مميزة) badge, since there is no info table displayed, the middle of the image becomes emtpy, I need to fill it with something, or ideas to improve it when it has the  (مادة مميزة) badge. 
 * ![screenshot](image.png): Info displayed on the OG Thumbnail itself is different from the OG Title & Description, the OG Thumbnail itself is probably the correct one.
+* Currently, the table of info displays: "التعليم", "الكلية", "العام", & "الترم" (or the "مادة مميزة" badge) inside of a table, and under the table it displays: Number of lessons, quizzes, notebooks, & folders. 
+  * These should be swapped, The Number of lessons, quizzes, notebooks, & folders should be displayed in the table because it's more important, and the other info/badge should be under the table.
+
+### Drag-and-drop in `/my-content`
+Drag-and-drop in `/my-content` wasn't updated to support Notebook extensions (`.m`, `.ipynb`, `.zip`).
+
+### Parts of the platform that weren't updated for Notebooks
+* The admin upload modal wasn't updated ![screenshot](image-1.png).
+* ![Folders in my content weren't updated](image-2.png) 
+
+### Cards Design
+* Notebook Cards and Lesson cards are similar to each other, give each a different border color and a different download button color both on the platform and inside (`/my-content`)
+
+### معلومات الدفتر
+* The "معلومات الدفتر" modal doesn't include the uploader of the notebook, quizzes do include it, notebooks should include it, too.
+
+### Notebook Page
+The `Edit a copy` button should be moved into the `.toolbar-menu-items`.
 
 ### Bottom Nav on phones
 * Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.
@@ -57,6 +74,10 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 
 ### Dictation for Essay Questions (Lesson & Quiz Pages)
 Add dictation feature for essays in quizzes and lessons
+
+### "معلومات المجلد" and "معلومات المادة" 
+They both should be updated to include notebooks now.
+
 
 ### Result Pages
 

@@ -106,7 +106,7 @@ body.sidebar-expanded {
 .nb-files-card-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
 .nb-files-card-links a { color: inherit; font-weight: 600; text-decoration: underline; }
 .nb-files-card > button { flex: none; border: 0; background: transparent; color: inherit; font-size: 1.2rem; line-height: 1; cursor: pointer; opacity: .7; }
-.nb-files-dialog { width: min(560px, 92vw); border: 1px solid rgba(128,128,128,.4); border-radius: 14px; background: var(--bg-card, #1c1c1f); color: inherit; padding: 16px; }
+.nb-files-dialog { position: fixed; inset: 0; margin: auto; height: fit-content; max-height: calc(100dvh - 32px); overflow-y: auto; width: min(560px, calc(100vw - 28px)); border: 1px solid rgba(128,128,128,.4); border-radius: 14px; background: var(--bg-card, #1c1c1f); color: inherit; padding: 16px; }
 .nb-files-dialog::backdrop { background: rgba(0,0,0,.55); }
 .nb-files-dialog-head { display: flex; align-items: center; gap: 8px; }
 .nb-files-dialog-head h3 { margin: 0; }
@@ -129,4 +129,7 @@ body.sidebar-expanded {
 .mlweb .toolbar-menu-items button[data-nb-drive] { display: flex; align-items: center; gap: 9px; }
 .mlweb .toolbar-menu-items button[data-nb-drive] img { flex: none; width: 18px; height: 18px; object-fit: contain; }
 .mlweb .toolbar-menu-items button[data-nb-drive-first] { margin-top: 4px; border-top: 1px solid var(--line, rgba(128,128,128,.3)); border-radius: 0; padding-top: 6px; }
-.mlweb .toolbar-menu-items button[data-nb-drive-first] + button[data-nb-drive] { margin-bottom: 4px; }
+.mlweb .toolbar-menu-items button[data-nb-drive] + button:not([data-nb-drive]) { margin-top: 4px; border-top: 1px solid var(--line, rgba(128,128,128,.3)); border-radius: 0; padding-top: 6px; }
+.mlweb .toolbar-menu-items button[data-nb-drive="disconnect"] { color: var(--err, #d93025); }
+.mlweb .toolbar-menu-items button[data-nb-drive="disconnect"]:hover:not(:disabled) { background: var(--errbg, rgba(217,48,37,.1)); border-color: transparent; }
+.mlweb .toolbar-menu-items button[data-nb-drive][hidden] { display: none; }

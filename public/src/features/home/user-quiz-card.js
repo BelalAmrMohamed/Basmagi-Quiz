@@ -510,8 +510,8 @@ export function showUserNotebookActionsOverlay(nb, triggerBtn) {
       },
       { label: "إعادة تسمية", icon: RENAME_ICON_SVG, onClick: () => renameItem(nbId, title) },
     ]);
-    appendNotebookMenuEntries(menu, closeMenu, reposition, nb);
     appendMoveGroup(menu, closeMenu, reposition, nbId);
+    appendNotebookMenuEntries(menu, closeMenu, reposition, nb);
     const deleteOpt = document.createElement("button");
     deleteOpt.type = "button";
     deleteOpt.className = "exam-action-btn exam-action-btn--danger";

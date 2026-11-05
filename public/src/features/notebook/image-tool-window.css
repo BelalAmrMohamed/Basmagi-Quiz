@@ -19,7 +19,8 @@
   -webkit-user-select: none;
   touch-action: none;
   transition: box-shadow 0.18s ease, border-color 0.18s ease, transform 0.22s ease;
-  z-index: 10000; /* Above sidebar (4000) and bottom-nav (4001) */
+  z-index: 10000;
+  /* Above sidebar (4000) and bottom-nav (4001) */
 }
 
 /* Theme support: dark and dark-slate */
@@ -69,8 +70,7 @@ html[data-theme="dark-slate"] .mlweb-imtool-win {
 /* Minimized (collapsed to titlebar) */
 .mlweb-imtool-win.is-minimized {
   position: fixed !important;
-  inset: auto auto calc(16px + env(safe-area-inset-bottom, 0px) + var(--mlweb-minimized-offset, 0px))
-    max(16px, env(safe-area-inset-left, 0px)) !important;
+  inset: auto auto calc(16px + env(safe-area-inset-bottom, 0px) + var(--mlweb-minimized-offset, 0px)) max(16px, env(safe-area-inset-left, 0px)) !important;
   width: min(280px, calc(100vw - 32px)) !important;
   height: 48px !important;
   min-width: 0 !important;
@@ -84,13 +84,13 @@ html[data-theme="dark-slate"] .mlweb-imtool-win {
   touch-action: auto;
   transition: inset 0.22s ease, width 0.22s ease, height 0.22s ease, transform 0.22s ease, box-shadow 0.18s ease;
 }
+
 .mlweb-imtool-win.is-minimized .mlweb-imtool-toolbar,
 .mlweb-imtool-win.is-minimized .mlweb-imtool-body,
 .mlweb-imtool-win.is-minimized .mlweb-imtool-statusbar,
 .mlweb-imtool-win.is-minimized .mlweb-imtool-resizer,
 .mlweb-imtool-win.is-minimized .mlweb-imtool-grip,
 .mlweb-imtool-win.is-minimized .mlweb-imtool-titlebar-spacer,
-.mlweb-imtool-win.is-minimized .mlweb-imtool-badge,
 .mlweb-imtool-win.is-minimized .mlweb-imtool-win-btn.btn-min {
   display: none !important;
 }
@@ -145,16 +145,6 @@ html[data-theme="dark-slate"] .mlweb-imtool-titlebar {
 html[data-theme="dark"] .mlweb-imtool-title,
 html[data-theme="dark-slate"] .mlweb-imtool-title {
   color: var(--color-text-primary, #edf0f7);
-}
-
-.mlweb-imtool-badge {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: rgba(128, 128, 128, 0.15);
-  color: var(--color-text-secondary, #667085);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .mlweb-imtool-win-controls {
@@ -213,54 +203,6 @@ html[data-theme="dark-slate"] .mlweb-imtool-title {
 .mlweb-imtool-win-btn.btn-close-info:hover {
   background: rgba(128, 128, 128, 0.18);
   color: var(--color-text-primary, #1d2433);
-}
-
-.mlweb-imtool-win-btn span {
-  display: block;
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.mlweb-imtool-win-btn.btn-close span::before {
-  content: "×";
-  position: absolute;
-  inset: -2px 0 0;
-  opacity: 0;
-  text-align: center;
-  font: 700 10px/13px Arial, sans-serif;
-}
-
-.mlweb-imtool-win-btn.btn-min span::before {
-  content: "−";
-  position: absolute;
-  inset: -1px 0 0;
-  opacity: 0;
-  text-align: center;
-  font: 700 10px/13px Arial, sans-serif;
-}
-
-.mlweb-imtool-win-btn.btn-max span::before {
-  content: "↗";
-  position: absolute;
-  inset: -1px 0 0;
-  opacity: 0;
-  text-align: center;
-  font: 700 9px/13px Arial, sans-serif;
-}
-
-.mlweb-imtool-win-controls:hover .mlweb-imtool-win-btn span::before {
-  opacity: 1;
-}
-
-.mlweb-imtool-win.is-maximized .mlweb-imtool-win-btn.btn-max span::before {
-  content: "↙";
-  opacity: 1;
-}
-
-.mlweb-imtool-win.is-minimized .mlweb-imtool-win-btn.btn-max span::before {
-  content: "↗";
-  opacity: 1;
 }
 
 .mlweb-imtool-win.is-minimized .mlweb-imtool-win-controls {
@@ -533,14 +475,70 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
   position: absolute;
   z-index: 5;
 }
-.mlweb-imtool-resizer.r-e  { top: 0; right: 0; width: 6px; height: 100%; cursor: e-resize; }
-.mlweb-imtool-resizer.r-w  { top: 0; left: 0; width: 6px; height: 100%; cursor: w-resize; }
-.mlweb-imtool-resizer.r-s  { bottom: 0; left: 0; width: 100%; height: 6px; cursor: s-resize; }
-.mlweb-imtool-resizer.r-n  { top: 0; left: 0; width: 100%; height: 6px; cursor: n-resize; }
-.mlweb-imtool-resizer.r-se { bottom: 0; right: 0; width: 14px; height: 14px; cursor: se-resize; }
-.mlweb-imtool-resizer.r-sw { bottom: 0; left: 0; width: 14px; height: 14px; cursor: sw-resize; }
-.mlweb-imtool-resizer.r-ne { top: 0; right: 0; width: 14px; height: 14px; cursor: ne-resize; }
-.mlweb-imtool-resizer.r-nw { top: 0; left: 0; width: 14px; height: 14px; cursor: nw-resize; }
+
+.mlweb-imtool-resizer.r-e {
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: e-resize;
+}
+
+.mlweb-imtool-resizer.r-w {
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  cursor: w-resize;
+}
+
+.mlweb-imtool-resizer.r-s {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  cursor: s-resize;
+}
+
+.mlweb-imtool-resizer.r-n {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  cursor: n-resize;
+}
+
+.mlweb-imtool-resizer.r-se {
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  cursor: se-resize;
+}
+
+.mlweb-imtool-resizer.r-sw {
+  bottom: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  cursor: sw-resize;
+}
+
+.mlweb-imtool-resizer.r-ne {
+  top: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  cursor: ne-resize;
+}
+
+.mlweb-imtool-resizer.r-nw {
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nw-resize;
+}
 
 .mlweb-imtool-grip {
   position: absolute;
@@ -751,7 +749,7 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
     gap: 6px;
   }
 
-  .mlweb #bar .actions > :is(button, select, .toolbar-menu) {
+  .mlweb #bar .actions> :is(button, select, .toolbar-menu) {
     flex: 0 0 auto;
     max-width: 58vw;
   }
@@ -808,9 +806,154 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .mlweb-imtool-win,
   .mlweb-imtool-win.is-minimized {
     transition: none;
     transform: none;
   }
+}
+
+/* =============================================================================
+   Polish: window-control glyphs, button sizing that beats the runtime's global
+   `.mlweb button` rules, touch gestures and phone layout
+   ============================================================================= */
+.mlweb-imtool-stage {
+  touch-action: none;
+}
+
+.mlweb-imtool-win button.mlweb-imtool-win-btn {
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.mlweb-imtool-win button.mlweb-imtool-win-btn.btn-close-info {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
+.mlweb-imtool-win-btn svg {
+  width: 9px;
+  height: 9px;
+  opacity: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+  transition: opacity .12s ease;
+}
+
+.mlweb-imtool-win-controls:hover .mlweb-imtool-win-btn svg {
+  opacity: 1;
+}
+
+.mlweb-imtool-win-btn .ic-restore {
+  display: none;
+}
+
+.mlweb-imtool-win.is-maximized .mlweb-imtool-win-btn .ic-max {
+  display: none;
+}
+
+.mlweb-imtool-win.is-maximized .mlweb-imtool-win-btn .ic-restore {
+  display: block;
+  opacity: 1;
+}
+
+.mlweb-imtool-win.is-minimized .mlweb-imtool-win-btn .ic-max {
+  display: none;
+}
+
+.mlweb-imtool-win.is-minimized .mlweb-imtool-win-btn .ic-restore {
+  display: block;
+  opacity: 1;
+}
+
+.mlweb-imtool-win button.mlweb-imtool-tb-btn {
+  min-height: 0;
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 6px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.mlweb-imtool-tb-btn svg {
+  flex: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (hover: none),
+(max-width: 600px) {
+  .mlweb-imtool-win-controls {
+    gap: 10px;
+    inset-inline-start: 12px;
+  }
+
+  .mlweb-imtool-win button.mlweb-imtool-win-btn:not(.btn-close-info) {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mlweb-imtool-win-btn svg {
+    width: 12px;
+    height: 12px;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 600px) {
+
+  /* Controls sit at the start; the title starts right after them and keeps all the remaining width. */
+  .mlweb-imtool-titlebar {
+    justify-content: flex-start;
+    padding: 8px 12px;
+    padding-inline-start: 104px;
+    min-height: 44px;
+  }
+
+  .mlweb-imtool-title-wrap {
+    justify-content: flex-start;
+    flex: 1;
+  }
+
+  .mlweb-imtool-win.is-minimized .mlweb-imtool-titlebar {
+    padding-inline-start: 78px;
+  }
+
+  .mlweb-imtool-toolbar {
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .mlweb-imtool-win button.mlweb-imtool-tb-btn {
+    height: 36px;
+    min-width: 36px;
+    padding: 0 11px;
+    font-size: 13px;
+  }
+
+  .mlweb-imtool-tb-btn svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .mlweb-imtool-zoom-display {
+    height: 32px;
+  }
+}
+
+/* A cell with an open menu rises above the sticky toolbar at every width (it was only done on phones). */
+.mlweb #nb .cell:has(.cell-menu[open]) {
+  z-index: 30;
+}
+
+.mlweb .cell-menu[open] {
+  z-index: 31;
 }
