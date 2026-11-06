@@ -8,7 +8,6 @@
     "og:test": "node --test tests/og-render.test.js",
     "og:snapshot": "node scripts/og-snapshot.mjs",
     "sync:mcp": "node scripts/sync-mcp-rules.js",
-    "build:notebook-runtime": "node -e \"console.error('ERROR: The MATLAB runtime artifact (public/assets/notebook-runtime) is built from the external online-matlab-compiler source, which has not yet been migrated into this repo. To rebuild: clone the online-matlab-compiler repo alongside this one and run its build manually. See docs/plans/Cpp-Runtime-Implementation-Plan.md.'); process.exit(1)\"",
     "dev": "npm run dev:vercel",
     "dev:vercel": "concurrently -k -n vercel,sync -c blue,magenta \"npx vercel dev --local --listen 8081\" \"npx wait-on tcp:8081 && npx browser-sync start --proxy localhost:8081 --port 8080 --files 'public/**/*.html,public/src/**/*.js,public/src/**/*.css,api/**/*.js' --reload-delay 250 --no-open\"",
     "dev:static": "npx http-server public -p 8080 -o -c-1",
@@ -20,8 +19,10 @@
     "push": "git switch production && git merge main && git push && git switch main",
     "push:all": "npm run zip && git push && npm run push",
     "revert": "git reset --soft HEAD~1",
-    "build:cpp-runtime": "npm ci --prefix runtimes/cpp --cache node_modules/.cache/npm && npm run build --prefix runtimes/cpp",
-    "typecheck:cpp": "npm run typecheck --prefix runtimes/cpp"
+    "build:runtimes": "npm ci --prefix runtimes --cache node_modules/.cache/npm && npm run build --prefix runtimes",
+    "build:cpp-runtime": "npm run build:runtimes",
+    "typecheck:runtimes": "npm run typecheck --prefix runtimes",
+    "typecheck:cpp": "npm run typecheck:runtimes"
   },
   "keywords": [
     "examination",

@@ -1,0 +1,27 @@
+{
+  "name": "basmagi-runtimes",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.18.6",
+    "@codemirror/commands": "^6.8.1",
+    "@codemirror/lang-cpp": "^6.0.3",
+    "@codemirror/language": "^6.11.3",
+    "@codemirror/legacy-modes": "^6.5.5",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.38.6",
+    "@lezer/highlight": "^1.2.1",
+    "codemirror": "^6.0.2",
+    "dompurify": "^3.2.6",
+    "katex": "^0.16.22",
+    "marked": "^15.0.12"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.5",
+    "typescript": "^5.8.3"
+  }
+}
