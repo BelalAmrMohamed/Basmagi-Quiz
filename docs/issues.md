@@ -39,10 +39,6 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 ### Dictation for Essay Questions (Lesson & Quiz Pages)
 Add dictation feature for essays in quizzes and lessons
 
-### "معلومات المجلد" and "معلومات المادة" 
-They both should be updated to include notebooks now.
-
-
 ### Result Pages
 
 #### Videos (Easy to make and intersting idea)
@@ -56,13 +52,18 @@ They both should be updated to include notebooks now.
 * Some vidoes will be displayed based on the percentage of the result.
 
 ### `public\about.html` Page
+
+#### Redesign
+Redesign the whole page:
+* Journey style page with different scroll effects for each different sections.
+* It should use its own CSS styling instead of importing from the main page or other pages.
+* It sill should be resposive to the themes of the platform, even if new themes get added.
+* It shouldn't use the shared animations, it should get its own animations.
+* It lacks images or visual elements.
+
+#### Suggestions
 * Suggestion: Add an open-source Angle (Since the repo is currently open source).
 * Suggestion: Add a short testimonial or review.
-* **The `المنصة بالأرقام` section:**
-  * The number "كلية ومرحلة تعليمية" is incorrect, it's showing 1, even though its supposed to be 2: CS College (Exists on the platform with many courses and content) and High Schools (Exists on the platform with a course and its content)
-  * The section only shows the number of published quizzes, it doesn't show lessons or notebooks.
-  * It says that "مادة وتصنيف" is `5`, but there is no way, a single term of CS College on the platform probably has more than 5 courses. It's no way that the whole platform has 5, or maybe the label wasn't intended for "courses", douple check and fix.
-
 
 ### Create Quiz Page
 `create-quiz.js` is 5000+ lines in one file — It's the right time to split it into modules.

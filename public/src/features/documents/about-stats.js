@@ -1,7 +1,7 @@
 // public/src/features/documents/about-stats.js
 // Two independent live-loaded pieces for about.html:
 //
-// 1. Platform stats (quizzes/categories/colleges/creators) shown in the
+// 1. Platform stats (quizzes/lessons/notebooks/courses/education tracks/creators) shown in the
 //    "المنصة بالأرقام" section — GET /api/admin?platformStats=true, a
 //    public anon-key-only read (see api/admin.js's isPlatformStats branch)
 //    mirroring the counts control.html used to show, minus anything
@@ -25,15 +25,17 @@ const PROFILE_ENDPOINT = `/api/admin?handle=${encodeURIComponent(PROFILE_HANDLE)
 
 const STAT_FIELDS = [
     { valueId: "statValueQuizzes", cardId: "statCardQuizzes", key: "totalQuizzes" },
-    { valueId: "statValueCategories", cardId: "statCardCategories", key: "totalCategories" },
-    { valueId: "statValueColleges", cardId: "statCardColleges", key: "totalColleges" },
+    { valueId: "statValueLessons", cardId: "statCardLessons", key: "totalLessons" },
+    { valueId: "statValueNotebooks", cardId: "statCardNotebooks", key: "totalNotebooks" },
+    { valueId: "statValueCourses", cardId: "statCardCourses", key: "totalCourses" },
+    { valueId: "statValueEducationTracks", cardId: "statCardEducationTracks", key: "totalEducationTracks" },
     { valueId: "statValueCreators", cardId: "statCardCreators", key: "totalCreators" },
 ];
 
 function formatCount(n) {
     if (typeof n !== "number" || !Number.isFinite(n)) return "—";
     try {
-        return n.toLocaleString("ar-EG");
+        return n.toLocaleString("en-US");
     } catch (_) {
         return String(n);
     }
@@ -181,7 +183,7 @@ const sparkState = { daily: [], drawn: false, resizeBound: false };
 
 function formatDay(day) {
     try {
-        return new Intl.DateTimeFormat("ar-EG", { day: "numeric", month: "long" }).format(
+        return new Intl.DateTimeFormat("ar-EG-u-nu-latn", { day: "numeric", month: "long" }).format(
             new Date(`${day}T12:00:00`),
         );
     } catch (_) {
@@ -270,7 +272,7 @@ function renderSparkline(daily) {
         guide.setAttribute("visibility", "visible");
         hoverDot.setAttribute("visibility", "visible");
         if (tip) {
-            tip.textContent = `${formatDay(daily[best].day)} · ${formatCount(daily[best].views)} مشاهدة`;
+            tip.textContent = `${formatDay(daily[best].day)} | ${formatCount(daily[best].views)} مشاهدة`;
             tip.style.left = `${Math.min(Math.max((p.x / w) * 100, 14), 86)}%`;
             tip.hidden = false;
         }

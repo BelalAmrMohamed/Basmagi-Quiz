@@ -2302,8 +2302,7 @@ async function handleStats(req, res) {
   const isPlatformStats = req.query.platformStats === "true";
 
   // ── Public platform stats (about.html) ──────────────────────────────────
-  // Same underlying counts as handleControlGet's platformStats, but
-  // computed with the anon client (public/RLS-governed reads only) and
+  // Computed with the anon client (public/RLS-governed reads only) and
   // stripped of anything developer-only: no ownerEmail, and "creators" is a
   // plain count rather than the admin_users management list. This is the
   // only stats shape meant to be shown to every visitor, not just the
@@ -2313,13 +2312,25 @@ async function handleStats(req, res) {
       .from("quizzes")
       .select("id", { count: "exact", head: true });
 
-    const { data: catData } = await supabase.from("quizzes").select("category");
-    const uniqueCategories = new Set((catData || []).map((r) => r.category));
+    const { count: lessonCount } = await supabase
+      .from("lesson_public")
+      .select("id", { count: "exact", head: true });
 
-    const { count: collegeCount } = await supabase
-      .from("colleges")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true);
+    const { count: notebookCount } = await supabase
+      .from("notebook_public")
+      .select("id", { count: "exact", head: true });
+
+    const { count: courseCount } = await supabase
+      .from("courses")
+      .select("id", { count: "exact", head: true });
+
+    // Count education tracks represented by courses (e.g. University and
+    // High), rather than college rows; some stages have no college record.
+    const { data: courseTracks } = await supabase
+      .from("courses")
+      .select("education_type")
+      .neq("education_type", "Featured");
+    const uniqueEducationTracks = new Set((courseTracks || []).map((row) => row.education_type).filter(Boolean));
 
     const { count: creatorCount } = await supabase
       .from("admin_users")
@@ -2327,8 +2338,10 @@ async function handleStats(req, res) {
 
     return res.status(200).json({
       totalQuizzes: quizCount ?? 0,
-      totalCategories: uniqueCategories.size,
-      totalColleges: collegeCount ?? 0,
+      totalLessons: lessonCount ?? 0,
+      totalNotebooks: notebookCount ?? 0,
+      totalCourses: courseCount ?? 0,
+      totalEducationTracks: uniqueEducationTracks.size,
       totalCreators: creatorCount ?? 0,
     });
   }

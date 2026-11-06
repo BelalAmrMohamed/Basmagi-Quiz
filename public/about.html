@@ -133,7 +133,7 @@
                     <p>لقطة سريعة من داخل بصمجي، تتحدّث بالأرقام بدل الشعارات.</p>
                 </div>
                 <div class="platform-stats" id="platformStats" aria-live="polite">
-                    <div class="platform-stat-card platform-stat-loading" id="statCardQuizzes">
+                    <div class="platform-stat-card platform-stat-loading" id="statCardQuizzes" data-stat-index="01">
                         <span class="platform-stat-icon" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -146,7 +146,30 @@
                         <strong class="platform-stat-value" id="statValueQuizzes">—</strong>
                         <span class="platform-stat-label">امتحان منشور</span>
                     </div>
-                    <div class="platform-stat-card platform-stat-loading" id="statCardCategories">
+                    <div class="platform-stat-card platform-stat-loading" id="statCardLessons" data-stat-index="02">
+                        <span class="platform-stat-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                                <path d="M9 7h7M9 11h7M9 15h4" />
+                            </svg>
+                        </span>
+                        <strong class="platform-stat-value" id="statValueLessons">—</strong>
+                        <span class="platform-stat-label">درس منشور</span>
+                    </div>
+                    <div class="platform-stat-card platform-stat-loading" id="statCardNotebooks" data-stat-index="03">
+                        <span class="platform-stat-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="16" rx="2" />
+                                <path d="m8 10 3 2-3 2M13 15h4" />
+                            </svg>
+                        </span>
+                        <strong class="platform-stat-value" id="statValueNotebooks">—</strong>
+                        <span class="platform-stat-label">دفتر منشور</span>
+                    </div>
+                    <div class="platform-stat-card platform-stat-loading" id="statCardCourses" data-stat-index="04">
                         <span class="platform-stat-icon" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -154,10 +177,10 @@
                                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                             </svg>
                         </span>
-                        <strong class="platform-stat-value" id="statValueCategories">—</strong>
-                        <span class="platform-stat-label">مادة وتصنيف</span>
+                        <strong class="platform-stat-value" id="statValueCourses">—</strong>
+                        <span class="platform-stat-label">مقرر دراسي</span>
                     </div>
-                    <div class="platform-stat-card platform-stat-loading" id="statCardColleges">
+                    <div class="platform-stat-card platform-stat-loading" id="statCardEducationTracks" data-stat-index="05">
                         <span class="platform-stat-icon" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -166,10 +189,10 @@
                                 <path d="M10 22v-6h4v6" />
                             </svg>
                         </span>
-                        <strong class="platform-stat-value" id="statValueColleges">—</strong>
-                        <span class="platform-stat-label">كلية ومرحلة تعليمية</span>
+                        <strong class="platform-stat-value" id="statValueEducationTracks">—</strong>
+                        <span class="platform-stat-label">مسار تعليمي نشط</span>
                     </div>
-                    <div class="platform-stat-card platform-stat-loading" id="statCardCreators">
+                    <div class="platform-stat-card platform-stat-loading" id="statCardCreators" data-stat-index="06">
                         <span class="platform-stat-icon" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -186,19 +209,23 @@
 
                 <div class="live-stats" id="liveStats" aria-live="off">
                     <div class="live-stats-block live-stats-block--total platform-stat-loading" id="liveCardTotal">
-                        <span class="live-stats-label">إجمالي مشاهدات المنصة</span>
+                        <span class="live-stats-label">إجمالي مشاهدات المنصة (منذ بدء تسجيل المشاهدات في شهر 11 عام
+                            2026)</span>
                         <strong class="platform-stat-value live-stats-total" id="liveTotalViews">—</strong>
-                        <span class="live-online" id="liveOnline"><span class="live-dot" aria-hidden="true"></span><b id="liveOnlineCount">—</b> متصل الآن</span>
+                        <span class="live-online" id="liveOnline"><span class="live-dot" aria-hidden="true"></span><b
+                                id="liveOnlineCount">—</b> متصل الآن</span>
                     </div>
                     <div class="live-stats-block live-stats-block--today platform-stat-loading" id="liveCardToday">
-                        <span class="live-stats-label">اليوم</span>
+                        <span class="live-stats-label">هذا اليوم</span>
                         <strong class="platform-stat-value" id="liveTodayViews">—</strong>
                         <span class="platform-stat-label">مشاهدة</span>
                     </div>
                     <figure class="live-stats-block live-stats-block--trend" id="liveCardTrend">
-                        <figcaption class="live-stats-label">المشاهدات في آخر ٣٠ يومًا</figcaption>
+                        <figcaption class="live-stats-label">المشاهدات في آخر 30 يومًا (على اليسار أحدث يوم)
+                        </figcaption>
                         <div class="live-spark-wrap" id="liveSparkWrap">
-                            <svg class="live-spark" id="liveSpark" role="img" aria-label="رسم بياني لمشاهدات آخر ٣٠ يومًا"></svg>
+                            <svg class="live-spark" id="liveSpark" role="img"
+                                aria-label="رسم بياني لمشاهدات آخر 30 يومًا"></svg>
                             <div class="live-spark-tip" id="liveSparkTip" hidden></div>
                         </div>
                     </figure>
@@ -209,21 +236,52 @@
                 <div class="about-section-heading">
                     <span class="stack-eyebrow">هندسة وراء تجربة بسيطة</span>
                     <h2 id="stack-heading">كيف بُنيت المنصة؟</h2>
-                    <p>منصة امتحانات بصمجي مشروع مغلق المصدر، وهذه أبرز الأدوات والتقنيات التي تقف خلف الواجهة والخوادم وتجربة دفاتر الأكواد.</p>
+                    <p>منصة امتحانات بصمجي مشروع مغلق المصدر، وهذه أبرز الأدوات والتقنيات التي تقف خلف الواجهة والخوادم
+                        وتجربة دفاتر الأكواد.</p>
                 </div>
                 <div class="stack-showcase" aria-label="طبقات وتقنيات منصة بصمجي">
-                    <article class="stack-feature-card"><span class="stack-index">01 / EXPERIENCE</span><h3>تجربة ويب جاهزة للتوسع</h3><p>واجهة عربية مرنة تعمل كتطبيق قابل للتثبيت، وتجمع أدوات الويب الحديثة مع استضافة موثوقة.</p><div class="stack-tags"><span>JavaScript</span><span>CSS</span><span>Node.js</span><span>PWA</span><span>Vercel</span></div></article>
-                    <article class="stack-feature-card"><span class="stack-index">02 / DISCOVERY</span><h3>محتوى يسهل اكتشافه</h3><p>تهيئة الصفحات لمحركات البحث ومحركات الإجابة التوليدية لتفهم محتوى بصمجي وتعرضه بوضوح.</p><div class="stack-tags"><span>SEO</span><span>GEO</span><span>Metadata</span></div></article>
-                    <article class="stack-feature-card stack-feature-card--dark"><span class="stack-index">03 / NOTEBOOKS</span><h3>دفاتر أكواد تفاعلية</h3><p>بيئة تشغيل ومفسّر للأكواد داخل صفحات الدفتر وإنشاء دفتر جديد، مع عرض النتائج في سياق التعلم.</p><div class="stack-tags"><span>Runtime Interpreter</span><span>Notebook</span><span>إنشاء دفتر</span></div></article>
-                    <article class="stack-feature-card"><span class="stack-index">04 / CONNECTIVITY</span><h3>بيانات وتكامل</h3><p>قاعدة بيانات علائقية وخدمات MCP تتيح ربط قدرات المنصة بالأدوات والأنظمة المتوافقة.</p><div class="stack-tags"><span>Supabase</span><span>PostgreSQL</span><span>MCP Server</span></div></article>
-                    <article class="stack-feature-card stack-feature-card--admin"><span class="stack-index">05 / PEOPLE & CONTROL</span><h3>إدارة بصلاحيات دقيقة</h3><p>تسجيل دخول للمشرفين عبر البريد ورمز تحقق أو Google وGitHub. ومن لوحة تحكم المطور يمكن إدارة المشرفين وتعيين صلاحيات مخصصة لكل منهم.</p><div class="stack-tags"><span>تسجيل آمن</span><span>لوحة المطور</span><span>إدارة المشرفين</span><span>صلاحيات مخصصة</span></div></article>
+                    <article class="stack-feature-card"><span class="stack-index">01 / EXPERIENCE</span>
+                        <h3>تجربة ويب جاهزة للتوسع</h3>
+                        <p>واجهة عربية مرنة تعمل كتطبيق قابل للتثبيت، وتجمع أدوات الويب الحديثة مع استضافة موثوقة.</p>
+                        <div class="stack-tags">
+                            <span>JavaScript</span><span>CSS</span><span>Node.js</span><span>PWA</span><span>Vercel</span>
+                        </div>
+                    </article>
+                    <article class="stack-feature-card"><span class="stack-index">02 / DISCOVERY</span>
+                        <h3>محتوى يسهل اكتشافه</h3>
+                        <p>تهيئة الصفحات لمحركات البحث ومحركات الإجابة التوليدية لتفهم محتوى بصمجي وتعرضه بوضوح.</p>
+                        <div class="stack-tags"><span>SEO</span><span>GEO</span><span>Metadata</span></div>
+                    </article>
+                    <article class="stack-feature-card stack-feature-card--dark"><span class="stack-index">03 /
+                            NOTEBOOKS</span>
+                        <h3>دفاتر أكواد تفاعلية</h3>
+                        <p>بيئة تشغيل ومفسّر للأكواد داخل صفحات الدفتر وإنشاء دفتر جديد، مع عرض النتائج في سياق التعلم.
+                        </p>
+                        <div class="stack-tags"><span>Runtime Interpreter</span><span>Notebook</span><span>إنشاء
+                                دفتر</span></div>
+                    </article>
+                    <article class="stack-feature-card"><span class="stack-index">04 / CONNECTIVITY</span>
+                        <h3>بيانات وتكامل</h3>
+                        <p>قاعدة بيانات علائقية وخدمات MCP تتيح ربط قدرات المنصة بالأدوات والأنظمة المتوافقة.</p>
+                        <div class="stack-tags"><span>Supabase</span><span>PostgreSQL</span><span>MCP Server</span>
+                        </div>
+                    </article>
+                    <article class="stack-feature-card stack-feature-card--admin"><span class="stack-index">05 / PEOPLE
+                            & CONTROL</span>
+                        <h3>إدارة بصلاحيات دقيقة</h3>
+                        <p>تسجيل دخول للمشرفين عبر البريد ورمز تحقق أو Google وGitHub. ومن لوحة تحكم المطور يمكن إدارة
+                            المشرفين وتعيين صلاحيات مخصصة لكل منهم.</p>
+                        <div class="stack-tags"><span>تسجيل آمن</span><span>لوحة المطور</span><span>إدارة
+                                المشرفين</span><span>صلاحيات مخصصة</span></div>
+                    </article>
                 </div>
             </section>
             <section class="about-section telegram-showcase-section" aria-labelledby="telegram-showcase-heading">
                 <div class="about-section-heading">
                     <div class="hero-kicker telegram-kicker">المذاكرة المتنقلة</div>
                     <h2 id="telegram-showcase-heading">الباشــمبصمج معك أينما ذهبت — متوفر الآن على تيليجرام</h2>
-                    <p>لا تحتاج لفتح المتصفح في كل مرة. يمكنك الآن مناقشة أسئلتك، رفع محاضراتك، وتوليد امتحانات كاملة مباشرة من تطبيق تيليجرام على هاتفك أو حاسوبك.</p>
+                    <p>لا تحتاج لفتح المتصفح في كل مرة. يمكنك الآن مناقشة أسئلتك، رفع محاضراتك، وتوليد امتحانات كاملة
+                        مباشرة من تطبيق تيليجرام على هاتفك أو حاسوبك.</p>
                 </div>
 
                 <div class="about-telegram-container" id="aboutTelegramCardMount">
@@ -420,11 +478,11 @@
     <script type="module" src="src/features/documents/documents-shell.js"></script>
     <script type="module" src="src/features/documents/doc-toc.js"></script>
     <script type="module" src="src/features/documents/about-stats.js"></script>
-<script type="module">
-    import { mountTelegramBotCard } from "./src/components/telegram-bot-card/telegram-bot-card.js";
-    mountTelegramBotCard(document.getElementById("aboutTelegramCardMount"), { variant: "showcase" });
-</script>
-<script src="/src/shared/analytics-beacon.js" defer></script>
+    <script type="module">
+        import { mountTelegramBotCard } from "./src/components/telegram-bot-card/telegram-bot-card.js";
+        mountTelegramBotCard(document.getElementById("aboutTelegramCardMount"), { variant: "showcase" });
+    </script>
+    <script src="/src/shared/analytics-beacon.js" defer></script>
 </body>
 
 </html>
