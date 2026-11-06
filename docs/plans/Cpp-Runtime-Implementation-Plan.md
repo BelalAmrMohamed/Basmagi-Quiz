@@ -2,7 +2,7 @@
 
 ## Decisions (all resolved)
 - **Runtime ids:** `matlab` and `cpp`.
-- **MATLAB runtime:** untouched. Its `runtime.js` stays a built artifact. The uploaded `online-matlab-compiler` is the standalone site and has no `MLWebNotebook.mount` embed layer, so it is not used. Do not add it to Basmagi.
+- **MATLAB runtime:** `public/assets/notebook-runtime/runtime.js` is the committed built artifact and **does** expose `MLWebNotebook.mount`. The `online-matlab-compiler` standalone source (`apps/web/src/main.ts`) does not export `.mount` — the mount wrapper was added when building the artifact for Basmagi. Full source migration into the Basmagi repo (so `build:notebook-runtime` regenerates the artifact from source) is the remaining work; until that migration the artifact is committed and treated as the source of truth. Do not hand-edit it.
 - **C++ runtime:** new Basmagi-owned source in `runtimes/cpp/` (TypeScript + esbuild). It builds to `public/assets/notebook-runtime-cpp/{runtime.js,runtime.css}` and is committed, like the MATLAB build. It exposes `window.BasmagiCppNotebook.mount`, with the same contract as `MLWebNotebook.mount`.
 - **Execution:** Supabase Edge Function `cpp-run` calls a remote compiler. The primary provider is Wandbox (gcc, no key). Piston (`emkc.org`) is used only if the secret `PISTON_TOKEN` is set, because its public API now requires authorization (educational, low-volume use is allowed). Apply for the token in parallel; this does not block the work.
 - **Cell model:** Jupyter-style, implemented by **replay**. A remote compiler is stateless, so every run assembles one program from cells 1..k. Output of earlier cells is discarded, and only cell k's output is shown.
@@ -140,6 +140,7 @@ Files: `index.ts`, `assemble.js` (pure ESM, imported by both Deno and `node --te
   - `splitSections`.
 - `tests/cpp-providers.test.js`: mocked `fetch` for Wandbox and Piston mapping, retry, fallback, truncation, and 429 from the quota.
 - `tests/notebook-runtime-cpp.test.js`: `cpp` accepted, unknown runtime rejected, `stdin` kept and validated, `routeFile("cpp","a.cpp") === "code"`, and convert/export round trip.
+- `tests/notebook-shell-parity.test.js`: regression + parity coverage. Verifies that both runtimes expose `{mount}` via their built artifacts (string-search), that the C++ source delegates to `mountNotebookShell` rather than re-implementing the shell, and that both runtimes are listed in `RUNTIME_CONFIG` with the required fields (`global`, `base`, `kernel`).
 - Playwright (as before): mock `**/functions/v1/cpp-run`. Verify the run flow, Shift+Enter, error-line jump, the `cin` field, selector lock after save, and the "Edit a copy" menu entry still injecting.
 - Seed two C++ notebooks in `scripts/seed-notebooks.mjs`:
   - "2D & 3D arrays" (declaration, nested loops, passing to functions);

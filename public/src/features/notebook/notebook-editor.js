@@ -39,6 +39,11 @@ const cellToPlain = (c) => ({ type: c.type, source: c.source, ...(typeof c.stdin
 const STR = {
   en: {
     heading: "Create notebook", headingEdit: "Edit notebook", title: "Title", lang: "Notebook language", desc: "Description", src: "Source link (optional)",
+    topEyebrow: "NOTEBOOK STUDIO", topDescription: "Shape the notebook details, choose a runtime, then start building cells.",
+    detailsKicker: "01 / DETAILS", detailsHeading: "Set up your notebook", formIntro: "Add a clear title and choose how this notebook should be presented.", draftLabel: "Draft details",
+    identityHeading: "Notebook details", identityIntro: "Give learners enough context to know what they’ll open.", titleHint: "A concise title makes this notebook easier to find.", descriptionHint: "Describe the topic, goal, or expected starting point.", sourceHint: "Add a reference learners can open for more detail.",
+    settingsHeading: "Language and runtime", settingsIntro: "Choose how the notebook reads and which engine runs its code.", languageHint: "Controls notebook text direction and interface language.", runtimeHintMatlab: "Runs in the browser with the MATLAB learning runtime.", runtimeHintCpp: "Runs C++ code using the online compiler service.", runtimeLock: "Locked after save",
+    placementHeading: "Publishing location", placementIntro: "Choose where learners will find this notebook.", course: "Course", folder: "Folder", slug: "URL slug", compressTitle: "Optimize notebook images", compressShort: "Compress images to WebP when publishing.", compressHint: "Image names and references are updated automatically.",
     import: "Import .ipynb / .m", save: "Save to My Content", savePlatform: "Save and publish", loading: "Loading editor…",
     saved: "Saved", savedMsg: "The notebook was saved to My Content.", driveDone: (n, f) => `Also backed up to Google Drive: “${n}” in “${f}”.`, publishedMsg: "The notebook was published.",
     fail: "Could not save", problems: (n) => `Fix ${n} problem${n === 1 ? "" : "s"} before saving`, importFail: "Import failed", importNotes: "Import notes",
@@ -49,6 +54,11 @@ const STR = {
   },
   ar: {
     heading: "إنشاء دفتر", headingEdit: "تعديل الدفتر", title: "العنوان", lang: "لغة الدفتر", desc: "الوصف", src: "رابط المصدر (اختياري)",
+    topEyebrow: "مساحة الدفاتر", topDescription: "أكمل تفاصيل الدفتر واختر بيئة التشغيل، ثم ابدأ ببناء الخلايا.",
+    detailsKicker: "٠١ / التفاصيل", detailsHeading: "إعداد الدفتر", formIntro: "أضف عنواناً واضحاً واختر طريقة عرض هذا الدفتر.", draftLabel: "تفاصيل المسودة",
+    identityHeading: "تفاصيل الدفتر", identityIntro: "أضف سياقاً يساعد المتعلمين على معرفة محتوى الدفتر.", titleHint: "يساعد العنوان المختصر على العثور على الدفتر.", descriptionHint: "اشرح الموضوع أو الهدف أو نقطة البداية المتوقعة.", sourceHint: "أضف مرجعاً يمكن للمتعلمين فتحه لمعرفة المزيد.",
+    settingsHeading: "اللغة وبيئة التشغيل", settingsIntro: "اختر لغة الدفتر والمحرك الذي يشغّل الشيفرة.", languageHint: "تحدد اتجاه النص ولغة واجهة الدفتر.", runtimeHintMatlab: "يعمل في المتصفح باستخدام بيئة MATLAB التعليمية.", runtimeHintCpp: "يشغّل شيفرة C++ عبر خدمة المترجم على الإنترنت.", runtimeLock: "مقفل بعد الحفظ",
+    placementHeading: "مكان النشر", placementIntro: "اختر المكان الذي سيجد فيه المتعلمون هذا الدفتر.", course: "المادة", folder: "المجلد", slug: "معرّف الرابط", compressTitle: "تحسين صور الدفتر", compressShort: "ضغط الصور إلى WebP عند النشر.", compressHint: "سيتم تحديث أسماء الصور ومراجعها تلقائياً.",
     import: "استيراد .ipynb / .m", save: "حفظ في امتحاناتك", savePlatform: "حفظ ونشر", loading: "جاري تحميل المحرر…",
     saved: "تم الحفظ", savedMsg: "تم حفظ الدفتر في «امتحاناتك».", driveDone: (n, f) => `ونُسخ احتياطياً إلى Google Drive: «${n}» داخل «${f}».`, publishedMsg: "تم نشر الدفتر.",
     fail: "تعذر الحفظ", problems: (n) => `أصلح ${n} من المشاكل قبل الحفظ`, importFail: "فشل الاستيراد", importNotes: "ملاحظات الاستيراد",
@@ -94,15 +104,25 @@ function applyChrome() {
   const area = $("contentArea");
   area.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
   area.setAttribute("lang", lang);
+  $("cnbShell").setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
+  $("cnbShell").setAttribute("lang", lang);
   $("cnbHeading").textContent = editId ? t("headingEdit") : t("heading");
+  $("cnbLblCourse").textContent = t("course");
+  $("cnbLblFolder").textContent = t("folder");
+  $("cnbLblSlug").textContent = t("slug");
   $("cnbLblTitle").textContent = t("title");
   $("cnbLblLang").textContent = t("lang");
   $("cnbLblRuntime").textContent = state.language === "ar" ? "بيئة التشغيل" : "Runtime";
   $("cnbLblDesc").textContent = t("desc");
   $("cnbLblSrc").textContent = t("src");
-  $("cnbCompressLbl").textContent = t("compress");
+  $("cnbCompressLbl").textContent = state.language === "ar" ? "ضغط الصور عند النشر" : "Compress images on publish";
   $("cnbCompressRow").hidden = localMode;
-  $("cnbSave").textContent = localMode ? t("save") : t("savePlatform");
+  const runtime = $("cnbRuntime").value || state.runtime;
+  $("cnbRuntimeCard").dataset.runtime = runtime;
+  $("cnbRuntimeLockNote").textContent = t("runtimeLock");
+  $("cnbRuntimeLockNote").hidden = !$("cnbRuntime").disabled;
+  $("cnbRuntimeCard").classList.toggle("is-locked", $("cnbRuntime").disabled);
+  $("cnbSaveLabel").textContent = localMode ? t("save") : t("savePlatform");
   document.title = `${t("heading")} | Basmagi Quiz`;
 }
 
@@ -207,7 +227,7 @@ async function save() {
         history.replaceState(history.state, "", `/notebook/edit/${encodeURIComponent(editId)}`);
         document.querySelector('.menu-item[href="/notebook/new"]')?.classList.remove("active");
       }
-      applyChrome(); $("cnbRuntime").disabled = true;
+      $("cnbRuntime").disabled = true; applyChrome();
       return;
     }
     let up;
@@ -296,6 +316,7 @@ export async function startEditor(edit = null) {
   } catch (err) { showNotification(t("loadFail"), err.message, "error"); }
   writeMeta(); applyChrome();
   $("cnbRuntime").disabled = !!editId;
+  applyChrome();
   try { await mountEditor(); } catch { showIssues(t("loadFail"), [t("runtimeFail")]); }
   void loadDraftAssets();
   import("./notebook-files-strip.js").then(({ mountFilesStrip }) => mountFilesStrip({
@@ -310,7 +331,7 @@ export async function startEditor(edit = null) {
   $("cnbForm").addEventListener("submit", (e) => e.preventDefault());
   $("cnbRuntime").addEventListener("change", async () => {
     if (editId) return;
-    state = { ...state, cells: currentCells() }; readMeta(); markDirty();
+    state = { ...state, cells: currentCells() }; readMeta(); applyChrome(); markDirty();
     try { await mountEditor(); showNotification("", state.language === "ar" ? "تم تغيير بيئة التشغيل." : "Runtime changed.", "info"); } catch { showIssues(t("loadFail"), [t("runtimeFail")]); }
   });
   $("cnbLanguage").addEventListener("change", async () => {

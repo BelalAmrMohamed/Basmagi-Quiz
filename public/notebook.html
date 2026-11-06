@@ -630,29 +630,26 @@
     <header class="cnb-top">
       <h1 id="cnbHeading">Create notebook</h1>
       <div class="cnb-top-actions">
-        <button type="button" id="cnbSave" class="cnb-btn cnb-btn--primary">Save to My Content</button>
+        <button type="button" id="cnbSave" class="cnb-btn cnb-btn--primary"><span id="cnbSaveLabel">Save to My Content</span></button>
       </div>
     </header>
-    <form id="cnbForm" class="cnb-meta" novalidate>
-      <label class="cnb-field cnb-field--title"><span id="cnbLblTitle">Title</span>
-        <input id="cnbTitle" type="text" maxlength="200" autocomplete="off" required></label>
-      <label class="cnb-field cnb-field--lang"><span id="cnbLblLang">Notebook language</span>
-        <select id="cnbLanguage">
-          <option value="en">English (LTR)</option>
-          <option value="ar">العربية (RTL)</option>
-        </select></label>
-      <label class="cnb-field cnb-field--desc"><span id="cnbLblDesc">Description</span>
-        <textarea id="cnbDescription" rows="2" maxlength="1200"></textarea></label>
-      <label class="cnb-field cnb-field--src"><span id="cnbLblSrc">Source link (optional)</span>
-        <input id="cnbSource" type="url" dir="ltr" placeholder="https://"></label>
-      <div id="cnbPlacementRow" class="cnb-field cnb-field--place" hidden>
-        <label><span>Course</span><select id="cnbCourse"></select></label>
-        <label><span>Folder</span><select id="cnbFolder"></select></label>
-        <label><span>Slug</span><input id="cnbSlug" type="text" dir="ltr" maxlength="80"></label>
+    <form id="cnbForm" class="cnb-form" novalidate>
+      <div class="cnb-field-grid">
+        <label class="cnb-field cnb-field--title" for="cnbTitle"><span id="cnbLblTitle">Title</span><input id="cnbTitle" type="text" maxlength="200" autocomplete="off" required></label>
+        <label class="cnb-field cnb-field--desc" for="cnbDescription"><span id="cnbLblDesc">Description</span><textarea id="cnbDescription" rows="2" maxlength="1200"></textarea></label>
+        <label class="cnb-field cnb-field--src" for="cnbSource"><span id="cnbLblSrc">Source link (optional)</span><input id="cnbSource" type="url" dir="ltr" placeholder="https://"></label>
+        <label class="cnb-field" for="cnbLanguage"><span id="cnbLblLang">Notebook language</span><select id="cnbLanguage"><option value="en">English (LTR)</option><option value="ar">العربية (RTL)</option></select></label>
+        <div class="cnb-runtime-card" id="cnbRuntimeCard" data-runtime="matlab">
+          <label class="cnb-field" for="cnbRuntime"><span id="cnbLblRuntime">Runtime</span><select id="cnbRuntime" aria-describedby="cnbRuntimeLockNote"><option value="matlab">MATLAB</option><option value="cpp">C++</option></select></label>
+          <span class="cnb-runtime-lock" id="cnbRuntimeLockNote" hidden>Runtime locked</span>
+        </div>
+        <fieldset id="cnbPlacementRow" class="cnb-field-grid cnb-field-grid--placement" hidden>
+          <label class="cnb-field" for="cnbCourse"><span id="cnbLblCourse">Course</span><select id="cnbCourse"></select></label>
+          <label class="cnb-field" for="cnbFolder"><span id="cnbLblFolder">Folder</span><select id="cnbFolder"></select></label>
+          <label class="cnb-field" for="cnbSlug"><span id="cnbLblSlug">URL slug</span><input id="cnbSlug" type="text" dir="ltr" maxlength="80"></label>
+        </fieldset>
+        <label id="cnbCompressRow" class="cnb-compress-card" for="cnbCompress" hidden><input id="cnbCompress" type="checkbox"><span id="cnbCompressLbl">Compress images to WebP on publish</span></label>
       </div>
-      <label id="cnbCompressRow" class="cnb-field cnb-field--place" hidden><span id="cnbCompressLbl"></span>
-        <input id="cnbCompress" type="checkbox"></label>
-      <label class="cnb-field"><span id="cnbLblRuntime">Runtime / بيئة التشغيل</span><select id="cnbRuntime"><option value="matlab">MATLAB</option><option value="cpp">C++</option></select></label>
     </form>
     <div id="cnbStorage" class="storage-banner" hidden></div>
     <div id="cnbIssues" class="cnb-issues" role="alert" aria-live="assertive" hidden></div>
