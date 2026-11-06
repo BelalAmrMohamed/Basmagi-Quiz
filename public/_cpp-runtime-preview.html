@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notebook runtime comparison</title>
+  <link rel="stylesheet" href="/src/styles/themes.css">
+  <link rel="stylesheet" href="/assets/notebook-runtime/runtime.css">
+  <link rel="stylesheet" href="/assets/notebook-runtime-cpp/runtime.css">
+  <style>
+    body { margin: 0; padding: 18px; color: var(--color-text-primary); background: var(--color-background); font: 15px system-ui, sans-serif; }
+    .preview-top { display:flex; gap:8px; align-items:center; margin-bottom:18px; }
+    .preview-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .preview-pane { min-width:0; }
+    .preview-pane h2 { margin:0 0 10px; }
+    @media(max-width:900px){.preview-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="preview-top">
+    <strong>Theme:</strong>
+    <button data-theme-choice="light">Light</button>
+    <button data-theme-choice="dark">Dark</button>
+    <button data-theme-choice="dark-slate">Dark-Slate</button>
+  </div>
+  <div class="preview-grid">
+    <section class="preview-pane"><h2>MATLAB reference</h2><div id="matlab"></div></section>
+    <section class="preview-pane"><h2>C++ runtime</h2><div id="cpp"></div></section>
+  </div>
+  <script src="/assets/notebook-runtime/runtime.js"></script>
+  <script src="/assets/notebook-runtime-cpp/runtime.js"></script>
+  <script>
+    for (const button of document.querySelectorAll('[data-theme-choice]')) button.onclick = () => document.documentElement.dataset.theme = button.dataset.themeChoice;
+    const notebook = (source) => ({ title:'Runtime preview', cells:[{id:'preview-cell',type:'code',source}] });
+    window.MLWebNotebook.mount({root:document.querySelector('#matlab'),baseUrl:'/assets/notebook-runtime/',notebook:notebook('x = 1;'),lang:'en'});
+    window.BasmagiCppNotebook.mount({root:document.querySelector('#cpp'),notebook:notebook('#include <iostream>\nint value;\nstd::cin >> value;\nstd::cout << value;'),lang:'en'});
+  </script>
+</body>
+</html>

@@ -1,4 +1,6 @@
-const COMPILER_OPTION='-std=c++17 -Wall -Wextra -O1'; let compilerCache={value:'',at:0};
+// Wandbox's compiler-option-raw field expects newline-separated flags.
+// A space-delimited value reaches g++ as one malformed argv option.
+const COMPILER_OPTION='-std=c++17\n-Wall\n-Wextra\n-O1'; let compilerCache={value:'',at:0};
 export async function runWandbox(code, stdin, signal) {
  let compiler='gcc-head'; if(Date.now()-compilerCache.at<3600000) compiler=compilerCache.value||compiler;
  else { try {const r=await fetch('https://wandbox.org/api/list.json',{signal});const list=await r.json();const gcc=list.filter(x=>/^gcc-/.test(x.name||'')&&/C\+\+/.test(x.language||'')).sort((a,b)=>new Intl.Collator('en',{numeric:true}).compare(b.name||'',a.name||'')); if(gcc[0])compiler=gcc[0].name;compilerCache={value:compiler,at:Date.now()};}catch{} }
