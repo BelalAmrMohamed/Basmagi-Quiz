@@ -43,6 +43,7 @@ export const LIMITS = {
   notebookSource: 500,
   notebookCells: 200,
   notebookCellSource: 20000,
+  notebookCellStdin: 4000,
   notebookCellId: 64,
   notebookBytes: 300_000,
   notebookAssets: 100, // max files in a notebook's asset manifest
@@ -50,8 +51,8 @@ export const LIMITS = {
 };
 
 /** Runtimes a notebook may declare. Unknown values are REJECTED (never defaulted).
- *  Python/C++ are future adapters, intentionally not listed. */
-export const NOTEBOOK_RUNTIMES = ["matlab"];
+ */
+export const NOTEBOOK_RUNTIMES = ["matlab", "cpp"];
 export const NOTEBOOK_SCHEMA_VERSION = 1;
 export const NOTEBOOK_LANGUAGES = ["en", "ar"];
 export const NOTEBOOK_CELL_TYPES = ["markdown", "code"];
@@ -436,7 +437,7 @@ const NOTEBOOK_CELL_ID_RE = /^[A-Za-z0-9_-]+$/;
  * assigning stable ids (`cell-N`) to cells that have none. It does NOT fix
  * invalid data (unknown types stay as given so checkNotebook can reject them).
  */
-export function normalizeNotebookContent(rawCells, language) {
+export function normalizeNotebookContent(rawCells, language, runtime = "matlab") {
   const cells = Array.isArray(rawCells) ? rawCells : [];
   const used = new Set(cells.map((c) => str(c?.id)).filter(Boolean));
   let n = 0;
@@ -454,6 +455,7 @@ export function normalizeNotebookContent(rawCells, language) {
       id: str(c?.id) || nextId(),
       type: typeof c?.type === "string" ? c.type : "",
       source: typeof c?.source === "string" ? c.source : c?.source == null ? "" : String(c.source),
+      ...(runtime === "cpp" && c?.type === "code" && typeof c?.stdin === "string" ? { stdin: c.stdin } : {}),
     })),
   };
 }
@@ -580,6 +582,9 @@ export function checkNotebook(input, opts = {}) {
         c.err("CELL_TOO_LONG", path, `الخلية ${n}: ${cell.source.length} حرف وتتجاوز ${LIMITS.notebookCellSource} — قسّمها إلى عدة خلايا.`);
       }
       if (!cell.source.trim()) c.warn("CELL_EMPTY", path, `الخلية ${n}: فارغة.`);
+    }
+    if (cell.stdin !== undefined && (str(input?.runtime) !== "cpp" || type !== "code" || typeof cell.stdin !== "string" || cell.stdin.length > LIMITS.notebookCellStdin)) {
+      c.err("CELL_STDIN_INVALID", `${path}.stdin`, `الخلية ${n}: stdin مسموح لخلايا C++ فقط وبحد أقصى ${LIMITS.notebookCellStdin} حرف.`);
     }
     if (type === "code") codeCells++;
     const id = cell.id;

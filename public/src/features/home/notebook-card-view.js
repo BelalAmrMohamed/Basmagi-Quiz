@@ -7,11 +7,12 @@
 // ============================================================================
 import { createTypeChip, tagCardType } from "./card-type.js";
 import { MORE_DOTS_ICON_SVG, DOWNLOAD_ICON_SVG } from "./icons.js";
+import { RUNTIME_CONFIG } from "../../shared/runtime-config.js";
 
-export const RUNTIME_LABELS = { matlab: "MATLAB (تعليمي)" };
+export const RUNTIME_LABELS = { matlab: "MATLAB (تعليمي)", cpp: "C++" };
 
 export function runtimeLabel(runtime) {
-  return RUNTIME_LABELS[runtime] || runtime || "";
+  return RUNTIME_CONFIG[runtime]?.label === "C++" ? "C++" : RUNTIME_LABELS[runtime] || RUNTIME_CONFIG[runtime]?.label || runtime || "";
 }
 
 /**

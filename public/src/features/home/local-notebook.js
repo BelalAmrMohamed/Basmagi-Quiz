@@ -9,12 +9,12 @@
 export function classifyDroppedFile(fileName) {
   const name = String(fileName || "").toLowerCase();
   if (name.endsWith(".json")) return "quiz";
-  if (name.endsWith(".ipynb") || name.endsWith(".m")) return "notebook";
+  if (/\.(ipynb|m|cpp|cc|cxx|h|hpp)$/.test(name)) return "notebook";
   if (name.endsWith(".zip")) return "notebook-zip";
   return "unsupported";
 }
 
-/** Splits dropped files into quiz JSON / notebook files (.ipynb .m .zip) / unsupported. */
+/** Splits dropped files into quiz JSON / notebook files (.ipynb .m .cpp .cc .cxx .h .hpp .zip) / unsupported. */
 export function partitionDroppedFiles(files) {
   const out = { quizFiles: [], notebookFiles: [], unsupported: [] };
   for (const file of Array.from(files || [])) {

@@ -23,7 +23,7 @@ const SCHEMA_VERSION = 1;
 
 const toDoc = (cells) => ({
   schemaVersion: SCHEMA_VERSION,
-  cells: cells.map((c, i) => ({ id: `cell-${i + 1}`, type: c.type, source: c.source })),
+  cells: cells.map((c, i) => ({ id: `cell-${i + 1}`, type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}) })),
 });
 
 const normalizeEol = (s) => String(s ?? "").replace(/\r\n?/g, "\n");
@@ -51,7 +51,7 @@ export function notebookFromIpynb(text) {
     const source = Array.isArray(cell?.source) ? cell.source.join("") : String(cell?.source ?? "");
     if (kind === "markdown") cells.push({ type: "markdown", source: normalizeEol(source) });
     else if (kind === "code") {
-      cells.push({ type: "code", source: normalizeEol(source) });
+      cells.push({ type: "code", source: normalizeEol(source), ...(typeof cell?.metadata?.stdin === "string" ? { stdin: cell.metadata.stdin } : {}) });
       if (Array.isArray(cell.outputs) && cell.outputs.length) outputsDropped++;
     } else {
       warnings.push(`الخلية ${i + 1}: النوع "${kind}" غير مدعوم وتم تجاهلها.`);
@@ -61,10 +61,9 @@ export function notebookFromIpynb(text) {
   if (!cells.length) throw new Error("لا توجد خلايا Markdown أو كود قابلة للاستيراد في هذا الملف.");
 
   const language = json.metadata?.language_info?.name || json.metadata?.kernelspec?.language || null;
-  if (language && !/^(matlab|octave)$/i.test(String(language))) {
-    warnings.push(`لغة الدفتر الأصلية "${language}" ليست MATLAB — سيُعامل المحتوى كـ MATLAB وقد لا يعمل.`);
-  }
-  return { content: toDoc(cells), warnings, language };
+  const runtime = /^(c\+\+|cpp)$/i.test(String(language || "")) || /cpp|c\+\+/i.test(String(json.metadata?.kernelspec?.name || "")) ? "cpp" : "matlab";
+  if (runtime === "matlab" && language && !/^(matlab|octave)$/i.test(String(language))) warnings.push(`لغة الدفتر الأصلية "${language}" ليست MATLAB — سيُعامل المحتوى كـ MATLAB وقد لا يعمل.`);
+  return { content: toDoc(cells), warnings, language, runtime };
 }
 
 /**
@@ -83,25 +82,29 @@ export function titleFromFileName(name) {
   return String(name || "")
     .split(/[\\/]/)
     .pop()
-    .replace(/\.(ipynb|m)$/i, "")
+    .replace(/\.(ipynb|m|cpp|cc|cxx|h|hpp)$/i, "")
     .replace(/[_]+/g, " ")
     .trim();
 }
 
 /**
- * Dispatches by file name. Anything other than .ipynb/.m is rejected.
- * @returns {{ title: string, runtime: "matlab", content: object, warnings: string[] }}
+ * Dispatches by file name. C++ source extensions are imported as one code cell.
+ * @returns {{ title: string, runtime: "matlab" | "cpp", content: object, warnings: string[] }}
  */
 export function notebookFromFile(fileName, text) {
   if (/\.ipynb$/i.test(fileName)) {
     const r = notebookFromIpynb(text);
-    return { title: titleFromFileName(fileName), runtime: "matlab", content: r.content, warnings: r.warnings };
+    return { title: titleFromFileName(fileName), runtime: r.runtime, content: r.content, warnings: r.warnings };
+  }
+  if (/\.(cpp|cc|cxx|h|hpp)$/i.test(fileName)) {
+    const source = trimBlankEdges(normalizeEol(text)); if (!source.trim()) throw new Error("ملف C++ فارغ.");
+    return { title: titleFromFileName(fileName), runtime: "cpp", content: toDoc([{ type: "code", source }]), warnings: [] };
   }
   if (/\.m$/i.test(fileName)) {
     const r = notebookFromMScript(text);
     return { title: titleFromFileName(fileName), runtime: "matlab", content: r.content, warnings: r.warnings };
   }
-  throw new Error(`نوع الملف غير مدعوم: ${fileName} (المدعوم: .ipynb و .m).`);
+  throw new Error(`نوع الملف غير مدعوم: ${fileName} (المدعوم: .ipynb و .m وملفات C++).`);
 }
 
 // ── Compiler lesson files ───────────────────────────────────────────────────
@@ -140,7 +143,7 @@ export const COMPILER_MIGRATION_PREFIX = "matlab-compiler:";
  * markdown are preserved exactly; image assets are referenced by file name in
  * the code (they ship with the notebook runtime), listed in `assets`.
  * @returns {{ migrationKey: string, sourceLessonId: string, slug: string, sortOrder: number,
- *            title: string, runtime: "matlab", content: object, assets: string[] }}
+ *            title: string, runtime: "matlab" | "cpp", content: object, assets: string[] }}
  */
 export function compilerLessonToNotebook(lesson) {
   if (!lesson?.id) throw new Error("ملف الدرس لا يحتوي @id.");

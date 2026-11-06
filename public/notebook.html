@@ -624,6 +624,7 @@
     <div id="notebookStatus" class="notebook-status" role="status">
       <span class="notebook-spinner" aria-hidden="true"></span> جاري تحميل الدفتر…
     </div>
+    <p id="notebookDisclaimer" class="notebook-disclaimer" hidden></p>
     <div id="notebookRoot" class="notebook-root"></div>
     <section id="cnbShell" class="cnb-shell" dir="ltr" lang="en" hidden>
     <header class="cnb-top">
@@ -651,9 +652,7 @@
       </div>
       <label id="cnbCompressRow" class="cnb-field cnb-field--place" hidden><span id="cnbCompressLbl"></span>
         <input id="cnbCompress" type="checkbox"></label>
-      <select id="cnbRuntime" hidden>
-        <option value="matlab">MATLAB</option>
-      </select>
+      <label class="cnb-field"><span id="cnbLblRuntime">Runtime / بيئة التشغيل</span><select id="cnbRuntime"><option value="matlab">MATLAB</option><option value="cpp">C++</option></select></label>
     </form>
     <div id="cnbStorage" class="storage-banner" hidden></div>
     <div id="cnbIssues" class="cnb-issues" role="alert" aria-live="assertive" hidden></div>

@@ -43,7 +43,7 @@ export function openInlineCreateNotebookModal() {
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
       </div>
-      <p class="create-quiz-modal__subtitle">الصق JSON الدفتر (انسخ البرومبت أولاً وأعطه لأداة الذكاء الاصطناعي)، أو ارفع ملف Jupyter <code>.ipynb</code> أو سكريبت MATLAB <code>.m</code>.</p>
+      <p class="create-quiz-modal__subtitle">الصق JSON الدفتر (انسخ البرومبت أولاً وأعطه لأداة الذكاء الاصطناعي)، أو ارفع ملف Jupyter <code>.ipynb</code> أو سكريبت MATLAB <code>.m</code> أو ملف C++ (<code>.cpp</code> وامتداداته).</p>
       <div class="create-quiz-modal__form-group create-quiz-modal__form-group--content">
         <label for="inlineNotebookJson" class="create-quiz-modal__label">JSON الدفتر</label>
         <textarea id="inlineNotebookJson" class="create-quiz-modal__textarea" rows="7" spellcheck="false" dir="ltr" aria-describedby="inlineNotebookFeedback" placeholder='{"title":"...","description":"...","source":"https://...","runtime":"matlab","cells":[{"type":"markdown","source":"..."},{"type":"code","source":"x = 1:5"}]}'></textarea>
@@ -56,7 +56,7 @@ export function openInlineCreateNotebookModal() {
           <button type="button" id="inlineNotebookCreate" class="inline-quiz-btn create-quiz-modal__btn create-quiz-modal__btn--create">إنشاء الدفتر ✨</button>
         </div>
       </div>
-      <input type="file" id="inlineNotebookFileInput" class="create-quiz-modal__file-input" accept=".ipynb,.m" />
+      <input type="file" id="inlineNotebookFileInput" class="create-quiz-modal__file-input" accept=".ipynb,.m,.cpp,.cc,.cxx,.h,.hpp" />
     </div>
   `;
   overlay.appendChild(modalCard);
@@ -136,8 +136,8 @@ export function openInlineCreateNotebookModal() {
     fileInput.value = "";
     if (!f) return;
     clearFeedback();
-    if (!/\.(ipynb|m)$/i.test(f.name)) {
-      showFeedback("error", "نوع الملف غير مدعوم", [`الملف «${f.name}» ليس .ipynb ولا .m.`, "المدعوم: ملفات Jupyter (.ipynb) وسكريبتات MATLAB (.m)."]);
+    if (!/\.(ipynb|m|cpp|cc|cxx|h|hpp)$/i.test(f.name)) {
+      showFeedback("error", "نوع الملف غير مدعوم", [`الملف «${f.name}» ليس امتداداً مدعوماً.`, "المدعوم: Jupyter (.ipynb)، MATLAB (.m)، وملفات C++ (.cpp/.cc/.cxx/.h/.hpp)."]);
       return;
     }
     try {

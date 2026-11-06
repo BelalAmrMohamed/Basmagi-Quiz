@@ -21,7 +21,7 @@ export function notebookFromPayload(p) {
     // Never default a missing/unknown runtime here: validation must flag it.
     runtime: typeof p?.runtime === "string" ? p.runtime : "",
     language: normalizeNotebookLang(p?.language || p?.content?.language) || detectNotebookLang({ title: p?.title, description: p?.description, cells }),
-    cells: cells.map((c) => ({ id: c.id, type: c.type, source: typeof c.source === "string" ? c.source : "" })),
+    cells: cells.map((c) => ({ id: c.id, type: c.type, source: typeof c.source === "string" ? c.source : "", ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}) })),
     // published file manifest [{path,mime,size,sha256,url}] (kept so republishing reuses uploaded files)
     assets: normalizeNotebookAssets(p?.content?.assets || p?.assets),
   };
@@ -59,7 +59,7 @@ export function buildPayload(state) {
     source: state.source.trim(),
     runtime: state.runtime,
     slug: state.slug.trim() || null,
-    content: { ...normalizeNotebookContent(state.cells, state.language), ...((state.assets || []).length ? { assets: state.assets } : {}) },
+    content: { ...normalizeNotebookContent(state.cells, state.language, state.runtime), ...((state.assets || []).length ? { assets: state.assets } : {}) },
   };
 }
 
@@ -79,11 +79,12 @@ const EN_ISSUES = {
   NOTEBOOK_TOO_LARGE: "The notebook is too large (maximum 300KB). Split it into several notebooks.",
   UNKNOWN_CELL_TYPE: "A cell has an unknown type (use code or markdown).",
   CELL_TOO_LONG: "A cell is longer than 20000 characters.",
+  CELL_STDIN_INVALID: "C++ input must be text no longer than 4000 characters.",
 };
 
 /** Same shared rules as the API/MCP: { errors:[msg], warnings:[msg] }. Messages are English when lang === "en". */
 export function validateState(state, lang = "ar") {
-  const check = checkNotebook({ ...state, content: normalizeNotebookContent(state.cells, state.language) });
+  const check = checkNotebook({ ...state, content: normalizeNotebookContent(state.cells, state.language, state.runtime) });
   const msg = (i) => (lang === "en" ? EN_ISSUES[i.code] || i.message : i.message);
   return { errors: check.errors.map(msg), warnings: check.warnings.map(msg), text: formatIssueList(check.errors) };
 }
@@ -92,7 +93,7 @@ export function validateState(state, lang = "ar") {
 export function importFileInto(state, fileName, text) {
   const r = notebookFromFile(fileName, text);
   return {
-    state: { ...state, title: state.title.trim() ? state.title : r.title, runtime: r.runtime, language: detectNotebookLang({ title: r.title, cells: r.content.cells }), cells: r.content.cells.map((c) => ({ type: c.type, source: c.source })) },
+    state: { ...state, title: state.title.trim() ? state.title : r.title, runtime: r.runtime, language: detectNotebookLang({ title: r.title, cells: r.content.cells }), cells: r.content.cells.map((c) => ({ type: c.type, source: c.source, ...(c.stdin !== undefined ? { stdin: c.stdin } : {}) })) },
     warnings: r.warnings,
   };
 }

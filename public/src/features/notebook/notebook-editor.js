@@ -10,6 +10,8 @@ import { fetchImportDraft, getDraftAssets, consumeImportDraft } from "../../shar
 import { escapeHtml } from "../home/escape-html.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { normalizeNotebookLang } from "../../shared/notebook-lang.js";
+import { loadRuntime } from "../../shared/runtime-loader.js";
+import { RUNTIME_CONFIG } from "../../shared/runtime-config.js";
 import * as M from "./notebook-editor-model.js";
 import { createWorkspaceBridge } from "../../shared/workspace-bridge.js";
 import * as wsStore from "../../shared/workspace-store.js";
@@ -22,7 +24,6 @@ import "./image-tool-window.js";
 import "./notebook-output-controls.js";
 import "./notebook-menu-controls.js";
 
-const RUNTIME_BASE = "/assets/notebook-runtime/";
 const $ = (id) => document.getElementById(id);
 let state = M.emptyNotebook();
 let editId = null;
@@ -30,8 +31,10 @@ let localMode = true; // false only for admin platform publishing
 let handle = null; // runtime mount handle
 let bridge = null; // workspace (IndexedDB) bridge — files are NOT sent anywhere until an admin publishes
 let mountedLang = "";
+let mountedRuntime = "";
 let dirtyFlag = false;
 let saving = false;
+const cellToPlain = (c) => ({ type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}) });
 
 const STR = {
   en: {
@@ -94,6 +97,7 @@ function applyChrome() {
   $("cnbHeading").textContent = editId ? t("headingEdit") : t("heading");
   $("cnbLblTitle").textContent = t("title");
   $("cnbLblLang").textContent = t("lang");
+  $("cnbLblRuntime").textContent = state.language === "ar" ? "بيئة التشغيل" : "Runtime";
   $("cnbLblDesc").textContent = t("desc");
   $("cnbLblSrc").textContent = t("src");
   $("cnbCompressLbl").textContent = t("compress");
@@ -130,35 +134,22 @@ function writeMeta() {
 const markDirty = () => { dirtyFlag = true; };
 
 let runtimePromise = null;
-function loadRuntime() {
-  if (window.MLWebNotebook?.mount) return Promise.resolve(window.MLWebNotebook);
-  if (!runtimePromise) {
-    runtimePromise = new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = `${RUNTIME_BASE}runtime.js`; s.async = true;
-      s.onload = () => (window.MLWebNotebook?.mount ? resolve(window.MLWebNotebook) : reject(new Error("runtime missing")));
-      s.onerror = () => { runtimePromise = null; reject(new Error("runtime failed to load")); };
-      document.head.append(s);
-    });
-  }
-  return runtimePromise;
-}
-
 async function mountEditor() {
-  const runtime = await loadRuntime();
+  const runtime = await loadRuntime(state.runtime);
   if (!bridge) bridge = createWorkspaceBridge(editId || "draft", { onWarn: (m) => showNotification("", m, "info"), onChange: markDirty });
   if (handle) { try { handle.destroy(); } catch { /* ignore */ } }
   const host = $("cnbEditor");
   host.replaceChildren();
   host.setAttribute("aria-busy", "false");
   mountedLang = state.language;
+  mountedRuntime = state.runtime;
   handle = runtime.mount({
     root: host,
-    baseUrl: RUNTIME_BASE,
+    baseUrl: RUNTIME_CONFIG[state.runtime].base,
     mode: "edit",
     lang: state.language,
-    notebook: { id: editId || "draft", title: state.title, schemaVersion: 1, runtime: "matlab", cells: state.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, type: c.type, source: c.source })) },
-    onChange: (cells) => { state = { ...state, cells: cells.map((c) => ({ type: c.type, source: c.source })) }; markDirty(); },
+    notebook: { id: editId || "draft", title: state.title, schemaVersion: 1, runtime: state.runtime, cells: state.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, ...cellToPlain(c) })) },
+    onChange: (cells) => { state = { ...state, cells: cells.map(cellToPlain) }; markDirty(); },
     onNotice: (m) => showNotification("", m, "info"),
   });
   void restoreWorkspace();
@@ -186,7 +177,7 @@ async function restoreWorkspace() {
 }
 
 
-function currentCells() { return handle ? handle.getCells().map((c) => ({ type: c.type, source: c.source })) : state.cells; }
+function currentCells() { return handle ? handle.getCells().map(cellToPlain) : state.cells; }
 
 async function save() {
   if (saving) return;
@@ -216,13 +207,13 @@ async function save() {
         history.replaceState(history.state, "", `/notebook/edit/${encodeURIComponent(editId)}`);
         document.querySelector('.menu-item[href="/notebook/new"]')?.classList.remove("active");
       }
-      applyChrome();
+      applyChrome(); $("cnbRuntime").disabled = true;
       return;
     }
     let up;
     try { up = await prepareNotebookAssets({ workspaceKey: bridge.key, cells: payload.content.cells, knownAssets: state.assets, compress: $("cnbCompress").checked }); }
     catch (e) { showIssues(t("assetFail"), [e.message]); return; }
-    const content = { ...normalizeNotebookContent(up.cells, state.language), ...(up.assets.length ? { assets: up.assets } : {}) };
+    const content = { ...normalizeNotebookContent(up.cells, state.language, state.runtime), ...(up.assets.length ? { assets: up.assets } : {}) };
     const body = { ...payload, content };
     const res = editId
       ? await api({ action: "update-notebook", id: editId, ...body })
@@ -268,7 +259,7 @@ async function importFile(f, opts = {}) {
     readMeta(); state = { ...state, cells: currentCells() };
     const r = M.importFileInto(opts.append ? { ...state, cells: [] } : state, f.name, await f.text());
     state = opts.append ? { ...state, cells: [...state.cells, ...r.state.cells] } : r.state; writeMeta(); applyChrome(); markDirty(); clearIssues();
-    if (handle && mountedLang === state.language) handle.setCells(state.cells); else await mountEditor();
+    if (handle && mountedLang === state.language && mountedRuntime === state.runtime) handle.setCells(state.cells); else await mountEditor();
     if (r.warnings.length) showIssues(t("importNotes"), r.warnings, "warn");
   } catch (err) { showIssues(t("importFail"), [err.message]); }
 }
@@ -304,6 +295,7 @@ export async function startEditor(edit = null) {
     }
   } catch (err) { showNotification(t("loadFail"), err.message, "error"); }
   writeMeta(); applyChrome();
+  $("cnbRuntime").disabled = !!editId;
   try { await mountEditor(); } catch { showIssues(t("loadFail"), [t("runtimeFail")]); }
   void loadDraftAssets();
   import("./notebook-files-strip.js").then(({ mountFilesStrip }) => mountFilesStrip({
@@ -316,6 +308,11 @@ export async function startEditor(edit = null) {
 
   $("cnbForm").addEventListener("input", () => { readMeta(); markDirty(); if (!$("cnbIssues").hidden) clearIssues(); });
   $("cnbForm").addEventListener("submit", (e) => e.preventDefault());
+  $("cnbRuntime").addEventListener("change", async () => {
+    if (editId) return;
+    state = { ...state, cells: currentCells() }; readMeta(); markDirty();
+    try { await mountEditor(); showNotification("", state.language === "ar" ? "تم تغيير بيئة التشغيل." : "Runtime changed.", "info"); } catch { showIssues(t("loadFail"), [t("runtimeFail")]); }
+  });
   $("cnbLanguage").addEventListener("change", async () => {
     state = { ...state, cells: currentCells() }; readMeta(); applyChrome(); markDirty();
     try { await mountEditor(); } catch { /* shown on next save */ }

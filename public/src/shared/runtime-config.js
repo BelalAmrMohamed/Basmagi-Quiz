@@ -5,10 +5,11 @@
 // =============================================================================
 export const RUNTIME_CONFIG = {
   matlab: {
-    label: "MATLAB",
+    label: "MATLAB", global: "MLWebNotebook", base: "/assets/notebook-runtime/", kernel: "matlab",
     codeExts: [".m", ".ipynb"],                          // imported as notebook cells
     workspaceExts: [".png", ".jpg", ".jpeg", ".webp", ".gif"], // go to the workspace "Current Folder"
   },
+  cpp: { label: "C++", global: "BasmagiCppNotebook", base: "/assets/notebook-runtime-cpp/", kernel: "xcpp17", codeExts: [".cpp", ".cc", ".cxx", ".h", ".hpp"], workspaceExts: [] },
 };
 
 const ext = (name) => { const m = String(name || "").toLowerCase().match(/\.[a-z0-9]+$/); return m ? m[0] : ""; };

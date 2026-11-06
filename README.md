@@ -95,3 +95,7 @@ Start your HTML mastery journey today! 🚀
 ## The purpose of `.nojekyll` :
 
 tells GitHub to just serve the files exactly as they are, which helps bots reach the sitemap and manifest files without interference.
+
+## Notebook runtimes
+
+Notebooks support MATLAB-style browser execution and C++17. C++ cells are sent to an online compiler, require an internet connection, and replay earlier cells when a later cell runs. Cell output is separated by cell; optional `stdin` input is available for each C++ cell. Compiler output is not stored.

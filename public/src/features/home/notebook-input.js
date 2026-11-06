@@ -23,7 +23,7 @@ Use this exact structure:
 \`\`\`
 Rules:
 - "language" is "en" (English, left-to-right UI) or "ar" (Arabic, right-to-left UI): the language of the Markdown explanations.
-- "runtime" MUST be "matlab": a browser-based EDUCATIONAL MATLAB-style subset (not MathWorks MATLAB: no toolboxes, Simulink, files or network). Never use Python or C++.
+- "runtime" MUST be "matlab" or "cpp". MATLAB is the educational browser-based subset; C++ is sent to an online compiler and needs internet.
 - Alternate short Markdown cells (explanations) with small, runnable code cells. Each code cell must be self-contained enough to run top-to-bottom, and code/comments/output stay left-to-right.
 - Cell "type" is only "markdown" or "code". "source" is a single string. NEVER put a literal line break inside a JSON string: write every line break as the two characters \\n, and escape double quotes (\\") and backslashes (\\\\).
 - Math: every formula, variable, exponent, fraction, root, Greek letter or math symbol inside Markdown cells must be LaTeX: $...$ inline, $$...$$ display. Never plain text (x^2, sqrt(x), x²). Escape backslashes in JSON (\\\\frac). No raw HTML.
@@ -214,7 +214,7 @@ export function parseNotebookInput({ text = "", fileName = "" } = {}) {
     if (data && Array.isArray(data.cells) && (data.nbformat != null || data.cells.some((c) => c && c.cell_type))) {
       try {
         const r = notebookFromIpynb(JSON.stringify(data));
-        content = r.content;
+        content = r.content; runtime = r.runtime;
         warnings = r.warnings || [];
       } catch (e) {
         throw new NotebookInputError("تعذّر تحويل ملف Jupyter", [e.message]);
@@ -227,7 +227,7 @@ export function parseNotebookInput({ text = "", fileName = "" } = {}) {
       source = typeof data?.source === "string" ? data.source : "";
       runtime = typeof data?.runtime === "string" ? data.runtime : "";
       const cells = Array.isArray(data?.cells) ? data.cells : data.content.cells;
-      content = normalizeNotebookContent(cells);
+      content = normalizeNotebookContent(cells, data?.language ?? data?.content?.language, runtime);
       explicitLang = data?.language ?? data?.content?.language;
     }
   }

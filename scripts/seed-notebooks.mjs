@@ -21,12 +21,29 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const LESSON_DIR = path.join(root, "online-matlab-compiler/apps/web/lessons");
 const ASSET_DIR = path.join(root, "public/assets/notebook-runtime/assets");
 
+export function loadCppSeedNotebooks() {
+  const examples = [
+    { title: "2D & 3D arrays", slug: "cpp-2d-3d-arrays", sortOrder: 101, content: { schemaVersion: 1, language: "en", cells: [
+      { id: "cell-1", type: "markdown", source: "# 2D and 3D arrays\nCreate nested arrays, loop through dimensions, and pass arrays to functions." },
+      { id: "cell-2", type: "code", source: "#include <iostream>\nvoid print2d(int a[2][3]) { for(int i=0;i<2;i++){ for(int j=0;j<3;j++) std::cout << a[i][j] << ' '; std::cout << '\\n'; } }" },
+      { id: "cell-3", type: "code", source: "int a[2][3]={{1,2,3},{4,5,6}}; print2d(a);" },
+      { id: "cell-4", type: "code", source: "int cube[2][2][2]={{{1,2},{3,4}},{{5,6},{7,8}}}; std::cout << cube[1][0][1];" },
+    ] } },
+    { title: "OOP: classes and polymorphism", slug: "cpp-oop-polymorphism", sortOrder: 102, content: { schemaVersion: 1, language: "en", cells: [
+      { id: "cell-1", type: "markdown", source: "# Object oriented programming\nClasses, encapsulation, inheritance, abstract classes, and virtual dispatch." },
+      { id: "cell-2", type: "code", source: "#include <iostream>\n#include <vector>\nclass Base { public: virtual int value() const = 0; virtual ~Base()=default; };\nclass Square: public Base { int side; public: explicit Square(int s):side(s){} int value() const override {return side*side;} };\nclass Cube: public Base { int side; public: explicit Cube(int s):side(s){} int value() const override {return side*side*side;} };" },
+      { id: "cell-3", type: "code", source: "std::vector<Base*> shapes={new Square(3),new Cube(2)}; for(auto* s:shapes) std::cout << s->value() << ' '; for(auto* s:shapes) delete s;" },
+    ] } },
+  ];
+  return examples.map((n) => ({ ...n, migrationKey: `cpp-seed:${n.slug}`, runtime: "cpp", description: "C++17 notebook", source: "", valid: validateNotebook({ ...n, runtime: "cpp", description: "C++17 notebook", source: "" }) }));
+}
+
 export function loadSeedNotebooks(dir = LESSON_DIR) {
   const notebooks = readdirSync(dir)
     .filter((f) => f.endsWith(".txt"))
     .map((f) => compilerLessonToNotebook(parseCompilerLesson(readFileSync(path.join(dir, f), "utf8"))))
     .sort((a, b) => COMPILER_LESSON_ORDER.indexOf(a.sourceLessonId) - COMPILER_LESSON_ORDER.indexOf(b.sourceLessonId));
-  return notebooks.map((n) => ({ ...n, valid: validateNotebook(n) }));
+  return [...notebooks.map((n) => ({ ...n, valid: validateNotebook(n) })), ...loadCppSeedNotebooks()];
 }
 
 function arg(name) {
@@ -38,7 +55,7 @@ async function main() {
   const notebooks = loadSeedNotebooks();
   const missing = [...new Set(notebooks.flatMap((n) => n.assets))].filter((a) => !existsSync(path.join(ASSET_DIR, `${a}.json`)));
   if (missing.length) throw new Error(`Missing runtime assets: ${missing.join(", ")}`);
-  if (notebooks.length !== 10) throw new Error(`Expected 10 lessons, found ${notebooks.length}`);
+  if (notebooks.filter(n => n.runtime === "matlab").length !== 10) throw new Error(`Expected 10 MATLAB lessons`);
 
   if (process.argv.includes("--dry-run")) {
     for (const n of notebooks) console.log(`${n.sortOrder}. ${n.migrationKey}  "${n.title}"  cells=${n.content.cells.length} assets=[${n.assets.join(", ")}]`);

@@ -83,10 +83,11 @@ test(".m becomes ONE code cell; file dispatch rejects other types", () => {
 
 test("all ten compiler lessons convert, validate, and are unique/ordered", () => {
   const list = loadSeedNotebooks();
-  assert.equal(list.length, 10);
-  assert.equal(new Set(list.map((n) => n.migrationKey)).size, 10);
-  assert.equal(new Set(list.map((n) => n.slug)).size, 10);
-  assert.deepEqual(list.map((n) => n.sortOrder), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.equal(list.filter((n) => n.runtime === "matlab").length, 10);
+  assert.equal(list.filter((n) => n.runtime === "cpp").length, 2);
+  assert.equal(new Set(list.map((n) => n.migrationKey)).size, 12);
+  assert.equal(new Set(list.map((n) => n.slug)).size, 12);
+  assert.deepEqual(list.slice(0, 10).map((n) => n.sortOrder), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   for (const n of list) {
     assert.equal(checkNotebook({ ...n, content: n.content }).errors.length, 0, n.migrationKey);
   }
@@ -111,7 +112,7 @@ test("MCP: draft url, guide, outline, patch ops, round-trip", () => {
   assert.match(applyDraftPatch("notebook", v.data, { ops: [{ op: "set_section", at: 1 }] }).error, /set_cell/);
   const input = notebookToDraftInput({ title: "t", runtime: "matlab", content: { cells } });
   assert.equal(mcpValidate(input).ok, true);
-  assert.equal(mcpValidate({ ...input, runtime: "cpp" }).ok, false);
+  assert.equal(mcpValidate({ ...input, runtime: "cpp" }).ok, true);
 });
 
 test("notebookUrl", () => {

@@ -25,13 +25,15 @@ export function resolveNotebookLang(explicit, info) {
 const STRINGS = {
   en: {
     loading: "Loading notebook…", retry: "Retry", home: "Back to home",
-    disclaimer: "This notebook runs entirely in your browser with an educational MATLAB-style interpreter — not the original MATLAB. Your work is kept on your device and never sent to a server or counted in scores.",
+    disclaimer: "This MATLAB-style notebook runs in your browser. Your work is kept on your device and never sent to a server or counted in scores.",
+    disclaimerCpp: "C++ code is sent to an online compiler to run. It is not stored, requires an internet connection, and your notebook work itself stays on this device.",
     invalid: "Invalid notebook link.", loadFailed: "Could not load the notebook.", runtimeFailed: "Could not load the notebook runtime. Check your connection and retry.", mountFailed: "Could not run the notebook in this browser.",
   },
   ar: {
     loading: "جاري تحميل الدفتر…", retry: "إعادة المحاولة", home: "العودة إلى الصفحة الرئيسية",
-    disclaimer: "يعمل هذا الدفتر داخل متصفحك فقط بمفسّر تعليمي بأسلوب MATLAB — وليس MATLAB الأصلي. عملك محفوظ محلياً على جهازك ولا يُرسل إلى أي خادم ولا يُحتسب في الدرجات.",
+    disclaimer: "يعمل دفتر MATLAB التعليمي داخل متصفحك. يبقى عملك على جهازك ولا يُرسل إلى خادم ولا يُحتسب في الدرجات.",
+    disclaimerCpp: "يُرسل كود C++ إلى مترجم عبر الإنترنت لتشغيله. لا يُخزّن الكود، ويتطلب التشغيل اتصالاً بالإنترنت، بينما يبقى عملك في الدفتر على هذا الجهاز.",
     invalid: "رابط الدفتر غير صالح.", loadFailed: "تعذر تحميل الدفتر.", runtimeFailed: "تعذر تحميل بيئة تشغيل الدفتر. تحقق من اتصالك ثم أعد المحاولة.", mountFailed: "تعذر تشغيل الدفتر في هذا المتصفح.",
   },
 };
-export const notebookText = (lang, key) => (STRINGS[lang] || STRINGS.en)[key];
+export const notebookText = (lang, key, runtime) => { const strings=STRINGS[lang]||STRINGS.en; return runtime === "cpp" && key === "disclaimer" ? strings.disclaimerCpp : strings[key]; };

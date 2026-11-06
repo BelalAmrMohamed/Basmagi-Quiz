@@ -25,7 +25,7 @@ export async function buildNotebookBundle(nb) {
       if (res.ok) files.set(a.path, await res.blob());
     } catch { /* a missing published file is skipped, not fatal */ }
   }
-  const cells = (nb.cells || []).map((c, i) => ({ id: c.id || `cell-${i + 1}`, type: c.type === "code" ? "code" : "markdown", source: String(c.source ?? "") }));
+  const cells = (nb.cells || []).map((c, i) => ({ id: c.id || `cell-${i + 1}`, type: c.type === "code" ? "code" : "markdown", source: String(c.source ?? ""), ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}) }));
   const meta = {
     title: nb.title || "notebook", description: nb.description || "", source: nb.source || "", runtime: nb.runtime || "matlab",
     content: { schemaVersion: 1, ...(nb.language ? { language: nb.language } : {}), cells },

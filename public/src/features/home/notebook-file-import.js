@@ -28,7 +28,7 @@ async function readNotebookFile(file) {
     const st = notebookFromPayload(z.meta);
     const rec = {
       title: st.title, description: st.description, source: st.source, runtime: st.runtime, language: st.language,
-      content: { ...normalizeNotebookContent(st.cells, st.language), language: st.language },
+      content: { ...normalizeNotebookContent(st.cells, st.language, st.runtime), language: st.language },
       warnings: [],
     };
     return { rec, files: z.files };

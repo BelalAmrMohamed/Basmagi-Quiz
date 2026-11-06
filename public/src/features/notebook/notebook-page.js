@@ -1,8 +1,8 @@
 // =============================================================================
 // public/src/features/notebook/notebook-page.js
 // /notebook/:slug-or-id — loads a PUBLISHED notebook (notebook_public) and
-// mounts the browser-only MATLAB-style runtime (assets/notebook-runtime/).
-// Learner code runs in a Web Worker and is never sent to a server; learner
+// mounts the notebook runtime selected by notebook.runtime.
+// MATLAB code runs in a Web Worker; C++ code runs through an online compiler. Learner
 // edits are autosaved locally by the runtime, scoped by notebook id + schema
 // version. Notebooks are unscored (no attempts / points / profile sync).
 // =============================================================================
@@ -12,11 +12,12 @@ import { resolveNotebookLang, notebookText } from "../../shared/notebook-lang.js
 import { showNotebookInfoModal } from "../home/notebook-actions.js";
 import { createWorkspaceBridge } from "../../shared/workspace-bridge.js";
 import { exportNotebookZip } from "../../shared/notebook-bundle.js";
+import { loadRuntime } from "../../shared/runtime-loader.js";
+import { RUNTIME_CONFIG } from "../../shared/runtime-config.js";
 import "./image-tool-window.js";
 import "./notebook-output-controls.js";
 import "./notebook-menu-controls.js";
 
-const RUNTIME_BASE = "/assets/notebook-runtime/";
 const LOAD_TIMEOUT_MS = 15000;
 
 const $ = (id) => document.getElementById(id);
@@ -63,21 +64,7 @@ async function fetchNotebookRow(ref) {
   return data || null;
 }
 
-let runtimePromise = null;
-function loadRuntime() {
-  if (window.MLWebNotebook?.mount) return Promise.resolve(window.MLWebNotebook);
-  if (!runtimePromise) {
-    runtimePromise = new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = `${RUNTIME_BASE}runtime.js`;
-      script.async = true;
-      script.onload = () => (window.MLWebNotebook?.mount ? resolve(window.MLWebNotebook) : reject(new Error("runtime missing")));
-      script.onerror = () => { runtimePromise = null; reject(new Error("runtime failed to load")); };
-      document.head.append(script);
-    });
-  }
-  return runtimePromise;
-}
+const cellToPlain = (c) => ({ type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}) });
 
 /** Workspace (browser-only) notebook from امتحاناتك: /notebook/<user_notebook_…>?type=user */
 function readLocalNotebookRow(ref) {
@@ -125,12 +112,21 @@ async function init() {
   const { notebook } = prepared;
   const lang = resolveNotebookLang(row.language || row.content?.language, notebook);
   applyPageLang(lang);
+  const disclaimer = $("notebookDisclaimer");
+  disclaimer.textContent = notebookText(lang, "disclaimer", notebook.runtime);
+  disclaimer.hidden = false;
 
   document.title = `${notebook.title} | دفتر تفاعلي | منصة امتحانات بصمجي`;
+  const metaDescription = notebook.runtime === "cpp"
+    ? "Interactive C++17 notebook. Code is sent to an online compiler to run; an internet connection is required."
+    : "دفتر تفاعلي بأسلوب MATLAB يعمل داخل المتصفح على منصة امتحانات بصمجي";
+  for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
+    document.querySelector(selector)?.setAttribute("content", metaDescription);
+  }
 
   let runtime;
   try {
-    runtime = await loadRuntime();
+    runtime = await loadRuntime(notebook.runtime);
   } catch {
     return showError(notebookText(lang, "runtimeFailed"), { retry: init });
   }
@@ -139,7 +135,7 @@ async function init() {
   try {
     handle = runtime.mount({
       root: $("notebookRoot"),
-      baseUrl: RUNTIME_BASE,
+      baseUrl: RUNTIME_CONFIG[notebook.runtime].base,
       notebook,
       lang,
       onInfo: () => showNotebookInfoModal(row),
@@ -149,24 +145,45 @@ async function init() {
     console.error("[notebook-page] mount failed:", e);
     return showError(notebookText(lang, "mountFailed"));
   }
+  if (notebook.runtime === "cpp") {
+    window.__mlwebImport = async (file) => {
+      try {
+        if (/\.notebook\.zip$/i.test(file.name)) {
+          const { parseNotebookZip } = await import("../../shared/workspace-zip.js");
+          const bundle = await parseNotebookZip(await file.arrayBuffer());
+          handle?.setCells?.(bundle.meta.content?.cells || bundle.meta.cells || []);
+          return;
+        }
+        const { notebookFromFile } = await import("../../shared/notebook-convert.js");
+        const imported = notebookFromFile(file.name, await file.text());
+        if (imported.runtime !== notebook.runtime) throw new Error("Choose a C++ source file or C++ Jupyter notebook.");
+        handle?.setCells?.(imported.content.cells);
+        imported.warnings.forEach((message) => window.dispatchEvent(new CustomEvent("notebook:notice", { detail: message })));
+      } catch (error) {
+        window.dispatchEvent(new CustomEvent("notebook:notice", { detail: error.message || "Import failed" }));
+      }
+    };
+    window.addEventListener("pagehide", () => { delete window.__mlwebImport; }, { once: true });
+  }
   $("notebookStatus").hidden = true;
   $("contentArea").setAttribute("aria-busy", "false");
   const wsKey = isLocal ? ref : `pub_${notebook.id}`;
   window.__mlwebExport = {
     zip: () => exportNotebookZip({
       title: notebook.title, description: notebook.description, source: row.source || row.meta?.source || "", runtime: notebook.runtime, language: lang,
-      cells: (handle?.getCells?.() || notebook.cells).map((c) => ({ type: c.type, source: c.source })), keys: [wsKey], assets: notebook.assets,
+      cells: (handle?.getCells?.() || notebook.cells).map(cellToPlain), keys: [wsKey], assets: notebook.assets,
     }).catch((e) => window.dispatchEvent(new CustomEvent("notebook:notice", { detail: e.message || "Export failed" }))),
   };
-  if (!isLocal) addCopyBar({ title: notebook.title, description: notebook.description, source: row.source || "", runtime: notebook.runtime, assets: notebook.assets }, lang, () => (handle?.getCells?.() || notebook.cells).map((c) => ({ type: c.type, source: c.source })), wsKey);
+  if (!isLocal) addCopyBar({ title: notebook.title, description: notebook.description, source: row.source || "", runtime: notebook.runtime, assets: notebook.assets }, lang, () => (handle?.getCells?.() || notebook.cells).map(cellToPlain), wsKey);
   restoreFiles(wsKey, notebook.assets).then((bridge) => bridge && import("./notebook-files-strip.js").then(({ mountFilesStrip }) => mountFilesStrip({
     before: $("notebookRoot"), lang, bridge,
-    getMeta: () => ({ title: notebook.title, description: notebook.description, source: row.source || "", runtime: notebook.runtime, language: lang, cells: (handle?.getCells?.() || notebook.cells).map((c) => ({ type: c.type, source: c.source })), assets: notebook.assets }),
+    getMeta: () => ({ title: notebook.title, description: notebook.description, source: row.source || "", runtime: notebook.runtime, language: lang, cells: (handle?.getCells?.() || notebook.cells).map(cellToPlain), assets: notebook.assets }),
   }))).catch((e) => console.warn("[notebook-page] files strip failed:", e));
 }
 
 /** /notebook/new and /notebook/edit/<id>: the editor (and, for admins, publishing) loads on demand. */
 async function startEditorMode(route) {
+  $("notebookDisclaimer").hidden = true;
   if (route.mode === "edit" && !route.ref) return showError("رابط الدفتر غير صالح.");
   $("notebookStatus").hidden = true;
   $("notebookRoot").hidden = true;

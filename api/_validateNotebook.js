@@ -24,7 +24,7 @@ import {
 
 const ALLOWED_DOCUMENT_KEYS = new Set(["schemaVersion", "language", "cells", "assets"]);
 // `_localId` is editor bookkeeping that may ride along in drafts/exports; it is dropped.
-const ALLOWED_CELL_KEYS = new Set(["id", "type", "source", "_localId"]);
+const ALLOWED_CELL_KEYS = new Set(["id", "type", "source", "stdin", "_localId"]);
 
 function isPlainObject(v) {
     return v !== null && typeof v === "object" && !Array.isArray(v);
@@ -71,7 +71,7 @@ export function validateNotebookRuntime(runtime) {
  * Learner outputs/workspace state are not part of the schema and are rejected
  * as unknown keys.
  */
-export function validateNotebookContent(content) {
+export function validateNotebookContent(content, runtime = "matlab") {
     if (!isPlainObject(content)) throw new Error("محتوى الدفتر يجب أن يكون كائناً { schemaVersion, cells }.");
     for (const key of Object.keys(content)) {
         if (!ALLOWED_DOCUMENT_KEYS.has(key)) throw new Error(`حقل غير مسموح به في محتوى الدفتر: "${key}".`);
@@ -87,10 +87,10 @@ export function validateNotebookContent(content) {
         }
     });
 
-    const check = checkNotebook({ content }, { contentOnly: true });
+    const check = checkNotebook({ content, runtime }, { contentOnly: true });
     if (check.errors.length) throw new Error(formatIssueList(check.errors));
 
-    const clean = normalizeNotebookContent(content.cells, content.language);
+    const clean = normalizeNotebookContent(content.cells, content.language, runtime);
     // Published file manifest (validated above by checkNotebook); omitted when empty.
     const assets = normalizeNotebookAssets(content.assets);
     return assets.length ? { ...clean, assets } : clean;
@@ -111,6 +111,6 @@ export function validateNotebook(input) {
         description: validateNotebookDescription(input.description),
         source: validateNotebookSource(input.source),
         runtime: validateNotebookRuntime(input.runtime),
-        content: validateNotebookContent(input.content),
+        content: validateNotebookContent(input.content, input.runtime),
     };
 }

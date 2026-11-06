@@ -32,9 +32,9 @@ const NB_THEME = {
   title: "#ffffff", desc: "#cbd5e1", accent: NB_ACCENT,
   chipBg: "rgba(255,255,255,0.06)", chipText: "#f1f5f9", chipBorderAlpha: "55", chipShadow: null,
 };
-const NB_RUNTIME_LABEL = { matlab: "MATLAB" };
+const NB_RUNTIME_LABEL = { matlab: "MATLAB", cpp: "C++" };
 
-const NB_FILE_LABEL = { matlab: "script.m" };
+const NB_FILE_LABEL = { matlab: "script.m", cpp: "main.cpp" };
 
 const NB_KEYWORDS = new Set([
   "for", "end", "if", "else", "elseif", "while", "function", "return", "break",

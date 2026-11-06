@@ -104,12 +104,12 @@ Schema and content rules:
 
 const PROMPTS_REGISTRY: Record<string, { description: string; text: string }> = {
   convert_folder: {
-    description: "Convert a shared folder / set of files (e.g. Google Drive) into Basmagi quizzes, lessons and MATLAB notebooks",
-    text: `Call get_authoring_guide(topic="convert") and follow it.\n- Inventory the folder recursively and read every file's real content.\n- Decide per file: questions/exams → quiz; lecture/notes → lesson; MATLAB code → notebook (runtime "matlab"); other code languages are NOT runnable → offer a lesson with code blocks; unreadable/media-only files → skipped with a reason.\n- Show me one table (file → type → title → reason) and wait for my confirmation when anything is ambiguous or the folder is large; otherwise proceed.\n- Create one draft link per item (source = the file's own link), then give me a final table of links, warnings and skipped files. Nothing is published until I save.\n\nNow convert this folder:`,
+    description: "Convert a shared folder / set of files (e.g. Google Drive) into Basmagi quizzes, lessons and MATLAB/C++ notebooks",
+    text: `Call get_authoring_guide(topic="convert") and follow it.\n- Inventory the folder recursively and read every file's real content.\n- Decide per file: questions/exams → quiz; lecture/notes → lesson; MATLAB code → notebook (runtime "matlab"); C++ code or C++ Jupyter notebooks → notebook (runtime "cpp"); other code languages remain non-runnable → offer a lesson with code blocks; unreadable/media-only files → skipped with a reason.\n- Show me one table (file → type → title → reason) and wait for my confirmation when anything is ambiguous or the folder is large; otherwise proceed.\n- Create one draft link per item (source = the file's own link), then give me a final table of links, warnings and skipped files. Nothing is published until I save.\n\nNow convert this folder:`,
   },
   matlab_notebook: {
-    description: "Prompt for turning lecture/lab material into an executable MATLAB-style notebook draft (create_notebook_import_link)",
-    text: `Call get_authoring_guide(topic="notebook") first, then build a notebook and call create_notebook_import_link (use dry_run first if unsure).\n- runtime MUST be "matlab" — a browser-based EDUCATIONAL MATLAB-style subset, not MathWorks MATLAB (no toolboxes/Simulink/files/network). Never promise Python or C++.\n- Alternate short Arabic-friendly Markdown explanations (math in LaTeX, no raw HTML) with small runnable code cells (code/comments/output stay left-to-right).\n- Use only the bundled sample images (test.png, testgray.png, pepper.png, Test2.png, GrayTest1.png, BinaryImage.png, GrayscaleImage.png, ColorImage.png, test_lookup.gif).\n- Set "language" to "en" or "ar" (the language of the Markdown explanations; it drives the notebook page direction and UI).\n- Respect limits: ≤200 cells, ≤20000 chars per cell, ≤300KB total.\n- Tell the user the link only opens a draft: an admin must review and save to publish.\n\nNow convert the material I provide:`,
+    description: "Prompt for turning lecture/lab material into an executable MATLAB-style or C++17 notebook draft (create_notebook_import_link)",
+    text: `Call get_authoring_guide(topic="notebook") first, then build a notebook and call create_notebook_import_link (use dry_run first if unsure).\n- runtime MUST be "matlab" or "cpp". MATLAB is the educational browser subset, not MathWorks MATLAB. C++ uses a remote online compiler with replay semantics; use stdin only on C++ cells.\n- Alternate short Arabic-friendly Markdown explanations (math in LaTeX, no raw HTML) with small runnable code cells (code/comments/output stay left-to-right).\n- Use only the bundled sample images (test.png, testgray.png, pepper.png, Test2.png, GrayTest1.png, BinaryImage.png, GrayscaleImage.png, ColorImage.png, test_lookup.gif).\n- Set "language" to "en" or "ar" (the language of the Markdown explanations; it drives the notebook page direction and UI).\n- Respect limits: ≤200 cells, ≤20000 chars per cell, ≤300KB total.\n- Tell the user the link only opens a draft: an admin must review and save to publish.\n\nNow convert the material I provide:`,
   },
   general_purpose_quiz: {
     description: "Standard prompt for generating quizzes from raw study material",
@@ -271,7 +271,7 @@ const TOOLS = [
   {
     name: "get_notebook",
     annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Fetch metadata (title, description, source, runtime, cell count) of a PUBLISHED executable notebook by ID or slug. Notebooks run only in the learner's browser (an educational MATLAB-style subset, not MathWorks MATLAB).",
+    description: "Fetch metadata (title, description, source, runtime, cell count) of a PUBLISHED executable notebook by ID or slug. MATLAB runs in the browser; C++ uses a remote compiler.",
     inputSchema: {
       type: "object",
       properties: { notebookId: { type: "string", description: "The UUID or slug of the notebook." } },
@@ -432,7 +432,7 @@ const TOOLS = [
   {
     name: "create_notebook_import_link",
     annotations: { title: "Create notebook (short import link)", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    description: "Validate an executable notebook and return ONE SHORT link (…/notebook/new?draft=CODE, valid 72h, no sign-in) that opens the Notebook Creator pre-filled for an admin to review. NOTHING is published by this tool — an admin must review and save in the editor. Uses the SAME validation as the editor and upload API; returns ERRORS (nothing saved) or a link plus WARNINGS. runtime is REQUIRED (only \"matlab\": a browser-based educational MATLAB-style subset, not MathWorks MATLAB). Call get_authoring_guide(topic='notebook') first.",
+    description: "Validate an executable notebook and return ONE SHORT link (…/notebook/new?draft=CODE, valid 72h, no sign-in) that opens the Notebook Creator pre-filled for an admin to review. NOTHING is published by this tool — an admin must review and save in the editor. Uses the SAME validation as the editor and upload API; returns ERRORS (nothing saved) or a link plus WARNINGS. runtime is REQUIRED (\"matlab\" or \"cpp\"). Call get_authoring_guide(topic='notebook') first.",
     inputSchema: {
       type: "object",
       properties: {
@@ -440,7 +440,7 @@ const TOOLS = [
         title: { type: "string", description: "Notebook title (1-200 chars)." },
         description: { type: "string", description: "Short summary (max 1200 chars)." },
         source: { type: "string", description: "https:// link to the source material, or \"\"." },
-        runtime: { type: "string", enum: ["matlab"], description: "Required. Never defaulted." },
+        runtime: { type: "string", enum: ["matlab", "cpp"], description: "Required. Never defaulted." },
         cells: {
           type: "array",
           description: "Ordered cells (1-200).",
@@ -1478,7 +1478,7 @@ async function saveDraft(kind: "quiz" | "lesson" | "notebook", data: unknown): P
   return { url: base64Link(kind, data), short: false };
 }
 
-const NOTEBOOK_NOTE = "ملاحظة: يعمل الدفتر داخل متصفح المتعلم فقط (مفسّر تعليمي بأسلوب MATLAB وليس MATLAB الأصلي)، ولا يُحفظ عمل المتعلم على الخادم.";
+const NOTEBOOK_NOTE = { matlab: "ملاحظة: يعمل الدفتر داخل متصفح المتعلم فقط (مفسّر تعليمي بأسلوب MATLAB وليس MATLAB الأصلي)، ولا يُحفظ عمل المتعلم على الخادم.", cpp: "ملاحظة: يُرسل كود C++ إلى مترجم عبر الإنترنت لتشغيله ولا يُخزّن؛ يتطلب الإنترنت، بينما يبقى عمل الدفتر على جهاز المتعلم." };
 
 async function fetchNotebook(ref: string) {
   const id = String(ref || "").trim();
@@ -1495,7 +1495,7 @@ async function handleGetNotebook(args: { notebookId: string }) {
   if (!String(args?.notebookId || "").trim()) return "الرجاء تحديد معرف الدفتر (notebookId).";
   const d = await fetchNotebook(args.notebookId);
   if (!d) return `لم يتم العثور على الدفتر بالمعرف "${args.notebookId}".`;
-  return `# 💻 ${d.title}\n\n${d.description || ""}\n\nالمصدر: ${d.source || "منصة بصمجي"}\nبيئة التشغيل: ${d.runtime}\nعدد الخلايا: ${d.cell_count ?? "غير محدد"}\n\n${NOTEBOOK_NOTE}\n💡 للمحتوى الكامل استخدم get_notebook_content.\nرابط الدفتر: https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(d.slug || d.id)}`;
+  return `# 💻 ${d.title}\n\n${d.description || ""}\n\nالمصدر: ${d.source || "منصة بصمجي"}\nبيئة التشغيل: ${d.runtime}\nعدد الخلايا: ${d.cell_count ?? "غير محدد"}\n\n${NOTEBOOK_NOTE[d.runtime] || NOTEBOOK_NOTE.matlab}\n💡 للمحتوى الكامل استخدم get_notebook_content.\nرابط الدفتر: https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(d.slug || d.id)}`;
 }
 
 async function handleGetNotebookContent(args: { notebookId: string; format?: string }) {
@@ -1818,7 +1818,7 @@ async function handleRpcRequest(reqBody: any) {
           protocolVersion: "2024-11-05",
           capabilities: { tools: {}, prompts: {} },
           serverInfo: { name: "Basmagi Quiz Connector", version: "3.2.0" },
-          instructions: "Basmagi Quiz creates DRAFT links only: nothing is published until the user saves in the editor. Before creating any quiz, lesson or notebook, call get_authoring_guide. When the user asks to convert existing files or a whole folder (for example a shared Google Drive folder), call get_authoring_guide(topic=\"convert\") first: it explains how to decide per file between quiz, lesson and MATLAB notebook, when to confirm the plan with the user, and how to report the results.",
+          instructions: "Basmagi Quiz creates DRAFT links only: nothing is published until the user saves in the editor. Before creating any quiz, lesson or notebook, call get_authoring_guide. When the user asks to convert existing files or a whole folder (for example a shared Google Drive folder), call get_authoring_guide(topic=\"convert\") first: it explains how to decide per file between quiz, lesson and MATLAB/C++ notebook, when to confirm the plan with the user, and how to report the results.",
         },
       };
 

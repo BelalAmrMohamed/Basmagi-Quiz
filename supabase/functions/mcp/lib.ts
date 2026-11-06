@@ -103,7 +103,7 @@ export function validateNotebook(args: any) {
   if (!rawCells || !rawCells.length || errors.length) {
     return { ok: false, data: null, errors, warnings, stats: null };
   }
-  const content = normalizeNotebookContent(rawCells, args?.language ?? args?.content?.language);
+  const content = normalizeNotebookContent(rawCells, args?.language ?? args?.content?.language, args?.runtime ?? args?.content?.runtime);
   const data = {
     title: str(args?.title),
     description: str(args?.description),
@@ -302,7 +302,7 @@ export const AUTHORING_GUIDE: Record<string, string> = {
   workflow: `# Basmagi — Claude's authoring workflow
 1. Call get_authoring_guide topic=quiz|lesson|markdown once per conversation (this text).
 2. Source material attached by the user → read it fully; do NOT invent facts. Unsolved questions → solve them carefully, then explain.\n   - User gave a FOLDER or several files to convert (e.g. a shared Google Drive folder)? Call get_authoring_guide topic=convert first: it says how to decide quiz vs lesson vs notebook per file, when to confirm with the user, and how to report.
-3. Build the object, then call create_quiz_import_link / create_lesson_import_link / create_notebook_import_link (topic=notebook for executable MATLAB-style notebooks).
+3. Build the object, then call create_quiz_import_link / create_lesson_import_link / create_notebook_import_link (topic=notebook for executable MATLAB-style or C++17 notebooks).
    - Result is ONE short link: ${SITE}/create-quiz?draft=<code> (valid ${DRAFT_TTL_HOURS}h, no sign-in needed).
    - If the result lists ERRORS nothing was saved: fix exactly what it says and call again.
    - The errors are the SAME checks the editor page and the upload step run, so a draft that passes here will not fail later. Each error names the question/block and how to fix it.
@@ -349,9 +349,13 @@ Structure tips: one idea per section; a short markdown intro, the explanation, t
   notebook: `# Notebook schema (create_notebook_import_link)
 { title (≤${LIMITS.notebookTitle}), description (≤${LIMITS.notebookDescription}), source ("https://…" or ""),
   runtime: "${NOTEBOOK_RUNTIMES.join('" | "')}"  (REQUIRED — never defaulted; unknown values are rejected),
-  cells: [ { id?: "cell-1", type: "markdown" | "code", source: string } ]  (≤${LIMITS.notebookCells} cells, each source ≤${LIMITS.notebookCellSource} chars, whole notebook ≤${LIMITS.notebookBytes / 1000}KB) }
+  cells: [ { id?: "cell-1", type: "markdown" | "code", source: string, stdin?: string } ]  (≤${LIMITS.notebookCells} cells, each source ≤${LIMITS.notebookCellSource} chars, stdin ≤4000 chars on C++ code cells, whole notebook ≤${LIMITS.notebookBytes / 1000}KB) }
 
-Runtime limits (tell learners the truth): "matlab" is a browser-based EDUCATIONAL MATLAB-style subset (arrays, cells, structs, switch/if/for/while, functions, basic image processing: imread/imshow/imtool/imwrite/imfinfo/rgb2gray/rgb2hsv/rgb2ycbcr/imcrop/imresize/imrotate/imhist/histeq). It is NOT MathWorks MATLAB: no toolboxes, no Simulink, no file/network access, no server-side execution. Code runs only in the learner's browser (60 s limit). Do not promise Python/C++ — not available.
+Runtime limits (tell learners the truth): "matlab" is a browser-based EDUCATIONAL MATLAB-style subset, NOT MathWorks MATLAB. "cpp" runs C++17 through an online community compiler: code is sent for execution, needs internet, is not stored, and does not support file I/O or interactive prompts. The notebook replays earlier cells for each run and only shows the selected cell output; use //@global or const declarations for shared globals. Each C++ code cell may include a stdin string (≤4000 chars).
+
+C++ replay example (cells share declarations and run statements in order):
+- Cell 1: struct Point { int x; }; (declaration is hoisted)
+- Cell 2: Point p{3}; std::cout << p.x; (replayed with cell 1 on every run)
 
 Authoring tips:
 - Alternate short markdown explanations with small runnable code cells; one idea per cell; prefer 5–40 lines per code cell.
@@ -372,9 +376,9 @@ Use this when the user shares a folder or several files (usually from Google Dri
 ## 2. Classify every item
 - Questions with choices/answers: past exams, midterms, question banks, worksheets, MCQ / true-false / essay sets (solved or unsolved) → QUIZ (create_quiz_import_link).
 - Explanatory material: lecture slides, notes, summaries, book chapters, study guides, articles, solved examples → LESSON (create_lesson_import_link), each section ending with 1–3 check questions.
-- Runnable MATLAB code: .m scripts, MATLAB lab sheets / live scripts, image-processing labs → NOTEBOOK with runtime "matlab" (create_notebook_import_link).
+- Runnable MATLAB code: .m scripts and MATLAB labs → NOTEBOOK with runtime "matlab". C++ source and C++ Jupyter notebooks → NOTEBOOK with runtime "cpp" (create_notebook_import_link).
 - Lecture or lab that mixes explanation with MANY questions → a lesson for the explanation + a separate quiz for the questions (after the quiz is published, a quizRef block can link it); only a few questions → keep them inside the lesson as question blocks. Ask when unsure.
-- Code in any other language (Python, C/C++, Java, JavaScript, SQL, .ipynb …) → NOT a notebook: the only runtime is "matlab". Offer a lesson with the code in fenced code blocks and say clearly that it will not be runnable.
+- Code in other languages (Python, C, Java, JavaScript, SQL, and non-C++ Jupyter files) → NOT a runnable notebook. Offer a lesson with code in fenced blocks and say clearly that it will not run.
 - Videos, audio, images only, zips, raw-data sheets, duplicates, drafts → skip, listed under "skipped" with the reason (a public https video/audio/image URL may be embedded as a media block inside a lesson).
 - Rules of thumb: one exam file = one quiz; one lecture = one lesson; never merge unrelated files; split very large files into several drafts instead of truncating (respect the schema limits).
 - Keep the source language (usually Arabic). Never invent questions, facts or code that are not in the file (solving unsolved questions and writing explanations is expected).
@@ -382,7 +386,7 @@ Use this when the user shares a folder or several files (usually from Google Dri
 
 ## 3. Verify with the user BEFORE creating (ask ONCE)
 - Send one compact table: file → proposed type (+ runtime) → proposed title → short reason. Ask only about what is ambiguous or unsupported and say which items you will do as proposed.
-- Ask first when: the folder has more than about 5 items, an item fits two types, an item is unsupported (non-MATLAB code), or the user did not say which types they want.
+- Ask first when: the folder has more than about 5 items, an item fits two types, an item is unsupported code language (other than MATLAB or C++), or the user did not say which types they want.
 - Do not ask (convert, then show the table) when the user already specified the types, said "just do it / convert everything", or the folder is small and every item is clearly one type.
 
 ## 4. Create

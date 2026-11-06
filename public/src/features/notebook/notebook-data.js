@@ -53,7 +53,7 @@ export function prepareNotebook(row) {
   if (!content || typeof content !== "object" || content.schemaVersion !== NOTEBOOK_SCHEMA_VERSION) {
     return { ok: false, kind: "malformed", message: "محتوى الدفتر بصيغة غير مدعومة أو تالفة." };
   }
-  const check = checkNotebook({ content }, { contentOnly: true });
+  const check = checkNotebook({ content, runtime: row.runtime }, { contentOnly: true });
   if (check.errors.length) {
     return { ok: false, kind: "malformed", message: "محتوى الدفتر غير صالح: " + check.errors[0].message };
   }
@@ -66,7 +66,7 @@ export function prepareNotebook(row) {
       schemaVersion: content.schemaVersion,
       language: content.language || "",
       runtime: row.runtime,
-      cells: content.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, type: c.type, source: c.source })),
+      cells: content.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}) })),
       // published workspace files [{path,mime,size,sha256,url}], fetched into the virtual folder after mount
       assets: Array.isArray(content.assets) ? content.assets : [],
     },
