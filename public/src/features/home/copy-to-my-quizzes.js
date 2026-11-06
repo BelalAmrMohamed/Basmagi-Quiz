@@ -231,6 +231,40 @@ export async function copyLessonToUserQuizzes(lesson) {
 }
 
 /**
+ * Copies a platform notebook (summary from the home manifest, or a full
+ * notebook_public row) into the visitor's own «محتواي», including its workspace
+ * files / images (copyNotebookToLocal does the file copy). Title collisions are
+ * resolved by copyNotebookToLocal ("… (copy)"), so a repeat copy never fails.
+ *
+ * @returns {Promise<boolean>} true if a new copy was created
+ */
+export async function copyNotebookToUserQuizzes(notebook) {
+  const key = inFlightKey("notebook", null, notebook?.title || notebook?.id || "notebook");
+  if (copiesInFlight.has(key)) return false;
+  copiesInFlight.add(key);
+  try {
+    const [{ fetchPlatformNotebookRow }, { rowToNotebook }, { copyNotebookToLocal }] = await Promise.all([
+      import("./notebook-actions.js"),
+      import("../../shared/notebook-export.js"),
+      import("../notebook/notebook-copy.js"),
+    ]);
+    const row = await fetchPlatformNotebookRow(notebook);
+    const nb = rowToNotebook(row);
+    await copyNotebookToLocal({ ...nb, sourceKey: `pub_${nb.id}` });
+    const { refreshUserQuizzesCard } = await import("./course-count.js");
+    refreshUserQuizzesCard();
+    showNotification("تم النسخ", `تم نسخ «${nb.title}» إلى محتواي.`, "success");
+    return true;
+  } catch (error) {
+    console.error("[copy-to-my-quizzes] notebook copy failed:", error);
+    showNotification("تعذّر النسخ", "تعذّر نسخ الدفتر. تحقق من اتصالك ومن مساحة التخزين ثم حاول مرة أخرى.", "error");
+    return false;
+  } finally {
+    copiesInFlight.delete(key);
+  }
+}
+
+/**
  * Copies a complete manifest course/folder tree while preserving parentId
  * relationships. Unlike copying leaves individually, this keeps the same
  * hierarchy in the user's local collection.

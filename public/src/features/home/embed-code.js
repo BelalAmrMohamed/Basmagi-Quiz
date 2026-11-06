@@ -1,4 +1,4 @@
-// "نسخ كود التضمين" — copies an <iframe> snippet for embedding a quiz/lesson
+// "نسخ كود التضمين" — copies an <iframe> snippet for embedding a quiz/lesson/notebook
 // (Notion, blogs…). Targets ?embed=1, which strips the platform chrome
 // (see shared/embed-mode.js).
 import { showNotification } from "../../components/notifications/notifications.js";
@@ -10,7 +10,7 @@ export function buildEmbedUrl(kind, idOrSlug) {
 }
 
 export function buildEmbedCode(kind, idOrSlug, title = "") {
-  const safeTitle = String(title || (kind === "quiz" ? "امتحان" : "درس")).replace(/"/g, "&quot;");
+  const safeTitle = String(title || (kind === "quiz" ? "امتحان" : kind === "notebook" ? "دفتر" : "درس")).replace(/"/g, "&quot;");
   return `<iframe src="${buildEmbedUrl(kind, idOrSlug)}" title="${safeTitle}" width="100%" height="700" style="border:0;border-radius:12px" loading="lazy" allowfullscreen></iframe>`;
 }
 

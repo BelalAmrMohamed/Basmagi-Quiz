@@ -16,10 +16,11 @@ import {
   formatDateForInfo,
 } from "./info-details.js";
 
-function statsHtml({ quizCount, lessonCount, subfolderCount }) {
+function statsHtml({ quizCount, lessonCount, notebookCount = 0, subfolderCount }) {
   return `
     <div class="course-info-stat"><strong>${quizCount}</strong><span>امتحان</span></div>
     <div class="course-info-stat"><strong>${lessonCount}</strong><span>درس</span></div>
+    <div class="course-info-stat"><strong>${notebookCount}</strong><span>دفتر</span></div>
     <div class="course-info-stat"><strong>${subfolderCount}</strong><span>مجلد فرعي</span></div>
   `;
 }
@@ -85,6 +86,7 @@ export function showLocalFolderInfoModal(itemId) {
   // Descendant counts: walk children breadth-first.
   let quizCount = 0;
   let lessonCount = 0;
+  let notebookCount = 0;
   let subfolderCount = 0;
   const queue = [itemId];
   while (queue.length) {
@@ -96,14 +98,14 @@ export function showLocalFolderInfoModal(itemId) {
         subfolderCount += 1;
         queue.push(r.id || r.meta?.id);
       } else if (type === "lesson") lessonCount += 1;
-      else if (type === "notebook") continue;
+      else if (type === "notebook") notebookCount += 1;
       else quizCount += 1;
     }
   }
 
   const { body } = openInfoOverlay({
     title: isCourse ? "معلومات المادة" : "معلومات المجلد",
-    statsHtml: statsHtml({ quizCount, lessonCount, subfolderCount }),
+    statsHtml: statsHtml({ quizCount, lessonCount, notebookCount, subfolderCount }),
   });
   const created = formatDateForInfo(item.meta?.createdAt);
   const updated = formatDateForInfo(item.meta?.updatedAt);

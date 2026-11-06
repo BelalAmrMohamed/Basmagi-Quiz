@@ -36,6 +36,7 @@ export function getCourseContentsStats(course) {
   const tree = getCategoryTree() || {};
   let quizCount = Array.isArray(course?.exams) ? course.exams.length : 0;
   let lessonCount = Array.isArray(course?.lessons) ? course.lessons.length : 0;
+  let notebookCount = Array.isArray(course?.notebooks) ? course.notebooks.length : 0;
   let subfolderCount = 0;
 
   function visitFolder(key) {
@@ -44,11 +45,12 @@ export function getCourseContentsStats(course) {
     subfolderCount += 1;
     quizCount += Array.isArray(folder.exams) ? folder.exams.length : 0;
     lessonCount += Array.isArray(folder.lessons) ? folder.lessons.length : 0;
+    notebookCount += Array.isArray(folder.notebooks) ? folder.notebooks.length : 0;
     (folder.subcategories || []).forEach(visitFolder);
   }
 
   (course?.subcategories || []).forEach(visitFolder);
-  return { quizCount, lessonCount, subfolderCount };
+  return { quizCount, lessonCount, notebookCount, subfolderCount };
 }
 
 /**
@@ -111,12 +113,13 @@ export function showCourseActionsOverlay(course) {
  * @param {object} course - The course object from the categoryTree.
  */
 export function showCourseInfoModal(course) {
-  const { quizCount, lessonCount, subfolderCount } = getCourseContentsStats(course);
+  const { quizCount, lessonCount, notebookCount, subfolderCount } = getCourseContentsStats(course);
   const { body, isOpen } = openInfoOverlay({
     title: "معلومات المادة",
     statsHtml: `
     <div class="course-info-stat"><strong>${quizCount}</strong><span>امتحان</span></div>
     <div class="course-info-stat"><strong>${lessonCount}</strong><span>درس</span></div>
+    <div class="course-info-stat"><strong>${notebookCount}</strong><span>دفتر</span></div>
     <div class="course-info-stat"><strong>${subfolderCount}</strong><span>مجلد فرعي</span></div>
   `,
   });

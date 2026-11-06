@@ -71,6 +71,8 @@ import { openAIAgentWithAttachment, resolveUserItemAttachment } from "../../comp
 import { downloadLesson } from "./lesson-download.js";
 import { openDescriptionSourceModal } from "./description-source-modal.js";
 import { appendNotebookMenuEntries, showNotebookDownloadModal } from "./notebook-actions.js";
+import { createNotebookCardShell, createNotebookActionRow } from "./notebook-card-view.js";
+import { createTypeChip, tagCardType } from "./card-type.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { SPARKLE_ICON_SVG } from "./icons.js";
 
@@ -206,6 +208,8 @@ export function createUserQuizCard(quiz, index) {
   // ── Build text wrapper (display:contents on desktop, flex-col on mobile) ──
   const textWrap = document.createElement("div");
   textWrap.className = "card-text";
+  textWrap.appendChild(createTypeChip("quiz"));
+  tagCardType(card, "quiz");
   textWrap.appendChild(h);
   const description = String(qz(quiz, "description") || "").trim();
   if (description) {
@@ -311,6 +315,8 @@ export function createUserLessonCard(lesson) {
   icon.setAttribute("aria-hidden", "true");
   const text = document.createElement("div");
   text.className = "card-text";
+  text.append(createTypeChip("lesson"));
+  tagCardType(card, "lesson");
   const heading = document.createElement("h3");
   heading.textContent = title;
   heading.setAttribute("data-tooltip-badge", "📘 درس");
@@ -394,11 +400,16 @@ export function createUserLessonCard(lesson) {
 export function createUserNotebookCard(nb) {
   const nbId = nb.id || nb.meta?.id;
   const title = nb.meta?.title || "دفتر بدون عنوان";
-  const description = nb.meta?.description || "";
-  const cells = nb.stats?.cellCount ?? nb.notebook?.content?.cells?.length ?? 0;
-  const card = document.createElement("div");
-  card.className = "exam-card user-quiz-card user-lesson-card user-notebook-card";
-  card.setAttribute("role", "article");
+  // Same card body as the platform notebook card (notebook-card-view.js):
+  // title, description, cell count, runtime label and the type chip.
+  const { card, icon, text } = createNotebookCardShell({
+    title,
+    description: nb.meta?.description || "",
+    cellCount: nb.stats?.cellCount ?? nb.notebook?.content?.cells?.length ?? 0,
+    runtime: nb.notebook?.runtime || "matlab",
+    cardClass: "exam-card user-quiz-card user-lesson-card user-notebook-card",
+    iconClass: "user-quiz--phone-only-emoji",
+  });
   card.setAttribute("aria-label", `دفتر: ${title}`);
 
   const checkbox = document.createElement("input");
@@ -421,67 +432,12 @@ export function createUserNotebookCard(nb) {
     }
   });
 
-  const icon = document.createElement("span");
-  icon.className = "user-quiz--phone-only-emoji";
-  icon.textContent = "💻";
-
-  icon.setAttribute("aria-hidden", "true");
-  const text = document.createElement("div");
-  text.className = "card-text";
-  const heading = document.createElement("h3");
-  heading.textContent = title;
-  heading.setAttribute("data-tooltip-badge", "💻 دفتر تفاعلي");
-  heading.setAttribute("data-tooltip-text", title);
-  text.append(heading);
-  if (description) {
-    const desc = document.createElement("p");
-    desc.className = "lesson-card-description";
-    desc.textContent = description;
-    desc.setAttribute("data-tooltip-badge", "📄 وصف الدفتر");
-    desc.setAttribute("data-tooltip-text", description);
-    text.append(desc);
-  }
-  const meta = document.createElement("div");
-  meta.className = "exam-card-meta user-quiz-card-meta";
-  const label = document.createElement("p");
-  label.className = "exam-question-count";
-  label.textContent = `الخلايا: ${cells}`;
-  meta.append(label);
-  text.append(meta);
-
-  const actions = document.createElement("div");
-  actions.className = "exam-card-actions-wrap";
-  const more = document.createElement("button");
-  more.className = "exam-more-btn";
-  more.type = "button";
-  more.innerHTML = MORE_DOTS_ICON_SVG;
-  more.setAttribute("aria-label", `خيارات إضافية لـ ${title}`);
-  more.onclick = (event) => {
-    event.stopPropagation();
-    showUserNotebookActionsOverlay(nb, more);
-  };
-  const start = document.createElement("button");
-  start.className = "start-btn";
-  start.type = "button";
-  start.style.flex = "1";
-  start.style.minWidth = "0";
-  start.textContent = "افتح الدفتر";
-  start.onclick = (event) => {
-    event.stopPropagation();
-    playUserNotebook(nb);
-  };
-  const download = document.createElement("button");
-  download.className = "start-btn desktop-download-btn";
-  download.type = "button";
-  download.style.flex = "1";
-  download.style.minWidth = "0";
-  download.textContent = "تحميل";
-  download.setAttribute("aria-label", `تحميل دفتر ${title}`);
-  download.onclick = (event) => {
-    event.stopPropagation();
-    showNotebookDownloadModal(nb, download);
-  };
-  actions.append(more, start, download);
+  const actions = createNotebookActionRow({
+    title,
+    onMore: (trigger) => showUserNotebookActionsOverlay(nb, trigger),
+    onOpen: () => playUserNotebook(nb),
+    onDownload: (button) => showNotebookDownloadModal(nb, button),
+  });
   card.append(checkbox, icon, text, actions);
   return card;
 }

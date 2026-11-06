@@ -186,23 +186,26 @@ export function countCategoryContents(tree, node) {
   let quizCount = 0;
   let lessonCount = 0;
   let folderCount = 0;
+  let notebookCount = 0;
   const visit = (n, isChild = false) => {
     if (!n) return;
     if (isChild) folderCount += 1;
     quizCount += Array.isArray(n.exams) ? n.exams.length : 0;
     lessonCount += Array.isArray(n.lessons) ? n.lessons.length : 0;
+    notebookCount += Array.isArray(n.notebooks) ? n.notebooks.length : 0;
     (n.subcategories || []).forEach((key) => visit(tree?.[key], true));
   };
   visit(node);
-  return { quizCount, lessonCount, folderCount };
+  return { quizCount, lessonCount, notebookCount, folderCount };
 }
 
 /** Rows shared by the course and folder submenus: counts + creator. */
 export function buildContainerInfoRows(tree, node) {
-  const { quizCount, lessonCount, folderCount } = countCategoryContents(tree, node);
+  const { quizCount, lessonCount, notebookCount, folderCount } = countCategoryContents(tree, node);
   return [
     { label: "امتحان", val: String(quizCount) },
     { label: "درس", val: String(lessonCount) },
+    { label: "دفتر", val: String(notebookCount) },
     { label: "مجلد", val: String(folderCount) },
     ...(node?.created_by ? [{ label: "إعداد", val: "…", loadVal: () => fetchCreatorName(node.created_by) }] : []),
   ];

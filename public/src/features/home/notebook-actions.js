@@ -10,6 +10,8 @@ import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-ht
 import { renderMarkdown } from "../../shared/markdown.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { exportNotebookZip } from "../../shared/notebook-bundle.js";
+import { sourceIconHtml } from "../../shared/source-link.js";
+import { buildInfoSkeletonHtml, buildCreatorSectionHtml, fetchCreatorById, fetchCreatorName } from "./info-details.js";
 import { buildExportCard, buildSourceActions } from "../../components/download-quiz-modal/export-card.js";
 import {
   rowToNotebook, collectNotebookInfo, notebookToIpynb, notebookToMScript, notebookToHtml, safeFileName,
@@ -27,7 +29,7 @@ function infoBodyHtml(info, url) {
   add("بيئة التشغيل", escapeHtml(RUNTIME_LABEL[info.runtime] || info.runtime));
   add("لغة الدفتر", escapeHtml(LANG_LABEL[info.language] || info.language));
   if (info.description) add("الوصف", escapeHtml(info.description));
-  if (info.source) add("المصدر", link(info.source));
+  if (info.source) add("المصدر", `${sourceIconHtml(info.source)}${link(info.source)}`);
   if (url) add("رابط الدفتر", link(url));
   add("مكان الحفظ", info.local ? "على جهازك فقط (محتواي)" : "منصة بصمجي (مشترك)");
   const created = formatDateForInfo(info.createdAt);
@@ -43,7 +45,8 @@ function infoBodyHtml(info, url) {
     <div class="quiz-info-section">
       <div class="quiz-info-section-title">تفاصيل الدفتر</div>
       <div class="quiz-meta-grid">${rows.join("")}</div>
-    </div>`;
+    </div>
+    ${info.createdBy ? `<div data-notebook-creator-slot>${buildInfoSkeletonHtml({ title: false, pills: 0, rows: 0, card: true })}</div>` : ""}`;
 }
 
 export function showNotebookInfoModal(row) {
@@ -73,6 +76,15 @@ export function showNotebookInfoModal(row) {
   dialog.addEventListener("click", (e) => { if (e.target === dialog) close(); });
   dialog.addEventListener("close", () => dialog.remove());
   dialog.showModal();
+  // Uploader card («إعداد»), same as the quiz / lesson dialogs — platform notebooks only
+  // (local notebooks have no uploader).
+  const slot = dialog.querySelector("[data-notebook-creator-slot]");
+  if (slot && info.createdBy) {
+    fetchCreatorById(info.createdBy).then((creator) => {
+      if (!slot.isConnected) return;
+      slot.innerHTML = creator ? buildCreatorSectionHtml(creator) : "";
+    }).catch(() => { slot.remove(); });
+  }
   return dialog;
 }
 
@@ -245,6 +257,7 @@ export function appendNotebookMenuEntries(menu, closeMenu, reposition, row, { pl
   const basicRows = [
     { label: "ID", val: info.id, multiline: true, copyable: true, ltr: true },
     { label: "الخلايا", val: cellCount },
+    ...(platform && info.createdBy ? [{ label: "إعداد", val: "…", loadVal: () => fetchCreatorName(info.createdBy) }] : []),
     ...(platform ? [] : [{ label: "كود / نص", val: `${info.codeCount} / ${info.markdownCount}` }, { label: "اللغة", val: info.language === "ar" ? "العربية" : "English" }]),
   ].filter((r) => r.val || r.val === 0);
   menu.appendChild(createExamInfoSubmenu(basicRows, async () => { const full = await loadRow(); if (full) showNotebookInfoModal(full); }, closeMenu, reposition, "معلومات الدفتر"));

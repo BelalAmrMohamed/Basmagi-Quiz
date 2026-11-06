@@ -18,6 +18,7 @@
 // index.html already loads via quiz-info-modal.css. Nothing here needs new CSS.
 // ============================================================================
 
+import { sourceIconHtml } from "../../shared/source-link.js";
 import { escapeHtml } from "./escape-html.js";
 import { buildInfoSkeletonHtml, buildCreatorSectionHtml, fetchCreatorById, fetchLessonViewCount } from "./info-details.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
@@ -163,7 +164,7 @@ export function buildLessonInfoBodyHtml(info) {
         const safeSource = /^(https?:\/\/)/i.test(info.source)
             ? `<a href="${escapeHtml(info.source)}" target="_blank" rel="noopener noreferrer" dir="ltr">${escapeHtml(info.source)}</a>`
             : `<span dir="ltr">${escapeHtml(info.source)}</span>`;
-        addRow("المصدر", safeSource);
+        addRow("المصدر", `${sourceIconHtml(info.source)}${safeSource}`);
     }
     if (info.url && !info.url.endsWith("/lesson/")) {
         addRow("رابط الدرس", `<a href="${escapeHtml(info.url)}" target="_blank" rel="noopener noreferrer" dir="ltr">${escapeHtml(info.url)}</a>`);

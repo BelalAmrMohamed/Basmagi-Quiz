@@ -33,6 +33,7 @@ export function rowToNotebook(row) {
     language: resolveNotebookLang(content.language, { title, description, cells }),
     createdAt: (local ? row.meta?.createdAt : row?.created_at) || null,
     updatedAt: (local ? row.meta?.updatedAt : row?.updated_at) || null,
+    createdBy: local ? null : (row?.created_by || row?.createdBy || null), // platform notebooks only
     local,
     cells,
     assets: Array.isArray(content.assets) ? content.assets : [],
@@ -46,7 +47,7 @@ export function collectNotebookInfo(row) {
   return {
     id: nb.id, title: nb.title, description: nb.description, source: nb.source, runtime: nb.runtime, language: nb.language,
     cellCount: nb.cells.length, codeCount: code.length, markdownCount: nb.cells.length - code.length, codeLines: lines,
-    createdAt: nb.createdAt, updatedAt: nb.updatedAt, local: nb.local, slug: nb.slug,
+    createdAt: nb.createdAt, updatedAt: nb.updatedAt, createdBy: nb.createdBy, local: nb.local, slug: nb.slug,
   };
 }
 

@@ -3,6 +3,7 @@
 // JSON (see NOTEBOOK_CREATION_PROMPT), a pasted raw .ipynb JSON, or an
 // uploaded .ipynb / .m file. Uses the same shared validation as the admin
 // editor, the API and the MCP server.
+import { buildLocalNotebookEntry } from "./local-notebook.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { hasSameLevelCollision, currentFolderId } from "./user-quizzes-folders.js";
@@ -204,25 +205,7 @@ export function openInlineCreateNotebookModal() {
       return;
     }
 
-    const id = `user_notebook_${crypto.randomUUID()}`;
-    const now = new Date().toISOString();
-    userItems.push({
-      id,
-      meta: {
-        type: "notebook",
-        title,
-        parentId: targetParentId,
-        createdAt: new Date().toLocaleString("en-US"),
-        updatedAt: now,
-        description: rec.description.trim(),
-        source: rec.source.trim(),
-        passwordProtected: false,
-      },
-      stats: { cellCount: rec.content.cells.length },
-      notebook: { runtime: rec.runtime, content: rec.content },
-      passwordHash: null,
-      questions: [],
-    });
+    userItems.push(buildLocalNotebookEntry({ rec, title, parentId: targetParentId }));
 
     if (!setInStorage("user_quizzes", JSON.stringify(userItems))) {
       showFeedback("error", "تعذّر حفظ الدفتر", ["تعذّر الحفظ محلياً. قد تكون مساحة التخزين ممتلئة — احذف عناصر غير مستخدمة ثم أعد المحاولة."]);

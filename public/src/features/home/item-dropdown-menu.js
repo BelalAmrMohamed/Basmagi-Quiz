@@ -21,6 +21,7 @@ import { positionItemDropdownMenu } from "./floating-position.js";
 import { escapeHtml } from "./escape-html.js";
 import { INFO_ICON_SVG, COPY_CHECK_ICON_SVG } from "./icons.js";
 import { closeUserQuizContextMenu } from "./user-quizzes-folders.js";
+import { orderItemMenu } from "./item-menu-order.js";
 
 /** Removes any currently-open dropdown menu(s). Defensive — normally only
  * one can be open at a time since opening a new one closes the last. Also
@@ -42,7 +43,7 @@ let openTriggerBtn = null;
 /** Anchors `menu` below (or, if there's no room, above) `triggerBtn`,
  * right-edge aligned (this is an RTL UI), clamped so it never runs off
  * either side of the viewport. */
-export function openItemDropdownMenu(triggerBtn, buildContent) {
+export function openItemDropdownMenu(triggerBtn, buildContent, { ordered = true } = {}) {
   const wasOpenForThisTrigger = openTriggerBtn === triggerBtn;
   closeAllItemDropdownMenus();
 
@@ -91,6 +92,9 @@ export function openItemDropdownMenu(triggerBtn, buildContent) {
   }
 
   buildContent(menu, closeMenu, reposition);
+  // One fixed order for every item type (see item-menu-order.js). Non-item
+  // menus ("إنشاء …", root actions) opt out with { ordered: false }.
+  if (ordered) orderItemMenu(menu);
 
   document.body.appendChild(menu);
   positionItemDropdownMenu(menu, triggerBtn);

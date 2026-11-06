@@ -1,5 +1,6 @@
 // Platform lesson card and its shared actions menu.
 import { downloadLesson } from "./lesson-download.js";
+import { createTypeChip, tagCardType } from "./card-type.js";
 import { EMBED_ICON_SVG, copyEmbedCode } from "./embed-code.js";
 import { fetchLessonViewCount, fetchCreatorName } from "./info-details.js";
 import { openItemDropdownMenu, createActionGroupSubmenu, createExamInfoSubmenu } from "./item-dropdown-menu.js";
@@ -70,6 +71,8 @@ export function createLessonCard(lesson) {
 
   const text = document.createElement("div");
   text.className = "card-text";
+  text.appendChild(createTypeChip("lesson"));
+  tagCardType(card, "lesson");
   const heading = document.createElement("h3");
   heading.textContent = lesson.title || "درس بدون عنوان";
   heading.setAttribute("data-tooltip-badge", "📘 درس تفاعلي");
@@ -138,9 +141,6 @@ export function createLessonCard(lesson) {
   download.className = "start-btn desktop-download-btn";
   download.style.flex = "1";
   download.style.minWidth = "0";
-  download.style.background = "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)";
-  download.style.color = "white";
-  download.style.boxShadow = "0 4px 14px rgba(37, 99, 235, 0.35)";
   download.innerHTML = `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
   download.setAttribute("aria-label", `تحميل ${lesson.title || "الدرس"}`);
   download.addEventListener("click", (event) => {

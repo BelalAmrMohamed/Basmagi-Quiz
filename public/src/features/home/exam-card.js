@@ -6,6 +6,7 @@
 // per-card `exam`/`config` state, so it isn't a standalone module function).
 // ============================================================================
 
+import { createTypeChip, tagCardType } from "./card-type.js";
 import { startQuiz } from "./quiz-navigation.js";
 import { isRecentlyAdded } from "./date-utils.js";
 import { formatArabicQuestionCount, refreshUserQuizzesCard } from "./course-count.js";
@@ -240,6 +241,8 @@ export function createExamCard(exam) {
   // ── Build text wrapper (display:contents on desktop, flex-col on mobile) ──
   const textWrap = document.createElement("div");
   textWrap.className = "card-text";
+  textWrap.appendChild(createTypeChip("quiz"));
+  tagCardType(card, "quiz");
   textWrap.appendChild(h);
   const description = String(exam.description || "").trim();
   if (description) {

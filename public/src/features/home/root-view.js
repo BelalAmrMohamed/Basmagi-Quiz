@@ -358,6 +358,7 @@ export async function renderRootCategories() {
       rootMenuBtn.onclick = (event) => {
         event.stopPropagation();
         openItemDropdownMenu(rootMenuBtn, (menu, closeMenu) => {
+          menu.dataset.unordered = "1"; // root actions menu, not an item menu
           const askAi = document.createElement("button");
           askAi.type = "button";
           askAi.className = "exam-action-btn";

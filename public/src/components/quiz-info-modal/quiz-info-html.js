@@ -1,4 +1,5 @@
 // public/src/components/quiz-info-modal/quiz-info-html.js
+import { sourceIconHtml } from "../../shared/source-link.js";
 import { escapeHtml } from "../../features/home/escape-html.js";
 import { avatarEngine } from "../../shared/avatarEngine.js";
 
@@ -242,7 +243,7 @@ export function buildQuizInfoModalHtml(config, questionCount = null, creatorProf
   if (config.source) {
     gridItems.push(`
       <div class="quiz-meta-label">المصدر</div>
-      <div class="quiz-meta-value">${linkify(config.source)}</div>
+      <div class="quiz-meta-value">${sourceIconHtml(config.source)}${linkify(config.source)}</div>
     `);
   }
 

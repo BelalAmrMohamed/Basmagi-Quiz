@@ -1,4 +1,5 @@
 // public/src/features/home/user-quizzes-folders.js
+import { getFolderContentsCount, formatFolderAndQuizCount } from "./folder-counts.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { _prompt, _confirm, _confirmTyped, showNotification } from "../../components/notifications/notifications.js";
 import { isAdminAuthenticated } from "../../shared/adminAuth.js";
@@ -1685,83 +1686,7 @@ export function selectItem(itemId) {
   updateBulkActionBar(true);
 }
 
-/**
- * Recursively count all subfolders and quizzes inside a given folder or course.
- * @param {object[]} userQuizzes
- * @param {string} folderId
- * @returns {{ subfolderCount: number, quizCount: number }}
- */
-export function getFolderContentsCount(userQuizzes, folderId) {
-  let subfolderCount = 0;
-  let quizCount = 0;
-  let lessonCount = 0;
-
-  function walk(currentId) {
-    const children = userQuizzes.filter(
-      (q) =>
-        (q.meta?.parentId || null) === currentId &&
-        // Drafts are never shown in the tree (see getChildren), so they must
-        // not be counted either.
-        q.meta?.type !== "draft" &&
-        q.meta?.type !== "draft-lesson",
-    );
-    for (const child of children) {
-      const type = child.meta?.type;
-      if (type === "folder" || type === "course") {
-        subfolderCount++;
-        walk(child.id || child.meta?.id);
-      } else if (type === "lesson") {
-        // Lessons used to fall into the `else` below and be reported as
-        // quizzes ("3 امتحانات" for a folder holding 1 quiz + 2 lessons).
-        lessonCount++;
-      } else if (type === "notebook") {
-        // notebooks are neither quizzes nor lessons in the counts
-      } else {
-        quizCount++;
-      }
-    }
-  }
-
-  walk(folderId);
-  return { subfolderCount, quizCount, lessonCount };
-}
-
-/**
- * Format the subfolder and quiz count in natural Arabic with proper plural rules.
- * @param {number} subfolderCount
- * @param {number} quizCount
- * @returns {string}
- */
-export function formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount = 0) {
-  if (subfolderCount === 0 && quizCount === 0 && lessonCount === 0) {
-    return "فارغ";
-  }
-
-  const parts = [];
-
-  if (subfolderCount > 0) {
-    if (subfolderCount === 1) parts.push("مجلد واحد");
-    else if (subfolderCount === 2) parts.push("مجلدان");
-    else if (subfolderCount >= 3 && subfolderCount <= 10) parts.push(`${subfolderCount} مجلدات`);
-    else parts.push(`${subfolderCount} مجلد`);
-  }
-
-  if (quizCount > 0) {
-    if (quizCount === 1) parts.push("امتحان واحد");
-    else if (quizCount === 2) parts.push("امتحانان");
-    else if (quizCount >= 3 && quizCount <= 10) parts.push(`${quizCount} امتحانات`);
-    else parts.push(`${quizCount} امتحان`);
-  }
-
-  if (lessonCount > 0) {
-    if (lessonCount === 1) parts.push("درس واحد");
-    else if (lessonCount === 2) parts.push("درسان");
-    else if (lessonCount >= 3 && lessonCount <= 10) parts.push(`${lessonCount} دروس`);
-    else parts.push(`${lessonCount} درس`);
-  }
-
-  return parts.join(" · ");
-}
+export { getFolderContentsCount, formatFolderAndQuizCount } from "./folder-counts.js";
 
 export function createFolderOrCourseCard(item) {
   const card = document.createElement("div");
@@ -1820,8 +1745,8 @@ export function createFolderOrCourseCard(item) {
 
   // Subtext: total number of subfolders and quizzes (recursive)
   const userQuizzes = readUserQuizzes();
-  const { subfolderCount, quizCount, lessonCount } = getFolderContentsCount(userQuizzes, itemId);
-  const subtextStr = formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount);
+  const { subfolderCount, quizCount, lessonCount, notebookCount } = getFolderContentsCount(userQuizzes, itemId);
+  const subtextStr = formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount, notebookCount);
 
   const subtextEl = document.createElement("p");
   subtextEl.className = "category-card-subtext user-quiz-count";

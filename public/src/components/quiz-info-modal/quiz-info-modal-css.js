@@ -341,4 +341,6 @@ a.quiz-creator-card:hover .quiz-creator-cta {
 .info-skel--row { height: 16px; }
 .info-skel--card { height: 58px; border-radius: 14px; }
 @media (prefers-reduced-motion: reduce) { .info-skel::after { animation: none; } }
+
+.source-drive-icon { width: 18px; height: 18px; vertical-align: middle; margin-inline-end: 6px; border-radius: 3px; object-fit: contain; }
 `;

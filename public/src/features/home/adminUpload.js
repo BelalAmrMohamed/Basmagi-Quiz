@@ -24,6 +24,7 @@
 // =============================================================================
 
 import { prepareNotebookAssets, rollbackAssets } from "../../shared/notebook-publish-assets.js";
+import { formatItemCounts } from "./upload-counts.js";
 import { getToken, isAdminAuthenticated, signOut } from "../../shared/adminAuth.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { userProfile } from "../../shared/userProfile.js";
@@ -845,7 +846,7 @@ function renderThreadTree(items, root, rootChain) {
   }
 
   function countDescendants(chainKey) {
-    let folders = 0, quizzes = 0, lessons = 0;
+    let folders = 0, quizzes = 0, lessons = 0, notebooks = 0;
     function walk(key) {
       for (const item of items) {
         if ((item.folderSegments || []).join("/") !== key) continue;
@@ -855,14 +856,14 @@ function renderThreadTree(items, root, rootChain) {
         } else if (item.type === "lesson") {
           lessons++;
         } else if (item.type === "notebook") {
-          // counted by the upload API (notebooksUploaded), not in these buckets
+          notebooks++;
         } else {
           quizzes++;
         }
       }
     }
     walk(chainKey);
-    return { folders, quizzes, lessons };
+    return { folders, quizzes, lessons, notebooks };
   }
 
   // Renders one sibling group (all items whose folderSegments join to
@@ -881,17 +882,21 @@ function renderThreadTree(items, root, rootChain) {
       const li = document.createElement("li");
       if (item.type === "folder") {
         const childKey = [...(item.folderSegments || []), item.name].join("/");
-        const { folders, quizzes, lessons } = countDescendants(childKey);
+        const { folders, quizzes, lessons, notebooks } = countDescendants(childKey);
         const badgeParts = [];
         if (folders) badgeParts.push(`${folders} مجلد`);
         if (quizzes) badgeParts.push(`${quizzes} امتحان`);
         if (lessons) badgeParts.push(`${lessons} درس`);
+        if (notebooks) badgeParts.push(`${notebooks} دفتر`);
         li.appendChild(makeRow("📁", item.name, badgeParts.join(" · "), true));
         appendGroup(li, childKey, depth + 1);
       } else {
         const isLesson = item.type === "lesson";
-        const label = isLesson ? item.lesson?.title || item.name || "درس" : item.quiz?.meta?.title || item.name || "امتحان";
-        li.appendChild(makeRow(isLesson ? "📖" : "📝", label, "", true));
+        const isNotebook = item.type === "notebook";
+        const label = isNotebook
+          ? item.notebook?.title || item.name || "دفتر"
+          : isLesson ? item.lesson?.title || item.name || "درس" : item.quiz?.meta?.title || item.name || "امتحان";
+        li.appendChild(makeRow(isNotebook ? "💻" : isLesson ? "📖" : "📝", label, "", true));
       }
       sublist.appendChild(li);
     }
@@ -937,6 +942,7 @@ function renderFolderReviewStep(step1Vals) {
   const folderCount = items.filter((i) => i.type === "folder").length + (courseItem ? 1 : 0);
   const quizCount = items.filter((i) => i.type === "quiz").length;
   const lessonCount = items.filter((i) => i.type === "lesson").length;
+  const notebookCount = items.filter((i) => i.type === "notebook").length;
   const rootLabel = courseItem ? courseItem.name : rootName;
   const rootChain = courseItem ? [rootLabel] : [];
   const nonRootItems = courseItem ? items.filter((i) => i !== courseItem) : items;
@@ -945,7 +951,7 @@ function renderFolderReviewStep(step1Vals) {
     ${hdr("رفع مجلد إلى قاعدة البيانات")}
     ${stepsHTML(2)}
     <div class="adm-body">
-      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد/مادة ورفع ${quizCount} امتحان و${lessonCount} درس</p>
+      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد/مادة ورفع ${formatItemCounts({ quizzes: quizCount, lessons: lessonCount, notebooks: notebookCount })}</p>
       <div id="adm-tree-holder" style="max-height:320px;overflow-y:auto;"></div>
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-folder-back">→ رجوع</button>
@@ -1006,18 +1012,18 @@ async function doFolderUpload({ educationType, college, year, term }) {
 
   const hintEl = document.getElementById("adm-folder-hint");
   const resultEl = document.getElementById("adm-folder-result");
-  const { foldersCreated, quizzesUploaded, lessonsUploaded = 0, failed } = result;
+  const { foldersCreated, quizzesUploaded, lessonsUploaded = 0, notebooksUploaded = 0, failed } = result;
 
   if (hintEl) {
     if (failed.length === 0) {
-      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد/مادة ورفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس بنجاح!`;
+      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد/مادة ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} بنجاح!`;
       hintEl.style.color = "var(--color-success)";
       showNotification("تم الرفع بنجاح ✅", "success");
       invalidateManifestCache();
     } else {
-      hintEl.textContent = `تم رفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس • فشل ${failed.length}`;
-      hintEl.style.color = quizzesUploaded + lessonsUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded + lessonsUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس (فشل ${failed.length})`, "warning");
+      hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} • فشل ${failed.length}`;
+      hintEl.style.color = quizzesUploaded + lessonsUploaded + notebooksUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
+      if (quizzesUploaded + lessonsUploaded + notebooksUploaded > 0) showNotification(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} (فشل ${failed.length})`, "warning");
       invalidateManifestCache();
     }
   }
@@ -1069,10 +1075,12 @@ function renderCourseUploadReviewStep(step1Vals) {
     const folderCount = items.filter((i) => i.type === "folder").length;
     const quizCount = items.filter((i) => i.type === "quiz").length;
     const lessonCount = items.filter((i) => i.type === "lesson").length;
+    const notebookCount = items.filter((i) => i.type === "notebook").length;
     const badgeParts = [];
     if (folderCount) badgeParts.push(`${folderCount} مجلد`);
     if (quizCount) badgeParts.push(`${quizCount} امتحان`);
     if (lessonCount) badgeParts.push(`${lessonCount} درس`);
+    if (notebookCount) badgeParts.push(`${notebookCount} دفتر`);
     treeHolder.appendChild(
       renderThreadTree(items, { icon: "📚", label: courseName, badge: badgeParts.join(" · ") }, [courseName]),
     );
@@ -1123,18 +1131,18 @@ async function doCourseUpload({ educationType, college, year, term }) {
 
   const hintEl = document.getElementById("adm-course-hint");
   const resultEl = document.getElementById("adm-course-result");
-  const { coursesCount, foldersCreated, quizzesUploaded, lessonsUploaded = 0, failed } = result;
+  const { coursesCount, foldersCreated, quizzesUploaded, lessonsUploaded = 0, notebooksUploaded = 0, failed } = result;
 
   if (hintEl) {
     if (failed.length === 0) {
-      hintEl.textContent = `✅ تم إنشاء ${coursesCount} مادة و${foldersCreated} مجلد ورفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس بنجاح!`;
+      hintEl.textContent = `✅ تم إنشاء ${coursesCount} مادة و${foldersCreated} مجلد ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} بنجاح!`;
       hintEl.style.color = "var(--color-success)";
       showNotification("تم الرفع بنجاح ✅", "success");
       invalidateManifestCache();
     } else {
-      hintEl.textContent = `تم رفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس • فشل ${failed.length}`;
-      hintEl.style.color = quizzesUploaded + lessonsUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded + lessonsUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس (فشل ${failed.length})`, "warning");
+      hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} • فشل ${failed.length}`;
+      hintEl.style.color = quizzesUploaded + lessonsUploaded + notebooksUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
+      if (quizzesUploaded + lessonsUploaded + notebooksUploaded > 0) showNotification(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} (فشل ${failed.length})`, "warning");
       invalidateManifestCache();
     }
   }
@@ -1247,6 +1255,7 @@ function renderFolderUploadReviewStep(step1Vals) {
   const folderCount = items.filter((i) => i.type === "folder").length;
   const quizCount = items.filter((i) => i.type === "quiz").length;
   const lessonCount = items.filter((i) => i.type === "lesson").length;
+  const notebookCount = items.filter((i) => i.type === "notebook").length;
   const destinationLabel = subfolderPath.length > 0
     ? `${courseName} ← ${subfolderPath.join(" ← ")}`
     : courseName;
@@ -1255,7 +1264,7 @@ function renderFolderUploadReviewStep(step1Vals) {
     ${hdr("رفع المجلد إلى المنصة")}
     ${stepsHTML(3)}
     <div class="adm-body">
-      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد ورفع ${quizCount} امتحان و${lessonCount} درس داخل "${destinationLabel}"</p>
+      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد ورفع ${formatItemCounts({ quizzes: quizCount, lessons: lessonCount, notebooks: notebookCount })} داخل "${destinationLabel}"</p>
       <div id="adm-tree-holder" style="max-height:320px;overflow-y:auto;"></div>
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-folder-target-back">→ رجوع</button>
@@ -1314,18 +1323,18 @@ async function doFolderUploadToExisting({ educationType, college, year, term }) 
 
   const hintEl = document.getElementById("adm-folder-target-hint");
   const resultEl = document.getElementById("adm-folder-target-result");
-  const { foldersCreated, quizzesUploaded, lessonsUploaded = 0, failed } = result;
+  const { foldersCreated, quizzesUploaded, lessonsUploaded = 0, notebooksUploaded = 0, failed } = result;
 
   if (hintEl) {
     if (failed.length === 0) {
-      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد ورفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس بنجاح!`;
+      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} بنجاح!`;
       hintEl.style.color = "var(--color-success)";
       showNotification("تم الرفع بنجاح ✅", "success");
       invalidateManifestCache();
     } else {
-      hintEl.textContent = `تم رفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس • فشل ${failed.length}`;
-      hintEl.style.color = quizzesUploaded + lessonsUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded + lessonsUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} امتحان و${lessonsUploaded} درس (فشل ${failed.length})`, "warning");
+      hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} • فشل ${failed.length}`;
+      hintEl.style.color = quizzesUploaded + lessonsUploaded + notebooksUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
+      if (quizzesUploaded + lessonsUploaded + notebooksUploaded > 0) showNotification(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} (فشل ${failed.length})`, "warning");
       invalidateManifestCache();
     }
   }

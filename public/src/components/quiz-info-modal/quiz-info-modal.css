@@ -356,3 +356,5 @@ a.quiz-creator-card:hover .quiz-creator-cta {
 .quiz-attempts-stat__value { font-size: 1.5rem; font-weight: 800; line-height: 1; color: var(--color-primary, #6366f1); }
 .quiz-attempts-stat__label { font-size: 0.85rem; color: var(--color-text-secondary); }
 .quiz-attempts-stat[hidden] { display: none; }
+
+.source-drive-icon { width: 18px; height: 18px; vertical-align: middle; margin-inline-end: 6px; border-radius: 3px; object-fit: contain; }

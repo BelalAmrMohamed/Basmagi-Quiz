@@ -11,6 +11,7 @@
 // handlers/functions, by which point both modules have finished loading.
 // ============================================================================
 
+import { handleMyContentDrop } from "./notebook-file-import.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { isAdminAuthenticated, fullSignOut } from "../../shared/adminAuth.js";
 import { _prompt } from "../../components/notifications/notifications.js";
@@ -729,6 +730,7 @@ export function renderUserQuizzesView() {
     createFolderBtn.onclick = (e) => {
       e.stopPropagation();
       openItemDropdownMenu(createFolderBtn, (menu, closeMenu) => {
+        menu.dataset.unordered = "1"; // create menu, not an item menu
         // "امتحان جديد" — opens the same modal previously reachable
         // via the standalone .user-create-quiz-card in the quiz grid
         // (createInlineCreateQuizCard(), removed per docs/plans/
@@ -874,8 +876,8 @@ export function renderUserQuizzesView() {
 
     container.appendChild(actionsBar);
 
-    // Drag-and-drop JSON import on the whole user-content section
-    wireJsonFileDropZone(container, (files) => importJsonQuizFiles(files), {
+    // Drag-and-drop import on the whole user-content section: .json (quiz), .ipynb / .m / .zip (notebooks)
+    wireJsonFileDropZone(container, (files) => handleMyContentDrop(files), {
       isEnabled: () => container.classList.contains("user-quizzes-drop-zone"),
     });
 
