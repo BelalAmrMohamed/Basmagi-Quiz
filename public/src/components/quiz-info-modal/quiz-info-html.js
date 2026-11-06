@@ -1,5 +1,5 @@
 // public/src/components/quiz-info-modal/quiz-info-html.js
-import { sourceIconHtml } from "../../shared/source-link.js";
+import { infoItemLinkHtml, infoSourceHtml } from "../../shared/info-link.js";
 import { escapeHtml } from "../../features/home/escape-html.js";
 import { avatarEngine } from "../../shared/avatarEngine.js";
 
@@ -97,14 +97,6 @@ export function buildCreatorSectionHtml(creatorProfile, sectionTitle = "إعدا
  *                                       Pass null to skip the creator card.
  */
 export function buildQuizInfoModalHtml(config, questionCount = null, creatorProfile = null) {
-  const isUrl = (s) => /^https?:\/\//i.test(s);
-  const linkify = (val) => {
-    const v = String(val);
-    return isUrl(v)
-      ? `<a href="${escapeHtml(v)}" target="_blank" rel="noopener noreferrer">${escapeHtml(v)}</a>`
-      : escapeHtml(v);
-  };
-
   // 1. Header
   const headerHtml = `
     <div class="quiz-info-dialog-header">
@@ -243,16 +235,14 @@ export function buildQuizInfoModalHtml(config, questionCount = null, creatorProf
   if (config.source) {
     gridItems.push(`
       <div class="quiz-meta-label">المصدر</div>
-      <div class="quiz-meta-value">${sourceIconHtml(config.source)}${linkify(config.source)}</div>
+      <div class="quiz-meta-value">${infoSourceHtml(config.source)}</div>
     `);
   }
 
   // On the quiz-taking page the URL is informational text; in library
   // dialogs it is a convenient shareable link.
   if (config.quizUrl) {
-    const urlHtml = config.quizUrlAsText
-      ? escapeHtml(config.quizUrl)
-      : `<a href="${escapeHtml(config.quizUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(config.quizUrl)}</a>`;
+    const urlHtml = infoItemLinkHtml(config.quizUrl, title, "رابط الامتحان");
     gridItems.push(`
       <div class="quiz-meta-label">رابط الامتحان</div>
       <div class="quiz-meta-value" dir="ltr">${urlHtml}</div>

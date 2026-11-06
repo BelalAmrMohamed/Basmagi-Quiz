@@ -28,6 +28,7 @@ import {
   buildQuizInfoModalHtml,
   fetchCreatorProfile,
 } from "../../components/quiz-info-modal/quiz-info-html.js";
+import { bindInfoCopyButtons } from "../../shared/info-link.js";
 
 // ── Shared Markdown engine ─────────
 // renderMarkdown:           full GFM renderer with KaTeX, tables, copy buttons
@@ -333,6 +334,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       questions.length,
       creatorProfile,
     );
+    bindInfoCopyButtons(els.quizInfoDialog);
 
     // Wire up close button (rendered dynamically into the shell)
     const closeBtn = els.quizInfoDialog.querySelector(

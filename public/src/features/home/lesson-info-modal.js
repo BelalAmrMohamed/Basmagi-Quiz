@@ -18,7 +18,7 @@
 // index.html already loads via quiz-info-modal.css. Nothing here needs new CSS.
 // ============================================================================
 
-import { sourceIconHtml } from "../../shared/source-link.js";
+import { bindInfoCopyButtons, infoItemLinkHtml, infoSourceHtml } from "../../shared/info-link.js";
 import { escapeHtml } from "./escape-html.js";
 import { buildInfoSkeletonHtml, buildCreatorSectionHtml, fetchCreatorById, fetchLessonViewCount } from "./info-details.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
@@ -161,13 +161,10 @@ export function buildLessonInfoBodyHtml(info) {
     if (info.essayCount) addRow("أسئلة مقالية", escapeHtml(String(info.essayCount)));
     if (info.description) addRow("الوصف", escapeHtml(info.description));
     if (info.source) {
-        const safeSource = /^(https?:\/\/)/i.test(info.source)
-            ? `<a href="${escapeHtml(info.source)}" target="_blank" rel="noopener noreferrer" dir="ltr">${escapeHtml(info.source)}</a>`
-            : `<span dir="ltr">${escapeHtml(info.source)}</span>`;
-        addRow("المصدر", `${sourceIconHtml(info.source)}${safeSource}`);
+        addRow("المصدر", infoSourceHtml(info.source));
     }
     if (info.url && !info.url.endsWith("/lesson/")) {
-        addRow("رابط الدرس", `<a href="${escapeHtml(info.url)}" target="_blank" rel="noopener noreferrer" dir="ltr">${escapeHtml(info.url)}</a>`);
+        addRow("رابط الدرس", infoItemLinkHtml(info.url, info.title, "رابط الدرس"));
     }
     if (info.passwordProtected) addRow("الحماية", "محمي بكلمة مرور");
     if (info.fontLabel) addRow("خط القراءة", escapeHtml(info.fontLabel));
@@ -246,6 +243,7 @@ export function showUserLessonInfoModal(row) {
     dialog.setAttribute("aria-labelledby", "lessonInfoDialogTitle");
     const info = collectLessonInfo(row);
     dialog.innerHTML = buildLessonInfoHtml(info);
+    bindInfoCopyButtons(dialog);
     document.body.appendChild(dialog);
 
     // Shared lessons carry the uploader's account id: the body renders a

@@ -8,6 +8,7 @@
 import { createTypeChip, tagCardType } from "./card-type.js";
 import { MORE_DOTS_ICON_SVG, DOWNLOAD_ICON_SVG } from "./icons.js";
 import { RUNTIME_CONFIG } from "../../shared/runtime-config.js";
+import { withDownloadLoading } from "../../components/download-quiz-modal/export-card.js";
 
 export const RUNTIME_LABELS = { matlab: "MATLAB (تعليمي)", cpp: "C++" };
 
@@ -100,7 +101,7 @@ export function createNotebookActionRow({ title, onMore, onOpen, onDownload }) {
   download.style.minWidth = "0";
   download.innerHTML = `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
   download.setAttribute("aria-label", `تحميل دفتر ${name}`);
-  download.addEventListener("click", (event) => { event.stopPropagation(); onDownload(download); });
+  download.addEventListener("click", (event) => { event.stopPropagation(); void withDownloadLoading(download, () => onDownload(download)); });
 
   actions.append(more, start, download);
   return actions;

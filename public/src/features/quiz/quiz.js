@@ -40,6 +40,7 @@ import {
   buildQuizInfoModalHtml,
   fetchCreatorProfile,
 } from "../../components/quiz-info-modal/quiz-info-html.js";
+import { bindInfoCopyButtons } from "../../shared/info-link.js";
 import { loadFullQuizData } from "../home/quiz-data-loader.js";
 import { openReportModal, isQuestionReported } from "../../components/report-question/report-question.js";
 import {
@@ -1340,6 +1341,7 @@ async function init() {
         questions.length,
         creatorProfile,
       );
+      bindInfoCopyButtons(dialog);
 
       // Wire up close button (rendered dynamically into the shell)
       const closeBtn = dialog.querySelector(".quiz-info-dialog-close");

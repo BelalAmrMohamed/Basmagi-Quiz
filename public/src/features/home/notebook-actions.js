@@ -10,7 +10,7 @@ import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-ht
 import { renderMarkdown } from "../../shared/markdown.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { exportNotebookZip } from "../../shared/notebook-bundle.js";
-import { sourceIconHtml } from "../../shared/source-link.js";
+import { bindInfoCopyButtons, infoItemLinkHtml, infoSourceHtml } from "../../shared/info-link.js";
 import { buildInfoSkeletonHtml, buildCreatorSectionHtml, fetchCreatorById, fetchCreatorName } from "./info-details.js";
 import { buildExportCard, buildSourceActions } from "../../components/download-quiz-modal/export-card.js";
 import {
@@ -23,14 +23,13 @@ const RUNTIME_LABEL = { matlab: "MATLAB (مفسّر تعليمي داخل الم
 function infoBodyHtml(info, url) {
   const rows = [];
   const add = (label, valueHtml) => rows.push(`<div class="quiz-meta-label">${escapeHtml(label)}</div><div class="quiz-meta-value">${valueHtml}</div>`);
-  const link = (u) => (/^https?:\/\//i.test(u) ? `<a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer" dir="ltr">${escapeHtml(u)}</a>` : `<span dir="ltr">${escapeHtml(u)}</span>`);
   add("نص (Markdown)", escapeHtml(String(info.markdownCount)));
   add("كود", escapeHtml(`${info.codeCount} (${info.codeLines} سطر)`));
   add("بيئة التشغيل", escapeHtml(RUNTIME_LABEL[info.runtime] || info.runtime));
   add("لغة الدفتر", escapeHtml(LANG_LABEL[info.language] || info.language));
   if (info.description) add("الوصف", escapeHtml(info.description));
-  if (info.source) add("المصدر", `${sourceIconHtml(info.source)}${link(info.source)}`);
-  if (url) add("رابط الدفتر", link(url));
+  if (info.source) add("المصدر", infoSourceHtml(info.source));
+  if (url) add("رابط الدفتر", infoItemLinkHtml(url, info.title, "رابط الدفتر"));
   add("مكان الحفظ", info.local ? "على جهازك فقط (محتواي)" : "منصة بصمجي (مشترك)");
   const created = formatDateForInfo(info.createdAt);
   if (created) add("تاريخ الإنشاء", `<span dir="ltr">${escapeHtml(created)}</span>`);
@@ -66,6 +65,7 @@ export function showNotebookInfoModal(row) {
       </div>
       <div class="quiz-info-dialog-body">${infoBodyHtml(info, url)}</div>
     </div>`;
+  bindInfoCopyButtons(dialog);
   document.body.appendChild(dialog);
   const close = () => {
     if (dialog.open) dialog.close();
@@ -165,12 +165,19 @@ export function showNotebookDownloadModal(row, triggerBtn = null) {
   };
 
   for (const option of formats) {
+    const copyable = ["ipynb", "m", "html"].includes(option.kind);
     grid.appendChild(buildExportCard({
       format: option.kind,
       label: option.label,
       extension: option.extension,
       icon: option.icon,
-      canCopy: false,
+      canCopy: copyable,
+      onCopy: async () => {
+        const nb = rowToNotebook(row);
+        if (option.kind === "ipynb") return JSON.stringify(notebookToIpynb(nb), null, 1);
+        if (option.kind === "m") return notebookToMScript(nb).replace(/\n/g, "\r\n");
+        return htmlOf(nb);
+      },
       onDownload: () => {
         const r = downloadNotebook(row, option.kind);
         if (r && typeof r.then === "function") r.then((ok) => { if (ok) close(); });

@@ -69,6 +69,7 @@ import {
 // rationale.
 import { openAIAgentWithAttachment, resolveUserItemAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 import { downloadLesson } from "./lesson-download.js";
+import { withDownloadLoading } from "../../components/download-quiz-modal/export-card.js";
 import { openDescriptionSourceModal } from "./description-source-modal.js";
 import { appendNotebookMenuEntries, showNotebookDownloadModal } from "./notebook-actions.js";
 import { createNotebookCardShell, createNotebookActionRow } from "./notebook-card-view.js";
@@ -389,7 +390,7 @@ export function createUserLessonCard(lesson) {
   download.setAttribute("aria-label", `تحميل درس ${title}`);
   download.onclick = (event) => {
     event.stopPropagation();
-    downloadLesson(lesson, download);
+    void withDownloadLoading(download, () => downloadLesson(lesson, download));
   };
   actions.append(more, start, download);
   card.append(checkbox, icon, text, actions);

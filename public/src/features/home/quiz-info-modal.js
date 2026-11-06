@@ -10,6 +10,7 @@ import { loadFullQuizData } from "./quiz-data-loader.js";
 import { buildQuizInfoModalHtml, fetchCreatorProfile } from "../../components/quiz-info-modal/quiz-info-html.js";
 import { fetchQuizDetails, buildInfoSkeletonDialogHtml } from "./info-details.js";
 import { getEduTypeLabel } from "./course-info-fields.js";
+import { bindInfoCopyButtons } from "../../shared/info-link.js";
 export { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 
 /**
@@ -22,6 +23,7 @@ function createAndShowDialog(htmlContent) {
   
   // Set content
   dialog.innerHTML = htmlContent;
+  bindInfoCopyButtons(dialog);
   
   document.body.appendChild(dialog);
   
@@ -128,6 +130,7 @@ export async function showQuizInfoModal(exam) {
 
   // Replace with fully loaded HTML
   dialog.innerHTML = buildQuizInfoModalHtml(config, questionCount, creatorProfile);
+  bindInfoCopyButtons(dialog);
   
   // Re-bind close handler after innerHTML replacement
   const closeBtn = dialog.querySelector(".quiz-info-dialog-close");
