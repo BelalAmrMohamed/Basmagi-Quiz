@@ -24,12 +24,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ### Notebook Page
 
-#### Small issues
-* The `Edit a copy` button should be moved into the `.toolbar-menu-items`.
-
-#### Big Update (Shared Runtime UI)
-I tried doing it many times but failed, the MATLAB Celss UI and top bar have been perfected throughout a long time, but when the C++ runtime was added, it created its own UI, with its own Cell styling, and button, which are too bad for me to publish, and I don't want to rebuild a new UI for cells and new top bar each time I add a new runtime. The existing MATLAB Cells UI must become a shared UI.
-
 ### Bottom Nav on phones
 * Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.
 * I honestly don't know what is the best decision, maybe keeping settings 
