@@ -21,6 +21,7 @@ import "./console-ui.js";
 
 // 2. Logic imports
 import { initPWA } from "../../shared/pwa-manager.js";
+import { installHoverSpotlight } from "../../shared/hover-spotlight.js";
 import { syncAdminSessionWithSupabase } from "./session-sync.js";
 import { initApp, restoreViewFromURL } from "./navigation.js";
 import { renderRootCategories } from "./root-view.js";
@@ -90,6 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // banner are active regardless of which page the user is on.
   initPWA();
   initCustomTooltips();
+  installHoverSpotlight();
 
   // ── Page guard ────────────────────────────────────────────────────────────
   // index-entrypoint.js is imported as an ES module by side-menu.js (for the

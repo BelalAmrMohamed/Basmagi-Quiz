@@ -402,7 +402,7 @@ input::placeholder {
 
 .btn-primary:hover {
     background: linear-gradient(135deg, var(--gold), var(--gold-light));
-    transform: translateY(-1px);
+    
 }
 
 .btn-primary:active {

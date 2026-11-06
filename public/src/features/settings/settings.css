@@ -224,7 +224,7 @@ body.sidebar-expanded {
 .option-card:hover {
   border-color: var(--color-primary);
   box-shadow: var(--shadow-sm);
-  transform: translateY(-2px);
+  
 }
 
 .option-card.selected {
@@ -346,7 +346,7 @@ body.sidebar-expanded {
   border-color: var(--color-primary, #0088cc);
   box-shadow: 0 4px 12px rgba(0, 136, 204, 0.1);
   background: var(--color-surface, #ffffff);
-  transform: translateY(-2px);
+  
 }
 
 .course-info {
@@ -468,7 +468,7 @@ body.sidebar-expanded {
 }
 
 .btn-save:hover {
-  transform: translateY(-2px);
+  
   box-shadow: var(--shadow-lg);
 }
 

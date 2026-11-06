@@ -630,7 +630,7 @@ body.sidebar-expanded {
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
+  
   box-shadow: var(--shadow-md);
 }
 
@@ -865,7 +865,7 @@ body.sidebar-expanded {
 a.admin-gallery-item:hover,
 a.admin-gallery-item:focus-visible {
   background: var(--color-background-secondary);
-  transform: translateY(-2px);
+  
   outline: none;
 }
 
@@ -1311,7 +1311,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 .dash-badge:hover,
 .dash-badge:focus-visible,
 .dash-badge.is-revealed {
-  transform: translateY(-4px);
+  
   box-shadow: var(--shadow-md);
   outline: none;
 }

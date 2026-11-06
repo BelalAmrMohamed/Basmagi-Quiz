@@ -175,7 +175,7 @@
 }
 .sd-btn:hover:not(:disabled) {
     opacity: 0.92;
-    transform: translateY(-1px);
+    
 }
 .sd-btn:active:not(:disabled) {
     transform: translateY(0);
@@ -295,7 +295,7 @@
 .sd-sso-btn:hover:not(:disabled) {
     border-color: var(--color-primary, #6366f1);
     background: var(--color-hover-overlay, rgba(99,102,241,0.04));
-    transform: translateY(-1px);
+    
 }
 .sd-sso-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 

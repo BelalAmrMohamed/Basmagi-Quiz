@@ -194,7 +194,7 @@ export function renderLandingScreen() {
         overflow: hidden;
       }
       .landing-btn-primary:hover {
-        transform: translateY(-2px) scale(1.015);
+        transform: scale(1.015);
         box-shadow:
           0 14px 36px -6px rgba(99,102,241,0.6),
           inset 0 1px 0 rgba(255,255,255,0.25);

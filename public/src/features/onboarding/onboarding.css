@@ -334,7 +334,7 @@ html[data-motion="reduced"] .welcome-icon {
 
 .selection-card:hover {
   background: rgba(0, 0, 0, 0.06);
-  transform: translateY(-2px);
+  
 }
 
 .selection-card:focus-visible {
@@ -439,7 +439,7 @@ input:checked+.toggle-switch::after {
 
 .btn-primary:hover {
   background: var(--primary-dark);
-  transform: translateY(-2px);
+  
 }
 
 .btn:disabled {
@@ -623,7 +623,7 @@ input:checked+.toggle-switch::after {
   border-color: var(--color-primary, #6366f1);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
   background: var(--color-surface, #fff);
-  transform: translateY(-2px);
+  
 }
 
 .course-list .course-info {

@@ -1032,7 +1032,7 @@ body.sidebar-expanded {
 }
 
 .theme-selector-btn:hover {
-  transform: translateY(-2px);
+  
   box-shadow: var(--shadow-sm);
 }
 
@@ -1729,9 +1729,7 @@ html[data-motion="reduced"] {
   font-size: 0.875rem;
 }
 
-.menu-nav-item.list-item:hover {
-  transform: translateX(4px);
-}
+.menu-nav-item.list-item:hover { box-shadow: var(--shadow-md, 0 6px 16px rgba(0,0,0,0.14)); }
 
 .menu-nav-item-left {
   display: flex;
@@ -2115,7 +2113,7 @@ dialog.quiz-password-dialog {
 }
 
 .quiz-password-submit-btn:hover {
-  transform: translateY(-1px);
+  
   box-shadow: var(--shadow-md);
 }
 
@@ -2154,8 +2152,9 @@ dialog.quiz-password-dialog {
 }
 
 .finish-btn:hover {
-  transform: translateY(-2px);
+  
   box-shadow: var(--shadow-lg);
+  filter: brightness(1.06);
 }
 
 /* ─── 6. Exam Completion Progress ───────────────────────────────────────── */
@@ -2842,8 +2841,10 @@ body.is-resizing-media .media-container.resizable-media {
 }
 
 .option-row:hover {
-  transform: translateX(4px);
+  /* No sideways slide: the row never moves, so hovering along its border can't flicker. */
   background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.12);
 }
 
 .option-row:focus-within {
@@ -2912,8 +2913,9 @@ body.is-resizing-media .media-container.resizable-media {
 }
 
 .check-answer-btn:hover {
-  transform: translateY(-2px);
+  
   box-shadow: var(--shadow-lg);
+  filter: brightness(1.06);
 }
 
 .check-answer-btn:disabled {
@@ -3031,8 +3033,9 @@ body.is-resizing-media .media-container.resizable-media {
 }
 
 .nav-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
+  
   box-shadow: var(--shadow-lg);
+  filter: brightness(1.06);
 }
 
 .nav-btn:disabled {

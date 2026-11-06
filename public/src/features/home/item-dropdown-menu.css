@@ -92,7 +92,7 @@
     background: var(--gradient-accent);
     color: white;
     border: none;
-    transform: translateY(-1px);
+    
     box-shadow: var(--shadow-lg);
 }
 

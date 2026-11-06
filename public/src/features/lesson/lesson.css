@@ -2691,7 +2691,7 @@
   border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border));
   background: color-mix(in srgb, var(--color-primary) 9%, var(--color-surface));
   color: var(--color-primary);
-  transform: translateY(-1px);
+  
   box-shadow: 0 3px 8px rgb(0 0 0 / .06);
 }
 
@@ -3249,7 +3249,7 @@
 
 .lesson-question__option:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
-  transform: translateY(-1px);
+  
 }
 
 .lesson-question__option:focus-visible,
@@ -3328,9 +3328,7 @@
 }
 
 .lesson-question__check-btn:hover:not(:disabled),
-.lesson-question__essay-check-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
+.lesson-question__essay-check-btn:hover:not(:disabled) { filter: brightness(1.07); }
 
 .lesson-question__check-btn:disabled,
 .lesson-question__essay-check-btn:disabled {
@@ -3935,7 +3933,7 @@
   transition: transform .15s ease, background .15s ease;
 }
 
-.lesson-comments__more:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--community-accent) 12%, var(--color-surface)); }
+.lesson-comments__more:hover {  background: color-mix(in srgb, var(--community-accent) 12%, var(--color-surface)); }
 .lesson-comments__more[hidden] { display: none; }
 
 .lesson-comments__permalink-note {
@@ -4041,7 +4039,7 @@
 }
 
 .lesson-comments__composer .lesson-comments__form-row button[type="submit"] svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.lesson-comments__composer .lesson-comments__form-row button[type="submit"]:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 9px 20px color-mix(in srgb, var(--community-accent) 30%, transparent); }
+.lesson-comments__composer .lesson-comments__form-row button[type="submit"]:hover:not(:disabled) {  box-shadow: 0 9px 20px color-mix(in srgb, var(--community-accent) 30%, transparent); }
 .lesson-comments__form-row button:disabled { cursor: wait; opacity: .6; }
 
 .lesson-comments__form--reply {
@@ -4154,7 +4152,7 @@
 }
 
 .lesson-question__option:not([disabled]):hover {
-  transform: translateY(-2px);
+  
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 

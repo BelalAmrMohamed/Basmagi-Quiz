@@ -368,9 +368,6 @@ function openLessonDownloadOptions(lesson, triggerBtn) {
   header.innerHTML = `
     <h2 id="lessonDownloadTitle"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg> تنزيل الدرس</h2>
     <button type="button" class="close-btn dl-close" aria-label="إغلاق"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>`;
-  const subtitle = document.createElement("p");
-  subtitle.className = "lesson-dl-subtitle";
-  subtitle.textContent = "اختر صيغة الدرس. يمكنك تنزيل الملف أو نسخ محتواه مباشرة.";
   const grid = document.createElement("div");
   grid.className = "mode-grid lesson-dl-grid";
   grid.setAttribute("role", "group");
@@ -411,7 +408,6 @@ function openLessonDownloadOptions(lesson, triggerBtn) {
     const controller = new AbortController();
     activeController = controller;
     grid.style.display = "none";
-    subtitle.style.display = "none";
     progressPanel.style.display = "flex";
     progressIcon.src = iconUrl;
     progressIcon.onerror = () => { progressIcon.style.visibility = "hidden"; };
@@ -452,7 +448,6 @@ function openLessonDownloadOptions(lesson, triggerBtn) {
         if (completed) close();
         else {
           progressPanel.style.display = "none";
-          subtitle.style.display = "";
           grid.style.display = "";
         }
       }
@@ -484,7 +479,7 @@ function openLessonDownloadOptions(lesson, triggerBtn) {
   const sourceActions = buildSourceActions(lesson?.source || lesson?.meta?.source);
   if (sourceActions) grid.appendChild(sourceActions);
 
-  modal.append(header, subtitle, grid, progressPanel);
+  modal.append(header, grid, progressPanel);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
   const onKeyDown = (event) => {

@@ -305,8 +305,9 @@ body.sidebar-expanded {
 }
 
 .nav-btn:hover {
-  transform: translateY(-2px);
+  
   box-shadow: var(--shadow-lg);
+  filter: brightness(1.06);
 }
 
 .nav-btn.primary {
@@ -490,7 +491,7 @@ body.sidebar-expanded {
 
 .review-card:hover {
   box-shadow: var(--shadow-lg);
-  transform: translateX(3px);
+  
 }
 
 .review-card.correct {
@@ -1513,7 +1514,7 @@ html[data-motion="normal"] {
 }
 
 .cert-btn:hover {
-  transform: translateY(-2px);
+  
   box-shadow: var(--shadow-lg);
 }
 
@@ -1882,8 +1883,10 @@ html[data-motion="reduced"] {
 }
 
 .option-row:hover {
-  transform: translateX(4px);
+  /* No sideways slide: the row never moves, so hovering along its border can't flicker. */
   background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.12);
 }
 
 .option-row:focus-within {

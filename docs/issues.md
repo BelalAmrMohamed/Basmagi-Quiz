@@ -7,34 +7,33 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Global Issue: Buggy Hover Interactions (Buttons & Cards)
-
-Investigate the entire project for buttons, cards, and other interactive elements that exhibit buggy or flickering behavior when hovered, particularly when the cursor moves near or along their borders.
-
-**Likely root cause:**
-Some hover effects may change an element's position, dimensions, or boundaries (e.g., translating it upward while simultaneously increasing its scale). This can cause the element to move away from the cursor, trigger `mouseleave`, and repeatedly toggle the hover state, resulting in a flickering or flashing effect.
-
-**Requirements:**
-1. Audit the entire project and identify all instances of problematic hover implementations.
-2. Investigate the actual root cause rather than blindly modifying CSS transitions.
-3. Fix each affected element using the most appropriate approach. Consider alternatives such as `transform`, `box-shadow`, background-color transitions, and other visual effects that don't unintentionally alter the element's hover boundaries.
-4. Preserve the original design intent and individuality of each element. **Do NOT apply one universal hover effect to every button or card.**
-5. Avoid unnecessary changes to elements that already have smooth, bug-free hover interactions.
-6. Check for similar issues involving nested elements, overlapping interactive areas, pseudo-elements, and conflicting hover states.
-
-**Objective:** Eliminate buggy hover behavior throughout the project while preserving the existing visual identity, design variety, and intended interaction effects of every component.
-
-Make the necessary changes directly in the existing codebase. Do not merely provide recommendations or a list of potential fixes.
+### Home Page (index.html)
 
 #### Info Modals
-* Info modals for quizzes, lessons, and notebooks, should use the drive icon when the source is from Google Drive
-  * ("public\assets\images\google-drive-icon.webp")
+* Info modals for quizzes, lessons, and notebooks, should use the drive icon when the source is from Google Drive, or the YouTube icon if it's Youtube
+  * `public\assets\images\google-drive-icon.webp`
+  * `public\assets\images\youtube-icon.webp`
+
+#### Downlaod modals
+* Notebook: The download modal doesn't have copying for copyable exports.
+* Download modals should use the Drive icon when the link is in Google Drive: 
+  * `public\assets\images\google-drive-icon.webp`
+  * `public\assets\images\youtube-icon.webp`
 
 ---
 
 ### Notebook Page
+
+#### Small issues
 * The `Edit a copy` button should be moved into the `.toolbar-menu-items`.
 * Saving to my content shouldn're redirect me to (my-content), it should keep me in the notebook page, but in the saved notebook itself not in (`/notebook/new`).
+* Lines in code cells shouldn't get auto breaking when they are long, that is not how a typical code editor fashion.
+* **Auto Indentation**: Implement auto indentation like other code-editors do, when a user types a line that usually needs to start a new indentation like `for i = 1:255` and presses `Enter`, an indentation should be added.
+
+#### Big Update (New Runtime: C++)
+* Implement a second new runtime: C++.
+* You will have to allow notebook creators to choose between the current one (MATLAB) and the new (C++).
+
 
 ### Bottom Nav on phones
 * Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.
@@ -43,7 +42,22 @@ Make the necessary changes directly in the existing codebase. Do not merely prov
 ### Quiz Passwords are exposed
 The home page downloads every quiz’s password to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be fixed.
 
-### AI Agent
+### image-tool-window
+* Make the window responsive when it becomes smaller/bigger:
+  * The `mlweb-imtool-toolbar` should never become split on 2 lines, it should have a better respond to smaller width window.
+  * Keep the `mlweb-imtool-win-controls` buttons on the left, but make the title and icon on the right instead of the middle.
+  * If you find any room for improvement, you are free to impress me. 
+* Do these fixes quickly because my credits are extremely low, you might get shut-down if you took long before you present me the updated files.
+
+Files:
+* `public\src\features\notebook\image-tool-window.css`
+* `public\src\features\notebook\image-tool-window.js`
+
+### AI Agent (الباشــمبصمج)
+
+#### Redesign
+* Implement my personal component from 21st.dev: Rich Markdown AI Input Field with code blocks.
+* Instead of a modal, make it a window like `image-tool-window`, don't copy it or import it in the AI Agent files, I want you to implement a better version that is resposive when the window itself is smaller/bigger. Features:
 
 #### Dictation
 Fix Dictation: The dictation doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser when using the browser api for dictation.

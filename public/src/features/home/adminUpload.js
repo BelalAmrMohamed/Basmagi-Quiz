@@ -285,7 +285,7 @@ function injectStyles() {
 
     .adm-btns { display:flex; gap:9px; margin-top:16px; }
     .adm-btn { flex:1; padding:10px 14px; border:none; border-radius:9px; font-size:.92rem; font-weight:700; cursor:pointer; transition:transform .2s,box-shadow .2s; font-family:inherit; }
-    .adm-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+    .adm-btn:hover:not(:disabled) {  box-shadow:var(--shadow-md); }
     .adm-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
     .adm-btn-primary { background:var(--gradient-accent); color:#fff; }
     .adm-btn-ghost   { background:var(--color-background-secondary); border:1.5px solid var(--color-border); color:var(--color-text); }

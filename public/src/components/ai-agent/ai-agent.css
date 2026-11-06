@@ -196,7 +196,7 @@
   background: var(--gradient-accent);
   color: white;
   border: none;
-  transform: translateY(-1px);
+
   box-shadow: var(--shadow-lg);
 }
 
@@ -546,7 +546,7 @@
 }
 
 .ai-agent-msg-edit-submit:hover:not(:disabled) {
-  transform: translateY(-1px);
+  filter: brightness(1.07);
 }
 
 .ai-agent-msg-edit-cancel {
@@ -618,7 +618,8 @@
 }
 
 .ai-agent-msg-attachment-name {
-  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  unicode-bidi: plaintext;
+  /* truncate by the text's own direction */
   text-align: start;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -980,7 +981,7 @@
 .ai-agent-attachment-tile:hover,
 .ai-agent-attachment-tile:focus-visible {
   border-color: var(--color-primary, #2563eb);
-  transform: translateY(-1px);
+
 }
 
 /* Distinct tint per attachment kind so a file vs. a quiz/course/folder
@@ -1022,7 +1023,8 @@
 }
 
 .ai-agent-attachment-tile-name {
-  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  unicode-bidi: plaintext;
+  /* truncate by the text's own direction */
   width: 100%;
   font-size: 0.62rem;
   line-height: 1.2;
@@ -1669,7 +1671,7 @@
 }
 
 .ai-agent-dictation-btn:hover {
-  transform: translateY(-1px);
+
   box-shadow: var(--shadow-md);
 }
 
@@ -1791,7 +1793,8 @@
 }
 
 .ai-agent-history-item-title {
-  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  unicode-bidi: plaintext;
+  /* truncate by the name's own direction */
   text-align: start;
   font-size: 0.87rem;
   font-weight: 600;
@@ -1954,7 +1957,7 @@
 }
 
 .ai-agent-btn:hover {
-  transform: translateY(-1px);
+
   box-shadow: var(--shadow-md);
 }
 
@@ -2068,7 +2071,8 @@
 }
 
 .ai-agent-fab:hover {
-  transform: translateY(-2px) scale(1.05) rotate(5deg);
+  transform: scale(1.05) rotate(5deg);
+  filter: brightness(1.07);
 }
 
 .ai-agent-fab:active {
@@ -2722,7 +2726,8 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-sidebar-recent-item {
-  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  unicode-bidi: plaintext;
+  /* truncate by the text's own direction */
   width: 100%;
   border: none;
   border-radius: 8px;
@@ -3350,7 +3355,7 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-slash-row:hover {
-  transform: translateY(-1px);
+
   background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
   border-color: color-mix(in srgb, var(--color-primary) 32%, var(--color-border));
 }
@@ -3408,7 +3413,8 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-slash-row-title {
-  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  unicode-bidi: plaintext;
+  /* truncate by the text's own direction */
   text-align: start;
   min-width: 0;
   overflow: hidden;
@@ -3571,7 +3577,7 @@ body.sidebar-expanded .ai-agent-fab {
 
 .ai-agent-creator-card-link:hover,
 .ai-agent-creator-card-link:focus-visible {
-  transform: translateY(-2px);
+
   border-color: color-mix(in srgb, var(--creator-accent) 55%, var(--color-border));
   background: color-mix(in srgb, var(--creator-accent) 10%, var(--color-surface));
   box-shadow: 0 7px 18px rgba(0, 0, 0, 0.13);
@@ -3654,7 +3660,8 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-creator-card-link-copy strong {
-  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  unicode-bidi: plaintext;
+  /* truncate by the name's own direction */
   text-align: start;
   overflow: hidden;
   font-size: 0.77rem;
@@ -3664,7 +3671,8 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-creator-card-link-copy small {
-  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  unicode-bidi: plaintext;
+  /* truncate by the text's own direction */
   text-align: start;
   overflow: hidden;
   color: var(--color-text-secondary);
@@ -3813,7 +3821,8 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-created-item-destination {
-  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  unicode-bidi: plaintext;
+  /* truncate by the text's own direction */
   text-align: start;
   min-width: 0;
   overflow: hidden;
@@ -3842,7 +3851,7 @@ body.sidebar-expanded .ai-agent-fab {
 
 .ai-agent-created-item-action:hover,
 .ai-agent-created-item-action:focus-visible {
-  transform: translateY(-1px);
+
   background: color-mix(in srgb, var(--item-accent) 20%, var(--color-surface));
   outline: 2px solid color-mix(in srgb, var(--item-accent) 65%, transparent);
   outline-offset: 2px;
@@ -4060,7 +4069,8 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-slash-row-desc {
-  unicode-bidi: plaintext; /* truncate by the text's own direction */
+  unicode-bidi: plaintext;
+  /* truncate by the text's own direction */
   text-align: start;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -4120,35 +4130,6 @@ body.sidebar-expanded .ai-agent-fab {
 .ai-agent-sidebar-btn--telegram:focus-visible {
   outline: 2px solid #24A1DE;
   outline-offset: 2px;
-}
-
-/* Telegram invite banner (empty chat) */
-.ai-agent-telegram-banner {
-  margin: 0 12px 8px;
-  position: relative;
-}
-
-.ai-agent-telegram-banner-dismiss {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  top: 6px;
-  inset-inline-start: 6px;
-  z-index: 3;
-  width: 24px;
-  height: 24px;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  opacity: 0.6;
-  font-size: 0.8rem;
-}
-
-.ai-agent-telegram-banner-dismiss:hover {
-  opacity: 1;
 }
 
 .ai-agent-telegram-settings-section {

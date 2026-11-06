@@ -142,10 +142,6 @@ export function showNotebookDownloadModal(row, triggerBtn = null) {
     <h2 id="notebookDownloadTitle">${DOWNLOAD_ICON_SVG}<span>تنزيل الدفتر</span></h2>
     <button type="button" class="close-btn dl-close" aria-label="إغلاق">×</button>`;
 
-  const subtitle = document.createElement("p");
-  subtitle.className = "lesson-dl-subtitle";
-  subtitle.textContent = "اختر صيغة الدفتر أو افتح رابطه المصدر.";
-
   const grid = document.createElement("div");
   grid.className = "mode-grid lesson-dl-grid";
   grid.setAttribute("role", "group");
@@ -186,7 +182,7 @@ export function showNotebookDownloadModal(row, triggerBtn = null) {
   const sourceActions = buildSourceActions(row?.source || row?.meta?.source);
   if (sourceActions) grid.appendChild(sourceActions);
 
-  modal.append(header, subtitle, grid);
+  modal.append(header, grid);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
   document.addEventListener("keydown", onKeyDown);
@@ -261,6 +257,15 @@ export function appendNotebookMenuEntries(menu, closeMenu, reposition, row, { pl
     ...(platform ? [] : [{ label: "كود / نص", val: `${info.codeCount} / ${info.markdownCount}` }, { label: "اللغة", val: info.language === "ar" ? "العربية" : "English" }]),
   ].filter((r) => r.val || r.val === 0);
   menu.appendChild(createExamInfoSubmenu(basicRows, async () => { const full = await loadRow(); if (full) showNotebookInfoModal(full); }, closeMenu, reposition, "معلومات الدفتر"));
+
+  // Phones: the card has no download button (same as quizzes / lessons) — it lives in this menu.
+  // Hidden on desktop via .mobile-only, where the card's own button is shown.
+  const download = document.createElement("button");
+  download.type = "button";
+  download.className = "exam-action-btn mobile-only exam-action-btn--primary";
+  download.innerHTML = `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
+  download.onclick = async (e) => { e.stopPropagation(); closeMenu(); const full = await loadRow(); if (full) showNotebookDownloadModal(full); };
+  menu.appendChild(download);
 
   const ask = document.createElement("button");
   ask.type = "button";

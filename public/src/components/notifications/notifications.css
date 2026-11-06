@@ -304,7 +304,7 @@
 
 .confirmation-btn.confirm:hover {
   filter: brightness(1.1);
-  transform: translateY(-2px) scale(1.02);
+  transform: scale(1.02);
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
 }
 

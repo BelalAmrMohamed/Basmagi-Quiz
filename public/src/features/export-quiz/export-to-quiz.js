@@ -890,7 +890,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
 
   .toggle-option:hover {
     background: var(--bg-tertiary);
-    transform: translateX(2px);
+    
   }
 
   .toggle-option:focus-visible {
@@ -978,7 +978,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   .nav-btn:hover {
     border-color: var(--gradient-start);
     background: var(--card-answered);
-    transform: translateY(-1px);
+    
     box-shadow: var(--shadow-sm);
   }
 
@@ -1401,7 +1401,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
 
   .question-card:hover {
     box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
+    
   }
 
   .question-card.answered {
@@ -1599,7 +1599,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   .option-btn:hover:not(.disabled) {
     border-color: var(--gradient-start);
     background: var(--card-answered);
-    transform: translateX(4px);
+    
     box-shadow: var(--shadow-sm);
   }
 
@@ -1686,7 +1686,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   }
 
   .check-answer-btn:hover:not(:disabled) {
-    transform: translateY(-1px);
+    
     box-shadow: var(--shadow-md);
   }
 
@@ -1898,7 +1898,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   }
 
   .btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
+    
     box-shadow: 0 6px 20px rgba(var(--gradient-start-rgb), 0.55);
   }
 
@@ -1915,7 +1915,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
 
   .btn-secondary:hover:not(:disabled) {
     background: var(--border-color);
-    transform: translateY(-1px);
+    
   }
 
   .btn-block {

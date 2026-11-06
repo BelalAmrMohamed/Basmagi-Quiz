@@ -201,7 +201,7 @@ export function createExamCard(exam) {
   downloadBtn.style.boxShadow = "0 4px 14px rgba(220, 38, 38, 0.4)";
   downloadBtn.innerHTML = exam.password
     ? `${LOCK_ICON_SVG}<span>تحميل</span>`
-    : "تحميل";
+    : `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
   downloadBtn.setAttribute(
     "aria-label",
     exam.password

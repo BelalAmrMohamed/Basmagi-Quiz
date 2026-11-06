@@ -157,7 +157,7 @@ body.sidebar-expanded {
 }
 
 .report-stat-card:hover {
-  transform: translateY(-2px);
+  
   border-color: var(--color-border-light, #555555);
   box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
 }
@@ -643,7 +643,7 @@ body.sidebar-expanded {
 }
 
 .empty-btn-action:hover {
-  transform: translateY(-2px);
+  
   opacity: 0.92;
 }
 

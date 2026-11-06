@@ -79,11 +79,3 @@ html[data-theme="dark-slate"] {
 .exam-card[data-item-type="notebook"] .desktop-download-btn:hover {
   background: color-mix(in srgb, var(--type-notebook) 14%, transparent);
 }
-
-@media (max-width: 640px) {
-  .exam-card[data-item-type="notebook"] .start-btn.desktop-download-btn {
-    background: var(--type-notebook) !important;
-    border: 0 !important;
-    color: #fff !important;
-  }
-}

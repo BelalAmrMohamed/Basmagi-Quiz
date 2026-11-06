@@ -768,7 +768,7 @@ html[data-theme="dark-slate"] .about-page {
 .about-page .featured-link-card:hover,
 .about-page .featured-link-card:focus-visible {
   border-color: var(--about-coral);
-  transform: translateY(-2px);
+  
 }
 
 /* Website — real link-unfurl style card (thumbnail + domain + title + desc) */
@@ -1010,7 +1010,7 @@ html[data-theme="dark-slate"] .about-page {
 }
 
 .about-page .creator-contact-btn:hover {
-  transform: translateY(-2px);
+  
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 

@@ -140,7 +140,7 @@ body {
   box-shadow: 0 4px 14px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 .item-metadata-save:hover:not(:disabled) {
-  transform: translateY(-1px); background: var(--color-primary-hover);
+   background: var(--color-primary-hover);
   box-shadow: 0 6px 18px color-mix(in srgb, var(--color-primary) 40%, transparent);
 }
 .item-metadata-save:disabled { opacity: .65; cursor: wait; }
@@ -205,7 +205,7 @@ body.sidebar-expanded {
 }
 
 #breadcrumb:hover {
-  transform: translateY(-2px);
+  
   box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
@@ -1307,7 +1307,7 @@ ANIMATIONS
 }
 
 #Subjects-text:hover {
-  transform: translateY(-2px);
+  
   box-shadow:
     0 8px 24px rgba(99, 102, 241, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.22);
@@ -1729,7 +1729,13 @@ Container
     display: none;
   }
 
-  /* Subtle hover — no lift on mobile */
+  /* Subtle hover — no lift and no spotlight on mobile */
+  .card::after,
+  .category-card::after,
+  .exam-card::after {
+    display: none;
+  }
+
   .card:hover,
   .category-card:hover,
   .exam-card:hover {
@@ -2072,10 +2078,13 @@ Container
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Hover: NO movement and NO scale — the card's hit-box never changes, so the
+   cursor can sit on (or slide along) its border without the hover state
+   flickering on/off. Feedback = top accent strip (::before) + glow/border tint
+   + a cursor-following spotlight (::after, positioned by hover-spotlight.js). */
 .card:hover,
 .category-card:hover,
 .exam-card:hover {
-  transform: translateY(-6px) scale(1.015);
   box-shadow:
     var(--shadow-xl),
     0 0 0 1px rgba(99, 102, 241, 0.08),
@@ -2089,10 +2098,32 @@ Container
   transform: scaleX(1);
 }
 
+/* Spotlight: soft radial highlight that follows the pointer inside the card. */
+.card::after,
+.category-card::after,
+.exam-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none; /* never part of the hover/click target */
+  background: radial-gradient(260px circle at var(--spot-x, 50%) var(--spot-y, 0%),
+      color-mix(in srgb, var(--type-accent, #6366f1) 16%, transparent),
+      transparent 70%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.card:hover::after,
+.category-card:hover::after,
+.exam-card:hover::after {
+  opacity: 1;
+}
+
 .card:active,
 .category-card:active,
 .exam-card:active {
-  transform: translateY(-2px) scale(1.005);
+  box-shadow: var(--shadow-lg);
   transition-duration: 0.1s;
 }
 
@@ -2486,7 +2517,7 @@ Container
 }
 
 .start-btn:hover {
-  transform: translateY(-2px);
+  
   box-shadow: var(--shadow-lg);
 }
 
@@ -3054,7 +3085,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 }
 
 .download-password-actions .btn-primary:hover {
-  transform: translateY(-2px);
+  
   box-shadow: var(--shadow-lg);
 }
 
@@ -3297,7 +3328,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 }
 
 .error-state button:hover {
-  transform: translateY(-2px);
+  
   box-shadow: 0 6px 18px rgba(220, 38, 38, 0.4);
 }
 
@@ -3632,7 +3663,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 }
 
 .exam-card.user-quiz-card:hover {
-  transform: translateY(-4px);
+  
   box-shadow: var(--shadow-lg);
 }
 
@@ -3659,7 +3690,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 }
 
 .user-quizzes-container .category-card:hover {
-  transform: translateY(-4px);
+  
   box-shadow: var(--shadow-lg);
 }
 
@@ -3855,7 +3886,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 }
 
 .subscribe-btn--add:hover {
-  transform: translateY(-1px);
+  
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
 
@@ -3938,7 +3969,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   background: var(--color-primary, #0088cc);
   color: #fff;
   box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--color-primary, #0088cc) 50%, transparent);
-  transform: translateY(-1px);
+  
 }
 
 .create-folder-btn:active {
@@ -4786,7 +4817,7 @@ kbd {
 }
 
 .create-quiz-modal__btn--create:hover {
-  transform: translateY(-1px);
+  
   box-shadow: 0 6px 18px rgba(220, 38, 38, 0.5);
 }
 
@@ -4971,7 +5002,7 @@ kbd {
   color: var(--color-primary);
   background: var(--color-primary-light);
   box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
+  
 }
 
 .btn.selection-toggle-btn:active {
@@ -5003,7 +5034,7 @@ kbd {
   background: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
   color: #fff;
-  transform: translateY(-1px);
+  
   box-shadow:
     0 6px 16px -2px color-mix(in srgb, var(--color-primary) 55%, transparent),
     var(--shadow-md);
@@ -5134,7 +5165,7 @@ kbd {
   background: var(--color-text-secondary);
   color: var(--color-surface);
   box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-text-primary) 45%, transparent);
-  transform: translateY(-1px);
+  
 }
 
 .bulk-action-bar .bulk-delete-btn {
@@ -5147,7 +5178,7 @@ kbd {
   background: var(--color-error, #e53e3e);
   color: var(--color-surface);
   box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-error, #e53e3e) 45%, transparent);
-  transform: translateY(-1px);
+  
 }
 
 .bulk-action-bar .bulk-extract-btn {
@@ -5165,14 +5196,14 @@ kbd {
   background: var(--color-primary);
   color: #fff;
   box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-primary) 45%, transparent);
-  transform: translateY(-1px);
+  
 }
 
 .bulk-action-bar .bulk-upload-btn:hover {
   background: var(--color-admin-hover);
   color: #fff;
   box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-primary) 45%, transparent);
-  transform: translateY(-1px);
+  
 }
 
 .bulk-action-bar .btn:active {
@@ -5362,32 +5393,6 @@ kbd {
 .exam-card.notebook-card .desktop-download-btn {
   background: var(--color-primary);
   color: #fff;
-}
-
-@media (max-width: 640px) {
-  .exam-card.notebook-card .start-btn.desktop-download-btn,
-  .exam-card.user-notebook-card .start-btn.desktop-download-btn {
-    display: flex !important;
-    font-size: 0 !important;
-    background: var(--color-primary) !important;
-    box-shadow: none !important;
-  }
-
-  .exam-card.notebook-card .start-btn.desktop-download-btn::after,
-  .exam-card.user-notebook-card .start-btn.desktop-download-btn::after {
-    content: none !important;
-  }
-
-  .exam-card.notebook-card .desktop-download-btn svg,
-  .exam-card.user-notebook-card .desktop-download-btn svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  .exam-card.notebook-card .desktop-download-btn span,
-  .exam-card.user-notebook-card .desktop-download-btn span {
-    display: none;
-  }
 }
 
 /* Folder/course info modal: the card already has its own padding, so drop the

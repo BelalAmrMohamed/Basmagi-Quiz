@@ -675,7 +675,7 @@ html[data-motion="reduced"] *::after {
     border-color: var(--accent);
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 8%, var(--bg));
-    transform: translateY(-1px);
+    
 }
 
 .doc-video-chip.is-active {
@@ -901,7 +901,7 @@ html[data-motion="reduced"] *::after {
 
 .doc-download-btn:hover {
     background: var(--accent-mid);
-    transform: translateY(-1px);
+    
     box-shadow: 0 6px 16px rgba(0, 0, 0, .18);
 }
 

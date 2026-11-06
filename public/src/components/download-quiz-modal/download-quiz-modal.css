@@ -36,15 +36,6 @@
   color: var(--color-primary);
 }
 
-.lesson-dl-subtitle {
-  margin: 0;
-  padding: 15px 24px 0;
-  color: var(--color-text-secondary);
-  font-size: .82rem;
-  line-height: 1.7;
-  text-align: right;
-}
-
 .lesson-dl-grid .export-card {
   min-height: 142px;
   justify-content: center;
@@ -120,6 +111,7 @@
   background: var(--color-primary-light);
   box-shadow: var(--shadow-md);
 }
+
 /* Fix #flicker: the hover "lift" must move the CONTENT, not the card box.
    When `transform: translateY(-3px)` was applied to .export-card itself,
    the whole bounding box jumped 3px up on hover, so a cursor close to the
@@ -286,11 +278,6 @@
 
   .dl-modal-card .modal-header {
     padding: 16px 16px 12px;
-  }
-
-  .lesson-dl-subtitle {
-    padding: 12px 16px 0;
-    font-size: .75rem;
   }
 
   .lesson-dl-grid .export-card {
