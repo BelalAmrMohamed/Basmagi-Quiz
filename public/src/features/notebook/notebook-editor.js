@@ -199,6 +199,7 @@ async function save() {
   saving = true; $("cnbSave").disabled = true;
   try {
     if (localMode) {
+      const wasNew = !editId; // saveLocal() assigns editId (module-level) as a side effect, so capture this first
       const err = saveLocal(payload);
       if (err) { showIssues(t("fail"), [err === "dup" ? t("dup") : err]); return; }
       dirtyFlag = false;
@@ -208,7 +209,14 @@ async function save() {
       // the workspace now lives under the new id, so the key is passed explicitly (bridge.key is still "draft").
       const drive = await Promise.race([window.__nbFilesStrip?.backup({ silent: true, key: editId, fromDraft: true }), new Promise((r) => setTimeout(() => r(null), 10000))]);
       showNotification(t("saved"), drive ? `${t("savedMsg")} ${t("driveDone", drive.name, drive.folderName)}` : t("savedMsg"), "success");
-      setTimeout(() => { location.href = "/my-content"; }, drive ? 1800 : 700);
+      // Stay on this page, on the saved notebook — swap the URL from
+      // /notebook/new to /notebook/edit/<id> in place (no navigation/reload),
+      // and drop the "new notebook" chrome now that it's an existing one.
+      if (wasNew) {
+        history.replaceState(history.state, "", `/notebook/edit/${encodeURIComponent(editId)}`);
+        document.querySelector('.menu-item[href="/notebook/new"]')?.classList.remove("active");
+      }
+      applyChrome();
       return;
     }
     let up;

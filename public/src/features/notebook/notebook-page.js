@@ -181,26 +181,51 @@ async function startEditorMode(route) {
   await startEditor(route.mode === "edit" ? route.ref : null);
 }
 
-/** "Edit a copy" bar for published notebooks (copy lives only in this browser's My Content). */
+/**
+ * "Edit a copy" for published notebooks (copy lives only in this browser's My
+ * Content). Lives inside the runtime's own notebook menu (.toolbar-menu-items)
+ * rather than a separate bar above the notebook — the runtime rebuilds that
+ * menu on mount and on state changes, so (like notebook-files-strip.js's Drive
+ * items) a MutationObserver re-adds the entry whenever it disappears.
+ */
 function addCopyBar(nb, lang, getCells, wsKey) {
-  const bar = document.createElement("div");
-  bar.className = "notebook-copy-bar";
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.textContent = lang === "ar" ? "تعديل نسخة خاصة بي" : "Edit a copy";
-  btn.addEventListener("click", async () => {
+  const label = lang === "ar" ? "تعديل نسخة خاصة بي" : "Edit a copy";
+  let busy = false;
+  const root = $("notebookRoot");
+
+  const run = async (btn) => {
+    if (busy) return;
+    busy = true;
     btn.disabled = true;
     try {
       const { copyNotebookToLocal } = await import("./notebook-copy.js");
       const id = await copyNotebookToLocal({ ...nb, language: lang, cells: getCells(), sourceKey: wsKey });
       location.href = `/notebook/edit/${encodeURIComponent(id)}`;
     } catch (e) {
+      busy = false;
       btn.disabled = false;
       window.dispatchEvent(new CustomEvent("notebook:notice", { detail: e.message || "Could not create a copy" }));
     }
-  });
-  bar.append(btn);
-  $("notebookRoot").before(bar);
+  };
+
+  let queued = false;
+  const inject = () => {
+    queued = false;
+    const menu = root.querySelector(".toolbar-menu-items");
+    if (!menu || menu.querySelector("[data-nb-edit-copy]")) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("role", "menuitem");
+    btn.dataset.nbEditCopy = "";
+    btn.textContent = label;
+    btn.addEventListener("click", () => {
+      btn.closest("details")?.removeAttribute("open");
+      run(btn);
+    });
+    menu.append(btn);
+  };
+  new MutationObserver(() => { if (!queued) { queued = true; requestAnimationFrame(inject); } }).observe(root, { childList: true, subtree: true });
+  inject();
 }
 
 /** Workspace files: the visitor's own saved files first, then the published manifest (missing names only). */

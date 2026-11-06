@@ -33,7 +33,22 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 #### Big Update (New Runtime: C++)
 * Implement a second new runtime: C++.
 * You will have to allow notebook creators to choose between the current one (MATLAB) and the new (C++).
+* The runtime is for educational purposes for the Programming Fundamentals Course in C++ and the OOP Course (Object-Oriented-Programming).
+* Important things that need to be implemented: 
+  * Variables: The ones that will be used in the 2 courses.
+  * Arrays: 2D and 3D
+  * OOP: of course
+  * Other important parts that you know of.
+* The platform has a Postgress Supabase Database (Free Tier), which allows for about 24 Edge functions, and storage of course. 
+* The platform is hosted on Vercel, which allows for 12 serverless-fuctions, but those slots are all used, although edge functions aren't used.
+* If you need to implement any back-end for this runtime based on the available features/tools, you can do it.
 
+#### Ordered Objectives
+1. Fix the Small issues that were mentioned first.
+2. If you found any other code-editor needed updates do them, or any other UI issues fix them.
+3. Then Present me the updated repo.
+4. Ask me for any context you need to make sure you have the needed info for the New Runtime update.
+5. Generate a ready-to-execute implementation plan for it.
 
 ### Bottom Nav on phones
 * Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.
