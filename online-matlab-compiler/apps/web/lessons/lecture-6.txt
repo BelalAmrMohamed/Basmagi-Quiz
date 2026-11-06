@@ -1,0 +1,40 @@
+@id lecture-6
+@title MATLAB language essentials: switch, cells, structs and histeq
+@group Lectures
+@files testgray.png
+%% md
+# MATLAB language essentials
+
+This lesson introduces `switch` selection, cell arrays, structure fields, and grayscale histogram equalization with `histeq`.
+
+MLWeb implements an educational MATLAB-style subset; these examples run in the browser without a MATLAB installation.
+%% code
+mode = 'gray';
+switch mode
+    case 'rgb'
+        description = 'Color image';
+    case 'gray'
+        description = 'Grayscale image';
+    otherwise
+        description = 'Other image';
+end
+description
+%% code
+samples = {1, 'bright'; [2 3], false};
+first = samples{1};
+samples{3} = 9;
+updated = samples{3};
+%% code
+imageInfo = struct('name', 'testgray.png', 'kind', 'grayscale');
+imageInfo.name
+imageInfo.kind = 'equalized grayscale';
+imageInfo.kind
+%% md
+## Equalize image contrast
+
+`histeq` accepts a two-dimensional grayscale image and returns an output of the same class and size.
+%% code
+I = imread('testgray.png');
+J = histeq(I);
+size(J)
+imshow(J)

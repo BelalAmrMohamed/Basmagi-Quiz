@@ -1,0 +1,8 @@
+{
+  "name": "@mlweb/interp",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": { "test": "tsx test/run.ts" },
+  "devDependencies": { "tsx": "^4.19.0", "pngjs": "^7.0.0", "@types/node": "^22.0.0", "typescript": "^5.6.0" }
+}

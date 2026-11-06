@@ -37,17 +37,6 @@ I tried doing it many times but failed, the MATLAB Celss UI and top bar have bee
 ### Quiz Passwords are exposed
 The home page downloads every quiz’s password to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be fixed.
 
-### image-tool-window
-* Make the window responsive when it becomes smaller/bigger:
-  * The `mlweb-imtool-toolbar` should never become split on 2 lines, it should have a better respond to smaller width window.
-  * Keep the `mlweb-imtool-win-controls` buttons on the left, but make the title and icon on the right instead of the middle.
-  * If you find any room for improvement, you are free to impress me. 
-* Do these fixes quickly because my credits are extremely low, you might get shut-down if you took long before you present me the updated files.
-
-Files:
-* `public\src\features\notebook\image-tool-window.css`
-* `public\src\features\notebook\image-tool-window.js`
-
 ### AI Agent (الباشــمبصمج)
 
 #### Redesign

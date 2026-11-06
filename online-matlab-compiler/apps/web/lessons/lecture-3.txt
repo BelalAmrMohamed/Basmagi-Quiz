@@ -1,0 +1,157 @@
+@id lecture-3
+@title Lecture 3 · Creating gray and color images, imwrite and imfinfo
+@group Lectures
+@files
+%% md
+# Lecture 3 · Building images with loops
+Every image is a matrix, so you can **create** an image by filling a matrix with the formula you want. `imwrite` saves it and `imfinfo` checks the file.
+
+## Gray shades: horizontal
+Pixel = column − 1, so it goes from 0 (black) to 255 (white) from left to right.
+%% code
+A = zeros(256,256,'uint8');
+for i=1:256
+    for j=1:256
+        A(i,j) = j-1;
+    end
+end
+imtool(A);
+imwrite(A, 'Gray1.png');
+imfinfo 'Gray1.png'
+%% md
+## Gray shades: vertical
+%% code
+A = zeros(256,256,'uint8');
+for i=1:256
+    for j=1:256
+        A(j,i) = 256-j;
+    end
+end
+imtool(A);
+%% md
+## A white X on black, and the opposite
+**Example 1.** White image, black lines: the two diagonals and the two middle lines.
+%% code
+A = zeros(256,256,'uint8');
+for i=1:256
+    for j=1:256
+        A(i,j) = 255;
+    end
+end
+for i=1:256
+    A(i,i) = 0;
+    A(i,257-i) = 0;
+    A(i,128) = 0;
+    A(128,i) = 0;
+end
+imtool(A);
+%% md
+**Example 2.** Black image, white diagonals.
+%% code
+A = zeros(256,256,'uint8');
+for i=1:256
+    A(i,i) = 255;
+    A(i,257-i) = 255;
+end
+imtool(A);
+%% md
+**Example 3.** A white square (pixels 11 to 246) with a thick black X. The three loops make the diagonals three pixels wide.
+%% code
+A = zeros(256,256,'uint8');
+for i=11:246
+    for j=11:246
+        A(i,j) = 255;
+    end
+end
+for i=1:256
+    A(i,i) = 0;
+    A(i,257-i) = 0;
+end
+for i=1:255
+    A(i,i+1) = 0;
+    A(i+1,i) = 0;
+    A(i,256-i) = 0;
+    A(i+1,257-i) = 0;
+end
+for i=1:254
+    A(i,i+2) = 0;
+    A(i+2,i) = 0;
+    A(i,255-i) = 0;
+    A(i+1,258-i) = 0;
+end
+imtool(A);
+%% md
+## Color shades
+Layer 1 = red. `256-j` goes from 255 (left) to 1 (right).
+%% code
+A = zeros(256,256,3,'uint8');
+for i=1:256
+    for j=1:256
+        A(i,j,1) = 256-j;
+        A(i,j,2) = 0;
+        A(i,j,3) = 0;
+    end
+end
+imtool(A);
+imwrite(A, 'Color1.png');
+imfinfo 'Color1.png'
+%% md
+## Three nested squares
+Red background, green square (61 to 240), blue square (121 to 180).
+%% code
+A = zeros(300,300,3,'uint8');
+for i=1:300
+    for j=1:300
+        A(i,j,1) = 255;
+        A(i,j,2) = 0;
+        A(i,j,3) = 0;
+    end
+end
+for i=61:240
+    for j=61:240
+        A(i,j,1) = 0;
+        A(i,j,2) = 255;
+        A(i,j,3) = 0;
+    end
+end
+for i=121:180
+    for j=121:180
+        A(i,j,1) = 0;
+        A(i,j,2) = 0;
+        A(i,j,3) = 255;
+    end
+end
+imtool(A);
+imwrite(A, 'Color2.png');
+%% md
+## Exercises
+1. Create a 256×256 gray image that goes from **white on the left to black on the right**.
+2. Create a **diagonal gradient** (the value grows with `i + j`). Hint: `uint8` saturates at 255.
+3. Make a 256×256 **blue** gradient from top (black) to bottom (full blue).
+%% code
+% your answer here
+
+%% md
+### Solution (try first!)
+%% code
+A = zeros(256,256,'uint8');
+for i=1:256
+    for j=1:256
+        A(i,j) = 256-j;
+    end
+end
+imtool(A);
+D = zeros(256,256,'uint8');
+for i=1:256
+    for j=1:256
+        D(i,j) = (i+j)/2;
+    end
+end
+imtool(D);
+B = zeros(256,256,3,'uint8');
+for i=1:256
+    for j=1:256
+        B(i,j,3) = i-1;
+    end
+end
+imtool(B);

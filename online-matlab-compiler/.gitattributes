@@ -1,0 +1,4 @@
+# Run `git archive --format=zip --output=online-matlab-compiler.zip HEAD` to export.
+.github/ export-ignore
+
+# Large Files, excluded to make the `online-matlab-compiler.zip` smaller. They exist in the actual project.

@@ -1,0 +1,179 @@
+@id section-2
+@title Section 2 · Image types, pixels and brightness
+@group Sections
+@files test.png testgray.png
+%% md
+# Section 2 · Pixels and brightness
+**Image types:** Binary (1 bit: 0 or 1) · Grayscale (8 bit: 0..255) · RGB (24 bit: three 8-bit layers).
+
+Rules to remember:
+- A matrix of `uint8` **saturates**: `200 + 100` gives `255`, and `20 - 50` gives `0`.
+- Brightness up = add a number to the pixel. Brightness down = subtract it.
+%% code
+a = imread('testgray.png');
+b = imread('test.png');
+imshow(a), figure, imshow(b);
+%% code
+imfinfo('testgray.png')
+imfinfo('test.png')
+%% md
+## Size of the matrix
+`size(a, 1)` = rows, `size(a, 2)` = columns, `size(a, 3)` = layers (a gray image has no 3rd dimension, so it gives 1).
+%% code
+size(a)
+size(a, 1)
+size(a, 2)
+size(a, 3)
+size(b)
+size(b, 3)
+%% md
+## Testing a pixel
+Pixel (90,120) of the gray image, then of the color image (one value per channel).
+%% code
+p = imread('testgray.png');
+f1 = p(90,120)
+f2 = p(90,120,1)
+f3 = p(90,120,:)
+%% code
+j = imread('test.png');
+k  = j(90,120,:)
+k1 = j(90,120,1)
+k2 = j(90,120,2)
+k3 = j(90,120,3)
+%% md
+## Increasing brightness (grayscale)
+Run this and compare the two images. The bright parts become pure white (saturation).
+%% code
+x = imread('testgray.png');
+imtool(x);
+for i = 1 : size(x,1)
+    for j = 1 : size(x,2)
+        x(i,j) = x(i,j) + 50;
+    end
+end
+imtool(x);
+%% md
+## Increasing brightness (color)
+**One layer only** (blue): the picture gets a blue tint.
+%% code
+r = imread('test.png');
+imtool(r);
+for i = 1 : size(r,1)
+    for j = 1 : size(r,2)
+        r(i,j,3) = r(i,j,3) + 50;
+    end
+end
+imtool(r);
+%% md
+**All layers, first way** (three lines):
+%% code
+y = imread('test.png');
+imtool(y);
+for i = 1 : size(y,1)
+    for j = 1 : size(y,2)
+        y(i,j,1) = y(i,j,1) + 50;
+        y(i,j,2) = y(i,j,2) + 50;
+        y(i,j,3) = y(i,j,3) + 50;
+    end
+end
+imtool(y);
+%% md
+**All layers, second way** (`:` means "all layers"):
+%% code
+y = imread('test.png');
+for i = 1 : size(y,1)
+    for j = 1 : size(y,2)
+        y(i,j,:) = y(i,j,:) + 50;
+    end
+end
+imtool(y);
+%% md
+## Decreasing brightness
+Same idea with `-`. Values below 0 become 0.
+%% code
+c = imread('testgray.png');
+imtool(c);
+for i = 1 : size(c,1)
+    for j = 1 : size(c,2)
+        c(i,j) = c(i,j) - 50;
+    end
+end
+imtool(c);
+%% code
+d = imread('test.png');
+imtool(d);
+for i = 1 : size(d,1)
+    for j = 1 : size(d,2)
+        d(i,j,:) = d(i,j,:) - 50;
+    end
+end
+imtool(d);
+%% md
+## Functions
+In MATLAB each function lives in its own file. In MLWeb, run the `function` cell once, then call it from any cell.
+%% code
+function brightGrayFun(imgname, V)
+    c = imread(imgname);
+    imtool(c);
+    for i = 1:size(c,1)
+        for j = 1:size(c,2)
+            c(i,j) = c(i,j) + V;
+        end
+    end
+    imtool(c);
+end
+%% code
+function brightColorFun_v1(imgname, V)
+    c = imread(imgname);
+    imtool(c);
+    for i = 1:size(c,1)
+        for j = 1:size(c,2)
+            c(i,j,1) = c(i,j,1) + V;
+            c(i,j,2) = c(i,j,2) + V;
+            c(i,j,3) = c(i,j,3) + V;
+        end
+    end
+    imtool(c);
+end
+%% code
+function brightColorFun_v2(imgname, R, G, B)
+    c = imread(imgname);
+    imtool(c);
+    for i = 1:size(c,1)
+        for j = 1:size(c,2)
+            c(i,j,1) = c(i,j,1) + R;
+            c(i,j,2) = c(i,j,2) + G;
+            c(i,j,3) = c(i,j,3) + B;
+        end
+    end
+    imtool(c);
+end
+%% md
+Calling the functions (`v2` adds a different value to each channel, so `150, -150, -150` makes the picture red):
+%% code
+brightGrayFun('testgray.png', 50)
+%% code
+brightColorFun_v1('test.png', 50);
+%% code
+brightColorFun_v2('test.png', 150, -150, -150);
+%% md
+## Exercises
+1. Make `testgray.png` **darker by 80** using a function `darkGrayFun(imgname, V)`.
+2. Make `test.png` greener: add 100 to green only, using `brightColorFun_v2`.
+%% code
+% your answer here
+
+%% md
+### Solution (try first!)
+%% code
+function darkGrayFun(imgname, V)
+    c = imread(imgname);
+    for i = 1:size(c,1)
+        for j = 1:size(c,2)
+            c(i,j) = c(i,j) - V;
+        end
+    end
+    imtool(c);
+end
+darkGrayFun('testgray.png', 80);
+brightColorFun_v2('test.png', 0, 100, 0);

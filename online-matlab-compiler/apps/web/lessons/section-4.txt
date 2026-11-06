@@ -1,0 +1,153 @@
+@id section-4
+@title Section 4 · Colon indexing, color spaces, cropping
+@group Sections
+@files test.png pepper.png Test2.png
+%% md
+# Section 4 · Faster code and color spaces
+## Coloring squares with `:` (no loops)
+`x(:,:,1) = 255` means: **all rows, all columns, layer 1**. A range like `61:240` selects part of the image.
+
+First, a common mistake. The red layer is never switched off, so the squares are *not* green and blue:
+%% code
+x = zeros(300, 300, 3, 'uint8');
+x(:,:,1) = 255;
+imtool(x);
+x(61:240,61:240,2) = 255;
+imtool(x);
+x(121:180,121:180,3) = 255;
+imtool(x);
+%% md
+Red + green = **yellow**, red + green + blue = **white**. The right way: turn off the layer you do not want inside each square.
+%% code
+y = zeros(300, 300, 3, 'uint8');
+y(:,:,1) = 255;
+y(61:240,61:240,1) = 0;
+y(61:240,61:240,2) = 255;
+y(121:180,121:180,2) = 0;
+y(121:180,121:180,3) = 255;
+imtool(y);
+%% md
+## Color spaces
+A *color space* is a way to describe a color with numbers.
+
+| Space | Components | Main use |
+|---|---|---|
+| RGB | Red, Green, Blue | displaying colors |
+| HSV | Hue, Saturation, Value | picking colors, segmentation |
+| YCbCr | Luminance, Blue-diff., Red-diff. | compression, video |
+| YIQ | Luminance, In-phase, Quadrature | NTSC TV |
+
+**Main idea:** RGB mixes brightness with color. HSV describes color the way people do (type, vividness, brightness). YCbCr and YIQ keep **brightness (Y)** separate from color.
+%% md
+### HSV
+`rgb2hsv` returns `double` values from 0 to 1. `H` = color type, `S` = vividness, `V` = brightness.
+%% code
+a = imread('pepper.png');
+imtool(a);
+b = rgb2hsv(a);
+H = b(:,:,1);
+S = b(:,:,2);
+V = b(:,:,3);
+imtool(b), imtool(H), imtool(S), imtool(V);
+%% md
+### YCbCr
+%% code
+a = imread('pepper.png');
+c = rgb2ycbcr(a);
+Y  = c(:,:,1);
+Cb = c(:,:,2);
+Cr = c(:,:,3);
+imtool(c), imtool(Y), imtool(Cb), imtool(Cr);
+%% md
+### YIQ
+%% code
+a = imread('pepper.png');
+d = rgb2ntsc(a);
+Y = d(:,:,1);
+I = d(:,:,2);
+Q = d(:,:,3);
+imtool(d), imtool(Y), imtool(I), imtool(Q);
+%% md
+## Cropping
+**First way:** copy pixel by pixel. `b` is 50×200 and is filled from the top-left corner of `Test2.png`.
+%% code
+a = imread('Test2.png');
+b = zeros(50,200,3,'uint8');
+for i=1:size(b,1)
+    for j=1:size(b,2)
+        b(i,j,:) = a(i,j,:);
+    end
+end
+imtool(a), imtool(b);
+imwrite(b, 'new_crop_1.png');
+%% md
+Start from another corner: rows and columns from (61,61), using two counters `r` and `c`.
+%% code
+a = imread('Test2.png');
+b = zeros(196,196,3,'uint8');
+r = 61;
+first_column = 61;
+c = first_column;
+for i=1:size(b,1)
+    for j=1:size(b,2)
+        b(i,j,:) = a(r,c,:);
+        c = c+1;
+    end
+    r = r+1;
+    c = first_column;
+end
+imtool(a), imtool(b);
+imwrite(b, 'new_crop_1.png');
+%% md
+**Second way:** one line with ranges. Rows 61–110 and columns 61–110 of `pepper.png`:
+%% code
+a = imread('pepper.png');
+b2(1:50,1:50,:) = a(61:110,61:110,:);
+imtool(a), imtool(b2);
+imwrite(b2, 'new_crop_2.png');
+%% code
+a = imread('Test2.png');
+b3(1:50,1:200,1:3) = a(1:50,1:200,1:3);
+imtool(a), imtool(b3);
+imwrite(b3, 'new_crop_3.png');
+%% md
+## A cropping function
+`cropImage(image, rows, cols, startRow, startColumn)`
+%% code
+function cropImage(image, rows, cols, startRow, startColumn)
+    tempStartColumn = startColumn;
+    img = imread(image);
+    newImg = zeros(rows, cols, 3, 'uint8');
+    for i = 1:size(newImg, 1)
+        for j = 1:size(newImg, 2)
+            newImg(i, j, 1:3) = img(startRow, startColumn, 1:3);
+            startColumn = startColumn + 1;
+        end
+        startRow = startRow + 1;
+        startColumn = tempStartColumn;
+    end
+    imtool(img), imtool(newImg);
+    imwrite(newImg, ['new_', image]);
+end
+%% code
+cropImage('Test2.png', 196, 196, 61, 61);
+%% md
+## Exercises
+1. Without loops, make a 200×200 RGB image that is **blue** with a **white** 100×100 square in the middle.
+2. Crop the **bottom-right 100×100** corner of `pepper.png` using ranges (hint: `end-99:end`).
+3. Show only the **saturation** layer of `pepper.png`. Which fruit is the most vivid?
+%% code
+% your answer here
+
+%% md
+### Solution (try first!)
+%% code
+z = zeros(200,200,3,'uint8');
+z(:,:,3) = 255;
+z(51:150,51:150,:) = 255;
+imtool(z);
+a = imread('pepper.png');
+corner = a(end-99:end, end-99:end, :);
+imtool(corner);
+hsv = rgb2hsv(a);
+imtool(hsv(:,:,2));

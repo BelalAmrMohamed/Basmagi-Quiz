@@ -1,0 +1,115 @@
+@id lecture-5
+@title Lecture 5 · Gray conversion methods and thresholding
+@group Lectures
+@files pepper.png GrayTest1.png
+%% md
+# Lecture 5 · Color → gray → binary
+## Four ways to convert color to gray
+**1. Average:** `(R + G + B) / 3`. Divide each layer first so `uint8` does not saturate.
+%% code
+a = imread('pepper.png');
+b1 = zeros(200,200,'uint8');
+for i=1:size(a,1)
+    for j=1:size(a,2)
+        b1(i,j) = a(i,j,1)/3+a(i,j,2)/3+a(i,j,3)/3;
+    end
+end
+imtool(a), imtool(b1);
+%% md
+**2. Lightness:** the middle of the brightest and darkest layer, `(max + min) / 2`.
+%% code
+b2 = zeros(200,200,'uint8');
+for i=1:size(a,1)
+    for j=1:size(a,2)
+        b2(i,j) = (max(a(i,j,:))/2)+(min(a(i,j,:))/2);
+    end
+end
+imtool(b2);
+%% md
+**3. Weighted (luminosity):** the eye is most sensitive to green, so `0.3 R + 0.59 G + 0.11 B`.
+%% code
+b3 = zeros(200,200,'uint8');
+for i=1:size(a,1)
+    for j=1:size(a,2)
+        b3(i,j) = (a(i,j,1)*0.3)+(a(i,j,2)*0.59)+(a(i,j,3)*0.11);
+    end
+end
+imtool(b3);
+%% md
+**4. Built-in** `rgb2gray` (it uses almost the same weights as method 3):
+%% code
+b4 = rgb2gray(a);
+imtool(b4);
+%% md
+## Gray → binary (thresholding)
+Pixels **≥ threshold** become 1 (white), the others 0 (black).
+%% code
+a = imread('GrayTest1.png');
+b = zeros(200,200,'double');
+for i=1:200
+    for j=1:200
+        if (a(i,j)>=128)
+            b(i,j) = 1;
+        else
+            b(i,j) = 0;
+        end
+    end
+end
+imtool(a), imtool(b);
+%% md
+Try other thresholds. A **higher** threshold gives more black; a **lower** one gives more white.
+%% code
+for i=1:200
+    for j=1:200
+        if (a(i,j)>=170)
+            b(i,j) = 1;
+        else
+            b(i,j) = 0;
+        end
+    end
+end
+imtool(b);
+%% code
+for i=1:200
+    for j=1:200
+        if (a(i,j)>=75)
+            b(i,j) = 1;
+        else
+            b(i,j) = 0;
+        end
+    end
+end
+imtool(b);
+%% md
+## The built-in `im2bw`
+`im2bw(a, level)` takes a level between 0 and 1 (0.5 is about 128).
+%% code
+b = im2bw(a, 0.5);
+imtool(b);
+b = im2bw(a, 0.9);   % more black
+imtool(b);
+b = im2bw(a, 0.1);   % more white
+imtool(b);
+%% md
+## Exercises
+1. Convert `pepper.png` to gray with `rgb2gray`, then to binary with the threshold **100** using a loop.
+2. Do the same in one line with `im2bw`. Are the two images the same? (They can differ by a few pixels at the exact threshold.)
+3. Which gray method gives the brightest red pepper area: average, lightness or weighted? Show the three side by side.
+%% code
+% your answer here
+
+%% md
+### Solution (try first!)
+%% code
+a = imread('pepper.png');
+g = rgb2gray(a);
+b = zeros(200,200,'uint8');
+for i=1:200
+    for j=1:200
+        if g(i,j) >= 100
+            b(i,j) = 255;
+        end
+    end
+end
+imtool(b);
+imtool(im2bw(g, 100/255));
