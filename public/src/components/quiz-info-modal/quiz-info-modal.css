@@ -363,3 +363,4 @@ a.quiz-creator-card:hover .quiz-creator-cta {
 .info-platform-icon { width: 16px; height: 16px; object-fit: contain; flex: 0 0 auto; }
 .info-copy-btn { display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 23px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--color-text-secondary, #64748b); cursor: pointer; }
 .info-copy-btn:hover, .info-copy-btn:focus-visible { color: var(--color-primary, #3b82f6); background: var(--color-background-secondary, #f1f5f9); }
+.info-copy-btn.copied { color: #16a34a; background: rgba(22, 163, 74, 0.12); }

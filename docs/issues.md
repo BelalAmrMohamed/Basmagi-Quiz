@@ -7,23 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Home Page (index.html)
-
-#### Info Modals
-* Info modals for quizzes, lessons, and notebooks, should use the drive icon when the source is from Google Drive, or the YouTube icon if it's Youtube
-  * `public\assets\images\google-drive-icon.webp`
-  * `public\assets\images\youtube-icon.webp`
-
-#### Downlaod modals
-* Notebook: The download modal doesn't have copying for copyable exports.
-* Download modals should use the Drive icon when the link is in Google Drive: 
-  * `public\assets\images\google-drive-icon.webp`
-  * `public\assets\images\youtube-icon.webp`
-
----
-
-### Notebook Page
-
 ### Bottom Nav on phones
 * Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.
 * I honestly don't know what is the best decision, maybe keeping settings 

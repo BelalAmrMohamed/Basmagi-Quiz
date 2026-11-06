@@ -1,8 +1,8 @@
-import { showNotification } from "../components/notifications/notifications.js";
 import { PLATFORM_ICON_SRC, sourceIconHtml } from "./source-link.js";
 import { escapeHtml } from "../features/home/escape-html.js";
 
 const COPY_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
+const COPIED_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
 
 export function infoSourceHtml(value) {
   const source = String(value || "").trim();
@@ -34,13 +34,28 @@ async function copyText(value) {
 export function bindInfoCopyButtons(root) {
   root.querySelectorAll(".info-copy-btn").forEach((button) => {
     button.addEventListener("click", async () => {
+      if (button.disabled) return;
+      button.disabled = true;
       try {
         await copyText(button.dataset.copyValue || "");
-        showNotification("تم النسخ", "تم نسخ الرابط.", "success");
+        button.innerHTML = COPIED_ICON;
+        button.classList.add("copied");
+        button.setAttribute("aria-label", "تم نسخ الرابط");
+        button.title = "تم النسخ";
+        clearTimeout(button._copyResetTimer);
+        button._copyResetTimer = setTimeout(() => {
+          button.innerHTML = COPY_ICON;
+          button.classList.remove("copied");
+          button.disabled = false;
+          button.setAttribute("aria-label", button.dataset.copyAriaLabel);
+          button.title = button.dataset.copyTitle;
+        }, 1800);
       } catch (error) {
+        button.disabled = false;
         console.error("[info-modal] copy failed:", error);
-        showNotification("تعذّر النسخ", "تعذّر نسخ الرابط.", "error");
       }
     });
+    button.dataset.copyAriaLabel = button.getAttribute("aria-label") || "نسخ الرابط";
+    button.dataset.copyTitle = button.title || "نسخ الرابط";
   });
 }
