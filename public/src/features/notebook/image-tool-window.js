@@ -238,17 +238,17 @@ class ImageToolWindow {
         </div>
         <div class="mlweb-imtool-tb-sep"></div>
         <div class="mlweb-imtool-tb-group">
-          <button type="button" class="mlweb-imtool-tb-btn btn-toggle-values is-active" title="${t.toggleValuesTitle}">
+          <button type="button" class="mlweb-imtool-tb-btn btn-toggle-values is-active" title="${t.toggleValuesTitle}" aria-label="${t.toggleValues}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 10h16M4 16h16M10 4v16M16 4v16"/></svg>
-            ${t.toggleValues}
+            <span class="mlweb-imtool-tb-label">${t.toggleValues}</span>
           </button>
-          <button type="button" class="mlweb-imtool-tb-btn btn-info" title="${t.infoTitle}">
+          <button type="button" class="mlweb-imtool-tb-btn btn-info" title="${t.infoTitle}" aria-label="${t.info}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-            ${t.info}
+            <span class="mlweb-imtool-tb-label">${t.info}</span>
           </button>
-          <button type="button" class="mlweb-imtool-tb-btn btn-download" title="${t.downloadTitle}">
+          <button type="button" class="mlweb-imtool-tb-btn btn-download" title="${t.downloadTitle}" aria-label="${t.download}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            ${t.download}
+            <span class="mlweb-imtool-tb-label">${t.download}</span>
           </button>
         </div>
         <span class="mlweb-imtool-tb-hint">${t.hint}</span>
@@ -449,7 +449,7 @@ class ImageToolWindow {
           const dx = mEv.clientX - startX;
           const dy = mEv.clientY - startY;
           let newW = startW, newH = startH, newL = startL, newT = startT;
-          const minW = 380, minH = 260;
+          const minW = 300, minH = 240;
 
           if (dir.includes('e')) newW = Math.max(minW, startW + dx);
           if (dir.includes('s')) newH = Math.max(minH, startH + dy);

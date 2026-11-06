@@ -23,6 +23,9 @@ test("compact notebook metadata retains editor and publishing hooks", () => {
   assert.match(html, /id="cnbIssues"[^>]*role="alert"[^>]*aria-live="assertive"/);
   assert.match(editor, /prepareNotebookAssets\([\s\S]*compress: \$\("cnbCompress"\)\.checked/);
   assert.match(editor, /courseId: \$\("cnbCourse"\)\.value, folderId: \$\("cnbFolder"\)\.value/);
+  assert.match(editor, /history\.replaceState\(history\.state, "", `\/notebook\/edit\//);
+  assert.match(editor, /t\(editId \? "saveEdit" : "save"\)/);
+  assert.match(editor, /t\(editId \? "headingEdit" : "heading"\).*Basmagi Quiz/);
 });
 
 test("metadata form is concise, localized, accessible, and responsive", () => {

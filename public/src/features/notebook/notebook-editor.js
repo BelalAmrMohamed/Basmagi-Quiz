@@ -44,7 +44,7 @@ const STR = {
     identityHeading: "Notebook details", identityIntro: "Give learners enough context to know what they’ll open.", titleHint: "A concise title makes this notebook easier to find.", descriptionHint: "Describe the topic, goal, or expected starting point.", sourceHint: "Add a reference learners can open for more detail.",
     settingsHeading: "Language and runtime", settingsIntro: "Choose how the notebook reads and which engine runs its code.", languageHint: "Controls notebook text direction and interface language.", runtimeHintMatlab: "Runs in the browser with the MATLAB learning runtime.", runtimeHintCpp: "Runs C++ code using the online compiler service.", runtimeLock: "Locked after save",
     placementHeading: "Publishing location", placementIntro: "Choose where learners will find this notebook.", course: "Course", folder: "Folder", slug: "URL slug", compressTitle: "Optimize notebook images", compressShort: "Compress images to WebP when publishing.", compressHint: "Image names and references are updated automatically.",
-    import: "Import .ipynb / .m", save: "Save to My Content", savePlatform: "Save and publish", loading: "Loading editor…",
+    import: "Import .ipynb / .m", save: "Save to My Content", saveEdit: "Save changes", savePlatform: "Save and publish", loading: "Loading editor…",
     saved: "Saved", savedMsg: "The notebook was saved to My Content.", driveDone: (n, f) => `Also backed up to Google Drive: “${n}” in “${f}”.`, publishedMsg: "The notebook was published.",
     fail: "Could not save", problems: (n) => `Fix ${n} problem${n === 1 ? "" : "s"} before saving`, importFail: "Import failed", importNotes: "Import notes",
     loadFail: "Could not load", runtimeFail: "Could not load the notebook editor. Check your connection and reload the page.", dup: "A notebook with this title already exists here. Choose a different title.",
@@ -59,7 +59,7 @@ const STR = {
     identityHeading: "تفاصيل الدفتر", identityIntro: "أضف سياقاً يساعد المتعلمين على معرفة محتوى الدفتر.", titleHint: "يساعد العنوان المختصر على العثور على الدفتر.", descriptionHint: "اشرح الموضوع أو الهدف أو نقطة البداية المتوقعة.", sourceHint: "أضف مرجعاً يمكن للمتعلمين فتحه لمعرفة المزيد.",
     settingsHeading: "اللغة وبيئة التشغيل", settingsIntro: "اختر لغة الدفتر والمحرك الذي يشغّل الشيفرة.", languageHint: "تحدد اتجاه النص ولغة واجهة الدفتر.", runtimeHintMatlab: "يعمل في المتصفح باستخدام بيئة MATLAB التعليمية.", runtimeHintCpp: "يشغّل شيفرة C++ عبر خدمة المترجم على الإنترنت.", runtimeLock: "مقفل بعد الحفظ",
     placementHeading: "مكان النشر", placementIntro: "اختر المكان الذي سيجد فيه المتعلمون هذا الدفتر.", course: "المادة", folder: "المجلد", slug: "معرّف الرابط", compressTitle: "تحسين صور الدفتر", compressShort: "ضغط الصور إلى WebP عند النشر.", compressHint: "سيتم تحديث أسماء الصور ومراجعها تلقائياً.",
-    import: "استيراد .ipynb / .m", save: "حفظ في امتحاناتك", savePlatform: "حفظ ونشر", loading: "جاري تحميل المحرر…",
+    import: "استيراد .ipynb / .m", save: "حفظ في امتحاناتك", saveEdit: "حفظ التغييرات", savePlatform: "حفظ ونشر", loading: "جاري تحميل المحرر…",
     saved: "تم الحفظ", savedMsg: "تم حفظ الدفتر في «امتحاناتك».", driveDone: (n, f) => `ونُسخ احتياطياً إلى Google Drive: «${n}» داخل «${f}».`, publishedMsg: "تم نشر الدفتر.",
     fail: "تعذر الحفظ", problems: (n) => `أصلح ${n} من المشاكل قبل الحفظ`, importFail: "فشل الاستيراد", importNotes: "ملاحظات الاستيراد",
     loadFail: "تعذر التحميل", runtimeFail: "تعذر تحميل محرر الدفاتر. تحقق من اتصالك وأعد تحميل الصفحة.", dup: "يوجد دفتر بنفس العنوان هنا بالفعل. اختر عنواناً مختلفاً.",
@@ -122,8 +122,8 @@ function applyChrome() {
   $("cnbRuntimeLockNote").textContent = t("runtimeLock");
   $("cnbRuntimeLockNote").hidden = !$("cnbRuntime").disabled;
   $("cnbRuntimeCard").classList.toggle("is-locked", $("cnbRuntime").disabled);
-  $("cnbSaveLabel").textContent = localMode ? t("save") : t("savePlatform");
-  document.title = `${t("heading")} | Basmagi Quiz`;
+  $("cnbSaveLabel").textContent = localMode ? t(editId ? "saveEdit" : "save") : t("savePlatform");
+  document.title = `${t(editId ? "headingEdit" : "heading")} | Basmagi Quiz`;
 }
 
 function showIssues(headline, items, kind = "error") {

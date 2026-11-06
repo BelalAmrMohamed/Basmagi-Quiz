@@ -957,3 +957,215 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
 .mlweb .cell-menu[open] {
   z-index: 31;
 }
+
+/* =============================================================================
+   Window-size responsiveness (container queries on the WINDOW width)
+   ============================================================================= */
+.mlweb-imtool-win {
+  container-type: inline-size;
+  container-name: imtool;
+  min-width: min(300px, calc(100vw - 16px));
+}
+
+.mlweb-imtool-win .mlweb-imtool-toolbar {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.mlweb-imtool-win .mlweb-imtool-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.mlweb-imtool-win .mlweb-imtool-tb-group,
+.mlweb-imtool-win .mlweb-imtool-tb-sep,
+.mlweb-imtool-win .mlweb-imtool-tb-btn,
+.mlweb-imtool-win .mlweb-imtool-zoom-display,
+.mlweb-imtool-win .mlweb-imtool-tb-hint {
+  flex: 0 0 auto;
+}
+
+@container imtool (max-width: 640px) {
+  .mlweb-imtool-tb-hint {
+    display: none;
+  }
+}
+
+@container imtool (max-width: 560px) {
+  .mlweb-imtool-tb-label {
+    display: none;
+  }
+
+  .mlweb-imtool-win button.mlweb-imtool-tb-btn:has(.mlweb-imtool-tb-label) {
+    width: 30px;
+    padding: 0;
+  }
+}
+
+@container imtool (max-width: 440px) {
+  .mlweb-imtool-win .mlweb-imtool-toolbar {
+    gap: 4px;
+    padding: 5px 6px;
+  }
+
+  .mlweb-imtool-tb-sep {
+    margin: 0 1px;
+  }
+
+  .mlweb-imtool-win button.mlweb-imtool-tb-btn {
+    padding: 0 7px;
+    font-size: 12px;
+  }
+
+  .mlweb-imtool-zoom-display {
+    min-width: 46px;
+    font-size: 11px;
+  }
+}
+
+@container imtool (max-width: 360px) {
+  .mlweb-imtool-tb-sep {
+    display: none;
+  }
+
+  .mlweb-imtool-title {
+    font-size: 12.5px;
+  }
+
+  .mlweb-imtool-status-meta {
+    display: none;
+  }
+}
+
+.mlweb-imtool-win button:focus-visible {
+  outline: 2px solid var(--color-primary, #b94a16);
+  outline-offset: 2px;
+}
+
+/* =============================================================================
+   Title bar + macOS traffic lights. Fully in-flow (nothing absolutely
+   positioned) so nothing can overlap or fall off an edge, in LTR or RTL pages.
+   Controls: physical left. Title + icon: physical right.
+   ============================================================================= */
+.mlweb-imtool-win .mlweb-imtool-titlebar,
+.mlweb-imtool-win .mlweb-imtool-toolbar {
+  direction: ltr;
+}
+
+.mlweb-imtool-win .mlweb-imtool-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 0 14px !important;
+  min-height: 42px;
+}
+
+.mlweb-imtool-win .mlweb-imtool-titlebar-spacer {
+  display: none !important;
+}
+
+.mlweb-imtool-win .mlweb-imtool-win-controls {
+  position: static !important;
+  transform: none !important;
+  inset: auto !important;
+  flex: 0 0 auto;
+  display: flex !important;
+  align-items: center;
+  gap: 8px !important;
+  order: 0;
+}
+
+.mlweb-imtool-win .mlweb-imtool-title-wrap,
+.mlweb-imtool-win:not(.is-minimized) .mlweb-imtool-title-wrap {
+  order: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  justify-content: flex-end;
+  margin: 0;
+}
+
+.mlweb-imtool-win.is-minimized .mlweb-imtool-titlebar {
+  height: 46px;
+  min-height: 46px;
+  padding: 0 12px !important;
+}
+
+.mlweb-imtool-win.is-minimized .mlweb-imtool-title-wrap {
+  justify-content: flex-start;
+}
+
+.mlweb-imtool-win .mlweb-imtool-win-controls>button.mlweb-imtool-win-btn {
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 12px !important;
+  width: 12px !important;
+  height: 12px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  border: .5px solid rgba(0, 0, 0, .3) !important;
+  color: rgba(0, 0, 0, .6) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  cursor: pointer;
+}
+
+.mlweb-imtool-win .mlweb-imtool-win-controls>.btn-close {
+  background: #ff5f57 !important;
+}
+
+.mlweb-imtool-win .mlweb-imtool-win-controls>.btn-min {
+  background: #febc2e !important;
+}
+
+.mlweb-imtool-win .mlweb-imtool-win-controls>.btn-max {
+  background: #28c840 !important;
+}
+
+.mlweb-imtool-win .mlweb-imtool-win-controls>button:hover {
+  filter: brightness(1.08);
+}
+
+.mlweb-imtool-win .mlweb-imtool-win-controls>button:active {
+  filter: brightness(.85);
+}
+
+.mlweb-imtool-win .mlweb-imtool-win-controls>button svg {
+  width: 8px !important;
+  height: 8px !important;
+  opacity: 0;
+  stroke-width: 1.8;
+}
+
+.mlweb-imtool-win .mlweb-imtool-win-controls:hover>button svg,
+.mlweb-imtool-win .mlweb-imtool-win-controls:focus-within>button svg {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .mlweb-imtool-win .mlweb-imtool-win-controls {
+    gap: 10px !important;
+  }
+
+  .mlweb-imtool-win .mlweb-imtool-win-controls>button.mlweb-imtool-win-btn {
+    flex-basis: 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .mlweb-imtool-win .mlweb-imtool-win-controls>button svg {
+    opacity: 1;
+    width: 10px !important;
+    height: 10px !important;
+  }
+}
