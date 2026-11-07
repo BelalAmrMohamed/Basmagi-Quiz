@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased]
+
+## [8.3.5] - 2026-11-07
+### Changed
+- Updated issues.md & notebook-editor.js.
+- Updated issues.md, package.json, & notebook.html.
+
 ### Added
 - Added a C++17 notebook runtime backed by the cpp-run Edge Function, with per-cell stdin and C++ notebook import/export.
 - Notebook OG thumbnail (`/api/og?notebook=`) and server-rendered `/notebook/:id` meta tags.
