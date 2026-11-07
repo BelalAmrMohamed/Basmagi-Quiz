@@ -76,7 +76,7 @@ test("draft codes: unguessable format, URL shape", () => {
   const codes = new Set(Array.from({ length: 500 }, () => makeDraftCode()));
   assert.equal(codes.size, 500);
   for (const c of codes) assert.match(c, DRAFT_CODE_RE);
-  assert.match(draftUrl("quiz", "abcdefghjk"), /^https:\/\/basmagi-quiz\.vercel\.app\/create-quiz\?draft=abcdefghjk$/);
+  assert.match(draftUrl("quiz", "abcdefghjk"), /^https:\/\/basmagi-quiz\.vercel\.app\/my-content\?draft=abcdefghjk$/);
   assert.ok(draftUrl("lesson", "abcdefghjk").length < 80); // vs. thousands of chars for base64
 });
 

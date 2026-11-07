@@ -5626,3 +5626,33 @@ kbd {
     display: none;
   }
 }
+
+/* ── New item from an MCP link: glow + «جديد» badge (mcp-draft-import.js) ── */
+.user-quiz-card.mcp-new-item {
+  position: relative;
+  outline: 2px solid var(--color-primary, #6366f1);
+  outline-offset: 2px;
+  animation: mcp-new-glow 1.6s ease-out 3;
+}
+.mcp-new-badge {
+  position: absolute;
+  top: -10px;
+  inset-inline-start: 12px;
+  z-index: 3;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--color-primary, #6366f1);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.6;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+@keyframes mcp-new-glow {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary, #6366f1) 55%, transparent); }
+  100% { box-shadow: 0 0 0 18px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .user-quiz-card.mcp-new-item { animation: none; }
+}

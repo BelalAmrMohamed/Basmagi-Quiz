@@ -12,13 +12,13 @@
 //
 // Version 3.0.0:
 //   - create_*_import_link now stores a short-lived draft (table import_drafts) and returns a
-//     SHORT link (/create-quiz?draft=<code>) instead of a huge base64 URL. Falls back to base64
+//     SHORT link (/my-content?draft=<code>) instead of a huge base64 URL. Falls back to base64
 //     only if the database write fails. No sign-in involved.
 //   - Strict validation with ERRORS (nothing saved) and WARNINGS (saved), never silent guessing.
 //   - Fixed: essay questions no longer get fake "نعم/لا" options; search_catalog searches ALL quizzes.
 //   - New: get_authoring_guide; get_creator_info(section) rebuilt from the /about page;
 //     tool annotations (readOnly / destructive hints).
-//   - GET /draft/<code> → JSON, used by the create-quiz / create-lesson pages.
+//   - GET /draft/<code> → JSON, used by /my-content to import the item when the link is opened (DELETE removes it afterwards).
 //
 // Version 2.2.0:
 //   - Full content retrieval for courses & folders (with recursive traversal)
@@ -105,11 +105,11 @@ Schema and content rules:
 const PROMPTS_REGISTRY: Record<string, { description: string; text: string }> = {
   convert_folder: {
     description: "Convert a shared folder / set of files (e.g. Google Drive) into Basmagi quizzes, lessons and MATLAB/C++ notebooks",
-    text: `Call get_authoring_guide(topic="convert") and follow it.\n- Inventory the folder recursively and read every file's real content.\n- Decide per file: questions/exams → quiz; lecture/notes → lesson; MATLAB code → notebook (runtime "matlab"); C++ code or C++ Jupyter notebooks → notebook (runtime "cpp"); other code languages remain non-runnable → offer a lesson with code blocks; unreadable/media-only files → skipped with a reason.\n- Show me one table (file → type → title → reason) and wait for my confirmation when anything is ambiguous or the folder is large; otherwise proceed.\n- Create one draft link per item (source = the file's own link), then give me a final table of links, warnings and skipped files. Nothing is published until I save.\n\nNow convert this folder:`,
+    text: `Call get_authoring_guide(topic="convert") and follow it.\n- Inventory the folder recursively and read every file's real content.\n- Decide per file: questions/exams → quiz; lecture/notes → lesson; MATLAB code → notebook (runtime "matlab"); C++ code or C++ Jupyter notebooks → notebook (runtime "cpp"); other code languages remain non-runnable → offer a lesson with code blocks; unreadable/media-only files → skipped with a reason.\n- Show me one table (file → type → title → reason) and wait for my confirmation when anything is ambiguous or the folder is large; otherwise proceed.\n- Create one link per item (source = the file's own link), then give me a final table of links, warnings and skipped files. Each item is added to my «محتواي» when I open its link.\n\nNow convert this folder:`,
   },
   matlab_notebook: {
     description: "Prompt for turning lecture/lab material into an executable MATLAB-style or C++17 notebook draft (create_notebook_import_link)",
-    text: `Call get_authoring_guide(topic="notebook") first, then build a notebook and call create_notebook_import_link (use dry_run first if unsure).\n- runtime MUST be "matlab" or "cpp". MATLAB is the educational browser subset, not MathWorks MATLAB. C++ uses a remote online compiler with replay semantics; use stdin only on C++ cells.\n- Alternate short Arabic-friendly Markdown explanations (math in LaTeX, no raw HTML) with small runnable code cells (code/comments/output stay left-to-right).\n- Use only the bundled sample images (test.png, testgray.png, pepper.png, Test2.png, GrayTest1.png, BinaryImage.png, GrayscaleImage.png, ColorImage.png, test_lookup.gif).\n- Set "language" to "en" or "ar" (the language of the Markdown explanations; it drives the notebook page direction and UI).\n- Respect limits: ≤200 cells, ≤20000 chars per cell, ≤300KB total.\n- Tell the user the link only opens a draft: an admin must review and save to publish.\n\nNow convert the material I provide:`,
+    text: `Call get_authoring_guide(topic="notebook") first, then build a notebook and call create_notebook_import_link (use dry_run first if unsure).\n- runtime MUST be "matlab" or "cpp". MATLAB is the educational browser subset, not MathWorks MATLAB. C++ uses a remote online compiler with replay semantics; use stdin only on C++ cells.\n- Alternate short Arabic-friendly Markdown explanations (math in LaTeX, no raw HTML) with small runnable code cells (code/comments/output stay left-to-right).\n- Use only the bundled sample images (test.png, testgray.png, pepper.png, Test2.png, GrayTest1.png, BinaryImage.png, GrayscaleImage.png, ColorImage.png, test_lookup.gif).\n- Set "language" to "en" or "ar" (the language of the Markdown explanations; it drives the notebook page direction and UI).\n- Respect limits: ≤200 cells, ≤20000 chars per cell, ≤300KB total.\n- Tell the user that opening the link adds the notebook straight to their «محتواي» (no admin review).\n\nNow convert the material I provide:`,
   },
   general_purpose_quiz: {
     description: "Standard prompt for generating quizzes from raw study material",
@@ -333,7 +333,7 @@ const TOOLS = [
   {
     name: "create_quiz_import_link",
     annotations: { title: "Create quiz (short import link)", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    description: "Validate a quiz and return ONE SHORT link (…/create-quiz?draft=CODE, valid 72h, no sign-in) that opens the Quiz Creator pre-filled. Nothing is published until the user saves in the editor. Returns ERRORS (nothing saved — fix and retry; they are the same checks the editor page and the upload step run) or a link plus WARNINGS. Call get_authoring_guide(topic='quiz') first for the schema. Essay questions: give `answer` and NO options.",
+    description: "Validate a quiz and return ONE SHORT link (…/my-content?draft=CODE, valid 72h, no sign-in). When the user opens it, the quiz is saved directly into their «محتواي» (highlighted as new) — no editor, no confirmation step. Returns ERRORS (nothing saved — fix and retry; they are the same checks the editor page and the upload step run) or a link plus WARNINGS. Call get_authoring_guide(topic='quiz') first for the schema. Essay questions: give `answer` and NO options.",
     inputSchema: {
       type: "object",
       properties: {
@@ -367,7 +367,7 @@ const TOOLS = [
   {
     name: "create_lesson_import_link",
     annotations: { title: "Create lesson (short import link)", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    description: "Validate a lesson and return ONE SHORT link (…/create-lesson?draft=CODE, valid 72h, no sign-in) that opens the Lesson Creator pre-filled. Nothing is published until the user saves. Returns ERRORS (nothing saved — fix and retry; they are the same checks the editor page and the upload step run) or a link plus WARNINGS. Call get_authoring_guide(topic='lesson') first for block types and structure tips.",
+    description: "Validate a lesson and return ONE SHORT link (…/my-content?draft=CODE, valid 72h, no sign-in). When the user opens it, the lesson is saved directly into their «محتواي» (highlighted as new) — no editor, no confirmation step. Returns ERRORS (nothing saved — fix and retry; they are the same checks the editor page and the upload step run) or a link plus WARNINGS. Call get_authoring_guide(topic='lesson') first for block types and structure tips.",
     inputSchema: {
       type: "object",
       properties: {
@@ -432,7 +432,7 @@ const TOOLS = [
   {
     name: "create_notebook_import_link",
     annotations: { title: "Create notebook (short import link)", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    description: "Validate an executable notebook and return ONE SHORT link (…/notebook/new?draft=CODE, valid 72h, no sign-in) that opens the Notebook Creator pre-filled for an admin to review. NOTHING is published by this tool — an admin must review and save in the editor. Uses the SAME validation as the editor and upload API; returns ERRORS (nothing saved) or a link plus WARNINGS. runtime is REQUIRED (\"matlab\" or \"cpp\"). Call get_authoring_guide(topic='notebook') first.",
+    description: "Validate an executable notebook and return ONE SHORT link (…/my-content?draft=CODE, valid 72h, no sign-in). When the user opens it, the notebook is saved directly into their «محتواي» (highlighted as new) — no admin review. Uses the SAME validation as the editor and upload API; returns ERRORS (nothing saved) or a link plus WARNINGS. runtime is REQUIRED (\"matlab\" or \"cpp\"). Call get_authoring_guide(topic='notebook') first.",
     inputSchema: {
       type: "object",
       properties: {
@@ -461,7 +461,7 @@ const TOOLS = [
   {
     name: "add_workspace_asset",
     annotations: { title: "Add a small image to a notebook draft (base64)", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    description: "Attach ONE image (png/jpg/webp/gif, ≤10 MB, ≤20 MB per draft) to a NOTEBOOK draft's workspace so cells can use it (imread('cat.png'), ![](cat.png)). Use ONLY for small files (≤ ~200 KB): you must write every base64 character yourself. For bigger files prefer add_workspace_asset_from_url or request_asset_upload. Files wait in temporary storage, expire with the draft (72h) and are NOT published unless the admin publishes the notebook. Same filename = replace.",
+    description: "Attach ONE image (png/jpg/webp/gif, ≤10 MB, ≤20 MB per draft) to a NOTEBOOK draft's workspace so cells can use it (imread('cat.png'), ![](cat.png)). Use ONLY for small files (≤ ~200 KB): you must write every base64 character yourself. For bigger files prefer add_workspace_asset_from_url or request_asset_upload. Files wait in temporary storage, expire with the draft (72h) and are copied into the user's browser workspace when they open the link. Same filename = replace.",
     inputSchema: { type: "object", properties: { code: { type: "string", description: "Draft code (10 chars) or its full link." }, filename: { type: "string", description: "Exact name the cells use, with extension, e.g. cat.png (never rename)." }, base64: { type: "string", description: "File bytes, base64 (no data: prefix)." } }, required: ["code", "filename", "base64"] },
   },
   {
@@ -479,7 +479,7 @@ const TOOLS = [
   {
     name: "update_import_draft",
     annotations: { title: "Edit a draft in place", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    description: "Edit an existing draft instead of re-sending it whole. The SAME link keeps working (expiry is renewed); the user just reloads/opens it again. Atomic: the whole patch is validated and, on any error, nothing changes. patch = { meta?: {title?, description?, source?}, ops?: [...] }. 1-based positions. Quiz ops: set_question{at,question} insert_question{at,question} append_questions{questions} delete_question{at} move_question{at,to}. Lesson ops: set_section/insert_section{at,section} append_sections{sections} delete_section{at} move_section{at,to}; set_block/insert_block{section,at,block} append_blocks{section,blocks} delete_block{section,at} move_block{section,at,to}. Both: replace_text{find,replace} (every string, e.g. fix a term everywhere). Questions/blocks use the same shape as the create tools.",
+    description: "Edit an existing draft instead of re-sending it whole. The SAME link keeps working (expiry is renewed). Only works BEFORE the user opens the link: opening it moves the item into their «محتواي» and the draft is deleted — after that, make a new draft (clone_to_draft is for public items only). Atomic: the whole patch is validated and, on any error, nothing changes. patch = { meta?: {title?, description?, source?}, ops?: [...] }. 1-based positions. Quiz ops: set_question{at,question} insert_question{at,question} append_questions{questions} delete_question{at} move_question{at,to}. Lesson ops: set_section/insert_section{at,section} append_sections{sections} delete_section{at} move_section{at,to}; set_block/insert_block{section,at,block} append_blocks{section,blocks} delete_block{section,at} move_block{section,at,to}. Both: replace_text{find,replace} (every string, e.g. fix a term everywhere). Questions/blocks use the same shape as the create tools.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1522,7 +1522,7 @@ async function handleCreateNotebookImportLink(args: any) {
   const s = v.stats!;
   const head = `✅ تم التحقق من الدفتر: ${s.cells} خلية (كود ${s.code} · نص ${s.markdown}).`;
   const how = short
-    ? `🔗 رابط قصير صالح ${DRAFT_TTL_HOURS} ساعة (بلا تسجيل دخول). يفتح محرر الدفاتر معبّأً للمراجعة؛ لن يُنشر شيء قبل أن يحفظه مشرف:\n${url}`
+    ? `🔗 رابط قصير صالح ${DRAFT_TTL_HOURS} ساعة (بلا تسجيل دخول). عند فتحه يُحفظ الدفتر مباشرة في «محتواي» ويظهر مميّزاً بشارة «جديد» (بدون مراجعة مشرف):\n${url}`
     : `🔗 تعذّر إنشاء رابط قصير فاستُخدم رابط الاستيراد الطويل (انسخه كاملاً دون تعديل):\n${url}`;
   return [head, how, formatIssues("الدفتر", v)].filter(Boolean).join("\n\n");
 }
@@ -1535,7 +1535,7 @@ async function handleCreateQuizImportLink(args: any) {
   const s = v.stats!;
   const head = `✅ تم التحقق من الامتحان: ${s.questions} سؤال (اختيار فردي ${s.mcq} · متعدد ${s.multiSelect} · مقالي ${s.essay}).`;
   const how = short
-    ? `🔗 رابط قصير صالح ${DRAFT_TTL_HOURS} ساعة (بلا تسجيل دخول). يفتح محرر الامتحان معبّأً؛ لن يُنشر شيء قبل أن يحفظه المستخدم:\n${url}`
+    ? `🔗 رابط قصير صالح ${DRAFT_TTL_HOURS} ساعة (بلا تسجيل دخول). عند فتحه يُحفظ الامتحان مباشرة في «محتواي» ويظهر مميّزاً بشارة «جديد»:\n${url}`
     : `🔗 تعذّر إنشاء رابط قصير فاستُخدم رابط الاستيراد الطويل (انسخه كاملاً دون تعديل):\n${url}`;
   return [head, how, formatIssues("الامتحان", v)].filter(Boolean).join("\n\n");
 }
@@ -1548,7 +1548,7 @@ async function handleCreateLessonImportLink(args: any) {
   const s = v.stats!;
   const head = `✅ تم التحقق من الدرس: ${s.sections} قسم، ${s.blocks} عنصر، ${s.questions} سؤال.`;
   const how = short
-    ? `🔗 رابط قصير صالح ${DRAFT_TTL_HOURS} ساعة (بلا تسجيل دخول). يفتح محرر الدرس معبّأً؛ لن يُنشر شيء قبل أن يحفظه المستخدم:\n${url}`
+    ? `🔗 رابط قصير صالح ${DRAFT_TTL_HOURS} ساعة (بلا تسجيل دخول). عند فتحه يُحفظ الدرس مباشرة في «محتواي» ويظهر مميّزاً بشارة «جديد»:\n${url}`
     : `🔗 تعذّر إنشاء رابط قصير فاستُخدم رابط الاستيراد الطويل (انسخه كاملاً دون تعديل):\n${url}`;
   return [head, how, formatIssues("الدرس", v)].filter(Boolean).join("\n\n");
 }
@@ -1601,7 +1601,7 @@ async function handleUpdateImportDraft(args: { code: string; patch: any }) {
   const stats = d.kind === "quiz" ? `${v.stats.questions} سؤال` : d.kind === "notebook" ? `${v.stats.cells} خلية` : `${v.stats.sections} قسم، ${v.stats.questions} سؤال`;
   return [
     `✅ تم تطبيق ${res.applied!.length} تعديل (${res.applied!.join("، ")}). المسودة الآن: ${stats}.`,
-    `🔗 نفس الرابط (صلاحيته جُدّدت ${DRAFT_TTL_HOURS} ساعة) — على المستخدم إعادة فتحه/تحديث الصفحة ليرى التعديل:\n${link}`,
+    `🔗 نفس الرابط (صلاحيته جُدّدت ${DRAFT_TTL_HOURS} ساعة) — التعديل يظهر عند فتح الرابط (إن كان المستخدم قد فتحه من قبل فقد أصبح العنصر في «محتواي» ولن يتأثر — أنشئ مسودة جديدة):\n${link}`,
     formatIssues("المسودة", v),
   ].filter(Boolean).join("\n\n");
 }
@@ -1716,7 +1716,7 @@ async function assetSummary(code: string, added: AssetResult) {
   if (!added.ok) return `❌ ${added.error}`;
   const all = await listDraftAssets(code);
   const total = all.reduce((s, a) => s + a.size, 0);
-  return `✅ ${added.name} (${Math.round(added.size / 1024)} KB) added to the draft workspace. Files now: ${all.map((a) => a.name).join(", ")} (${(total / 1048576).toFixed(1)} MB of 20 MB). They are temporary (expire with the draft) and are uploaded to the platform only if the admin publishes a notebook that references them.`;
+  return `✅ ${added.name} (${Math.round(added.size / 1024)} KB) added to the draft workspace. Files now: ${all.map((a) => a.name).join(", ")} (${(total / 1048576).toFixed(1)} MB of 20 MB). They are temporary (expire with the draft) and are copied into the user's browser workspace when they open the link.`;
 }
 
 async function handleAddAssetB64(args: { code: string; filename: string; base64: string }) {
@@ -1783,7 +1783,11 @@ async function handleDraftDelete(code: string): Promise<Response> {
   const json = (obj: unknown, status: number) => new Response(JSON.stringify(obj), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   if (!DRAFT_CODE_RE.test(code)) return json({ error: "invalid_code" }, 400);
   const { data } = await supabase.from("import_drafts").select("kind").eq("code", code).maybeSingle();
-  if (!data || data.kind !== "notebook") return json({ ok: true }, 200);
+  if (!data) return json({ ok: true }, 200);
+  if (data.kind !== "notebook") {
+    await supabase.from("import_drafts").delete().eq("code", code);
+    return json({ ok: true, removed: 0 }, 200);
+  }
   const files = await listDraftAssets(code);
   const paths = files.map((f) => `${code}/${f.name}`);
   if (paths.length) { await supabase.storage.from(DRAFT_ASSET_BUCKET).remove(paths); await supabase.rpc("storage_release", { p_bucket: DRAFT_ASSET_BUCKET, p_paths: paths }); }
@@ -1818,7 +1822,7 @@ async function handleRpcRequest(reqBody: any) {
           protocolVersion: "2024-11-05",
           capabilities: { tools: {}, prompts: {} },
           serverInfo: { name: "Basmagi Quiz Connector", version: "3.2.0" },
-          instructions: "Basmagi Quiz creates DRAFT links only: nothing is published until the user saves in the editor. Before creating any quiz, lesson or notebook, call get_authoring_guide. When the user asks to convert existing files or a whole folder (for example a shared Google Drive folder), call get_authoring_guide(topic=\"convert\") first: it explains how to decide per file between quiz, lesson and MATLAB/C++ notebook, when to confirm the plan with the user, and how to report the results.",
+          instructions: "Basmagi Quiz creates short links: when the user opens one it saves the item directly into their personal «محتواي» (private to their browser, highlighted as new); nothing is published to the public platform. Before creating any quiz, lesson or notebook, call get_authoring_guide. When the user asks to convert existing files or a whole folder (for example a shared Google Drive folder), call get_authoring_guide(topic=\"convert\") first: it explains how to decide per file between quiz, lesson and MATLAB/C++ notebook, when to confirm the plan with the user, and how to report the results.",
         },
       };
 

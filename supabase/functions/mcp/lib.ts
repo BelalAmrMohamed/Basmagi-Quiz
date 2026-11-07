@@ -251,7 +251,9 @@ export const DRAFT_CODE_RE = /^[2-9a-hj-km-np-z]{10}$/;
 export const DRAFT_TTL_HOURS = 72;
 
 export function draftUrl(kind: "quiz" | "lesson" | "notebook", code: string) {
-  return kind === "notebook" ? `${SITE}/notebook/new?draft=${code}` : `${SITE}/create-${kind}?draft=${code}`;
+  // Every kind opens «محتواي» directly: the item is saved there when the link is opened.
+  void kind;
+  return `${SITE}/my-content?draft=${code}`;
 }
 
 // ── Static content ──────────────────────────────────────────────────────────
@@ -303,16 +305,16 @@ export const AUTHORING_GUIDE: Record<string, string> = {
 1. Call get_authoring_guide topic=quiz|lesson|markdown once per conversation (this text).
 2. Source material attached by the user → read it fully; do NOT invent facts. Unsolved questions → solve them carefully, then explain.\n   - User gave a FOLDER or several files to convert (e.g. a shared Google Drive folder)? Call get_authoring_guide topic=convert first: it says how to decide quiz vs lesson vs notebook per file, when to confirm with the user, and how to report.
 3. Build the object, then call create_quiz_import_link / create_lesson_import_link / create_notebook_import_link (topic=notebook for executable MATLAB-style or C++17 notebooks).
-   - Result is ONE short link: ${SITE}/create-quiz?draft=<code> (valid ${DRAFT_TTL_HOURS}h, no sign-in needed).
+   - Result is ONE short link: ${SITE}/my-content?draft=<code> (valid ${DRAFT_TTL_HOURS}h, no sign-in needed).
    - If the result lists ERRORS nothing was saved: fix exactly what it says and call again.
    - The errors are the SAME checks the editor page and the upload step run, so a draft that passes here will not fail later. Each error names the question/block and how to fix it.
    - WARNINGS are saved but worth fixing; mention important ones to the user.
-4. Give the user the link as-is (never edit/re-encode it) and tell them to open it, review, then press save/publish in the editor. Nothing is published until they do.
+4. Give the user the link as-is (never edit/re-encode it) and tell them to open it: the item is saved straight into their «محتواي» and shown there with a «جديد» badge (no editor step, no confirmation, no admin review). It is saved in their own browser only, not published to the public platform. Edit a draft with update_import_draft BEFORE they open the link; once opened, the item lives in «محتواي» and the draft is gone.
 5. Revising: do NOT rebuild and re-send everything.
    - get_import_draft(code) → numbered outline → update_import_draft(code, patch) with only the change (same link stays valid; 1-based positions; atomic).
    - Improve/translate/extend something that already exists: clone_to_draft(type,id), then patch. Inspect originals cheaply with get_quiz / get_lesson_content format="outline".
    - Not sure the content is valid? create_*_import_link with dry_run=true validates without saving.
-   - Re-opening an updated link REPLACES whatever is currently in the user's editor, so patch before they start editing, and say so.
+   - Patching only works while the link is unopened: opening it saves the item into the user's «محتواي» and deletes the draft. To change an already-opened item, create a new draft (the user can delete the old one).
 6. Check for existing content first with search_catalog to avoid duplicates, and offer to link related lessons/quizzes (quizRef / lesson-reference blocks).
 Language: write quiz/lesson text in the language of the source material (usually Arabic). Keep tool arguments (field names) in English.`,
 
@@ -361,9 +363,9 @@ Authoring tips:
 - Alternate short markdown explanations with small runnable code cells; one idea per cell; prefer 5–40 lines per code cell.
 - Markdown is Arabic-friendly (direction detected per block); code, comments in code and output are always left-to-right. Avoid raw HTML. Math in LaTeX ($...$ / $$...$$).
 - Image examples may only use the bundled sample images (test.png, testgray.png, pepper.png, Test2.png, GrayTest1.png, BinaryImage.png, GrayscaleImage.png, ColorImage.png, test_lookup.gif); learners can upload their own.
-- Your own images (png/jpg/webp/gif; names are used exactly as written, never renamed): after create_notebook_import_link, attach each file the cells use to the SAME draft code — cells then use imread("cat.png") / ![](cat.png). Pick by size: ≤ ~200 KB → add_workspace_asset (base64: you must write every character, so never for bigger files); a public image link or a Drive file shared "Anyone with the link" → add_workspace_asset_from_url (server downloads it, any size ≤10 MB); a file on a disk you can run commands on (user attachment under /mnt/user-data/uploads, Claude Code / Cowork) → request_asset_upload and run the curl it returns. If none works (private Drive file, blocked network), do NOT skip silently: tell the user which images to add themselves (workspace panel → Upload, or Import from Google Drive in the editor). Limits: 10 MB per file, 20 MB per draft; files are temporary (they expire with the 72h draft) and reach platform storage only if an admin publishes the notebook, and only the ones the cells reference.
+- Your own images (png/jpg/webp/gif; names are used exactly as written, never renamed): after create_notebook_import_link, attach each file the cells use to the SAME draft code — cells then use imread("cat.png") / ![](cat.png). Pick by size: ≤ ~200 KB → add_workspace_asset (base64: you must write every character, so never for bigger files); a public image link or a Drive file shared "Anyone with the link" → add_workspace_asset_from_url (server downloads it, any size ≤10 MB); a file on a disk you can run commands on (user attachment under /mnt/user-data/uploads, Claude Code / Cowork) → request_asset_upload and run the curl it returns. If none works (private Drive file, blocked network), do NOT skip silently: tell the user which images to add themselves (workspace panel → Upload, or Import from Google Drive in the editor). Limits: 10 MB per file, 20 MB per draft; files are temporary (they expire with the 72h draft) and are copied into the user's browser workspace for the notebook when they open the link.
 - Only authored source is stored. Learner outputs/edits stay in the learner's browser (autosave) and are never graded or synced.
-- Notebooks are published only by an admin pressing save in the editor — MCP only creates a draft link.`,
+- Notebooks need NO admin approval: opening the link saves the notebook into the user's «محتواي» like quizzes and lessons.`,
 
   convert: `# Converting existing files / a whole folder (Google Drive, uploads, links)
 Use this when the user shares a folder or several files (usually from Google Drive) and asks to convert / upload / move them to Basmagi. YOU decide what each file becomes — never push everything into one type.
@@ -392,7 +394,7 @@ Use this when the user shares a folder or several files (usually from Google Dri
 ## 4. Create
 - One item at a time: read the file → build → dry_run if unsure → create_*_import_link → keep the link. Fix ERRORS and retry; mention important WARNINGS. For big results create the draft, then refine with update_import_draft instead of re-sending.
 - A notebook that uses images from the folder: attach them with the asset tools described in the notebook guide (add_workspace_asset_from_url works with the Drive share link when the file is shared \"Anyone with the link\"); list in the final report any image the user must add by hand.
-- Each item gets its own draft link; drafts live ${DRAFT_TTL_HOURS}h, so tell the user to open them soon. Nothing is published until the user saves in the editor (notebooks: an admin must save).
+- Each item gets its own draft link; drafts live ${DRAFT_TTL_HOURS}h, so tell the user to open them soon. Opening a link saves that item straight into their «محتواي» (no editor step, no admin review for notebooks).
 
 ## 5. Final report
 One table: file → type → draft link → warnings. Then "skipped" (with reasons) and anything needing the user's decision. Never say something was published.`,

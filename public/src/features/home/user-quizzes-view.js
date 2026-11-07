@@ -53,6 +53,7 @@ import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
 import { createUserQuizCard, createUserLessonCard, createUserNotebookCard } from "./user-quiz-card.js";
+import { takePendingHighlight } from "./mcp-draft-import.js";
 import { openInlineCreateQuizModal } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
@@ -560,6 +561,26 @@ async function handleQuizToolCall(toolCall) {
 /**
  * Render user-created quizzes VIEW (Folder Content)
  */
+/** Marks the card of a freshly created item (looked up by data-item-id). No-op if it is not on this level. */
+function highlightNewItem(container, itemId) {
+  if (!itemId) return;
+  const card = Array.from(container.querySelectorAll("[data-item-id]")).find((el) => el.dataset.itemId === itemId);
+  if (!card) return;
+  card.classList.add("mcp-new-item");
+  const badge = document.createElement("span");
+  badge.className = "mcp-new-badge";
+  badge.textContent = "جديد";
+  card.appendChild(badge);
+  const clear = () => {
+    card.classList.remove("mcp-new-item");
+    badge.remove();
+  };
+  // The glow fades by itself; the badge stays until the user interacts with the card (or ~20 s).
+  card.addEventListener("click", clear, { once: true });
+  setTimeout(clear, 20000);
+  requestAnimationFrame(() => card.scrollIntoView({ behavior: "smooth", block: "center" }));
+}
+
 export function renderUserQuizzesView() {
   try {
     const selectedUserQuizzes = getSelectedUserQuizzes();
@@ -933,6 +954,7 @@ export function renderUserQuizzesView() {
             e.stopPropagation();
             showContextMenu(e, "item", item.id || item.meta?.id, item.meta?.title);
           });
+          quizCard.dataset.itemId = item.id || item.meta?.id || "";
           quizzesContainer.appendChild(quizCard);
         }
       });
@@ -946,6 +968,10 @@ export function renderUserQuizzesView() {
     // needed to reach the same modal.
 
     container.appendChild(quizzesContainer);
+
+    // An item that was just created from an MCP link gets a «جديد» badge +
+    // glow and is scrolled into view (see .mcp-new-item in index.css).
+    highlightNewItem(quizzesContainer, takePendingHighlight());
 
     // ── AI Helper — floating action button that opens the modal widget on
     // click (see public/src/components/ai-agent/ai-agent.js). Mounted once

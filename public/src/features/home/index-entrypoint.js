@@ -26,6 +26,7 @@ import { syncAdminSessionWithSupabase } from "./session-sync.js";
 import { initApp, restoreViewFromURL } from "./navigation.js";
 import { renderRootCategories } from "./root-view.js";
 import { renderUserQuizzesView } from "./user-quizzes-view.js";
+import { importMcpDraftFromUrl } from "./mcp-draft-import.js";
 import { setFolderState } from "./user-quizzes-folders.js";
 import { initCustomTooltips } from "../../components/tooltip/tooltip.js";
 import { startQuiz } from "./quiz-navigation.js";
@@ -164,10 +165,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  initApp().catch((err) => {
-    console.error("Init error:", err);
-    if (typeof renderRootCategories === "function") renderRootCategories();
-  });
+  // MCP draft link (/my-content?draft=<code>): save the item into «محتواي»
+  // BEFORE the first render so the grid already contains it (and can highlight it).
+  // Never throws; the page loads normally if the link is bad or expired.
+  importMcpDraftFromUrl()
+    .catch((err) => console.error("MCP draft import failed:", err))
+    .then(() => initApp())
+    .catch((err) => {
+      console.error("Init error:", err);
+      if (typeof renderRootCategories === "function") renderRootCategories();
+    });
 
   // ── Keyboard shortcuts: "/" or Ctrl+K → open search; "?" → shortcuts overlay
   // Original lines 4867-4914.

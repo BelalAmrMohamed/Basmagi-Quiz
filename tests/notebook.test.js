@@ -99,7 +99,7 @@ test("compiler lesson conversion preserves cell order, code and markdown exactly
 });
 
 test("MCP: draft url, guide, outline, patch ops, round-trip", () => {
-  assert.equal(draftUrl("notebook", "abcdefghjk"), "https://basmagi-quiz.vercel.app/notebook/new?draft=abcdefghjk");
+  assert.equal(draftUrl("notebook", "abcdefghjk"), "https://basmagi-quiz.vercel.app/my-content?draft=abcdefghjk");
   assert.match(AUTHORING_GUIDE.notebook, /NOT MathWorks MATLAB/);
   const v = mcpValidate(ok);
   assert.match(outlineNotebook(v.data), /cells: 2/);

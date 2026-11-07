@@ -44,24 +44,6 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 
 ## New Features
 
-### MCP Server: Creating Lessons, Quizzes, & Notebooks
-* Open drafts in user content directly, not inside the create pages. 
-* So when a user uses the MCP Server to create an item, opens the draft link provided by AI, the link opens inside `/my-content` with the item already created.
-
-Q: What does “already created” mean exactly? Should the draft be automatically saved/published to the database when the user clicks the link — so they land on `/my-content` and see the item already there? Or should it open `/my-content` with a modal/panel showing the draft ready to confirm & save?
-A: It should open `/my-content` WITHOUT a modal/panel showing the draft ready to confirm & save. It should be already saved.
-
-Q: Who can create items? Currently the create tools work without sign-in (the draft code is enough). If the item gets auto-created on link open, the user needs to be authenticated. Is that okay — meaning only signed-in users would see the item appear in their content?
-A: The same people that could do it before: Everyone. We are just changing the "Where"
-
-Q: For notebooks specifically, the current flow says “an admin must review and save.” Should notebooks still require admin approval, or should they also auto-create for the user who opens the link?
-A: They are just for everyone, to admin approval at all.
-
-Q: What is `/my-content`? Is that a page that already exists in the codebase, or is it something new? I saw `create-quiz.html` and `profile.html` in `public/` — is there a `my-content.html` or similar?
-A: Yes, it's the `/my-content` it's that a page that already exists in the codebase.
-
-I want that when the draft is created inside the `/my-content` page, it gets highlighted or atleast a notification that tells that user that the "<title>" was created, or some UI/UX feedback that indicates to the user which one is is the new item.
-
 #### Documentation
 * Move the MCP-related docs from the `/how-to-use-ai-agent` to a new independent page with steps screenshots from: public\assets\document-pages
 
@@ -121,8 +103,6 @@ Redesign the whole page:
    1. `مسار تعليمي نشط`: Shows the actual `Active learning paths`
    2. `صانع محتوى`: Shows the top admins/developers. 
       1. Suggestion (Not Confirmed): with a link to see all of them.
-
-`مقرر دراسي`: Change it to: `مقرر دراسي (مادة)`
 
 ### Create Quiz Page
 `create-quiz.js` is 5000+ lines in one file — It's the right time to split it into modules.
