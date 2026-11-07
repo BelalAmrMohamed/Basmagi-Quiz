@@ -10,13 +10,20 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../../public/src/shared/publ
 import { createCppEngine, CPP_AR, type CppExecute } from './engine';
 
 const execute: CppExecute = async ({ cells, target, signal }) => {
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/cpp-run`, {
-    method: 'POST',
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ cells, target }), signal,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${SUPABASE_URL}/functions/v1/cpp-run`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ cells, target }), signal,
+    });
+  } catch (e) {
+    if ((e as Error)?.name === 'AbortError') throw e;
+    // fetch() rejects with a bare TypeError for offline, DNS failure and blocked CORS alike.
+    throw new Error('Could not reach the compile service (network error, or this site is not in the function\'s ALLOWED_ORIGINS).');
+  }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : `Compiler service returned HTTP ${response.status}.`);
+  if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : `Compile service returned HTTP ${response.status}.`);
   return data;
 };
 

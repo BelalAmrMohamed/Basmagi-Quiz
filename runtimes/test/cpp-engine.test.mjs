@@ -46,9 +46,33 @@ test('timeout reports a message', async () => {
   const e = createCppEngine({ timeoutMs: 10, execute: ({ signal }) => new Promise((_, rej) => signal.addEventListener('abort', () => rej(Object.assign(new Error('x'), { name: 'AbortError' })))) });
   const { sink, log } = sinkOf();
   await e.run({ cells: [cells[0]], target: 0, signal: new AbortController().signal }, sink);
-  assert.match(log.status.at(-1)[0], /Time limit/);
+  assert.match(log.status.at(-1)[0], /No response from the compile service/);
 });
 test('caps: only stdin', () => {
   const e = createCppEngine({ execute: async () => ({ ok: true }) });
   assert.deepEqual(e.caps, { workspace: false, files: false, images: false, stdin: true, history: false });
+});
+test('compile error status names the provider and explains an empty diagnostic', async () => {
+  const e = createCppEngine({ execute: async () => ({ ok: false, compile: '', provider: 'wandbox' }) });
+  const { sink, log } = sinkOf();
+  await e.runAll({ cells: [cells[0]], target: 'all', signal: new AbortController().signal }, sink);
+  assert.deepEqual(log.status.at(-1), ['Compile error · wandbox', 'error']);
+  assert.match(log.out[0][1].s, /no diagnostics/);
+});
+test('service errors from the Edge Function are shown verbatim in the cell and status', async () => {
+  const msg = 'Compiler unavailable. Wandbox: timed out after 12.0 s; Piston: not configured (set PISTON_TOKEN). Please retry in a moment.';
+  const e = createCppEngine({ execute: async () => { throw new Error(msg); } });
+  const { sink, log } = sinkOf();
+  await e.run({ cells: [cells[0]], target: 0, signal: new AbortController().signal }, sink);
+  assert.equal(log.out[0][1].s, msg + '\n');
+  assert.deepEqual(log.status.at(-1), [msg, 'error']);
+});
+test('attach() feeds notebook cells to the completion source', async () => {
+  const e = createCppEngine({ execute: async () => ({ ok: true }) });
+  e.attach({ codeSources: () => ['int totalCount = 0;'] });
+  const { EditorState } = await import('@codemirror/state');
+  const src = 'tot', state = EditorState.create({ doc: src });
+  const ctx = { state, pos: 3, explicit: false, matchBefore: (re) => { const m = src.match(new RegExp('(?:' + re.source + ')$')); return m ? { from: 3 - m[0].length, to: 3, text: m[0] } : null; } };
+  const sources = [].concat(e.editor.completions);
+  assert.ok(sources[0](ctx).options.some((o) => o.label === 'totalCount'));
 });

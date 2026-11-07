@@ -5,7 +5,7 @@
 // style, through sink.input().
 // =============================================================================
 import { cpp } from '@codemirror/lang-cpp';
-import type { CompletionSource } from '@codemirror/autocomplete';
+import { cppCompletions } from './completions';
 import type { Engine, Cell, RunRequest, RunSink } from '../../shared/engine';
 
 export type CppRunResponse = {
@@ -21,17 +21,11 @@ export const CPP_AR: Record<string, string> = {
   'Exit': 'الخروج',
   'Empty cell skipped': 'تم تجاوز الخلية الفارغة',
   'Compiler request failed.': 'فشل طلب المترجم.',
-  'Time limit reached (25 s).': 'انتهت المهلة (25 ثانية).',
+  'No response from the compile service within 25 s.': 'لم تصل أي استجابة من خدمة التجميع خلال 25 ثانية.',
+  'The compiler returned no diagnostics.': 'لم يُرجع المترجم أي رسائل.',
   'output truncated': 'تم اقتطاع المخرجات',
   'Compiler messages': 'رسائل المترجم',
   'Standard input · Cell {n}': 'الإدخال القياسي · الخلية {n}',
-};
-
-const KEYWORDS = ['bool', 'break', 'case', 'catch', 'char', 'class', 'const', 'constexpr', 'continue', 'cout', 'cin', 'double', 'else', 'enum', 'false', 'float', 'for', 'if', 'int', 'long', 'namespace', 'nullptr', 'private', 'protected', 'public', 'return', 'short', 'signed', 'std::array', 'std::cin', 'std::cout', 'std::map', 'std::set', 'std::string', 'std::unordered_map', 'std::vector', 'struct', 'switch', 'template', 'true', 'try', 'typedef', 'unsigned', 'using', 'void', 'while'];
-const keywordCompletions: CompletionSource = (ctx) => {
-  const w = ctx.matchBefore(/[\w:]+/);
-  if (!w || (w.from === w.to && !ctx.explicit)) return null;
-  return { from: w.from, options: KEYWORDS.map((label) => ({ label, type: 'keyword' })) };
 };
 
 const USES_CIN = /(?:\bstd\s*::\s*)?\bcin\b/;
@@ -50,6 +44,8 @@ export function parseCompile(text: string): { diags: Array<{ k: number; line: nu
 }
 
 export function createCppEngine(o: CppEngineOptions): Engine {
+  // Filled in by the shell through attach(); completions read it lazily on every keystroke.
+  let codeSources: () => string[] = () => [];
   const tr = (s: string) => (o.lang === 'ar' && CPP_AR[s]) || s;
   const timeoutMs = o.timeoutMs ?? 25000;
 
@@ -94,7 +90,11 @@ export function createCppEngine(o: CppEngineOptions): Engine {
         }
         if (rest && (!res.ok || !diags.length)) sink.out({ k: res.ok ? 'warn' : 'err', s: rest + '\n' }, selected[0].idx);
       }
-      if (!res.ok) { sink.status(tr('Compile error'), 'error'); return; }
+      if (!res.ok) {
+        if (!res.compile) sink.out({ k: 'err', s: tr('The compiler returned no diagnostics.') + '\n' }, selected[0].idx);
+        sink.status(tr('Compile error') + (res.provider ? ' · ' + res.provider : ''), 'error');
+        return;
+      }
       const sections = res.sections || [];
       selected.forEach((a, i) => {
         const s = sections[all ? i : 0] || {};
@@ -105,7 +105,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
       void hasErr;
     } catch (e) {
       if (req.signal.aborted) return;
-      const msg = timedOut ? tr('Time limit reached (25 s).') : (e as Error)?.message || tr('Compiler request failed.');
+      const msg = timedOut ? tr('No response from the compile service within 25 s.') : (e as Error)?.message || tr('Compiler request failed.');
       sink.out({ k: 'err', s: msg + '\n' }, selected[0].idx);
       sink.status(msg, 'error');
     } finally {
@@ -118,7 +118,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
     id: 'cpp', label: 'C++17', kernelDisplay: 'C++17', language: 'C++', mimetype: 'text/x-c++src',
     importAccept: '.cpp,.cc,.cxx,.h,.hpp,.ipynb,.notebook.zip',
     legacyStoreKey: (id) => `basmagi:nb:${id}:v1`,
-    editor: { extensions: () => [cpp()], completions: keywordCompletions },
+    editor: { extensions: () => [cpp()], completions: cppCompletions({ codeSources: () => codeSources() }) },
     help: {
       intro: 'Shift+Enter runs the selected code cell and advances. Ctrl+Enter runs it in place. Earlier cells replay on each run; use const globals or //@global for shared declarations. A cell that uses cin asks for its own input when it runs.',
       items: [['Shared declarations', 'Earlier cells replay on each run. Use const globals or //@global for declarations shared between cells.', 'تُعاد الخلايا السابقة عند كل تشغيل؛ استخدم const أو //@global للمشاركة بين الخلايا.'],
@@ -128,6 +128,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
     exportExt: '.cpp', kernel: 'xcpp17',
     run: (req, sink) => go(req, sink, false),
     runAll: (req, sink) => go(req, sink, true),
+    attach(host) { codeSources = host.codeSources; },
     reset() {}, dispose() {},
   };
 }
