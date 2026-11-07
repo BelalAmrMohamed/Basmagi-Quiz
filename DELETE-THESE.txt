@@ -1,5 +1,0 @@
-Delete these 4 old files (moved up into runtimes/):
-runtimes/cpp/package.json
-runtimes/cpp/package-lock.json
-runtimes/cpp/build.mjs
-runtimes/cpp/tsconfig.json

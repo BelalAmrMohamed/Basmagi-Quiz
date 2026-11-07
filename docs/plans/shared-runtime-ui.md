@@ -54,7 +54,7 @@ Create `runtimes/matlab/src/{index.ts,engine.ts,completions.ts,indent.ts,worker.
 
 **Done when:** all items in the manual checklist below pass for MATLAB.
 
-## [] Phase 4: C++ engine on the shared UI
+## [x] Phase 4: C++ engine on the shared UI
 - `runtimes/cpp/src/engine.ts` keeps only the existing `execute` (the `cpp-run` Edge Function call), the cell assembly, and `@codemirror/lang-cpp`. Caps: all false except `stdin`.
 - Compiler errors become `{k:'diag'}` outputs, which the shared UI renders. The stdin request uses the shared prompt dialog. Compile status uses `sink.status`.
 - **Delete** `runtimes/cpp/src/notebook-shell.ts` and `style.css`. `public/assets/notebook-runtime-cpp/runtime.css` is now just the shared CSS.
@@ -71,7 +71,7 @@ Replace the string-grep `tests/notebook-shell-parity.test.js` with:
 5. Add `npm run test:runtimes`.
 
 ## [] Phase 6: Cleanup and docs
-1. Delete `online-matlab-compiler/` from this repo only after Phases 3 to 5 are green.
+1. Delete `online-matlab-compiler/` from this repo only after Phases 3 to 5 are green. User (Me) will delete it in his copy.
 2. Add `docs/runtimes.md`: the architecture, the Engine contract, and "add a runtime in 4 steps":
    - Create `runtimes/<id>/src/engine.ts`.
    - Add an entry to `runtime-config.js`.
