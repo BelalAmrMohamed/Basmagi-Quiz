@@ -40,8 +40,8 @@ const NOINDEX_PAGES = [
 const STATIC_INDEXABLE_PAGES = [
     "/about",
     "/create-quiz",
-    "/how-to-create-a-quiz",
-    "/how-to-upload-a-quiz",
+    "/how-to-create-content",
+    "/how-to-upload-content",
     "/how-to-use-ai-agent",
     "/privacy-policy",
     "/terms-of-service",

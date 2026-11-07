@@ -511,8 +511,8 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── favicon.svg
 │   ├── google0c1df2c3df22a824.html
 │   ├── google67d62c2618576950.html
-│   ├── how-to-create-a-quiz.html
-│   ├── how-to-upload-a-quiz.html
+│   ├── how-to-create-content.html
+│   ├── how-to-upload-content.html
 │   ├── how-to-use-ai-agent.html
 │   ├── index.html
 │   ├── lesson.html

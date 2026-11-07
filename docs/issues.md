@@ -86,6 +86,9 @@ Add dictation feature for essays in quizzes and lessons
     * When window is open, maximized or minimized, the الباشــمبصمج's fab becomes hidden, until the window is closed.
     * When the window is minimized and there was a prompt running, it should continue running with an animation on the minimized state indicating so.
 
+### Update the `createEmptyState`
+* Update the `createEmptyState` to include a link to the `/how-to-create-content`
+
 ### Result Pages
 
 #### Videos (Easy to make and intersting idea)

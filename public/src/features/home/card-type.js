@@ -19,7 +19,7 @@ export function tagCardType(card, kind) {
 }
 
 /**
- * Small chip shown at the top of a card, e.g. "💻 دفتر · MATLAB (تعليمي)".
+ * Small chip shown at the top of a card, e.g. "💻 دفتر · MATLAB".
  * `detail` is optional extra text (the notebook runtime).
  */
 export function createTypeChip(kind, detail = "") {

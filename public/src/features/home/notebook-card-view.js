@@ -10,7 +10,7 @@ import { MORE_DOTS_ICON_SVG, DOWNLOAD_ICON_SVG } from "./icons.js";
 import { RUNTIME_CONFIG } from "../../shared/runtime-config.js";
 import { withDownloadLoading } from "../../components/download-quiz-modal/export-card.js";
 
-export const RUNTIME_LABELS = { matlab: "MATLAB (تعليمي)", cpp: "C++" };
+export const RUNTIME_LABELS = { matlab: "MATLAB", cpp: "C++" };
 
 export function runtimeLabel(runtime) {
   return RUNTIME_CONFIG[runtime]?.label === "C++" ? "C++" : RUNTIME_LABELS[runtime] || RUNTIME_CONFIG[runtime]?.label || runtime || "";

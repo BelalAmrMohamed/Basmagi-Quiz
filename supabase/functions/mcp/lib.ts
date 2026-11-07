@@ -292,8 +292,8 @@ export const CREATOR_INFO: Record<string, string> = {
   pages: `## صفحات مفيدة
 - ${SITE}/create-quiz — إنشاء امتحان
 - ${SITE}/create-lesson — إنشاء درس
-- ${SITE}/how-to-create-a-quiz — شرح إنشاء امتحان
-- ${SITE}/how-to-upload-a-quiz — شرح رفع امتحان
+- ${SITE}/how-to-create-content — شرح إنشاء امتحان
+- ${SITE}/how-to-upload-content — شرح رفع امتحان
 - ${SITE}/how-to-use-ai-agent — شرح استخدام المساعد الذكي
 - ${SITE}/privacy-policy · ${SITE}/terms-of-service`,
 };

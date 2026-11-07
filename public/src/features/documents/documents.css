@@ -675,7 +675,7 @@ html[data-motion="reduced"] *::after {
     border-color: var(--accent);
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 8%, var(--bg));
-    
+
 }
 
 .doc-video-chip.is-active {
@@ -714,7 +714,7 @@ html[data-motion="reduced"] *::after {
 
 /* ─────────────────────────────────────────
     SUB-HEADINGS, NUMBERED LISTS & INLINE CODE (inside .section)
-    Used by how-to-use-ai-agent / how-to-create-a-quiz. The global reset
+    Used by how-to-use-ai-agent / how-to-create-content. The global reset
     zeroes every margin/padding, so <ol>, <h3> and <code> need explicit rules
     or numbers sit outside the text column and subheadings touch the
     paragraph above them.
@@ -901,7 +901,7 @@ html[data-motion="reduced"] *::after {
 
 .doc-download-btn:hover {
     background: var(--accent-mid);
-    
+
     box-shadow: 0 6px 16px rgba(0, 0, 0, .18);
 }
 
