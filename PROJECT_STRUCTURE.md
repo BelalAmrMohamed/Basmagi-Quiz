@@ -17,7 +17,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 ├── PROJECT_STRUCTURE.md
 ├── README.md
 ├── vercel.json
-├── api/ [746.56 KB, 17095 LOC]
+├── api/ [747.07 KB, 17108 LOC]
 │   ├── _og/ [158.71 KB, 3496 LOC]
 │   │   ├── blocks.js
 │   │   ├── common.js
@@ -67,19 +67,20 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── upload-quiz.js
 │   └── user-profile.js
 │
-├── docs/ [71.57 KB, 930 LOC]
-│   ├── plans/ [45.49 KB, 398 LOC]
+├── docs/ [64.28 KB, 861 LOC]
+│   ├── plans/ [37 KB, 320 LOC]
 │   │   ├── advanced-read-aloud.md
 │   │   ├── ai-agent-on-quiz-page-prompt.md
-│   │   ├── Cpp-Runtime-Implementation-Plan.md
-│   │   └── lesson-video-export-plan.md
+│   │   ├── lesson-video-export-plan.md
+│   │   └── shared-runtime-ui.md
 │   │
 │   ├── Database-Schema-Context.md
 │   ├── issues.md
-│   └── NOTES.md
+│   ├── NOTES.md
+│   └── runtimes.md
 │
-├── public/ [205.26 MB, 150489 LOC]
-│   ├── assets/ [199.62 MB, 2675 LOC]
+├── public/ [14.64 MB, 149848 LOC]
+│   ├── assets/ [8.95 MB, 1021 LOC]
 │   │   ├── downloads/ [2.63 KB, 12 LOC]
 │   │   │   └── basmagi-quiz-authoring.skill
 │   │   │
@@ -132,7 +133,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   ├── word_icon.png
 │   │   │   └── youtube-icon.webp
 │   │   │
-│   │   ├── notebook-runtime/ [1.35 MB, 2462 LOC]
+│   │   ├── notebook-runtime/ [1.89 MB, 466 LOC]
 │   │   │   ├── assets/ [834.63 KB, 10 LOC]
 │   │   │   │   ├── BinaryImage.png.json
 │   │   │   │   ├── ColorImage.png.json
@@ -145,142 +146,60 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── Test2.png.json
 │   │   │   │   └── testgray.png.json
 │   │   │   │
+│   │   │   ├── fonts/ [253.7 KB, 0 LOC]
+│   │   │   │   ├── KaTeX_AMS-Regular.woff2
+│   │   │   │   ├── KaTeX_Caligraphic-Bold.woff2
+│   │   │   │   ├── KaTeX_Caligraphic-Regular.woff2
+│   │   │   │   ├── KaTeX_Fraktur-Bold.woff2
+│   │   │   │   ├── KaTeX_Fraktur-Regular.woff2
+│   │   │   │   ├── KaTeX_Main-Bold.woff2
+│   │   │   │   ├── KaTeX_Main-BoldItalic.woff2
+│   │   │   │   ├── KaTeX_Main-Italic.woff2
+│   │   │   │   ├── KaTeX_Main-Regular.woff2
+│   │   │   │   ├── KaTeX_Math-BoldItalic.woff2
+│   │   │   │   ├── KaTeX_Math-Italic.woff2
+│   │   │   │   ├── KaTeX_SansSerif-Bold.woff2
+│   │   │   │   ├── KaTeX_SansSerif-Italic.woff2
+│   │   │   │   ├── KaTeX_SansSerif-Regular.woff2
+│   │   │   │   ├── KaTeX_Script-Regular.woff2
+│   │   │   │   ├── KaTeX_Size1-Regular.woff2
+│   │   │   │   ├── KaTeX_Size2-Regular.woff2
+│   │   │   │   ├── KaTeX_Size3-Regular.woff2
+│   │   │   │   ├── KaTeX_Size4-Regular.woff2
+│   │   │   │   └── KaTeX_Typewriter-Regular.woff2
+│   │   │   │
 │   │   │   ├── runtime.css
 │   │   │   ├── runtime.js
 │   │   │   └── worker.js
 │   │   │
-│   │   ├── notebook-runtime-cpp/ [516.84 KB, 76 LOC]
-│   │   │   ├── runtime.css
-│   │   │   └── runtime.js
-│   │   │
-│   │   ├── profile-featured/ [7.06 MB, 0 LOC]
-│   │   │   ├── pictures/ [545.56 KB, 0 LOC]
-│   │   │   │   ├── 1.jpg
-│   │   │   │   ├── 10.jpg
-│   │   │   │   ├── 11.jpg
-│   │   │   │   ├── 12.jpg
-│   │   │   │   ├── 13.jpg
-│   │   │   │   ├── 14.jpg
-│   │   │   │   ├── 15.jpg
-│   │   │   │   ├── 16.jpg
-│   │   │   │   ├── 2.jpg
-│   │   │   │   ├── 3.jpg
-│   │   │   │   ├── 4.jpg
-│   │   │   │   ├── 5.jpg
-│   │   │   │   ├── 6.jpg
-│   │   │   │   ├── 7.jpg
-│   │   │   │   ├── 8.jpg
-│   │   │   │   └── 9.jpg
-│   │   │   │
-│   │   │   └── thumbnails/ [6.53 MB, 0 LOC]
-│   │   │       ├── 1.jpg
-│   │   │       ├── 10.jpg
-│   │   │       ├── 11.jpg
-│   │   │       ├── 12.jpg
-│   │   │       ├── 2.jpg
-│   │   │       ├── 3.jpg
-│   │   │       ├── 4.jpg
-│   │   │       ├── 5.jpg
-│   │   │       ├── 6.jpg
-│   │   │       ├── 7.jpg
-│   │   │       ├── 8.jpg
-│   │   │       └── 9.jpg
-│   │   │
-│   │   ├── quiz-media/ [177.9 MB, 0 LOC]
-│   │   │   ├── Cambridge_2019/ [103.65 MB, 0 LOC]
-│   │   │   │   ├── Test1 Part1.mp3
-│   │   │   │   ├── Test1 Part2.mp3
-│   │   │   │   ├── Test1 Part3.mp3
-│   │   │   │   ├── Test1 Part4.mp3
-│   │   │   │   ├── Test2 Part1.mp3
-│   │   │   │   ├── Test2 Part2.mp3
-│   │   │   │   ├── Test2 Part3.mp3
-│   │   │   │   ├── Test2 Part4.mp3
-│   │   │   │   ├── Test3 Part1.mp3
-│   │   │   │   ├── Test3 Part2.mp3
-│   │   │   │   ├── Test3 Part3.mp3
-│   │   │   │   ├── Test3 Part4.mp3
-│   │   │   │   ├── Test4 Part1.mp3
-│   │   │   │   ├── Test4 Part2.mp3
-│   │   │   │   ├── Test4 Part3.mp3
-│   │   │   │   └── Test4 Part4.mp3
-│   │   │   │
-│   │   │   ├── TEST_1/ [18.17 MB, 0 LOC]
-│   │   │   │   ├── Part_1.mp4
-│   │   │   │   ├── Part_2.mp4
-│   │   │   │   ├── Part_3.mp4
-│   │   │   │   ├── Part_4.mp4
-│   │   │   │   └── Recording.mp3
-│   │   │   │
-│   │   │   ├── TEST_2/ [18.33 MB, 0 LOC]
-│   │   │   │   ├── Part_1.mp4
-│   │   │   │   ├── Part_2.mp4
-│   │   │   │   ├── Part_3.mp4
-│   │   │   │   └── Part_4.mp4
-│   │   │   │
-│   │   │   ├── TEST_3/ [19.06 MB, 0 LOC]
-│   │   │   │   ├── Part_1.mp4
-│   │   │   │   ├── Part_2.mp4
-│   │   │   │   ├── Part_3.mp4
-│   │   │   │   └── Part_4.mp4
-│   │   │   │
-│   │   │   ├── TEST_4/ [17.41 MB, 0 LOC]
-│   │   │   │   ├── Part_1.mp4
-│   │   │   │   ├── Part_2.mp4
-│   │   │   │   ├── Part_3.mp4
-│   │   │   │   └── Part_4.mp4
-│   │   │   │
-│   │   │   ├── 1d-formula.jpg
-│   │   │   ├── 2_2_AI_Mid_Sinai.jpg
-│   │   │   ├── 2_2_AI_Mid.jpg
-│   │   │   ├── 2_2_DB_erd_2.jpg
-│   │   │   ├── 2_2_DB_erd_3.jpg
-│   │   │   ├── 2_2_DB_erd.jpg
-│   │   │   ├── 2020_2021-summer-final-2.jpg
-│   │   │   ├── 2020_2021-summer-final-6.jpg
-│   │   │   ├── 2020_2021-summer-final-7.jpg
-│   │   │   ├── 2020_2021-summer-final-8.jpg
-│   │   │   ├── 2020_2021-summer-final.jpg
-│   │   │   ├── adding-element.jpg
-│   │   │   ├── array-memory-diagram.jpg
-│   │   │   ├── backtrack-graph.png
-│   │   │   ├── case-tools.jpg
-│   │   │   ├── comp-storage.jpg
-│   │   │   ├── dashboard-thumbnail.jpg
-│   │   │   ├── Exercise-6-22.jpg
-│   │   │   ├── Exercise-6-23.jpg
-│   │   │   ├── Exercise-6-24.jpg
-│   │   │   ├── Exercise-6-25.jpg
-│   │   │   ├── Exercise-7-C2.jpg
-│   │   │   ├── final-2022-2023.jpg
-│   │   │   ├── final-2023-2024.jpg
-│   │   │   ├── final-2024-2025-2.jpg
-│   │   │   ├── final-2024-2025-3.jpg
-│   │   │   ├── IBM.png
-│   │   │   ├── icon-512.png
-│   │   │   ├── mid-2025-2.jpg
-│   │   │   ├── mid-2025.jpg
-│   │   │   ├── multi-dimen-array.jpg
-│   │   │   ├── Partition-of-Sample-Space-S.jpg
-│   │   │   ├── permutation_table.png
-│   │   │   ├── rad-sdlc.jpg
-│   │   │   ├── salesman-graph.png
-│   │   │   ├── shifting-process.jpg
-│   │   │   ├── Tree-diagram-for-Example-2.jpg
-│   │   │   ├── university-as-a-system.jpg
-│   │   │   └── volume-of-sales.jpg
-│   │   │
-│   │   └── quiz-sources/ [6.92 MB, 0 LOC]
-│   │       ├── 2020 - 2021 Final.pdf
-│   │       ├── 2020 - 2021 Summer Final.pdf
-│   │       ├── 2021 - 2022 Mid.pdf
-│   │       ├── 2022 - 2023 Final.pdf
-│   │       ├── 2023 - 2024 Final.pdf
-│   │       ├── 2024 - 2025 Final.pdf
-│   │       └── Mid 2025.pdf
+│   │   └── notebook-runtime-cpp/ [1.18 MB, 418 LOC]
+│   │       ├── fonts/ [253.7 KB, 0 LOC]
+│   │       │   ├── KaTeX_AMS-Regular.woff2
+│   │       │   ├── KaTeX_Caligraphic-Bold.woff2
+│   │       │   ├── KaTeX_Caligraphic-Regular.woff2
+│   │       │   ├── KaTeX_Fraktur-Bold.woff2
+│   │       │   ├── KaTeX_Fraktur-Regular.woff2
+│   │       │   ├── KaTeX_Main-Bold.woff2
+│   │       │   ├── KaTeX_Main-BoldItalic.woff2
+│   │       │   ├── KaTeX_Main-Italic.woff2
+│   │       │   ├── KaTeX_Main-Regular.woff2
+│   │       │   ├── KaTeX_Math-BoldItalic.woff2
+│   │       │   ├── KaTeX_Math-Italic.woff2
+│   │       │   ├── KaTeX_SansSerif-Bold.woff2
+│   │       │   ├── KaTeX_SansSerif-Italic.woff2
+│   │       │   ├── KaTeX_SansSerif-Regular.woff2
+│   │       │   ├── KaTeX_Script-Regular.woff2
+│   │       │   ├── KaTeX_Size1-Regular.woff2
+│   │       │   ├── KaTeX_Size2-Regular.woff2
+│   │       │   ├── KaTeX_Size3-Regular.woff2
+│   │       │   ├── KaTeX_Size4-Regular.woff2
+│   │       │   └── KaTeX_Typewriter-Regular.woff2
+│   │       │
+│   │       ├── runtime.css
+│   │       └── runtime.js
 │   │
-│   ├── src/ [4.68 MB, 132255 LOC]
-│   │   ├── components/ [814.7 KB, 21758 LOC]
+│   ├── src/ [4.72 MB, 133173 LOC]
+│   │   ├── components/ [816.02 KB, 21765 LOC]
 │   │   │   ├── ai-agent/ [487.64 KB, 11723 LOC]
 │   │   │   │   ├── ai-agent-actions.js
 │   │   │   │   ├── ai-agent-attach-launcher.js
@@ -300,7 +219,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── ai-agent.css
 │   │   │   │   └── ai-agent.js
 │   │   │   │
-│   │   │   ├── download-quiz-modal/ [59.38 KB, 1699 LOC]
+│   │   │   ├── download-quiz-modal/ [59.57 KB, 1702 LOC]
 │   │   │   │   ├── download-quiz-modal.css
 │   │   │   │   ├── download-quiz-modal.js
 │   │   │   │   └── export-card.js
@@ -316,7 +235,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── offline-banner.css
 │   │   │   │   └── offline-banner.js
 │   │   │   │
-│   │   │   ├── quiz-info-modal/ [30.37 KB, 1003 LOC]
+│   │   │   ├── quiz-info-modal/ [31.49 KB, 1007 LOC]
 │   │   │   │   ├── quiz-info-html.js
 │   │   │   │   ├── quiz-info-modal-css.js
 │   │   │   │   └── quiz-info-modal.css
@@ -339,7 +258,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │       ├── tooltip.css
 │   │   │       └── tooltip.js
 │   │   │
-│   │   ├── features/ [3.26 MB, 93781 LOC]
+│   │   ├── features/ [3.29 MB, 94616 LOC]
 │   │   │   ├── control/ [69.58 KB, 2365 LOC]
 │   │   │   │   ├── control-stats.css
 │   │   │   │   ├── control.css
@@ -356,7 +275,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── create-quiz.js
 │   │   │   │   └── question-navigator.js
 │   │   │   │
-│   │   │   ├── documents/ [110.04 KB, 3152 LOC]
+│   │   │   ├── documents/ [112.66 KB, 3232 LOC]
 │   │   │   │   ├── about-stats.js
 │   │   │   │   ├── about.css
 │   │   │   │   ├── doc-toc.js
@@ -371,7 +290,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── export-to-quiz.js
 │   │   │   │   └── export-to-word.js
 │   │   │   │
-│   │   │   ├── home/ [1.05 MB, 27312 LOC]
+│   │   │   ├── home/ [1.05 MB, 27326 LOC]
 │   │   │   │   ├── admin-item-actions.js
 │   │   │   │   ├── adminUpload.js
 │   │   │   │   ├── ai-prompts.js
@@ -473,7 +392,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── lesson-view.js
 │   │   │   │   └── lesson.css
 │   │   │   │
-│   │   │   ├── notebook/ [141.9 KB, 3769 LOC]
+│   │   │   ├── notebook/ [177.92 KB, 4504 LOC]
 │   │   │   │   ├── image-tool-window.css
 │   │   │   │   ├── image-tool-window.js
 │   │   │   │   ├── notebook-copy.js
@@ -499,7 +418,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── profile.js
 │   │   │   │   └── profileWidgets.js
 │   │   │   │
-│   │   │   ├── quiz/ [252.16 KB, 7780 LOC]
+│   │   │   ├── quiz/ [252.26 KB, 7783 LOC]
 │   │   │   │   ├── keyboard-nav.js
 │   │   │   │   ├── quiz.css
 │   │   │   │   └── quiz.js
@@ -508,7 +427,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── reports.css
 │   │   │   │   └── reports.js
 │   │   │   │
-│   │   │   ├── result/ [96.62 KB, 3290 LOC]
+│   │   │   ├── result/ [96.73 KB, 3293 LOC]
 │   │   │   │   ├── result.css
 │   │   │   │   └── result.js
 │   │   │   │
@@ -516,7 +435,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │       ├── settings.css
 │   │   │       └── settings.js
 │   │   │
-│   │   ├── shared/ [576.87 KB, 14660 LOC]
+│   │   ├── shared/ [580.97 KB, 14736 LOC]
 │   │   │   ├── adminAuth.js
 │   │   │   ├── adminBadgeSync.js
 │   │   │   ├── analytics-beacon.js
@@ -537,6 +456,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   ├── google-drive.js
 │   │   │   ├── hover-spotlight.js
 │   │   │   ├── import-draft.js
+│   │   │   ├── info-link.js
 │   │   │   ├── levelGauge.css
 │   │   │   ├── levelGauge.js
 │   │   │   ├── markdown-css.js
@@ -581,6 +501,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │       ├── markdown.css
 │   │       └── themes.css
 │   │
+│   ├── _cpp-runtime-preview.html
 │   ├── about.html
 │   ├── control.html
 │   ├── create-lesson.html
@@ -613,19 +534,87 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── sitemap.xml
 │   └── terms-of-service.html
 │
-├── runtimes/ [39.81 KB, 43 LOC]
-│   └── cpp/ [39.81 KB, 43 LOC]
-│       ├── src/ [15.55 KB, 34 LOC]
-│       │   ├── index.ts
-│       │   └── style.css
-│       │
-│       ├── build.mjs
-│       ├── package-lock.json
-│       ├── package.json
-│       └── tsconfig.json
+├── runtimes/ [783.47 KB, 8538 LOC]
+│   ├── cpp/ [64.02 KB, 791 LOC]
+│   │   └── src/ [64.02 KB, 791 LOC]
+│   │       ├── completion-data.ts
+│   │       ├── completions.ts
+│   │       ├── engine.ts
+│   │       └── index.ts
+│   │
+│   ├── matlab/ [484.69 KB, 2508 LOC]
+│   │   ├── interp/ [447.66 KB, 1465 LOC]
+│   │   │   ├── src/ [75.04 KB, 1241 LOC]
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── interp.ts
+│   │   │   │   ├── parser.ts
+│   │   │   │   └── values.ts
+│   │   │   │
+│   │   │   ├── test/ [355.14 KB, 215 LOC]
+│   │   │   │   ├── assets/ [340.79 KB, 75 LOC]
+│   │   │   │   │   └── ... (max depth reached)
+│   │   │   │   │
+│   │   │   │   ├── lessons.ts
+│   │   │   │   └── run.ts
+│   │   │   │
+│   │   │   ├── package-lock.json
+│   │   │   └── package.json
+│   │   │
+│   │   └── src/ [37.03 KB, 1043 LOC]
+│   │       ├── completion-data.ts
+│   │       ├── completions.ts
+│   │       ├── engine.ts
+│   │       ├── help.ts
+│   │       ├── indent.ts
+│   │       ├── index.ts
+│   │       ├── language.ts
+│   │       └── worker.ts
+│   │
+│   ├── shared/ [150.47 KB, 4396 LOC]
+│   │   ├── styles/ [50.94 KB, 2531 LOC]
+│   │   │   ├── cells.css
+│   │   │   ├── dialogs.css
+│   │   │   ├── editor.css
+│   │   │   ├── imtool.css
+│   │   │   ├── index.css
+│   │   │   ├── outputs.css
+│   │   │   ├── side-panel.css
+│   │   │   ├── tokens.css
+│   │   │   └── toolbar.css
+│   │   │
+│   │   ├── cell-view.ts
+│   │   ├── ctx.ts
+│   │   ├── dialogs.ts
+│   │   ├── dom.ts
+│   │   ├── editor.ts
+│   │   ├── engine.ts
+│   │   ├── export-dialog.ts
+│   │   ├── i18n.ts
+│   │   ├── image-tool.ts
+│   │   ├── images.ts
+│   │   ├── indent-guides.ts
+│   │   ├── markdown.ts
+│   │   ├── outputs.ts
+│   │   ├── shell.ts
+│   │   ├── side-panel.ts
+│   │   └── toolbar.ts
+│   │
+│   ├── test/ [40.3 KB, 688 LOC]
+│   │   ├── completions.test.mjs
+│   │   ├── cpp-completions.test.mjs
+│   │   ├── cpp-engine.test.mjs
+│   │   ├── indent.test.mjs
+│   │   ├── parity.test.mjs
+│   │   └── shell.test.mjs
+│   │
+│   ├── build-info.json
+│   ├── build.mjs
+│   ├── package-lock.json
+│   ├── package.json
+│   └── tsconfig.json
 │
-├── scripts/ [160.29 KB, 3134 LOC]
-│   ├── lib/ [47.42 KB, 1004 LOC]
+├── scripts/ [161.31 KB, 3152 LOC]
+│   ├── lib/ [47.39 KB, 1004 LOC]
 │   │   ├── content-rules.js
 │   │   ├── notebook-convert.js
 │   │   ├── quizId.js
@@ -658,6 +647,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   └── vo.py
 │   │
 │   ├── commit.js
+│   ├── cpp-run-probe.mjs
 │   ├── cpp-smoke.mjs
 │   ├── git-changes.js
 │   ├── map.js
@@ -667,10 +657,11 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── seo-check.mjs
 │   └── sync-mcp-rules.js
 │
-├── supabase/ [300.08 KB, 5546 LOC]
-│   ├── functions/ [195.39 KB, 3332 LOC]
-│   │   ├── cpp-run/ [10.89 KB, 77 LOC]
+├── supabase/ [311.12 KB, 5849 LOC]
+│   ├── functions/ [206.43 KB, 3635 LOC]
+│   │   ├── cpp-run/ [21.94 KB, 380 LOC]
 │   │   │   ├── assemble.js
+│   │   │   ├── handler.ts
 │   │   │   ├── index.ts
 │   │   │   ├── providers.ts
 │   │   │   └── ratelimit.ts
@@ -722,13 +713,14 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │
 │   └── config.toml
 │
-└── tests/ [88.31 KB, 1648 LOC]
+└── tests/ [100.4 KB, 1876 LOC]
     ├── analytics.test.js
     ├── arabic-shape.test.js
     ├── content-rules-sync.test.js
     ├── content-rules.test.js
     ├── cpp-assemble.test.js
     ├── cpp-providers.test.js
+    ├── cpp-run-handler.test.js
     ├── folder-sync.test.js
     ├── image-tool.test.js
     ├── markdown-list-direction.test.js
@@ -737,6 +729,7 @@ The map is useful for quickly identifying the layout of the project, understandi
     ├── mcp-lib.test.js
     ├── no-hover-lift.test.js
     ├── notebook-export.test.js
+    ├── notebook-form.test.js
     ├── notebook-input.test.js
     ├── notebook-page.test.js
     ├── notebook-route.test.js
@@ -756,14 +749,14 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Directory | Lines of Code |
 |-----------|---------------|
-| `public` | 150489 |
-| `api` | 17095 |
-| `supabase` | 5546 |
-| `scripts` | 3134 |
-| `(root)` | 1702 |
-| `tests` | 1648 |
-| `docs` | 930 |
-| `runtimes` | 43 |
+| `public` | 149848 |
+| `api` | 17108 |
+| `runtimes` | 8538 |
+| `supabase` | 5849 |
+| `scripts` | 3152 |
+| `tests` | 1876 |
+| `(root)` | 1708 |
+| `docs` | 861 |
 
 ### Top 10 Largest Code Files
 
@@ -775,7 +768,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 | `public/src/features/export-quiz/export-to-quiz.js` | 4533 |
 | `public/src/features/lesson/lesson.css` | 4167 |
 | `public/src/components/ai-agent/ai-agent.css` | 4145 |
-| `public/src/features/quiz/quiz.js` | 3704 |
+| `public/src/features/quiz/quiz.js` | 3707 |
 | `public/src/features/quiz/quiz.css` | 3607 |
 | `public/src/features/create-lesson/create-lesson.js` | 3523 |
 | `public/src/features/profile/profile.css` | 3182 |
@@ -784,38 +777,38 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Extension | Files | Lines of Code | Size |
 |-----------|-------|---------------|------------|
-| .js | 293 | 107068 | 5.45 MB |
-| .css | 40 | 49169 | 1.21 MB |
+| .js | 296 | 108571 | 6.14 MB |
+| .css | 48 | 49692 | 1.33 MB |
+| .ts | 41 | 8050 | 459.2 KB |
 | .sql | 37 | 1799 | 89.08 KB |
-| .html | 22 | 15112 | 919.09 KB |
-| .json | 19 | 391 | 1017.28 KB |
-| .mjs | 15 | 1010 | 63.5 KB |
-| .md | 11 | 2408 | 136.77 KB |
+| .html | 23 | 15207 | 924.61 KB |
+| .json | 22 | 437 | 1.03 MB |
+| .mjs | 22 | 1826 | 109.15 KB |
+| .md | 12 | 2344 | 129.66 KB |
 | .py | 9 | 266 | 14.65 KB |
-| .ts | 7 | 2691 | 169.97 KB |
 | .txt | 3 | 124 | 7.38 KB |
 | .webp | 2 | 31 | 8.14 KB |
 | .xml | 2 | 21 | 1.4 KB |
 | (no extension) | 1 | 22 | 1.06 KB |
+| .yml | 1 | 41 | 1.02 KB |
 | .skill | 1 | 12 | 2.63 KB |
+| .m | 1 | 75 | 3.37 KB |
 | .sh | 1 | 7 | 486 B |
 | .toml | 1 | 415 | 15.61 KB |
-| .yml | 1 | 41 | 1.02 KB |
-| **Total** | **465** | **180587** | **9.05 MB** |
+| **Total** | **523** | **188940** | **10.23 MB** |
 
 ### Binary / Media Files (Physical Size)
 
 | Extension | Files | Size |
 |-----------|-------|------------|
-| .jpg | 65 | 8.25 MB |
-| .png | 42 | 5.93 MB |
-| .mp3 | 17 | 103.72 MB |
-| .mp4 | 16 | 72.89 MB |
-| .pdf | 7 | 6.92 MB |
+| .png | 45 | 6 MB |
+| .woff2 | 40 | 507.41 KB |
+| .jpg | 3 | 149.14 KB |
 | .ttf | 1 | 58.58 KB |
 | .ico | 1 | 4.19 KB |
 | .svg | 1 | 19.48 KB |
-| **Total** | **150** | **197.8 MB** |
+| .gif | 1 | 13.63 KB |
+| **Total** | **92** | **6.74 MB** |
 
-**Grand Total Files:** 615
-**Total Repository Size:** 206.84 MB
+**Grand Total Files:** 615  
+**Total Repository Size:** 16.97 MB

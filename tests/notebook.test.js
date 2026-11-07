@@ -81,16 +81,13 @@ test(".m becomes ONE code cell; file dispatch rejects other types", () => {
   assert.throws(() => notebookFromMScript("   "), /فارغ/);
 });
 
-test("all ten compiler lessons convert, validate, and are unique/ordered", () => {
+test("C++ seed notebooks validate and are unique/ordered", () => {
   const list = loadSeedNotebooks();
-  assert.equal(list.filter((n) => n.runtime === "matlab").length, 10);
-  assert.equal(list.filter((n) => n.runtime === "cpp").length, 2);
-  assert.equal(new Set(list.map((n) => n.migrationKey)).size, 12);
-  assert.equal(new Set(list.map((n) => n.slug)).size, 12);
-  assert.deepEqual(list.slice(0, 10).map((n) => n.sortOrder), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-  for (const n of list) {
-    assert.equal(checkNotebook({ ...n, content: n.content }).errors.length, 0, n.migrationKey);
-  }
+  assert.equal(list.length, 2);
+  assert.ok(list.every((n) => n.runtime === "cpp"));
+  assert.equal(new Set(list.map((n) => n.migrationKey)).size, 2);
+  assert.equal(new Set(list.map((n) => n.slug)).size, 2);
+  for (const n of list) assert.equal(checkNotebook({ ...n, content: n.content }).errors.length, 0, n.migrationKey);
 });
 
 test("compiler lesson conversion preserves cell order, code and markdown exactly", () => {

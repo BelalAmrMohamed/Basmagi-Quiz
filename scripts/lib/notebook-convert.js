@@ -110,7 +110,7 @@ export function notebookFromFile(fileName, text) {
 // ── Compiler lesson files ───────────────────────────────────────────────────
 
 /**
- * Parses online-matlab-compiler/apps/web/lessons/*.txt:
+ * Parses a lesson .txt file:
  *   header lines "@key value", then cells introduced by "%% md" / "%% code".
  */
 export function parseCompilerLesson(text) {

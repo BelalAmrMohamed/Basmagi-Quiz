@@ -33,3 +33,5 @@ export function mount(opts: MountOptions): ShellHandle {
 }
 
 (window as unknown as { BasmagiCppNotebook?: { mount: typeof mount } }).BasmagiCppNotebook = { mount };
+
+// x

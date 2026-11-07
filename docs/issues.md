@@ -7,6 +7,10 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Notebooke Page: C++ Runtime
+* **![Screenshot](image.png)**
+* When I try to run any C++ code, it either return an error, or doesn't return anything.
+
 ### Missing element in sidebar
 Add the link to the notebook page to the sidebar in document pages. See: `public\src\features\documents\documents-shell.js`
 
@@ -45,11 +49,18 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 
 ## New Features
 
+### Creating in MCP Server
+* Open drafts in user content directly, not inside the create pages.
+
 ### Dictation for Essay Questions (Lesson & Quiz Pages)
 Add dictation feature for essays in quizzes and lessons
 
-### Notebook Page: MATLAB Runtime
+### Notebook Page: 
 
+#### Improvements
+* Implement cursor animation similar to that of VS Code
+
+#### MATLAB Runtime
 * **Current Folder Improvements**:
   * Add a more menu (3 vertical dots).
   * Move the **Remove** and **Download** into it.
@@ -58,6 +69,10 @@ Add dictation feature for essays in quizzes and lessons
     * **Rename**: Renames the item. Use the platform's `_prompt()` for it, its in `notifications.js`.
     * **Copy Image**: Copies the image to clipboard.
     * Recommend to me other functionalities to add.
+
+#### C++ Runtime 
+* There is no error handling while typing, if users forget a simple thing like a semi-column or something it doesn't get highlighted.
+* When I write this in a cell: `cout << "Hello World\n";`, it doesn't return an error that I didn't write the `int main()` function or that I forgot to add `#include <iostream>` at the top, it runs whithout an error, and as usual, nothing shows up. I don't understand why, I need an explanation 
 
 ### Result Pages
 
