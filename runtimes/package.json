@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/shell.test.mjs test/indent.test.mjs test/completions.test.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.6",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "esbuild": "^0.25.5",
+    "jsdom": "^31.0.0",
     "typescript": "^5.8.3"
   }
 }

@@ -1,0 +1,285 @@
+/* runtimes/shared/styles/side-panel.css - Workspace table, current-folder files strip and command history.
+   Class names and the .mlweb root are a contract with the host pages; do not rename. */
+
+.mlweb #layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 300px);
+  gap: 22px;
+  padding: 24px clamp(14px, 2.5vw, 36px);
+  max-width: 1700px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+.mlweb #side {
+  position: sticky;
+  top: 84px;
+  min-width: 0;
+}
+
+.mlweb .panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.mlweb .panel h3 {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 12px;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+  color: var(--mute);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mlweb .panel h3 button {
+  min-height: 32px;
+  text-transform: none;
+  font-size: 12px;
+  padding: 3px 9px;
+}
+
+.mlweb .panel .body {
+  padding: 10px 13px;
+  max-height: 300px;
+  overflow: auto;
+  font-size: 13px;
+}
+
+.mlweb .panel .empty {
+  color: var(--mute);
+  padding: 8px 2px;
+}
+
+.mlweb table.ws {
+  width: 100%;
+  border-collapse: collapse;
+  font:
+    12px ui-monospace,
+    Menlo,
+    monospace;
+  direction: ltr;
+}
+
+.mlweb :is(table.ws td, table.ws th) {
+  padding: 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.mlweb table.ws button {
+  min-height: 28px;
+  padding: 2px 5px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+}
+
+.mlweb table.ws button:hover {
+  text-decoration: underline;
+}
+
+.mlweb .file {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.mlweb .file:last-child {
+  border: 0;
+}
+
+.mlweb .file canvas {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+
+.mlweb .file .n {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font:
+    12px ui-monospace,
+    monospace;
+  direction: ltr;
+  text-align: left;
+}
+
+.mlweb .file button {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 4px;
+}
+
+.mlweb .hist div {
+  font:
+    12px ui-monospace,
+    Menlo,
+    monospace;
+  padding: 6px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: ltr;
+  text-align: left;
+}
+
+.mlweb .hist div:hover {
+  background: var(--out);
+}
+
+.mlweb
+  :is(
+    [dir="rtl"] .file .n,
+    [dir="rtl"] .hist div,
+    [dir="rtl"] .src,
+    [dir="rtl"] pre.o
+  ) {
+  direction: ltr;
+}
+
+@media (max-width: 1000px) {
+  .mlweb #layout {
+      grid-template-columns: minmax(0, 1fr) 260px;
+      gap: 14px;
+    }
+
+}
+
+@media (max-width: 760px) {
+  .mlweb #layout {
+      grid-template-columns: minmax(0, 1fr);
+      padding-top: 16px;
+    }
+
+  .mlweb #side {
+      position: static;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+  .mlweb #side .panel {
+      margin: 0;
+    }
+
+  .mlweb #side .panel:last-child {
+      grid-column: 1 / -1;
+    }
+
+}
+
+@media (max-width: 520px) {
+  .mlweb #layout {
+      gap: 18px;
+      padding: 14px 12px calc(24px + env(safe-area-inset-bottom));
+    }
+
+  .mlweb #side {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+  .mlweb #side .panel:last-child {
+      grid-column: auto;
+    }
+
+}
+
+.mlweb #layout {
+  display: block;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-top: 0;
+  background: var(--panel);
+  border-radius: 0 0 6px 6px;
+}
+
+.mlweb #side {
+  display: none;
+  position: static;
+  padding: 10px clamp(8px, 1.5vw, 20px) 4px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-soft);
+}
+
+.mlweb #layout.side-open {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.mlweb #layout.side-open #side {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.mlweb #side .panel {
+  margin: 0;
+  box-shadow: none;
+  border-radius: 6px;
+}
+
+.mlweb .panel .body {
+  max-height: 220px;
+}
+
+@media (min-width: 900px) {
+  .mlweb :is(#layout, #layout.side-open) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) clamp(260px, 24vw, 340px);
+      align-items: start;
+    }
+
+  .mlweb :is(#side, #layout.side-open #side) {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      grid-column: 2;
+      grid-row: 1;
+      position: sticky;
+      top: 48px;
+      max-height: calc(100vh - 56px);
+      overflow: auto;
+      overscroll-behavior: contain;
+      padding: 10px;
+      border-bottom: 0;
+      border-inline-start: 1px solid var(--line);
+      background: var(--panel-soft);
+    }
+
+  .mlweb #side .panel {
+      flex: none;
+    }
+
+  .mlweb #toggleside {
+      display: none;
+    }
+
+}
+
+@media (max-width: 760px) {
+  .mlweb #layout.side-open #side {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+}
+

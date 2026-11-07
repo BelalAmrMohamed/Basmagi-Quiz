@@ -1,0 +1,419 @@
+/* runtimes/shared/styles/cells.css - Cell cards: tools row, cell menu, insert row, markdown editor textarea.
+   Class names and the .mlweb root are a contract with the host pages; do not rename. */
+
+.mlweb
+  :is(
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    a:focus-visible
+  ) {
+  outline: 3px solid color-mix(in srgb, var(--ring) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.mlweb #nb {
+  min-width: 0;
+}
+
+.mlweb .cell {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  margin-bottom: 16px;
+  overflow: visible;
+  box-shadow: var(--shadow);
+}
+
+.mlweb .cell.sel {
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--line));
+  box-shadow: none;
+}
+
+.mlweb .cell .tools {
+  position: absolute;
+  z-index: 3;
+  top: 8px;
+  inset-inline-end: 10px;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: var(--mute);
+  background: var(--panel);
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.mlweb :is(.cell:hover .tools, .cell:focus-within .tools) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mlweb .cell .tools .sp {
+  flex: 1;
+}
+
+.mlweb .cell .tools button {
+  min-height: 34px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.mlweb .cell .idx {
+  display: none;
+}
+
+.mlweb .cell.running .idx {
+  color: var(--run);
+  font-weight: 700;
+}
+
+.mlweb .cell-menu {
+  position: relative;
+}
+
+.mlweb .cell-menu > summary {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  list-style: none;
+}
+
+.mlweb .cell-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.mlweb .cell-menu-items {
+  position: absolute;
+  top: calc(100% + 5px);
+  inset-inline-end: 0;
+  z-index: 10;
+  display: grid;
+  width: max-content;
+  min-width: 205px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.mlweb .cell-menu-items button {
+  min-height: 36px;
+  border: 0;
+  background: transparent;
+  text-align: start;
+  font-size: 13px;
+}
+
+.mlweb .cell-menu-items button:hover {
+  background: var(--panel-soft);
+}
+
+.mlweb .cell-insert {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: -14px;
+  display: flex;
+  gap: 5px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+.mlweb :is(.cell:hover .cell-insert, .cell:focus-within .cell-insert) {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%);
+}
+
+.mlweb .cell-insert button {
+  min-height: 30px;
+  padding: 3px 11px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--mute);
+  font-size: 12px;
+}
+
+.mlweb .cell-insert button:hover {
+  background: var(--panel-soft);
+  color: var(--ink);
+}
+
+.mlweb textarea.src {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  outline: 0;
+  resize: vertical;
+  padding: 15px 17px;
+  background: var(--code);
+  color: var(--ink);
+  font:
+    14px/1.65 ui-monospace,
+    Cascadia Code,
+    Menlo,
+    Consolas,
+    monospace;
+  tab-size: 4;
+  white-space: pre;
+  overflow-x: auto;
+  direction: ltr;
+  text-align: left;
+}
+
+@media (max-width: 520px) {
+  .mlweb .cell {
+      margin-bottom: 22px;
+    }
+
+  .mlweb .cell .tools {
+      position: relative;
+      inset: auto;
+      min-height: 46px;
+      justify-content: flex-end;
+      padding: 5px 8px;
+      border-bottom: 1px solid var(--line);
+      border-radius: 12px 12px 0 0;
+      background: var(--panel-soft);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+  .mlweb .cell .tools .sp {
+      flex: 1;
+    }
+
+  .mlweb .cell .tools button {
+      min-height: 40px;
+    }
+
+  .mlweb .cell-menu > summary {
+      width: 40px;
+      height: 40px;
+    }
+
+  .mlweb
+      :is(
+        .cell-insert,
+        .cell:hover .cell-insert,
+        .cell:focus-within .cell-insert
+      ) {
+      position: relative;
+      inset: auto;
+      width: max-content;
+      margin: 0 auto 6px;
+      transform: none;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+  .mlweb .cell-insert button {
+      min-height: 40px;
+      padding-inline: 14px;
+    }
+
+}
+
+@media (max-width: 360px) {
+  .mlweb .cell .tools button {
+      padding-inline: 8px;
+    }
+
+}
+
+.mlweb textarea.src.mdsrc {
+  direction: inherit;
+  text-align: start;
+  white-space: pre-wrap;
+  font-family: inherit;
+}
+
+.mlweb #nb {
+  padding: 14px clamp(6px, 1.5vw, 20px) 40px;
+  min-height: 240px;
+}
+
+@media (min-width: 900px) {
+  .mlweb #nb {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+}
+
+.mlweb .cell {
+  margin: 0 0 6px;
+  padding-inline-start: var(--jp-prompt);
+  border: 1px solid transparent;
+  border-radius: var(--jp-radius);
+  background: transparent;
+  box-shadow: none;
+  position: relative;
+}
+
+.mlweb .cell:before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 5px;
+  border-radius: 3px 0 0 3px;
+  background: transparent;
+}
+
+.mlweb .cell:hover {
+  border-color: color-mix(in srgb, var(--line) 80%, transparent);
+}
+
+.mlweb .cell.sel {
+  border-color: color-mix(in srgb, var(--jp-sel) 55%, var(--line));
+}
+
+.mlweb .cell.sel:before {
+  background: var(--jp-sel);
+}
+
+.mlweb .cell:focus-within:before {
+  background: var(--jp-edit);
+}
+
+.mlweb .cell:focus-within {
+  border-color: color-mix(in srgb, var(--jp-edit) 50%, var(--line));
+}
+
+.mlweb .cell.running:before {
+  background: var(--accent);
+}
+
+.mlweb .cell .idx {
+  display: block;
+  position: absolute;
+  inset-inline-start: 6px;
+  top: 8px;
+  width: calc(var(--jp-prompt) - 12px);
+  text-align: end;
+  font:
+    12.5px/1.6 ui-monospace,
+    Cascadia Code,
+    Menlo,
+    Consolas,
+    monospace;
+  color: #307fc1;
+  direction: ltr;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.mlweb .cell.running .idx {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.mlweb .cell .tools {
+  top: -15px;
+  inset-inline-end: 8px;
+  gap: 3px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  box-shadow: var(--shadow);
+}
+
+.mlweb :is(.cell .tools button, .cell-menu > summary) {
+  min-height: 28px;
+  height: 28px;
+  padding: 2px 9px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.mlweb .cell-menu > summary {
+  width: 30px;
+  padding: 0;
+}
+
+.mlweb textarea.src {
+  border: 1px solid var(--line);
+  border-radius: var(--jp-radius);
+  padding: 10px 12px;
+}
+
+.mlweb .cell-insert {
+  bottom: -13px;
+}
+
+@media (max-width: 760px) {
+  .mlweb .cell {
+      padding-inline-start: 0;
+      padding-top: 20px;
+    }
+
+  .mlweb .cell:before {
+      width: 4px;
+    }
+
+  .mlweb .cell .idx {
+      top: 2px;
+      inset-inline-start: 10px;
+      width: auto;
+      text-align: start;
+      font-size: 11.5px;
+    }
+
+  .mlweb .cell .tools {
+      position: absolute;
+      top: -13px;
+      min-height: 0;
+      padding: 2px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--panel);
+      opacity: 1;
+      pointer-events: auto;
+      justify-content: flex-start;
+    }
+
+  .mlweb .cell .tools .sp {
+      display: none;
+    }
+
+  .mlweb
+      :is(
+        .cell-insert,
+        .cell:hover .cell-insert,
+        .cell:focus-within .cell-insert
+      ) {
+      display: none;
+    }
+
+}
+

@@ -1,0 +1,290 @@
+/* runtimes/shared/styles/dialogs.css - Help, confirm and export dialogs, notice toast, button tooltip.
+   Class names and the .mlweb root are a contract with the host pages; do not rename. */
+
+/* Shared dialog shell: position, size, surface and backdrop for every modal. */
+.mlweb :is(#helpDialog, #confirmDialog, #imageTool, #exportDialog) {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  overflow: hidden;
+}
+
+.mlweb :is(#confirmDialog, #imageTool, #exportDialog) {
+  width: min(760px, calc(100vw - 28px));
+  max-height: min(88vh, 900px);
+  padding: 0;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 24px 80px #0005;
+}
+
+.mlweb #helpDialog::backdrop,
+.mlweb #confirmDialog::backdrop,
+.mlweb #imageTool::backdrop,
+.mlweb #exportDialog::backdrop {
+  background: #0b101bb3;
+  backdrop-filter: blur(3px);
+}
+
+@keyframes notice-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mlweb-tooltip {
+  position: fixed;
+  z-index: 20000;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 16px));
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: #171b24;
+  color: #fff;
+  font:
+    500 12px/1.35 system-ui,
+    sans-serif;
+  white-space: normal;
+  box-shadow: 0 4px 16px #0005;
+  pointer-events: none;
+}
+
+.mlweb-tooltip[hidden] {
+  display: none;
+}
+
+.mlweb :is(#helpDialog[open], #exportDialog[open]) {
+  display: flex;
+  flex-direction: column;
+}
+
+.mlweb #helpDialog {
+  width: min(780px, calc(100vw - 28px));
+  max-height: min(82vh, 760px);
+  padding: 0;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 24px 80px #0005;
+}
+
+.mlweb :is(#confirmDialog, #exportDialog) {
+  width: min(480px, calc(100vw - 28px));
+}
+
+.mlweb .dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mlweb .dialog-head h2 {
+  flex: 1;
+  margin: 0;
+}
+
+.mlweb .dialog-head button {
+  min-width: 40px;
+  font-size: 20px;
+}
+
+.mlweb .dialog-body {
+  padding: 16px 20px 20px;
+}
+
+.mlweb .dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.mlweb .help-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mlweb .help-head h2 {
+  flex: 1;
+  margin: 0;
+}
+
+.mlweb .help-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 16px 20px 22px;
+  overflow: auto;
+}
+
+.mlweb .export-formats {
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.mlweb .export-formats legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.mlweb .export-opt {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.mlweb .export-opt:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--panel-soft);
+}
+
+.mlweb .export-opt input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.mlweb .export-outputs {
+  margin-top: 4px;
+}
+
+.mlweb .export-note {
+  margin: 6px 2px 0;
+  color: var(--mute);
+  font-size: 12.5px;
+}
+
+.mlweb #helpSearch {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  background: var(--code);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.mlweb #helpItems {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.mlweb .help-item {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel-soft);
+}
+
+.mlweb .help-item b {
+  font:
+    600 13px ui-monospace,
+    Menlo,
+    monospace;
+}
+
+.mlweb .help-item p {
+  margin: 5px 0 0;
+  color: var(--mute);
+  font-size: 13px;
+}
+
+.mlweb #notice {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(420px, calc(100vw - 36px));
+  padding: 9px 10px 9px 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: var(--panel);
+  box-shadow: 0 16px 48px #0003;
+  animation: notice-in 0.18s ease-out;
+}
+
+.mlweb #noticeMessage {
+  flex: 1;
+}
+
+.mlweb #notice button {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 20px;
+}
+
+.mlweb #notice[hidden] {
+  display: none;
+}
+
+@media (max-width: 520px) {
+  .mlweb #notice {
+      right: 12px;
+      bottom: calc(12px + env(safe-area-inset-bottom));
+      left: 12px;
+      max-width: none;
+    }
+
+  .mlweb #helpItems {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+}
+
+.mlweb .local-note {
+  max-width: 1700px;
+  margin: 12px auto 0;
+  padding: 9px clamp(14px, 2.5vw, 36px);
+  color: var(--mute);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.mlweb .local-note {
+  max-width: none;
+  margin: 0;
+  padding: 4px 12px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-top: 0;
+  font-size: 12px;
+  text-align: end;
+}
+
+.mlweb .local-note[hidden] {
+  display: none;
+}
+
+
+

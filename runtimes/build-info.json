@@ -1,6 +1,7 @@
 {
-  "sourcesSha256": "f53ba1dbc4e995c5326bb44627186c9284840e20339f73dcb00baad94646911d",
+  "sourcesSha256": "889601d6bbee002488a267c06412783b5766353cdce7bd9d6938ac9011585d68",
   "builtTargets": [
-    "cpp"
+    "cpp",
+    "matlab"
   ]
 }

@@ -7,6 +7,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Missing element in sidebar
+Add the link to the notebook page to the sidebar in document pages. See: `public\src\features\documents\documents-shell.js`
+
 ### Bottom Nav on phones
 * Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.
 * I honestly don't know what is the best decision, maybe keeping settings 
@@ -65,6 +68,15 @@ Redesign the whole page:
 * Suggestion: Add an open-source Angle (Since the repo is currently open source).
 * Suggestion: Add a short testimonial or review.
 
+#### المنصة بالأرقام
+1. **Better more Advanced analytics:** Allow the user to extend the `المشاهدات في آخر 30 يومًا` to cover more/less time, like a year or a week or custom.
+2. **Rich Tooltips**: Give rich tooltips to:
+   1. `مسار تعليمي نشط`: Shows the actual `Active learning paths`
+   2. `صانع محتوى`: Shows the top admins/developers. 
+      1. Suggestion (Not Confirmed): with a link to see all of them.
+
+`مقرر دراسي`: Change it to: `مقرر دراسي (مادة)`
+
 ### Create Quiz Page
 `create-quiz.js` is 5000+ lines in one file — It's the right time to split it into modules.
 
@@ -84,18 +96,3 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 ### Offline Page
 Improve:
 * It's theme Should match the theme of the platform (see themes.css and theme-controller.js), but it shouldn't import these files, it should be independent. It should also default to the default theme of the platform.
-
-### Notebooks
-
-#### Workspace
-* When creating a new notebook, adding new images, saving the notebook, and uploading it to the platform, the notebook doesn't include the uploaded images.
-* I don't want all users to be able to upload images to the platform (I'm on Supabase free-tier), only admins should, and also admins shouldn't do it all the time, because not all notebooks they create are going to be published. I haven't thought of a way to solve this issue.
-* MCP Server should be able to add images to the workspace, too, but if the draft isn't saved, they should be deleted.
-
-DB Note:
-* Since we are expanding our usage of the DB based on that update, I want to put a limit on uploaded content to the DB (Like images, videos, etc...) [For all pages, not just the notebook page], this way notebooks, lessons, quizzes, and other items can still be uploaded and preserved even when the limit of the uploaded images and content is reached.
-
-#### Awaiting decision (not implemented)
-
-4. **Notebook image asset lifecycle:** Define how images added to the workspace are carried through local save, import drafts, and publication. Decide how to restrict platform uploads to admins, clean up uncommitted draft assets, support MCP-created workspace assets, and enforce shared storage limits before implementing this.
-5. **Notebook reliability and end-to-end coverage:** Test local and published notebook flows in a browser, including the admin publish path against staging/live Supabase. Review execution interruption and worker-error reporting, and add coverage for failures and recovery. Do not change runtime behavior until this scope is approved.

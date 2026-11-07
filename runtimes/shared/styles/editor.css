@@ -1,0 +1,123 @@
+/* runtimes/shared/styles/editor.css - CodeMirror look and the autocomplete popup.
+   Class names and the .mlweb root are a contract with the host pages; do not rename. */
+
+.mlweb .code-editor {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 0 0 12px 12px;
+  background: var(--code);
+}
+
+.mlweb .code-editor .cm-editor {
+  color: var(--ink);
+  background: var(--code);
+  font:
+    14px/1.65 ui-monospace,
+    Cascadia Code,
+    Menlo,
+    Consolas,
+    monospace;
+}
+
+.mlweb .code-editor .cm-editor.cm-focused {
+  outline: none;
+}
+
+.mlweb .code-editor .cm-scroller {
+  overflow: auto;
+}
+
+.mlweb .code-editor .cm-content {
+  min-height: 48px;
+}
+
+.mlweb .code-editor .cm-gutters {
+  font-size: 12px;
+  user-select: none;
+}
+
+.mlweb .code-editor .cm-lineNumbers .cm-gutterElement {
+  min-width: 3.2em;
+  padding: 0 10px 0 6px;
+  text-align: right;
+}
+
+.mlweb .code-editor .cm-selectionBackground {
+  border-radius: 2px;
+}
+
+@media (max-width: 520px) {
+  .mlweb .code-editor .cm-content {
+      min-width: 0;
+    }
+
+}
+
+.mlweb :is(.code-editor, .code-editor .cm-editor) {
+  direction: ltr;
+  text-align: left;
+}
+
+.mlweb .code-editor {
+  border: 1px solid var(--line);
+  border-radius: var(--jp-radius);
+  background: var(--code);
+}
+
+.mlweb :is(.cell.sel .code-editor, .cell:focus-within .code-editor) {
+  border-color: color-mix(in srgb, var(--jp-edit) 60%, var(--line));
+}
+
+.mlweb .cm-tooltip.mlweb-complete {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.mlweb .cm-tooltip.mlweb-complete > ul {
+  font:
+    13px/1.4 ui-monospace,
+    Cascadia Code,
+    Menlo,
+    Consolas,
+    monospace;
+  max-height: 14em;
+}
+
+.mlweb .cm-tooltip.mlweb-complete > ul > li {
+  padding: 2px 8px;
+}
+
+.mlweb .cm-tooltip.mlweb-complete > ul > li[aria-selected] {
+  background: color-mix(in srgb, var(--accent) 22%, var(--panel));
+  color: var(--ink);
+}
+
+.mlweb .cm-tooltip.mlweb-complete .cm-completionDetail {
+  margin-inline-start: 10px;
+  color: var(--mute);
+  font-style: normal;
+}
+
+.mlweb .cm-tooltip.mlweb-complete .cm-completionMatchedText {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.mlweb .cm-tooltip.cm-completionInfo {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font:
+    12.5px/1.45 system-ui,
+    sans-serif;
+  max-width: 280px;
+  padding: 6px 9px;
+}
+
+

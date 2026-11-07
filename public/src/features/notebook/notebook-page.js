@@ -14,6 +14,7 @@ import { createWorkspaceBridge } from "../../shared/workspace-bridge.js";
 import { exportNotebookZip } from "../../shared/notebook-bundle.js";
 import { loadRuntime } from "../../shared/runtime-loader.js";
 import { RUNTIME_CONFIG } from "../../shared/runtime-config.js";
+import { _prompt } from "../../components/notifications/notifications.js";
 import "./image-tool-window.js";
 import "./notebook-output-controls.js";
 import "./notebook-menu-controls.js";
@@ -139,6 +140,7 @@ async function init() {
       notebook,
       lang,
       onInfo: () => showNotebookInfoModal(row),
+      onPrompt: _prompt,
       onNotice: (message) => window.dispatchEvent(new CustomEvent("notebook:notice", { detail: message })),
     });
   } catch (e) {

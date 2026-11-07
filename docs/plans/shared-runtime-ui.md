@@ -14,7 +14,7 @@
 
 **Done when:** `npm run build:runtimes` succeeds and the C++ notebook behaves as before.
 
-## [] Phase 2: Shared UI (`runtimes/shared/`)
+## [x] Phase 2: Shared UI (`runtimes/shared/`)
 Inputs: `online-matlab-compiler/apps/web/src/main.ts` (structure) and `public/assets/notebook-runtime/runtime.css` (styles). For behavior missing from the old source, run `npx prettier public/assets/notebook-runtime/runtime.js > /tmp/mlweb.pretty.js` and search for the anchors `mlweb-imtool`, `export-formats`, `i.lang===` and `MLWebNotebook={mount`.
 
 Engine contract, in `shared/engine.ts`:
@@ -45,7 +45,7 @@ Create these files:
 
 **Done when:** `tsc --noEmit` passes and a jsdom test mounts the shell with a fake engine.
 
-## [] Phase 3: MATLAB engine on the shared UI
+## [x] Phase 3: MATLAB engine on the shared UI
 Create `runtimes/matlab/src/{index.ts,engine.ts,completions.ts,indent.ts,worker.ts}`.
 - `engine.ts` wraps the interpreter worker, with a 60 s limit, workspace vars, and image and file handling. Caps are all true except `stdin`.
 - `completions.ts`: port `matlabCompletionSource` from the old `main.ts`.

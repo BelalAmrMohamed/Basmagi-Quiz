@@ -27,13 +27,29 @@ const TARGETS = {
     globalName: 'BasmagiCppRuntime',
   },
   matlab: {
-    skip: 'MATLAB source is migrated in Phase 3; public/assets/notebook-runtime/ stays as committed until then.',
+    entry: 'matlab/src/index.ts',
+    outDir: 'notebook-runtime',
+    globalName: 'MLWebRuntime',
+    // The interpreter Web Worker, loaded by the engine as <baseUrl>worker.js.
+    extra: [{ entry: 'matlab/src/worker.ts', outfile: 'worker.js' }],
   },
 };
 
 // Everything that can change a bundle's content. Add new source roots here.
 const SOURCE_ROOTS = ['shared', 'cpp/src', 'matlab/src', 'matlab/interp/src'];
 const SOURCE_FILES = ['package.json', 'package-lock.json', 'build.mjs', 'tsconfig.json'];
+
+/** KaTeX ships woff2 + woff + ttf per font; every browser we support has woff2, so keep only that. */
+const katexWoff2Only = {
+  name: 'katex-woff2-only',
+  setup(b) {
+    b.onLoad({ filter: /katex\.min\.css$/ }, async (a) => ({
+      contents: (await readFile(a.path, 'utf8')).replace(/,url\([^)]*\.woff\) format\("woff"\),url\([^)]*\.ttf\) format\("truetype"\)/g, ''),
+      loader: 'css',
+      resolveDir: path.dirname(a.path),
+    }));
+  },
+};
 
 async function runTarget(name, t) {
   if (t.skip) { console.log(`- ${name}: skipped (${t.skip})`); return; }
@@ -47,9 +63,17 @@ async function runTarget(name, t) {
     format: 'iife',
     globalName: t.globalName,
     outfile: path.join(outDir, 'runtime.js'),
-    loader: { '.css': 'css' },
+    loader: { '.css': 'css', '.woff2': 'file' },
+    assetNames: 'fonts/[name]',
+    plugins: [katexWoff2Only],
     define: { 'process.env.NODE_ENV': '"production"' },
   });
+  for (const x of t.extra ?? []) {
+    await build({
+      absWorkingDir: here, entryPoints: [x.entry], bundle: true, minify: true, format: 'iife', target: 'es2022',
+      outfile: path.join(outDir, x.outfile),
+    });
+  }
   console.log(`- ${name}: built -> public/assets/${t.outDir}/`);
 }
 
