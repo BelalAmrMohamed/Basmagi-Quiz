@@ -11,14 +11,26 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 * Pressing (`ctrl` + `S`) to save doesn't always work.
 
 ### Missing element in sidebar
-Add the link to the notebook page to the sidebar in document pages. See: `public\src\features\documents\documents-shell.js`
+* Add the link to the notebook page to the sidebar in document pages. See: `public\src\features\documents\documents-shell.js`
+* Also add the link to user content `/my-content`
+
+### Notebook Page: UI Issue
+* ![screenshot](image.png)
+* The cell scrollbars don't work, trying to scroll through them doesn't work. 
 
 ### Bottom Nav on phones
 * Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.
 * I honestly don't know what is the best decision, maybe keeping settings 
 
-### Quiz Passwords are exposed
-The home page downloads every quiz’s password to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be fixed.
+### Home Page
+
+#### Passwords are exposed
+The home page downloads every password (Of lessons and quizzes) to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be patched.
+
+#### Notebooks Download modal
+* ![screenshot](image-1.png)
+* This Notebook, which is a C++ runtime, its download modal has an `.m` export, which is MATLAB runtime specific, and it doesn't have the Cpp export `.cpp`.
+* Each new runtime should get its own specific exports, and not the MATLAB's. 
 
 ### AI Agent (الباشــمبصمج): Dictation
 Fix Dictation: The dictation doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser when using the browser api for dictation.
@@ -51,22 +63,8 @@ Add dictation feature for essays in quizzes and lessons
 #### Improvements
 * Implement cursor animation similar to that of VS Code
 
-#### MATLAB Runtime
-* **Current Folder Improvements**:
-  * Add a more menu (3 vertical dots).
-  * Move the **Remove** and **Download** into it.
-  * Add these: 
-    * **Copy Name**: Copies the name of the item (with its extension).
-    * **Rename**: Renames the item. Use the platform's `_prompt()` for it, its in `notifications.js`.
-    * **Copy Image**: Copies the image to clipboard.
-    * Recommend to me other functionalities to add.
-
-#### Runtime 
+#### Runtimes
 * There is no error handling while typing, if users forget a simple thing like a semi-column or something it doesn't get highlighted.
-
-#### UI
-* ![screenshot](image.png)
-* The cell scrollbars don't work, trying to scroll through them doesn't work. 
 
 ### AI Agent (الباشــمبصمج): Redesign
 * Implement my personal component from 21st.dev: Rich Markdown AI Input Field with code blocks.

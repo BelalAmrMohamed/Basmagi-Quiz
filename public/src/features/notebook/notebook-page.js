@@ -13,6 +13,7 @@ import { showNotebookInfoModal } from "../home/notebook-actions.js";
 import { createWorkspaceBridge } from "../../shared/workspace-bridge.js";
 import { exportNotebookZip } from "../../shared/notebook-bundle.js";
 import { loadRuntime } from "../../shared/runtime-loader.js";
+import { _prompt } from "../../components/notifications/notifications.js";
 import { RUNTIME_CONFIG } from "../../shared/runtime-config.js";
 import "./image-tool-window.js";
 import "./notebook-output-controls.js";
@@ -139,6 +140,7 @@ async function init() {
       notebook,
       lang,
       onInfo: () => showNotebookInfoModal(row),
+      onPrompt: (message, value) => _prompt(message, value, { dismissOnBackdrop: false }),
             onNotice: (message) => window.dispatchEvent(new CustomEvent("notebook:notice", { detail: message })),
     });
   } catch (e) {

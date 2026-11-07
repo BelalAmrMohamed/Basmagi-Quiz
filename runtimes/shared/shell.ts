@@ -100,12 +100,12 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
   const ctx: Ctx = {
     engine, t, lang, root, opts, state, q, editors, editorStates,
     isEdit: edit, mkCell, save, render, renderSide: () => renderSide(ctx), renderToolbar: () => renderToolbar(ctx, importInput),
-    notify, confirm: (...a) => dialogs.confirm(...a), answerInput,
+    notify, confirm: (...a) => dialogs.confirm(...a), prompt: (...a) => dialogs.prompt(...a), answerInput,
     focusEditor: (id) => { focusEditorId = id; render(); },
     focusCard: (id) => { focusCardId = id; render(); },
     leaveEditor, jumpToLine, runCell, runFromEditor, runAll, stop, resetWorkspace, resetToPublished, replaceCells,
     openHelp: () => dialogs.help(), openExport: () => exportDialog.open(), openImage: (o) => imageTool?.open(o),
-    addFile, removeFile, files: () => engine.files ?? new Map(), clearHistory,
+    addFile, removeFile, renameFile, files: () => engine.files ?? new Map(), clearHistory,
   };
   const dialogs = createDialogs(ctx);
   const exportDialog = createExportDialog(ctx);
@@ -354,6 +354,17 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     if (engine.removeFile) engine.removeFile(name); else engine.files?.delete(name);
     window.__mlwebFileHook?.del?.(name);
     ctx.renderSide();
+  }
+  function renameFile(from: string, to: string): boolean {
+    const name = to.trim(), files = engine.files;
+    if (!engine.renameFile || !files?.has(from) || name === from) return false;
+    if (!name || /[\\/]/.test(name)) { notify(t('File names cannot be empty or contain / or \\.')); return false; }
+    if (files.has(name)) { notify(t('A file named {name} already exists.', { name })); return false; }
+    engine.renameFile(from, name);
+    window.__mlwebFileHook?.rename?.(from, name);
+    if (state.cells.some((c) => c.type === 'code' && c.src.includes(from))) notify(t('Renamed. Code cells that mention {name} still use the old name.', { name: from }));
+    ctx.renderSide();
+    return true;
   }
 
   // ---------------- editor focus helpers ----------------

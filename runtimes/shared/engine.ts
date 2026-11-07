@@ -89,6 +89,8 @@ export interface Engine {
   files?: Map<string, ImageFile>;
   addFile?(f: File): Promise<void>;
   removeFile?(name: string): void;
+  /** Rename a workspace file in place (keeps its position in `files`). The shell validates the name first. */
+  renameFile?(from: string, to: string): void;
   /** Called once at mount: lets the engine read notebook state (for autocomplete). */
   attach?(host: { codeSources(): string[] }): void;
   /** Called with the cell sources so the engine can pre-load files they mention. */

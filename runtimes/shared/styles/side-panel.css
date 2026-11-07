@@ -126,6 +126,43 @@
   padding: 4px;
 }
 
+.mlweb .file .file-more {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.mlweb .file-menu {
+  position: fixed;
+  z-index: 1000;
+  display: grid;
+  min-width: 170px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.mlweb .file-menu button {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  text-align: start;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mlweb .file-menu button:is(:hover, :focus-visible) {
+  background: var(--panel-soft);
+}
+
+.mlweb .file-menu button.danger {
+  color: var(--err);
+}
+
 .mlweb .hist div {
   font:
     12px ui-monospace,

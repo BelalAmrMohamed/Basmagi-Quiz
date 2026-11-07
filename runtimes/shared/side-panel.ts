@@ -4,9 +4,9 @@
 // Each panel renders only if the engine's `caps` flag for it is true.
 // =============================================================================
 import type { Ctx } from './ctx';
+import type { ImageFile } from './engine';
 import { h, fmtBytes } from './dom';
-import { rawToCanvas } from './images';
-import { downloadImage } from './images';
+import { rawToCanvas, toBlob, downloadImage } from './images';
 
 /** True when the engine has anything to show in the side column. */
 export const hasSidePanels = (ctx: Pick<Ctx, 'engine'>) => { const c = ctx.engine.caps; return c.workspace || c.files || c.history; };
@@ -29,14 +29,115 @@ function workspacePanel(ctx: Ctx): HTMLElement {
   return h('div', { class: 'panel' }, h('h3', {}, t('Workspace'), h('button', { title: t('Clear variables'), onclick: () => ctx.resetWorkspace() }, t('Clear'))), body);
 }
 
+type MenuItem = { label: string; action: () => void | Promise<void>; danger?: boolean };
+let closeOpenMenu: (() => void) | null = null;
+
+/**
+ * A small floating menu. It is appended to the notebook root with `position: fixed`, because the
+ * panel body scrolls and clips anything absolutely positioned inside it.
+ */
+function openMenu(ctx: Ctx, anchor: HTMLElement, items: MenuItem[]) {
+  closeOpenMenu?.();
+  const menu = h('div', { class: 'file-menu', role: 'menu' });
+  const buttons = items.map((it) => h('button', {
+    type: 'button', role: 'menuitem', class: it.danger ? 'danger' : '',
+    onclick: () => { close(false); void it.action(); },
+  }, it.label));
+  menu.append(...buttons);
+  ctx.root.append(menu);
+  anchor.setAttribute('aria-expanded', 'true');
+
+  const r = anchor.getBoundingClientRect(), w = menu.offsetWidth, ht = menu.offsetHeight, gap = 8;
+  const rtl = getComputedStyle(ctx.root).direction === 'rtl';
+  const left = Math.min(Math.max(rtl ? r.left : r.right - w, gap), Math.max(gap, window.innerWidth - w - gap));
+  const below = r.bottom + 4, top = below + ht > window.innerHeight - gap ? Math.max(gap, r.top - ht - 4) : below;
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+
+  const away = (e: Event) => { if (!menu.contains(e.target as Node) && !anchor.contains(e.target as Node)) close(false); };
+  const key = (e: KeyboardEvent) => {
+    const i = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); buttons[(i + 1) % buttons.length].focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); buttons[(i - 1 + buttons.length) % buttons.length].focus(); }
+    else if (e.key === 'Tab') close(false);
+  };
+  const dismiss = () => close(false);
+  // Scrolling only matters when it moves the button the menu hangs from (the panel body scrolls).
+  const onScroll = () => { const a = anchor.getBoundingClientRect(); if (Math.abs(a.top - r.top) > 1 || Math.abs(a.left - r.left) > 1) close(false); };
+  function close(refocus: boolean) {
+    document.removeEventListener('pointerdown', away, true);
+    document.removeEventListener('keydown', key, true);
+    window.removeEventListener('resize', dismiss);
+    window.removeEventListener('scroll', onScroll, true);
+    menu.remove();
+    anchor.setAttribute('aria-expanded', 'false');
+    if (closeOpenMenu === close0) closeOpenMenu = null;
+    if (refocus && anchor.isConnected) anchor.focus();
+  }
+  const close0 = () => close(false);
+  closeOpenMenu = close0;
+  document.addEventListener('pointerdown', away, true);
+  document.addEventListener('keydown', key, true);
+  window.addEventListener('resize', dismiss);
+  window.addEventListener('scroll', onScroll, true);
+  buttons[0]?.focus({ preventScroll: true });
+}
+
+async function copyText(text: string): Promise<boolean> {
+  try { await navigator.clipboard.writeText(text); return true; } catch { /* fall back below */ }
+  const ta = h('textarea', { style: 'position:fixed;opacity:0', 'aria-hidden': 'true' });
+  ta.value = text;
+  document.body.append(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { /* not allowed */ }
+  ta.remove();
+  return ok;
+}
+
+/** PNG is the one image type every browser accepts on the clipboard. */
+async function copyImage(img: ImageFile): Promise<boolean> {
+  try {
+    if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') return false;
+    // The promise is handed over unresolved so Safari keeps the click's permission while it encodes.
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': toBlob(rawToCanvas(img), 'image/png') })]);
+    return true;
+  } catch { return false; }
+}
+
+function fileMenu(ctx: Ctx, anchor: HTMLElement, name: string, img: ImageFile) {
+  const { t } = ctx;
+  const items: MenuItem[] = [
+    { label: t('Copy Name'), action: async () => ctx.notify((await copyText(name)) ? t('Copied {name}', { name }) : t('Could not copy to the clipboard.')) },
+    ...(ctx.engine.renameFile ? [{
+      label: t('Rename'),
+      action: async () => {
+        const next = await ctx.prompt(t('Rename file'), name);
+        if (next === null) return;
+        let to = next.trim();
+        // Typing just a new base name keeps the old extension, so imread('name.png') keeps working.
+        if (to && !/\.[A-Za-z0-9]+$/.test(to)) to += /\.[^.]+$/.exec(name)?.[0] ?? '';
+        ctx.renameFile(name, to);
+      },
+    }] : []),
+    { label: t('Copy Image'), action: async () => ctx.notify((await copyImage(img)) ? t('Image copied to clipboard.') : t('Could not copy the image. Your browser may block clipboard access; use Download instead.')) },
+    { label: t('Download'), action: () => downloadImage(name, img) },
+    { label: t('Remove'), danger: true, action: () => ctx.removeFile(name) },
+  ];
+  openMenu(ctx, anchor, items);
+}
+
 function filesPanel(ctx: Ctx): HTMLElement {
   const { t } = ctx;
   const body = h('div', { class: 'body' }), files = ctx.files();
   for (const [name, img] of files) {
     body.append(h('div', { class: 'file' }, rawToCanvas(img),
       h('span', { class: 'n', title: `${img.width}×${img.height} · ${img.channels === 1 ? 'grayscale' : 'RGB'} · ${fmtBytes(img.fileSize)}` }, name + ' · ' + fmtBytes(img.fileSize)),
-      h('button', { title: t('Download file'), onclick: () => void downloadImage(name, img) }, '↓'),
-      h('button', { title: t('Remove file'), onclick: () => ctx.removeFile(name) }, '✕')));
+      h('button', {
+        class: 'file-more', title: t('File actions'), 'aria-haspopup': 'menu', 'aria-expanded': 'false',
+        onclick: (e: MouseEvent) => fileMenu(ctx, e.currentTarget as HTMLElement, name, img),
+      }, '⋮')));
   }
   if (!files.size) body.append(h('div', { class: 'empty' }, t('No files yet. Upload an image to get started.')));
   const input = h('input', { type: 'file', accept: 'image/*', multiple: true, style: 'display:none' });

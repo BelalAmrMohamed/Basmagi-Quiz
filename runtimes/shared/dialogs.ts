@@ -23,6 +23,7 @@ export interface Dialogs {
   elements: HTMLElement[];
   help(): void;
   confirm(title: string, message: string, accept?: string): Promise<boolean>;
+  prompt(message: string, value?: string): Promise<string | null>;
   notify(message: string): void;
   dispose(): void;
 }
@@ -88,6 +89,12 @@ export function createDialogs(ctx: Ctx): Dialogs {
     confirmDialog.querySelector('[data-confirm-accept]')!.textContent = accept;
     return new Promise((resolve) => { confirmResolve = resolve; openDialog(confirmDialog); });
   };
+  // Text prompt: the host's _prompt when it provides one, the browser's own prompt otherwise.
+  const prompt = (message: string, value = ''): Promise<string | null> => {
+    const hook = ctx.opts.onPrompt;
+    if (hook) return Promise.resolve(hook(message, value)).then((v) => (typeof v === 'string' ? v : null), () => null);
+    return Promise.resolve(window.prompt(message, value));
+  };
   confirmDialog.querySelectorAll('[data-confirm-cancel]').forEach((b) => on(b, 'click', () => settleConfirm(false)));
   on(confirmDialog.querySelector('[data-confirm-accept]'), 'click', () => settleConfirm(true));
   on(confirmDialog, 'cancel', (e) => { e.preventDefault(); settleConfirm(false); });
@@ -106,7 +113,7 @@ export function createDialogs(ctx: Ctx): Dialogs {
   on(notice.querySelector('#dismissNotice'), 'click', () => { window.clearTimeout(noticeTimer); notice.hidden = true; });
 
   return {
-    elements: [helpDialog, confirmDialog, notice], help, confirm, notify,
+    elements: [helpDialog, confirmDialog, notice], help, confirm, prompt, notify,
     dispose() {
       window.clearTimeout(noticeTimer);
       settleConfirm(false);

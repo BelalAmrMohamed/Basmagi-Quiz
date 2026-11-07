@@ -187,6 +187,14 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
       worker?.postMessage({ t: 'putFile', name: f.name, img });
     },
     removeFile(name: string) { files.delete(name); worker?.postMessage({ t: 'delFile', name }); },
+    renameFile(from: string, to: string) {
+      // Rebuild the map so the file keeps its place in the list; `files` itself must stay the same object.
+      const next = [...files].map(([k, v]) => (k === from ? [to, { ...v, filename: '/vfs/' + to }] as const : [k, v] as const));
+      files.clear();
+      for (const [k, v] of next) files.set(k, v);
+      worker?.postMessage({ t: 'delFile', name: from });
+      worker?.postMessage({ t: 'putFile', name: to, img: files.get(to) });
+    },
 
     attach(host) { codeSources = host.codeSources; },
 

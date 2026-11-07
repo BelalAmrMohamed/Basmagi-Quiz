@@ -24,6 +24,8 @@ export interface MountOptions {
   onNotice?: (message: string) => void;
   onInfo?: () => void;
   onConfirm?: (title: string, message: string, accept: string) => boolean | Promise<boolean>;
+  /** Single-line text prompt (the platform's _prompt). Resolves to the text, or null when cancelled. */
+  onPrompt?: (message: string, value: string) => string | null | Promise<string | null>;
 }
 export type HostCell = { id: string; type: 'code' | 'markdown'; source: string; stdin?: string };
 
@@ -40,6 +42,7 @@ export interface Ctx {
   renderToolbar(): void;
   notify(message: string): void;
   confirm(title: string, message: string, accept?: string): Promise<boolean>;
+  prompt(message: string, value?: string): Promise<string | null>;
   /** Submit (string) or cancel (null) the open input box of a cell. */
   answerInput(cell: UiCell, value: string | null): void;
   /** Re-render and put the caret in a code/text cell's editor. */
@@ -65,6 +68,8 @@ export interface Ctx {
   openImage(o: Extract<Out, { k: 'img' }>): void;
   addFile(f: File): Promise<void>;
   removeFile(name: string): void;
+  /** Validates `to`, renames, tells the host. Returns false (after a notice) when the rename was refused. */
+  renameFile(from: string, to: string): boolean;
   files(): Map<string, ImageFile>;
   clearHistory(): void;
   /** Editor view/state bookkeeping owned by the shell. */

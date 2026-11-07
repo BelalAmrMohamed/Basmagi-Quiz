@@ -35,6 +35,18 @@ export function createWorkspaceBridge(key, opts = {}) {
       opts.onChange?.();
       if (persist) store.putFile(current, file).then(() => { checkSize(); emit("add", file.name); }).catch((e) => console.warn("[workspace] save failed", e));
     },
+    rename(from, to) {
+      opts.onChange?.();
+      if (!persist) return;
+      store.listFiles(current).then(async (files) => {
+        const rec = files.find((f) => f.path === from);
+        if (!rec) return; // published asset: it is restored from the manifest, so there is nothing stored to move
+        await store.putFile(current, new File([rec.blob], to, { type: rec.mime }), to, rec.updatedAt);
+        await store.deleteFile(current, from);
+        emit("del", from);
+        emit("add", to);
+      }).catch((e) => console.warn("[workspace] rename failed", e));
+    },
     del(name) {
       opts.onChange?.();
       if (persist) store.deleteFile(current, name).then(() => emit("del", name)).catch(() => {});

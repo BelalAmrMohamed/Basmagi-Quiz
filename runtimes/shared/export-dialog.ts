@@ -8,7 +8,7 @@ import { h, openDialog, closeDialog, download, esc } from './dom';
 import { renderMarkdown } from './markdown';
 import { rgbToDataUrl } from './images';
 
-declare global { interface Window { __mlwebExport?: { zip?: () => void | Promise<void> }; __mlwebImport?: (f: File) => void | Promise<void>; __mlwebFileHook?: { add?(f: File): void; del?(name: string): void } } }
+declare global { interface Window { __mlwebExport?: { zip?: () => void | Promise<void> }; __mlwebImport?: (f: File) => void | Promise<void>; __mlwebFileHook?: { add?(f: File): void; del?(name: string): void; rename?(from: string, to: string): void } } }
 
 const lines = (s: string) => s.split('\n').map((l, i, a) => (i < a.length - 1 ? l + '\n' : l));
 const fileBase = (ctx: Ctx) =>
