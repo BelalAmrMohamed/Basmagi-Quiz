@@ -120,7 +120,7 @@
       "destination": "https://esdfdzhtavraczrhxnmp.supabase.co/functions/v1/mcp/$1"
     },
     {
-      "source": "/((?!api/|_vercel/|assets/|src/|favicon\\.|manifest\\.json|robots\\.txt|sitemap\\.xml|sitemap-static\\.xml|llms\\.txt|service-worker\\.js|about$|control$|create-quiz$|create-lesson$|notebook$|lesson-comments$|how-to-create-content$|how-to-upload-content$|how-to-use-ai-agent$|oauth-callback$|offline$|onboarding$|privacy-policy$|profile$|quiz$|reports$|result$|settings$|terms-of-service$|.*\\.[a-zA-Z0-9]+$).*)",
+      "source": "/((?!api/|_vercel/|assets/|src/|favicon\\.|manifest\\.json|robots\\.txt|sitemap\\.xml|sitemap-static\\.xml|llms\\.txt|service-worker\\.js|about$|control$|create-quiz$|create-lesson$|notebook$|lesson-comments$|how-to-connect-mcp$|how-to-create-content$|how-to-upload-content$|how-to-use-ai-agent$|oauth-callback$|offline$|onboarding$|privacy-policy$|profile$|quiz$|reports$|result$|settings$|terms-of-service$|.*\\.[a-zA-Z0-9]+$).*)",
       "destination": "/"
     }
   ],

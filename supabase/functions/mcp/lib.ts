@@ -296,6 +296,7 @@ export const CREATOR_INFO: Record<string, string> = {
 - ${SITE}/create-lesson — إنشاء درس
 - ${SITE}/how-to-create-content — شرح إنشاء امتحان
 - ${SITE}/how-to-upload-content — شرح رفع امتحان
+- ${SITE}/how-to-connect-mcp — ربط Claude/ChatGPT بالمنصة (MCP) بالصور
 - ${SITE}/how-to-use-ai-agent — شرح استخدام المساعد الذكي
 - ${SITE}/privacy-policy · ${SITE}/terms-of-service`,
 };

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+        (function () {
+            try {
+                const theme = localStorage.getItem("quiz_theme_pref") || "light";
+                const animations = localStorage.getItem("quiz_animations_pref") !== "disabled";
+                const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                document.documentElement.setAttribute("data-theme", theme);
+                document.documentElement.setAttribute("data-animations", animations && !reduced ? "enabled" : "disabled");
+                document.documentElement.setAttribute("data-motion", reduced ? "reduced" : "normal");
+            } catch (_) { }
+        })();
+    </script>
+    <meta name="description" content="دليل ربط منصة امتحانات بصمجي بـ Claude أو ChatGPT أو Gemini عبر خادم MCP بالصور خطوة بخطوة، ثم إنشاء امتحان أو درس أو دفتر من محاضرتك وحفظه مباشرة في «محتواي»." />
+    <meta name="author" content="بلال عمرو محمد" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ربط المنصة بـ Claude و ChatGPT (MCP) | منصة امتحانات بصمجي" />
+    <meta property="og:description" content="خطوات ربط خادم MCP بالصور، وإنشاء امتحان أو درس أو دفتر من محاضرتك بضغطة رابط." />
+    <meta property="og:url" content="https://basmagi-quiz.vercel.app/how-to-connect-mcp" />
+    <link rel="canonical" href="https://basmagi-quiz.vercel.app/how-to-connect-mcp" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <title>ربط المنصة بـ Claude و ChatGPT (MCP) | منصة امتحانات بصمجي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="src/styles/themes.css">
+    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
+    <link rel="stylesheet" href="src/components/notifications/notifications.css">
+    <link rel="stylesheet" href="src/features/documents/documents.css">
+    <link rel="stylesheet" href="src/components/telegram-bot-card/telegram-bot-card.css">
+</head>
+
+<link rel="stylesheet" href="src/features/documents/doc-steps.css">
+</head>
+
+<body>
+    <div class="top-bar" role="presentation" aria-hidden="true"></div>
+
+    <main>
+        <div class="page-wrapper">
+            <header class="header" role="banner">
+                <div class="logo-lockup">
+                    <img src="/favicon.png" alt="شعار منصة بصمجي" class="logo-mark" width="48" height="48" />
+                    <div class="brand-name">منصة امتحانات بصمجي</div>
+                </div>
+                <h1>ربط المنصة بـ Claude و ChatGPT (MCP)</h1>
+                <div class="doc-meta"><span>دليل الربط الخارجي</span><span>خطوات بالصور</span><span>٥ دقائق</span></div>
+            </header>
+
+            <p class="intro">بدل أن تنسخ الأسئلة وتلصقها بنفسك، اربط المنصة بمساعدك المفضل مرة واحدة عبر <strong>خادم MCP</strong>، ثم ارفع له محاضرتك واطلب منه امتحاناً أو درساً أو دفتراً. يعطيك <strong>رابطاً قصيراً</strong> تفتحه فيُحفظ العنصر <strong>مباشرة في «محتواي»</strong> ويظهر لك بشارة «جديد».</p>
+
+            <nav class="doc-quick" aria-label="اختصارات">
+                <a href="#claude"><strong>Claude</strong><span>الأسهل · مع Skill</span></a>
+                <a href="#chatgpt"><strong>ChatGPT</strong><span>٣ خطوات</span></a>
+                <a href="#gemini"><strong>Gemini</strong><span>بالفيديو</span></a>
+                <a href="#skill"><strong>Skill</strong><span>نتيجة أدق</span></a>
+            </nav>
+
+            <section class="section" aria-labelledby="s1">
+                <h2 id="s1">١. ما الذي ستحصل عليه؟ <span class="section-badge">نظرة سريعة</span></h2>
+                <ul class="doc-cards">
+                    <li><strong>بحث في المنصة</strong>المواد والمجلدات والامتحانات والدروس، من داخل المحادثة.</li>
+                    <li><strong>إنشاء من محاضرتك</strong>امتحان، درس، أو دفتر تشغيل (MATLAB / C++) من ملف أو نص.</li>
+                    <li><strong>بلا تسجيل دخول</strong>الرابط وحده يكفي. يُحفظ العنصر في متصفحك فقط ولا يُنشر على المنصة العامة.</li>
+                </ul>
+                <p>رابط الخادم الذي ستحتاجه في كل الخطوات:</p>
+                <div class="doc-copy" dir="ltr"><code>https://basmagi-quiz.vercel.app/api/mcp</code><button type="button" class="doc-copy__btn" data-copy="https://basmagi-quiz.vercel.app/api/mcp">نسخ</button></div>
+                <!-- Video Guide Embed Card: MCP / Claude connection -->
+                <article class="doc-video-card" aria-label="فيديو شرح ربط المنصة بـ Claude">
+                    <div class="doc-video-card__head">
+                        <span class="doc-video-card__badge">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            ربط Claude بالمنصة
+                        </span>
+                        <h3>شرح بالفيديو: ربط منصة امتحانات بصمجي بـ Claude مباشرة</h3>
+                        <p class="doc-video-card__desc">شاهد خطوات إضافة الـ Connector في Claude، وتجربة البحث، وإنشاء امتحان أو درس من محاضرة، ثم الربط مع Gemini وChatGPT:</p>
+                        <p class="doc-video-card__note">ملاحظة: الفيديو مسجّل قبل آخر تحديث. الرابط الذي يعطيك إياه Claude الآن قصير، وعند فتحه يُحفظ العنصر مباشرة في «محتواي» (تفاصيل ذلك في القسم ٥).</p>
+                    </div>
+
+                    <div class="doc-video-card__player-wrap">
+                        <iframe class="doc-video-card__iframe"
+                            src="https://www.youtube-nocookie.com/embed/ZjizaeFrdwE?rel=0"
+                            title="شرح بالفيديو: ربط منصة امتحانات بصمجي بـ Claude مباشرة"
+                            loading="lazy"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+
+                    <div class="doc-video-card__chapters">
+                        <span class="doc-video-card__chapters-title">فصول الشرح السريع:</span>
+                        <div class="doc-video-card__timeline" role="list">
+                            <button type="button" class="doc-video-chip is-active" data-time="0">
+                                <span class="doc-video-chip__time">00:00</span>
+                                <span>مقدمة: الباشــمبصمج وأدواته</span>
+                            </button>
+                            <button type="button" class="doc-video-chip" data-time="36">
+                                <span class="doc-video-chip__time">00:36</span>
+                                <span>إضافة Connector مخصص في Claude</span>
+                            </button>
+                            <button type="button" class="doc-video-chip" data-time="60">
+                                <span class="doc-video-chip__time">01:00</span>
+                                <span>تجربة البحث في محتوى المنصة</span>
+                            </button>
+                            <button type="button" class="doc-video-chip" data-time="91">
+                                <span class="doc-video-chip__time">01:31</span>
+                                <span>رفع محاضرة وإنشاء امتحان أو درس</span>
+                            </button>
+                            <button type="button" class="doc-video-chip" data-time="97">
+                                <span class="doc-video-chip__time">01:37</span>
+                                <span>لماذا الرابط طويل؟ (قبل التحديث)</span>
+                            </button>
+                            <button type="button" class="doc-video-chip" data-time="141">
+                                <span class="doc-video-chip__time">02:21</span>
+                                <span>إنشاء درس من محاضرة</span>
+                            </button>
+                            <button type="button" class="doc-video-chip" data-time="174">
+                                <span class="doc-video-chip__time">02:54</span>
+                                <span>الربط مع Gemini وChatGPT</span>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="section" aria-labelledby="claude">
+                <h2 id="claude">٢. الربط مع Claude <span class="section-badge">٥ خطوات</span></h2>
+                <p>تعمل الخطوات على claude.ai وتطبيق سطح المكتب. (الواجهة بالإنجليزية في الصور؛ الأسماء بين علامات الخط العريض هي ما ستراه في الشاشة.)</p>
+                <ol class="doc-steps">
+                <li class="doc-step">
+                    <span class="doc-step__num" aria-hidden="true">1</span>
+                    <div class="doc-step__body">
+                        <h3>افتح قائمة Connectors</h3>
+                        <p>من خانة الكتابة اضغط على <strong>+</strong> ثم <strong>Connectors</strong> ثم <strong>Manage connectors</strong>.</p>
+                        <figure class="doc-shot">
+                        <button type="button" class="doc-shot__zoom" data-full="/assets/document-pages/claude/step-1.jpeg" aria-label="تكبير الصورة: قائمة + في Claude مفتوحة على Connectors ثم Manage connectors">
+                            <img src="/assets/document-pages/claude/step-1.jpeg" alt="قائمة + في Claude مفتوحة على Connectors ثم Manage connectors" width="1500" height="844" loading="lazy" decoding="async" />
+                        </button>
+                        <figcaption>قائمة <bdi>+</bdi> ← <bdi>Connectors</bdi> ← <bdi>Manage connectors</bdi>.</figcaption>
+                    </figure>
+                    </div>
+                </li>
+                <li class="doc-step">
+                    <span class="doc-step__num" aria-hidden="true">2</span>
+                    <div class="doc-step__body">
+                        <h3>أضف Connector مخصصاً</h3>
+                        <p>في تبويب <strong>Connectors</strong> اضغط <strong>Add</strong> ثم اختر <strong>Add custom connector</strong>.</p>
+                        <figure class="doc-shot">
+                        <button type="button" class="doc-shot__zoom" data-full="/assets/document-pages/claude/step-2.jpeg" aria-label="تكبير الصورة: صفحة إعدادات Connectors في Claude مع زر Add وخيار Add custom connector">
+                            <img src="/assets/document-pages/claude/step-2.jpeg" alt="صفحة إعدادات Connectors في Claude مع زر Add وخيار Add custom connector" width="1500" height="844" loading="lazy" decoding="async" />
+                        </button>
+                        <figcaption>زر <bdi>Add</bdi> أعلى يمين القائمة.</figcaption>
+                    </figure>
+                    </div>
+                </li>
+                <li class="doc-step">
+                    <span class="doc-step__num" aria-hidden="true">3</span>
+                    <div class="doc-step__body">
+                        <h3>اكتب الاسم والرابط</h3>
+                        <p>سمّه <strong>Basmagi Quiz</strong> والصق رابط الخادم، ثم اضغط <strong>Continue</strong>.</p><div class="doc-copy" dir="ltr"><code id="mcpUrl1">https://basmagi-quiz.vercel.app/api/mcp</code><button type="button" class="doc-copy__btn" data-copy="https://basmagi-quiz.vercel.app/api/mcp">نسخ</button></div>
+                        <figure class="doc-shot">
+                        <button type="button" class="doc-shot__zoom" data-full="/assets/document-pages/claude/step-3.jpeg" aria-label="تكبير الصورة: نافذة Add custom connector وفيها الاسم Basmagi Quiz ورابط الخادم">
+                            <img src="/assets/document-pages/claude/step-3.jpeg" alt="نافذة Add custom connector وفيها الاسم Basmagi Quiz ورابط الخادم" width="1500" height="844" loading="lazy" decoding="async" />
+                        </button>
+                        <figcaption>الاسم يظهر في قائمتك، والرابط هو رابط المنصة متبوعاً بـ <bdi>/api/mcp</bdi>.</figcaption>
+                    </figure>
+                    </div>
+                </li>
+                <li class="doc-step">
+                    <span class="doc-step__num" aria-hidden="true">4</span>
+                    <div class="doc-step__body">
+                        <h3>اترك الخيار على «No sign-in» ثم Add</h3>
+                        <p>سيكتشف Claude تلقائياً أن الخادم لا يحتاج تسجيل دخول (تظهر علامة <strong>Detected</strong>)، فاترك الاختيار كما هو واضغط <strong>Add</strong>. لا تحتاج إلى أي Header أو مفتاح.</p>
+                        <figure class="doc-shot">
+                        <button type="button" class="doc-shot__zoom" data-full="/assets/document-pages/claude/step-4.jpeg" aria-label="تكبير الصورة: خيار No sign-in محدد تلقائياً في نافذة إضافة الـ Connector">
+                            <img src="/assets/document-pages/claude/step-4.jpeg" alt="خيار No sign-in محدد تلقائياً في نافذة إضافة الـ Connector" width="1500" height="844" loading="lazy" decoding="async" />
+                        </button>
+                        <figcaption>لا تُضف Headers ولا إعدادات متقدمة.</figcaption>
+                    </figure>
+                    </div>
+                </li>
+                <li class="doc-step">
+                    <span class="doc-step__num" aria-hidden="true">5</span>
+                    <div class="doc-step__body">
+                        <h3>اضبط صلاحيات الأدوات</h3>
+                        <p>افتح الـ Connector وستجد أدواته في مجموعتين: <strong>Read-only tools</strong> (للبحث والقراءة) و<strong>Write/delete tools</strong>. اختر <strong>Always allow</strong> لأدوات القراءة كي لا يسألك Claude في كل بحث، واترك الباقي على <strong>Needs approval</strong>.</p>
+                        <figure class="doc-shot">
+                        <button type="button" class="doc-shot__zoom" data-full="/assets/document-pages/claude/step-5.jpeg" aria-label="تكبير الصورة: صفحة صلاحيات أدوات Basmagi Quiz في Claude مع قائمة Always allow">
+                            <img src="/assets/document-pages/claude/step-5.jpeg" alt="صفحة صلاحيات أدوات Basmagi Quiz في Claude مع قائمة Always allow" width="1500" height="844" loading="lazy" decoding="async" />
+                        </button>
+                        <figcaption>عدد الأدوات في كل مجموعة قد يتغير مع تحديثات المنصة.</figcaption>
+                    </figure>
+                    </div>
+                </li>
+                </ol>
+            </section>
+
+            <section class="section" aria-labelledby="chatgpt">
+                <h2 id="chatgpt">٣. الربط مع ChatGPT <span class="section-badge">٣ خطوات</span></h2>
+                <p>يتطلب ظهور خيار الـ Plugins / MCP المخصص في حسابك وخطتك؛ إن لم يظهر فهو غير متاح لحسابك بعد من جهة OpenAI.</p>
+                <ol class="doc-steps">
+                <li class="doc-step">
+                    <span class="doc-step__num" aria-hidden="true">1</span>
+                    <div class="doc-step__body">
+                        <h3>افتح Plugins</h3>
+                        <p>من القائمة الجانبية في ChatGPT اضغط <strong>Plugins</strong>.</p>
+                        <figure class="doc-shot">
+                        <button type="button" class="doc-shot__zoom" data-full="/assets/document-pages/chatGPT/step-1.jpeg" aria-label="تكبير الصورة: القائمة الجانبية في ChatGPT مع سهم يشير إلى Plugins">
+                            <img src="/assets/document-pages/chatGPT/step-1.jpeg" alt="القائمة الجانبية في ChatGPT مع سهم يشير إلى Plugins" width="1501" height="844" loading="lazy" decoding="async" />
+                        </button>
+                        <figcaption><bdi>Plugins</bdi> في القائمة الجانبية.</figcaption>
+                    </figure>
+                    </div>
+                </li>
+                <li class="doc-step">
+                    <span class="doc-step__num" aria-hidden="true">2</span>
+                    <div class="doc-step__body">
+                        <h3>Add ← Add custom MCP server</h3>
+                        <p>اضغط <strong>Add</strong> أعلى الصفحة ثم اختر <strong>Add custom MCP server</strong>.</p>
+                        <figure class="doc-shot">
+                        <button type="button" class="doc-shot__zoom" data-full="/assets/document-pages/chatGPT/step-2.png" aria-label="تكبير الصورة: قائمة Add في صفحة Plugins مع خيار Add custom MCP server">
+                            <img src="/assets/document-pages/chatGPT/step-2.png" alt="قائمة Add في صفحة Plugins مع خيار Add custom MCP server" width="1621" height="912" loading="lazy" decoding="async" />
+                        </button>
+                        <figcaption>الخيار الثالث في القائمة.</figcaption>
+                    </figure>
+                    </div>
+                </li>
+                <li class="doc-step">
+                    <span class="doc-step__num" aria-hidden="true">3</span>
+                    <div class="doc-step__body">
+                        <h3>املأ البيانات</h3>
+                        <p>الاسم <strong>Basmagi Quiz</strong>، والوصف اختياري، والصق الرابط في <strong>Server URL</strong>، واجعل <strong>Authentication</strong> على <strong>No authentication</strong>. فعّل مربع «I understand» ثم <strong>Create as a plugin</strong>.</p><div class="doc-copy" dir="ltr"><code id="mcpUrl2">https://basmagi-quiz.vercel.app/api/mcp</code><button type="button" class="doc-copy__btn" data-copy="https://basmagi-quiz.vercel.app/api/mcp">نسخ</button></div>
+                        <figure class="doc-shot">
+                        <button type="button" class="doc-shot__zoom" data-full="/assets/document-pages/chatGPT/step-3.png" aria-label="تكبير الصورة: نافذة Add custom MCP server في ChatGPT بعد ملء الاسم والرابط">
+                            <img src="/assets/document-pages/chatGPT/step-3.png" alt="نافذة Add custom MCP server في ChatGPT بعد ملء الاسم والرابط" width="1604" height="902" loading="lazy" decoding="async" />
+                        </button>
+                        <figcaption>اختر <bdi>No authentication</bdi> من القائمة المنسدلة.</figcaption>
+                    </figure>
+                    </div>
+                </li>
+                </ol>
+            </section>
+
+            <section class="section" aria-labelledby="gemini">
+                <h2 id="gemini">٤. الربط مع Gemini <span class="section-badge">بالفيديو</span></h2>
+                <p>الفكرة نفسها: أضف رابط خادم MCP ذاته كموصّل مخصص. تجد خطواتها في الفيديو أعلاه من الدقيقة <strong>02:54</strong>.</p>
+            </section>
+
+            <section class="section" aria-labelledby="s5">
+                <h2 id="s5">٥. جرّب: أنشئ أول امتحان <span class="section-badge">الاستخدام</span></h2>
+                <p>ارفع المحاضرة أو الصق نصها، واطلب بلغتك، مع ذكر اسم الـ Connector. أمثلة:</p>
+                <ul class="doc-prompts">
+                    <li dir="auto">اعملي امتحان على الفاعل والمفعول عشان تختبرني قبل امتحان نهاية السنة على منصة امتحانات بصمجي (Basmagi Quiz)</li>
+                    <li dir="auto">حوّل المحاضرة المرفقة إلى درس مقسّم لأقسام مع أسئلة، على منصة امتحانات بصمجي.</li>
+                    <li dir="auto">اعمل دفتر MATLAB تفاعلي يشرح معالجة الصور من الملف المرفق.</li>
+                </ul>
+                <div class="doc-shots-row">
+                    <figure class="doc-shot">
+                        <button type="button" class="doc-shot__zoom" data-full="/assets/document-pages/claude/usage.jpeg" aria-label="تكبير الصورة: مثال على طلب إنشاء امتحان عبر Claude مع ذكر Basmagi Quiz">
+                            <img src="/assets/document-pages/claude/usage.jpeg" alt="مثال على طلب إنشاء امتحان عبر Claude مع ذكر Basmagi Quiz" width="1500" height="844" loading="lazy" decoding="async" />
+                        </button>
+                        <figcaption>في Claude: اذكر اسم الـ Connector داخل الطلب.</figcaption>
+                    </figure>
+                    <figure class="doc-shot">
+                        <button type="button" class="doc-shot__zoom" data-full="/assets/document-pages/chatGPT/usage.jpeg" aria-label="تكبير الصورة: مثال على طلب إنشاء امتحان في ChatGPT مع اختيار Basmagi Quiz من قائمة Plugins">
+                            <img src="/assets/document-pages/chatGPT/usage.jpeg" alt="مثال على طلب إنشاء امتحان في ChatGPT مع اختيار Basmagi Quiz من قائمة Plugins" width="1763" height="844" loading="lazy" decoding="async" />
+                        </button>
+                        <figcaption>في ChatGPT: اكتب <bdi>@</bdi> ثم اختر <bdi>Basmagi Quiz</bdi> من قائمة Plugins.</figcaption>
+                    </figure>
+                </div>
+                <h3>ماذا يحدث عند فتح الرابط؟</h3>
+                <ol class="doc-flow">
+                    <li><strong>يعطيك المساعد رابطاً قصيراً</strong> من الشكل <code dir="ltr">/my-content?draft=…</code> صالحاً <strong>٧٢ ساعة</strong>.</li>
+                    <li><strong>تفتحه</strong> فتنتقل إلى «محتواي» ويُحفظ العنصر تلقائياً، دون محرّر أو خطوة تأكيد.</li>
+                    <li><strong>تجده مميّزاً</strong> بشارة «جديد» وتظهر لك رسالة بعنوانه. إن وُجد عنصر بالاسم نفسه أضفنا إلى اسمه <bdi>(2)</bdi>.</li>
+                </ol>
+                <p>يعمل ذلك للامتحانات والدروس والدفاتر على حدٍّ سواء، وبلا مراجعة مشرف. يُخزَّن العنصر في المتصفح الذي فتحت فيه الرابط، فافتحه على الجهاز الذي ستدرس عليه. فتح الرابط نفسه مرة ثانية على الجهاز نفسه لا يكرّر العنصر.</p>
+            </section>
+
+            <section class="section" aria-labelledby="s6">
+                <h2 id="s6">٦. التعديل والنسخ <span class="section-badge">مهم</span></h2>
+                <ul>
+                    <li><strong>عدّل قبل أن تفتح الرابط:</strong> اطلب من المساعد التعديل وسيغيّر المسودة نفسها وبالرابط نفسه.</li>
+                    <li><strong>بعد الفتح</strong> يصبح العنصر في «محتواي» وتُحذف المسودة من الخادم؛ عدّله من هناك بنفسك أو اطلب مسودة جديدة.</li>
+                    <li><strong>نسخ عنصر موجود على المنصة</strong> لترجمته أو تقصيره: يُنسخ إلى مسودة جديدة ويبقى الأصل كما هو (المحمي بكلمة مرور لا يُنسخ).</li>
+                </ul>
+            </section>
+
+            <section class="section" aria-labelledby="skill">
+                <h2 id="skill">٧. Skill للحصول على نتيجة أدق <span class="section-badge">Claude فقط</span></h2>
+                <p>الـ Skill دليل رسمي للمنصة يعرّف Claude بالطريقة الصحيحة للعمل مع الـ Connector، فتقل الأخطاء من أول محاولة.</p>
+                <article class="doc-download-card" aria-labelledby="skillCardTitle">
+                    <div class="doc-download-card__head">
+                        <span class="doc-download-card__badge">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            تحديث جديد · ملف للتحميل
+                        </span>
+                        <div class="doc-download-card__title" id="skillCardTitle">📖 دليل كتابة جوّه الموصل (AI Skill)</div>
+                        <p class="doc-download-card__desc">دلوقتي Claude بقى عنده دليل رسمي للمنصة، فالنتيجة أحسن من أول مرة. لو بتعمل امتحانات أو دروس عن طريق Claude، الموضوع بقى أسهل وأسرع بكتير:</p>
+                    </div>
+
+                    <ul class="doc-download-card__list">
+                        <li>
+                            <strong>رابط قصير بدل الرابط الطويل</strong>
+                            دلوقتي Claude بيديك رابط صغير لما تفتحه بيتحفظ المحتوى مباشرة في «محتواي» ويظهر بشارة «جديد». صالح ٧٢ ساعة ومن غير تسجيل دخول.
+                        </li>
+                        <li>
+                            <strong>تعديل من غير ما تبدأ من الأول</strong>
+                            عايز تعدل قبل ما تفتح الرابط؟ Claude بيعدّل في نفس المسودة وبنفس الرابط، بدل ما يعيد كتابة كل حاجة.
+                        </li>
+                        <li>
+                            <strong>نسخ امتحان أو درس موجود وتعديله</strong>
+                            تحب تترجم امتحان، تقصّره، أو تعمل منه نسخة تانية؟ Claude بينسخه لمسودة جديدة ويعدّل عليها، والأصلي ما بيتغيرش.
+                        </li>
+                    </ul>
+
+                    <div class="doc-download-card__footer">
+                        <a class="doc-download-btn" href="/assets/downloads/basmagi-quiz-authoring.skill"
+                            download="basmagi-quiz-authoring.skill">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            تحميل الـ Skill
+                        </a>
+                        <span class="doc-download-card__meta"><bdi>basmagi-quiz-authoring.skill</bdi> · ٣ كيلوبايت</span>
+                        <p class="doc-download-card__hint">بعد التحميل، ارفعه من إعدادات Claude (قسم Skills). يعمل مع الـ Connector الموضّح أعلاه، ومخصّص لـ Claude فقط. جرّبوه وقولولي رأيكم.</p>
+                    </div>
+                </article>
+            </section>
+
+            <section class="section" aria-labelledby="s8">
+                <h2 id="s8">٨. حل المشكلات الشائعة <span class="section-badge">أسئلة شائعة</span></h2>
+                <details class="doc-faq"><summary>الرابط يقول «انتهت الصلاحية أو استُخدم من قبل»</summary><p>الرابط يعيش ٧٢ ساعة ويُستهلك عند فتحه لأول مرة. افتح «محتواي» في المتصفح الذي فتحت فيه الرابط؛ العنصر هناك. وإلا اطلب من المساعد رابطاً جديداً.</p></details>
+                <details class="doc-faq"><summary>فتحت الرابط ولا أجد العنصر</summary><p>تأكد أنك في المتصفح نفسه (وليس نافذة خاصة أُغلقت)، وأن مساحة التخزين غير ممتلئة. يخزّن «محتواي» بياناته في متصفحك؛ مسح بيانات الموقع يمسحه.</p></details>
+                <details class="doc-faq"><summary>المساعد لا يستخدم الـ Connector</summary><p>اذكر اسمه صراحة في الطلب («على منصة امتحانات بصمجي (Basmagi Quiz)») وتأكد أنه مفعّل في قائمة الـ Connectors / Plugins.</p></details>
+                <details class="doc-faq"><summary>يطلب مني Claude الموافقة في كل مرة</summary><p>اضبط أدوات القراءة على <strong>Always allow</strong> كما في الخطوة ٥ من قسم Claude، واترك أدوات الكتابة بموافقتك.</p></details>
+                <details class="doc-faq"><summary>هل يمكن لأحد غيري رؤية ما أنشأته؟</summary><p>لا. العنصر يُحفظ في متصفحك فقط. أما رابط الخادم نفسه فعام (يستطيع أي شخص يعرفه استخدامه)، لذلك لا تضع فيه بيانات خاصة.</p></details>
+            </section>
+        </div>
+    </main>
+
+    <dialog class="doc-lightbox" id="docLightbox" aria-label="عرض الصورة"><button type="button" class="doc-lightbox__close" aria-label="إغلاق">×</button><img alt="" /></dialog>
+<script src="/src/shared/analytics-beacon.js" defer></script>
+</body>
+
+<script type="module" src="src/features/documents/documents-shell.js"></script>
+<script type="module" src="src/features/documents/doc-toc.js"></script>
+<script type="module" src="src/features/documents/doc-steps.js"></script>
+</html>
