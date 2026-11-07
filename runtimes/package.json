@@ -5,7 +5,7 @@
   "scripts": {
     "build": "node build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/shell.test.mjs test/indent.test.mjs test/completions.test.mjs"
+    "test": "node --test test/shell.test.mjs test/indent.test.mjs test/cpp-engine.test.mjs test/completions.test.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.6",

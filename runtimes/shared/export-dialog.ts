@@ -22,7 +22,7 @@ function exportIpynb(ctx: Ctx, withOutputs: boolean) {
     nbformat: 4, nbformat_minor: 5,
     metadata: {
       kernelspec: { name: engine.kernel, display_name: engine.kernelDisplay ?? engine.label, language: engine.language ?? engine.id },
-      language_info: { name: engine.language ?? engine.id, file_extension: engine.exportExt },
+      language_info: { name: engine.language ?? engine.id, file_extension: engine.exportExt, ...(engine.mimetype ? { mimetype: engine.mimetype } : {}) },
     },
     cells: ctx.state.cells.map((c) => {
       const source = lines(c.src);
@@ -70,6 +70,7 @@ function exportHtml(ctx: Ctx, withOutputs: boolean) {
       if (o.k === 'img') return `<img alt="figure ${o.fig}" src="${rgbToDataUrl(o.w, o.h, o.rgb)}">`;
       if (o.k === 'html') return `<div class="o">${o.html}</div>`;
       if (o.k === 'diag') return `<pre class="o ${o.sev === 'warning' ? 'warn' : 'err'}">${esc(`line ${o.line}: ${o.msg}`)}</pre>`;
+      if (o.k === 'stdin') return `<pre class="o">${esc(o.label + ': ' + o.value)}</pre>`;
       return `<pre class="o${o.k === 'text' ? '' : ' ' + o.k}">${esc(o.s.replace(/\n+$/, ''))}</pre>`;
     }).join('') : '';
     return `<section class="code"><span class="prompt">In [${withOutputs && c.count ? c.count : n}]:</span><div><pre class="src" dir="ltr">${esc(c.src)}</pre>${outs}</div></section>`;

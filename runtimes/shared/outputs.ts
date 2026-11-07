@@ -54,6 +54,7 @@ export function renderOut(ctx: Ctx, cell: UiCell, o: Out): HTMLElement {
       return box;
     }
     case 'diag': return diagnostic(ctx, cell, o);
+    case 'stdin': return h('div', { class: 'o o-stdin' }, h('span', { class: 'o-input-label' }, o.label), h('pre', { class: 'o-stdin-value', dir: 'ltr' }, o.value));
     default: return h('pre', { class: 'o' + (o.k === 'text' ? '' : ' ' + o.k) }, o.s.replace(/\n+$/, '\n'));
   }
 }

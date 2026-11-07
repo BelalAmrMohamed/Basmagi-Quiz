@@ -1,0 +1,4 @@
+Delete these 3 old C++ files (replaced by the shared UI + runtimes/cpp/src/engine.ts):
+runtimes/cpp/src/notebook-shell.ts
+runtimes/cpp/src/editor.ts
+runtimes/cpp/src/style.css

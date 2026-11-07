@@ -9,7 +9,7 @@
 // =============================================================================
 import type { EditorState } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
-import type { Engine, ImageFile, Out, RunSink, VarInfo, Cell } from './engine';
+import type { Engine, ImageFile, Out, RunSink, VarInfo, Cell, InputRequest } from './engine';
 import type { Ctx, HostCell, MountOptions, UiCell } from './ctx';
 import { createT, type Lang } from './i18n';
 import { h, store, closeDialog } from './dom';
@@ -62,7 +62,9 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
   const editorScroll = new Map<number, { top: number; left: number }>();
   const cleanups: Array<() => void> = [];
   let cur: { ctrl: AbortController } | null = null;
-  let statusKind: 'run' | 'error' | undefined;
+  let statusKind: 'run' | 'error' | 'result' | undefined;
+  const resolvers = new Map<number, (v: string | null) => void>();
+  let focusInputId: number | null = null;
   let focusEditorId: number | null = null, focusCardId: number | null = null;
   let renderQ = 0, lastD = 0, generation = 0;
 
@@ -98,7 +100,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
   const ctx: Ctx = {
     engine, t, lang, root, opts, state, q, editors, editorStates,
     isEdit: edit, mkCell, save, render, renderSide: () => renderSide(ctx), renderToolbar: () => renderToolbar(ctx, importInput),
-    notify, confirm: (...a) => dialogs.confirm(...a), prompt,
+    notify, confirm: (...a) => dialogs.confirm(...a), answerInput,
     focusEditor: (id) => { focusEditorId = id; render(); },
     focusCard: (id) => { focusCardId = id; render(); },
     leaveEditor, jumpToLine, runCell, runFromEditor, runAll, stop, resetWorkspace, resetToPublished, replaceCells,
@@ -111,11 +113,30 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
   const importInput = createImportInput(ctx);
   root.append(...dialogs.elements, exportDialog.element, ...(imageTool ? [imageTool.element] : []));
 
-  /** Text prompt: the platform's _prompt() when the host provides it, else the browser's. */
-  async function prompt(message: string, defaultValue = '', options?: Record<string, unknown>): Promise<string | null> {
-    if (opts.onPrompt) return (await opts.onPrompt(message, defaultValue, options)) ?? null;
-    return window.prompt(message, defaultValue);
+  /** Inline input: shows the box in the running cell and waits for Enter (value) or Esc/Stop (null). */
+  function ask(c: UiCell | undefined, req: InputRequest = {}): Promise<string | null> {
+    if (!c) return Promise.resolve(null);
+    if (resolvers.has(c.id)) answerInput(c, null);
+    return new Promise((resolve) => {
+      c.pending = { label: req.label ?? t('Standard input'), value: req.value ?? c.stdin ?? '' };
+      resolvers.set(c.id, resolve);
+      focusInputId = c.id;
+      render();
+    });
   }
+  function answerInput(c: UiCell, value: string | null) {
+    const resolve = resolvers.get(c.id), p = c.pending;
+    resolvers.delete(c.id);
+    c.pending = undefined;
+    if (value !== null && p) {
+      c.stdin = value;
+      c.outs.push({ k: 'stdin', label: p.label, value });
+      save();
+    }
+    render();
+    resolve?.(value);
+  }
+  const cancelInputs = () => { for (const c of state.cells) if (c.pending) answerInput(c, null); };
 
   function notify(message: string) {
     if (opts.onNotice) { try { opts.onNotice(message); } catch { /* host notice failed */ } return; }
@@ -139,9 +160,23 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     updateSaveState();
     if (!ok) notify(t('Notebook could not be saved in this browser. Export a copy to avoid losing changes.'));
   }
+  function loadLegacy(): UiCell[] | null {
+    const key = engine.legacyStoreKey?.(String(opts.notebook.id));
+    const raw = key ? store.get(key) : null;
+    if (!raw) return null;
+    try {
+      const j = JSON.parse(raw);
+      if (!Array.isArray(j?.cells) || !j.cells.length) return null;
+      return j.cells.map((x: any) => {
+        const c = mkCell(x?.type === 'code' ? 'code' : 'md', String(x?.source ?? ''));
+        if (c.type === 'code' && x?.stdin) c.stdin = String(x.stdin);
+        return c;
+      });
+    } catch { return null; }
+  }
   function loadLocal(): UiCell[] | null {
     const raw = store.get(nbKey());
-    if (!raw) return null;
+    if (!raw) return loadLegacy();
     try {
       const j = JSON.parse(raw);
       const arr = Array.isArray(j) ? j : j && Array.isArray(j.cells) ? j.cells : null;
@@ -156,7 +191,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
   }
 
   // ---------------- status ----------------
-  function setStatus(text: string, kind?: 'run' | 'error') {
+  function setStatus(text: string, kind?: 'run' | 'error' | 'result') {
     statusKind = kind;
     const el = q('status');
     if (el) { el.textContent = text; el.title = text; el.setAttribute('aria-label', text); el.dataset.state = state.busy ? 'running' : 'idle'; }
@@ -201,7 +236,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
       status: (text, kind) => { if (run === generation) setStatus(text, kind); },
       vars: (v: VarInfo[]) => { if (run === generation) { state.vars = v; ctx.renderSide(); } },
       files: () => { if (run === generation) ctx.renderSide(); },
-      prompt,
+      input: (req, i) => (run === generation ? ask(live(i), req) : Promise.resolve(null)),
     };
   }
 
@@ -229,7 +264,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
       if (cur?.ctrl === ctrl) {
         cur = null; state.busy = false;
         for (const c of targets) c.running = false;
-        if (statusKind !== 'error') setStatus(t('Ready'));
+        if (statusKind !== 'error' && statusKind !== 'result') setStatus(t('Ready'));
         else syncStop();
         if (!destroyed) { render(); ctx.renderSide(); }
       }
@@ -264,7 +299,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     }
   }
 
-  function stop() { cur?.ctrl.abort(); }
+  function stop() { cur?.ctrl.abort(); cancelInputs(); }
   function resetWorkspace() {
     if (cur) return;
     void engine.reset();
@@ -309,6 +344,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     if (p) void p.then(() => { if (!destroyed) ctx.renderSide(); }, () => {});
   }
   async function addFile(f: File) {
+    if (!engine.addFile && !engine.files) return;
     if (!engine.addFile) { engine.files?.set(f.name, await fileToImage(f)); }
     else await engine.addFile(f);
     window.__mlwebFileHook?.add?.(f);
@@ -385,6 +421,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     const nb = q('nb')!, y = window.scrollY, active = document.activeElement as HTMLElement | null;
     const ta = active as HTMLTextAreaElement | null;
     let keepText = ta && ta.dataset?.cell ? { id: ta.dataset.cell, s: ta.selectionStart, e: ta.selectionEnd } : null;
+    const keepInput = ta && ta.dataset?.stdin ? { id: ta.dataset.stdin, s: ta.selectionStart, e: ta.selectionEnd } : null;
     let keepEditor: number | null = null;
     const keepCard = active instanceof HTMLElement && active.classList.contains('cell') ? Array.from(nb.children).indexOf(active) : -1;
     for (const [id, view] of editors) {
@@ -411,6 +448,14 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
         if (t2) { t2.focus(); t2.setSelectionRange(t2.value.length, t2.value.length); t2.scrollIntoView?.({ block: 'nearest' }); }
       }
       focusEditorId = null; keepText = null; keepEditor = null;
+    }
+    if (focusInputId !== null) {
+      const t3 = nb.querySelector<HTMLTextAreaElement>(`textarea[data-stdin="${focusInputId}"]`);
+      if (t3) { t3.focus(); t3.setSelectionRange(t3.value.length, t3.value.length); t3.scrollIntoView?.({ block: 'nearest' }); }
+      focusInputId = null; keepText = null; keepEditor = null;
+    } else if (keepInput) {
+      const t3 = nb.querySelector<HTMLTextAreaElement>(`textarea[data-stdin="${keepInput.id}"]`);
+      if (t3) { t3.focus({ preventScroll: true }); t3.setSelectionRange(keepInput.s, keepInput.e); }
     }
     if (keepText) {
       const t2 = nb.querySelector<HTMLTextAreaElement>(`textarea[data-cell="${keepText.id}"]`);
@@ -495,7 +540,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     if (activeDestroy === destroy) activeDestroy = null;
     generation++;
     if (renderQ) cancelAnimationFrame(renderQ);
-    cur?.ctrl.abort(); cur = null; state.busy = false;
+    cur?.ctrl.abort(); cancelInputs(); cur = null; state.busy = false;
     for (const view of editors.values()) view.destroy();
     editors.clear();
     try { engine.dispose(); } catch { /* engine already gone */ }

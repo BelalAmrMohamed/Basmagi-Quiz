@@ -120,13 +120,27 @@ test('MATLAB engine: worker messages become outputs, 60 s guard is cleared', asy
   assert.ok(posted.some((m) => m.t === 'run'));
 });
 
-test('sink.prompt goes through the host onPrompt (platform _prompt)', async () => {
+test('sink.input shows an inline Jupyter-style box, echoes the answer, and Stop cancels it', async () => {
   const dom = env(), w = dom.window, root = w.document.getElementById('root');
-  const asked = [];
   let got;
-  const eng = fakeEngine({ async run(_r, sink) { got = await sink.prompt('stdin?', 'dflt'); sink.out({ k: 'text', s: String(got) }); } });
-  w.T.mountShell(eng, { root, notebook: nb([{ type: 'code', source: 'x' }]), onPrompt: async (m, d) => { asked.push([m, d]); return 'typed'; } });
-  await w.__mlweb.runAll(); await tick(w);
-  assert.deepEqual(asked, [['stdin?', 'dflt']]);
-  assert.equal(root.querySelector('.outs .o').textContent, 'typed');
+  const eng = fakeEngine({ caps: { workspace: false, files: false, images: false, stdin: true, history: false },
+    async run(r, sink) { got = await sink.input({ label: 'Enter your name' }, r.target); sink.out({ k: 'text', s: 'hi ' + got }); } });
+  w.T.mountShell(eng, { root, notebook: nb([{ type: 'code', source: 'x' }]) });
+  const p = w.__mlweb.runAll(); await tick(w);
+  const ta = root.querySelector('textarea[data-stdin]');
+  assert.ok(ta, 'inline box rendered');
+  assert.match(root.querySelector('.o-input').textContent, /Enter your name/);
+  ta.value = 'Ruby';
+  ta.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  await p; await tick(w);
+  assert.equal(got, 'Ruby');
+  assert.equal(root.querySelector('textarea[data-stdin]'), null);
+  assert.match(root.querySelector('.o-stdin').textContent, /Ruby/);
+  const eng2 = fakeEngine({ async run(r, sink) { got = await sink.input({}, r.target); } });
+  const root2 = w.document.createElement('div'); w.document.body.append(root2);
+  w.T.mountShell(eng2, { root: root2, notebook: nb([{ type: 'code', source: 'x' }]) });
+  const p2 = w.__mlweb.runAll(); await tick(w);
+  root2.querySelector('textarea[data-stdin]').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  await p2; await tick(w);
+  assert.equal(got, null);
 });

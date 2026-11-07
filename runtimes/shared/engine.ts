@@ -22,7 +22,12 @@ export type Out =
   | { k: 'text' | 'err' | 'warn'; s: string }
   | { k: 'img'; fig: number; w: number; h: number; rgb: Uint8Array; tool: boolean }
   | { k: 'html'; html: string }
-  | { k: 'diag'; line: number; col?: number; sev: 'error' | 'warning'; msg: string };
+  | { k: 'diag'; line: number; col?: number; sev: 'error' | 'warning'; msg: string }
+  /** Echo of a line of standard input the user typed into the cell (added by the shell, never by engines). */
+  | { k: 'stdin'; label: string; value: string };
+
+/** Inline, Jupyter-style input box shown under the running cell. */
+export type InputRequest = { label?: string; value?: string };
 
 /** Handed to `Engine.run`. All calls refer to the cell being run unless `cell` is given. */
 export interface RunSink {
@@ -30,14 +35,19 @@ export interface RunSink {
   out(o: Out, cell?: number): void;
   /** Drop every output of the running cell except errors (MATLAB `clc`). */
   clear(cell?: number): void;
-  /** Toolbar status text. `'run'` while working, `'error'` for a failure message. */
-  status(text: string, kind?: 'run' | 'error'): void;
+  /** Toolbar status text. `'run'` while working, `'error'` for a failure, `'result'` for a summary that stays until the next run. */
+  status(text: string, kind?: 'run' | 'error' | 'result'): void;
   /** Replace the workspace variable table (only shown when `caps.workspace`). */
   vars?(v: VarInfo[]): void;
   /** The engine's file list changed (only shown when `caps.files`). */
   files?(): void;
-  /** The platform's own prompt (`_prompt` from notifications.js, via the host's `onPrompt`). Resolves null on cancel. */
-  prompt(message: string, defaultValue?: string, options?: Record<string, unknown>): Promise<string | null>;
+  /**
+   * Ask for a line (or lines) of input the way a Jupyter notebook does: an input box appears
+   * inside the cell that is running, the user types and presses Enter (Shift+Enter adds a new
+   * line, Esc cancels). Resolves null on cancel or Stop. The answer is stored on the cell as
+   * `stdin` and echoed in its output.
+   */
+  input(req?: InputRequest, cell?: number): Promise<string | null>;
 }
 
 export type RunRequest = {
@@ -56,6 +66,12 @@ export interface Engine {
   kernelDisplay?: string;
   /** Jupyter language name; defaults to `id`. */
   language?: string;
+  /** Jupyter language_info.mimetype. */
+  mimetype?: string;
+  /** `accept` list of the Import file picker; default `<exportExt>,.ipynb` (+ .zip when the host imports bundles). */
+  importAccept?: string;
+  /** Storage key an older UI used for local edits; read once so readers keep their changes. */
+  legacyStoreKey?(notebookId: string): string;
   editor: { extensions(): Extension[]; completions?: CompletionSource | CompletionSource[] };
   /** Help dialog content. The shell adds the generic notebook shortcuts itself. */
   help?: { title?: string; intro?: string; searchPlaceholder?: string; items: Array<[title: string, en: string, ar: string]> };

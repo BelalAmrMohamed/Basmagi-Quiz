@@ -7,6 +7,8 @@ export type Lang = 'en' | 'ar';
 export type T = (en: string, vars?: Record<string, string | number>) => string;
 
 export const AR: Record<string, string> = {
+  "Standard input": "الإدخال القياسي",
+  "Enter to run · Shift+Enter for a new line · Esc to cancel": "Enter للتشغيل · Shift+Enter لسطر جديد · Esc للإلغاء",
   "Continue": "متابعة",
   "Worker error: ": "خطأ في المُنفِّذ: ",
   "Ready": "جاهز",

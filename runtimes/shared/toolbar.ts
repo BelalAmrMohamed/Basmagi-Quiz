@@ -56,7 +56,7 @@ export function renderToolbar(ctx: Ctx, importInput: HTMLInputElement) {
 export function createImportInput(ctx: Ctx): HTMLInputElement {
   const { t, engine } = ctx;
   const hostImport = () => window.__mlwebImport;
-  const input = h('input', { type: 'file', accept: `${engine.exportExt},.ipynb${hostImport() ? ',.zip' : ''}`, style: 'display:none' });
+  const input = h('input', { type: 'file', accept: engine.importAccept ?? `${engine.exportExt},.ipynb${hostImport() ? ',.zip' : ''}`, style: 'display:none' });
   input.onchange = () => {
     const f = input.files?.[0];
     if (f) {

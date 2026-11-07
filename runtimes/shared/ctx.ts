@@ -9,6 +9,8 @@ import type { T, Lang } from './i18n';
 export interface UiCell {
   id: number; type: 'code' | 'md'; src: string; stdin?: string;
   outs: Out[]; count: number | null; running: boolean; mdEdit: boolean;
+  /** Open input box (see Engine RunSink.input). */
+  pending?: { label: string; value: string };
 }
 
 /** What the host passes to `mount()`. */
@@ -21,8 +23,6 @@ export interface MountOptions {
   onChange?: (cells: HostCell[]) => void;
   onNotice?: (message: string) => void;
   onInfo?: () => void;
-  /** The platform's `_prompt(message, defaultValue, options)`; falls back to window.prompt. */
-  onPrompt?: (message: string, defaultValue?: string, options?: Record<string, unknown>) => Promise<string | null> | string | null;
   onConfirm?: (title: string, message: string, accept: string) => boolean | Promise<boolean>;
 }
 export type HostCell = { id: string; type: 'code' | 'markdown'; source: string; stdin?: string };
@@ -40,7 +40,8 @@ export interface Ctx {
   renderToolbar(): void;
   notify(message: string): void;
   confirm(title: string, message: string, accept?: string): Promise<boolean>;
-  prompt(message: string, defaultValue?: string, options?: Record<string, unknown>): Promise<string | null>;
+  /** Submit (string) or cancel (null) the open input box of a cell. */
+  answerInput(cell: UiCell, value: string | null): void;
   /** Re-render and put the caret in a code/text cell's editor. */
   focusEditor(id: number): void;
   /** Re-render and focus the cell card (command mode). */

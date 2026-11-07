@@ -106,8 +106,26 @@ export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
 
   const outs = h('div', { class: 'outs' });
   for (const o of c.outs) outs.append(renderOut(ctx, c, o));
+  if (c.pending) outs.append(inputRow(ctx, c, c.pending));
   const insert = h('div', { class: 'cell-insert', role: 'group', 'aria-label': t('Insert a cell below') },
     h('button', { onclick: insertAt('code', 1) }, t('+ Code')), h('button', { onclick: insertAt('md', 1) }, t('+ Text')));
   el.append(outs, insert);
   return el;
+}
+
+/** Jupyter-style stdin box: label, then a bordered field. Enter submits, Shift+Enter adds a line, Esc cancels. */
+function inputRow(ctx: Ctx, c: UiCell, p: NonNullable<UiCell['pending']>): HTMLElement {
+  const { t } = ctx, id = `stdin-${c.id}`;
+  const field = h('textarea', { id, class: 'o-input-field', dir: 'ltr', rows: 1, spellcheck: false, autocomplete: 'off', 'data-stdin': c.id, maxlength: 4000 });
+  field.value = p.value;
+  const fit = () => { field.style.height = 'auto'; field.style.height = field.scrollHeight + 'px'; };
+  requestAnimationFrame(fit);
+  field.oninput = () => { p.value = field.value; fit(); };
+  field.onkeydown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ctx.answerInput(c, field.value); }
+    else if (e.key === 'Escape') { e.preventDefault(); ctx.answerInput(c, null); }
+  };
+  return h('div', { class: 'o-input' },
+    h('label', { class: 'o-input-label', for: id }, p.label), field,
+    h('span', { class: 'o-input-hint' }, t('Enter to run · Shift+Enter for a new line · Esc to cancel')));
 }

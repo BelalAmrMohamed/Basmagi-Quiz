@@ -8,7 +8,7 @@ import { getToken, isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { fetchImportDraft, getDraftAssets, consumeImportDraft } from "../../shared/import-draft.js";
 import { escapeHtml } from "../home/escape-html.js";
-import { showNotification, _prompt } from "../../components/notifications/notifications.js";
+import { showNotification } from "../../components/notifications/notifications.js";
 import { normalizeNotebookLang } from "../../shared/notebook-lang.js";
 import { loadRuntime } from "../../shared/runtime-loader.js";
 import { RUNTIME_CONFIG } from "../../shared/runtime-config.js";
@@ -171,7 +171,6 @@ async function mountEditor() {
     notebook: { id: editId || "draft", title: state.title, schemaVersion: 1, runtime: state.runtime, cells: state.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, ...cellToPlain(c) })) },
     onChange: (cells) => { state = { ...state, cells: cells.map(cellToPlain) }; markDirty(); },
     onNotice: (m) => showNotification("", m, "info"),
-    onPrompt: _prompt,
   });
   void restoreWorkspace();
 }
