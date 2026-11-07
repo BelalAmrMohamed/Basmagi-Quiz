@@ -5627,32 +5627,57 @@ kbd {
   }
 }
 
-/* ── New item from an MCP link: glow + «جديد» badge (mcp-draft-import.js) ── */
-.user-quiz-card.mcp-new-item {
-  position: relative;
-  outline: 2px solid var(--color-primary, #6366f1);
-  outline-offset: 2px;
-  animation: mcp-new-glow 1.6s ease-out 3;
+/* ── New item from an MCP link: pulsing glow + «جديد» badge (mcp-draft-import.js) ──
+   The glow is a box-shadow (the card has overflow:hidden, which would clip an
+   outside badge/outline), so the badge lives INSIDE the card's top corner. */
+.exam-card.user-quiz-card.mcp-new-item {
+  --mcp-glow: var(--color-primary, #6366f1);
+  border-color: var(--mcp-glow);
+  background-image: linear-gradient(color-mix(in srgb, var(--mcp-glow) 14%, transparent), color-mix(in srgb, var(--mcp-glow) 5%, transparent));
+  box-shadow:
+    0 0 0 3px var(--mcp-glow),
+    0 0 22px 4px color-mix(in srgb, var(--mcp-glow) 70%, transparent),
+    0 0 60px 14px color-mix(in srgb, var(--mcp-glow) 35%, transparent);
+  animation: mcp-new-pulse 1.4s ease-in-out infinite;
+  z-index: 2;
 }
 .mcp-new-badge {
   position: absolute;
-  top: -10px;
-  inset-inline-start: 12px;
-  z-index: 3;
-  padding: 2px 10px;
+  top: 10px;
+  inset-inline-start: 10px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 12px;
   border-radius: 999px;
   background: var(--color-primary, #6366f1);
   color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.6;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
   pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
-@keyframes mcp-new-glow {
-  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary, #6366f1) 55%, transparent); }
-  100% { box-shadow: 0 0 0 18px transparent; }
+.mcp-new-badge::before {
+  content: "✦";
+  font-size: 11px;
+}
+@keyframes mcp-new-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 3px var(--mcp-glow),
+      0 0 18px 3px color-mix(in srgb, var(--mcp-glow) 55%, transparent),
+      0 0 44px 8px color-mix(in srgb, var(--mcp-glow) 25%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px var(--mcp-glow),
+      0 0 30px 8px color-mix(in srgb, var(--mcp-glow) 85%, transparent),
+      0 0 80px 22px color-mix(in srgb, var(--mcp-glow) 45%, transparent);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .user-quiz-card.mcp-new-item { animation: none; }
+  .exam-card.user-quiz-card.mcp-new-item { animation: none; }
 }

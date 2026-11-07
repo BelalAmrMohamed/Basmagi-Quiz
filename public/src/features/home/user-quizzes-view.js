@@ -575,9 +575,9 @@ function highlightNewItem(container, itemId) {
     card.classList.remove("mcp-new-item");
     badge.remove();
   };
-  // The glow fades by itself; the badge stays until the user interacts with the card (or ~20 s).
+  // the glow + badge stay until the user clicks the card (or ~30 s).
   card.addEventListener("click", clear, { once: true });
-  setTimeout(clear, 20000);
+  setTimeout(clear, 30000);
   requestAnimationFrame(() => card.scrollIntoView({ behavior: "smooth", block: "center" }));
 }
 

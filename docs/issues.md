@@ -96,6 +96,7 @@ Redesign the whole page:
 #### Suggestions
 * Suggestion: Add an open-source Angle (Since the repo is currently open source).
 * Suggestion: Add a short testimonial or review.
+* **Make all the docs measurable.** We already have an analytics beacon, so add one event for "copied MCP URL" and one for "opened My Content from a draft link". That tells us whether people finish setup. A "Was this helpful?" thumbs row per section would also show which steps confuse people.
 
 #### المنصة بالأرقام
 1. **Better more Advanced analytics:** Allow the user to extend the `المشاهدات في آخر 30 يومًا` to cover more/less time, like a year or a week or custom.
