@@ -7,9 +7,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Notebooke Page: C++ Runtime
-* **![Screenshot](image.png)**
-* When I try to run any C++ code, it either return an error, or doesn't return anything.
+### Create Quiz & Create Lesson Pages
+* Pressing (`ctrl` + `S`) to save doesn't always work.
 
 ### Missing element in sidebar
 Add the link to the notebook page to the sidebar in document pages. See: `public\src\features\documents\documents-shell.js`
@@ -21,19 +20,7 @@ Add the link to the notebook page to the sidebar in document pages. See: `public
 ### Quiz Passwords are exposed
 The home page downloads every quiz’s password to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be fixed.
 
-### AI Agent (الباشــمبصمج)
-
-#### Redesign
-* Implement my personal component from 21st.dev: Rich Markdown AI Input Field with code blocks.
-* Instead of a modal, make it a window like `image-tool-window`, don't copy it or import it in the AI Agent files, I want you to implement a a copy of it. Features:
-  * Same UI of Basmagi but in a window instead of a modal. Include all features and resposiveness of that window: 
-    * Aero Snap with the thumbnail/preview
-    * Mac-style control buttons at the top
-    * الباشــمبصمج's own title and logo at the top instead of that of `image-tool-window`.
-    * When window is open, maximized or minimized, the الباشــمبصمج's fab becomes hidden, until the window is closed.
-    * When the window is minimized and there was a prompt running, it should continue running with an animation on the minimized state indicating so.
-
-#### Dictation
+### AI Agent (الباشــمبصمج): Dictation
 Fix Dictation: The dictation doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser when using the browser api for dictation.
 
 ### Performance (Globally, but specially the main page)
@@ -49,13 +36,17 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 
 ## New Features
 
-### Creating in MCP Server
-* Open drafts in user content directly, not inside the create pages.
+### MCP Server: Creating Lessons, Quizzes, & Notebooks
+* Open drafts in user content directly, not inside the create pages. 
+* So when a user uses the MCP Server to create an item, opens the draft link provided by AI, the link opens inside `/my-content` with the item already created.
+
+#### Documentation
+* Move the MCP-related docs to a new page with steps screenshots from: public\assets\document-pages
 
 ### Dictation for Essay Questions (Lesson & Quiz Pages)
 Add dictation feature for essays in quizzes and lessons
 
-### Notebook Page: 
+### Notebook Page
 
 #### Improvements
 * Implement cursor animation similar to that of VS Code
@@ -70,9 +61,22 @@ Add dictation feature for essays in quizzes and lessons
     * **Copy Image**: Copies the image to clipboard.
     * Recommend to me other functionalities to add.
 
-#### C++ Runtime 
+#### Runtime 
 * There is no error handling while typing, if users forget a simple thing like a semi-column or something it doesn't get highlighted.
-* When I write this in a cell: `cout << "Hello World\n";`, it doesn't return an error that I didn't write the `int main()` function or that I forgot to add `#include <iostream>` at the top, it runs whithout an error, and as usual, nothing shows up. I don't understand why, I need an explanation 
+
+#### UI
+* ![screenshot](image.png)
+* The cell scrollbars don't work, trying to scroll through them doesn't work. 
+
+### AI Agent (الباشــمبصمج): Redesign
+* Implement my personal component from 21st.dev: Rich Markdown AI Input Field with code blocks.
+* Instead of a modal, make it a window like `image-tool-window`, don't copy it or import it in the AI Agent files, I want you to implement a a copy of it. Features:
+  * Same UI of Basmagi but in a window instead of a modal. Include all features and resposiveness of that window: 
+    * Aero Snap with the thumbnail/preview
+    * Mac-style control buttons at the top
+    * الباشــمبصمج's own title and logo at the top instead of that of `image-tool-window`.
+    * When window is open, maximized or minimized, the الباشــمبصمج's fab becomes hidden, until the window is closed.
+    * When the window is minimized and there was a prompt running, it should continue running with an animation on the minimized state indicating so.
 
 ### Result Pages
 
