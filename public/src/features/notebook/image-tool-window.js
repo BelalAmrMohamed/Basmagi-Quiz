@@ -13,6 +13,7 @@
 // - Image information properties card (min/max/mean, class, size)
 // - Export menu: copy image, save PNG/JPG, copy pixels as a MATLAB matrix
 // - Overlays: pixel grid, rulers, crosshair (View menu)
+// - Aero Snap: drag to a side (halves) or corner (quarters) with a live preview; drag out to restore
 // - Snap to screen edges, remembered size/position, double-click title to maximize
 // - Touch: pinch, two-finger pan, double-tap fit/100%; keyboard shortcuts + ? popover
 // - Full English & Arabic localization
@@ -160,6 +161,8 @@ const I18N = {
 const GEO_KEY = 'mlweb-imtool-geom';
 const PREF_KEY = 'mlweb-imtool-prefs';
 const SNAP = 14;
+const AERO_EDGE = 14;   // pointer distance from a screen edge that arms Aero Snap
+const AERO_CORNER = 110; // pointer distance from top/bottom that turns a side zone into a corner
 const RULER_W = 32;
 const RULER_H = 18;
 const NICE_STEPS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
@@ -236,6 +239,9 @@ class ImageToolWindow {
     this.isMinimized = false;
     this.savedRect = null;
     this.cursor = null;
+    this.snapRestore = null;
+    this.snapPreview = null;
+    this._aeroZone = null;
     this._tap = null;
     this._lastTap = null;
     this._lastMinToggle = 0;
@@ -484,6 +490,58 @@ class ImageToolWindow {
     writeStore(GEO_KEY, all);
   }
 
+  /** Which of the 6 Aero Snap zones the pointer is in (or null). */
+  aeroZone(x, y) {
+    const iw = window.innerWidth, ih = window.innerHeight;
+    const left = x <= AERO_EDGE, right = x >= iw - AERO_EDGE;
+    if (!left && !right) return null;
+    const side = left ? 'left' : 'right';
+    if (y <= AERO_CORNER) return `top-${side}`;
+    if (y >= ih - AERO_CORNER) return `bottom-${side}`;
+    return side;
+  }
+
+  aeroRect(zone) {
+    const iw = window.innerWidth, ih = window.innerHeight;
+    const hw = Math.floor(iw / 2), hh = Math.floor(ih / 2);
+    const right = zone.endsWith('right');
+    const l = right ? iw - hw : 0;
+    if (zone === 'left' || zone === 'right') return { l, t: 0, w: hw, h: ih };
+    return { l, t: zone.startsWith('top') ? 0 : ih - hh, w: hw, h: hh };
+  }
+
+  /** Live outline of where the window will land. Starts at the window's own rect and morphs to the target. */
+  updateSnapPreview(zone) {
+    let pv = this.snapPreview;
+    if (!zone) {
+      if (!pv) return;
+      pv.classList.remove('is-visible');
+      this.snapPreview = null;
+      setTimeout(() => pv.remove(), 220);
+      return;
+    }
+    const r = this.aeroRect(zone);
+    if (!pv) {
+      pv = document.createElement('div');
+      pv.className = 'mlweb-imtool-snap-preview';
+      pv.style.zIndex = String(topZIndex + 1);
+      const wr = this.win.getBoundingClientRect();
+      Object.assign(pv.style, { left: `${wr.left}px`, top: `${wr.top}px`, width: `${wr.width}px`, height: `${wr.height}px` });
+      document.body.appendChild(pv);
+      this.snapPreview = pv;
+      pv.getBoundingClientRect(); // commit the start rect so the transition runs
+    }
+    pv.classList.add('is-visible');
+    Object.assign(pv.style, { left: `${r.l}px`, top: `${r.t}px`, width: `${r.w}px`, height: `${r.h}px` });
+  }
+
+  applyAeroSnap(zone) {
+    const r = this.aeroRect(zone);
+    if (!this.snapRestore) this.snapRestore = { w: this.win.offsetWidth, h: this.win.offsetHeight };
+    Object.assign(this.win.style, { left: `${r.l}px`, top: `${r.t}px`, width: `${r.w}px`, height: `${r.h}px` });
+    this.render();
+  }
+
   snapRect(l, t, w, h) {
     const iw = window.innerWidth, ih = window.innerHeight;
     if (Math.abs(l) < SNAP) l = 0; else if (Math.abs(l + w - iw) < SNAP) l = iw - w;
@@ -516,12 +574,22 @@ class ImageToolWindow {
       this.bringToFront();
       const startMouseX = e.clientX;
       const startMouseY = e.clientY;
-      const startWinLeft = this.win.offsetLeft;
+      let startWinLeft = this.win.offsetLeft;
       const startWinTop = this.win.offsetTop;
+      const grabRatio = Math.min(0.9, Math.max(0.1, (e.clientX - startWinLeft) / (this.win.offsetWidth || 1)));
       this.titlebar.setPointerCapture(e.pointerId);
 
       const onMove = (moveEv) => {
         if (this.isMaximized) return;
+        // Dragging a snapped window out restores its previous size (pointer keeps its place on the title bar)
+        if (this.snapRestore && Math.hypot(moveEv.clientX - startMouseX, moveEv.clientY - startMouseY) > 4) {
+          const r = this.snapRestore;
+          this.snapRestore = null;
+          win.style.width = `${r.w}px`;
+          win.style.height = `${r.h}px`;
+          startWinLeft = Math.round(startMouseX - r.w * grabRatio);
+          this.render();
+        }
         const dx = moveEv.clientX - startMouseX;
         const dy = moveEv.clientY - startMouseY;
         let newLeft = startWinLeft + dx;
@@ -534,9 +602,16 @@ class ImageToolWindow {
 
         win.style.left = `${newLeft}px`;
         win.style.top = `${newTop}px`;
+
+        const zone = this.aeroZone(moveEv.clientX, moveEv.clientY);
+        if (zone !== this._aeroZone) { this._aeroZone = zone; this.updateSnapPreview(zone); }
       };
 
       const onUp = (upEv) => {
+        const zone = this._aeroZone;
+        this._aeroZone = null;
+        this.updateSnapPreview(null);
+        if (zone && upEv.type === 'pointerup') this.applyAeroSnap(zone);
         this.titlebar.releasePointerCapture(upEv.pointerId);
         this.titlebar.removeEventListener('pointermove', onMove);
         this.titlebar.removeEventListener('pointerup', onUp);
@@ -624,6 +699,7 @@ class ImageToolWindow {
         e.stopPropagation();
         this.bringToFront();
         const dir = handle.dataset.dir;
+        this.snapRestore = null;
         const startX = e.clientX;
         const startY = e.clientY;
         const startW = win.offsetWidth;
@@ -1327,6 +1403,7 @@ class ImageToolWindow {
     if (this.ro) this.ro.disconnect();
     openWindows.delete(this.win);
     clearTimeout(this._toastTimer);
+    if (this.snapPreview) this.snapPreview.remove();
     this.win.remove();
     layoutMinimizedWindows();
   }
