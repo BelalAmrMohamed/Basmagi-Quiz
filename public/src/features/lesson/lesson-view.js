@@ -1021,9 +1021,9 @@ export async function renderLessonView() {
 
   container.innerHTML =
     `<article class="lesson-view lesson-view--reader" data-lesson-id="${escapeHtml(lesson.id)}" data-lesson-lang="${lessonLang}">` +
-    `<header class="lesson-view__header lesson-view__header--${lessonLang}" data-lesson-lang="${lessonLang}" dir="${isEnglish ? "ltr" : "rtl"}" aria-labelledby="lessonViewTitle">` +
+    `<header class="lesson-view__header lesson-view__header--${lessonLang}" data-lesson-lang="${lessonLang}" dir="auto" aria-labelledby="lessonViewTitle">` +
     `<div class="lesson-view__heading">` +
-    `<h1 id="lessonViewTitle" class="lesson-view__title" dir="${isEnglish ? "ltr" : "rtl"}">${escapeHtml(lesson.title || "")}</h1>` +
+    `<h1 id="lessonViewTitle" class="lesson-view__title" dir="auto">${escapeHtml(lesson.title || "")}</h1>` +
     (lesson.description?.trim() ? `<p class="lesson-view__description" dir="auto">${escapeHtml(lesson.description.trim())}</p>` : "") +
     `</div>` +
     `<div class="lesson-view__header-footer">` +
@@ -1172,7 +1172,7 @@ export async function renderLessonView() {
     });
   });
 
-  import("../home/info-details.js").then((m) => m.recordLessonView(lesson.id)).catch(() => {});
+  import("../home/info-details.js").then((m) => m.recordLessonView(lesson.id)).catch(() => { });
 
   lessonEl.querySelector(".lesson-view__download-btn")?.addEventListener("click", (event) => {
     void downloadLesson(lesson, event.currentTarget);
