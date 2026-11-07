@@ -11,7 +11,10 @@
 // - Dynamic contrast text (white on dark, black on light with crisp outline)
 // - 1-based MATLAB coordinate tracking (X: col, Y: row)
 // - Image information properties card (min/max/mean, class, size)
-// - Download PNG
+// - Export menu: copy image, save PNG/JPG, copy pixels as a MATLAB matrix
+// - Overlays: pixel grid, rulers, crosshair (View menu)
+// - Snap to screen edges, remembered size/position, double-click title to maximize
+// - Touch: pinch, two-finger pan, double-tap fit/100%; keyboard shortcuts + ? popover
 // - Full English & Arabic localization
 // =============================================================================
 
@@ -56,6 +59,38 @@ const I18N = {
     maxVal: 'Max Intensity',
     meanVal: 'Mean Intensity',
     memory: 'Data Size',
+    exportLabel: 'Export',
+    exportTitle: 'Copy or save the image',
+    copyImage: 'Copy image',
+    savePng: 'Save as PNG',
+    saveJpg: 'Save as JPG',
+    copyMatrix: 'Copy pixel values (MATLAB)',
+    view: 'View',
+    viewTitle: 'Overlays: grid, rulers, crosshair',
+    grid: 'Pixel grid',
+    rulers: 'Rulers',
+    crosshair: 'Crosshair',
+    help: 'Keyboard shortcuts (?)',
+    shortcuts: 'Keyboard & gestures',
+    copied: 'Image copied',
+    copyFailed: 'Copy failed in this browser',
+    matrixCopied: (r, c, part) => `Copied ${r}×${c} matrix${part ? ' (' + part + ')' : ''}`,
+    keys: [
+      ['+ / −', 'Zoom in / out'],
+      ['0', 'Fit to window'],
+      ['1', 'Actual size (100%)'],
+      ['← ↑ → ↓', 'Pan (Shift = faster)'],
+      ['I', 'Image info'],
+      ['G', 'Pixel grid'],
+      ['R', 'Rulers'],
+      ['C', 'Crosshair'],
+      ['Ctrl+C', 'Copy image'],
+      ['?', 'This help'],
+      ['Esc', 'Close menu / restore / close'],
+      ['Double-click title', 'Maximize / restore'],
+      ['Double-tap', 'Toggle fit / 100%'],
+      ['Pinch · two fingers', 'Zoom · pan'],
+    ],
   },
   ar: {
     title: 'أداة الصورة',
@@ -87,8 +122,54 @@ const I18N = {
     maxVal: 'أعلى قيمة إضاءة',
     meanVal: 'متوسط الإضاءة',
     memory: 'حجم البيانات',
+    exportLabel: 'تصدير',
+    exportTitle: 'نسخ أو حفظ الصورة',
+    copyImage: 'نسخ الصورة',
+    savePng: 'حفظ بصيغة PNG',
+    saveJpg: 'حفظ بصيغة JPG',
+    copyMatrix: 'نسخ قيم البكسل (MATLAB)',
+    view: 'عرض',
+    viewTitle: 'الطبقات: الشبكة، المساطر، خطوط التقاطع',
+    grid: 'شبكة البكسل',
+    rulers: 'المساطر',
+    crosshair: 'خطا التقاطع',
+    help: 'اختصارات لوحة المفاتيح (?)',
+    shortcuts: 'الاختصارات والإيماءات',
+    copied: 'تم نسخ الصورة',
+    copyFailed: 'تعذر النسخ في هذا المتصفح',
+    matrixCopied: (r, c, part) => `تم نسخ مصفوفة ${r}×${c}${part ? ' (' + part + ')' : ''}`,
+    keys: [
+      ['+ / −', 'تكبير / تصغير'],
+      ['0', 'ملاءمة النافذة'],
+      ['1', 'الحجم الفعلي (100%)'],
+      ['← ↑ → ↓', 'تحريك (Shift = أسرع)'],
+      ['I', 'معلومات الصورة'],
+      ['G', 'شبكة البكسل'],
+      ['R', 'المساطر'],
+      ['C', 'خطا التقاطع'],
+      ['Ctrl+C', 'نسخ الصورة'],
+      ['?', 'هذه المساعدة'],
+      ['Esc', 'إغلاق القائمة / استعادة / إغلاق'],
+      ['نقر مزدوج على العنوان', 'تكبير / استعادة'],
+      ['نقر مزدوج باللمس', 'تبديل الملاءمة / 100%'],
+      ['قرص · إصبعان', 'تكبير · تحريك'],
+    ],
   }
 };
+
+const GEO_KEY = 'mlweb-imtool-geom';
+const PREF_KEY = 'mlweb-imtool-prefs';
+const SNAP = 14;
+const RULER_W = 32;
+const RULER_H = 18;
+const NICE_STEPS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
+
+function readStore(key) {
+  try { return JSON.parse(sessionStorage.getItem(key) || '{}') || {}; } catch { return {}; }
+}
+function writeStore(key, obj) {
+  try { sessionStorage.setItem(key, JSON.stringify(obj)); } catch { /* storage unavailable */ }
+}
 
 let cascadeCounter = 0;
 let topZIndex = 10000; // Above sidebar (4000) and bottom-nav (4001)
@@ -154,6 +235,15 @@ class ImageToolWindow {
     this.isMaximized = false;
     this.isMinimized = false;
     this.savedRect = null;
+    this.cursor = null;
+    this._tap = null;
+    this._lastTap = null;
+    this._lastMinToggle = 0;
+    this._toastTimer = 0;
+    const prefs = readStore(PREF_KEY);
+    this.showGrid = prefs.grid !== false;
+    this.showRulers = !!prefs.rulers;
+    this.showCrosshair = !!prefs.crosshair;
 
     // Create offscreen source
     this.offscreen = createOffscreenCanvas(image.w, image.h, image.rgb);
@@ -246,9 +336,16 @@ class ImageToolWindow {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
             <span class="mlweb-imtool-tb-label">${t.info}</span>
           </button>
-          <button type="button" class="mlweb-imtool-tb-btn btn-download" title="${t.downloadTitle}" aria-label="${t.download}">
+          <button type="button" class="mlweb-imtool-tb-btn btn-view" title="${t.viewTitle}" aria-label="${t.view}" aria-haspopup="menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>
+            <span class="mlweb-imtool-tb-label">${t.view}</span>
+          </button>
+          <button type="button" class="mlweb-imtool-tb-btn btn-export" title="${t.exportTitle}" aria-label="${t.exportLabel}" aria-haspopup="menu">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            <span class="mlweb-imtool-tb-label">${t.download}</span>
+            <span class="mlweb-imtool-tb-label">${t.exportLabel}</span>
+          </button>
+          <button type="button" class="mlweb-imtool-tb-btn btn-help" title="${t.help}" aria-label="${t.help}" aria-haspopup="dialog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5h.01"/></svg>
           </button>
         </div>
         <span class="mlweb-imtool-tb-hint">${t.hint}</span>
@@ -256,6 +353,23 @@ class ImageToolWindow {
       <div class="mlweb-imtool-body">
         <div class="mlweb-imtool-stage" tabindex="0">
           <canvas class="mlweb-imtool-canvas"></canvas>
+          <canvas class="mlweb-imtool-overlay"></canvas>
+          <div class="mlweb-imtool-pop pop-view" hidden role="menu">
+            <button type="button" class="mlweb-imtool-pop-item" role="menuitemcheckbox" data-toggle="grid"><span class="chk"></span><span class="lbl">${t.grid}</span><kbd>G</kbd></button>
+            <button type="button" class="mlweb-imtool-pop-item" role="menuitemcheckbox" data-toggle="rulers"><span class="chk"></span><span class="lbl">${t.rulers}</span><kbd>R</kbd></button>
+            <button type="button" class="mlweb-imtool-pop-item" role="menuitemcheckbox" data-toggle="crosshair"><span class="chk"></span><span class="lbl">${t.crosshair}</span><kbd>C</kbd></button>
+          </div>
+          <div class="mlweb-imtool-pop pop-export" hidden role="menu">
+            <button type="button" class="mlweb-imtool-pop-item" role="menuitem" data-act="copy-image"><span class="lbl">${t.copyImage}</span><kbd>Ctrl+C</kbd></button>
+            <button type="button" class="mlweb-imtool-pop-item" role="menuitem" data-act="png"><span class="lbl">${t.savePng}</span></button>
+            <button type="button" class="mlweb-imtool-pop-item" role="menuitem" data-act="jpg"><span class="lbl">${t.saveJpg}</span></button>
+            <button type="button" class="mlweb-imtool-pop-item" role="menuitem" data-act="matrix"><span class="lbl">${t.copyMatrix}</span></button>
+          </div>
+          <div class="mlweb-imtool-pop pop-help" hidden role="dialog" aria-label="${t.shortcuts}">
+            <div class="mlweb-imtool-pop-title">${t.shortcuts}</div>
+            <div class="mlweb-imtool-keys">${t.keys.map(([k, d]) => `<kbd>${k}</kbd><span>${d}</span>`).join('')}</div>
+          </div>
+          <div class="mlweb-imtool-toast" role="status" aria-live="polite"></div>
           <div class="mlweb-imtool-info-card" hidden>
             <div class="mlweb-imtool-info-head">
               <h4>${t.title} · ${t.figure} ${figNum}</h4>
@@ -307,14 +421,37 @@ class ImageToolWindow {
     this.pixelStatus = win.querySelector('.mlweb-imtool-status-pixel');
     this.infoCard = win.querySelector('.mlweb-imtool-info-card');
     this.valuesBtn = win.querySelector('.btn-toggle-values');
+    this.overlay = win.querySelector('.mlweb-imtool-overlay');
+    this.octx = this.overlay.getContext('2d');
+    this.toast = win.querySelector('.mlweb-imtool-toast');
+    this.pops = {
+      view: win.querySelector('.pop-view'),
+      export: win.querySelector('.pop-export'),
+      help: win.querySelector('.pop-help'),
+    };
+    this.menuBtns = {
+      view: win.querySelector('.btn-view'),
+      export: win.querySelector('.btn-export'),
+      help: win.querySelector('.btn-help'),
+    };
 
     this.hookEvents();
     this.container.appendChild(win);
     openWindows.set(win, this);
+    win.focus({ preventScroll: true });
   }
 
   applyInitialCascade() {
     const idx = cascadeCounter++;
+    const saved = readStore(GEO_KEY)[String(Math.abs(this.image.fig || 1))];
+    if (saved && saved.w > 0 && saved.h > 0) {
+      const w = Math.max(300, Math.min(saved.w, window.innerWidth - 8));
+      const h = Math.max(240, Math.min(saved.h, window.innerHeight - 8));
+      const l = Math.max(-w + 100, Math.min(window.innerWidth - 100, saved.l));
+      const t = Math.max(0, Math.min(window.innerHeight - 40, saved.t));
+      Object.assign(this.win.style, { width: `${w}px`, height: `${h}px`, left: `${l}px`, top: `${t}px` });
+      return;
+    }
     const defaultW = Math.min(680, window.innerWidth - 40);
     const defaultH = Math.min(520, window.innerHeight - 80);
 
@@ -338,6 +475,22 @@ class ImageToolWindow {
     this.win.style.top = `${top}px`;
   }
 
+  saveGeometry() {
+    if (this.isMaximized || this.isMinimized) return;
+    const all = readStore(GEO_KEY);
+    all[String(Math.abs(this.image.fig || 1))] = {
+      l: this.win.offsetLeft, t: this.win.offsetTop, w: this.win.offsetWidth, h: this.win.offsetHeight,
+    };
+    writeStore(GEO_KEY, all);
+  }
+
+  snapRect(l, t, w, h) {
+    const iw = window.innerWidth, ih = window.innerHeight;
+    if (Math.abs(l) < SNAP) l = 0; else if (Math.abs(l + w - iw) < SNAP) l = iw - w;
+    if (Math.abs(t) < SNAP) t = 0; else if (Math.abs(t + h - ih) < SNAP) t = ih - h;
+    return { left: l, top: t };
+  }
+
   bringToFront() {
     if (this.isMaximized) {
       this.win.style.zIndex = '12000';
@@ -346,6 +499,7 @@ class ImageToolWindow {
     }
     for (const [w] of openWindows) w.classList.remove('is-focused');
     this.win.classList.add('is-focused');
+    if (document.activeElement !== this.win && !this.win.contains(document.activeElement)) this.win.focus({ preventScroll: true });
   }
 
   hookEvents() {
@@ -376,6 +530,7 @@ class ImageToolWindow {
         // Keep header visible in viewport
         newLeft = Math.max(-win.offsetWidth + 100, Math.min(window.innerWidth - 100, newLeft));
         newTop = Math.max(0, Math.min(window.innerHeight - 40, newTop));
+        ({ left: newLeft, top: newTop } = this.snapRect(newLeft, newTop, win.offsetWidth, win.offsetHeight));
 
         win.style.left = `${newLeft}px`;
         win.style.top = `${newTop}px`;
@@ -386,6 +541,7 @@ class ImageToolWindow {
         this.titlebar.removeEventListener('pointermove', onMove);
         this.titlebar.removeEventListener('pointerup', onUp);
         this.titlebar.removeEventListener('pointercancel', onUp);
+        this.saveGeometry();
       };
 
       this.titlebar.addEventListener('pointermove', onMove);
@@ -394,6 +550,12 @@ class ImageToolWindow {
     });
     this.titlebar.addEventListener('click', (e) => {
       if (this.isMinimized && !e.target.closest('button')) this.toggleMinimize();
+    });
+
+    this.titlebar.addEventListener('dblclick', (e) => {
+      if (e.target.closest('button')) return;
+      if (this.isMinimized || Date.now() - this._lastMinToggle < 600) return;
+      this.toggleMaximize();
     });
 
     // Window controls
@@ -426,7 +588,33 @@ class ImageToolWindow {
       infoBtn.classList.remove('is-active');
     });
 
-    win.querySelector('.btn-download').addEventListener('click', () => this.downloadPng());
+    // Popover menus (View / Export / Help)
+    for (const name of Object.keys(this.menuBtns)) {
+      this.menuBtns[name].addEventListener('click', (e) => { e.stopPropagation(); this.toggleMenu(name); });
+    }
+    for (const pop of Object.values(this.pops)) {
+      pop.addEventListener('wheel', (e) => e.stopPropagation());
+      pop.addEventListener('pointerdown', (e) => e.stopPropagation());
+    }
+    this.pops.view.addEventListener('click', (e) => {
+      const item = e.target.closest('[data-toggle]');
+      if (item) this.toggleSetting(item.dataset.toggle);
+    });
+    this.pops.export.addEventListener('click', (e) => {
+      const item = e.target.closest('[data-act]');
+      if (!item) return;
+      this.closeMenus();
+      const act = item.dataset.act;
+      if (act === 'copy-image') this.copyImage();
+      else if (act === 'png') this.saveImage('png');
+      else if (act === 'jpg') this.saveImage('jpg');
+      else if (act === 'matrix') this.copyMatrix();
+    });
+    this.syncViewMenu();
+    // click anywhere else in the window (toolbar gaps, titlebar) closes menus
+    win.addEventListener('pointerdown', (e) => {
+      if (!e.target.closest('.mlweb-imtool-pop, .btn-view, .btn-export, .btn-help')) this.closeMenus();
+    });
 
     // Resize handles (disabled when maximized)
     win.querySelectorAll('.mlweb-imtool-resizer').forEach(handle => {
@@ -464,6 +652,12 @@ class ImageToolWindow {
             newH = hClamped;
           }
 
+          const iw = window.innerWidth, ih = window.innerHeight;
+          if (dir.includes('e') && Math.abs(newL + newW - iw) < SNAP && iw - newL >= minW) newW = iw - newL;
+          if (dir.includes('s') && Math.abs(newT + newH - ih) < SNAP && ih - newT >= minH) newH = ih - newT;
+          if (dir.includes('w') && Math.abs(newL) < SNAP && newW + newL >= minW) { newW += newL; newL = 0; }
+          if (dir.includes('n') && Math.abs(newT) < SNAP && newH + newT >= minH) { newH += newT; newT = 0; }
+
           win.style.width = `${newW}px`;
           win.style.height = `${newH}px`;
           win.style.left = `${newL}px`;
@@ -477,6 +671,7 @@ class ImageToolWindow {
           handle.removeEventListener('pointerup', onResizeUp);
           handle.removeEventListener('pointercancel', onResizeUp);
           this.render();
+          this.saveGeometry();
         };
 
         handle.addEventListener('pointermove', onResizeMove);
@@ -507,21 +702,25 @@ class ImageToolWindow {
     const pair = () => { const [a, b] = [...this.pointers.values()]; return { dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } }; };
 
     this.stage.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('.mlweb-imtool-info-card')) return;
+      if (e.target.closest('.mlweb-imtool-info-card, .mlweb-imtool-pop')) return;
       e.preventDefault();
       this.bringToFront();
       if (this.pointers.size >= 2) return;
       this.pointers.set(e.pointerId, stagePt(e));
+      // tap candidate (touch / pen only): a single finger that barely moves
+      this._tap = this.pointers.size === 1 && e.pointerType !== 'mouse'
+        ? { t: Date.now(), x: e.clientX, y: e.clientY, moved: false } : null;
       try { this.stage.setPointerCapture(e.pointerId); } catch { /* ignore */ }
       this.isPanning = true;
       this.stage.classList.add('is-panning');
-      if (this.pointers.size === 2) pinch = pair();
+      if (this.pointers.size === 2) { pinch = pair(); this._tap = null; this._lastTap = null; }
     });
 
     this.stage.addEventListener('pointermove', (e) => {
       const prev = this.pointers.get(e.pointerId);
       if (!prev) { this.trackCursorPixel(e); return; }
       const cur = stagePt(e);
+      if (this._tap && Math.hypot(e.clientX - this._tap.x, e.clientY - this._tap.y) > 10) this._tap.moved = true;
       this.pointers.set(e.pointerId, cur);
       if (this.pointers.size === 2 && pinch) {
         const now = pair();
@@ -540,8 +739,21 @@ class ImageToolWindow {
     });
 
     const endPointer = (e) => {
+      const wasSingle = this.pointers.size === 1;
       if (!this.pointers.delete(e.pointerId)) return;
       try { this.stage.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+      if (e.type === 'pointerup' && wasSingle && this._tap && !this._tap.moved && Date.now() - this._tap.t < 300) {
+        const last = this._lastTap;
+        const now = { t: Date.now(), x: e.clientX, y: e.clientY };
+        if (last && now.t - last.t < 350 && Math.hypot(now.x - last.x, now.y - last.y) < 30) {
+          this._lastTap = null;
+          if (Math.abs(this.zoom - 1) < 0.001) this.fitToWindow(); else this.actualSize();
+          this.render();
+        } else {
+          this._lastTap = now;
+        }
+      }
+      this._tap = null;
       pinch = null;
       if (!this.pointers.size) { this.isPanning = false; this.stage.classList.remove('is-panning'); }
     };
@@ -550,6 +762,8 @@ class ImageToolWindow {
     this.stage.addEventListener('lostpointercapture', endPointer);
 
     this.stage.addEventListener('pointerleave', () => {
+      this.cursor = null;
+      this.drawOverlay();
       if (!this.isPanning) {
         this.pixelStatus.textContent = this.t.pixelPrompt;
       }
@@ -557,24 +771,86 @@ class ImageToolWindow {
 
     // Keyboard shortcuts while window is focused
     win.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        if (this.isMaximized) {
-          this.toggleMaximize();
-        } else {
-          this.close();
-        }
-      } else if (e.key === '+' || e.key === '=') {
-        this.zoomRelative(1.25);
-      } else if (e.key === '-') {
-        this.zoomRelative(1 / 1.25);
-      } else if (e.key === '0') {
-        this.fitToWindow();
-        this.render();
-      } else if (e.key === '1') {
-        this.actualSize();
-        this.render();
+      if (e.target.closest && e.target.closest('input, textarea, select')) return;
+      const key = e.key;
+      if ((e.ctrlKey || e.metaKey) && key.toLowerCase() === 'c') {
+        if (String(window.getSelection && window.getSelection()) === '') { e.preventDefault(); this.copyImage(); }
+        return;
       }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const lower = key.length === 1 ? key.toLowerCase() : key;
+      const step = e.shiftKey ? 160 : 40;
+      let handled = true;
+      if (key === 'Escape') {
+        if (this.anyMenuOpen()) this.closeMenus();
+        else if (this.isMaximized) this.toggleMaximize();
+        else this.close();
+      } else if (key === '+' || key === '=') this.zoomRelative(1.25);
+      else if (key === '-' || key === '_') this.zoomRelative(1 / 1.25);
+      else if (key === '0') { this.fitToWindow(); this.render(); }
+      else if (key === '1') { this.actualSize(); this.render(); }
+      else if (key === 'ArrowLeft') { this.panX += step; this.render(); }
+      else if (key === 'ArrowRight') { this.panX -= step; this.render(); }
+      else if (key === 'ArrowUp') { this.panY += step; this.render(); }
+      else if (key === 'ArrowDown') { this.panY -= step; this.render(); }
+      else if (lower === 'i') win.querySelector('.btn-info').click();
+      else if (lower === 'g') this.toggleSetting('grid');
+      else if (lower === 'r') this.toggleSetting('rulers');
+      else if (lower === 'c') this.toggleSetting('crosshair');
+      else if (key === '?' || (key === '/' && e.shiftKey)) this.toggleMenu('help');
+      else handled = false;
+      if (handled) e.preventDefault();
     });
+  }
+
+  // ---- popovers, toast, settings ------------------------------------------
+  anyMenuOpen() { return Object.values(this.pops).some(p => !p.hidden); }
+
+  closeMenus() {
+    for (const [name, pop] of Object.entries(this.pops)) {
+      pop.hidden = true;
+      this.menuBtns[name].classList.remove('is-active');
+    }
+  }
+
+  toggleMenu(name) {
+    const wasOpen = !this.pops[name].hidden;
+    this.closeMenus();
+    if (wasOpen || this.isMinimized) return;
+    const pop = this.pops[name];
+    pop.hidden = false;
+    this.menuBtns[name].classList.add('is-active');
+    const sr = this.stage.getBoundingClientRect();
+    const br = this.menuBtns[name].getBoundingClientRect();
+    const left = Math.max(8, Math.min(br.left - sr.left, sr.width - pop.offsetWidth - 8));
+    pop.style.left = `${left}px`;
+    pop.style.top = '8px';
+  }
+
+  syncViewMenu() {
+    const map = { grid: this.showGrid, rulers: this.showRulers, crosshair: this.showCrosshair };
+    this.pops.view.querySelectorAll('[data-toggle]').forEach((el) => {
+      const on = !!map[el.dataset.toggle];
+      el.classList.toggle('is-on', on);
+      el.setAttribute('aria-checked', String(on));
+    });
+  }
+
+  toggleSetting(name) {
+    if (name === 'grid') this.showGrid = !this.showGrid;
+    else if (name === 'rulers') this.showRulers = !this.showRulers;
+    else if (name === 'crosshair') this.showCrosshair = !this.showCrosshair;
+    else return;
+    writeStore(PREF_KEY, { grid: this.showGrid, rulers: this.showRulers, crosshair: this.showCrosshair });
+    this.syncViewMenu();
+    this.render();
+  }
+
+  showToast(msg) {
+    this.toast.textContent = msg;
+    this.toast.classList.add('is-show');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => this.toast.classList.remove('is-show'), 2200);
   }
 
   trackCursorPixel(e) {
@@ -584,6 +860,7 @@ class ImageToolWindow {
     const px = Math.floor((mx - this.panX) / this.zoom);
     const py = Math.floor((my - this.panY) / this.zoom);
     const { w, h, rgb } = this.image;
+    if (e.pointerType !== 'touch') { this.cursor = { x: mx, y: my }; this.drawOverlay(); }
 
     if (px >= 0 && px < w && py >= 0 && py < h) {
       const idx = (py * w + px) * 3;
@@ -681,6 +958,8 @@ class ImageToolWindow {
     const maxBtn = this.win.querySelector('.btn-max');
     if (this.isMaximized) this.toggleMaximize();
 
+    this.closeMenus();
+    this._lastMinToggle = Date.now();
     this.isMinimized = !this.isMinimized;
     this.win.classList.toggle('is-minimized', this.isMinimized);
     maxBtn.title = this.isMinimized ? this.t.restore : this.t.maximize;
@@ -742,20 +1021,22 @@ class ImageToolWindow {
       const rowEnd = Math.min(h, Math.ceil((stageH - panY) / zoom));
 
       // Draw subtle pixel grid
-      ctx.strokeStyle = 'rgba(128, 128, 128, 0.45)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let col = colStart; col <= colEnd; col++) {
-        const x = Math.round(panX + col * zoom) + 0.5;
-        ctx.moveTo(x, Math.max(0, panY + rowStart * zoom));
-        ctx.lineTo(x, Math.min(stageH, panY + rowEnd * zoom));
+      if (this.showGrid) {
+        ctx.strokeStyle = 'rgba(128, 128, 128, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let col = colStart; col <= colEnd; col++) {
+          const x = Math.round(panX + col * zoom) + 0.5;
+          ctx.moveTo(x, Math.max(0, panY + rowStart * zoom));
+          ctx.lineTo(x, Math.min(stageH, panY + rowEnd * zoom));
+        }
+        for (let row = rowStart; row <= rowEnd; row++) {
+          const y = Math.round(panY + row * zoom) + 0.5;
+          ctx.moveTo(Math.max(0, panX + colStart * zoom), y);
+          ctx.lineTo(Math.min(stageW, panX + colEnd * zoom), y);
+        }
+        ctx.stroke();
       }
-      for (let row = rowStart; row <= rowEnd; row++) {
-        const y = Math.round(panY + row * zoom) + 0.5;
-        ctx.moveTo(Math.max(0, panX + colStart * zoom), y);
-        ctx.lineTo(Math.min(stageW, panX + colEnd * zoom), y);
-      }
-      ctx.stroke();
 
       // Render In-Pixel Numerical Values
       if (this.showPixelValues && zoom >= 10.0) {
@@ -825,7 +1106,206 @@ class ImageToolWindow {
       }
     }
 
+    if (this.showRulers) this.drawRulers(ctx, stageW, stageH);
+
     ctx.restore();
+    this.drawOverlay();
+  }
+
+  drawRulers(ctx, stageW, stageH) {
+    const { w, h } = this.image;
+    const zoom = this.zoom;
+    const pickStep = (minPx) => NICE_STEPS.find(n => n * zoom >= minPx) || NICE_STEPS[NICE_STEPS.length - 1];
+    const stepX = pickStep(46);
+    const stepY = pickStep(24);
+    const dark = 'rgba(18, 22, 30, 0.88)';
+    const line = 'rgba(160, 170, 190, 0.55)';
+    const textCol = 'rgba(210, 216, 230, 0.95)';
+
+    ctx.fillStyle = dark;
+    ctx.fillRect(0, 0, stageW, RULER_H);
+    ctx.fillRect(0, RULER_H, RULER_W, stageH - RULER_H);
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(RULER_W + 0.5, RULER_H);
+    ctx.lineTo(RULER_W + 0.5, stageH);
+    ctx.moveTo(0, RULER_H + 0.5);
+    ctx.lineTo(stageW, RULER_H + 0.5);
+    ctx.stroke();
+
+    ctx.font = '10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    ctx.fillStyle = textCol;
+    ctx.strokeStyle = line;
+
+    // top ruler: columns (1-based, at the pixel centre)
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(RULER_W + 1, 0, stageW, RULER_H);
+    ctx.clip();
+    ctx.beginPath();
+    const k0 = Math.max(1, Math.floor((RULER_W - this.panX) / zoom));
+    const k1 = Math.min(w, Math.ceil((stageW - this.panX) / zoom) + 1);
+    for (let k = k0; k <= k1; k++) {
+      if (k % stepX !== 0 && !(k === 1 && stepX === 1)) continue;
+      const x = Math.round(this.panX + (k - 0.5) * zoom) + 0.5;
+      ctx.moveTo(x, RULER_H - 5);
+      ctx.lineTo(x, RULER_H);
+      ctx.fillText(String(k), x, 7);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // left ruler: rows
+    ctx.textAlign = 'right';
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, RULER_H + 1, RULER_W, stageH);
+    ctx.clip();
+    ctx.beginPath();
+    const r0 = Math.max(1, Math.floor((RULER_H - this.panY) / zoom));
+    const r1 = Math.min(h, Math.ceil((stageH - this.panY) / zoom) + 1);
+    for (let r = r0; r <= r1; r++) {
+      if (r % stepY !== 0 && !(r === 1 && stepY === 1)) continue;
+      const y = Math.round(this.panY + (r - 0.5) * zoom) + 0.5;
+      ctx.moveTo(RULER_W - 5, y);
+      ctx.lineTo(RULER_W, y);
+      ctx.fillText(String(r), RULER_W - 7, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /** Cheap overlay layer: crosshair + ruler cursor marks. Redrawn on every mouse move without touching the image canvas. */
+  drawOverlay() {
+    const c = this.overlay;
+    if (!c || this.isMinimized) return;
+    const W = this.stage.clientWidth, H = this.stage.clientHeight;
+    if (!W || !H) return;
+    const dpr = window.devicePixelRatio || 1;
+    if (c.width !== W * dpr || c.height !== H * dpr) { c.width = W * dpr; c.height = H * dpr; }
+    const g = this.octx;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    const cur = this.cursor;
+    if (!cur || (!this.showCrosshair && !this.showRulers)) return;
+
+    const { w, h } = this.image;
+    let x = cur.x, y = cur.y;
+    const px = Math.floor((x - this.panX) / this.zoom);
+    const py = Math.floor((y - this.panY) / this.zoom);
+    if (px >= 0 && px < w && py >= 0 && py < h) {
+      x = this.panX + (px + 0.5) * this.zoom;
+      y = this.panY + (py + 0.5) * this.zoom;
+    }
+    x = Math.round(x) + 0.5;
+    y = Math.round(y) + 0.5;
+
+    if (this.showCrosshair) {
+      g.setLineDash([5, 4]);
+      for (const [lw, col] of [[3, 'rgba(0,0,0,0.4)'], [1, 'rgba(255,255,255,0.92)']]) {
+        g.lineWidth = lw;
+        g.strokeStyle = col;
+        g.beginPath();
+        g.moveTo(x, 0); g.lineTo(x, H);
+        g.moveTo(0, y); g.lineTo(W, y);
+        g.stroke();
+      }
+      g.setLineDash([]);
+    }
+    if (this.showRulers) {
+      g.fillStyle = '#ff7a3d';
+      g.fillRect(x - 1, 0, 2, RULER_H);
+      g.fillRect(0, y - 1, RULER_W, 2);
+    }
+  }
+
+  // ---- export ------------------------------------------------------------
+  pngBlob() {
+    return new Promise(res => this.offscreen.toBlob(res, 'image/png'));
+  }
+
+  saveImage(kind) {
+    const { fig } = this.image;
+    const isJpg = kind === 'jpg';
+    this.offscreen.toBlob(blob => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `imtool-figure${Math.abs(fig || 1)}.${isJpg ? 'jpg' : 'png'}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, isJpg ? 'image/jpeg' : 'image/png', isJpg ? 0.92 : undefined);
+  }
+
+  async copyImage() {
+    try {
+      const blob = await this.pngBlob();
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      this.showToast(this.t.copied);
+    } catch {
+      this.showToast(this.t.copyFailed);
+    }
+  }
+
+  async copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;opacity:0;left:-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch { /* ignore */ }
+      ta.remove();
+      return ok;
+    }
+  }
+
+  /** Copies pixel values as MATLAB code. Whole image when small, otherwise the visible region (capped). */
+  async copyMatrix() {
+    const { w, h, rgb } = this.image;
+    const CAP = 160000; // pixels
+    let x0 = 0, y0 = 0, x1 = w, y1 = h;
+    let part = '';
+    if (w * h > CAP) {
+      const sw = this.stage.clientWidth, sh = this.stage.clientHeight;
+      x0 = Math.max(0, Math.floor(-this.panX / this.zoom));
+      x1 = Math.min(w, Math.ceil((sw - this.panX) / this.zoom));
+      y0 = Math.max(0, Math.floor(-this.panY / this.zoom));
+      y1 = Math.min(h, Math.ceil((sh - this.panY) / this.zoom));
+      let bw = Math.max(1, x1 - x0), bh = Math.max(1, y1 - y0);
+      if (bw * bh > CAP) {
+        const k = Math.sqrt(CAP / (bw * bh));
+        const nw = Math.max(1, Math.floor(bw * k)), nh = Math.max(1, Math.floor(bh * k));
+        x0 += Math.floor((bw - nw) / 2); y0 += Math.floor((bh - nh) / 2);
+        bw = nw; bh = nh;
+      }
+      x1 = x0 + bw; y1 = y0 + bh;
+      part = `I(${y0 + 1}:${y1}, ${x0 + 1}:${x1})`;
+    }
+    const channel = (c) => {
+      const rows = [];
+      for (let y = y0; y < y1; y++) {
+        const row = new Array(x1 - x0);
+        for (let x = x0; x < x1; x++) row[x - x0] = rgb[(y * w + x) * 3 + c];
+        rows.push(row.join(' '));
+      }
+      return '[' + rows.join(';\n ') + ']';
+    };
+    const text = this.isGrayscale
+      ? `I = uint8(${channel(0)});`
+      : `I = uint8(cat(3, ...\n${channel(0)}, ...\n${channel(1)}, ...\n${channel(2)}));`;
+    const ok = await this.copyText(text);
+    this.showToast(ok ? this.t.matrixCopied(y1 - y0, x1 - x0, part) : this.t.copyFailed);
   }
 
   downloadPng() {
@@ -846,6 +1326,7 @@ class ImageToolWindow {
   close() {
     if (this.ro) this.ro.disconnect();
     openWindows.delete(this.win);
+    clearTimeout(this._toastTimer);
     this.win.remove();
     layoutMinimizedWindows();
   }

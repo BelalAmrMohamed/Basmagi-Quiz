@@ -1169,3 +1169,168 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
     height: 10px !important;
   }
 }
+
+/* =============================================================================
+   Overlay canvas, popovers (View / Export / Help), toast
+   ============================================================================= */
+.mlweb-imtool-win {
+  outline: none;
+}
+
+.mlweb-imtool-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.mlweb-imtool-pop {
+  position: absolute;
+  z-index: 12;
+  box-sizing: border-box;
+  min-width: 190px;
+  max-width: calc(100% - 16px);
+  max-height: calc(100% - 16px);
+  overflow: auto;
+  padding: 5px;
+  background: color-mix(in srgb, var(--color-surface, #161922) 97%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--color-text-primary, #f0f3f8);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.16));
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+  font-size: 12.5px;
+  cursor: default;
+}
+
+.mlweb-imtool-pop[hidden] {
+  display: none;
+}
+
+.mlweb-imtool-win button.mlweb-imtool-pop-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 0;
+  height: 30px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mlweb-imtool-win button.mlweb-imtool-pop-item:hover {
+  background: rgba(128, 128, 128, 0.2);
+}
+
+.mlweb-imtool-pop-item .lbl {
+  flex: 1;
+}
+
+.mlweb-imtool-pop-item .chk {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border: 1.5px solid var(--color-text-secondary, #8b949e);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.mlweb-imtool-pop-item.is-on .chk {
+  background: var(--color-primary, #b94a16) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2l2.4 2.4 4.6-5' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% no-repeat;
+  border-color: var(--color-primary, #b94a16);
+}
+
+.mlweb-imtool-pop kbd {
+  font: 600 10.5px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--color-text-secondary, #8b949e);
+  background: rgba(128, 128, 128, 0.16);
+  border: 1px solid rgba(128, 128, 128, 0.28);
+  white-space: nowrap;
+}
+
+.mlweb-imtool-pop.pop-help {
+  width: 340px;
+  padding: 10px 12px;
+}
+
+.mlweb-imtool-pop-title {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+}
+
+.mlweb-imtool-keys {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  align-items: center;
+  line-height: 1.35;
+}
+
+.mlweb-imtool-keys kbd {
+  justify-self: start;
+}
+
+.mlweb-imtool-keys span {
+  color: var(--color-text-secondary, #a0a9ba);
+}
+
+.mlweb-imtool-toast {
+  position: absolute;
+  z-index: 13;
+  left: 50%;
+  bottom: 14px;
+  transform: translate(-50%, 8px);
+  max-width: calc(100% - 24px);
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(20, 24, 33, 0.94);
+  color: #f0f3f8;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.mlweb-imtool-toast.is-show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.mlweb-imtool-win.is-minimized .mlweb-imtool-pop,
+.mlweb-imtool-win.is-minimized .mlweb-imtool-toast {
+  display: none;
+}
+
+@container imtool (max-width: 400px) {
+  .mlweb-imtool-pop.pop-help {
+    width: calc(100% - 16px);
+  }
+
+  .mlweb-imtool-keys {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .mlweb-imtool-keys span {
+    margin-bottom: 5px;
+  }
+}
