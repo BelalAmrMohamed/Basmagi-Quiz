@@ -41,7 +41,8 @@
   <meta name="twitter:creator" content="@BelalAmrDev">
   <meta name="twitter:title" content="درس | منصة امتحانات بصمجي">
   <meta name="twitter:description" content="درس تفاعلي على منصة امتحانات بصمجي">
-  <meta name="twitter:image" content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/lesson-thumbnail.jpg?v=1">
+  <meta name="twitter:image"
+    content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/lesson-thumbnail.jpg?v=1">
   <meta name="twitter:image:alt" content="درس | منصة امتحانات بصمجي">
 
   <!-- PWA Meta Tags -->
@@ -130,7 +131,7 @@
 
   <!-- Canvas Animation Script - Only loads if user enabled animations -->
   <script type="module" src="src/shared/flow-field.js"></script>
-<script src="/src/shared/embed-mode.js"></script>
+  <script src="/src/shared/embed-mode.js"></script>
   <link rel="stylesheet" href="/src/styles/embed-mode.css">
 </head>
 
@@ -250,6 +251,14 @@
         <span class="menu-label">الصفحة الرئيسية</span>
       </a>
 
+      <a href="/my-content" class="menu-item" data-tooltip="محتواي"><svg xmlns="http://www.w3.org/2000/svg" width="22"
+          height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <path d="M8 13h8M8 17h5" />
+        </svg><span class="menu-label">محتواي</span>
+      </a>
+
       <a href="create-quiz" class="menu-item" data-tooltip="إنشاء امتحانات">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -279,15 +288,14 @@
         <span class="menu-label">إنشاء دروس</span>
       </a>
 
-            <a href="/notebook/new" class="menu-item" data-tooltip="إنشاء دفاتر">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    aria-hidden="true">
-                    <polyline points="16 18 22 12 16 6" />
-                    <polyline points="8 6 2 12 8 18" />
-                </svg>
-                <span class="menu-label">إنشاء دفاتر</span>
-            </a>
+      <a href="/notebook/new" class="menu-item" data-tooltip="إنشاء دفاتر">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="16 18 22 12 16 6" />
+          <polyline points="8 6 2 12 8 18" />
+        </svg>
+        <span class="menu-label">إنشاء دفاتر</span>
+      </a>
 
       <div class="menu-item-dropdown-wrap">
         <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
@@ -690,7 +698,7 @@
     });
   </script>
 
-<script src="/src/shared/analytics-beacon.js" defer></script>
+  <script src="/src/shared/analytics-beacon.js" defer></script>
 </body>
 
 </html>

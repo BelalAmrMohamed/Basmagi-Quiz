@@ -10,10 +10,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ### Create Quiz & Create Lesson Pages
 * Pressing (`ctrl` + `S`) to save doesn't always work.
 
-### Missing element in sidebar
-* Add the link to the notebook page to the sidebar in document pages. See: `public\src\features\documents\documents-shell.js`
-* Also add the link to user content `/my-content`
-
 ### Notebook Page: UI Issue
 * ![screenshot](image.png)
 * The cell scrollbars don't work, trying to scroll through them doesn't work. 
@@ -53,7 +49,7 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 * So when a user uses the MCP Server to create an item, opens the draft link provided by AI, the link opens inside `/my-content` with the item already created.
 
 #### Documentation
-* Move the MCP-related docs to a new page with steps screenshots from: public\assets\document-pages
+* Move the MCP-related docs from the `/how-to-use-ai-agent` to a new independent page with steps screenshots from: public\assets\document-pages
 
 ### Dictation for Essay Questions (Lesson & Quiz Pages)
 Add dictation feature for essays in quizzes and lessons
