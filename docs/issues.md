@@ -56,8 +56,8 @@ Add dictation feature for essays in quizzes and lessons
   * Add these: 
     * **Copy Name**: Copies the name of the item (with its extension).
     * **Rename**: Renames the item. Use the platform's `_prompt()` for it, its in `notifications.js`.
+    * **Copy Image**: Copies the image to clipboard.
     * Recommend to me other functionalities to add.
-
 
 ### Result Pages
 

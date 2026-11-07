@@ -38,7 +38,7 @@ const cellToPlain = (c) => ({ type: c.type, source: c.source, ...(typeof c.stdin
 
 const STR = {
   en: {
-    heading: "Create notebook", headingEdit: "Edit notebook", title: "Title", lang: "Notebook language", desc: "Description", src: "Source link (optional)",
+    heading: "Create notebook (Beta Testing)", headingEdit: "Edit notebook", title: "Title", lang: "Notebook language", desc: "Description", src: "Source link (optional)",
     topEyebrow: "NOTEBOOK STUDIO", topDescription: "Shape the notebook details, choose a runtime, then start building cells.",
     detailsKicker: "01 / DETAILS", detailsHeading: "Set up your notebook", formIntro: "Add a clear title and choose how this notebook should be presented.", draftLabel: "Draft details",
     identityHeading: "Notebook details", identityIntro: "Give learners enough context to know what they’ll open.", titleHint: "A concise title makes this notebook easier to find.", descriptionHint: "Describe the topic, goal, or expected starting point.", sourceHint: "Add a reference learners can open for more detail.",
@@ -85,8 +85,10 @@ function saveLocal(payload) {
     items[i] = { ...old, ...body, meta: { ...old.meta, title: payload.title, description: payload.description, source: payload.source, updatedAt: now } };
   } else {
     editId = `user_notebook_${crypto.randomUUID()}`;
-    items.push({ id: editId, meta: { type: "notebook", title: payload.title, parentId: null, createdAt: new Date().toLocaleString("en-US"), updatedAt: now, description: payload.description, source: payload.source, passwordProtected: false },
-      stats: body.stats, notebook: body.notebook, passwordHash: null, questions: [] });
+    items.push({
+      id: editId, meta: { type: "notebook", title: payload.title, parentId: null, createdAt: new Date().toLocaleString("en-US"), updatedAt: now, description: payload.description, source: payload.source, passwordProtected: false },
+      stats: body.stats, notebook: body.notebook, passwordHash: null, questions: []
+    });
   }
   try { localStorage.setItem("user_quizzes", JSON.stringify(items)); } catch { return "تعذّر الحفظ محلياً. قد تكون مساحة التخزين ممتلئة."; }
   return null;
@@ -214,7 +216,7 @@ async function save() {
       const err = saveLocal(payload);
       if (err) { showIssues(t("fail"), [err === "dup" ? t("dup") : err]); return; }
       dirtyFlag = false;
-      await wsStore.renameWorkspace(bridge?.key || "draft", editId).catch(() => {});
+      await wsStore.renameWorkspace(bridge?.key || "draft", editId).catch(() => { });
       void consumeImportDraft();
       // Only when Drive is already connected (never opens a popup). Awaited (max 10 s) so the redirect cannot cancel the upload;
       // the workspace now lives under the new id, so the key is passed explicitly (bridge.key is still "draft").
@@ -298,7 +300,7 @@ export async function startEditor(edit = null) {
   const editIsLocal = !!edit && /^user_notebook_/.test(edit);
   localMode = !(admin && ((edit && !editIsLocal) || params.get("draft")));
   if (!localMode) { $("cnbPlacementRow").hidden = false; void mountStorageBanner($("cnbStorage")); await loadPlacement(); }
-  if (!edit) await wsStore.clearWorkspace("draft").catch(() => {});
+  if (!edit) await wsStore.clearWorkspace("draft").catch(() => { });
   try {
     const draft = await fetchImportDraft("notebook");
     if (draft) state = M.notebookFromPayload(JSON.parse(draft));
