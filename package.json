@@ -19,6 +19,7 @@
     "push": "git switch production && git merge main && git push && git switch main",
     "push:all": "npm run zip && git push && npm run push",
     "revert": "git reset --soft HEAD~1",
+    "push:tags": "git push origin --tags",
     "build:runtimes": "npm ci --prefix runtimes --cache node_modules/.cache/npm && npm run build --prefix runtimes",
     "build:cpp-runtime": "npm run build:runtimes",
     "typecheck:runtimes": "npm run typecheck --prefix runtimes",

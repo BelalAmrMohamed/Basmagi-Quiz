@@ -21,7 +21,13 @@ The home page downloads every quiz’s password to the browser, so passwords are
 
 #### Redesign
 * Implement my personal component from 21st.dev: Rich Markdown AI Input Field with code blocks.
-* Instead of a modal, make it a window like `image-tool-window`, don't copy it or import it in the AI Agent files, I want you to implement a better version that is resposive when the window itself is smaller/bigger. Features:
+* Instead of a modal, make it a window like `image-tool-window`, don't copy it or import it in the AI Agent files, I want you to implement a a copy of it. Features:
+  * Same UI of Basmagi but in a window instead of a modal. Include all features and resposiveness of that window: 
+    * Aero Snap with the thumbnail/preview
+    * Mac-style control buttons at the top
+    * الباشــمبصمج's own title and logo at the top instead of that of `image-tool-window`.
+    * When window is open, maximized or minimized, the الباشــمبصمج's fab becomes hidden, until the window is closed.
+    * When the window is minimized and there was a prompt running, it should continue running with an animation on the minimized state indicating so.
 
 #### Dictation
 Fix Dictation: The dictation doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser when using the browser api for dictation.
@@ -41,6 +47,17 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 
 ### Dictation for Essay Questions (Lesson & Quiz Pages)
 Add dictation feature for essays in quizzes and lessons
+
+### Notebook Page: MATLAB Runtime
+
+* **Current Folder Improvements**:
+  * Add a more menu (3 vertical dots).
+  * Move the **Remove** and **Download** into it.
+  * Add these: 
+    * **Copy Name**: Copies the name of the item (with its extension).
+    * **Rename**: Renames the item. Use the platform's `_prompt()` for it, its in `notifications.js`.
+    * Recommend to me other functionalities to add.
+
 
 ### Result Pages
 
