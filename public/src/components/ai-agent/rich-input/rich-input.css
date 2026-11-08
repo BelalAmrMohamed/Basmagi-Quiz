@@ -195,6 +195,24 @@ html[data-theme="dark-slate"] .rmci-root {
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
 }
 
+/* ── "View Usage" row + flyout ── */
+.rmci-menu-usage-lead { display: inline-flex; align-items: center; gap: 8px; }
+.rmci-submenu:has(.rmci-usage-body) { min-width: 250px; max-width: 300px; padding: 6px; }
+.rmci-usage-head { padding: 6px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .02em; color: var(--rmci-muted); }
+.rmci-usage-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 10px; }
+.rmci-usage-row:hover { background: var(--rmci-hover); }
+.rmci-usage-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.rmci-usage-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.rmci-usage-name { font-size: 13px; font-weight: 600; color: var(--rmci-fg); }
+.rmci-usage-pct { font-size: 12px; color: var(--rmci-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rmci-usage-sub { font-size: 11px; color: var(--rmci-muted); }
+.rmci-usage-ring { flex-shrink: 0; }
+.rmci-usage-ring-bg { fill: none; stroke: color-mix(in srgb, var(--rmci-fg) 18%, transparent); stroke-width: 2.5; }
+.rmci-usage-ring-fg { fill: none; stroke: #4caf6a; stroke-width: 2.5; stroke-linecap: round; transition: stroke-dashoffset .4s ease; }
+.rmci-usage-row.is-warn .rmci-usage-ring-fg { stroke: #e0a030; }
+.rmci-usage-row.is-low .rmci-usage-ring-fg { stroke: #e05050; }
+.rmci-usage-note { padding: 10px; font-size: 12px; color: var(--rmci-muted); }
+
 /* ── ProseMirror content ── */
 .rmci-editor .ProseMirror { outline: none; min-height: 1.75rem; word-break: break-word; font-size: .9375rem; line-height: 1.6; white-space: pre-wrap; }
 .rmci-editor .ProseMirror > *:first-child { margin-top: 0; }

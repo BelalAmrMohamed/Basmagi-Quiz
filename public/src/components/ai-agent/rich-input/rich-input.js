@@ -31,6 +31,7 @@
 import { icon } from "./icons.js";
 import { toMarkdown } from "./markdown-serializer.js";
 import { buildExtensions } from "./extensions.js";
+import { formatReset } from "../ai-agent-usage.js";
 
 const VENDOR_URL = globalThis.__RMCI_VENDOR_URL__ || "/assets/vendor/tiptap/tiptap.js"; // override hook: tests
 const RTL_CHARS = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
@@ -150,6 +151,22 @@ function openMenu(trigger, build, { align = "start", rtl = false, width } = {}) 
   trigger.setAttribute("aria-expanded", "true");
   trigger.classList.add("is-open");
   return close;
+}
+
+/** One provider row of the usage flyout: name + "% left" + reset line + ring. */
+function usageRow(g) {
+  const pct = Math.max(0, Math.min(100, Number(g.percentLeft) || 0));
+  const row = document.createElement("div");
+  row.className = `rmci-usage-row${pct <= 10 ? " is-low" : pct <= 30 ? " is-warn" : ""}`;
+  row.setAttribute("role", "group");
+  const R = 8, C = 2 * Math.PI * R;
+  row.innerHTML =
+    '<span class="rmci-usage-text"><span class="rmci-usage-top"><span class="rmci-usage-name"></span><span class="rmci-usage-pct"></span></span><span class="rmci-usage-sub"></span></span>' +
+    `<svg class="rmci-usage-ring" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="${R}" class="rmci-usage-ring-bg"/><circle cx="11" cy="11" r="${R}" class="rmci-usage-ring-fg" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C * (1 - pct / 100)).toFixed(2)}" transform="rotate(-90 11 11)"/></svg>`;
+  row.querySelector(".rmci-usage-name").textContent = g.label;
+  row.querySelector(".rmci-usage-pct").textContent = `المتبقي ${pct}%`;
+  row.querySelector(".rmci-usage-sub").textContent = g.resetsAt ? formatReset(g.resetsAt) : "الحد الأسبوعي";
+  return row;
 }
 
 function menuItem({ iconHtml = "", label, hint = "", selected = false, locked = false, leadingCheck = false, onClick }) {
@@ -514,6 +531,7 @@ export function createRichInput(options = {}) {
       openMenu(btn, (menu, close) => {
         let submenuEl = null;
         let closeSubmenuTimer = null;
+        let activeTrigger = null; // which menu row currently owns the flyout
 
         const cancelCloseSubmenu = () => {
           if (closeSubmenuTimer) {
@@ -528,23 +546,64 @@ export function createRichInput(options = {}) {
             submenuEl.remove();
             submenuEl = null;
           }
-          if (subTrigger) {
-            subTrigger.setAttribute("aria-expanded", "false");
-            subTrigger.classList.remove("is-active");
+          if (activeTrigger) {
+            activeTrigger.setAttribute("aria-expanded", "false");
+            activeTrigger.classList.remove("is-active");
+            activeTrigger = null;
           }
         };
 
-        const openSubmenu = () => {
+        // One flyout at a time, shared by every submenu row ("Thinking level",
+        // "View Usage"). `fill(el, reposition)` populates it; it may call
+        // reposition() again when its content changes size (async usage load).
+        const openSubmenu = (trigger, fill) => {
           cancelCloseSubmenu();
-          if (submenuEl) return;
+          if (submenuEl && activeTrigger === trigger) return;
+          if (submenuEl) closeSubmenu();
+          activeTrigger = trigger;
           submenuEl = document.createElement("div");
           submenuEl.className = "rmci-menu rmci-submenu";
           submenuEl.setAttribute("role", "menu");
           submenuEl.dir = "rtl";
 
+          submenuEl.addEventListener("mouseenter", cancelCloseSubmenu);
+          submenuEl.addEventListener("mouseleave", scheduleCloseSubmenu);
+
+          submenuEl.style.position = "fixed";
+          document.body.appendChild(submenuEl);
+
+          const place = () => {
+            if (!submenuEl) return;
+            const tr = trigger.getBoundingClientRect();
+            const mr = menu.getBoundingClientRect();
+            const sw = submenuEl.offsetWidth || 220;
+            const sh = submenuEl.offsetHeight || 160;
+
+            // In RTL layout, the flyout opens directly to the left of the main menu
+            let left = mr.left - sw - 4;
+            if (left < 8) left = mr.right + 4;
+            left = Math.max(8, Math.min(left, window.innerWidth - sw - 8));
+
+            // Align the bottom of the submenu with the bottom of its trigger row
+            let top = tr.bottom - sh;
+            if (top < 8) top = Math.max(8, mr.top);
+            if (top + sh > window.innerHeight - 8) top = Math.max(8, window.innerHeight - sh - 8);
+
+            submenuEl.style.left = `${left}px`;
+            submenuEl.style.top = `${top}px`;
+          };
+
+          fill(submenuEl, place);
+          place();
+
+          trigger.setAttribute("aria-expanded", "true");
+          trigger.classList.add("is-active");
+        };
+
+        const fillEffort = (el) => {
           const curEffort = cfg.selectedEffort || "auto";
           cfg.effortLevels.forEach((eff) => {
-            submenuEl.appendChild(menuItem({
+            el.appendChild(menuItem({
               label: eff.label,
               hint: eff.hint || "",
               selected: eff.id === curEffort,
@@ -557,40 +616,34 @@ export function createRichInput(options = {}) {
               },
             }));
           });
+        };
 
-          submenuEl.addEventListener("mouseenter", cancelCloseSubmenu);
-          submenuEl.addEventListener("mouseleave", scheduleCloseSubmenu);
+        // "View Usage" flyout: header + one row per provider pool with a ring
+        // gauge, "% left" and the reset countdown.
+        const fillUsage = (el, place) => {
+          const head = document.createElement("div");
+          head.className = "rmci-usage-head";
+          head.textContent = "الاستخدام";
+          el.appendChild(head);
+          const body = document.createElement("div");
+          body.className = "rmci-usage-body";
+          body.innerHTML = '<div class="rmci-usage-note">جارٍ التحميل…</div>';
+          el.appendChild(body);
 
-          submenuEl.style.position = "fixed";
-          document.body.appendChild(submenuEl);
-
-          // Position submenu directly adjacent to the main dropdown menu
-          const tr = subTrigger.getBoundingClientRect();
-          const mr = menu.getBoundingClientRect();
-          const sw = submenuEl.offsetWidth || 220;
-          const sh = submenuEl.offsetHeight || 160;
-
-          // In RTL layout, the flyout opens directly to the left of the main menu
-          let left = mr.left - sw - 4;
-          if (left < 8) {
-            left = mr.right + 4;
-          }
-          left = Math.max(8, Math.min(left, window.innerWidth - sw - 8));
-
-          // Align the bottom of the submenu with the bottom of the subTrigger / main menu
-          let top = tr.bottom - sh;
-          if (top < 8) {
-            top = Math.max(8, mr.top);
-          }
-          if (top + sh > window.innerHeight - 8) {
-            top = Math.max(8, window.innerHeight - sh - 8);
-          }
-
-          submenuEl.style.left = `${left}px`;
-          submenuEl.style.top = `${top}px`;
-
-          subTrigger.setAttribute("aria-expanded", "true");
-          subTrigger.classList.add("is-active");
+          Promise.resolve(cfg.usage.load()).then((data) => {
+            if (!submenuEl || !el.isConnected) return;
+            body.replaceChildren();
+            const groups = data?.groups || [];
+            if (!groups.length) {
+              body.innerHTML = '<div class="rmci-usage-note">لا توجد بيانات استخدام متاحة.</div>';
+            }
+            groups.forEach((g) => body.appendChild(usageRow(g)));
+            place();
+          }).catch(() => {
+            if (!el.isConnected) return;
+            body.innerHTML = '<div class="rmci-usage-note">تعذّر تحميل الاستخدام الآن.</div>';
+            place();
+          });
         };
 
         const scheduleCloseSubmenu = () => {
@@ -637,16 +690,44 @@ export function createRichInput(options = {}) {
             <span class="rmci-menu-arrow">${icon("chevronLeft", 14)}</span>
           `;
 
-          subTrigger.addEventListener("mouseenter", openSubmenu);
+          subTrigger.addEventListener("mouseenter", () => openSubmenu(subTrigger, fillEffort));
           subTrigger.addEventListener("mouseleave", scheduleCloseSubmenu);
           subTrigger.addEventListener("click", (e) => {
             e.stopPropagation();
             cancelCloseSubmenu();
-            if (submenuEl) closeSubmenu();
-            else openSubmenu();
+            if (submenuEl && activeTrigger === subTrigger) closeSubmenu();
+            else openSubmenu(subTrigger, fillEffort);
           });
 
           menu.appendChild(subTrigger);
+        }
+
+        if (cfg.usage && typeof cfg.usage.load === "function") {
+          if (!(cfg.effortLevels && cfg.effortLevels.length)) {
+            const div = document.createElement("div");
+            div.className = "rmci-menu-divider";
+            menu.appendChild(div);
+          }
+          const usageTrigger = document.createElement("button");
+          usageTrigger.type = "button";
+          usageTrigger.className = "rmci-menu-item rmci-menu-item--submenu rmci-menu-item--usage";
+          usageTrigger.setAttribute("role", "menuitem");
+          usageTrigger.setAttribute("aria-haspopup", "menu");
+          usageTrigger.setAttribute("aria-expanded", "false");
+          usageTrigger.innerHTML = `
+            <span class="rmci-menu-usage-lead">${icon("gauge", 16)}<span class="rmci-menu-label">عرض الاستخدام</span></span>
+            <span class="rmci-menu-arrow">${icon("chevronLeft", 14)}</span>
+          `;
+          usageTrigger.addEventListener("mousedown", (e) => e.preventDefault());
+          usageTrigger.addEventListener("mouseenter", () => openSubmenu(usageTrigger, fillUsage));
+          usageTrigger.addEventListener("mouseleave", scheduleCloseSubmenu);
+          usageTrigger.addEventListener("click", (e) => {
+            e.stopPropagation();
+            cancelCloseSubmenu();
+            if (submenuEl && activeTrigger === usageTrigger) closeSubmenu();
+            else openSubmenu(usageTrigger, fillUsage);
+          });
+          menu.appendChild(usageTrigger);
         }
 
         const origRemove = menu.remove.bind(menu);

@@ -81,6 +81,7 @@
 
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
+import { recordPlatformUsage } from "./_usage.js";
 import { callProvider, isSupportedProvider, DEFAULT_MODELS } from "./_providerClients.js";
 import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, CREATE_LESSON_TOOL, ADD_LESSON_SECTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL, GET_CREATOR_INFO_TOOL, DISPLAY_CREATOR_CARD_TOOL, CREATE_FLASHCARDS_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
@@ -526,6 +527,9 @@ export default async function handler(req, res) {
   try {
     const platformModel = DEFAULT_MODELS[provider] || "gemini-flash-lite-latest";
     const result = await callProvider(provider, picked.key, messages, systemPrompt, tools, platformModel, effort);
+    // Meter the shared pool (feeds the "View Usage" menu). Awaited so the
+    // serverless function isn't frozen mid-write; recordPlatformUsage never throws.
+    await recordPlatformUsage(provider);
     return res.status(200).json(result);
   } catch (err) {
     console.error(

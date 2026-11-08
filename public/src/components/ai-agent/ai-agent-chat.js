@@ -29,6 +29,7 @@ import { saveConversation, deriveConversationTitle } from "./ai-agent-history-id
 // export menu (ai-agent.js) — one dropdown-menu visual style for the
 // whole widget rather than a bespoke one per popover.
 import { openAgentDropdown, closeAllAgentDropdowns, positionAgentDropdown } from "./ai-agent-dropdown.js";
+import { fetchPlatformUsage } from "./ai-agent-usage.js";
 import { createMentionMenu, getQuickAccessMentionDefinitions } from "./ai-agent-mention-menu.js";
 import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js";
 import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
@@ -282,6 +283,7 @@ export function createChatPanel(options = {}) {
       disabled: false,
       effortLevels,
       selectedEffort,
+      usage: { load: () => fetchPlatformUsage() },
       onChange: (id) => {
         setSelectedModel(getSelectedProvider(), id);
         refreshModelBarOptions();
