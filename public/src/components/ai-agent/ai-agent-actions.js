@@ -17,6 +17,7 @@
 
 // Standard SVG icons for actions
 const ICON_QUIZ = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`;
+const ICON_NOTEBOOK = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m8 10 3 2-3 2"/><path d="M13 15h3"/></svg>`;
 const ICON_FOLDER = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
 const ICON_COURSE = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`;
 const ICON_QUESTION = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>`;
@@ -103,6 +104,15 @@ const HOME_PAGE_ACTIONS = [
         icon: ICON_QUIZ,
         systemDirective: "المستخدم يطلب إنشاء امتحان جديد بشكل صريح عبر أمر /create-quiz. نفّذ الإجراء مباشرة فوراً واستدعِ أداة create_quiz لحفظه في قسم «امتحاناتك» دون طلب أي تأكيد مسبق.",
         placeholder: "اكتب موضوع الامتحان وعدد الأسئلة...",
+    },
+    {
+        id: "create-notebook",
+        command: "create-notebook",
+        label: "إنشاء دفتر",
+        description: "إنشاء دفتر كود وملاحظات برمجية تفاعلي وحفظه في «امتحاناتك»",
+        icon: ICON_NOTEBOOK,
+        systemDirective: "المستخدم يطلب إنشاء دفتر ملاحظات برمجية تفاعلي (Notebook) صراحة عبر أمر /create-notebook. جهّز محتوى الدفتر أو خلايا الكود والشرح ونفّذ الإجراء دون طلب تأكيد مسبق.",
+        placeholder: "موضوع الدفتر، لغة البرمجة، والملاحظات المطلوبة...",
     },
     {
         id: "create-folder",
@@ -321,6 +331,7 @@ export function createSlashMenu(options) {
         window.removeEventListener("resize", reposition);
         window.removeEventListener("scroll", reposition, true);
         document.removeEventListener("click", onOutsideClick);
+        window.removeEventListener("aiw:close-popups", close);
     }
 
     function reposition() {
@@ -476,6 +487,7 @@ export function createSlashMenu(options) {
         window.addEventListener("resize", reposition);
         window.addEventListener("scroll", reposition, true);
         document.addEventListener("click", onOutsideClick);
+        window.addEventListener("aiw:close-popups", close);
     }
 
     function handleInput() {

@@ -193,6 +193,7 @@ export function createMentionMenu(options) {
         clearTimeout(platformDebounceTimer);
         window.removeEventListener("resize", reposition);
         document.removeEventListener("click", onOutsideClick);
+        window.removeEventListener("aiw:close-popups", close);
     }
 
     function reposition() {
@@ -399,6 +400,7 @@ export function createMentionMenu(options) {
         positionMenu(menuEl, textarea);
         menuEl.style.visibility = "visible";
         window.addEventListener("resize", reposition);
+        window.addEventListener("aiw:close-popups", close);
         // Deferred one tick — same reasoning as the menu this replaces: the
         // very `@` keydown that opens it is still bubbling, and a click-type
         // outside-click listener registered synchronously could otherwise

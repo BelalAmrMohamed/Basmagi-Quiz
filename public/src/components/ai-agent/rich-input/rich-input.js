@@ -98,13 +98,21 @@ function openMenu(trigger, build, { align = "start", rtl = false, width } = {}) 
     menu.remove();
     trigger.setAttribute("aria-expanded", "false");
     trigger.classList.remove("is-open");
+    document.removeEventListener("pointerdown", onDown, true);
     document.removeEventListener("mousedown", onDown, true);
     document.removeEventListener("keydown", onKey, true);
     window.removeEventListener("resize", close);
+    window.removeEventListener("scroll", onScroll, true);
+    window.removeEventListener("aiw:close-popups", close);
+    window.removeEventListener("blur", close);
   };
   const onDown = (e) => {
     const isSub = e.target.closest && e.target.closest(".rmci-submenu");
     if (!menu.contains(e.target) && !trigger.contains(e.target) && !isSub) close();
+  };
+  const onScroll = (e) => {
+    if (menu.contains(e.target) || e.target.closest?.(".rmci-submenu")) return;
+    close();
   };
   const onKey = (e) => {
     if (e.key === "Escape") {
@@ -132,9 +140,13 @@ function openMenu(trigger, build, { align = "start", rtl = false, width } = {}) 
   if (r.bottom + mh + 8 > window.innerHeight && above > mh + 8) menu.style.top = `${r.top - mh - 6}px`;
   else menu.style.top = `${r.bottom + 6}px`;
 
+  document.addEventListener("pointerdown", onDown, true);
   document.addEventListener("mousedown", onDown, true);
   document.addEventListener("keydown", onKey, true);
   window.addEventListener("resize", close);
+  window.addEventListener("scroll", onScroll, true);
+  window.addEventListener("aiw:close-popups", close);
+  window.addEventListener("blur", close);
   trigger.setAttribute("aria-expanded", "true");
   trigger.classList.add("is-open");
   return close;
@@ -549,27 +561,31 @@ export function createRichInput(options = {}) {
           submenuEl.addEventListener("mouseenter", cancelCloseSubmenu);
           submenuEl.addEventListener("mouseleave", scheduleCloseSubmenu);
 
+          submenuEl.style.position = "fixed";
           document.body.appendChild(submenuEl);
 
-          // Position submenu adjacent to subTrigger / menu in RTL
+          // Position submenu directly adjacent to the main dropdown menu
           const tr = subTrigger.getBoundingClientRect();
           const mr = menu.getBoundingClientRect();
           const sw = submenuEl.offsetWidth || 220;
           const sh = submenuEl.offsetHeight || 160;
 
-          // In RTL layout, the flyout opens to the left of the main menu
+          // In RTL layout, the flyout opens directly to the left of the main menu
           let left = mr.left - sw - 4;
           if (left < 8) {
             left = mr.right + 4;
           }
           left = Math.max(8, Math.min(left, window.innerWidth - sw - 8));
 
-          let top = tr.top - 4;
+          // Align the bottom of the submenu with the bottom of the subTrigger / main menu
+          let top = tr.bottom - sh;
+          if (top < 8) {
+            top = Math.max(8, mr.top);
+          }
           if (top + sh > window.innerHeight - 8) {
             top = Math.max(8, window.innerHeight - sh - 8);
           }
 
-          submenuEl.style.position = "fixed";
           submenuEl.style.left = `${left}px`;
           submenuEl.style.top = `${top}px`;
 

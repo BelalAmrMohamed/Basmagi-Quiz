@@ -242,7 +242,7 @@ export function createChatPanel(options = {}) {
   // bottom bar when the input row is assembled.
   const rich = createRichInput({
     placeholder,
-    hint: "Enter للإرسال · Shift + Enter لسطر جديد · ``` لكتلة كود",
+    hint: "",
     maxHeight: 240,
     getCommands: () => getPageActions(pageKey, options.actions),
     getMentions: getQuickAccessMentionDefinitions,

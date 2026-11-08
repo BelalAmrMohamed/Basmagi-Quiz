@@ -195,6 +195,7 @@ export function createAgentWindow(cfg) {
   }
 
   function toggleMaximize() {
+    window.dispatchEvent(new CustomEvent("aiw:close-popups"));
     if (state.maximized) {
       state.maximized = false;
       win.classList.remove("is-maximized");
@@ -210,6 +211,7 @@ export function createAgentWindow(cfg) {
   }
 
   function toggleMinimize() {
+    window.dispatchEvent(new CustomEvent("aiw:close-popups"));
     if (state.maximized) toggleMaximize();
     state.lastMinToggle = Date.now();
     state.minimized = !state.minimized;
@@ -260,11 +262,15 @@ export function createAgentWindow(cfg) {
   window.addEventListener("resize", onWindowResize);
 
   // ── Events ───────────────────────────────────────────────────────────────
-  win.addEventListener("pointerdown", () => {
+  win.addEventListener("pointerdown", (e) => {
     win.classList.add("is-focused");
+    if (!e.target.closest(".rmci-menu, .rmci-model-btn, .rmci-heading-btn, .ai-agent-chat-more-btn")) {
+      window.dispatchEvent(new CustomEvent("aiw:close-popups"));
+    }
   });
 
   titlebar.addEventListener("pointerdown", (e) => {
+    window.dispatchEvent(new CustomEvent("aiw:close-popups"));
     if (e.target.closest("button")) return;
     if (state.maximized || state.minimized) return;
     e.preventDefault();
@@ -275,6 +281,7 @@ export function createAgentWindow(cfg) {
     titlebar.setPointerCapture(e.pointerId);
 
     const onMove = (ev) => {
+      window.dispatchEvent(new CustomEvent("aiw:close-popups"));
       if (state.maximized) return;
       // Dragging a snapped window out restores its previous size (pointer keeps its place on the title bar)
       if (state.snapRestore && Math.hypot(ev.clientX - startX, ev.clientY - startY) > 4) {
@@ -329,6 +336,7 @@ export function createAgentWindow(cfg) {
 
   win.querySelectorAll(".aiw-resizer").forEach((handle) => {
     handle.addEventListener("pointerdown", (e) => {
+      window.dispatchEvent(new CustomEvent("aiw:close-popups"));
       if (state.maximized || state.minimized) return;
       e.preventDefault();
       e.stopPropagation();
@@ -340,6 +348,7 @@ export function createAgentWindow(cfg) {
       handle.setPointerCapture(e.pointerId);
 
       const onMove = (ev) => {
+        window.dispatchEvent(new CustomEvent("aiw:close-popups"));
         const dx = ev.clientX - startX, dy = ev.clientY - startY;
         let w = startW, h = startH, l = startL, t = startT;
         if (dir.includes("e")) w = Math.max(MIN_W, startW + dx);
