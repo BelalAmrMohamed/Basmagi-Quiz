@@ -493,12 +493,9 @@ export function createChatPanel(options = {}) {
       });
       suggestionsEl.appendChild(chip);
     });
-    // Always insert right before inputRow (declared further down, but this
-    // function is never called until after inputRow exists — see the
-    // initial renderSuggestions() call below it) so re-rendering the chips
-    // from startNewConversation() puts them back in the same spot rather
-    // than appending after the input row.
-    panel.insertBefore(suggestionsEl, inputRow);
+    // Insert suggestions at the end of messagesEl so they scroll naturally
+    // with the chat messages and never collide with the floating input row.
+    messagesEl.appendChild(suggestionsEl);
   }
 
   // PHASE 3 icons for the attachment tiles — a generic file glyph (used for
@@ -1522,8 +1519,19 @@ export function createChatPanel(options = {}) {
   if (firefoxWarningEl) panel.appendChild(firefoxWarningEl);
   panel.appendChild(inputRow);
 
-  // inputRow exists now, so it's safe for renderSuggestions() to insert
-  // relative to it (see the function's own comment above).
+  // Keep messagesEl padding-bottom in sync with inputRow's actual rendered height,
+  // so the last message / suggestion chip can always scroll above the bottom-floating input row.
+  const updateMessagesPadding = () => {
+    const rowH = inputRow.offsetHeight || 60;
+    messagesEl.style.paddingBottom = `${rowH + 16}px`;
+  };
+  if (typeof ResizeObserver !== "undefined") {
+    const ro = new ResizeObserver(updateMessagesPadding);
+    ro.observe(inputRow);
+  }
+  updateMessagesPadding();
+
+  // inputRow exists now, so it's safe for renderSuggestions() to run
   renderSuggestions();
 
   function renderEmptyState() {

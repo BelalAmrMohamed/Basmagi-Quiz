@@ -135,3 +135,5 @@ Improve:
 
 ### What is `PISTON_TOKEN`
 
+### AI Agent
+Is making an independent page something usefull?

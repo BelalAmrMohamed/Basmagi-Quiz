@@ -112,25 +112,31 @@ export function buildExtensions(T, options) {
               const mentions = new Set((getMentions?.() || []).map((m) => mentionName(m).toLowerCase()).filter(Boolean));
               if (!commands.size && !mentions.size) return T.DecorationSet.empty;
               const decos = [];
-              let first = true;
               state.doc.descendants((node, pos) => {
-                if (node.type.name === "codeBlock") { first = false; return false; }
+                if (node.type.name === "codeBlock") return false;
                 if (!node.isTextblock) return true;
                 const text = node.textContent;
                 const start = pos + 1;
-                if (first) {
-                  first = false;
-                  const m = /^\/([^\s/]+)/.exec(text);
-                  if (m && commands.has(m[1].toLowerCase())) {
-                    decos.push(T.Decoration.inline(start, start + m[0].length, { class: "rmci-token rmci-token--command" }));
+
+                if (commands.size) {
+                  const reCmd = /(^|\s)\/([^\s/]+)/g;
+                  let cm;
+                  while ((cm = reCmd.exec(text))) {
+                    if (commands.has(cm[2].toLowerCase())) {
+                      const from = start + cm.index + cm[1].length;
+                      decos.push(T.Decoration.inline(from, from + cm[2].length + 1, { class: "rmci-token rmci-token--command" }));
+                    }
                   }
                 }
-                const re = /(^|\s)@([^\s@]+)/g;
-                let mm;
-                while ((mm = re.exec(text))) {
-                  if (mentions.has(mm[2].toLowerCase())) {
-                    const from = start + mm.index + mm[1].length;
-                    decos.push(T.Decoration.inline(from, from + mm[2].length + 1, { class: "rmci-token rmci-token--mention" }));
+
+                if (mentions.size) {
+                  const re = /(^|\s)@([^\s@]+)/g;
+                  let mm;
+                  while ((mm = re.exec(text))) {
+                    if (mentions.has(mm[2].toLowerCase())) {
+                      const from = start + mm.index + mm[1].length;
+                      decos.push(T.Decoration.inline(from, from + mm[2].length + 1, { class: "rmci-token rmci-token--mention" }));
+                    }
                   }
                 }
                 return false;

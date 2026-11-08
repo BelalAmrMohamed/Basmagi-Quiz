@@ -3384,7 +3384,8 @@ body.sidebar-expanded .ai-agent-fab {
 .ai-agent-slash-row.is-active {
   background: linear-gradient(115deg, color-mix(in srgb, var(--color-primary) 12%, var(--color-surface)), color-mix(in srgb, var(--color-surface) 94%, #25304d));
   border-color: color-mix(in srgb, var(--color-primary) 65%, var(--color-border));
-  box-shadow: inset 3px 0 var(--color-primary), 0 5px 16px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  /* inset shadow on the inline-end side (= right in RTL) acts as the accent bar */
+  box-shadow: inset -3px 0 var(--color-primary), 0 5px 16px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
 .ai-agent-dropdown-menu.ai-agent-slash-menu .ai-agent-slash-row {

@@ -193,8 +193,58 @@ html[data-theme="dark-slate"] .aiw { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
    live inside the rich input's bottom bar now.
    ============================================================================= */
 .ai-agent-sidebar-model-slot:empty { display: none; }
-.aiw .ai-agent-chat-input-row { align-items: stretch; }
-.aiw .ai-agent-chat-input-row > .rmci-root { max-width: 760px; margin-inline: auto; }
+
+/*
+  Floating-window chat layout:
+  1. The messages area fills 100% of the chat panel height so its scrollbar
+     is ALWAYS full length (from top to bottom of the chat panel) and NEVER
+     shrinks when the input field grows taller.
+  2. The input row is positioned at the bottom with a completely transparent
+     background and pointer-events: none, so the empty areas to the left and
+     right of the input field are NOT solid and DO NOT block messages behind them.
+  3. Padding-bottom on the messages area is dynamically adjusted in JS via
+     ResizeObserver so the bottom-most message can always be scrolled cleanly
+     above the floating input field.
+*/
+.aiw .ai-agent-chat-panel {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.aiw .ai-agent-chat-messages {
+  flex: 1 1 100% !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+}
+
+.aiw .ai-agent-chat-input-row {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 4 !important;
+  background: transparent !important;
+  pointer-events: none !important;
+  padding: 10px 14px !important;
+  box-sizing: border-box !important;
+  align-items: stretch;
+}
+
+.aiw .ai-agent-chat-input-row > * {
+  pointer-events: auto !important;
+}
+
+.aiw .ai-agent-chat-input-row > .rmci-root {
+  max-width: 760px;
+  margin-inline: auto;
+}
 .aiw .rmci-bar .ai-agent-more-btn {
   width: 32px; height: 32px; border: 1px solid var(--color-border); color: var(--color-text-secondary);
 }
@@ -298,10 +348,14 @@ html[data-theme="dark-slate"] .aiw { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
 }
 
 .aiw.aiw-compact .ai-agent-modal-card .ai-agent-chat-input-row {
-  position: sticky;
+  /* Retain bottom-floating input row layout in compact mode */
+  position: absolute;
   bottom: 0;
-  z-index: 3;
-  flex-shrink: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  background: transparent !important;
+  pointer-events: none !important;
   padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
 }
 
