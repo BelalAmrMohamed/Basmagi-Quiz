@@ -625,6 +625,20 @@ export function createRichInput(options = {}) {
           head.className = "rmci-usage-head";
           head.textContent = "الاستخدام";
           el.appendChild(head);
+
+          // Which key is actually serving THIS user's requests right now.
+          const own = cfg.usage.source === "own";
+          const src = document.createElement("div");
+          src.className = `rmci-usage-source ${own ? "is-own" : "is-platform"}`;
+          src.innerHTML = '<span class="rmci-usage-source-label">المفتاح المستخدم الآن</span><span class="rmci-usage-source-value"></span>';
+          src.querySelector(".rmci-usage-source-value").textContent = own ? "مفتاح API الخاص بك" : "مفتاح المنصة (مشترك)";
+          el.appendChild(src);
+          if (own) {
+            const note = document.createElement("div");
+            note.className = "rmci-usage-note";
+            note.textContent = "طلباتك تُرسل بمفتاحك الخاص ولا تُحتسب هنا، وحدّها يحدده مزوّدك. الأرقام التالية تخص مفتاح المنصة المشترك.";
+            el.appendChild(note);
+          }
           const body = document.createElement("div");
           body.className = "rmci-usage-body";
           body.innerHTML = '<div class="rmci-usage-note">جارٍ التحميل…</div>';
@@ -637,7 +651,15 @@ export function createRichInput(options = {}) {
             if (!groups.length) {
               body.innerHTML = '<div class="rmci-usage-note">لا توجد بيانات استخدام متاحة.</div>';
             }
-            groups.forEach((g) => body.appendChild(usageRow(g)));
+            groups.forEach((g) => {
+              const row = usageRow(g);
+              if (!own && g.id === cfg.usage.provider) row.classList.add("is-current");
+              body.appendChild(row);
+            });
+            const foot = document.createElement("div");
+            foot.className = "rmci-usage-note";
+            foot.textContent = "مفتاح المنصة المشترك بين جميع المستخدمين";
+            body.appendChild(foot);
             place();
           }).catch(() => {
             if (!el.isConnected) return;

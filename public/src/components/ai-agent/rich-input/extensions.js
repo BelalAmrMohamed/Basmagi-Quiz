@@ -124,7 +124,10 @@ export function buildExtensions(T, options) {
     doc.descendants((node, pos) => {
       if (node.type.name === "codeBlock") return false;
       if (!node.isTextblock) return true;
-      const text = node.textContent;
+      // textBetween with a 1-char leaf placeholder keeps string offsets identical
+      // to document positions. `node.textContent` drops soft line breaks
+      // (Shift+Enter), which shifted every chip after the first break.
+      const text = node.textBetween(0, node.content.size, "", "\n");
       const start = pos + 1;
       const scan = (re, set, kind) => {
         re.lastIndex = 0;

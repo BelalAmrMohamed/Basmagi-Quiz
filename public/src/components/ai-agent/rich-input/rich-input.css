@@ -211,6 +211,11 @@ html[data-theme="dark-slate"] .rmci-root {
 .rmci-usage-ring-fg { fill: none; stroke: #4caf6a; stroke-width: 2.5; stroke-linecap: round; transition: stroke-dashoffset .4s ease; }
 .rmci-usage-row.is-warn .rmci-usage-ring-fg { stroke: #e0a030; }
 .rmci-usage-row.is-low .rmci-usage-ring-fg { stroke: #e05050; }
+.rmci-usage-source { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 4px 4px; padding: 6px 10px; border-radius: 10px; font-size: 12px; border: 1px solid var(--rmci-border); }
+.rmci-usage-source-label { color: var(--rmci-muted); }
+.rmci-usage-source-value { font-weight: 600; color: var(--rmci-fg); }
+.rmci-usage-source.is-own { border-color: color-mix(in srgb, var(--rmci-ring) 55%, var(--rmci-border)); }
+.rmci-usage-row.is-current { background: color-mix(in srgb, var(--rmci-ring) 10%, transparent); }
 .rmci-usage-note { padding: 10px; font-size: 12px; color: var(--rmci-muted); }
 
 /* ── ProseMirror content ── */

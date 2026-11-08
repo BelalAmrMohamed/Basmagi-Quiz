@@ -283,7 +283,7 @@ export function createChatPanel(options = {}) {
       disabled: false,
       effortLevels,
       selectedEffort,
-      usage: { load: () => fetchPlatformUsage() },
+      usage: { load: () => fetchPlatformUsage(), source: hasKey ? "own" : "platform", provider },
       onChange: (id) => {
         setSelectedModel(getSelectedProvider(), id);
         refreshModelBarOptions();
