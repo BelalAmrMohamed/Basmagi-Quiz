@@ -14,38 +14,34 @@ const PROVIDER_STORAGE_KEY = "ai_agent_provider";
 const KEY_STORAGE_PREFIX = "ai_agent_key__"; // + provider
 const SYSTEM_PROMPT_STORAGE_PREFIX = "ai_agent_system_prompt__"; // + pageKey
 const MODEL_STORAGE_PREFIX = "ai_agent_model__"; // + provider
+const EFFORT_STORAGE_PREFIX = "ai_agent_effort__"; // + provider
 
 // Per-provider model catalog. The FIRST entry in each list is always the
-// "default" — deliberately the lightest/cheapest/latest model the provider
-// offers, mirroring api/ai-agent/_providerClients.js's own hardcoded
-// choice, so a user who never opens this dropdown still gets the same
-// default behavior as before this feature existed. `value: ""` means
-// "let the backend decide" (i.e. use its own default pointer) rather than
-// pinning a specific model string from the client — this is the initial/
-// unset state and is what an empty/never-saved selection resolves to.
-//
-// Google uses a dynamic "-latest" pointer (gemini-flash-lite-latest) that
-// the provider itself keeps pointed at its current lightest model, so no
-// version number ever goes stale here. DeepSeek and Claude don't publish
-// that kind of alias, so their entries are the latest hardcoded snapshot
-// versions available at time of writing — see _providerClients.js, which
-// this list is kept in sync with.
+// "default" — the fast and reliable model the provider offers.
 const MODELS_BY_PROVIDER = {
   google: [
-    { value: "gemini-flash-lite-latest", label: "Gemini Flash-Lite" },
-    { value: "gemini-flash-latest", label: "Gemini Flash" },
-    { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+    { value: "gemini-flash-lite-latest", label: "Gemini Flash-Lite", description: "الأخف وزناً ومتاح مجاناً" },
+    { value: "gemini-flash-latest", label: "Gemini Flash", description: "سريع ومتعدد الوسائط" },
+    { value: "gemini-3.8-flash", label: "Gemini 3.8 Flash", description: "مهام برمجية معقدة" },
+    { value: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro", description: "تفكير متقدم وتحليل منطقي" },
   ],
   deepseek: [
-    { value: "deepseek-chat", label: "DeepSeek Chat" },
-    { value: "deepseek-reasoner", label: "DeepSeek Reasoner" },
+    { value: "deepseek-chat", label: "DeepSeek Chat", description: "محادثة ومهام عامة" },
+    { value: "deepseek-reasoner", label: "DeepSeek Reasoner", description: "تفكير منطقي وحل معضلات" },
   ],
   claude: [
-    { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5" },
-    { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
-    { value: "claude-opus-4-6", label: "Claude Opus 4.6" },
+    { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5", description: "سريع وخفيف" },
+    { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", description: "توازن ذكي" },
+    { value: "claude-opus-4-6", label: "Claude Opus 4.6", description: "أعلى أداء" },
   ],
 };
+
+export const EFFORT_LEVELS = [
+  { value: "auto", label: "تلقائي (افتراضي)", hint: "يحدد النموذج عمق التفكير آلياً" },
+  { value: "low", label: "منخفض (Low)", hint: "تفكير سريع وموجز" },
+  { value: "medium", label: "متوسط (Medium)", hint: "تفكير متوازن" },
+  { value: "high", label: "عالي (High)", hint: "تفكير عميق وتفصيلي" },
+];
 
 const PROVIDERS = [
   { value: "google", label: "Google AI Studio (Gemini)" },
@@ -96,11 +92,36 @@ export function getModelsForProvider(provider) {
  */
 export function getSelectedModel() {
   const provider = getSelectedProvider();
-  return getFromStorage(`${MODEL_STORAGE_PREFIX}${provider}`, "");
+  const { hasKey } = getOwnKey();
+  if (provider === "google" && !hasKey) {
+    return "gemini-flash-lite-latest";
+  }
+  let model = getFromStorage(`${MODEL_STORAGE_PREFIX}${provider}`, "");
+  if (provider === "google" && model === "gemini-2.5-pro") {
+    model = "gemini-3.1-pro-preview";
+    setInStorage(`${MODEL_STORAGE_PREFIX}${provider}`, model);
+  }
+  return model || (MODELS_BY_PROVIDER[provider] && MODELS_BY_PROVIDER[provider][0]?.value) || "";
 }
 
 export function setSelectedModel(provider, model) {
+  const { hasKey } = getOwnKey();
+  if (provider === "google" && !hasKey) {
+    setInStorage(`${MODEL_STORAGE_PREFIX}${provider}`, "gemini-flash-lite-latest");
+    return;
+  }
+  if (provider === "google" && model === "gemini-2.5-pro") {
+    model = "gemini-3.1-pro-preview";
+  }
   setInStorage(`${MODEL_STORAGE_PREFIX}${provider}`, model || "");
+}
+
+export function getSelectedEffort(provider = getSelectedProvider()) {
+  return getFromStorage(`${EFFORT_STORAGE_PREFIX}${provider}`, "auto");
+}
+
+export function setSelectedEffort(provider, effort) {
+  setInStorage(`${EFFORT_STORAGE_PREFIX}${provider}`, effort || "auto");
 }
 
 /**
@@ -200,27 +221,27 @@ export function createSettingsPanel(options = {}) {
   modelSelect.className = "ai-agent-provider-select";
   panel.appendChild(modelSelect);
 
-  // Same rationale as the chat tab's model bar (ai-agent-chat.js): model
-  // selection only has any effect once the request uses the user's own
-  // key — the platform-key path always forces the default server-side
-  // (see api/ai-agent/chat.js) — so disable this select whenever no own
-  // key is saved, rather than letting it look interactive but do nothing.
   function refreshModelSelectAvailability() {
     const { hasKey } = getOwnKey();
+    const provider = providerSelect.value;
+    if (!hasKey && provider === "google") {
+      modelSelect.value = "gemini-flash-lite-latest";
+    }
     modelSelect.disabled = !hasKey;
     modelSelect.title = hasKey
       ? ""
-      : "اختيار النموذج متاح فقط عند استخدام مفتاح API الخاص بك";
+      : "اختيار النموذج متاح فقط عند استخدام مفتاح API الخاص بك. المستخدمون العاديون يستخدمون Gemini Flash-Lite.";
   }
 
   function loadModelsForCurrentProvider() {
     const provider = providerSelect.value;
+    const { hasKey } = getOwnKey();
     modelSelect.innerHTML = "";
     const models = getModelsForProvider(provider);
     models.forEach(({ value, label }) => {
       const opt = document.createElement("option");
       opt.value = value;
-      opt.textContent = label;
+      opt.textContent = (!hasKey && value !== "gemini-flash-lite-latest") ? `🔒 ${label}` : label;
       modelSelect.appendChild(opt);
     });
     modelSelect.value = getSelectedModel() || (models[0] && models[0].value) || "";
@@ -232,6 +253,41 @@ export function createSettingsPanel(options = {}) {
     setSelectedModel(providerSelect.value, modelSelect.value);
     if (typeof onKeyChanged === "function") onKeyChanged();
   });
+
+  // ── Effort select (Thinking / Reasoning depth) ──
+  const effortGroup = document.createElement("div");
+  effortGroup.className = "ai-agent-settings-field-group";
+
+  const effortLabel = document.createElement("label");
+  effortLabel.className = "ai-agent-field-label";
+  effortLabel.textContent = "مستوى التفكير / الجهد (Reasoning Effort)";
+  effortLabel.htmlFor = `${instanceId}-effort`;
+  effortGroup.appendChild(effortLabel);
+
+  const effortSelect = document.createElement("select");
+  effortSelect.id = `${instanceId}-effort`;
+  effortSelect.className = "ai-agent-provider-select";
+  EFFORT_LEVELS.forEach(({ value, label }) => {
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = label;
+    effortSelect.appendChild(opt);
+  });
+  effortSelect.value = getSelectedEffort(providerSelect.value);
+  effortSelect.addEventListener("change", () => {
+    setSelectedEffort(providerSelect.value, effortSelect.value);
+    if (typeof onKeyChanged === "function") onKeyChanged();
+  });
+  effortGroup.appendChild(effortSelect);
+  panel.appendChild(effortGroup);
+
+  function refreshEffortAvailability() {
+    // Show effort selection for Google provider (and reasoning models)
+    const isGoogle = providerSelect.value === "google";
+    effortGroup.style.display = isGoogle ? "block" : "none";
+    effortSelect.value = getSelectedEffort(providerSelect.value);
+  }
+  refreshEffortAvailability();
 
   // ── Own key input ──
   // NOTE: the response-language select that used to live here was removed
@@ -262,6 +318,7 @@ export function createSettingsPanel(options = {}) {
     setSelectedProvider(providerSelect.value);
     loadKeyForCurrentProvider();
     loadModelsForCurrentProvider();
+    refreshEffortAvailability();
     status.textContent = "";
     refreshKeySourceIndicator();
     updateKeyActionsVisibility();

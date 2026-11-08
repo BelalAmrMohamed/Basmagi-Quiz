@@ -56,28 +56,6 @@ Add dictation feature for essays in quizzes and lessons
 #### Runtimes
 * There is no error handling while typing, if users forget a simple thing like a semi-column or something it doesn't get highlighted.
 
-### AI Agent (الباشــمبصمج): Redesign
-* Implement my personal component from 21st.dev: Rich Markdown AI Input Field with code blocks.:
-  * [component](rich-markdown-ai-input.md)
-  * Convert it to HTML, CSS, and JS so it becomes usable and updatable in the feature.
-  * Keep the current Dictation Mic, "إرفاق ملف", "إرفاق امتحان أو مجلد", & "الأوامر المتاحة" without removing them.
-  * Keep the model-choice drpdown's logic (only unlocks for admins).
-* Instead of a modal, make it a window like `image-tool-window`, don't copy it or import it in the AI Agent files, I want you to implement a a copy of it. Features:
-  * Same UI of Basmagi but in a window instead of a modal. Include all features and resposiveness of that window: 
-    * Aero Snap with the thumbnail/preview
-    * Mac-style control buttons at the top
-    * الباشــمبصمج's own title and logo at the top instead of that of `image-tool-window`.
-    * When window is open, maximized or minimized, the الباشــمبصمج's fab becomes hidden, until the window is closed.
-    * When the window is minimized and there was a prompt running, it should continue running with an animation on the minimized state indicating so.
-* Error: ![Screenshot](image-2.png)
-  * Fix this error, I'm getting it only on the browser where I'm signed as a developer. I understood from it that I have to sign-in again, but I'm not using any developer-specific features, I'm using it as a normal user where the model is set to "Gemini Flash Lite"
-
-Q: The 21st.dev input is React + Tiptap. The site is plain vanilla JS with no bundler for public/src. How should I convert it?
-A: I want the full component to be integrated, no lightweight version, no second version.
-
-Q: Should the window support multiple windows like image-tool-window does, or just one Basmagi window?
-A: Single window only.
-
 ### Update the `createEmptyState`
 * Update the `createEmptyState` to include a link to the `/how-to-create-content`
 
@@ -153,4 +131,7 @@ Improve:
 * Add a section navigator inside the sidebar.
 * Add embeddings: Notebooks, Folders, & Courses.
 * Suggestion: For embedded items (Notebooks, Lessons, Quizzes, Folders, & Courses) show their thumbnail, that would be great looking.
-* Recommend to me design improvements.
+* Recommend to me other potential design improvements.
+
+### What is `PISTON_TOKEN`
+

@@ -29,13 +29,19 @@
 // own lightest/cheapest/latest default, exactly as if this feature didn't
 // exist.
 const ALLOWED_MODELS = {
-  google: new Set(["gemini-flash-lite-latest", "gemini-flash-latest", "gemini-2.5-pro"]),
+  google: new Set([
+    "gemini-flash-latest",
+    "gemini-flash-lite-latest",
+    "gemini-3.8-flash",
+    "gemini-3.1-pro-preview",
+    "gemini-2.5-pro", // auto-mapped to gemini-3.1-pro-preview
+  ]),
   deepseek: new Set(["deepseek-chat", "deepseek-reasoner"]),
   claude: new Set(["claude-haiku-4-5-20251001", "claude-sonnet-4-6", "claude-opus-4-6"]),
 };
 
-const DEFAULT_MODELS = {
-  google: "gemini-flash-lite-latest", // dynamic "-latest" pointer — always the provider's current lightest model
+export const DEFAULT_MODELS = {
+  google: "gemini-flash-lite-latest", // always the lightest free-tier model for shared platform keys
   deepseek: "deepseek-chat",
   claude: "claude-haiku-4-5-20251001",
 };
@@ -47,16 +53,22 @@ const DEFAULT_MODELS = {
  */
 function resolveModel(provider, requestedModel) {
   if (requestedModel && ALLOWED_MODELS[provider]?.has(requestedModel)) {
+    if (provider === "google" && requestedModel === "gemini-2.5-pro") {
+      return "gemini-3.1-pro-preview";
+    }
     return requestedModel;
   }
   return DEFAULT_MODELS[provider];
 }
 
-async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, requestedModel) {
+async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, requestedModel, effort) {
   // Defaults to the lightest, cheapest, latest available model — see
   // resolveModel()/DEFAULT_MODELS above — but honors a validated
   // client-supplied override (Settings tab's model picker).
-  const model = resolveModel("google", requestedModel);
+  let model = resolveModel("google", requestedModel);
+  if (model === "gemini-2.5-pro") {
+    model = "gemini-3.1-pro-preview";
+  }
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const contents = messages.map((m) => {
@@ -75,6 +87,15 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, request
 
   if (systemPrompt) {
     body.systemInstruction = { parts: [{ text: systemPrompt }] };
+  }
+
+  if (effort && ["low", "medium", "high"].includes(effort)) {
+    body.generationConfig = {
+      ...(body.generationConfig || {}),
+      thinkingConfig: {
+        thinkingLevel: effort,
+      },
+    };
   }
 
   if (Array.isArray(tools) && tools.length) {
@@ -286,10 +307,10 @@ const PROVIDERS = {
  *   default (DEFAULT_MODELS) when omitted or not recognized.
  * @returns {Promise<{ text: string, toolCalls?: Array<{name: string, input: object}> }>}
  */
-export async function callProvider(provider, apiKey, messages, systemPrompt, tools, model) {
+export async function callProvider(provider, apiKey, messages, systemPrompt, tools, model, effort) {
   const fn = PROVIDERS[provider];
   if (!fn) throw new Error(`Unsupported provider: ${provider}`);
-  return fn(apiKey, messages, systemPrompt, tools, model);
+  return fn(apiKey, messages, systemPrompt, tools, model, effort);
 }
 
 export function isSupportedProvider(provider) {

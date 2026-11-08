@@ -81,7 +81,7 @@
 
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
-import { callProvider, isSupportedProvider } from "./_providerClients.js";
+import { callProvider, isSupportedProvider, DEFAULT_MODELS } from "./_providerClients.js";
 import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, CREATE_LESSON_TOOL, ADD_LESSON_SECTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL, GET_CREATOR_INFO_TOOL, DISPLAY_CREATOR_CARD_TOOL, CREATE_FLASHCARDS_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
@@ -391,7 +391,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { provider, model, messages, useOwnKey, ownKey, systemPrompt, enableTools, toolNames } =
+  const { provider, model, effort, messages, useOwnKey, ownKey, systemPrompt, enableTools, toolNames } =
     req.body || {};
 
   if (!isSupportedProvider(provider)) {
@@ -443,7 +443,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const result = await callProvider(provider, ownKey, messages, systemPrompt, tools, model);
+      const result = await callProvider(provider, ownKey, messages, systemPrompt, tools, model, effort);
       return res.status(200).json(result);
     } catch (err) {
       console.error(
@@ -524,7 +524,8 @@ export default async function handler(req, res) {
   // Force the provider's lightest/cheapest/latest default regardless of
   // what the client sent.
   try {
-    const result = await callProvider(provider, picked.key, messages, systemPrompt, tools, undefined);
+    const platformModel = DEFAULT_MODELS[provider] || "gemini-flash-lite-latest";
+    const result = await callProvider(provider, picked.key, messages, systemPrompt, tools, platformModel, effort);
     return res.status(200).json(result);
   } catch (err) {
     console.error(

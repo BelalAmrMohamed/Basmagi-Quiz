@@ -8,9 +8,20 @@
 
 import { renderMarkdown } from "../../shared/markdown.js";
 import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
-import { getSelectedProvider, getSelectedModel, getModelsForProvider, setSelectedModel, getOwnKey, getSystemPrompt, isAiHelperAvailable } from "./ai-agent-settings.js";
+import { getSelectedProvider, getSelectedModel, getModelsForProvider, setSelectedModel, getOwnKey, getSystemPrompt, isAiHelperAvailable, EFFORT_LEVELS, getSelectedEffort, setSelectedEffort } from "./ai-agent-settings.js";
 import { getUserToken } from "../../shared/userLevel.js";
+import { createRichInput } from "./rich-input/rich-input.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
+
+function isJwtExpired(token, skewSeconds = 30) {
+  try {
+    const b64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const { exp } = JSON.parse(atob(b64));
+    return typeof exp === "number" && exp * 1000 <= Date.now() + skewSeconds * 1000;
+  } catch {
+    return true;
+  }
+}
 import { saveConversation, deriveConversationTitle } from "./ai-agent-history-idb.js";
 // PHASE 3c: reuses this widget's own self-contained anchored-popover
 // engine (ai-agent-dropdown.js), the same one used for the history
@@ -24,7 +35,6 @@ import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
 import { renderCreatorCard, creatorCardModelSummary } from "./ai-agent-creator-tools.js";
 import { renderResultCard, resultCardModelSummary } from "./ai-agent-result-cards.js";
 import {
-  attachRichInputHighlighter,
   decorateRichContent,
   attachRichMessageTooltips,
 } from "../../shared/rich-input-highlighter.js";
@@ -212,11 +222,31 @@ export function createChatPanel(options = {}) {
   /** @type {AbortController | null} */
   let currentAbortController = null;
   let isGenerating = false;
+  // Notifies listeners (the AI window's minimized "working" indicator) whenever
+  // a generation starts/ends. Listeners live on the panel: panel.onGeneratingChange(fn).
+  const generatingListeners = new Set();
+  function setGenerating(value) {
+    if (isGenerating === value) return;
+    isGenerating = value;
+    generatingListeners.forEach((fn) => { try { fn(value); } catch { /* listener error */ } });
+  }
   let sessionExecutedTools = new Set();
   let attachmentToolHandler = null;
 
   const panel = document.createElement("div");
   panel.className = "ai-agent-panel ai-agent-chat-panel";
+
+  // Rich Markdown input (Tiptap, see ./rich-input/). `textarea` below is its
+  // <textarea>-compatible adapter, so the dictation / @mention / slash-menu
+  // code keeps working unchanged. Send/mic/more buttons are moved into its
+  // bottom bar when the input row is assembled.
+  const rich = createRichInput({
+    placeholder,
+    hint: "Enter للإرسال · Shift + Enter لسطر جديد · ``` لكتلة كود",
+    maxHeight: 240,
+    getCommands: () => getPageActions(pageKey, options.actions),
+    getMentions: getQuickAccessMentionDefinitions,
+  });
 
   // Desktop-only model selector (Task 4: "Include the Model Selector
   // setting on desktops on the chat tab"). Hidden entirely on mobile via
@@ -226,75 +256,57 @@ export function createChatPanel(options = {}) {
   // exact same storage as the Settings tab's own model select (see
   // ai-agent-settings.js), so a change made from either place is
   // reflected in both without extra plumbing between them.
-  const modelBar = document.createElement("div");
-  modelBar.className = "ai-agent-chat-model-bar";
-
-  // Disabled native selects do not consistently receive pointer events, so
-  // put the explanatory tooltip on a wrapper that remains hoverable.
-  const modelSelectWrap = document.createElement("span");
-  modelSelectWrap.className = "ai-agent-chat-model-select-wrap";
-
-  const modelBarSelect = document.createElement("select");
-  modelBarSelect.className = "ai-agent-chat-model-select";
-  modelBarSelect.id = "ai-agent-chat-model-select";
-  modelBarSelect.name = "ai-agent-chat-model-select";
-  modelBarSelect.setAttribute("aria-label", "اختر النموذج");
-
-  // Model selection only makes sense when the request will actually use
-  // it — i.e. the user has saved their own API key. On the platform-key
-  // path every request shares the same rotated Google AI Studio
-  // free-tier keys (see api/ai-agent/chat.js), which always forces the
-  // lightest default server-side regardless of what's sent — so letting
-  // the dropdown look interactive there is actively misleading, on top of
-  // inviting a client that could otherwise be tricked into requesting a
-  // heavier model. Disabled (not hidden) so it's still visible as a
-  // preview of what an own key would unlock.
-  function refreshModelBarAvailability() {
-    const { hasKey } = getOwnKey();
-    modelBarSelect.disabled = !hasKey;
-    const reason = hasKey ? "" : "اختيار النموذج متاح فقط عند استخدام مفتاح API الخاص بك. أضف مفتاحك من الإعدادات لتغيير النموذج.";
-    modelSelectWrap.title = reason;
-    modelSelectWrap.setAttribute("aria-label", reason || "اختيار النموذج");
-  }
-
+  // Model choice now lives in the rich input's bottom bar (same logic as the
+  // old <select>): reads/writes the same storage as Settings, and is only
+  // unlocked when the request will actually use the choice (own API key),
+  // otherwise it stays visible-but-disabled with an explanatory tooltip.
   function refreshModelBarOptions() {
     const provider = getSelectedProvider();
-    modelBarSelect.innerHTML = "";
     const models = getModelsForProvider(provider);
-    models.forEach(({ value, label }) => {
-      const opt = document.createElement("option");
-      opt.value = value;
-      opt.textContent = label;
-      modelBarSelect.appendChild(opt);
+    const { hasKey } = getOwnKey();
+    const isGoogle = provider === "google";
+    const current = getSelectedModel() || (models[0] && models[0].value) || "";
+    const effortLevels = isGoogle
+      ? EFFORT_LEVELS.map(({ value, label, hint }) => ({ id: value, label, hint }))
+      : null;
+    const selectedEffort = getSelectedEffort(provider);
+
+    rich.setModels({
+      items: models.map(({ value, label, description }) => ({
+        id: value,
+        label,
+        description,
+        locked: isGoogle && !hasKey && value !== "gemini-flash-lite-latest",
+      })),
+      value: current,
+      disabled: false,
+      effortLevels,
+      selectedEffort,
+      onChange: (id) => {
+        setSelectedModel(getSelectedProvider(), id);
+        refreshModelBarOptions();
+      },
+      onLockedClick: (lockedItem) => {
+        appendError(
+          `نموذج "${lockedItem.label}" متاح فقط عند استخدام مفتاح API الخاص بك. انتقل إلى الإعدادات لإضافة مفتاحك.`
+        );
+        if (typeof options.onOpenSettings === "function") {
+          options.onOpenSettings();
+        } else {
+          const btn = [...document.querySelectorAll(".ai-agent-sidebar-btn")].find((b) =>
+            b.textContent.includes("الإعدادات")
+          );
+          btn?.click();
+        }
+      },
+      onEffortChange: (effId) => {
+        setSelectedEffort(getSelectedProvider(), effId);
+        refreshModelBarOptions();
+      },
     });
-    // getSelectedModel() returns "" (meaning "use the provider's own
-    // default") whenever no model has been explicitly saved yet — but ""
-    // never matches any <option>'s value, which left the select rendering
-    // with nothing visibly chosen. Fall back to the first (lightest/
-    // default) model in the list so there's always a real, visible
-    // selection, exactly matching what the backend actually uses in that
-    // unset case.
-    modelBarSelect.value = getSelectedModel() || (models[0] && models[0].value) || "";
-    refreshModelBarAvailability();
   }
   refreshModelBarOptions();
-
-  modelBarSelect.addEventListener("change", () => {
-    setSelectedModel(getSelectedProvider(), modelBarSelect.value);
-  });
-
-  modelSelectWrap.appendChild(modelBarSelect);
-  modelBar.appendChild(modelSelectWrap);
-  panel.appendChild(modelBar);
-  // Exposed so ai-agent.js can relocate this node into the desktop
-  // sidebar (see the "Sidebar Integration" requirement — the model bar
-  // used to render above the input row instead, full chat-panel width,
-  // which read as an oversized dropdown sitting in the wrong place
-  // entirely). Left appended to `panel` above as the DEFAULT position
-  // (mobile, or any embedding that doesn't move it) — ai-agent.js moving
-  // it elsewhere is an explicit opt-in, not a requirement for this
-  // module to work standalone.
-  panel.modelBarEl = modelBar;
+  panel.modelBarEl = null;
 
   const messagesEl = document.createElement("div");
   messagesEl.className = "ai-agent-chat-messages";
@@ -1024,15 +1036,7 @@ export function createChatPanel(options = {}) {
     });
   }
 
-  const textarea = document.createElement("textarea");
-  textarea.className = "ai-agent-chat-input";
-  textarea.placeholder = placeholder;
-  textarea.rows = 1;
-  // "auto" (not a hardcoded "ltr"/"rtl") so the very first line — before
-  // any CSS unicode-bidi kicks in visually — still gets a sane base
-  // direction/alignment from its own content instead of always starting
-  // LTR even for an Arabic-only message.
-  textarea.dir = "auto";
+  const textarea = rich.textarea;
 
   /**
    * Image paste support: catches images pasted from clipboard (e.g. screenshots,
@@ -1081,15 +1085,11 @@ export function createChatPanel(options = {}) {
 
   textarea.addEventListener("paste", handleImagePaste);
   panel.addEventListener("paste", (e) => {
-    if (e.target !== textarea) handleImagePaste(e);
+    if (!textarea.contains(e.target)) handleImagePaste(e);
   });
 
-  function resizeChatInput() {
-    textarea.style.height = "auto";
-    const contentHeight = textarea.scrollHeight;
-    textarea.style.height = `${Math.min(contentHeight, CHAT_INPUT_MAX_HEIGHT)}px`;
-    textarea.style.overflowY = contentHeight > CHAT_INPUT_MAX_HEIGHT ? "auto" : "hidden";
-  }
+  // The rich input grows/scrolls on its own; kept as a no-op for existing call sites.
+  function resizeChatInput() {}
 
   // Live mic-volume metering for the wave bars (separate from
   // SpeechRecognition, which exposes no amplitude data of its own) — a
@@ -1508,19 +1508,14 @@ export function createChatPanel(options = {}) {
   // textarea itself is never hidden or resized during dictation. Only
   // moreBtn and micBtn (never textarea/send) get hidden during dictation
   // — see setDictationUiState.
-  const inputControls = document.createElement("div");
-  inputControls.className = "ai-agent-chat-input-controls";
 
-  inputControls.appendChild(sendBtn);
-  if (micBtn) inputControls.appendChild(micBtn);
-  inputControls.appendChild(dictationWaveEl);
-
-  inputControls.appendChild(textarea);
-
-  if (moreBtn) inputControls.appendChild(moreBtn);
-
-  if (fileInput) inputControls.appendChild(fileInput);
-  inputRow.appendChild(inputControls);
+  // Rich input layout: [ + (more) | Aa ]  ...  [ model | mic/wave | send ]
+  if (moreBtn) rich.startSlot.insertBefore(moreBtn, rich.startSlot.firstChild);
+  if (micBtn) rich.endSlot.appendChild(micBtn);
+  rich.endSlot.appendChild(dictationWaveEl);
+  rich.endSlot.appendChild(sendBtn);
+  if (fileInput) rich.el.appendChild(fileInput);
+  inputRow.appendChild(rich.el);
 
   // Firefox warning sits above the input row, once, not inside it — it's
   // informational context for the row rather than a control within it.
@@ -2108,7 +2103,7 @@ export function createChatPanel(options = {}) {
       currentAbortController = null;
     }
     typingController.clear();
-    isGenerating = false;
+    setGenerating(false);
     sendBtn.disabled = false;
     updateAvailabilityGate();
     if (reason) {
@@ -2307,7 +2302,7 @@ export function createChatPanel(options = {}) {
   async function resendLastUserTurn(agentDepth = 0) {
     if (agentDepth === 0) {
       currentAbortController = new AbortController();
-      isGenerating = true;
+      setGenerating(true);
       sessionExecutedTools.clear();
     }
     sendBtn.disabled = true;
@@ -2390,10 +2385,13 @@ export function createChatPanel(options = {}) {
 
     let authToken = null;
     if (!hasOwnKey) {
-      const isAdmin = isAdminAuthenticated();
-      const adminToken = isAdmin ? getAdminToken() : null;
-      const userToken = isAdmin ? null : await getUserToken();
-      authToken = adminToken || userToken;
+      // An admin JWT left in sessionStorage may be expired; the server
+      // answers that with a hard 401 instead of falling back to the
+      // regular-user quota path. Only send it while it is still valid,
+      // otherwise behave like a normal user.
+      const adminToken = isAdminAuthenticated() ? getAdminToken() : null;
+      const adminUsable = !!adminToken && !isJwtExpired(adminToken);
+      authToken = adminUsable ? adminToken : await getUserToken();
     }
     const useOwnKeyNow = hasOwnKey && !authToken;
 
@@ -2408,6 +2406,7 @@ export function createChatPanel(options = {}) {
         body: JSON.stringify({
           provider,
           model: model || undefined,
+          effort: getSelectedEffort(provider) || undefined,
           messages: outgoingMessages,
           useOwnKey: useOwnKeyNow,
           ownKey: useOwnKeyNow ? ownKey : undefined,
@@ -2575,7 +2574,7 @@ export function createChatPanel(options = {}) {
       if (agentDepth === 0) {
         typingController.clear();
         currentAbortController = null;
-        isGenerating = false;
+        setGenerating(false);
         sendBtn.disabled = false;
         updateAvailabilityGate();
       }
@@ -2598,16 +2597,14 @@ export function createChatPanel(options = {}) {
     // action per the spec, without a second dedicated button for it.
     if (isDictating) stopRecognition();
 
-    const text = textarea.value.trim();
+    const text = rich.getMarkdown().trim();
     const attachments = pendingAttachments;
     // An attachment with no accompanying text is a valid send (e.g. "just
     // convert this exam", or attaching a quiz and hitting Send with no
     // typed prompt) — only block on genuinely empty input.
     if (!text && !attachments.length) return;
 
-    textarea.value = "";
-    inputHighlighter.refresh();
-    textarea.style.height = "auto";
+    rich.clear();
     sendBtn.disabled = true;
     pendingAttachments = [];
     renderAttachmentChips();
@@ -2655,8 +2652,12 @@ export function createChatPanel(options = {}) {
   }
 
   sendBtn.addEventListener("click", sendMessage);
+  textarea.addEventListener("rmci-submit", () => { if (!sendBtn.disabled) sendMessage(); });
   textarea.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.isComposing) {
+      // Enter keeps its editor meaning inside lists / quotes / code blocks and
+      // for a typed ``` fence (the editor handles it); everywhere else it sends.
+      if (rich.enterIsStructural()) return;
       e.preventDefault();
       // The mention menu has its own keyboard nav (arrows/Enter select an
       // item — see handleKeydown), so Enter reaching this far means the
@@ -2685,11 +2686,10 @@ export function createChatPanel(options = {}) {
    * intentional.
    */
   function updateSendBtnVisibility() {
-    if (isDictating || textarea.disabled) {
-      sendBtn.hidden = false;
-      return;
-    }
-    sendBtn.hidden = textarea.value.trim().length === 0 && !pendingAttachments.length;
+    // Always visible (like the rich input design); dimmed while there's nothing to send.
+    sendBtn.hidden = false;
+    const idle = !isDictating && textarea.value.trim().length === 0 && !pendingAttachments.length;
+    sendBtn.classList.toggle("is-idle", idle);
   }
 
   textarea.addEventListener("input", () => {
@@ -2772,11 +2772,8 @@ export function createChatPanel(options = {}) {
   // Highlighting is a separate layer over the native textarea. Its command
   // and fixed-mention metadata come from the same registries/menu definitions
   // as their live pickers, so page-specific actions stay in sync automatically.
-  const inputHighlighter = attachRichInputHighlighter({
-    textarea,
-    getCommands: () => getPageActions(pageKey, options.actions),
-    getMentions: getQuickAccessMentionDefinitions,
-  });
+  // Command / @mention highlighting is done inside the rich input itself now.
+  const inputHighlighter = { refresh() {}, destroy() {} };
 
   textarea.addEventListener("keydown", (e) => {
     // Escape (and, when the menu is open, arrow keys / Enter for keyboard
@@ -3066,6 +3063,11 @@ export function createChatPanel(options = {}) {
 
   panel.abortGeneration = function abortGeneration() {
     abortCurrentTurn("تم إيقاف الرد.");
+  };
+
+  panel.onGeneratingChange = function onGeneratingChange(fn) {
+    generatingListeners.add(fn);
+    return () => generatingListeners.delete(fn);
   };
 
   panel.isGenerating = function isGeneratingStatus() {

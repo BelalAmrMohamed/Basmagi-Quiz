@@ -52,6 +52,7 @@ import { createChatPanel } from "./ai-agent-chat.js";
 import { createSettingsPanel } from "./ai-agent-settings.js";
 import { createHistoryPanel } from "./ai-agent-history.js";
 import { openAgentDropdown } from "./ai-agent-dropdown.js";
+import { createAgentWindow } from "./ai-agent-window.js";
 import { openTelegramBotModal, TELEGRAM_PLANE_ICON_SVG } from "../telegram-bot-card/telegram-bot-card.js";
 
 const CLOSE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
@@ -195,6 +196,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
         ? (b) => branchHandlerRef.current?.(b)
         : handleBranch,
       onHistoryChanged: refreshHistoryHighlights,
+      onOpenSettings: () => branchHandlerRef?.onOpenSettings?.(),
     });
     body.replaceChild(newPanel, chatPanelSlot.current);
     chatPanelSlot.current = newPanel;
@@ -307,7 +309,12 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   }
 
   sidebarCollapseBtn.addEventListener("click", () => {
-    if (!window.matchMedia?.(DESKTOP_BREAKPOINT_QUERY).matches) return;
+    // Layout is decided by the window width when hosted in the AI window.
+    const hostCard = widget.closest(".aiw-card");
+    const inDesktop = hostCard
+      ? hostCard.classList.contains("ai-agent-desktop-layout")
+      : window.matchMedia?.(DESKTOP_BREAKPOINT_QUERY).matches;
+    if (!inDesktop) return;
     applySidebarCollapsedState(!sidebarCollapsed);
   });
   // The favicon IS the dedicated expand trigger while collapsed (CSS
@@ -560,13 +567,14 @@ function getOrCreateChatPanel(options) {
   if (!chatPanel) {
     let ref = branchHandlerRefsByPageKey.get(key);
     if (!ref) {
-      ref = { current: null };
+      ref = { current: null, onHistoryChanged: null, onOpenSettings: null };
       branchHandlerRefsByPageKey.set(key, ref);
     }
     chatPanel = createChatPanel({
       ...options,
       onBranchConversation: (branch) => ref.current?.(branch),
       onHistoryChanged: () => ref.onHistoryChanged?.(),
+      onOpenSettings: () => ref.onOpenSettings?.(),
     });
     chatPanelsByPageKey.set(key, chatPanel);
   }
@@ -577,7 +585,7 @@ function getBranchHandlerRef(pageKey) {
   const key = pageKey || "default";
   let ref = branchHandlerRefsByPageKey.get(key);
   if (!ref) {
-    ref = { current: null };
+    ref = { current: null, onHistoryChanged: null, onOpenSettings: null };
     branchHandlerRefsByPageKey.set(key, ref);
   }
   return ref;
@@ -649,145 +657,153 @@ function openSettingsModal(options, onClose) {
   overlay.querySelector(".ai-agent-settings-modal-close").onclick = closeSettingsModal;
 }
 
-// Tracks whether a modal is currently open, per FAB instance, so a second
-// click on the FAB (or a stray listener firing twice) can't stack a second
-// overlay on top of the first — see createAIAgentFab below, which hides
-// the FAB itself for the same reason.
+// ── Window (replaces the old modal) ──────────────────────────────────────────
+// The AI Agent now opens in a floating window (ai-agent-window.js) instead of
+// a modal overlay: draggable, resizable, Aero-Snap, minimizable. Only ONE
+// window exists at a time; opening again just restores/focuses it. While it
+// exists (open, maximized or minimized) <body> has `ai-agent-window-open`,
+// which hides every FAB (see ai-agent-window.css). The chat panel is cached
+// per pageKey (see getOrCreateChatPanel), so a running prompt keeps running
+// while the window is minimized — the pill shows a "working" animation.
+let activeWindow = null;
+
+function ensureAgentStyles() {
+  for (const file of ["./ai-agent-window.css", "./rich-input/rich-input.css"]) {
+    const href = new URL(file, import.meta.url).href;
+    if ([...document.querySelectorAll('link[rel="stylesheet"]')].some((l) => l.href === href)) continue;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    document.head.appendChild(link);
+  }
+}
+
+export function isAIAgentWindowOpen() {
+  return !!activeWindow;
+}
+
 export function openAIAgentModal(options, fab) {
+  if (activeWindow) {
+    activeWindow.reveal();
+    return activeWindow;
+  }
+  ensureAgentStyles();
+
   const cachedChat = getChatPanelForPageKey(options.pageKey);
   if (cachedChat && !cachedChat.isGenerating?.()) {
     cachedChat.clearTyping?.();
   }
 
-  const modal = document.createElement("div");
-  modal.className = "ai-agent-overlay ai-agent-modal-overlay";
-  modal.setAttribute("role", "dialog");
-  modal.setAttribute("aria-modal", "true");
-  modal.setAttribute("aria-labelledby", "aiAgentModalTitle");
-
-  let desktopMql = null;
-  function onDesktopChange(e) {
-    modalCard.classList.toggle("ai-agent-desktop-layout", e.matches);
-  }
-
-  function closeModal() {
-    const activeChat = getChatPanelForPageKey(options.pageKey);
-    if (activeChat) {
-      activeChat.stopSpeaking?.();
-      if (!activeChat.isGenerating?.()) {
-        activeChat.clearTyping?.();
-      }
-    }
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      try {
-        window.speechSynthesis.cancel();
-      } catch (e) {
-        // ignore
-      }
-    }
-    modal.remove();
-    document.removeEventListener("keydown", onKeydown);
-    if (desktopMql && typeof desktopMql.removeEventListener === "function") {
-      desktopMql.removeEventListener("change", onDesktopChange);
-    }
-    // Restore the FAB now that there's no modal for it to duplicate.
-    if (fab) fab.style.display = "";
-  }
-
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) closeModal();
-  });
-
-  const modalCard = document.createElement("div");
-  modalCard.className = "ai-agent-modal-shell ai-agent-modal-card";
-
-  const header = document.createElement("div");
-  header.className = "ai-agent-modal-header";
-  header.innerHTML = `
-    <button type="button" class="ai-agent-sidebar-collapse-btn ai-agent-mobile-sidebar-toggle" aria-label="فتح القائمة" aria-expanded="false" title="فتح القائمة">${SIDEBAR_EXPAND_DEFAULT_ICON_SVG_TOGGLE}${SIDEBAR_EXPAND_HOVER_ICON_SVG_TOGGLE}</button>
-    <h2 id="aiAgentModalTitle"><img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="" class="ai-agent-logo" aria-hidden="true"> الباشــمبصمج</h2>
-    <button type="button" class="ai-agent-close-btn ai-agent-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
-  `;
-
-  // See getOrCreateChatPanel's own doc comment: this ref (one per
-  // pageKey, persisted across modal close+reopen) lets the cached chat
-  // panel forward Edit-user-prompt submissions to the CURRENT modal
-  // instance's handleBranch() closure — buildWidgetContent repoints
-  // ref.current at its own freshly-built handleBranch below, every time
-  // this function runs.
+  // See getOrCreateChatPanel's own doc comment: this ref (one per pageKey,
+  // persisted across window close+reopen) lets the cached chat panel forward
+  // Edit-user-prompt submissions to the CURRENT window's handleBranch().
   const branchHandlerRef = getBranchHandlerRef(options.pageKey);
+  const chatPanel = getOrCreateChatPanel(options);
+  branchHandlerRef.onOpenSettings = () => {
+    openSettingsModal(options, () => {
+      chatPanel.refreshAvailability?.();
+    });
+  };
 
-  // Capture the built widget so the sidebar collapse control can drive the
-  // mobile drawer as well as the desktop collapsed state.
-  const widgetEl = buildWidgetContent(options, getOrCreateChatPanel(options), branchHandlerRef);
+  const widgetEl = buildWidgetContent(options, chatPanel, branchHandlerRef);
 
-  modalCard.appendChild(header);
-  modalCard.appendChild(widgetEl);
-  modal.appendChild(modalCard);
+  // Wrapper keeps the .ai-agent-modal-card class so ai-agent.css's existing
+  // descendant rules still apply; .aiw-card neutralises the card's own box.
+  const card = document.createElement("div");
+  card.className = "ai-agent-modal-card aiw-card";
+  card.appendChild(widgetEl);
 
-  modal.querySelector(".ai-agent-modal-close").onclick = closeModal;
-
-  // The established sidebar collapse control is the mobile drawer trigger.
-  const sidebarCollapseBtns = modal.querySelectorAll(".ai-agent-sidebar-collapse-btn");
   const mobileSidebar = widgetEl.querySelector(".ai-agent-sidebar");
-  sidebarCollapseBtns.forEach((sidebarCollapseBtn) => {
-    sidebarCollapseBtn.addEventListener("click", (event) => {
-      if (window.matchMedia?.(DESKTOP_BREAKPOINT_QUERY).matches) return;
-      event.stopPropagation();
-      const mobileSheetOpen = !mobileSidebar?.classList.contains("ai-agent-sidebar--mobile-open");
-      sidebarCollapseBtns.forEach((button) =>
-        button.setAttribute("aria-expanded", String(mobileSheetOpen)),
-      );
-      if (mobileSheetOpen) {
-        widgetEl.openMobileSidebarSheet?.();
-      } else {
-        widgetEl.closeMobileSidebarSheet?.();
+  const toggleBtns = () => [...win.el.querySelectorAll(".ai-agent-sidebar-collapse-btn, .aiw-sidebar-toggle")];
+
+  const EXPAND_ICONS_HTML = `${SIDEBAR_EXPAND_DEFAULT_ICON_SVG_TOGGLE}${SIDEBAR_EXPAND_HOVER_ICON_SVG_TOGGLE}`;
+  const COLLAPSE_ICONS_HTML = `${SIDEBAR_COLLAPSE_DEFAULT_ICON_SVG}${SIDEBAR_COLLAPSE_HOVER_ICON_SVG}`;
+
+  function updateSidebarToggleIcon(open) {
+    const toggleBtn = win?.el?.querySelector(".aiw-sidebar-toggle");
+    if (!toggleBtn) return;
+    toggleBtn.setAttribute("aria-expanded", String(open));
+    if (open) {
+      toggleBtn.innerHTML = COLLAPSE_ICONS_HTML;
+      toggleBtn.title = "طي الشريط الجانبي";
+      toggleBtn.setAttribute("aria-label", "طي الشريط الجانبي");
+    } else {
+      toggleBtn.innerHTML = EXPAND_ICONS_HTML;
+      toggleBtn.title = "فتح القائمة";
+      toggleBtn.setAttribute("aria-label", "فتح القائمة");
+    }
+  }
+
+  const isDesktopLayout = () => card.classList.contains("ai-agent-desktop-layout");
+
+  function toggleMobileSidebar() {
+    if (isDesktopLayout()) return;
+    const open = !mobileSidebar?.classList.contains("ai-agent-sidebar--mobile-open");
+    toggleBtns().forEach((b) => b.setAttribute("aria-expanded", String(open)));
+    updateSidebarToggleIcon(open);
+    if (open) widgetEl.openMobileSidebarSheet?.();
+    else widgetEl.closeMobileSidebarSheet?.();
+  }
+
+  const win = createAgentWindow({
+    title: "الباشــمبصمج",
+    logoSrc: "/assets/images/el-bash-mebasmag--no-bg.png",
+    toggleHtml: EXPAND_ICONS_HTML,
+    content: card,
+    onToggleSidebar: toggleMobileSidebar,
+    onResize: ({ compact }) => {
+      // Desktop layout (permanent sidebar) is decided by the WINDOW width.
+      card.classList.toggle("ai-agent-desktop-layout", !compact);
+      if (!compact) widgetEl.closeMobileSidebarSheet?.();
+    },
+    onClose: () => {
+      const activeChat = getChatPanelForPageKey(options.pageKey);
+      if (activeChat) {
+        activeChat.stopSpeaking?.();
+        if (!activeChat.isGenerating?.()) activeChat.clearTyping?.();
       }
+      try { window.speechSynthesis?.cancel(); } catch { /* ignore */ }
+      stopBusySync?.();
+      activeWindow = null;
+      if (fab) fab.style.display = "";
+    },
+  });
+  activeWindow = win;
+  updateSidebarToggleIcon(false);
+
+  // The drawer's own collapse buttons (inside the sidebar) also close the
+  // drawer in compact mode; keep every toggle's aria-expanded in sync.
+  win.el.querySelectorAll(".ai-agent-sidebar-collapse-btn").forEach((btn) => {
+    if (btn.classList.contains("aiw-sidebar-toggle")) return;
+    btn.addEventListener("click", (event) => {
+      if (isDesktopLayout()) return;
+      event.stopPropagation();
+      toggleMobileSidebar();
     });
   });
-  // The sidebar can also be closed from elsewhere (backdrop click, New
-  // Chat, selecting a history item — see buildWidgetContent's own
-  // closeMobileSidebarSheet call sites), which would otherwise leave the
-  // hamburger's aria-expanded/visual state out of sync. Wrap the exposed
-  // closer so every close path — not just this button's own click —
-  // resets it too.
   const originalCloseMobileSheet = widgetEl.closeMobileSidebarSheet;
   widgetEl.closeMobileSidebarSheet = function patchedCloseMobileSidebarSheet() {
-    sidebarCollapseBtns.forEach((button) => button.setAttribute("aria-expanded", "false"));
+    toggleBtns().forEach((b) => b.setAttribute("aria-expanded", "false"));
+    updateSidebarToggleIcon(false);
     return originalCloseMobileSheet?.();
   };
-
-  // Desktop-layout toggle — a class on the modal card, not a hardcoded
-  // assumption, so ai-agent.css's own >=901px media query stays the single
-  // source of truth for the actual pixel breakpoint (DESKTOP_BREAKPOINT_QUERY
-  // just needs to reasonably agree with it) while this class additionally
-  // lets any JS-side behavior key off the same signal without re-deriving
-  // it from window.innerWidth on every interaction. Kept live via a
-  // matchMedia listener (not computed once at open time) so resizing an
-  // already-open modal across the breakpoint reflows correctly.
-  if (typeof window.matchMedia === "function") {
-    desktopMql = window.matchMedia(DESKTOP_BREAKPOINT_QUERY);
-    modalCard.classList.toggle("ai-agent-desktop-layout", desktopMql.matches);
-    if (typeof desktopMql.addEventListener === "function") {
-      desktopMql.addEventListener("change", onDesktopChange);
-    }
-  }
-
-  document.body.appendChild(modal);
-
-  // Escape-to-close, mirroring the pattern other modals in this app use.
-  const onKeydown = (e) => {
-    if (e.key === "Escape") closeModal();
+  const originalOpenMobileSheet = widgetEl.openMobileSidebarSheet;
+  widgetEl.openMobileSidebarSheet = function patchedOpenMobileSidebarSheet() {
+    toggleBtns().forEach((b) => b.setAttribute("aria-expanded", "true"));
+    updateSidebarToggleIcon(true);
+    return originalOpenMobileSheet?.();
   };
-  document.addEventListener("keydown", onKeydown);
 
-  // Hide the FAB while its modal is open — clicking it again while a modal
-  // is already up previously opened a second, stacked modal on top of the
-  // first (no open-state check existed at all). Hiding is simpler than a
-  // toggle/focus-existing approach and avoids ever having two overlays in
-  // the DOM at once.
+  // Mirror "a prompt is running" onto the window so its minimized pill animates.
+  const syncBusy = (busy) => win.setBusy(busy);
+  syncBusy(!!chatPanel.isGenerating?.());
+  const stopBusySync = chatPanel.onGeneratingChange?.(syncBusy);
+
   if (fab) fab.style.display = "none";
+  return win;
 }
+
+export { openAIAgentModal as openAIAgentWindow };
 
 /**
  * Creates the floating action button that opens the AI Helper modal.

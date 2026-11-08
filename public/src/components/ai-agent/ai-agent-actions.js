@@ -329,7 +329,7 @@ export function createSlashMenu(options) {
 
     function onOutsideClick(e) {
         if (!menuEl) return;
-        if (menuEl.contains(e.target) || e.target === textarea) return;
+        if (menuEl.contains(e.target) || textarea.contains(e.target)) return;
         close();
     }
 

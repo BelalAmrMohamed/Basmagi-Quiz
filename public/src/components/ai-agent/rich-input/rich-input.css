@@ -1,0 +1,295 @@
+/* =============================================================================
+   rich-input.css — styles for the AI Agent rich input (rich-input.js).
+   Plain-CSS conversion of the 21st.dev component's Tailwind classes, mapped
+   onto this site's theme tokens (--color-*), so it follows light / dark /
+   dark-slate automatically.
+   ============================================================================= */
+
+.rmci-root,
+.rmci-menu {
+  --rmci-fg: var(--color-text-primary, #1d2433);
+  --rmci-muted: var(--color-text-secondary, #667085);
+  --rmci-border: var(--color-border, #dce2ed);
+  --rmci-card: var(--color-surface, #ffffff);
+  --rmci-ring: var(--color-primary, #b94a16);
+  --rmci-hover: color-mix(in srgb, var(--rmci-fg) 10%, transparent);
+  --rmci-active: color-mix(in srgb, var(--rmci-fg) 15%, transparent);
+
+  --rmci-comment: #6e7781; --rmci-kw: #cf222e; --rmci-str: #0a3069; --rmci-num: #0550ae;
+  --rmci-fn: #8250df; --rmci-type: #953800; --rmci-attr: #116329; --rmci-del: #82071e;
+}
+
+html[data-theme="dark"] .rmci-root,
+html[data-theme="dark-slate"] .rmci-root {
+  --rmci-comment: #7d8590; --rmci-kw: #ff7b72; --rmci-str: #a5d6ff; --rmci-num: #79c0ff;
+  --rmci-fn: #d2a8ff; --rmci-type: #ffa657; --rmci-attr: #7ee787; --rmci-del: #ffa198;
+}
+
+.rmci-root { width: 100%; max-width: 100%; box-sizing: border-box; color: var(--rmci-fg); }
+.rmci-root *, .rmci-menu * { box-sizing: border-box; }
+.rmci-root.is-disabled .rmci-editor { opacity: .6; }
+
+/* ── Shell ── */
+.rmci-editor {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--rmci-border);
+  border-radius: 24px;
+  background: var(--rmci-card);
+  color: var(--rmci-fg);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .12);
+  transition: border-color .2s ease, box-shadow .2s ease, opacity .2s ease;
+}
+.rmci-editor:focus-within {
+  border-color: color-mix(in srgb, var(--rmci-ring) 50%, transparent);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .12), 0 0 0 2px color-mix(in srgb, var(--rmci-ring) 30%, transparent);
+}
+
+.rmci-scroll { overflow-y: auto; padding: 14px 18px 2px; cursor: text; overscroll-behavior: contain; }
+.rmci-host { min-width: 0; }
+
+/* ── Toolbar ── */
+.rmci-toolbar-slot { animation: rmci-fade-down .2s ease; }
+.rmci-toolbar-slot[hidden] { display: none; }
+.rmci-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 2px;
+  padding: 6px 8px; border-bottom: 1px solid var(--rmci-border);
+}
+.rmci-divider { width: 1px; height: 16px; margin: 0 4px; background: var(--rmci-border); flex-shrink: 0; }
+
+.rmci-icon-btn,
+.rmci-heading-btn {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  border: 0; background: transparent; color: var(--rmci-muted); cursor: pointer;
+  border-radius: 10px; transition: background .15s ease, color .15s ease;
+}
+.rmci-icon-btn { width: 32px; height: 32px; padding: 0; }
+.rmci-heading-btn { height: 32px; gap: 2px; padding: 0 4px 0 8px; }
+.rmci-icon-btn:hover, .rmci-heading-btn:hover { background: var(--rmci-hover); color: var(--rmci-fg); }
+.rmci-icon-btn.is-active, .rmci-heading-btn.is-active, .rmci-icon-btn.is-open, .rmci-heading-btn.is-open {
+  background: var(--rmci-active); color: var(--rmci-fg);
+}
+.rmci-icon-btn:disabled { opacity: .4; pointer-events: none; }
+.rmci-icon-btn:focus-visible, .rmci-heading-btn:focus-visible, .rmci-model-btn:focus-visible,
+.rmci-codeblock-btn:focus-visible, .rmci-lang-btn:focus-visible, .rmci-menu-item:focus-visible {
+  outline: 2px solid var(--rmci-ring); outline-offset: 1px;
+}
+.rmci-icon { display: block; flex-shrink: 0; }
+
+/* ── Bottom bar ── */
+.rmci-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px 10px; }
+.rmci-bar-start, .rmci-bar-end { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.rmci-bar-end { gap: 6px; }
+.rmci-model-slot { display: contents; }
+
+.rmci-model-wrap { display: inline-flex; min-width: 0; }
+.rmci-model-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; max-width: 170px; padding: 0 12px;
+  border: 1px solid var(--rmci-border); border-radius: 999px;
+  background: color-mix(in srgb, var(--rmci-fg) 3%, transparent);
+  color: var(--rmci-muted); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.rmci-model-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rmci-model-btn:hover:not(:disabled) { background: var(--rmci-hover); color: var(--rmci-fg); }
+.rmci-model-btn:disabled { opacity: .55; cursor: not-allowed; }
+.rmci-model-btn .rmci-icon { transition: transform .2s ease; }
+.rmci-model-btn.is-open .rmci-icon { transform: rotate(180deg); }
+
+.rmci-hint { margin: 6px 0 0; text-align: center; font-size: 11px; color: color-mix(in srgb, var(--rmci-muted) 80%, transparent); }
+
+/* ── Menus (portaled to <body>) ── */
+.rmci-menu {
+  z-index: var(--z-toast, 7000);
+  min-width: 160px; max-width: calc(100vw - 16px); max-height: min(340px, calc(100vh - 16px)); overflow-y: auto;
+  padding: 4px; border: 1px solid var(--rmci-border); border-radius: 14px;
+  background: var(--rmci-card); color: var(--rmci-fg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .35);
+  animation: rmci-pop .15s ease;
+}
+.rmci-lang-menu { width: 160px; }
+.rmci-menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px;
+  border: 0; border-radius: 10px; background: transparent; color: inherit;
+  font: inherit; font-size: 13.5px; text-align: start; cursor: pointer;
+}
+.rmci-menu-item--compact { justify-content: space-between; padding: 6px 10px; font-size: 12px; text-align: left; }
+.rmci-menu-item:hover, .rmci-menu-item:focus-visible { background: var(--rmci-hover); }
+.rmci-menu-icon { color: var(--rmci-muted); display: inline-flex; }
+.rmci-menu-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.rmci-menu-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.rmci-menu-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--rmci-muted); }
+.rmci-menu-check { color: var(--rmci-ring, #b94a16); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rmci-menu-spacer { display: inline-block; width: 16px; height: 16px; flex-shrink: 0; }
+
+.rmci-menu-section-header {
+  padding: 6px 10px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--rmci-muted);
+  letter-spacing: 0.03em;
+}
+
+.rmci-menu-divider {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--rmci-border);
+}
+
+.rmci-menu-item--submenu {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% - 8px);
+  margin: 6px 4px 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--rmci-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--rmci-card) 92%, var(--rmci-fg) 4%);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.rmci-menu-item--submenu:hover,
+.rmci-menu-item--submenu.is-active,
+.rmci-menu-item--submenu:focus-visible {
+  background: var(--rmci-hover);
+  border-color: color-mix(in srgb, var(--rmci-ring) 50%, var(--rmci-border));
+}
+
+.rmci-menu-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rmci-muted);
+  flex-shrink: 0;
+  margin-inline-start: 8px;
+  transition: transform 0.15s ease;
+}
+
+.rmci-menu-item--submenu.is-active .rmci-menu-arrow {
+  transform: translateX(-3px);
+  color: var(--rmci-fg);
+}
+
+.rmci-menu-item.is-locked {
+  opacity: 0.78;
+}
+
+.rmci-menu-item.is-locked:hover {
+  background: color-mix(in srgb, var(--rmci-hover) 75%, transparent);
+}
+
+.rmci-menu-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rmci-muted);
+  flex-shrink: 0;
+}
+
+.rmci-submenu {
+  min-width: 210px;
+  max-width: 280px;
+  z-index: calc(var(--z-toast, 7000) + 1);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+}
+
+/* ── ProseMirror content ── */
+.rmci-editor .ProseMirror { outline: none; min-height: 1.75rem; word-break: break-word; font-size: .9375rem; line-height: 1.6; white-space: pre-wrap; }
+.rmci-editor .ProseMirror > *:first-child { margin-top: 0; }
+.rmci-editor .ProseMirror > *:last-child { margin-bottom: 0; }
+.rmci-editor .ProseMirror p { margin: .25rem 0; }
+.rmci-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder); float: inline-start; height: 0; pointer-events: none;
+  color: color-mix(in srgb, currentColor 45%, transparent);
+}
+.rmci-ph-rtl .ProseMirror p.is-editor-empty:first-child::before { float: right; direction: rtl; }
+.rmci-editor .ProseMirror h1 { font-size: 1.5rem; line-height: 1.25; font-weight: 700; margin: .75rem 0 .25rem; letter-spacing: -.01em; }
+.rmci-editor .ProseMirror h2 { font-size: 1.25rem; line-height: 1.3; font-weight: 650; margin: .65rem 0 .25rem; letter-spacing: -.01em; }
+.rmci-editor .ProseMirror h3 { font-size: 1.075rem; line-height: 1.35; font-weight: 600; margin: .55rem 0 .2rem; }
+.rmci-editor .ProseMirror ul { list-style: disc; padding-inline-start: 1.4rem; padding-inline-end: 0; margin: .3rem 0; }
+.rmci-editor .ProseMirror ol { list-style: decimal; padding-inline-start: 1.4rem; padding-inline-end: 0; margin: .3rem 0; }
+.rmci-editor .ProseMirror li { margin: .1rem 0; }
+.rmci-editor .ProseMirror li > p { margin: 0; }
+.rmci-editor .ProseMirror li::marker { color: color-mix(in srgb, currentColor 55%, transparent); }
+.rmci-editor .ProseMirror blockquote {
+  margin: .5rem 0; padding: .35rem .9rem;
+  border-inline-start: 3px solid color-mix(in srgb, currentColor 30%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent);
+  border-start-end-radius: .6rem; border-end-end-radius: .6rem;
+}
+/* Lists / quotes can't use dir="auto" themselves; flip them from their first block. */
+.rmci-editor .ProseMirror :is(ul, ol):has(> li:first-child > :is(p, h1, h2, h3):dir(rtl)),
+.rmci-editor .ProseMirror blockquote:has(> :is(p, h1, h2, h3):first-child:dir(rtl)) { direction: rtl; }
+.rmci-editor .ProseMirror code:not(pre code) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em; padding: .12rem .38rem; border-radius: .4rem;
+  background: color-mix(in srgb, currentColor 10%, transparent); border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  unicode-bidi: isolate;
+}
+.rmci-editor .ProseMirror pre code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+.rmci-editor .ProseMirror hr { border: 0; border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent); margin: .75rem 0; }
+.rmci-editor .ProseMirror u { text-underline-offset: 3px; }
+.rmci-editor .ProseMirror ::selection { background: color-mix(in srgb, currentColor 22%, transparent); }
+
+/* command / mention tokens (replaces the old textarea mirror highlighter) */
+.rmci-token { border-radius: 6px; padding: 0 3px; font-weight: 600; }
+.rmci-token--command { color: var(--rmci-ring); background: color-mix(in srgb, var(--rmci-ring) 14%, transparent); }
+.rmci-token--mention { color: #2f7de1; background: color-mix(in srgb, #2f7de1 14%, transparent); }
+
+/* ── Code block ── */
+.rmci-codeblock {
+  margin: .5rem 0; overflow: hidden; text-align: left;
+  border: 1px solid var(--rmci-border); border-radius: 14px;
+  background: color-mix(in srgb, var(--color-background-secondary, #f4f6fb) 70%, transparent);
+}
+.rmci-codeblock-header {
+  display: flex; align-items: center; justify-content: space-between; padding: 4px 10px;
+  border-bottom: 1px solid var(--rmci-border); background: color-mix(in srgb, var(--rmci-fg) 3%, transparent);
+  user-select: none;
+}
+.rmci-codeblock-actions { display: flex; align-items: center; gap: 4px; }
+.rmci-codeblock-btn {
+  display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--rmci-muted); font: inherit; font-size: 11px; font-weight: 500; cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.rmci-codeblock-btn:hover { background: var(--rmci-hover); color: var(--rmci-fg); }
+.rmci-codeblock-btn.is-done .rmci-icon { color: #34d399; }
+.rmci-lang-btn {
+  display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px 0 8px;
+  border: 1px solid var(--rmci-border); border-radius: 8px; background: color-mix(in srgb, var(--rmci-card) 80%, transparent);
+  color: color-mix(in srgb, var(--rmci-fg) 80%, transparent); font: inherit; font-size: 11px; font-weight: 500; cursor: pointer;
+}
+.rmci-lang-btn:hover { background: var(--rmci-hover); }
+.rmci-lang-btn .rmci-icon { color: var(--rmci-muted); transition: transform .2s ease; }
+.rmci-lang-btn.is-open .rmci-icon { transform: rotate(180deg); }
+.rmci-codeblock-pre {
+  margin: 0; padding: 12px 14px; overflow-x: auto; overflow-y: auto; max-height: 32rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.6;
+  transition: max-height .3s ease-out; tab-size: 2;
+}
+.rmci-codeblock-pre.is-collapsed { max-height: 3.25rem; overflow-y: hidden; }
+.rmci-codeblock-fade { height: 24px; margin-top: -24px; pointer-events: none; background: linear-gradient(to top, var(--rmci-card), transparent); position: relative; }
+.rmci-codeblock-fade[hidden] { display: none; }
+
+.rmci-editor .hljs-comment, .rmci-editor .hljs-quote { color: var(--rmci-comment); font-style: italic; }
+.rmci-editor .hljs-keyword, .rmci-editor .hljs-selector-tag, .rmci-editor .hljs-literal, .rmci-editor .hljs-doctag { color: var(--rmci-kw); }
+.rmci-editor .hljs-string, .rmci-editor .hljs-regexp, .rmci-editor .hljs-addition { color: var(--rmci-str); }
+.rmci-editor .hljs-number, .rmci-editor .hljs-symbol, .rmci-editor .hljs-bullet, .rmci-editor .hljs-meta { color: var(--rmci-num); }
+.rmci-editor .hljs-title, .rmci-editor .hljs-section, .rmci-editor .hljs-title.function_ { color: var(--rmci-fn); }
+.rmci-editor .hljs-built_in, .rmci-editor .hljs-type, .rmci-editor .hljs-class .hljs-title { color: var(--rmci-type); }
+.rmci-editor .hljs-attr, .rmci-editor .hljs-attribute, .rmci-editor .hljs-variable, .rmci-editor .hljs-template-variable,
+.rmci-editor .hljs-property, .rmci-editor .hljs-name, .rmci-editor .hljs-tag { color: var(--rmci-attr); }
+.rmci-editor .hljs-deletion { color: var(--rmci-del); }
+.rmci-editor .hljs-emphasis { font-style: italic; }
+.rmci-editor .hljs-strong { font-weight: 700; }
+
+/* while the editor module is still loading, keep the box the right height */
+.rmci-root:not(.is-ready) .rmci-host { min-height: 1.75rem; }
+
+@keyframes rmci-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes rmci-fade-down { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .rmci-menu, .rmci-toolbar-slot, .rmci-codeblock-pre { animation: none; transition: none; }
+}

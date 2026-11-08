@@ -1,7 +1,8 @@
 {
-  "sourcesSha256": "27eef4d36be63ea8d385d61d3abf86aafb23c560844d0978679b237ae3d31b5b",
+  "sourcesSha256": "a48a05458e80b77f6cd9494536a6f15f9d67cd4d4c19d1c9241cddd80710e663",
   "builtTargets": [
     "cpp",
-    "matlab"
+    "matlab",
+    "tiptap-vendor"
   ]
 }

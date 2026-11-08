@@ -33,10 +33,17 @@ const TARGETS = {
     // The interpreter Web Worker, loaded by the engine as <baseUrl>worker.js.
     extra: [{ entry: 'matlab/src/worker.ts', outfile: 'worker.js' }],
   },
+  // Third-party editor core for the AI Agent's rich input (ES module, lazy-loaded).
+  'tiptap-vendor': {
+    entry: 'tiptap-vendor/index.js',
+    outDir: 'vendor/tiptap',
+    outfile: 'tiptap.js',
+    format: 'esm',
+  },
 };
 
 // Everything that can change a bundle's content. Add new source roots here.
-const SOURCE_ROOTS = ['shared', 'cpp/src', 'matlab/src', 'matlab/interp/src'];
+const SOURCE_ROOTS = ['shared', 'cpp/src', 'matlab/src', 'matlab/interp/src', 'tiptap-vendor'];
 const SOURCE_FILES = ['package.json', 'package-lock.json', 'build.mjs', 'tsconfig.json'];
 
 /** KaTeX ships woff2 + woff + ttf per font; every browser we support has woff2, so keep only that. */
@@ -60,9 +67,9 @@ async function runTarget(name, t) {
     entryPoints: [t.entry],
     bundle: true,
     minify: true,
-    format: 'iife',
-    globalName: t.globalName,
-    outfile: path.join(outDir, 'runtime.js'),
+    format: t.format ?? 'iife',
+    ...(t.globalName ? { globalName: t.globalName } : {}),
+    outfile: path.join(outDir, t.outfile ?? 'runtime.js'),
     loader: { '.css': 'css', '.woff2': 'file' },
     assetNames: 'fonts/[name]',
     plugins: [katexWoff2Only],
