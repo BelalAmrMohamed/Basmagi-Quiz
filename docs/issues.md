@@ -44,16 +44,14 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 
 ## New Features
 
-#### Documentation
-* Move the MCP-related docs from the `/how-to-use-ai-agent` to a new independent page with steps screenshots from: public\assets\document-pages
-
 ### Dictation for Essay Questions (Lesson & Quiz Pages)
 Add dictation feature for essays in quizzes and lessons
 
 ### Notebook Page
 
-#### Improvements
+#### Improvements & New features
 * Implement cursor animation similar to that of VS Code
+* Implement some sort of a quiz/question, a user has to write some code that outputs a specific output. Even if the user's code doesn't perfectly match that of the formal-answer-code, as long as it outputs the same output. 
 
 #### Runtimes
 * There is no error handling while typing, if users forget a simple thing like a semi-column or something it doesn't get highlighted.
@@ -73,6 +71,12 @@ Add dictation feature for essays in quizzes and lessons
     * When the window is minimized and there was a prompt running, it should continue running with an animation on the minimized state indicating so.
 * Error: ![Screenshot](image-2.png)
   * Fix this error, I'm getting it only on the browser where I'm signed as a developer. I understood from it that I have to sign-in again, but I'm not using any developer-specific features, I'm using it as a normal user where the model is set to "Gemini Flash Lite"
+
+Q: The 21st.dev input is React + Tiptap. The site is plain vanilla JS with no bundler for public/src. How should I convert it?
+A: I want the full component to be integrated, no lightweight version, no second version.
+
+Q: Should the window support multiple windows like image-tool-window does, or just one Basmagi window?
+A: Single window only.
 
 ### Update the `createEmptyState`
 * Update the `createEmptyState` to include a link to the `/how-to-create-content`
@@ -100,8 +104,8 @@ Redesign the whole page:
 * It lacks images or visual elements.
 
 #### Suggestions
-* Suggestion: Add an open-source Angle (Since the repo is currently open source).
-* Suggestion: Add a short testimonial or review.
+* Add an open-source Angle (Since the repo is currently open source).
+* Add a short testimonial or review.
 * **Make all the docs measurable.** We already have an analytics beacon, so add one event for "copied MCP URL" and one for "opened My Content from a draft link". That tells us whether people finish setup. A "Was this helpful?" thumbs row per section would also show which steps confuse people.
 
 #### المنصة بالأرقام
@@ -110,6 +114,9 @@ Redesign the whole page:
    1. `مسار تعليمي نشط`: Shows the actual `Active learning paths`
    2. `صانع محتوى`: Shows the top admins/developers. 
       1. Suggestion (Not Confirmed): with a link to see all of them.
+
+#### Important Update
+* See [update plan.](plans/documentation-pages.md)
 
 ### Create Quiz Page
 `create-quiz.js` is 5000+ lines in one file — It's the right time to split it into modules.
@@ -130,3 +137,20 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 ### Offline Page
 Improve:
 * It's theme Should match the theme of the platform (see themes.css and theme-controller.js), but it shouldn't import these files, it should be independent. It should also default to the default theme of the platform.
+* Its design feels too complicated, I want a simpler version 
+
+### Profile Page
+* Notebooks (دفتر): Aren't counted anywhere in the page. It wasn't updated since then.
+* `أفضل المشرفين`: 
+  * Remove the scrollbar, scrolling through them is either by using the 2 buttons on the sides or by hand on phones.
+  * It shows emtpy admin profiles that don't have links, these are probably poeple who have been made admin, but haven't signed in for the first time, remove that.
+* Syncing is so messed up for developer/admin profiles.
+
+### Lesson Page
+* ![screenshot](image-3.png): The copy buttons on "source" and "link" don't work.
+* Questions:
+  * The UI of questions isn't the best, and to improve it, I need it to match that of the quiz page (Extremely refined, better feedback for correct/incorrect and essay grading.)
+* Add a section navigator inside the sidebar.
+* Add embeddings: Notebooks, Folders, & Courses.
+* Suggestion: For embedded items (Notebooks, Lessons, Quizzes, Folders, & Courses) show their thumbnail, that would be great looking.
+* Recommend to me design improvements.
