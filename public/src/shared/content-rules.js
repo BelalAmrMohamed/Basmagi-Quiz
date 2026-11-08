@@ -64,6 +64,17 @@ export const NOTEBOOK_ASSET_URL_MARKER = "/storage/v1/object/public/notebook-ass
 const HTTP_URL_RE = /^https?:\/\/\S+$/i;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Link-out embeds beyond quizRef / lesson-reference. Canonical kebab type →
+// id field, accepted camelCase alias, and Arabic noun for messages.
+export const EMBED_REFS = {
+  "notebook-reference": { alias: "notebookRef", field: "notebookId", code: "NOTEBOOK_REF", noun: "الدفتر" },
+  "folder-reference": { alias: "folderRef", field: "folderId", code: "FOLDER_REF", noun: "المجلد" },
+  "course-reference": { alias: "courseRef", field: "courseId", code: "COURSE_REF", noun: "المادة" },
+};
+export const EMBED_REF_BY_TYPE = Object.fromEntries(
+  Object.entries(EMBED_REFS).flatMap(([type, def]) => [[type, { ...def, type }], [def.alias, { ...def, type }]]),
+);
+
 const str = (v) => (v === undefined || v === null ? "" : String(v)).trim();
 export const isHttpUrl = (s) => HTTP_URL_RE.test(String(s || ""));
 
@@ -272,7 +283,7 @@ export function checkQuiz(input) {
 /**
  * @param {object} input  { title, description, source, sections|content.sections }
  * @param {{publish?: boolean, sectionsOnly?: boolean}} [opts]
- *   publish=true → lesson-reference ids must be UUIDs;
+ *   publish=true → lesson-reference / notebook-reference / folder-reference / course-reference ids must be UUIDs;
  *   sectionsOnly=true → skip title/description/source (callers that validate them separately)
  */
 export function checkLesson(input, opts = {}) {
@@ -359,6 +370,13 @@ export function checkLesson(input, opts = {}) {
         else if (publish && !UUID_RE.test(lessonId)) {
           c.err("LESSON_REF_NOT_UUID", path, `${at}: lessonId يجب أن يكون UUID لدرس منشور (من search_catalog) وليس معرّفاً محلياً.`);
         }
+      } else if (EMBED_REF_BY_TYPE[type]) {
+        const def = EMBED_REF_BY_TYPE[type];
+        const refId = str(b[def.field]);
+        if (!refId) c.err(`${def.code}_REQUIRED`, path, `${at}: ${def.field} مفقود — اختر ${def.noun} المرتبط (ابحث عنه بـ search_catalog).`);
+        else if (publish && !UUID_RE.test(refId)) {
+          c.err(`${def.code}_NOT_UUID`, path, `${at}: ${def.field} يجب أن يكون UUID لعنصر منشور (من search_catalog) وليس معرّفاً محلياً.`);
+        }
       } else if (type === "question") {
         const prompt = str(b.prompt ?? b.q);
         const qAt = `${at}${prompt ? ` («${clip(prompt)}»)` : ""}`;
@@ -410,7 +428,7 @@ export function checkLesson(input, opts = {}) {
           if (!explanation) c.warn("NO_EXPLANATION", path, `${qAt}: سؤال بلا explanation.`);
         }
       } else {
-        c.err("UNKNOWN_BLOCK_TYPE", path, `${at}: type="${type}" غير معروف (المسموح: markdown, media, quizRef, lesson-reference, question).`);
+        c.err("UNKNOWN_BLOCK_TYPE", path, `${at}: type="${type}" غير معروف (المسموح: markdown, media, quizRef, lesson-reference, notebook-reference, folder-reference, course-reference, question).`);
       }
     });
   });

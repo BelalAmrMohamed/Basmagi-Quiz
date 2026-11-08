@@ -2,6 +2,12 @@
 // Keeping the icons in markup avoids emoji/platform rendering differences.
 
 const ICONS = {
+  notebook: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18M12.5 8h3M12.5 12h3"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>',
+  course: '<path d="m12 3 10 5-10 5L2 8l10-5Z"/><path d="M6 10.5V16c0 1.4 2.7 3 6 3s6-1.600 6-3v-5.500"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11.5 4.43"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.33-1.33"/>',
+  list: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   book: '<path d="M4.5 5.5A2.5 2.5 0 0 1 7 3h12.5v16.5H7a2.5 2.5 0 0 0-2.5 2V5.5Z"/><path d="M4.5 21.5A2.5 2.5 0 0 1 7 19h12.5"/><path d="M7 3v16"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 10.5v6"/><path d="M12 7.5h.01"/>',
   settings: '<path d="M12 3.75v2.1M12 18.15v2.1M20.25 12h-2.1M5.85 12h-2.1"/><circle cx="12" cy="12" r="2.75"/><path d="m17.84 6.16-1.48 1.48M7.64 16.36l-1.48 1.48M17.84 17.84l-1.48-1.48M7.64 7.64 6.16 6.16"/>',

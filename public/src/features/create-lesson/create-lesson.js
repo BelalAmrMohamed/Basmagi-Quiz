@@ -36,6 +36,7 @@ import "../../shared/text-direction-sync.js";
 import { getToken, isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { reserveStorage, releaseStorage } from "../../shared/storage-guard.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+import { courseHref, buildFolderEntry } from "../lesson/lesson-embeds.js";
 import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.js";
 import { renderMarkdown } from "../../shared/markdown.js";
 import { isYouTubeUrl } from "../../shared/media-resolve.js";
@@ -692,6 +693,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateUndoRedoButtons();
     loadQuizExamList();
     loadReferenceLessons();
+    loadEmbedReferenceRows();
 
     // Wrapped defensively: an old-schema/corrupt draft (e.g. a block shape
     // that predates this feature) can throw while normalizing or rendering.
@@ -1391,6 +1393,9 @@ function openLessonById(id) {
 function hydrateBlock(block) {
     const b = { ...block, _localId: newLocalId("b") };
     if (b.type === "lessonRef") b.type = "lesson-reference";
+    if (b.type === "notebookRef") b.type = "notebook-reference";
+    if (b.type === "folderRef") b.type = "folder-reference";
+    if (b.type === "courseRef") b.type = "course-reference";
     if (b.type === "question") {
         if (b.questionKind === "essay") {
             b.questionKind = "essay";
@@ -2205,6 +2210,9 @@ function sectionCardHtml(section, index) {
         <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'markdown')">+ نص</button>
         <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'quizRef')">+ امتحان مرتبط</button>
         <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'lesson-reference')">+ درس مرتبط</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'notebook-reference')">+ دفتر مرتبط</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'folder-reference')">+ مجلد مرتبط</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'course-reference')">+ مادة مرتبطة</button>
         <button type="button" class="btn btn-secondary btn-sm" onclick="addBlock('${sid}', 'question')">+ سؤال مدمج</button>
       </div>
     </div>`;
@@ -2352,6 +2360,9 @@ function makeBlock(type) {
     if (type === "media") return { type: "media", url: "", kind: "image", alt: "", _localId };
     if (type === "quizRef") return { type: "quizRef", quizId: "", title: "", _localId };
     if (type === "lesson-reference") return { type: "lesson-reference", lessonId: "", title: "", _localId };
+    if (type === "notebook-reference") return { type: "notebook-reference", notebookId: "", title: "", _localId };
+    if (type === "folder-reference") return { type: "folder-reference", folderId: "", title: "", _localId };
+    if (type === "course-reference") return { type: "course-reference", courseId: "", title: "", _localId };
     return {
         type: "question",
         id: newLocalId("q"),
@@ -2436,6 +2447,9 @@ const BLOCK_LABELS = {
     media: "وسائط",
     quizRef: "امتحان مرتبط",
     "lesson-reference": "درس مرتبط",
+    "notebook-reference": "دفتر مرتبط",
+    "folder-reference": "مجلد مرتبط",
+    "course-reference": "مادة مرتبطة",
     question: "سؤال مدمج",
 };
 
@@ -2452,6 +2466,7 @@ function blockCardHtml(sectionId, block, index, total) {
     else if (block.type === "media") inner = mediaBlockInnerHtml(sectionId, block);
     else if (block.type === "quizRef") inner = quizRefBlockInnerHtml(sectionId, block);
     else if (block.type === "lesson-reference") inner = lessonRefBlockInnerHtml(sectionId, block);
+    else if (EMBED_PICKERS[block.type]) inner = embedRefBlockInnerHtml(sectionId, block);
     else inner = questionBlockInnerHtml(sectionId, block);
 
     return `
@@ -2858,6 +2873,176 @@ window.selectLessonReference = function (sectionId, localId, lessonId, source) {
     autosave();
 };
 
+// ── Notebook / folder / course reference blocks ───────────────────────────
+// Same picker UX as the lesson-reference block above (search → pick → chip),
+// parameterized by block type. Only published items are offered: these ids
+// must be UUIDs to publish, and nothing runs inline — cards just link out.
+
+const EMBED_PICKERS = {
+    "notebook-reference": { field: "notebookId", noun: "دفتر", placeholder: "اكتب جزءاً من عنوان الدفتر…", empty: "لم يتم اختيار دفتر بعد.", resultsLabel: "نتائج الدفاتر" },
+    "folder-reference": { field: "folderId", noun: "مجلد", placeholder: "اكتب جزءاً من اسم المجلد…", empty: "لم يتم اختيار مجلد بعد.", resultsLabel: "نتائج المجلدات" },
+    "course-reference": { field: "courseId", noun: "مادة", placeholder: "اكتب جزءاً من اسم المادة…", empty: "لم يتم اختيار مادة بعد.", resultsLabel: "نتائج المواد" },
+};
+
+/** Public rows offered by the notebook/folder/course pickers. */
+let embedRows = { notebooks: [], courses: [], folders: [] };
+
+async function loadEmbedReferenceRows() {
+    try {
+        const client = await ensureSharedSupabaseClient();
+        if (!client) return;
+        const [nb, courses, folders] = await Promise.all([
+            client.from("notebook_public").select("id, slug, title, description, runtime, course_id, folder_id, cell_count, updated_at").order("updated_at", { ascending: false }).limit(500),
+            client.from("courses").select("id, name, icon, updated_at").limit(500),
+            client.from("folders").select("id, course_id, parent_folder_id, name, icon, updated_at").limit(2000),
+        ]);
+        embedRows = {
+            notebooks: Array.isArray(nb.data) ? nb.data : [],
+            courses: Array.isArray(courses.data) ? courses.data : [],
+            folders: Array.isArray(folders.data) ? folders.data : [],
+        };
+        // Blocks already in the editor were rendered before these rows arrived.
+        const hasEmbeds = lessonData?.sections?.some((s) => s.blocks.some((b) => EMBED_PICKERS[b.type]));
+        if (hasEmbeds && typeof renderSections === "function") renderSections();
+    } catch (err) {
+        console.warn("[create-lesson] failed to load notebooks/courses/folders for the reference pickers:", err?.message || err);
+    }
+}
+
+function embedOptions(type) {
+    if (type === "notebook-reference") {
+        return embedRows.notebooks.map((row) => ({
+            id: String(row.id),
+            title: row.title || "دفتر بدون عنوان",
+            row,
+            details: [Number(row.cell_count) ? `${Number(row.cell_count)} خلية` : "", row.runtime || "", shortText(row.description)],
+        }));
+    }
+    if (type === "course-reference") {
+        return embedRows.courses.map((row) => ({ id: String(row.id), title: row.name || "مادة بدون اسم", row, details: [] }));
+    }
+    const coursesById = new Map(embedRows.courses.map((c) => [String(c.id), c]));
+    const foldersById = new Map(embedRows.folders.map((f) => [String(f.id), f]));
+    return embedRows.folders
+        .map((row) => {
+            const entry = buildFolderEntry(row, foldersById, coursesById.get(String(row.course_id)));
+            return entry ? { id: String(row.id), title: row.name || "مجلد بدون اسم", row: entry, details: [entry.pathLabel] } : null;
+        })
+        .filter(Boolean);
+}
+
+function embedRefSelectedHtml(type, entry, fallbackTitle, sectionId = "", localId = "") {
+    const cfg = EMBED_PICKERS[type];
+    const actions = (label) =>
+        `<div class="lesson-lessonref-chip-actions" role="group" aria-label="إجراءات المرجع">` +
+        `<button type="button" class="lesson-lessonref-chip-btn" onclick="focusEmbedRefSearch('${escapeHtml(localId)}')" aria-label="استبدال ${cfg.noun}" title="استبدال">استبدال</button>` +
+        `<button type="button" class="lesson-lessonref-chip-btn is-danger" onclick="removeEmbedReference('${escapeHtml(sectionId)}','${escapeHtml(localId)}')" aria-label="إزالة ${cfg.noun}" title="إزالة">إزالة</button>` +
+        `</div>`;
+    if (!entry) {
+        return fallbackTitle
+            ? `<div class="lesson-lessonref-chip"><div class="lesson-lessonref-chip-main"><span class="lesson-lessonref-chip-title">${escapeHtml(fallbackTitle)}</span><span class="lesson-lessonref-chip-status">مرجع غير متاح</span></div>${actions()}</div>`
+            : `<p class="lesson-quizref-empty">${cfg.empty}</p>`;
+    }
+    return `<div class="lesson-lessonref-chip"><div class="lesson-lessonref-chip-main"><span class="lesson-lessonref-chip-title">${escapeHtml(entry.title)}</span><span class="lesson-lessonref-chip-status">منشور</span></div>${actions()}</div>`;
+}
+
+function embedRefBlockInnerHtml(sectionId, block) {
+    const cfg = EMBED_PICKERS[block.type];
+    const sid = escapeHtml(sectionId);
+    const bid = escapeHtml(block._localId);
+    const currentId = block[cfg.field];
+    const matched = currentId ? embedOptions(block.type).find((item) => item.id === String(currentId)) : null;
+    return `
+    <div class="lesson-lessonref-editor">
+      <div class="form-group">
+        <label for="embedref-search-${bid}">ابحث عن ${cfg.noun}</label>
+        <input id="embedref-search-${bid}" type="search" class="form-input lesson-lessonref-search" placeholder="${cfg.placeholder}"
+          data-section-id="${sid}" data-local-id="${bid}" oninput="handleEmbedRefSearch(this)" autocomplete="off">
+        <div class="lesson-lessonref-results" id="embedref-results-${bid}" role="listbox" aria-label="${cfg.resultsLabel}"></div>
+      </div>
+      <div class="lesson-lessonref-selected" id="embedref-selected-${bid}">
+        ${matched ? embedRefSelectedHtml(block.type, matched, "", sectionId, block._localId) : currentId ? embedRefSelectedHtml(block.type, null, block.title || currentId, sectionId, block._localId) : embedRefSelectedHtml(block.type, null)}
+      </div>
+    </div>`;
+}
+
+window.handleEmbedRefSearch = function (input) {
+    const term = input.value.trim().toLowerCase();
+    const resultsEl = document.getElementById(`embedref-results-${input.dataset.localId}`);
+    if (!resultsEl) return;
+    if (!term) { resultsEl.innerHTML = ""; return; }
+    const block = findBlock(input.dataset.sectionId, input.dataset.localId);
+    if (!block || !EMBED_PICKERS[block.type]) return;
+    const matches = embedOptions(block.type).filter((item) => item.title.toLowerCase().includes(term)).slice(0, 10);
+    if (!matches.length) {
+        resultsEl.innerHTML = `<p class="lesson-quizref-no-results">لا توجد نتائج.</p>`;
+        return;
+    }
+    resultsEl.innerHTML = matches.map((item) => pickerResultHtml({
+        role: "option",
+        onclick: `selectEmbedReference('${escapeHtml(input.dataset.sectionId)}','${escapeHtml(input.dataset.localId)}','${escapeHtml(item.id)}')`,
+        title: item.title,
+        badge: "منشور",
+        details: item.details,
+    })).join("");
+};
+
+window.focusEmbedRefSearch = function (localId) {
+    const input = document.querySelector(`.lesson-lessonref-search[data-local-id="${CSS.escape(String(localId))}"]`);
+    if (!input) return;
+    input.focus({ preventScroll: true });
+    input.select();
+};
+
+window.removeEmbedReference = function (sectionId, localId) {
+    const block = findBlock(sectionId, localId);
+    const cfg = block && EMBED_PICKERS[block.type];
+    if (!cfg) return;
+    pushHistorySnapshot();
+    delete block[cfg.field];
+    delete block.title;
+    const selected = document.getElementById(`embedref-selected-${localId}`);
+    if (selected) selected.innerHTML = embedRefSelectedHtml(block.type, null);
+    const results = document.getElementById(`embedref-results-${localId}`);
+    if (results) results.innerHTML = "";
+    const input = document.querySelector(`.lesson-lessonref-search[data-local-id="${CSS.escape(String(localId))}"]`);
+    if (input) input.value = "";
+    autosave();
+};
+
+window.selectEmbedReference = function (sectionId, localId, id) {
+    const block = findBlock(sectionId, localId);
+    const cfg = block && EMBED_PICKERS[block.type];
+    if (!cfg) return;
+    const entry = embedOptions(block.type).find((item) => item.id === String(id));
+    if (!entry) {
+        showNotification("مرجع غير متاح", `تعذّر العثور على ${cfg.noun} المختار.`, "error");
+        return;
+    }
+    pushHistorySnapshot();
+    block[cfg.field] = entry.id;
+    block.title = entry.title;
+    document.getElementById(`embedref-selected-${localId}`).innerHTML = embedRefSelectedHtml(block.type, entry, "", sectionId, localId);
+    document.getElementById(`embedref-results-${localId}`).innerHTML = "";
+    const search = document.querySelector(`.lesson-lessonref-search[data-local-id="${CSS.escape(String(localId))}"]`);
+    if (search) search.value = "";
+    autosave();
+};
+
+/** Lookups for the preview overlay, in the same shapes lesson-view.js builds. */
+function buildEmbedPreviewLookups() {
+    const coursesById = new Map(embedRows.courses.map((c) => [String(c.id), c]));
+    const notebookLookup = new Map(embedRows.notebooks.map((row) => [String(row.id), row]));
+    const courseLookup = new Map(embedRows.courses.map((row) => [String(row.id), { ...row, href: courseHref(row.name) }]));
+    const foldersById = new Map(embedRows.folders.map((f) => [String(f.id), f]));
+    const folderLookup = new Map();
+    for (const row of embedRows.folders) {
+        const entry = buildFolderEntry(row, foldersById, coursesById.get(String(row.course_id)));
+        if (entry) folderLookup.set(String(row.id), entry);
+    }
+    return { notebookLookup, courseLookup, folderLookup };
+}
+
 // ── Embedded question block — MCQ or ESSAY ───────────────────────────────────
 // Mirrors create-quiz's question editor: prompt / options / explanation are
 // `.md-source` fields (so the global bar works on them), and a question can be
@@ -3170,12 +3355,12 @@ window.convertQuestionKind = async function (sectionId, localId, kind) {
 // statically here (their choices are visible but not interactive).
 
 async function loadReaderModules() {
-    const [{ renderBlock }, view, prefs] = await Promise.all([
+    const [{ renderBlock, equipReferenceThumbs }, view, prefs] = await Promise.all([
         import("../lesson/lesson-blocks.js"),
         import("../lesson/lesson-view.js"),
         import("../lesson/lesson-reader-prefs.js"),
     ]);
-    return { renderBlock, equipReferenceCardActions: view.equipReferenceCardActions, applyReaderPrefs: prefs.applyReaderPrefs };
+    return { renderBlock, equipReferenceThumbs, equipReferenceCardActions: view.equipReferenceCardActions, applyReaderPrefs: prefs.applyReaderPrefs };
 }
 
 window.previewLesson = async function () {
@@ -3215,6 +3400,7 @@ window.previewLesson = async function () {
         lessonLookup.set(id, lesson);
     }
     const content = serializeContent();
+    const embedLookups = buildEmbedPreviewLookups();
     const questionLabels = new Map();
     const allQuestions = content.sections.flatMap((section) =>
         section.blocks.filter((block) => block?.type === "question" && block.id),
@@ -3222,7 +3408,7 @@ window.previewLesson = async function () {
     allQuestions.forEach((question, index) => {
         questionLabels.set(question.id, { index: index + 1, total: allQuestions.length });
     });
-    const ctx = { lessonId: currentPreviewId, quizLookup, lessonLookup, questionLabels };
+    const ctx = { lessonId: currentPreviewId, quizLookup, lessonLookup, ...embedLookups, questionLabels };
 
     const sectionsHtml = content.sections
         .map((section, i) => {
@@ -3262,6 +3448,7 @@ window.previewLesson = async function () {
 
     const article = overlay.querySelector(".lesson-view");
     mods.applyReaderPrefs(article, readerPrefsFromData());
+    mods.equipReferenceThumbs(article);
     mods.equipReferenceCardActions(article, { id: currentPreviewId, title: lessonData.title || "درس بدون عنوان", description: lessonData.description || "", reader_prefs_default: readerPrefsFromData(), content }, quizLookup, lessonLookup);
 
     const previewCloseButton = overlay.querySelector("#lessonPreviewClose");

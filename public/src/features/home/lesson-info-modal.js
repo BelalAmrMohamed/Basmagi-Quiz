@@ -30,6 +30,9 @@ const BLOCK_LABELS = {
     media: "وسائط",
     quizRef: "امتحان",
     "lesson-reference": "درس",
+    "notebook-reference": "دفتر",
+    "folder-reference": "مجلد",
+    "course-reference": "مادة",
     question: "سؤال",
 };
 

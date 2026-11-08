@@ -26,6 +26,13 @@ const MAX_SOURCE_LENGTH = 500;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Notebook / folder / course link-out embeds: id field + Arabic noun per type.
+const EMBED_REF_FIELDS = {
+    "notebook-reference": { field: "notebookId", noun: "الدفتر" },
+    "folder-reference": { field: "folderId", noun: "المجلد" },
+    "course-reference": { field: "courseId", noun: "المادة" },
+};
+
 const ALLOWED_SECTION_KEYS = new Set(["id", "title", "defaultHidden", "blocks"]);
 const ALLOWED_BLOCK_KEYS_BY_TYPE = {
     // `id` / `_localId` are editor bookkeeping that legitimately ride along on
@@ -35,6 +42,9 @@ const ALLOWED_BLOCK_KEYS_BY_TYPE = {
     media: new Set(["type", "url", "kind", "alt", "id", "_localId"]),
     quizRef: new Set(["type", "quizId", "title", "id", "_localId"]),
     "lesson-reference": new Set(["type", "lessonId", "title", "slug", "id", "_localId"]),
+    "notebook-reference": new Set(["type", "notebookId", "title", "id", "_localId"]),
+    "folder-reference": new Set(["type", "folderId", "title", "id", "_localId"]),
+    "course-reference": new Set(["type", "courseId", "title", "id", "_localId"]),
     question: new Set([
         "type",
         "id",
@@ -125,6 +135,18 @@ function validateBlock(block, index, sectionIds) {
         const clean = { type: "lesson-reference", lessonId };
         if (typeof block.title === "string" && block.title) clean.title = block.title.slice(0, MAX_TITLE_LENGTH);
         if (typeof block.slug === "string" && block.slug) clean.slug = block.slug.slice(0, MAX_TITLE_LENGTH);
+        return clean;
+    }
+
+    if (EMBED_REF_FIELDS[type]) {
+        const { field, noun } = EMBED_REF_FIELDS[type];
+        const refId = typeof block[field] === "string" ? block[field].trim() : "";
+        if (!refId) throw new Error(`معرف ${noun} المرتبط مفقود في العنصر رقم ${index + 1}.`);
+        if (!UUID_RE.test(refId)) {
+            throw new Error(`معرف ${noun} المرتبط يجب أن يكون UUID عند نشر الدرس (العنصر رقم ${index + 1}).`);
+        }
+        const clean = { type, [field]: refId };
+        if (typeof block.title === "string" && block.title) clean.title = block.title.slice(0, MAX_TITLE_LENGTH);
         return clean;
     }
 

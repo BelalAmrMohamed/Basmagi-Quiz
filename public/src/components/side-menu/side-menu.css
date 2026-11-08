@@ -2087,3 +2087,108 @@ html[data-motion="reduced"] body {
 [data-theme="dark-slate"] .contact-telegram:hover {
   background: rgba(44, 165, 224, 0.08);
 }
+
+/* ── Lesson section navigator (lesson-section-nav.js) ───────────────────── */
+.lesson-section-nav__heading {
+  padding: 4px 10px 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: var(--color-text-tertiary, #888);
+}
+
+.lesson-section-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 38vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.lesson-section-nav__item[hidden] {
+  display: none;
+}
+
+.lesson-section-nav__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--color-text-secondary, var(--color-text));
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: start;
+  direction: rtl;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.lesson-section-nav__link:hover {
+  background: var(--color-background-secondary, #f5f5f5);
+}
+
+.lesson-section-nav__link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.lesson-section-nav__dot {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+}
+
+.lesson-section-nav__item.is-visited .lesson-section-nav__dot {
+  background: var(--color-success, #10b981);
+  border-color: var(--color-success, #10b981);
+}
+
+.lesson-section-nav__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lesson-section-nav__time {
+  flex: none;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-tertiary, #888);
+}
+
+.lesson-section-nav__item.is-active .lesson-section-nav__link {
+  background: var(--color-primary-light, rgba(99, 102, 241, 0.12));
+  color: var(--color-primary);
+}
+
+.lesson-section-nav__item.is-active .lesson-section-nav__dot {
+  border-color: var(--color-primary);
+}
+
+/* Collapsed rail shows only the icon button; no panel. */
+.sidebar:not(.expanded) .lesson-section-nav__panel {
+  display: none;
+}
+
+/* Mobile: the sheet is always expanded and nav is the scroll owner, so let the
+   list flow instead of nesting a second scroller. */
+@media (max-width: 768px) {
+  .lesson-section-nav__list { max-height: none; overflow: visible; }
+}
+
+/* Collapsed-rail icon matches the 18px theme icon (lessonIcon svgs are unsized). */
+.lesson-section-nav .theme-section-header svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}

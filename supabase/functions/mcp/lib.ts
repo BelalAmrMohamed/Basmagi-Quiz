@@ -9,7 +9,7 @@
 
 export const SITE = "https://basmagi-quiz.vercel.app";
 
-import { LIMITS as RULE_LIMITS, NOTEBOOK_RUNTIMES, checkQuiz, checkLesson, checkNotebook, normalizeNotebookContent } from "./content-rules.js";
+import { LIMITS as RULE_LIMITS, EMBED_REF_BY_TYPE, NOTEBOOK_RUNTIMES, checkQuiz, checkLesson, checkNotebook, normalizeNotebookContent } from "./content-rules.js";
 
 // Content limits come from the shared rules (single source of truth, same as the
 // editor pages and the upload API). `draftBytes` is the only MCP-specific cap.
@@ -179,6 +179,13 @@ export function validateLesson(args: any) {
           ...(b.title ? { title: str(b.title).slice(0, 200) } : {}),
           ...(b.slug ? { slug: str(b.slug).slice(0, 200) } : {}),
         });
+      } else if (EMBED_REF_BY_TYPE[type]) {
+        const def = EMBED_REF_BY_TYPE[type];
+        blocks.push({
+          type: def.type,
+          [def.field]: str(b[def.field]),
+          ...(b.title ? { title: str(b.title).slice(0, 200) } : {}),
+        });
       } else if (type === "question") {
         questions++;
         const prompt = str(b.prompt ?? b.q);
@@ -316,7 +323,7 @@ export const AUTHORING_GUIDE: Record<string, string> = {
    - Improve/translate/extend something that already exists: clone_to_draft(type,id), then patch. Inspect originals cheaply with get_quiz / get_lesson_content format="outline".
    - Not sure the content is valid? create_*_import_link with dry_run=true validates without saving.
    - Patching only works while the link is unopened: opening it saves the item into the user's «محتواي» and deletes the draft. To change an already-opened item, create a new draft (the user can delete the old one).
-6. Check for existing content first with search_catalog to avoid duplicates, and offer to link related lessons/quizzes (quizRef / lesson-reference blocks).
+6. Check for existing content first with search_catalog to avoid duplicates, and offer to link related lessons/quizzes (quizRef / lesson-reference / notebook-reference / folder-reference / course-reference blocks).
 Language: write quiz/lesson text in the language of the source material (usually Arabic). Keep tool arguments (field names) in English.`,
 
   quiz: `# Quiz schema (create_quiz_import_link)
@@ -346,6 +353,9 @@ Block types:
 - { type:"question", questionKind:"essay", prompt, modelAnswer, explanation? }
 - { type:"quizRef", quizId, title? }               — embed an existing quiz (find ids with search_catalog)
 - { type:"lesson-reference", lessonId, title?, slug? }
+- { type:"notebook-reference", notebookId, title? } — link-out card to a published notebook (UUID from search_catalog)
+- { type:"folder-reference", folderId, title? }     — link-out card to a course folder (UUID)
+- { type:"course-reference", courseId, title? }     — link-out card to a course (UUID)
 
 Structure tips: one idea per section; a short markdown intro, the explanation, then 1–3 check-yourself questions at the end of each section; a final "ملخص / مراجعة" section; set defaultHidden:true for long optional material (e.g. worked solutions). Lessons are never scored — questions are for self-check. lesson-reference blocks need the UUID of a PUBLISHED lesson (get it from search_catalog). Math: every formula, variable, exponent, fraction, root, Greek letter or math symbol in q/options/answer/explanation/lesson bodies must be LaTeX: $...$ inline, $$...$$ display. Never plain text (x^2, sqrt(x), 1/2, x², √, ≤). Escape backslashes in JSON (\\\\frac).`,
 
@@ -439,6 +449,7 @@ export function outlineLesson(data: any): string {
         : b.type === "question" ? `${b.questionKind || "mcq"}: ${clip(b.prompt ?? b.q, 60)}`
         : b.type === "quizRef" ? `quiz ${b.quizId}`
         : b.type === "lesson-reference" || b.type === "lessonRef" ? `lesson ${b.lessonId ?? b.lessonRefId}`
+        : EMBED_REF_BY_TYPE[b.type] ? `${EMBED_REF_BY_TYPE[b.type].type.replace("-reference", "")} ${b[EMBED_REF_BY_TYPE[b.type].field]}`
         : "";
       return `   ${i + 1}.${j + 1} [${b.type}] ${label}`;
     });

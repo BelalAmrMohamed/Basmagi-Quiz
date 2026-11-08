@@ -14,6 +14,7 @@
 // docs/plans/lessons-feature-plan.md's ground rules).
 // ============================================================================
 
+import { EMBED_REF_BY_TYPE } from "../../shared/content-rules.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { hasSameLevelCollision } from "../home/user-quizzes-folders.js";
 
@@ -143,7 +144,27 @@ export function normalizeLessonReferenceBlock(block) {
       ...(block.slug ? { slug: String(block.slug).trim() } : {}),
     };
   }
+  const embed = EMBED_REF_BY_TYPE[block.type];
+  if (embed) {
+    const refId = String(block[embed.field] || "").trim();
+    if (!refId) return null;
+    return { type: embed.type, [embed.field]: refId, title: String(block.title || "").trim() };
+  }
   return null;
+}
+
+/** Ids of one embed kind ("notebook-reference" | "folder-reference" | "course-reference"). */
+export function collectEmbedReferenceIds(normalizedContent, canonicalType) {
+  const field = EMBED_REF_BY_TYPE[canonicalType]?.field;
+  const ids = new Set();
+  if (!field) return [];
+  for (const section of normalizedContent?.sections || []) {
+    for (const block of section?.blocks || []) {
+      const normalized = normalizeLessonReferenceBlock(block);
+      if (normalized?.type === canonicalType && normalized[field]) ids.add(normalized[field]);
+    }
+  }
+  return [...ids];
 }
 
 export function collectQuizReferenceIds(normalizedContent) {
@@ -161,7 +182,7 @@ export function collectLessonReferenceIds(normalizedContent) {
   for (const section of normalizedContent?.sections || []) {
     for (const block of section?.blocks || []) {
       const normalized = normalizeLessonReferenceBlock(block);
-      if (normalized?.lessonId) ids.add(normalized.lessonId);
+      if (normalized?.type === "lesson-reference" && normalized.lessonId) ids.add(normalized.lessonId);
     }
   }
   return [...ids];
@@ -300,6 +321,20 @@ export function resetQuestionAnswers(lessonId) {
   const entry = getLessonProgress(lessonId);
   entry.questions = {};
   saveLessonProgress(lessonId, entry);
+}
+
+/** Clears only the listed questions' stored answers (retry-wrong); everything else is kept. */
+export function resetQuestionAnswersByIds(lessonId, questionIds) {
+  if (!lessonId || !Array.isArray(questionIds) || !questionIds.length) return;
+  const entry = getLessonProgress(lessonId);
+  let changed = false;
+  for (const id of questionIds) {
+    if (Object.prototype.hasOwnProperty.call(entry.questions, id)) {
+      delete entry.questions[id];
+      changed = true;
+    }
+  }
+  if (changed) saveLessonProgress(lessonId, entry);
 }
 
 export function appendEssayAnswerText(lessonId, questionId, answerText) {

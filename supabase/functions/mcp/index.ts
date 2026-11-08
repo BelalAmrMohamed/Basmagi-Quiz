@@ -389,13 +389,16 @@ const TOOLS = [
                 items: {
                   type: "object",
                   properties: {
-                    type: { type: "string", enum: ["markdown", "media", "quizRef", "lesson-reference", "question"] },
+                    type: { type: "string", enum: ["markdown", "media", "quizRef", "lesson-reference", "notebook-reference", "folder-reference", "course-reference", "question"] },
                     body: { type: "string", description: "Markdown text for markdown blocks" },
                     url: { type: "string", description: "Media URL" },
                     kind: { type: "string", enum: ["image", "audio", "video"] },
                     alt: { type: "string" },
                     quizId: { type: "string" },
                     lessonId: { type: "string" },
+                    notebookId: { type: "string", description: "UUID, for notebook-reference blocks" },
+                    folderId: { type: "string", description: "UUID, for folder-reference blocks" },
+                    courseId: { type: "string", description: "UUID, for course-reference blocks" },
                     questionKind: { type: "string", enum: ["mcq", "essay"] },
                     prompt: { type: "string" },
                     options: { type: "array", items: { type: "string" } },
@@ -1333,6 +1336,12 @@ async function handleGetLessonContent(args: { lessonId: string; format?: string 
             blockLines.push(`[مرجع امتحان: id=${block.quizId}${block.title ? ` - ${block.title}` : ""}]`);
           } else if (block.type === "lesson-reference" || block.type === "lessonRef") {
             blockLines.push(`[مرجع درس: id=${block.lessonId}${block.title ? ` - ${block.title}` : ""}]`);
+          } else if (block.type === "notebook-reference" || block.type === "notebookRef") {
+            blockLines.push(`[مرجع دفتر: id=${block.notebookId}${block.title ? ` - ${block.title}` : ""}]`);
+          } else if (block.type === "folder-reference" || block.type === "folderRef") {
+            blockLines.push(`[مرجع مجلد: id=${block.folderId}${block.title ? ` - ${block.title}` : ""}]`);
+          } else if (block.type === "course-reference" || block.type === "courseRef") {
+            blockLines.push(`[مرجع مادة: id=${block.courseId}${block.title ? ` - ${block.title}` : ""}]`);
           }
         }
       } else if (typeof section.content === "string") {

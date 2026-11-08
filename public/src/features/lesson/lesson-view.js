@@ -18,16 +18,19 @@
 
 import { container } from "../home/dom-refs.js";
 import { escapeHtml } from "../home/escape-html.js";
+import { courseHref, buildFolderEntry } from "./lesson-embeds.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import {
   normalizeLessonContent,
   getLessonProgress,
   resolveRevealedSections,
   collectLessonReferenceIds,
+  collectEmbedReferenceIds,
   normalizeLessonReferenceBlock,
 } from "./lesson-schema.js";
-import { renderBlock, equipQuestionBlocks } from "./lesson-blocks.js";
+import { renderBlock, equipQuestionBlocks, equipReferenceThumbs, resetQuestionElement, renderLessonRecap, refreshLessonRecap } from "./lesson-blocks.js";
 import { renderLessonToc, equipLessonToc } from "./lesson-toc.js";
+import { equipLessonSectionNav } from "./lesson-section-nav.js";
 import {
   getReaderPrefs,
   equipReaderPrefs,
@@ -267,6 +270,69 @@ async function fetchLessonRefs(lessonIds, currentLessonId) {
 }
 
 
+/**
+ * Notebook / folder / course embeds: three parallel `.in("id", ids)` queries,
+ * then (only when folders are embedded) the involved courses and ALL their
+ * folders so each folder's path can be built in memory. Failures are
+ * non-fatal: a missing entry renders the "no longer available" card.
+ */
+async function fetchEmbedRefs(normalized) {
+  const out = { notebookLookup: new Map(), folderLookup: new Map(), courseLookup: new Map() };
+  const onlyUuids = (ids) => ids.filter((id) => UUID_RE.test(String(id)));
+  const notebookIds = onlyUuids(collectEmbedReferenceIds(normalized, "notebook-reference"));
+  const folderIds = onlyUuids(collectEmbedReferenceIds(normalized, "folder-reference"));
+  const courseIds = onlyUuids(collectEmbedReferenceIds(normalized, "course-reference"));
+  if (!notebookIds.length && !folderIds.length && !courseIds.length) return out;
+  try {
+    const supabase = await ensureSharedSupabaseClient();
+    if (!supabase) return out;
+    const query = (table, columns, ids) => ids.length
+      ? supabase.from(table).select(columns).in("id", ids)
+      : Promise.resolve({ data: [], error: null });
+    const [nbRes, courseRes, folderRes] = await withTimeout(
+      Promise.all([
+        query("notebook_public", "id, slug, title, description, runtime, course_id, folder_id, cell_count, updated_at", notebookIds),
+        query("courses", "id, name, icon, updated_at", courseIds),
+        query("folders", "id, course_id, parent_folder_id, name, icon, updated_at", folderIds),
+      ]),
+      QUIZ_REF_TIMEOUT_MS,
+      "انتهت مهلة تحميل العناصر المرتبطة.",
+    );
+    for (const row of nbRes.data || []) out.notebookLookup.set(String(row.id), row);
+    const courses = new Map();
+    for (const row of courseRes.data || []) {
+      courses.set(String(row.id), row);
+      out.courseLookup.set(String(row.id), { ...row, href: courseHref(row.name) });
+    }
+
+    const folders = folderRes.data || [];
+    if (folders.length) {
+      const involvedCourseIds = [...new Set(folders.map((f) => String(f.course_id)))];
+      const missingCourseIds = involvedCourseIds.filter((id) => !courses.has(id));
+      const [extraCourses, siblings] = await withTimeout(
+        Promise.all([
+          missingCourseIds.length
+            ? supabase.from("courses").select("id, name, icon, updated_at").in("id", missingCourseIds)
+            : Promise.resolve({ data: [] }),
+          supabase.from("folders").select("id, course_id, parent_folder_id, name").in("course_id", involvedCourseIds),
+        ]),
+        QUIZ_REF_TIMEOUT_MS,
+        "انتهت مهلة تحميل مسارات المجلدات.",
+      );
+      for (const row of extraCourses.data || []) courses.set(String(row.id), row);
+      const byId = new Map((siblings.data || []).map((f) => [String(f.id), f]));
+      for (const folder of folders) {
+        // No parent course → no valid route → left out (renders as unavailable).
+        const entry = buildFolderEntry(folder, byId, courses.get(String(folder.course_id)));
+        if (entry) out.folderLookup.set(String(folder.id), entry);
+      }
+    }
+  } catch (error) {
+    console.warn("[lesson-view] notebook/folder/course lookup unavailable:", error);
+  }
+  return out;
+}
+
 function collectQuizRefIds(normalized) {
   const ids = [];
   for (const section of normalized.sections) {
@@ -431,6 +497,7 @@ function renderSection(section, ctx, isHidden = false) {
     (section.title
       ? `<div dir="auto" class="lesson-section__header">` +
       `<h2 class="lesson-section__title">${escapeHtml(section.title)}</h2>` +
+      `<button type="button" class="lesson-anchor-btn" data-section-anchor="${escapeHtml(section.id)}" aria-label="نسخ رابط القسم" title="نسخ رابط القسم">${lessonIcon("link")}</button>` +
       renderTtsControl(escapeHtml(section.id)) +
       `<button type="button" class="lesson-bookmark-btn${isLessonSectionBookmarked(ctx.lessonId, section.id) ? " is-active" : ""}" data-bookmark-toggle="${escapeHtml(section.id)}" aria-label="حفظ القسم كعلامة مرجعية" title="حفظ القسم">${lessonIcon("bookmark")}</button>` +
       `</div>`
@@ -728,6 +795,7 @@ function openLessonAgentWithAttachment(lesson, normalized, attachment) {
 const prefsCleanupByRoot = new WeakMap();
 const panelCleanupByRoot = new WeakMap();
 const tocCleanupByRoot = new WeakMap();
+const sectionNavCleanupByRoot = new WeakMap();
 const commentsCleanupByRoot = new WeakMap();
 const keyboardCleanupByRoot = new WeakMap();
 
@@ -889,12 +957,14 @@ export async function renderLessonView() {
   prefsCleanupByRoot.get(container)?.();
   panelCleanupByRoot.get(container)?.();
   tocCleanupByRoot.get(container)?.();
+  sectionNavCleanupByRoot.get(container)?.();
   commentsCleanupByRoot.get(container)?.();
   keyboardCleanupByRoot.get(container)?.();
   teardownSelectionActions?.();
   prefsCleanupByRoot.delete(container);
   panelCleanupByRoot.delete(container);
   tocCleanupByRoot.delete(container);
+  sectionNavCleanupByRoot.delete(container);
   commentsCleanupByRoot.delete(container);
   keyboardCleanupByRoot.delete(container);
   teardownSelectionActions = null;
@@ -945,14 +1015,17 @@ export async function renderLessonView() {
   let normalized;
   let quizLookup;
   let lessonLookup;
+  let embedLookups = { notebookLookup: new Map(), folderLookup: new Map(), courseLookup: new Map() };
   try {
     normalized = normalizeLessonContent(lesson.content);
-    const [quizRefs, lessonRefs] = await Promise.all([
+    const [quizRefs, lessonRefs, embedRefs] = await Promise.all([
       fetchQuizRefs(collectQuizRefIds(normalized)),
       fetchLessonRefs(collectLessonReferenceIds(normalized), lesson.id),
+      fetchEmbedRefs(normalized),
     ]);
     quizLookup = quizRefs;
     lessonLookup = lessonRefs;
+    embedLookups = embedRefs;
     lessonEmbeds = { quizLookup, lessonLookup };
   } catch (error) {
     console.error("[lesson-view] Lesson content preparation failed:", error);
@@ -976,7 +1049,7 @@ export async function renderLessonView() {
   const hiddenSectionIds = new Set(
     normalized.sections.filter((s) => s.defaultHidden && !initialRevealed.has(s.id)).map((s) => s.id),
   );
-  const ctx = { lessonId: lesson.id, quizLookup, lessonLookup, questionLabels };
+  const ctx = { lessonId: lesson.id, quizLookup, lessonLookup, ...embedLookups, questionLabels };
 
   const lessonHref = `/lesson/${encodeURIComponent(lesson.slug || lesson.id)}`;
   // The side table of contents is intentionally not rendered (the reader layout is
@@ -1014,6 +1087,7 @@ export async function renderLessonView() {
     `<main class="lesson-view__main">` +
     `<div class="lesson-view__body">` +
     normalized.sections.map((section) => renderSection(section, ctx, hiddenSectionIds.has(section.id))).join("") +
+    (allQuestions.length ? renderLessonRecap() : "") +
     `</div>` +
     `<div id="lesson-ai-quiz-slot">${renderLessonQuiz()}</div>` +
     (isUserCreated ? "" : renderLessonComments()) +
@@ -1070,12 +1144,36 @@ export async function renderLessonView() {
     }
   };
 
+  // Recap card (answered / correct / wrong list) — local only, reads stored progress.
+  const refreshRecap = () => {
+    const revealed = resolveRevealedSections(normalized, getLessonProgress(lesson.id));
+    const questions = normalized.sections
+      .filter((section) => !section.defaultHidden || revealed.has(section.id))
+      .flatMap((section) => section.blocks.filter((block) => block?.type === "question" && block.id))
+      .map((block) => ({
+        id: block.id,
+        number: questionLabels.get(block.id)?.index || 0,
+        label: String(block.prompt || "").replace(/[#*_`$>\[\]\\]/g, "").replace(/\s+/g, " ").trim().slice(0, 80) || "سؤال",
+      }));
+    refreshLessonRecap(container, lesson.id, questions);
+  };
+
   const handleQuestionAnswered = () => {
     const currentProgress = getLessonProgress(lesson.id);
     const revealed = resolveRevealedSections(normalized, currentProgress);
 
     let newlyRevealed = false;
     normalized.sections.forEach((section) => {
+      if (section.defaultHidden && !revealed.has(section.id)) {
+        // Answers were cleared (reset / retry-wrong): re-hide what they had revealed.
+        const secEl = container.querySelector(`#lesson-section-${CSS.escape(section.id)}`);
+        if (secEl && !secEl.hidden) {
+          secEl.hidden = true;
+          secEl.setAttribute("aria-hidden", "true");
+          secEl.classList.remove("animate-reveal");
+          newlyRevealed = true;
+        }
+      }
       if (section.defaultHidden && revealed.has(section.id)) {
         const secEl = container.querySelector(`#lesson-section-${CSS.escape(section.id)}`);
         if (secEl && secEl.hidden) {
@@ -1105,30 +1203,11 @@ export async function renderLessonView() {
         if (countLabel) countLabel.textContent = strings.sectionsCount(visibleCount);
       }
     }
+    refreshRecap();
   };
 
   const handleResetQuestions = () => {
-    container.querySelectorAll(".lesson-question").forEach((qEl) => {
-      qEl.dataset.answered = "false";
-      qEl.querySelectorAll(".lesson-question__option").forEach((btn) => {
-        btn.classList.remove("is-selected", "is-correct", "is-wrong");
-        btn.disabled = false;
-        btn.setAttribute("aria-pressed", "false");
-      });
-      const checkBtn = qEl.querySelector("[data-question-check]");
-      if (checkBtn) checkBtn.disabled = true;
-
-      const textarea = qEl.querySelector(".lesson-question__essay-input");
-      if (textarea) {
-        textarea.value = "";
-        textarea.disabled = false;
-      }
-      const essayCheck = qEl.querySelector(".lesson-question__essay-check-btn");
-      if (essayCheck) essayCheck.disabled = true;
-
-      const feedback = qEl.querySelector(".lesson-question__feedback");
-      if (feedback) feedback.hidden = true;
-    });
+    container.querySelectorAll(".lesson-question").forEach(resetQuestionElement);
 
     normalized.sections.forEach((section) => {
       if (section.defaultHidden) {
@@ -1157,6 +1236,7 @@ export async function renderLessonView() {
       const countLabel = container.querySelector("[data-section-count-label]");
       if (countLabel) countLabel.textContent = strings.sectionsCount(visibleCount);
     }
+    refreshRecap();
   };
 
   lessonEl.querySelector(".lesson-view__info-btn")?.addEventListener("click", () => {
@@ -1181,6 +1261,8 @@ export async function renderLessonView() {
   equipReferenceCardActions(lessonEl, lesson, quizLookup, lessonLookup, {
     onAsk: (attachment) => openLessonAgentWithAttachment(lesson, normalized, attachment),
   });
+  equipReferenceThumbs(lessonEl);
+  refreshRecap();
   equipPrefs(container, lessonEl, lesson.reader_prefs_default);
   equipQuestionBlocks(container, lesson.id, handleQuestionAnswered, (details) => {
     const contentBlock = details.kind === "mcq"
@@ -1200,6 +1282,8 @@ export async function renderLessonView() {
 
   tocCleanupByRoot.get(container)?.();
   tocCleanupByRoot.set(container, equipLessonToc(container, lesson.id) || (() => { }));
+  sectionNavCleanupByRoot.get(container)?.();
+  sectionNavCleanupByRoot.set(container, equipLessonSectionNav(container, lesson, normalized) || (() => { }));
   equipTts(container);
   equipLessonQuiz(container, rerenderQuizSlot);
   equipLessonBookmarks(container, lesson.id, handleBookmarksChange);

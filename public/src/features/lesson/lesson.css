@@ -4164,3 +4164,364 @@
 .lesson-question__feedback {
   animation: lessonSectionReveal 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ── Quiz-grade embedded questions (plan step 2) ─────────────────────────────
+   Mirrors quiz.css option rows / feedback / formal-answer. State is carried by
+   classes + data attributes set in lesson-blocks.js; nothing re-renders. */
+.lesson-view .lesson-question__option {
+  border-width: 2px;
+  border-radius: 12px;
+  padding: .9rem 1.1rem;
+}
+
+.lesson-view .lesson-question__option:not(:disabled):hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, .12);
+}
+
+.lesson-view .lesson-question__option.is-selected:not(.is-correct):not(.is-wrong) {
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, .12);
+}
+
+.lesson-view .lesson-question__option:disabled {
+  opacity: .92;
+  cursor: default;
+}
+
+.lesson-view .lesson-question__option.is-correct {
+  background: var(--color-success-light);
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, .12);
+}
+
+.lesson-view .lesson-question__option.is-correct .lesson-question__option-marker {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.lesson-view .lesson-question__option.is-wrong {
+  background: var(--color-error-light);
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, .12);
+}
+
+.lesson-view .lesson-question__option.is-wrong .lesson-question__option-marker {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: #fff;
+}
+
+/* Correct option the reader missed in a multi-select question. */
+.lesson-view .lesson-question__option.is-missed {
+  border-style: dashed;
+  border-color: var(--color-success);
+  background: transparent;
+}
+
+.lesson-view .lesson-question__option.is-missed .lesson-question__option-marker {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+[data-theme="dark"] .lesson-view .lesson-question__option.is-correct,
+[data-theme="dark-slate"] .lesson-view .lesson-question__option.is-correct {
+  background: rgba(16, 185, 129, .16);
+}
+
+[data-theme="dark"] .lesson-view .lesson-question__option.is-wrong,
+[data-theme="dark-slate"] .lesson-view .lesson-question__option.is-wrong {
+  background: rgba(239, 68, 68, .16);
+}
+
+/* Feedback card: verdict banner coloured by the question's result. */
+.lesson-view .lesson-question__feedback {
+  padding: 0;
+  overflow: hidden;
+  gap: 0;
+  animation: lessonFeedbackFade .25s ease both;
+}
+
+.lesson-view .lesson-question__feedback > :not(.lesson-question__verdict) {
+  margin: 0;
+  padding: .85rem 1.1rem;
+}
+
+.lesson-view .lesson-question__feedback > .lesson-question__verdict + * {
+  padding-top: 1rem;
+}
+
+.lesson-question__verdict {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .75rem 1.1rem;
+  background: var(--color-background-secondary, var(--color-surface));
+  font-weight: 800;
+}
+
+.lesson-question__verdict.is-correct {
+  background: var(--color-success-light);
+  color: #065f46;
+}
+
+.lesson-question__verdict.is-wrong {
+  background: var(--color-error-light);
+  color: #991b1b;
+}
+
+[data-theme="dark"] .lesson-question__verdict.is-correct,
+[data-theme="dark-slate"] .lesson-question__verdict.is-correct {
+  background: rgba(16, 185, 129, .18);
+  color: #6ee7b7;
+}
+
+[data-theme="dark"] .lesson-question__verdict.is-wrong,
+[data-theme="dark-slate"] .lesson-question__verdict.is-wrong {
+  background: rgba(239, 68, 68, .18);
+  color: #fca5a5;
+}
+
+.lesson-question__verdict-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 1.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: currentColor;
+  font-size: .8rem;
+  line-height: 1;
+}
+
+.lesson-question__verdict.is-correct .lesson-question__verdict-icon { background: var(--color-success); color: #fff; }
+.lesson-question__verdict.is-wrong .lesson-question__verdict-icon { background: var(--color-error); color: #fff; }
+
+.lesson-question__answer-label,
+.lesson-question__explanation-label {
+  display: block;
+  margin-bottom: .3rem;
+  color: var(--color-text-secondary);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+
+.lesson-view .lesson-question__explanation {
+  border-top: 1px solid var(--color-border);
+}
+
+/* Essay: locked textarea, score badge, model answer in formal-answer style. */
+.lesson-question[data-answered="true"] .lesson-question__essay-input {
+  cursor: not-allowed;
+  opacity: .8;
+}
+
+.lesson-question__essay-rating {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+}
+
+.lesson-question__score-badge {
+  padding: .15rem .65rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: .85rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.lesson-question__stars {
+  color: #f59e0b;
+  letter-spacing: .1em;
+}
+
+.lesson-view .lesson-question__model-answer {
+  margin: .25rem 1.1rem 1rem;
+  padding: 1rem 1.2rem;
+  border: 0;
+  border-inline-start: 5px solid #0ea5e9;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+  color: #0c4a6e;
+}
+
+[data-theme="dark"] .lesson-view .lesson-question__model-answer,
+[data-theme="dark-slate"] .lesson-view .lesson-question__model-answer {
+  background: linear-gradient(135deg, rgba(14, 165, 233, .2) 0%, rgba(14, 165, 233, .1) 100%);
+  color: var(--color-text-primary);
+}
+
+@keyframes lessonFeedbackFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+html[data-motion="reduced"] .lesson-view .lesson-question__feedback {
+  animation: none;
+}
+
+/* ── Heading anchor (copy deep link) — plan step 3 ── */
+.lesson-anchor-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  padding: .35rem;
+  border: 1px solid transparent;
+  border-radius: .65rem;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s ease, background-color .15s ease;
+}
+
+.lesson-anchor-btn .lesson-icon {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+}
+
+.lesson-section__header:hover .lesson-anchor-btn,
+.lesson-anchor-btn:focus-visible,
+.lesson-anchor-btn.is-copied {
+  opacity: 1;
+}
+
+.lesson-anchor-btn:hover { background: var(--color-background-secondary, rgba(0, 0, 0, .05)); }
+.lesson-anchor-btn.is-copied { color: var(--color-success); }
+
+@media (hover: none) {
+  .lesson-anchor-btn { opacity: .7; }
+}
+
+/* ── Reference card thumbnails (plan step 4) ─────────────────────────────── */
+.lesson-ref-card__thumb {
+  position: relative;
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-primary-light), color-mix(in srgb, var(--color-primary) 22%, var(--color-surface)));
+}
+
+.lesson-ref-card--lesson .lesson-ref-card__thumb {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-success) 16%, var(--color-surface)), color-mix(in srgb, var(--color-success) 32%, var(--color-surface)));
+}
+
+.lesson-ref-card__thumb-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  color: var(--color-primary);
+}
+
+.lesson-ref-card--lesson .lesson-ref-card__thumb-fallback { color: var(--color-success); }
+
+.lesson-ref-card__thumb-fallback .lesson-icon { width: 2.2rem; height: 2.2rem; opacity: .75; }
+
+.lesson-ref-card__thumb-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (min-width: 640px) {
+  .lesson-ref-card--has-thumb {
+    grid-template-columns: 180px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .lesson-ref-card--has-thumb .lesson-ref-card__thumb {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: stretch;
+    aspect-ratio: auto;
+    min-height: 101px;
+  }
+
+  .lesson-ref-card--has-thumb .lesson-ref-card__main,
+  .lesson-ref-card--has-thumb .lesson-ref-card__actions {
+    grid-column: 2;
+  }
+
+  .lesson-ref-card--has-thumb .lesson-ref-card__actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 760px) {
+  .lesson-ref-card--has-thumb .lesson-ref-card__actions { width: auto; }
+}
+
+/* Link-out embeds (notebook / folder / course): anchors styled like the action buttons. */
+a.lesson-ref-card__action {
+  text-decoration: none;
+}
+
+.lesson-ref-card__action[aria-disabled="true"] {
+  opacity: .5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Recap card (plan step 8) ── */
+.lesson-recap {
+  margin-top: 2rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.lesson-recap[hidden] { display: none; }
+
+.lesson-recap__title { margin: 0 0 .75rem; font-size: 1.1rem; font-weight: 800; }
+
+.lesson-recap__stats { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; font-weight: 700; }
+.lesson-recap__stat--correct { color: var(--color-success); }
+
+.lesson-recap__bar {
+  height: 8px;
+  margin: .75rem 0;
+  border-radius: 999px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.lesson-recap__bar > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--color-primary);
+  transition: width .25s ease;
+}
+
+.lesson-recap__wrong-title { margin: .75rem 0 .35rem; font-size: .85rem; font-weight: 800; color: var(--color-text-secondary); }
+.lesson-recap__wrong { margin: 0 0 .75rem; padding-inline-start: 1.1rem; }
+.lesson-recap__wrong a { color: var(--color-error); text-decoration: none; }
+.lesson-recap__wrong a:hover { text-decoration: underline; }
+
+.lesson-recap__retry {
+  padding: .55rem 1rem;
+  border: 2px solid var(--color-primary);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.lesson-recap__retry:hover { background: var(--color-primary-light); }
+html[data-motion="reduced"] .lesson-recap__bar > span { transition: none; }

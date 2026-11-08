@@ -70,6 +70,9 @@ const lessonBad = {
   "source not a link": { title: "t", source: "some note", sections: [{ title: "s", blocks: [{ type: "markdown", body: "x" }] }] },
   "essay without model answer": { title: "t", sections: [{ title: "s", blocks: [{ type: "question", questionKind: "essay", prompt: "p" }] }] },
   "lesson-reference not uuid": { title: "t", sections: [{ title: "s", blocks: [{ type: "lesson-reference", lessonId: "local-1" }] }] },
+  "notebook-reference not uuid": { title: "t", sections: [{ title: "s", blocks: [{ type: "notebook-reference", notebookId: "nb-1" }] }] },
+  "folder-reference missing id": { title: "t", sections: [{ title: "s", blocks: [{ type: "folder-reference" }] }] },
+  "course-reference not uuid": { title: "t", sections: [{ title: "s", blocks: [{ type: "courseRef", courseId: "c" }] }] },
 };
 
 test("lesson: shared + MCP reject the same fixtures", () => {
@@ -92,4 +95,28 @@ test("lesson: valid lesson passes shared + MCP", () => {
   const input = { title: "t", description: "d", sections: [{ title: "s", blocks: [{ type: "markdown", body: "نص $x^2$" }] }] };
   assert.equal(checkLesson(input, { publish: true }).errors.length, 0);
   assert.equal(validateLesson(input).ok, true);
+});
+
+const UUID_A = "11111111-1111-4111-8111-111111111111";
+
+test("lesson: notebook/folder/course references (kebab + aliases) pass shared + MCP + upload validators", () => {
+  const input = {
+    title: "t", description: "d",
+    sections: [{ title: "s", blocks: [
+      { type: "notebook-reference", notebookId: UUID_A },
+      { type: "folderRef", folderId: UUID_A },
+      { type: "courseRef", courseId: UUID_A },
+    ] }],
+  };
+  assert.equal(checkLesson(input, { publish: true }).errors.length, 0);
+  assert.equal(validateLesson(input).ok, true);
+  // MCP normalizes aliases to the kebab type.
+  assert.deepEqual(validateLesson(input).data.sections[0].blocks.map((b) => b.type), ["notebook-reference", "folder-reference", "course-reference"]);
+  const content = { sections: [{ id: "s1", title: "s", blocks: [
+    { type: "notebook-reference", notebookId: UUID_A },
+    { type: "folder-reference", folderId: UUID_A },
+    { type: "course-reference", courseId: UUID_A },
+  ] }] };
+  assert.doesNotThrow(() => validateLessonContent(content));
+  assert.throws(() => validateLessonContent({ sections: [{ id: "s1", title: "s", blocks: [{ type: "folder-reference", folderId: "x" }] }] }), /UUID/);
 });

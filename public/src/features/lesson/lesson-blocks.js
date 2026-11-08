@@ -13,10 +13,11 @@
 
 import { renderMarkdown, renderInlineMediaTag } from "../../shared/markdown.js";
 import { escapeHtml } from "../home/escape-html.js";
-import { recordQuestionAnswer, appendEssayAnswerText, resetLessonQuestionAnswers, getLessonProgress } from "./lesson-schema.js";
+import { recordQuestionAnswer, appendEssayAnswerText, resetLessonQuestionAnswers, resetQuestionAnswersByIds, getLessonProgress } from "./lesson-schema.js";
 import { _confirm } from "../../components/notifications/notifications.js";
 import { gradeEssay, isAnswerCorrect } from "../../shared/rate-answers.js";
 import { lessonIcon } from "./lesson-icons.js";
+import { ogThumbUrl } from "../../shared/og-thumb.js";
 
 const questionRootCleanup = new WeakMap();
 
@@ -41,6 +42,15 @@ export function renderBlock(block, ctx) {
     case "lesson-reference":
     case "lessonRef":
       return renderLessonReferenceBlock(block, ctx);
+    case "notebook-reference":
+    case "notebookRef":
+      return renderNotebookReferenceBlock(block, ctx);
+    case "folder-reference":
+    case "folderRef":
+      return renderFolderReferenceBlock(block, ctx);
+    case "course-reference":
+    case "courseRef":
+      return renderCourseReferenceBlock(block, ctx);
     case "question":
       return renderQuestionBlock(block, ctx);
     default:
@@ -82,17 +92,61 @@ function referenceActionButton(kind, action, id, title, label, icon, disabled = 
   return `<button type="button" class="lesson-ref-card__action lesson-ref-card__action--${action}" data-reference-kind="${kind}" data-reference-action="${action}" data-reference-id="${escapeHtml(id)}" data-reference-title="${escapeHtml(title)}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"${disabled ? " disabled aria-disabled=\"true\"" : ""}>${lessonIcon(icon)}<span>${escapeHtml(label)}</span></button>`;
 }
 
-function renderReferenceCard({ kind, id, title, description, countLabel, available, protectedContent }) {
-  const labels = kind === "quiz"
-    ? { start: "ابدأ الامتحان", open: "ابدأ الامتحان" }
-    : { start: "فتح الدرس", open: "فتح الدرس" };
-  const bodyTitle = title || (kind === "quiz" ? "امتحان غير متاح" : "درس غير متاح");
+/**
+ * Thumbnail slot: a gradient placeholder with the kind icon is ALWAYS
+ * rendered; the <img> (server-rendered /api/og picture) sits on top of it and
+ * is removed on error (see equipReferenceThumbs), revealing the placeholder.
+ * `thumbUrl` is null for protected/unavailable/unpublished items, so those
+ * never trigger a request that could leak a title or show a broken image.
+ */
+function renderReferenceThumb(kind, thumbUrl, protectedContent) {
+  const icon = (REF_KIND_META[kind] || REF_KIND_META.lesson).icon;
   return (
-    `<article class="lesson-ref-card lesson-ref-card--${kind}${available ? "" : " is-unavailable"}" data-reference-card data-reference-kind="${kind}">` +
+    `<div class="lesson-ref-card__thumb" aria-hidden="true">` +
+    `<span class="lesson-ref-card__thumb-fallback">${lessonIcon(icon)}${protectedContent ? lessonIcon("lock", "lesson-ref-card__thumb-lock") : ""}</span>` +
+    (thumbUrl ? `<img class="lesson-ref-card__thumb-img" src="${escapeHtml(thumbUrl)}" alt="" loading="lazy" decoding="async" width="1200" height="630">` : "") +
+    `</div>`
+  );
+}
+
+/** Removes thumbnails that fail to load so the placeholder underneath shows. */
+export function equipReferenceThumbs(root) {
+  if (!root) return;
+  const drop = (img) => img.remove();
+  root.querySelectorAll(".lesson-ref-card__thumb-img").forEach((img) => {
+    if (img.complete && img.naturalWidth === 0 && img.getAttribute("src")) drop(img);
+  });
+  // `error` does not bubble, but it can be captured at the root.
+  root.addEventListener("error", (event) => {
+    const img = event.target;
+    if (img instanceof HTMLImageElement && img.classList.contains("lesson-ref-card__thumb-img")) drop(img);
+  }, true);
+}
+
+const REF_KIND_META = {
+  quiz: { label: "امتحان", icon: "exam", missing: "امتحان غير متاح", start: "ابدأ الامتحان" },
+  lesson: { label: "درس", icon: "book", missing: "درس غير متاح", start: "فتح الدرس" },
+  notebook: { label: "دفتر", icon: "notebook", missing: "دفتر غير متاح", start: "فتح الدفتر" },
+  folder: { label: "مجلد", icon: "folder", missing: "مجلد غير متاح", start: "فتح المجلد" },
+  course: { label: "مادة", icon: "course", missing: "مادة غير متاحة", start: "فتح المادة" },
+};
+
+/**
+ * Shared card for every embed kind. quiz/lesson cards get the full action row
+ * (start/download/info/ask, wired by equipReferenceCardActions); notebook /
+ * folder / course cards are pure link-outs (`href`) — nothing runs inline.
+ */
+function renderReferenceCard({ kind, id, title, description, countLabel, available, protectedContent, thumbUrl = null, href = null }) {
+  const meta = REF_KIND_META[kind] || REF_KIND_META.lesson;
+  const linkOut = kind !== "quiz" && kind !== "lesson";
+  const bodyTitle = title || meta.missing;
+  return (
+    `<article class="lesson-ref-card lesson-ref-card--${kind} lesson-ref-card--has-thumb${available ? "" : " is-unavailable"}" data-reference-card data-reference-kind="${kind}">` +
+    renderReferenceThumb(kind, available && !protectedContent ? thumbUrl : null, protectedContent) +
     `<div class="lesson-ref-card__main">` +
-    `<div class="lesson-ref-card__icon" aria-hidden="true">${lessonIcon(kind === "quiz" ? "exam" : "book")}</div>` +
+    `<div class="lesson-ref-card__icon" aria-hidden="true">${lessonIcon(meta.icon)}</div>` +
     `<div class="lesson-ref-card__copy">` +
-    `<span class="lesson-ref-card__label">${kind === "quiz" ? "امتحان" : "درس"}</span>` +
+    `<span class="lesson-ref-card__label">${meta.label}</span>` +
     `<h3 class="lesson-ref-card__title">${escapeHtml(bodyTitle)}</h3>` +
     (description ? `<p class="lesson-ref-card__description">${escapeHtml(description)}</p>` : "") +
     (countLabel ? `<span class="lesson-ref-card__count">${escapeHtml(countLabel)}</span>` : "") +
@@ -100,10 +154,14 @@ function renderReferenceCard({ kind, id, title, description, countLabel, availab
     (protectedContent ? `<span class="lesson-ref-card__protected">${lessonIcon("lock")} محمي بكلمة مرور</span>` : "") +
     `</div></div>` +
     `<div class="lesson-ref-card__actions" role="group" aria-label="إجراءات العنصر المرتبط">` +
-    referenceActionButton(kind, "start", id, bodyTitle, labels.start, kind === "quiz" ? "play" : "book", !available) +
-    referenceActionButton(kind, "download", id, bodyTitle, "تنزيل", "download", !available) +
-    referenceActionButton(kind, "info", id, bodyTitle, "معلومات", "info", false) +
-    referenceActionButton(kind, "ask", id, bodyTitle, "اسأل الباشـمبصمج", "sparkle", !available) +
+    (linkOut
+      ? (available && href
+        ? `<a class="lesson-ref-card__action lesson-ref-card__action--start" href="${escapeHtml(href)}">${lessonIcon(meta.icon)}<span>${escapeHtml(meta.start)}</span></a>`
+        : `<span class="lesson-ref-card__action lesson-ref-card__action--start" aria-disabled="true">${lessonIcon(meta.icon)}<span>${escapeHtml(meta.start)}</span></span>`)
+      : referenceActionButton(kind, "start", id, bodyTitle, meta.start, kind === "quiz" ? "play" : "book", !available) +
+        referenceActionButton(kind, "download", id, bodyTitle, "تنزيل", "download", !available) +
+        referenceActionButton(kind, "info", id, bodyTitle, "معلومات", "info", false) +
+        referenceActionButton(kind, "ask", id, bodyTitle, "اسأل الباشـمبصمج", "sparkle", !available)) +
     `</div></article>`
   );
 }
@@ -114,7 +172,12 @@ function renderQuizRefBlock(block, ctx) {
   const quiz = ctx?.quizLookup?.get(quizId) || null;
   const title = quiz?.title || block.title || "امتحان";
   const count = typeof quiz?.questionCount === "number" ? `${quiz.questionCount} سؤال` : "";
-  return renderReferenceCard({ kind: "quiz", id: quizId, title, description: quiz?.description || "", countLabel: count, available: Boolean(quiz), protectedContent: Boolean(quiz?.passwordProtected) });
+  const quizCode = String(quiz?.meta?.id || quiz?.id || "");
+  // Only published platform quizzes (8-char public code) have a rendered thumbnail.
+  const thumbUrl = quiz && quiz.source === "platform" && /^[A-Za-z0-9]{8}$/.test(quizCode)
+    ? ogThumbUrl("quiz", { id: quizCode, updatedAt: quiz.meta?.updatedAt || quiz.meta?.createdAt || null })
+    : null;
+  return renderReferenceCard({ kind: "quiz", id: quizId, title, description: quiz?.description || "", countLabel: count, available: Boolean(quiz), protectedContent: Boolean(quiz?.passwordProtected), thumbUrl });
 }
 
 function renderLessonReferenceBlock(block, ctx) {
@@ -133,6 +196,63 @@ function renderLessonReferenceBlock(block, ctx) {
     countLabel: Number.isFinite(Number(target?.section_count)) ? `${Number(target.section_count)} أقسام` : "",
     available: Boolean(target),
     protectedContent: Boolean(target?.password_protected || target?.passwordProtected),
+    // Local (localStorage) lessons have no published id/slug: placeholder only.
+    thumbUrl: target && !target.localRow ? ogThumbUrl("lesson", { id: target.slug || target.id, updatedAt: target.updated_at }) : null,
+  });
+}
+
+function invalidEmbedCard(kind, text) {
+  return `<div class="lesson-ref-card lesson-ref-card--${kind} is-unavailable"><div class="lesson-ref-card__unavailable">${text}</div></div>`;
+}
+
+function renderNotebookReferenceBlock(block, ctx) {
+  const id = String(block.notebookId || "").trim();
+  if (!id) return invalidEmbedCard("notebook", "مرجع الدفتر غير صالح.");
+  const nb = ctx?.notebookLookup?.get(id) || null;
+  return renderReferenceCard({
+    kind: "notebook",
+    id,
+    title: nb?.title || block.title || "دفتر",
+    description: nb?.description || "",
+    countLabel: Number.isFinite(Number(nb?.cell_count)) ? `${Number(nb.cell_count)} خلية` : "",
+    available: Boolean(nb),
+    protectedContent: false,
+    href: nb ? `/notebook/${encodeURIComponent(nb.slug || nb.id)}` : null,
+    thumbUrl: nb ? ogThumbUrl("notebook", { id: nb.slug || nb.id, updatedAt: nb.updated_at }) : null,
+  });
+}
+
+function renderCourseReferenceBlock(block, ctx) {
+  const id = String(block.courseId || "").trim();
+  if (!id) return invalidEmbedCard("course", "مرجع المادة غير صالح.");
+  const course = ctx?.courseLookup?.get(id) || null;
+  return renderReferenceCard({
+    kind: "course",
+    id,
+    title: course?.name || block.title || "مادة",
+    description: "",
+    countLabel: "",
+    available: Boolean(course),
+    protectedContent: false,
+    href: course?.href || null,
+    thumbUrl: course ? ogThumbUrl("course", { id: course.id, updatedAt: course.updated_at }) : null,
+  });
+}
+
+function renderFolderReferenceBlock(block, ctx) {
+  const id = String(block.folderId || "").trim();
+  if (!id) return invalidEmbedCard("folder", "مرجع المجلد غير صالح.");
+  const folder = ctx?.folderLookup?.get(id) || null;
+  return renderReferenceCard({
+    kind: "folder",
+    id,
+    title: folder?.name || block.title || "مجلد",
+    description: folder?.pathLabel || "",
+    countLabel: "",
+    available: Boolean(folder),
+    protectedContent: false,
+    href: folder?.href || null,
+    thumbUrl: folder ? ogThumbUrl("folder", { id: folder.course_id, folderPath: folder.path, updatedAt: folder.updated_at }) : null,
   });
 }
 
@@ -203,6 +323,7 @@ function renderMcqQuestionBody(block, questionId, options, prior, header) {
   return (
     `<article class="lesson-block lesson-block--question lesson-question" ` +
     `data-question-kind="mcq" ` +
+    `id="lesson-question-${escapeHtml(questionId)}" ` +
     `data-question-id="${escapeHtml(questionId)}" ` +
     `data-correct-indexes="${escapeHtml(JSON.stringify(correctIndexes))}" ` +
     `data-multi-select="${multiSelect}"` +
@@ -213,10 +334,10 @@ function renderMcqQuestionBody(block, questionId, options, prior, header) {
     `<div class="lesson-question__options" role="group" aria-label="خيارات الإجابة">${optionsHtml}</div>` +
     `<button type="button" class="lesson-question__check-btn" data-question-check disabled>${multiSelect ? "تحقق من الإجابات" : "تحقق من الإجابة"}</button>` +
     `<div class="lesson-question__feedback" role="status" aria-live="polite" hidden>` +
-    `<span class="lesson-question__verdict"></span>` +
-    `<div class="lesson-question__correct-answer"><strong>الإجابة الصحيحة:</strong> ${correctAnswers.map((answer) => renderMarkdown(String(answer))).join("، ")}</div>` +
+    `<div class="lesson-question__verdict"><span class="lesson-question__verdict-icon" aria-hidden="true"></span><span class="lesson-question__verdict-text"></span></div>` +
+    `<div class="lesson-question__correct-answer"><span class="lesson-question__answer-label">${correctAnswers.length > 1 ? "الإجابات الصحيحة" : "الإجابة الصحيحة"}</span><div class="lesson-question__answer-body md-content">${correctAnswers.map((answer) => renderMarkdown(String(answer))).join("")}</div></div>` +
     (block.explanation
-      ? `<div class="lesson-question__explanation md-content">${renderMarkdown(block.explanation)}</div>`
+      ? `<div class="lesson-question__explanation"><div class="lesson-question__explanation-label">الشرح</div><div class="md-content">${renderMarkdown(block.explanation)}</div></div>`
       : "") +
     `</div>` +
     `</article>`
@@ -236,6 +357,7 @@ function renderEssayQuestionBody(block, questionId, prior, header) {
   return (
     `<article class="lesson-block lesson-block--question lesson-question" ` +
     `data-question-kind="essay" ` +
+    `id="lesson-question-${escapeHtml(questionId)}" ` +
     `data-question-id="${escapeHtml(questionId)}" ` +
     `data-model-answer="${escapeHtml(block.modelAnswer || "")}"` +
     (prior?.answered ? ` data-answered="true"` : "") +
@@ -247,11 +369,11 @@ function renderEssayQuestionBody(block, questionId, prior, header) {
     `<button type="button" class="lesson-question__essay-check-btn" ${prior?.answered || !priorAnswer.trim() ? "disabled" : ""}>تحقق من الإجابة</button>` +
     `</div>` +
     `<div class="lesson-question__feedback" role="status" aria-live="polite" hidden>` +
-    `<span class="lesson-question__verdict"></span>` +
-    `<div class="lesson-question__essay-rating" aria-label="التقييم التقريبي من خمسة"></div>` +
-    `<div class="lesson-question__model-answer md-content"><strong>الإجابة النموذجية:</strong> ${renderMarkdown(block.modelAnswer || "")}</div>` +
+    `<div class="lesson-question__verdict"><span class="lesson-question__verdict-icon" aria-hidden="true"></span><span class="lesson-question__verdict-text"></span></div>` +
+    `<div class="lesson-question__essay-rating" aria-label="التقييم التقريبي من خمسة"><span class="lesson-question__score-badge"></span><span class="lesson-question__stars" aria-hidden="true"></span></div>` +
+    `<div class="lesson-question__model-answer"><span class="lesson-question__answer-label">الإجابة النموذجية</span><div class="lesson-question__answer-body md-content">${renderMarkdown(block.modelAnswer || "")}</div></div>` +
     (block.explanation
-      ? `<div class="lesson-question__explanation md-content">${renderMarkdown(block.explanation)}</div>`
+      ? `<div class="lesson-question__explanation"><div class="lesson-question__explanation-label">الشرح</div><div class="md-content">${renderMarkdown(block.explanation)}</div></div>`
       : "") +
     `</div>` +
     `</article>`
@@ -289,6 +411,31 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
       } finally {
         resetAll.disabled = false;
       }
+      return;
+    }
+    const jump = e.target.closest("[data-recap-jump]");
+    if (jump) {
+      e.preventDefault();
+      const target = root.querySelector(`.lesson-question[data-question-id="${CSS.escape(jump.dataset.recapJump)}"]`);
+      target?.scrollIntoView({ behavior: document.documentElement.dataset.motion === "reduced" ? "auto" : "smooth", block: "center" });
+      return;
+    }
+    const retryWrong = e.target.closest("[data-retry-wrong]");
+    if (retryWrong) {
+      if (retryWrong.disabled) return;
+      let ids = [];
+      try { ids = JSON.parse(retryWrong.closest("[data-lesson-recap]")?.dataset.wrongIds || "[]"); } catch { ids = []; }
+      if (!ids.length) return;
+      // Clears ONLY the wrong questions' stored answers, resets just their DOM,
+      // then follows the same refresh path as reset-all (onAnswered).
+      resetQuestionAnswersByIds(lessonId, ids);
+      ids.forEach((id) => {
+        const qEl = root.querySelector(`.lesson-question[data-question-id="${CSS.escape(id)}"]`);
+        if (qEl) resetQuestionElement(qEl);
+      });
+      onAnswered?.();
+      root.querySelector(`.lesson-question[data-question-id="${CSS.escape(ids[0])}"]`)
+        ?.scrollIntoView({ behavior: document.documentElement.dataset.motion === "reduced" ? "auto" : "smooth", block: "center" });
       return;
     }
     const btn = e.target.closest("[data-explain-wrong]");
@@ -397,6 +544,91 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
   });
 }
 
+/** Returns one embedded question's DOM to its unanswered state (no storage writes). */
+export function resetQuestionElement(qEl) {
+  qEl.dataset.answered = "false";
+  delete qEl.dataset.result;
+  qEl.querySelectorAll(".lesson-question__option").forEach((btn) => {
+    btn.classList.remove("is-selected", "is-correct", "is-wrong", "is-missed");
+    btn.disabled = false;
+    btn.setAttribute("aria-pressed", "false");
+  });
+  const checkBtn = qEl.querySelector("[data-question-check]");
+  if (checkBtn) checkBtn.disabled = true;
+
+  const textarea = qEl.querySelector(".lesson-question__essay-input");
+  if (textarea) {
+    textarea.value = "";
+    textarea.disabled = false;
+  }
+  const essayCheck = qEl.querySelector(".lesson-question__essay-check-btn");
+  if (essayCheck) essayCheck.disabled = true;
+
+  const feedback = qEl.querySelector(".lesson-question__feedback");
+  if (feedback) {
+    feedback.hidden = true;
+    feedback.querySelector("[data-explain-wrong]")?.remove();
+  }
+}
+
+/** Static recap card shell, mounted after the last section; filled by refreshLessonRecap(). */
+export function renderLessonRecap() {
+  return (
+    `<section class="lesson-recap" data-lesson-recap hidden aria-labelledby="lessonRecapTitle">` +
+    `<h2 class="lesson-recap__title" id="lessonRecapTitle">ملخص الأسئلة</h2>` +
+    `<div class="lesson-recap__stats">` +
+    `<span class="lesson-recap__stat" data-recap-answered></span>` +
+    `<span class="lesson-recap__stat lesson-recap__stat--correct" data-recap-correct></span>` +
+    `</div>` +
+    `<div class="lesson-recap__bar" role="progressbar" aria-label="نسبة الأسئلة المجاب عنها" aria-valuemin="0" aria-valuemax="100"><span data-recap-bar></span></div>` +
+    `<div class="lesson-recap__wrong-wrap" data-recap-wrong-wrap hidden>` +
+    `<div class="lesson-recap__wrong-title">أسئلة تحتاج مراجعة</div>` +
+    `<ul class="lesson-recap__wrong" data-recap-wrong></ul>` +
+    `<button type="button" class="lesson-recap__retry" data-retry-wrong>إعادة المحاولة للأسئلة الخاطئة</button>` +
+    `</div>` +
+    `</section>`
+  );
+}
+
+/**
+ * Updates the recap from stored progress. `questions` = the questions
+ * currently reachable (visible sections), as [{ id, label, number }].
+ */
+export function refreshLessonRecap(root, lessonId, questions) {
+  const recap = root?.querySelector("[data-lesson-recap]");
+  if (!recap) return;
+  const list = Array.isArray(questions) ? questions : [];
+  recap.hidden = list.length === 0;
+  if (!list.length) return;
+
+  const stored = getLessonProgress(lessonId)?.questions || {};
+  const answered = list.filter((q) => stored[q.id]?.answered);
+  const correct = answered.filter((q) => stored[q.id]?.wasCorrect);
+  const wrong = answered.filter((q) => !stored[q.id]?.wasCorrect);
+
+  recap.querySelector("[data-recap-answered]").textContent = `أجبت على ${answered.length} من ${list.length}`;
+  recap.querySelector("[data-recap-correct]").textContent = `الصحيحة: ${correct.length}`;
+  const pct = Math.round((answered.length / list.length) * 100);
+  const bar = recap.querySelector(".lesson-recap__bar");
+  bar?.setAttribute("aria-valuenow", String(pct));
+  const fill = recap.querySelector("[data-recap-bar]");
+  if (fill) fill.style.width = `${pct}%`;
+
+  const wrongWrap = recap.querySelector("[data-recap-wrong-wrap]");
+  const wrongList = recap.querySelector("[data-recap-wrong]");
+  wrongWrap.hidden = wrong.length === 0;
+  recap.dataset.wrongIds = JSON.stringify(wrong.map((q) => q.id));
+  wrongList.replaceChildren(...wrong.map((q) => {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = `#lesson-question-${q.id}`;
+    a.dataset.recapJump = q.id;
+    a.textContent = `${q.number ? `سؤال ${q.number}: ` : ""}${q.label}`;
+    li.appendChild(a);
+    return li;
+  }));
+}
+
 function renderExplainWrongButton(feedback) {
   // One "اشرح لي إجابتي" trigger per feedback block — re-grading via
   // "إعادة المحاولة" removes the whole feedback block anyway (see the
@@ -411,16 +643,29 @@ function renderExplainWrongButton(feedback) {
   feedback.appendChild(btn);
 }
 
+function setVerdict(verdict, text, good) {
+  verdict.querySelector(".lesson-question__verdict-text").textContent = text;
+  verdict.querySelector(".lesson-question__verdict-icon").textContent = good ? "✓" : "✕";
+  verdict.classList.toggle("is-correct", good);
+  verdict.classList.toggle("is-wrong", !good);
+}
+
 function revealMcqAnswer(questionEl, correctIndexes, wasCorrect, chosenIndexes) {
   questionEl.dataset.answered = "true";
+  questionEl.dataset.result = wasCorrect ? "correct" : "wrong";
+  const multi = questionEl.dataset.multiSelect === "true";
   questionEl.querySelectorAll(".lesson-question__option").forEach((btn) => {
     const idx = Number(btn.dataset.optionIndex);
     const selected = chosenIndexes?.includes(idx) || false;
     btn.classList.toggle("is-selected", selected);
     btn.setAttribute("aria-pressed", String(selected));
     btn.disabled = true;
-    if (correctIndexes.includes(idx)) btn.classList.add("is-correct");
-    if (selected && !correctIndexes.includes(idx)) btn.classList.add("is-wrong");
+    const isCorrect = correctIndexes.includes(idx);
+    // A correct option the reader skipped in a multi-select question is
+    // marked "missed" (dashed) so it reads differently from a correct pick.
+    if (isCorrect && (selected || !multi)) btn.classList.add("is-correct");
+    if (isCorrect && !selected && multi) btn.classList.add("is-missed");
+    if (selected && !isCorrect) btn.classList.add("is-wrong");
   });
   const checkBtn = questionEl.querySelector("[data-question-check]");
   if (checkBtn) checkBtn.disabled = true;
@@ -429,11 +674,7 @@ function revealMcqAnswer(questionEl, correctIndexes, wasCorrect, chosenIndexes) 
   if (feedback) {
     feedback.hidden = false;
     const verdict = feedback.querySelector(".lesson-question__verdict");
-    if (verdict) {
-      verdict.textContent = wasCorrect ? "إجابة صحيحة" : "إجابة غير صحيحة — راجع الخيارات الصحيحة";
-      verdict.classList.toggle("is-correct", wasCorrect);
-      verdict.classList.toggle("is-wrong", !wasCorrect);
-    }
+    if (verdict) setVerdict(verdict, wasCorrect ? "إجابة صحيحة" : "إجابة غير صحيحة — راجع الخيارات الصحيحة", wasCorrect);
     if (!wasCorrect) renderExplainWrongButton(feedback);
   }
 }
@@ -454,21 +695,19 @@ function revealEssayAnswer(questionEl, modelAnswer, answerText) {
 
   const score = gradeEssay(answerText, modelAnswer);
   const wasClose = score >= 3;
+  questionEl.dataset.result = wasClose ? "correct" : "wrong";
 
   const feedback = questionEl.querySelector(".lesson-question__feedback");
   if (feedback) {
     feedback.hidden = false;
     const verdict = feedback.querySelector(".lesson-question__verdict");
-    if (verdict) {
-      verdict.textContent = `التقدير: ${score} من 5`;
-      verdict.classList.toggle("is-correct", wasClose);
-      verdict.classList.toggle("is-wrong", !wasClose);
-    }
-    const modelEl = feedback.querySelector(".lesson-question__model-answer");
+    if (verdict) setVerdict(verdict, wasClose ? "إجابتك قريبة من النموذجية" : "راجع الإجابة النموذجية", wasClose);
     const rating = feedback.querySelector(".lesson-question__essay-rating");
     if (rating) {
-      const stars = "★".repeat(score) + "☆".repeat(5 - score);
-      rating.textContent = `${score} من 5 · ${stars}`;
+      const badge = rating.querySelector(".lesson-question__score-badge");
+      const stars = rating.querySelector(".lesson-question__stars");
+      if (badge) badge.textContent = `${score}/5`;
+      if (stars) stars.textContent = "★".repeat(score) + "☆".repeat(5 - score);
       rating.setAttribute("aria-label", `التقييم التقريبي: ${score} من 5`);
     }
     if (!wasClose) renderExplainWrongButton(feedback);

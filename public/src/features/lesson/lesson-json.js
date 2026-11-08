@@ -1,4 +1,4 @@
-import { LIMITS, checkLesson, cleanSource } from "../../shared/content-rules.js";
+import { LIMITS, EMBED_REF_BY_TYPE, checkLesson, cleanSource } from "../../shared/content-rules.js";
 
 function invalid(message) {
   const error = new Error(message);
@@ -95,6 +95,16 @@ export function normalizeLessonJson(value) {
           lessonId,
           ...(typeof block.title === "string" && block.title ? { title: block.title.slice(0, 200) } : {}),
           ...(typeof block.slug === "string" && block.slug ? { slug: block.slug.slice(0, 200) } : {}),
+        };
+      }
+      if (EMBED_REF_BY_TYPE[block?.type]) {
+        const { type: canonical, field } = EMBED_REF_BY_TYPE[block.type];
+        const refId = text(block[field] ?? "", `Section ${sectionIndex + 1}, block ${blockIndex + 1} ${field}`, 200).trim();
+        if (!refId) invalid(`Section ${sectionIndex + 1}, block ${blockIndex + 1} needs a ${field}.`);
+        return {
+          type: canonical,
+          [field]: refId,
+          ...(typeof block.title === "string" && block.title ? { title: block.title.slice(0, 200) } : {}),
         };
       }
       if (block?.type !== "question") {
@@ -218,6 +228,13 @@ export function normalizeLessonDraft(value) {
           lessonId: str(block.lessonId ?? block.lessonRefId).trim(),
           ...(block.title ? { title: str(block.title).slice(0, 200) } : {}),
           ...(block.slug ? { slug: str(block.slug).slice(0, 200) } : {}),
+        });
+      } else if (EMBED_REF_BY_TYPE[type]) {
+        const { type: canonical, field } = EMBED_REF_BY_TYPE[type];
+        blocks.push({
+          type: canonical,
+          [field]: str(block[field]).trim(),
+          ...(block.title ? { title: str(block.title).slice(0, 200) } : {}),
         });
       } else if (type === "question") {
         const prompt = str(block.prompt ?? block.q);

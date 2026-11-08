@@ -124,15 +124,6 @@ Improve:
   * It shows emtpy admin profiles that don't have links, these are probably poeple who have been made admin, but haven't signed in for the first time, remove that.
 * Syncing is so messed up for developer/admin profiles.
 
-### Lesson Page
-* ![screenshot](image-3.png): The copy buttons on "source" and "link" don't work.
-* Questions:
-  * The UI of questions isn't the best, and to improve it, I need it to match that of the quiz page (Extremely refined, better feedback for correct/incorrect and essay grading.)
-* Add a section navigator inside the sidebar.
-* Add embeddings: Notebooks, Folders, & Courses.
-* Suggestion: For embedded items (Notebooks, Lessons, Quizzes, Folders, & Courses) show their thumbnail, that would be great looking.
-* Recommend to me other potential design improvements.
-
 ### What is `PISTON_TOKEN`
 
 ### AI Agent

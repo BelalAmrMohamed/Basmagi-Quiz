@@ -20,6 +20,7 @@
 // ============================================================================
 
 import { escapeHtml } from "../home/escape-html.js";
+import { bindInfoCopyButtons } from "../../shared/info-link.js";
 import { collectLessonInfo, buildLessonInfoBodyHtml, hydrateLessonCreator } from "../home/lesson-info-modal.js";
 import { renderLessonBookmarks, equipLessonBookmarks, cleanupLessonBookmarks } from "./lesson-bookmarks.js";
 import {
@@ -129,6 +130,7 @@ export function showLessonControlModal(options) {
         renderAiActionsSection() +
         `</div>` +
         `</div>`;
+    bindInfoCopyButtons(dialog);
     document.body.appendChild(dialog);
     hydrateLessonCreator(dialog, info);
 
