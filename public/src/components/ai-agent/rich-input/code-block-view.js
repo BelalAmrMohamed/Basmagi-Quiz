@@ -59,6 +59,9 @@ function openLanguageMenu(trigger, current, onPick) {
 
   const onDown = (e) => { if (!menu.contains(e.target) && !trigger.contains(e.target)) close(); };
   const onKey = (e) => { if (e.key === "Escape") close(); };
+  // Scroll events are captured from everything, including the menu's own list;
+  // only close when something OUTSIDE the menu scrolls (page/chat behind it).
+  const onScroll = (e) => { if (menu.contains(e.target)) return; close(); };
   function close() {
     menu.remove();
     trigger.setAttribute("aria-expanded", "false");
@@ -66,13 +69,13 @@ function openLanguageMenu(trigger, current, onPick) {
     document.removeEventListener("mousedown", onDown);
     document.removeEventListener("keydown", onKey);
     window.removeEventListener("resize", close);
-    window.removeEventListener("scroll", close, true);
+    window.removeEventListener("scroll", onScroll, true);
     if (closeOpenMenu === close) closeOpenMenu = null;
   }
   document.addEventListener("mousedown", onDown);
   document.addEventListener("keydown", onKey);
   window.addEventListener("resize", close);
-  window.addEventListener("scroll", close, true);
+  window.addEventListener("scroll", onScroll, true);
   trigger.setAttribute("aria-expanded", "true");
   trigger.classList.add("is-open");
   host.appendChild(menu);

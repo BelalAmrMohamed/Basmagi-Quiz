@@ -45,9 +45,6 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 ### Dictation for Essay Questions (Lesson & Quiz Pages)
 Add dictation feature for essays in quizzes and lessons
 
-### AI Agent
-* 
-
 ### Notebook Page
 
 #### Improvements & New features
