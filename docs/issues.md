@@ -18,12 +18,10 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 * Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.
 * I honestly don't know what is the best decision, maybe keeping settings 
 
-### Home Page
-
-#### Passwords are exposed
+### Home Page: Passwords are exposed
 The home page downloads every password (Of lessons and quizzes) to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be patched.
 
-#### Notebooks Download modal
+### Notebooks Download modal
 * ![screenshot](image-1.png)
 * This Notebook, which is a C++ runtime, its download modal has an `.m` export, which is MATLAB runtime specific, and it doesn't have the Cpp export `.cpp`.
 * Each new runtime should get its own specific exports, and not the MATLAB's. 
@@ -47,10 +45,13 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 ### Dictation for Essay Questions (Lesson & Quiz Pages)
 Add dictation feature for essays in quizzes and lessons
 
+### AI Agent
+* 
+
 ### Notebook Page
 
 #### Improvements & New features
-* Implement cursor animation similar to that of VS Code
+* Implement cursor animation style similar to that of VS Code: `expand` blinking.
 * Implement some sort of a quiz/question, a user has to write some code that outputs a specific output. Even if the user's code doesn't perfectly match that of the formal-answer-code, as long as it outputs the same output. 
 
 #### Runtimes
