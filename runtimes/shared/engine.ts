@@ -6,9 +6,15 @@
 // =============================================================================
 import type { Extension } from '@codemirror/state';
 import type { CompletionSource } from '@codemirror/autocomplete';
+import type { Diagnostic } from '@codemirror/lint';
+import type { EditorState } from '@codemirror/state';
 
 /** What the engine sees of a notebook cell. `id` is stable for the life of the cell. */
-export type Cell = { id: number; type: 'code' | 'md'; src: string; stdin?: string };
+export type Cell = {
+  id: number; type: 'code' | 'md'; src: string; stdin?: string;
+  /** `stdin` is fixed (a challenge's test input): the engine must use it without asking the learner. */
+  stdinLocked?: boolean;
+};
 
 /** Pixel data of a workspace file (MATLAB `imread` source). `data` is channels-interleaved 8-bit. */
 export type ImageFile = {
@@ -72,7 +78,9 @@ export interface Engine {
   importAccept?: string;
   /** Storage key an older UI used for local edits; read once so readers keep their changes. */
   legacyStoreKey?(notebookId: string): string;
-  editor: { extensions(): Extension[]; completions?: CompletionSource | CompletionSource[] };
+  editor: { extensions(): Extension[]; completions?: CompletionSource | CompletionSource[];
+    /** Live syntax check while typing (debounced by the shell). Messages must already be localized. */
+    lint?(state: EditorState): Diagnostic[] };
   /** Help dialog content. The shell adds the generic notebook shortcuts itself. */
   help?: { title?: string; intro?: string; searchPlaceholder?: string; items: Array<[title: string, en: string, ar: string]> };
   caps: { workspace: boolean; files: boolean; images: boolean; stdin: boolean; history: boolean };

@@ -21,6 +21,7 @@ export function rowToNotebook(row) {
     type: c?.type === "code" ? "code" : "markdown",
     source: strOf(c?.source),
     ...(typeof c?.stdin === "string" ? { stdin: c.stdin } : {}),
+    ...(c?.challenge && typeof c.challenge === "object" ? { challenge: c.challenge } : {}),
   }));
   const title = strOf(local ? row.meta?.title : row?.title).trim() || "Untitled notebook";
   const description = strOf(local ? row.meta?.description : row?.description).trim();
@@ -70,7 +71,7 @@ export function notebookAttachmentPayload(row) {
       runtime: nb.runtime,
       language: nb.language,
       note: "Executable educational MATLAB-style notebook. Cells are in order; 'code' cells are MATLAB code, 'markdown' cells are explanations.",
-      cells: nb.cells.map((c, i) => ({ n: i + 1, type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}) })),
+      cells: nb.cells.map((c, i) => ({ n: i + 1, type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}), ...(c.challenge ? { challenge: c.challenge } : {}) })),
     },
   };
 }
@@ -92,7 +93,7 @@ export function notebookToIpynb(input) {
     cells: nb.cells.map((c, i) => {
       const id = (c.id || `cell-${i + 1}`).replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 64) || `cell-${i + 1}`;
       return c.type === "code"
-        ? { id, cell_type: "code", metadata: { ...(c.stdin !== undefined ? { stdin: c.stdin } : {}) }, execution_count: null, source: lines(c.source), outputs: [] }
+        ? { id, cell_type: "code", metadata: { ...(c.stdin !== undefined ? { stdin: c.stdin } : {}), ...(c.challenge ? { challenge: c.challenge } : {}) }, execution_count: null, source: lines(c.source), outputs: [] }
         : { id, cell_type: "markdown", metadata: {}, source: lines(c.source) };
     }),
   };

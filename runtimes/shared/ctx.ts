@@ -5,19 +5,27 @@
 // =============================================================================
 import type { Engine, Out, VarInfo, ImageFile } from './engine';
 import type { T, Lang } from './i18n';
+import type { Challenge, ChallengeResult } from './challenge';
 
 export interface UiCell {
   id: number; type: 'code' | 'md'; src: string; stdin?: string;
   outs: Out[]; count: number | null; running: boolean; mdEdit: boolean;
   /** Open input box (see Engine RunSink.input). */
   pending?: { label: string; value: string };
+  /** Challenge cell: graded on its output. `chRef` = index of the published cell it came from (learner mode). */
+  challenge?: Challenge; chRef?: number;
+  /** Starter code to go back to (the source the cell had when published). */
+  starter?: string;
+  result?: ChallengeResult;
+  /** Learner UI state. */
+  hintShown?: boolean; solutionShown?: boolean; targetHidden?: boolean; attempts?: number;
 }
 
 /** What the host passes to `mount()`. */
 export interface MountOptions {
   root: HTMLElement;
   baseUrl?: string;
-  notebook: { id?: string; title?: string; schemaVersion?: number; runtime?: string; cells: Array<{ type?: string; source?: string; stdin?: string }> };
+  notebook: { id?: string; title?: string; schemaVersion?: number; runtime?: string; cells: Array<{ type?: string; source?: string; stdin?: string; challenge?: Challenge }> };
   lang?: string;
   mode?: string;
   onChange?: (cells: HostCell[]) => void;
@@ -27,7 +35,7 @@ export interface MountOptions {
   /** Single-line text prompt (the platform's _prompt). Resolves to the text, or null when cancelled. */
   onPrompt?: (message: string, value: string) => string | null | Promise<string | null>;
 }
-export type HostCell = { id: string; type: 'code' | 'markdown'; source: string; stdin?: string };
+export type HostCell = { id: string; type: 'code' | 'markdown'; source: string; stdin?: string; challenge?: Challenge };
 
 export interface Ctx {
   engine: Engine; t: T; lang: Lang; root: HTMLElement; opts: MountOptions;
@@ -61,6 +69,8 @@ export interface Ctx {
   resetWorkspace(): void;
   /** Discard local edits and show the published cells again. */
   resetToPublished(): void;
+  /** Put a challenge cell back to its starter code and clear its result. */
+  resetChallenge(cell: UiCell): void;
   /** Replace all cells (import). */
   replaceCells(cells: UiCell[]): void;
   openHelp(): void;

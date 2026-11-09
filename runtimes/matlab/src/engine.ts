@@ -10,6 +10,7 @@ import type { Engine, ImageFile, VarInfo, RunRequest, RunSink } from '../../shar
 import { createT, type Lang } from '../../shared/i18n';
 import { fileToImage } from '../../shared/images';
 import { matlabLanguage } from './language';
+import { matlabLint, type LintMessages } from './lint';
 import { matlabCompletions } from './completions';
 import { matlabIndent } from './indent';
 import { MATLAB_HELP } from './help';
@@ -27,6 +28,15 @@ export interface MatlabEngineOptions {
 }
 
 type Run = { sink: RunSink; id: number; fig: number; timer: number; settle: () => void };
+
+const LINT_EN: LintMessages = {
+  unmatched: (c) => `Unmatched '${c}'`, unclosed: (c) => `Unclosed '${c}'`,
+  mismatch: (o, c) => `'${c}' does not match '${o}'`, string: 'Unterminated string',
+};
+const LINT_AR: LintMessages = {
+  unmatched: (c) => `القوس '${c}' بلا مقابل`, unclosed: (c) => `القوس '${c}' غير مغلق`,
+  mismatch: (o, c) => `'${c}' لا يطابق '${o}'`, string: 'نص غير منتهٍ',
+};
 
 export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
   const t = createT(opts.lang === 'ar' ? 'ar' : 'en');
@@ -158,6 +168,7 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
     caps: { workspace: true, files: true, images: true, stdin: false, history: true },
     editor: {
       extensions: () => [matlabLanguage, matlabIndent()],
+      lint: matlabLint(opts.lang === 'ar' ? LINT_AR : LINT_EN),
       completions: matlabCompletions({ workspace: () => vars, codeSources: () => codeSources(), fileNames: () => [...files.keys()] }),
     },
     help: MATLAB_HELP,

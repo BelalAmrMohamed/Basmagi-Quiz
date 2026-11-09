@@ -269,6 +269,63 @@ const CREATE_LESSON_PAGE_ACTIONS = [
     },
 ];
 
+// Notebook page actions ("دفتر الأكواد")
+const NOTEBOOK_PAGE_ACTIONS = [
+    {
+        id: "add-cell",
+        command: "add-cell",
+        label: "إضافة خلية",
+        description: "إضافة خلية كود أو شرح جديدة إلى الدفتر",
+        icon: ICON_NOTEBOOK,
+        systemDirective: "The user explicitly invoked /add-cell. Write the cell (markdown explanation or runnable code in the notebook's language) and call notebook_add_cell immediately without asking for confirmation.",
+        placeholder: "ماذا تريد أن تضيف؟ (مثلاً: خلية كود لحساب المتوسط)",
+    },
+    {
+        id: "edit-cell",
+        command: "edit-cell",
+        label: "تعديل خلية",
+        description: "تعديل خلية موجودة (تحسين، تبسيط، إعادة صياغة)",
+        icon: ICON_SECTION,
+        systemDirective: "The user explicitly invoked /edit-cell. Identify the cell from the request (by number or content), then call notebook_edit_cell immediately with the COMPLETE new source, without asking for confirmation.",
+        placeholder: "رقم الخلية وما تريد تعديله...",
+    },
+    {
+        id: "delete-cell",
+        command: "delete-cell",
+        label: "حذف خلية",
+        description: "حذف خلية من الدفتر",
+        icon: ICON_TRASH,
+        systemDirective: "The user explicitly invoked /delete-cell. If they named a cell number, call notebook_delete_cell immediately. If they did not name one, ask which cell number to delete and do not call the tool.",
+        placeholder: "رقم الخلية التي تريد حذفها...",
+    },
+    {
+        id: "fix-error",
+        command: "fix-error",
+        label: "إصلاح الأخطاء",
+        description: "تشخيص خطأ في الخلايا وإصلاحه ثم إعادة تشغيله",
+        icon: ICON_ANALYZE,
+        systemDirective: "The user explicitly invoked /fix-error. Find the cell whose output has errors (or the cell they name), explain the cause briefly, fix it with notebook_edit_cell, then verify it with notebook_run_cell. Do not ask for confirmation.",
+        placeholder: "اختياري: رقم الخلية أو وصف المشكلة...",
+    },
+    {
+        id: "add-challenge",
+        command: "add-challenge",
+        label: "إضافة تحدٍّ برمجي",
+        description: "خلية تحدٍّ تُقيَّم على الناتج المطبوع فقط",
+        icon: ICON_QUESTION,
+        systemDirective: "The user explicitly invoked /add-challenge. Add a markdown cell with the task statement followed by a code cell with starter code and a challenge object (expectedOutput traced from your model solution, matchMode, hint, solution; testStdin for C++ input). Call notebook_add_cell for each cell immediately, then verify the solution's output against expectedOutput if you can run it.",
+        placeholder: "موضوع التحدي ومستواه...",
+    },
+    {
+        id: "explain-notebook",
+        command: "explain-notebook",
+        label: "شرح وتلخيص الدفتر",
+        description: "تلخيص الدفتر وشرح فكرته وخلاياه",
+        icon: ICON_LESSON,
+        systemDirective: "The user invoked /explain-notebook. Summarize what the notebook teaches and walk through its cells in order, briefly. Do not modify the notebook.",
+    },
+];
+
 // Result page actions ("صفحة النتيجة")
 const RESULT_PAGE_ACTIONS = [
     {
@@ -293,6 +350,7 @@ const RESULT_PAGE_ACTIONS = [
 registerPageActions("home", HOME_PAGE_ACTIONS);
 registerPageActions("create", CREATE_QUIZ_PAGE_ACTIONS);
 registerPageActions("create-lesson", CREATE_LESSON_PAGE_ACTIONS);
+registerPageActions("notebook", NOTEBOOK_PAGE_ACTIONS);
 registerPageActions((key) => key && key.startsWith("lesson-"), LESSON_PAGE_ACTIONS);
 registerPageActions("result", RESULT_PAGE_ACTIONS);
 

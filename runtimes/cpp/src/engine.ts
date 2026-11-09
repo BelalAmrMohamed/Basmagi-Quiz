@@ -6,6 +6,7 @@
 // =============================================================================
 import { cpp } from '@codemirror/lang-cpp';
 import { cppCompletions } from './completions';
+import { cppLint } from './lint';
 import type { Engine, Cell, RunRequest, RunSink } from '../../shared/engine';
 
 export type CppRunResponse = {
@@ -17,6 +18,7 @@ export type CppEngineOptions = { execute: CppExecute; lang?: 'en' | 'ar'; timeou
 
 export const CPP_AR: Record<string, string> = {
   'Compiling…': 'جارٍ التجميع…',
+  'Syntax error': 'خطأ في الصياغة',
   'Compile error': 'خطأ في التجميع',
   'Exit': 'الخروج',
   'Empty cell skipped': 'تم تجاوز الخلية الفارغة',
@@ -58,7 +60,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
     const selected = all ? active : active.filter((a) => a.idx === tIdx);
     const stdins = new Map<number, string>();
     for (const a of selected) {
-      if (USES_CIN.test(a.cell.src)) {
+      if (USES_CIN.test(a.cell.src) && !a.cell.stdinLocked) {
         const n = req.cells.slice(0, a.idx + 1).filter((c) => c.type === 'code').length;
         const v = await sink.input({ label: tr('Standard input · Cell {n}').replace('{n}', String(n)), value: a.cell.stdin ?? '' }, a.idx);
         if (v === null) return;
@@ -118,7 +120,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
     id: 'cpp', label: 'C++17', kernelDisplay: 'C++17', language: 'C++', mimetype: 'text/x-c++src',
     importAccept: '.cpp,.cc,.cxx,.h,.hpp,.ipynb,.notebook.zip',
     legacyStoreKey: (id) => `basmagi:nb:${id}:v1`,
-    editor: { extensions: () => [cpp()], completions: cppCompletions({ codeSources: () => codeSources() }) },
+    editor: { extensions: () => [cpp()], completions: cppCompletions({ codeSources: () => codeSources() }), lint: cppLint(tr('Syntax error')) },
     help: {
       intro: 'Shift+Enter runs the selected code cell and advances. Ctrl+Enter runs it in place. Earlier cells replay on each run; use const globals or //@global for shared declarations. A cell that uses cin asks for its own input when it runs.',
       items: [['Shared declarations', 'Earlier cells replay on each run. Use const globals or //@global for declarations shared between cells.', 'تُعاد الخلايا السابقة عند كل تشغيل؛ استخدم const أو //@global للمشاركة بين الخلايا.'],

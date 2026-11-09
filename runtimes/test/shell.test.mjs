@@ -144,3 +144,57 @@ test('sink.input shows an inline Jupyter-style box, echoes the answer, and Stop 
   await p2; await tick(w);
   assert.equal(got, null);
 });
+
+// ---- challenge cells ----
+test('challenge cell: fail shows actual vs expected, pass shows the success banner, reset restores starter', async () => {
+  const dom = env(), w = dom.window, root = w.document.getElementById('root');
+  const ch = { expectedOutput: 'out:x=2!', hint: 'Try x=2', solution: 'x=2' };
+  const h = w.T.mountShell(fakeEngine(), { root, notebook: nb([{ type: 'code', source: 'x=1', challenge: ch }]) });
+  assert.ok(root.querySelector('.cell.challenge .ch-badge'), 'badge');
+  assert.ok(root.querySelector('.ch-target .ch-pre').textContent.includes('out:x=2!'), 'target preview');
+  assert.equal(JSON.stringify(h.getCells()[0].challenge), JSON.stringify(ch), 'challenge survives getCells');
+  await w.__mlweb.runCell(w.__mlweb.cells[0]); await tick(w);
+  assert.ok(root.querySelector('.ch-result.fail'), 'fail banner');
+  assert.equal(root.querySelectorAll('.ch-cols .ch-pre').length, 2, 'actual and expected shown');
+  assert.ok(root.querySelector('.ch-line.diff'), 'differing line marked');
+  // solve it
+  const cell = w.__mlweb.cells[0];
+  cell.src = 'x=2';
+  await w.__mlweb.runCell(cell); await tick(w);
+  assert.ok(root.querySelector('.ch-result.pass .ch-pill'), 'pass banner');
+  // reset to starter
+  const reset = [...root.querySelectorAll('.ch-btn')].find((b) => /Reset to starter/.test(b.dataset.tooltip || b.textContent));
+  assert.ok(reset, 'reset button exists');
+  h.destroy();
+});
+
+test('challenge cell: errors are reported as such and plain cells are unaffected', async () => {
+  const dom = env(), w = dom.window, root = w.document.getElementById('root');
+  w.T.mountShell(fakeEngine(), { root, notebook: nb([{ type: 'code', source: 'boom', challenge: { expectedOutput: 'x' } }, { type: 'code', source: 'plain' }]) });
+  await w.__mlweb.runCell(w.__mlweb.cells[0]); await tick(w);
+  assert.ok(root.querySelector('.ch-result.error'));
+  await w.__mlweb.runCell(w.__mlweb.cells[1]); await tick(w);
+  assert.equal(root.querySelectorAll('.ch-result').length, 1);
+  assert.equal(root.querySelectorAll('.cell.challenge').length, 1);
+});
+
+test('challenge cell: testStdin is passed locked to engines with stdin', async () => {
+  const dom = env(), w = dom.window, root = w.document.getElementById('root');
+  let seen;
+  const eng = fakeEngine({ caps: { workspace: false, files: false, images: false, stdin: true, history: false },
+    async run({ cells, target }, sink) { seen = cells[target]; sink.out({ k: 'text', s: '7' }); } });
+  w.T.mountShell(eng, { root, notebook: nb([{ type: 'code', source: 'cin', challenge: { expectedOutput: '7', testStdin: '3 4' } }]) });
+  await w.__mlweb.runCell(w.__mlweb.cells[0]); await tick(w);
+  assert.equal(seen.stdin, '3 4'); assert.equal(seen.stdinLocked, true);
+  assert.ok(root.querySelector('.ch-result.pass'));
+});
+
+test('edit mode shows the author panel and writes challenge back through onChange', async () => {
+  const dom = env(), w = dom.window, root = w.document.getElementById('root');
+  let last;
+  w.T.mountShell(fakeEngine(), { root, mode: 'edit', onChange: (c) => { last = c; }, notebook: nb([{ type: 'code', source: 'a', challenge: { expectedOutput: '1' } }]) });
+  const ta = root.querySelector('.ch-author textarea');
+  assert.ok(ta, 'author panel');
+  ta.value = '2'; ta.dispatchEvent(new w.Event('input'));
+  assert.equal(last[0].challenge.expectedOutput, '2');
+});

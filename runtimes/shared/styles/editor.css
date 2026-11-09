@@ -121,3 +121,85 @@
 }
 
 
+
+/* ---- Cursor: VS Code "expand" blinking -------------------------------------
+   CodeMirror restarts the blink on every keypress / caret move by swapping the layer's inline
+   animation-name between cm-blink and cm-blink2. We switch the layer's own (stepped) animation
+   off and run the expand animation on each .cm-cursor instead, choosing one of two identical
+   keyframes from that inline name, so every swap restarts the cycle at full size.
+   Only transform + opacity animate: no layout, gutters stay aligned. */
+@keyframes cm-cursor-expand-a {
+  0%, 45% { transform: scaleY(1); opacity: 1; }
+  80%     { transform: scaleY(0); opacity: 0; }
+  100%    { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes cm-cursor-expand-b {
+  0%, 45% { transform: scaleY(1); opacity: 1; }
+  80%     { transform: scaleY(0); opacity: 0; }
+  100%    { transform: scaleY(1); opacity: 1; }
+}
+
+.mlweb .code-editor .cm-cursorLayer {
+  animation: none !important;
+}
+
+.mlweb .code-editor .cm-cursorLayer .cm-cursor {
+  transform-origin: center;
+  animation: cm-cursor-expand-a 1s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.mlweb .code-editor .cm-cursorLayer[style*="cm-blink2"] .cm-cursor {
+  animation-name: cm-cursor-expand-b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mlweb .code-editor .cm-cursorLayer .cm-cursor,
+  .mlweb .code-editor .cm-cursorLayer[style*="cm-blink2"] .cm-cursor {
+    animation: none;
+    transform: none;
+  }
+}
+
+/* ---- Live lint -------------------------------------------------------------- */
+.mlweb .cm-lintRange-error,
+.mlweb .cm-lintRange-warning {
+  background-image: none;
+  padding-bottom: 0;
+  text-decoration: underline wavy var(--syntax-error);
+  text-decoration-skip-ink: none;
+  text-underline-offset: 3px;
+}
+
+.mlweb .cm-lintRange-warning {
+  text-decoration-color: var(--run, #b7791f);
+}
+
+.mlweb .cm-tooltip.cm-tooltip-lint {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  font:
+    13px/1.4 ui-monospace,
+    Cascadia Code,
+    Menlo,
+    Consolas,
+    monospace;
+}
+
+.mlweb .cm-tooltip.cm-tooltip-lint .cm-diagnostic {
+  padding: 3px 8px;
+  margin: 0;
+  border-inline-start: 3px solid var(--syntax-error);
+}
+
+.mlweb .cm-tooltip.cm-tooltip-lint .cm-diagnostic-warning {
+  border-inline-start-color: var(--run, #b7791f);
+}
+
+.mlweb .code-editor .cm-gutter-lint {
+  width: 1em;
+}

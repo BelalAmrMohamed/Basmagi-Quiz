@@ -16,7 +16,7 @@ export async function copyNotebookToLocal(nb) {
   if (!Array.isArray(items)) items = [];
   const id = `user_notebook_${crypto.randomUUID()}`;
   const now = new Date().toISOString();
-  const content = { schemaVersion: 1, ...(nb.language ? { language: nb.language } : {}), cells: nb.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, type: c.type === "code" ? "code" : "markdown", source: String(c.source ?? ""), ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}) })) };
+  const content = { schemaVersion: 1, ...(nb.language ? { language: nb.language } : {}), cells: nb.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, type: c.type === "code" ? "code" : "markdown", source: String(c.source ?? ""), ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}), ...(c.challenge && typeof c.challenge === "object" ? { challenge: c.challenge } : {}) })) };
   items.push({
     id,
     meta: { type: "notebook", title: uniqueTitle(items, nb.title), parentId: null, createdAt: new Date().toLocaleString("en-US"), updatedAt: now, description: nb.description || "", source: nb.source || "", passwordHash: null, passwordProtected: false },

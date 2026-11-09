@@ -9,6 +9,7 @@ import { h } from './dom';
 import { createEditorState } from './editor';
 import { renderMarkdown } from './markdown';
 import { renderOut } from './outputs';
+import { challengeAuthor, challengeHeader, challengeResult } from './challenge-view';
 
 export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
   const { t, state } = ctx, cells = state.cells;
@@ -38,6 +39,7 @@ export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
   const duplicate = () => {
     const copy = ctx.mkCell(c.type, c.src);
     if (c.stdin !== undefined) copy.stdin = c.stdin;
+    if (c.challenge) { copy.challenge = structuredClone(c.challenge); copy.chRef = c.chRef; copy.starter = c.starter; }
     copy.mdEdit = c.type === 'md';
     cells.splice(i + 1, 0, copy);
     state.sel = i + 1; ctx.save(); ctx.render();
@@ -56,17 +58,21 @@ export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
       menuItem(t('Duplicate cell'), duplicate),
       menuItem(t('Move cell up'), mv(-1)),
       menuItem(t('Move cell down'), mv(1)),
-      ...(c.outs.length ? [menuItem(t('Clear cell output'), () => { c.outs = []; c.count = null; ctx.render(); })] : []),
-      menuItem(c.type === 'md' ? t('Convert to code') : t('Convert to text'), () => {
-        c.type = c.type === 'md' ? 'code' : 'md'; c.outs = []; c.mdEdit = c.type === 'md';
-        if (c.type === 'md') delete c.stdin;
+      ...(c.outs.length ? [menuItem(t('Clear cell output'), () => { c.outs = []; c.count = null; c.result = undefined; ctx.render(); })] : []),
+      ...(c.type === 'code' && ctx.isEdit() ? [menuItem(c.challenge ? t('Remove challenge') : t('Make challenge'), () => {
+        if (c.challenge) { delete c.challenge; c.result = undefined; } else c.challenge = { expectedOutput: '' };
         ctx.save(); ctx.render();
-      }),
+      })] : []),
+      ...(c.challenge && !ctx.isEdit() ? [] : [menuItem(c.type === 'md' ? t('Convert to code') : t('Convert to text'), () => {
+        c.type = c.type === 'md' ? 'code' : 'md'; c.outs = []; c.mdEdit = c.type === 'md';
+        if (c.type === 'md') { delete c.stdin; delete c.challenge; c.result = undefined; }
+        ctx.save(); ctx.render();
+      })]),
       menuItem(t('Delete cell'), remove)));
   tools.append(h('span', { class: 'sp' }), options);
 
   const el = h('section', {
-    class: 'cell' + (i === state.sel ? ' sel' : '') + (c.running ? ' running' : ''), tabindex: -1,
+    class: 'cell' + (i === state.sel ? ' sel' : '') + (c.running ? ' running' : '') + (c.challenge && c.type === 'code' ? ' challenge' : ''), tabindex: -1,
     'aria-label': t(c.type === 'md' ? 'Text cell {n}' : 'Code cell {n}', { n: i + 1 }),
   }, idx, tools);
   el.addEventListener('focusin', () => {
@@ -91,7 +97,9 @@ export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
     el.append(ta);
   } else {
     const host = h('div', { class: 'code-editor', dir: 'ltr', 'data-cell': c.id });
+    if (c.challenge) el.append(challengeHeader(ctx, c));
     el.append(host);
+    if (c.challenge && ctx.isEdit()) el.append(challengeAuthor(ctx, c));
     const st = ctx.editorStates.get(c.id) ?? createEditorState(ctx.engine, c.src, {
       runAdvance: () => ctx.runFromEditor(c, true),
       runStay: () => ctx.runFromEditor(c, false),
@@ -107,6 +115,7 @@ export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
   const outs = h('div', { class: 'outs' });
   for (const o of c.outs) outs.append(renderOut(ctx, c, o));
   if (c.pending) outs.append(inputRow(ctx, c, c.pending));
+  if (c.challenge && c.type === 'code' && !c.running) { const banner = challengeResult(ctx, c); if (banner) outs.append(banner); }
   const insert = h('div', { class: 'cell-insert', role: 'group', 'aria-label': t('Insert a cell below') },
     h('button', { onclick: insertAt('code', 1) }, t('+ Code')), h('button', { onclick: insertAt('md', 1) }, t('+ Text')));
   el.append(outs, insert);

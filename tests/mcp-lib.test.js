@@ -156,3 +156,26 @@ test("outline + clone helpers", () => {
   const l = lessonToDraftInput({ title: "T", description: "d", source: "https://a.b", content: { sections: [{ title: "s", blocks: [{ type: "markdown", body: "x" }] }] } });
   assert.equal(validateLesson(l).ok, true);
 });
+
+import { validateNotebook as vnb, notebookToDraftInput as nb2draft, outlineNotebook as outNb } from "../supabase/functions/mcp/lib.ts";
+
+test("notebook challenges: validated, normalized, counted and round-tripped", () => {
+  const ok = vnb({ title: "t", runtime: "cpp", cells: [
+    { type: "markdown", source: "Print the sum" },
+    { type: "code", source: "// TODO", challenge: { expectedOutput: "7", testStdin: "3 4", hint: " add ", solution: "int main(){}" } },
+  ] });
+  assert.equal(ok.ok, true, ok.errors.join("|"));
+  assert.equal(ok.stats.challenges, 1);
+  assert.equal(ok.data.cells[1].challenge.hint, "add");
+  assert.match(outNb(ok.data), /🏁challenge/);
+  assert.deepEqual(nb2draft({ runtime: "cpp", content: { cells: ok.data.cells } }).cells[1].challenge.testStdin, "3 4");
+  const bad = (challenge, runtime = "matlab", type = "code") => vnb({ title: "t", runtime, cells: [{ type, source: "x", challenge }] });
+  assert.equal(bad({ expectedOutput: "1", matchMode: "fuzzy" }).ok, false);
+  assert.equal(bad({ expectedOutput: "(", matchMode: "regex" }).ok, false);
+  assert.equal(bad({}).ok, false);
+  assert.equal(bad({ expectedOutput: "1", testStdin: "x" }).ok, false, "stdin is C++ only");
+  assert.equal(bad({ expectedOutput: "1", tolerance: 0.1 }).ok, false, "tolerance needs numeric");
+  assert.equal(bad({ expectedOutput: "1" }, "matlab", "markdown").ok, false);
+  assert.equal(bad({ expectedOutput: "1", extra: 1 }).ok, false);
+  assert.ok(AUTHORING_GUIDE.notebook.includes("Challenges"));
+});

@@ -29,7 +29,9 @@
 //                              // subset of ["create_lesson","add_lesson_section",
 //                              // "add_lesson_question","create_quiz","edit_quiz",
 //                              // "edit_current_quiz","delete_quiz","reset_quiz_page",
-//                              // "create_folder","create_course","move_item"] (see TOOLS_BY_NAME
+//                              // "create_folder","create_course","move_item",
+//                              // "notebook_add_cell","notebook_edit_cell",
+//                              // "notebook_delete_cell","notebook_run_cell"] (see TOOLS_BY_NAME
 //                              // below — "edit_quiz" and "edit_current_quiz" are two
 //                              // different SCHEMAS for the same action, pick one not
 //                              // both). Defaults to the original three (create/edit/
@@ -83,7 +85,7 @@ import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { recordPlatformUsage } from "./_usage.js";
 import { callProvider, isSupportedProvider, DEFAULT_MODELS } from "./_providerClients.js";
-import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, CREATE_LESSON_TOOL, ADD_LESSON_SECTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL, GET_CREATOR_INFO_TOOL, DISPLAY_CREATOR_CARD_TOOL, CREATE_FLASHCARDS_TOOL } from "./_tools.js";
+import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, CREATE_LESSON_TOOL, ADD_LESSON_SECTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL, GET_CREATOR_INFO_TOOL, DISPLAY_CREATOR_CARD_TOOL, CREATE_FLASHCARDS_TOOL, NOTEBOOK_ADD_CELL_TOOL, NOTEBOOK_EDIT_CELL_TOOL, NOTEBOOK_DELETE_CELL_TOOL, NOTEBOOK_RUN_CELL_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
 import { createClient } from "@supabase/supabase-js";
@@ -367,6 +369,10 @@ const TOOLS_BY_NAME = {
   create_folder: CREATE_FOLDER_TOOL,
   create_course: CREATE_COURSE_TOOL,
   move_item: MOVE_ITEM_TOOL,
+  notebook_add_cell: NOTEBOOK_ADD_CELL_TOOL,
+  notebook_edit_cell: NOTEBOOK_EDIT_CELL_TOOL,
+  notebook_delete_cell: NOTEBOOK_DELETE_CELL_TOOL,
+  notebook_run_cell: NOTEBOOK_RUN_CELL_TOOL,
   fetch_attached_quiz: FETCH_ATTACHED_QUIZ_TOOL,
   fetch_attached_lesson: FETCH_ATTACHED_LESSON_TOOL,
   // Read-only discovery tools — schemas only. Always resolved client-side

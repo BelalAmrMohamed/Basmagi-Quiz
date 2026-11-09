@@ -109,7 +109,7 @@ const PROMPTS_REGISTRY: Record<string, { description: string; text: string }> = 
   },
   matlab_notebook: {
     description: "Prompt for turning lecture/lab material into an executable MATLAB-style or C++17 notebook draft (create_notebook_import_link)",
-    text: `Call get_authoring_guide(topic="notebook") first, then build a notebook and call create_notebook_import_link (use dry_run first if unsure).\n- runtime MUST be "matlab" or "cpp". MATLAB is the educational browser subset, not MathWorks MATLAB. C++ uses a remote online compiler with replay semantics; use stdin only on C++ cells.\n- Alternate short Arabic-friendly Markdown explanations (math in LaTeX, no raw HTML) with small runnable code cells (code/comments/output stay left-to-right).\n- Use only the bundled sample images (test.png, testgray.png, pepper.png, Test2.png, GrayTest1.png, BinaryImage.png, GrayscaleImage.png, ColorImage.png, test_lookup.gif).\n- Set "language" to "en" or "ar" (the language of the Markdown explanations; it drives the notebook page direction and UI).\n- Respect limits: ≤200 cells, ≤20000 chars per cell, ≤300KB total.\n- Tell the user that opening the link adds the notebook straight to their «محتواي» (no admin review).\n\nNow convert the material I provide:`,
+    text: `Call get_authoring_guide(topic="notebook") first, then build a notebook and call create_notebook_import_link (use dry_run first if unsure).\n- runtime MUST be "matlab" or "cpp". MATLAB is the educational browser subset, not MathWorks MATLAB. C++ uses a remote online compiler with replay semantics; use stdin only on C++ cells.\n- Alternate short Arabic-friendly Markdown explanations (math in LaTeX, no raw HTML) with small runnable code cells (code/comments/output stay left-to-right).\n- Use only the bundled sample images (test.png, testgray.png, pepper.png, Test2.png, GrayTest1.png, BinaryImage.png, GrayscaleImage.png, ColorImage.png, test_lookup.gif).\n- Set "language" to "en" or "ar" (the language of the Markdown explanations; it drives the notebook page direction and UI).\n- Respect limits: ≤200 cells, ≤20000 chars per cell, ≤300KB total.\n- For practice, add coding CHALLENGE cells (cell.challenge, graded on printed output; see the Challenges section of the guide) and test every expectedOutput by tracing the starter+solution code.\n- Tell the user that opening the link adds the notebook straight to their «محتواي» (no admin review).\n\nNow convert the material I provide:`,
   },
   general_purpose_quiz: {
     description: "Standard prompt for generating quizzes from raw study material",
@@ -452,7 +452,21 @@ const TOOLS = [
             properties: {
               id: { type: "string", description: "Optional unique id ([A-Za-z0-9_-], ≤64)." },
               type: { type: "string", enum: ["markdown", "code"] },
-              source: { type: "string", description: "Cell text (≤20000 chars)." },
+              source: { type: "string", description: "Cell text (≤20000 chars). For a challenge cell this is the STARTER code the learner sees (may be empty or a skeleton)." },
+              stdin: { type: "string", description: "C++ code cells only, ≤4000 chars: input for cin (not for challenge cells: use challenge.testStdin)." },
+              challenge: {
+                type: "object",
+                description: "Code cells only. Turns the cell into an interactive CODING CHALLENGE graded on the program's printed output (stdout), never on the code text. See get_authoring_guide(topic=\"notebook\") → Challenges.",
+                properties: {
+                  expectedOutput: { type: "string", description: "Required. The exact text the correct program prints (≤8000 chars). With matchMode=regex it is a regular expression matched against the WHOLE output." },
+                  matchMode: { type: "string", enum: ["trimmed", "exact", "numeric", "regex"], description: "Default trimmed: ignores CRLF, trailing spaces per line and trailing blank lines. exact: only CRLF normalized. numeric: numbers compared with tolerance, words exactly. regex: full-output match." },
+                  tolerance: { type: "number", description: "numeric mode only (default 1e-6): |a-b| ≤ tolerance·max(1,|b|)." },
+                  testStdin: { type: "string", description: "C++ only, ≤4000 chars: input fed to cin when graded (learner is not prompted)." },
+                  hint: { type: "string", description: "Optional hint (≤1000 chars), shown on demand." },
+                  solution: { type: "string", description: "Optional model solution CODE (≤20000 chars). Learners can reveal it after their first run; it is delivered to the browser, so never put secrets in it." },
+                },
+                required: ["expectedOutput"],
+              },
             },
             required: ["type", "source"],
           },
@@ -1517,9 +1531,15 @@ async function handleGetNotebookContent(args: { notebookId: string; format?: str
   if (args?.format === "json") {
     return JSON.stringify({ id: d.id, slug: d.slug, title: d.title, description: d.description, source: d.source, runtime: d.runtime, url, content: d.content }, null, 2);
   }
-  const body = d.content.cells.map((c: any, i: number) =>
-    c.type === "code" ? `\`\`\`matlab\n${c.source}\n\`\`\`` : c.source
-  ).join("\n\n");
+  const body = d.content.cells.map((c: any) => {
+    if (c.type !== "code") return c.source;
+    const code = `\`\`\`${d.runtime === "cpp" ? "cpp" : "matlab"}\n${c.source}\n\`\`\``;
+    const ch = c.challenge;
+    if (!ch) return code;
+    return [`🏁 تحدي برمجي (التقييم على الناتج فقط · matchMode=${ch.matchMode || "trimmed"})`, code, `الناتج المتوقع:\n\`\`\`text\n${ch.expectedOutput}\n\`\`\``,
+      ch.testStdin ? `مدخلات الاختبار:\n\`\`\`text\n${ch.testStdin}\n\`\`\`` : "", ch.hint ? `تلميح: ${ch.hint}` : "",
+      ch.solution ? `الحل النموذجي:\n\`\`\`${d.runtime === "cpp" ? "cpp" : "matlab"}\n${ch.solution}\n\`\`\`` : ""].filter(Boolean).join("\n\n");
+  }).join("\n\n");
   return `# 💻 ${d.title}\n\n${d.description ? d.description + "\n\n" : ""}بيئة التشغيل: ${d.runtime}\nرابط الدفتر: ${url}\n\n${body}`;
 }
 
@@ -1529,7 +1549,7 @@ async function handleCreateNotebookImportLink(args: any) {
   if (args?.dry_run) return [`✅ (تجربة فقط — لم يُحفظ شيء) الدفتر صالح: ${JSON.stringify(v.stats)}`, formatIssues("الدفتر", v)].filter(Boolean).join("\n\n");
   const { url, short } = await saveDraft("notebook", v.data);
   const s = v.stats!;
-  const head = `✅ تم التحقق من الدفتر: ${s.cells} خلية (كود ${s.code} · نص ${s.markdown}).`;
+  const head = `✅ تم التحقق من الدفتر: ${s.cells} خلية (كود ${s.code} · نص ${s.markdown}${s.challenges ? ` · تحديات ${s.challenges}` : ""}).`;
   const how = short
     ? `🔗 رابط قصير صالح ${DRAFT_TTL_HOURS} ساعة (بلا تسجيل دخول). عند فتحه يُحفظ الدفتر مباشرة في «محتواي» ويظهر مميّزاً بشارة «جديد» (بدون مراجعة مشرف):\n${url}`
     : `🔗 تعذّر إنشاء رابط قصير فاستُخدم رابط الاستيراد الطويل (انسخه كاملاً دون تعديل):\n${url}`;

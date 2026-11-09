@@ -18,6 +18,7 @@ import { RUNTIME_CONFIG } from "../../shared/runtime-config.js";
 import "./image-tool-window.js";
 import "./notebook-output-controls.js";
 import "./notebook-menu-controls.js";
+import { mountNotebookAgent } from "./notebook-agent.js";
 
 const LOAD_TIMEOUT_MS = 15000;
 
@@ -65,7 +66,7 @@ async function fetchNotebookRow(ref) {
   return data || null;
 }
 
-const cellToPlain = (c) => ({ type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}) });
+const cellToPlain = (c) => ({ type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}), ...(c.challenge && typeof c.challenge === "object" ? { challenge: c.challenge } : {}) });
 
 /** Workspace (browser-only) notebook from امتحاناتك: /notebook/<user_notebook_…>?type=user */
 function readLocalNotebookRow(ref) {
@@ -170,6 +171,7 @@ async function init() {
   $("notebookStatus").hidden = true;
   $("contentArea").setAttribute("aria-busy", "false");
   const wsKey = isLocal ? ref : `pub_${notebook.id}`;
+  mountNotebookAgent({ getHandle: () => handle, notebook, lang });
   window.__mlwebExport = {
     zip: () => exportNotebookZip({
       title: notebook.title, description: notebook.description, source: row.source || row.meta?.source || "", runtime: notebook.runtime, language: lang,

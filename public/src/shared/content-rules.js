@@ -44,6 +44,10 @@ export const LIMITS = {
   notebookCells: 200,
   notebookCellSource: 20000,
   notebookCellStdin: 4000,
+  challengeExpected: 8000,
+  challengeHint: 1000,
+  challengeSolution: 20000,
+  challengeRegex: 500,
   notebookCellId: 64,
   notebookBytes: 300_000,
   notebookAssets: 100, // max files in a notebook's asset manifest
@@ -56,6 +60,8 @@ export const NOTEBOOK_RUNTIMES = ["matlab", "cpp"];
 export const NOTEBOOK_SCHEMA_VERSION = 1;
 export const NOTEBOOK_LANGUAGES = ["en", "ar"];
 export const NOTEBOOK_CELL_TYPES = ["markdown", "code"];
+export const CHALLENGE_MATCH_MODES = ["exact", "trimmed", "regex", "numeric"];
+export const CHALLENGE_KEYS = ["expectedOutput", "testStdin", "hint", "matchMode", "tolerance", "solution"];
 
 /** File types a notebook workspace may publish. Extend (e.g. csv/txt/mat) when new runtimes need data files. */
 export const NOTEBOOK_ASSET_MIME = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif" };
@@ -455,6 +461,21 @@ const NOTEBOOK_CELL_ID_RE = /^[A-Za-z0-9_-]+$/;
  * assigning stable ids (`cell-N`) to cells that have none. It does NOT fix
  * invalid data (unknown types stay as given so checkNotebook can reject them).
  */
+/**
+ * Canonical challenge object of a code cell (unknown keys dropped, empty optionals omitted).
+ * Output is graded on stdout only: see runtimes/shared/challenge.ts for the comparison rules.
+ */
+export function normalizeChallenge(raw, runtime = "matlab") {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const out = { expectedOutput: typeof raw.expectedOutput === "string" ? raw.expectedOutput : "" };
+  if (runtime === "cpp" && typeof raw.testStdin === "string" && raw.testStdin !== "") out.testStdin = raw.testStdin;
+  if (typeof raw.hint === "string" && raw.hint.trim()) out.hint = raw.hint.trim();
+  if (typeof raw.matchMode === "string" && raw.matchMode !== "trimmed") out.matchMode = raw.matchMode;
+  if (typeof raw.tolerance === "number" && raw.matchMode === "numeric") out.tolerance = raw.tolerance;
+  if (typeof raw.solution === "string" && raw.solution.trim()) out.solution = raw.solution;
+  return out;
+}
+
 export function normalizeNotebookContent(rawCells, language, runtime = "matlab") {
   const cells = Array.isArray(rawCells) ? rawCells : [];
   const used = new Set(cells.map((c) => str(c?.id)).filter(Boolean));
@@ -474,6 +495,7 @@ export function normalizeNotebookContent(rawCells, language, runtime = "matlab")
       type: typeof c?.type === "string" ? c.type : "",
       source: typeof c?.source === "string" ? c.source : c?.source == null ? "" : String(c.source),
       ...(runtime === "cpp" && c?.type === "code" && typeof c?.stdin === "string" ? { stdin: c.stdin } : {}),
+      ...(c?.type === "code" && c?.challenge !== undefined && c?.challenge !== null ? { challenge: normalizeChallenge(c.challenge, runtime) ?? c.challenge } : {}),
     })),
   };
 }
@@ -495,6 +517,38 @@ export function normalizeNotebookAssets(assets) {
 }
 
 const ASSET_PATH_RE = /^[^\\/:*?"<>|\u0000-\u001f.][^\\/:*?"<>|\u0000-\u001f]{0,99}$/;
+
+/** Validates a code cell's `challenge` block. @param {object} c issue collector from checkNotebook */
+export function checkChallenge(ch, type, runtime, path, n, c) {
+  const at = `${path}.challenge`;
+  if (type !== "code") return c.err("CHALLENGE_NOT_CODE", at, `الخلية ${n}: challenge مسموح لخلايا الكود فقط.`);
+  if (!ch || typeof ch !== "object" || Array.isArray(ch)) return c.err("CHALLENGE_INVALID", at, `الخلية ${n}: challenge يجب أن يكون كائناً { expectedOutput, ... }.`);
+  for (const k of Object.keys(ch)) {
+    if (!CHALLENGE_KEYS.includes(k)) c.err("CHALLENGE_UNKNOWN_KEY", `${at}.${k}`, `الخلية ${n}: حقل غير معروف في challenge: "${k}" (المسموح: ${CHALLENGE_KEYS.join(", ")}).`);
+  }
+  if (typeof ch.expectedOutput !== "string") c.err("CHALLENGE_EXPECTED_INVALID", `${at}.expectedOutput`, `الخلية ${n}: expectedOutput مطلوب ويجب أن يكون نصاً.`);
+  else if (ch.expectedOutput.length > LIMITS.challengeExpected) c.err("CHALLENGE_EXPECTED_TOO_LONG", `${at}.expectedOutput`, `الخلية ${n}: expectedOutput أطول من ${LIMITS.challengeExpected} حرف.`);
+  else if (!ch.expectedOutput.trim()) c.warn("CHALLENGE_EXPECTED_EMPTY", `${at}.expectedOutput`, `الخلية ${n}: expectedOutput فارغ — لن ينجح إلا ناتج فارغ.`);
+  if (ch.matchMode !== undefined && !CHALLENGE_MATCH_MODES.includes(ch.matchMode)) {
+    c.err("CHALLENGE_MATCH_MODE_INVALID", `${at}.matchMode`, `الخلية ${n}: matchMode="${ch.matchMode}" غير مدعوم (المسموح: ${CHALLENGE_MATCH_MODES.join(", ")}).`);
+  }
+  if (ch.matchMode === "regex" && typeof ch.expectedOutput === "string") {
+    if (ch.expectedOutput.length > LIMITS.challengeRegex) c.err("CHALLENGE_REGEX_TOO_LONG", `${at}.expectedOutput`, `الخلية ${n}: التعبير النمطي أطول من ${LIMITS.challengeRegex} حرف.`);
+    else { try { new RegExp(`^(?:${ch.expectedOutput})$`, "s"); } catch { c.err("CHALLENGE_REGEX_INVALID", `${at}.expectedOutput`, `الخلية ${n}: expectedOutput ليس تعبيراً نمطياً صالحاً.`); } }
+  }
+  if (ch.tolerance !== undefined && (ch.matchMode !== "numeric" || typeof ch.tolerance !== "number" || !Number.isFinite(ch.tolerance) || ch.tolerance < 0)) {
+    c.err("CHALLENGE_TOLERANCE_INVALID", `${at}.tolerance`, `الخلية ${n}: tolerance رقم ≥ 0 ويُسمح به مع matchMode="numeric" فقط.`);
+  }
+  if (ch.testStdin !== undefined && (str(runtime) !== "cpp" || typeof ch.testStdin !== "string" || ch.testStdin.length > LIMITS.notebookCellStdin)) {
+    c.err("CHALLENGE_STDIN_INVALID", `${at}.testStdin`, `الخلية ${n}: testStdin مسموح لدفاتر C++ فقط وبحد أقصى ${LIMITS.notebookCellStdin} حرف.`);
+  }
+  if (ch.hint !== undefined && (typeof ch.hint !== "string" || ch.hint.length > LIMITS.challengeHint)) {
+    c.err("CHALLENGE_HINT_INVALID", `${at}.hint`, `الخلية ${n}: hint نص بحد أقصى ${LIMITS.challengeHint} حرف.`);
+  }
+  if (ch.solution !== undefined && (typeof ch.solution !== "string" || ch.solution.length > LIMITS.challengeSolution)) {
+    c.err("CHALLENGE_SOLUTION_INVALID", `${at}.solution`, `الخلية ${n}: solution نص (كود الحل النموذجي) بحد أقصى ${LIMITS.challengeSolution} حرف.`);
+  }
+}
 
 /** @param {object} c issue collector from checkNotebook */
 export function checkNotebookAssets(assets, c) {
@@ -604,6 +658,7 @@ export function checkNotebook(input, opts = {}) {
     if (cell.stdin !== undefined && (str(input?.runtime) !== "cpp" || type !== "code" || typeof cell.stdin !== "string" || cell.stdin.length > LIMITS.notebookCellStdin)) {
       c.err("CELL_STDIN_INVALID", `${path}.stdin`, `الخلية ${n}: stdin مسموح لخلايا C++ فقط وبحد أقصى ${LIMITS.notebookCellStdin} حرف.`);
     }
+    if (cell.challenge !== undefined) checkChallenge(cell.challenge, type, input?.runtime, path, n, c);
     if (type === "code") codeCells++;
     const id = cell.id;
     if (id !== undefined && id !== null && id !== "") {

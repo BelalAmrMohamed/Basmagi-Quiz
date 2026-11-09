@@ -1,0 +1,200 @@
+/* runtimes/shared/styles/challenge.css - Challenge cells: header, target output, result banner, author panel. */
+
+.mlweb .cell.challenge {
+  border-inline-start: 3px solid var(--accent);
+}
+
+.mlweb .ch-box {
+  margin: 6px 0 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px 10px 0 0;
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+}
+
+.mlweb .ch-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.mlweb .ch-head .sp {
+  flex: 1;
+}
+
+.mlweb .ch-badge {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mlweb .ch-goal {
+  font-size: 13px;
+  color: var(--mute);
+}
+
+.mlweb .ch-btn {
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.mlweb .ch-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.mlweb .ch-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mlweb .ch-label {
+  margin-bottom: 3px;
+  color: var(--mute);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mlweb .ch-hint {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--warnbg);
+  color: var(--warn);
+  font-size: 13px;
+}
+
+.mlweb .ch-target {
+  margin-top: 8px;
+}
+
+.mlweb .ch-pre {
+  margin: 0;
+  padding: 8px 10px;
+  max-height: 260px;
+  overflow: auto;
+  border-radius: 8px;
+  background: var(--out);
+  font: 13px/1.5 ui-monospace, Cascadia Code, Menlo, Consolas, monospace;
+  white-space: pre;
+}
+
+.mlweb .ch-line {
+  display: block;
+}
+
+.mlweb .ch-line.diff {
+  background: color-mix(in srgb, var(--err) 18%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--err) 35%, transparent);
+}
+
+.mlweb .ch-result {
+  margin: 8px 0 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.mlweb .ch-result.pass {
+  border-color: var(--run);
+  background: color-mix(in srgb, var(--run) 9%, var(--panel));
+}
+
+.mlweb .ch-result.fail,
+.mlweb .ch-result.error {
+  border-color: var(--err);
+  background: var(--errbg);
+}
+
+.mlweb .ch-pill {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.mlweb .ch-result.pass .ch-pill {
+  background: var(--run);
+  color: #fff;
+  animation: ch-pop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mlweb .ch-result:is(.fail, .error) .ch-pill {
+  color: var(--err);
+}
+
+.mlweb .ch-note {
+  margin-inline-start: 10px;
+  color: var(--mute);
+  font-size: 12.5px;
+}
+
+.mlweb .ch-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.mlweb .ch-col {
+  min-width: 0;
+}
+
+.mlweb .ch-solution,
+.mlweb .ch-result > .ch-btn {
+  margin-top: 8px;
+}
+
+.mlweb .ch-author {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line);
+  border-top: 0;
+  background: var(--panel-soft);
+}
+
+.mlweb .ch-field {
+  display: grid;
+  gap: 2px;
+}
+
+.mlweb .ch-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font: 13px/1.45 ui-monospace, Cascadia Code, Menlo, Consolas, monospace;
+  resize: vertical;
+}
+
+@keyframes ch-pop {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .mlweb .ch-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mlweb .ch-result.pass .ch-pill {
+    animation: none;
+  }
+}

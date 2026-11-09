@@ -427,3 +427,70 @@ export const ADD_LESSON_SECTION_TOOL = {
     required: ["title", "content"],
   },
 };
+
+// ── Notebook page tools (executed client-side by notebook-agent.js) ─────────
+// Cells are addressed by their 1-based number as shown in the notebook context the
+// page sends along; the page re-validates everything against the shared content rules.
+const NOTEBOOK_CHALLENGE_SCHEMA = {
+  type: "object",
+  description: "Turns a code cell into a graded coding challenge. Grading compares what the program PRINTS (stdout) with expectedOutput, never the code text. The cell's source is the learner's starter code.",
+  properties: {
+    expectedOutput: { type: "string", description: "Exact text the correct program prints. For matchMode=regex: a regular expression matching the whole output." },
+    matchMode: { type: "string", enum: ["trimmed", "exact", "numeric", "regex"], description: "Default trimmed (ignores CRLF, trailing spaces per line, trailing blank lines). numeric: numbers within tolerance, words exact." },
+    tolerance: { type: "number", description: "numeric mode only (default 1e-6)." },
+    testStdin: { type: "string", description: "C++ notebooks only: input fed to cin when graded." },
+    hint: { type: "string" },
+    solution: { type: "string", description: "Optional model solution CODE the learner can reveal." },
+  },
+  required: ["expectedOutput"],
+};
+
+export const NOTEBOOK_ADD_CELL_TOOL = {
+  name: "notebook_add_cell",
+  description: "Insert one cell into the notebook currently open. type 'markdown' for explanations (Markdown, math in LaTeX) or 'code' for runnable code in the notebook's language. Use position to insert before an existing cell number; omit it to append at the end. Only call after the user confirmed, unless they used an explicit slash command.",
+  input_schema: {
+    type: "object",
+    properties: {
+      type: { type: "string", enum: ["markdown", "code"] },
+      source: { type: "string", description: "Cell text or code." },
+      position: { type: "integer", description: "1-based cell number the new cell is inserted BEFORE. Omit to append." },
+      challenge: NOTEBOOK_CHALLENGE_SCHEMA,
+    },
+    required: ["type", "source"],
+  },
+};
+
+export const NOTEBOOK_EDIT_CELL_TOOL = {
+  name: "notebook_edit_cell",
+  description: "Replace the content of an existing cell (fix a bug, improve code, rewrite an explanation). Give the cell number exactly as listed in the notebook context, and the COMPLETE new source (not a diff). Optionally set or remove its challenge. Only call after the user confirmed, unless they used an explicit slash command.",
+  input_schema: {
+    type: "object",
+    properties: {
+      cell: { type: "integer", description: "1-based cell number." },
+      source: { type: "string", description: "Complete new source for the cell." },
+      challenge: { ...NOTEBOOK_CHALLENGE_SCHEMA, description: NOTEBOOK_CHALLENGE_SCHEMA.description + " Omit to leave the cell's challenge unchanged." },
+      removeChallenge: { type: "boolean", description: "true to turn a challenge cell back into an ordinary code cell." },
+    },
+    required: ["cell"],
+  },
+};
+
+export const NOTEBOOK_DELETE_CELL_TOOL = {
+  name: "notebook_delete_cell",
+  description: "Delete one cell from the open notebook by its 1-based number. ALWAYS show which cell will be deleted and get explicit confirmation first, unless the user used the explicit /delete-cell command naming the cell.",
+  input_schema: {
+    type: "object",
+    properties: { cell: { type: "integer", description: "1-based cell number." } },
+    required: ["cell"],
+  },
+};
+
+export const NOTEBOOK_RUN_CELL_TOOL = {
+  name: "notebook_run_cell",
+  description: "Run one code cell of the open notebook (earlier cells replay automatically where the language needs it) and report what it printed. Use it to check a fix or a challenge. Safe: it only executes code already in the notebook.",
+  input_schema: {
+    type: "object",
+    properties: { cell: { type: "integer", description: "1-based cell number of a code cell." } },
+    required: ["cell"],
+  },
+};

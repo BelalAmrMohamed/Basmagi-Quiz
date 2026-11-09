@@ -24,7 +24,7 @@ import {
 
 const ALLOWED_DOCUMENT_KEYS = new Set(["schemaVersion", "language", "cells", "assets"]);
 // `_localId` is editor bookkeeping that may ride along in drafts/exports; it is dropped.
-const ALLOWED_CELL_KEYS = new Set(["id", "type", "source", "stdin", "_localId"]);
+const ALLOWED_CELL_KEYS = new Set(["id", "type", "source", "stdin", "challenge", "_localId"]);
 
 function isPlainObject(v) {
     return v !== null && typeof v === "object" && !Array.isArray(v);

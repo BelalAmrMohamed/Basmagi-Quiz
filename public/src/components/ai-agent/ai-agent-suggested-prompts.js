@@ -23,6 +23,15 @@ export const CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS = [
   "راجع الأسئلة الحالية وقولي لو فيه أي غلط",
 ];
 
+// Notebook page ("دفتر الأكواد") — about the open notebook's cells, outputs and challenges.
+export const NOTEBOOK_PAGE_SUGGESTED_PROMPTS = [
+  "لخّص لي هذا الدفتر في نقاط بسيطة",
+  "اشرح لي الخلية الحالية سطرًا بسطر",
+  "شغّل الخلايا وقولي لو فيه أي خطأ وأصلحه",
+  "أضف تحديًا برمجيًا في آخر الدفتر",
+  "أعطني تلميحًا للتحدي من غير ما تكشف الحل",
+];
+
 export const LESSON_PAGE_SUGGESTED_PROMPTS = [
   "لخّص لي هذا الدرس في نقاط بسيطة",
   "اشرح لي أصعب فكرة في هذا الدرس بمثال",

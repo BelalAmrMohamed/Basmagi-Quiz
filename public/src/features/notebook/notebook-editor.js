@@ -34,7 +34,7 @@ let mountedLang = "";
 let mountedRuntime = "";
 let dirtyFlag = false;
 let saving = false;
-const cellToPlain = (c) => ({ type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}) });
+const cellToPlain = (c) => ({ type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}), ...(c.challenge && typeof c.challenge === "object" ? { challenge: c.challenge } : {}) });
 
 const STR = {
   en: {

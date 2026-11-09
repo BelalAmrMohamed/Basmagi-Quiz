@@ -23,7 +23,7 @@ const SCHEMA_VERSION = 1;
 
 const toDoc = (cells) => ({
   schemaVersion: SCHEMA_VERSION,
-  cells: cells.map((c, i) => ({ id: `cell-${i + 1}`, type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}) })),
+  cells: cells.map((c, i) => ({ id: `cell-${i + 1}`, type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}), ...(c.challenge && typeof c.challenge === "object" ? { challenge: c.challenge } : {}) })),
 });
 
 const normalizeEol = (s) => String(s ?? "").replace(/\r\n?/g, "\n");
@@ -51,7 +51,7 @@ export function notebookFromIpynb(text) {
     const source = Array.isArray(cell?.source) ? cell.source.join("") : String(cell?.source ?? "");
     if (kind === "markdown") cells.push({ type: "markdown", source: normalizeEol(source) });
     else if (kind === "code") {
-      cells.push({ type: "code", source: normalizeEol(source), ...(typeof cell?.metadata?.stdin === "string" ? { stdin: cell.metadata.stdin } : {}) });
+      cells.push({ type: "code", source: normalizeEol(source), ...(typeof cell?.metadata?.stdin === "string" ? { stdin: cell.metadata.stdin } : {}), ...(cell?.metadata?.challenge && typeof cell.metadata.challenge === "object" ? { challenge: cell.metadata.challenge } : {}) });
       if (Array.isArray(cell.outputs) && cell.outputs.length) outputsDropped++;
     } else {
       warnings.push(`الخلية ${i + 1}: النوع "${kind}" غير مدعوم وتم تجاهلها.`);

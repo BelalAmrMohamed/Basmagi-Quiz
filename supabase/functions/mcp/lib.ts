@@ -122,7 +122,7 @@ export function validateNotebook(args: any) {
     data,
     errors,
     warnings,
-    stats: { cells: content.cells.length, code: content.cells.filter((c: any) => c.type === "code").length, markdown: content.cells.filter((c: any) => c.type === "markdown").length, bytes },
+    stats: { challenges: content.cells.filter((c: any) => c.challenge).length, cells: content.cells.length, code: content.cells.filter((c: any) => c.type === "code").length, markdown: content.cells.filter((c: any) => c.type === "markdown").length, bytes },
   };
 }
 
@@ -362,7 +362,18 @@ Structure tips: one idea per section; a short markdown intro, the explanation, t
   notebook: `# Notebook schema (create_notebook_import_link)
 { title (≤${LIMITS.notebookTitle}), description (≤${LIMITS.notebookDescription}), source ("https://…" or ""),
   runtime: "${NOTEBOOK_RUNTIMES.join('" | "')}"  (REQUIRED — never defaulted; unknown values are rejected),
-  cells: [ { id?: "cell-1", type: "markdown" | "code", source: string, stdin?: string } ]  (≤${LIMITS.notebookCells} cells, each source ≤${LIMITS.notebookCellSource} chars, stdin ≤4000 chars on C++ code cells, whole notebook ≤${LIMITS.notebookBytes / 1000}KB) }
+  cells: [ { id?: "cell-1", type: "markdown" | "code", source: string, stdin?: string, challenge?: Challenge } ]  (≤${LIMITS.notebookCells} cells, each source ≤${LIMITS.notebookCellSource} chars, stdin ≤4000 chars on C++ code cells, whole notebook ≤${LIMITS.notebookBytes / 1000}KB) }
+
+## Challenges (interactive coding exercises)
+A code cell with a \`challenge\` object becomes a graded exercise: the learner edits the cell (its \`source\` is the STARTER code), presses Run, and gets a green "Output matches expected result!" banner or a side-by-side Actual vs Expected diff. Grading looks ONLY at what the program prints (stdout), never at the code text, so any correct approach passes.
+Challenge = { expectedOutput: string (required, ≤${LIMITS.challengeExpected}), matchMode?: "trimmed"|"exact"|"numeric"|"regex", tolerance?: number (numeric only), testStdin?: string (C++ only), hint?: string (≤${LIMITS.challengeHint}), solution?: string (model solution code, ≤${LIMITS.challengeSolution}) }
+- trimmed (default): ignores CRLF, trailing spaces on each line and trailing blank lines — use it unless you have a reason.
+- numeric: tokens split on whitespace; numbers match within tolerance (default 1e-6, relative for |b|>1), words must match exactly. Use for floating-point results (e.g. MATLAB prints 3.1416).
+- regex: expectedOutput is a regular expression that must match the WHOLE normalized output (no ^ $ needed).
+- exact: only CRLF→LF normalization. Rarely needed.
+- C++ with cin: set testStdin; the learner is never prompted, the cell is always graded against it. MATLAB has no stdin.
+- solution: learners can reveal it after their first run (with a confirmation before they pass). It ships to the browser, so treat it as public. Provide one whenever a typical learner could get stuck.
+Authoring rules: (1) MATLAB output looks like "x =\n\n     5\n" when a statement has no semicolon, but disp(5) prints "5": derive expectedOutput by carefully tracing the SOLUTION code under the real runtime rules, or use numeric/regex mode when unsure; (2) the challenge must have ONE observable answer (avoid random numbers, timing, and addresses); (3) put the task statement in the markdown cell just above the code cell; (4) starter code should compile/run (e.g. comments + a TODO), a failing run is fine; (5) earlier cells of a C++ notebook replay on each run, so only the challenge cell's own stdout is graded; (6) always dry_run first — validation errors name CHALLENGE_* codes.
 
 Runtime limits (tell learners the truth): "matlab" is a browser-based EDUCATIONAL MATLAB-style subset, NOT MathWorks MATLAB. "cpp" runs C++17 through an online community compiler: code is sent for execution, needs internet, is not stored, and does not support file I/O or interactive prompts. The notebook replays earlier cells for each run and only shows the selected cell output; use //@global or const declarations for shared globals. Each C++ code cell may include a stdin string (≤4000 chars).
 
@@ -584,13 +595,13 @@ export function notebookToDraftInput(row: any) {
     description: row?.description || "",
     source: /^https?:\/\//i.test(row?.source || "") ? row.source : "",
     runtime: row?.runtime || "",
-    cells: (row?.content?.cells || []).map((c: any) => ({ type: c.type, source: c.source })),
+    cells: (row?.content?.cells || []).map((c: any) => ({ type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}), ...(c.challenge ? { challenge: c.challenge } : {}) })),
   };
 }
 
 export function outlineNotebook(data: any): string {
   const cells: any[] = data?.cells || data?.content?.cells || [];
-  const lines = cells.map((c, i) => `${i + 1}. [${c.type}] ${clip(c.source, 80)}`);
+  const lines = cells.map((c, i) => `${i + 1}. [${c.type}${c.challenge ? " 🏁challenge" : ""}] ${clip(c.source, 80)}`);
   return `title: ${data?.title || ""}\ndescription: ${clip(data?.description, 160)}\nsource: ${data?.source || "(none)"}\nruntime: ${data?.runtime || "(none)"}\ncells: ${cells.length}\n\n${lines.join("\n")}`;
 }
 

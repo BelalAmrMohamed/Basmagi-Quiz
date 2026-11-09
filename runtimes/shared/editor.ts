@@ -12,6 +12,7 @@ import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } 
 import { tags } from '@lezer/highlight';
 import type { Engine } from './engine';
 import { indentGuides } from './indent-guides';
+import { editorLint } from './lint';
 
 export const highlightStyle = HighlightStyle.define([
   { tag: tags.keyword, color: 'var(--syntax-keyword)', fontWeight: '650' },
@@ -49,7 +50,7 @@ export type EditorHooks = {
 
 /** Build an editor state. Kept per cell by the shell so undo history survives re-renders. */
 export function createEditorState(engine: Engine, doc: string, hooks: EditorHooks): EditorState {
-  const { extensions, completions } = engine.editor;
+  const { extensions, completions, lint } = engine.editor;
   const base: Extension[] = [
     lineNumbers(), highlightActiveLine(), highlightActiveLineGutter(), drawSelection(),
     history(), indentOnInput(), bracketMatching(), closeBrackets(),
@@ -63,6 +64,7 @@ export function createEditorState(engine: Engine, doc: string, hooks: EditorHook
       ? autocompletion({ override: Array.isArray(completions) ? completions : [completions], activateOnTyping: true, maxRenderedOptions: 40, icons: true, tooltipClass: () => 'mlweb-complete' })
       : [],
     ...extensions(),
+    editorLint(lint),
     Prec.highest(keymap.of([
       { key: 'Shift-Enter', run: () => { hooks.runAdvance(); return true; } },
       { key: 'Mod-Enter', run: () => { hooks.runStay(); return true; } },

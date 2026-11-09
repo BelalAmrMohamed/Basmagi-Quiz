@@ -11,6 +11,7 @@ import type { EditorState } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
 import type { Engine, ImageFile, Out, RunSink, VarInfo, Cell, InputRequest } from './engine';
 import type { Ctx, HostCell, MountOptions, UiCell } from './ctx';
+import { cleanChallenge, gradeCell, type Challenge } from './challenge';
 import { createT, type Lang } from './i18n';
 import { h, store, closeDialog } from './dom';
 import { createDialogs } from './dialogs';
@@ -24,9 +25,38 @@ import { fileToImage } from './images';
 
 export interface ShellHandle {
   getCells(): HostCell[];
-  setCells(cells: Array<{ type?: string; source?: string; stdin?: string }>): void;
+  setCells(cells: Array<{ type?: string; source?: string; stdin?: string; challenge?: Challenge }>): void;
   resetToPublished(): void;
+  /** Read-only snapshot for assistants: each cell with its latest printed output and challenge status. */
+  describe(): CellDescription[];
+  /** Run the 1-based cell `n` and resolve with what it printed. Null when `n` is not a code cell. */
+  runCellAt(n: number): Promise<CellDescription | null>;
   destroy(): void;
+}
+
+export type CellDescription = {
+  n: number; type: 'code' | 'markdown'; source: string;
+  /** Text the cell printed in its latest run, errors included (capped); empty if never run. */
+  output: string; ran: boolean; failed: boolean;
+  challenge?: { expectedOutput: string; matchMode: string; status: 'pass' | 'fail' | 'error' | 'not-run' };
+};
+
+const OUTPUT_CAP = 1500;
+function describeCell(c: UiCell, i: number): CellDescription {
+  const parts: string[] = [];
+  for (const o of c.outs) {
+    if (o.k === 'text' || o.k === 'warn') parts.push(o.s);
+    else if (o.k === 'err') parts.push('ERROR: ' + o.s);
+    else if (o.k === 'diag') parts.push(`${o.sev.toUpperCase()} line ${o.line}: ${o.msg}\n`);
+    else if (o.k === 'img') parts.push('[figure]\n');
+  }
+  const text = parts.join('');
+  return {
+    n: i + 1, type: c.type === 'code' ? 'code' : 'markdown', source: c.src,
+    output: text.length > OUTPUT_CAP ? text.slice(0, OUTPUT_CAP) + '\n…[truncated]' : text,
+    ran: c.count != null, failed: hasError(c),
+    ...(c.challenge ? { challenge: { expectedOutput: c.challenge.expectedOutput, matchMode: c.challenge.matchMode ?? 'trimmed', status: c.result?.state ?? 'not-run' } } : {}),
+  };
 }
 
 /** window.__mlweb: the debugging / test hook other pages rely on. Typed loosely on purpose. */
@@ -41,7 +71,8 @@ const fnv = (s: string) => {
   for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619); }
   return (x >>> 0).toString(36);
 };
-const hashCells = (cells: Array<{ type: string; src: string }>) => fnv(JSON.stringify(cells.map((c) => [c.type, c.src])));
+const hashCells = (cells: Array<{ type: string; src: string; challenge?: Challenge }>) =>
+  fnv(JSON.stringify(cells.map((c) => (c.challenge ? [c.type, c.src, c.challenge] : [c.type, c.src]))));
 
 export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<string, string> = {}): ShellHandle {
   activeDestroy?.();
@@ -70,9 +101,11 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
 
   const mkCell = (type: 'code' | 'md', src: string): UiCell => ({ id: nextId++, type, src, outs: [], count: null, running: false, mdEdit: false });
   const published = (): UiCell[] => {
-    const cells = (opts.notebook.cells || []).map((c) => {
+    const cells = (opts.notebook.cells || []).map((c, i) => {
       const cell = mkCell(c.type === 'code' ? 'code' : 'md', String(c.source ?? ''));
       if (cell.type === 'code' && c.stdin !== undefined) cell.stdin = String(c.stdin);
+      const ch = cell.type === 'code' ? cleanChallenge(c.challenge) : undefined;
+      if (ch) { cell.challenge = ch; cell.chRef = i; cell.starter = cell.src; }
       return cell;
     });
     return cells.length ? cells : [mkCell('code', '')];
@@ -81,6 +114,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
   const hostCells = (): HostCell[] => state.cells.map((c, i) => ({
     id: 'cell-' + (i + 1), type: c.type === 'code' ? 'code' : 'markdown', source: c.src,
     ...(engine.caps.stdin && c.type === 'code' && c.stdin !== undefined ? { stdin: c.stdin } : {}),
+    ...(c.type === 'code' && c.challenge ? { challenge: cleanChallenge(c.challenge) } : {}),
   }));
 
   // ---------------- skeleton ----------------
@@ -103,7 +137,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     notify, confirm: (...a) => dialogs.confirm(...a), prompt: (...a) => dialogs.prompt(...a), answerInput,
     focusEditor: (id) => { focusEditorId = id; render(); },
     focusCard: (id) => { focusCardId = id; render(); },
-    leaveEditor, jumpToLine, runCell, runFromEditor, runAll, stop, resetWorkspace, resetToPublished, replaceCells,
+    leaveEditor, jumpToLine, runCell, runFromEditor, runAll, stop, resetWorkspace, resetToPublished, resetChallenge, replaceCells,
     openHelp: () => dialogs.help(), openExport: () => exportDialog.open(), openImage: (o) => imageTool?.open(o),
     addFile, removeFile, renameFile, files: () => engine.files ?? new Map(), clearHistory,
   };
@@ -155,7 +189,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     if (edit()) { try { opts.onChange?.(hostCells()); } catch { /* host onChange failed */ } return; }
     const ok = store.set(nbKey(), JSON.stringify({
       v: 1, pub: publishedHash,
-      cells: state.cells.map((c) => ({ type: c.type, src: c.src, ...(c.stdin !== undefined ? { stdin: c.stdin } : {}) })),
+      cells: state.cells.map((c) => ({ type: c.type, src: c.src, ...(c.stdin !== undefined ? { stdin: c.stdin } : {}), ...(c.chRef !== undefined ? { chRef: c.chRef } : {}) })),
     }));
     updateSaveState();
     if (!ok) notify(t('Notebook could not be saved in this browser. Export a copy to avoid losing changes.'));
@@ -181,12 +215,20 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
       const j = JSON.parse(raw);
       const arr = Array.isArray(j) ? j : j && Array.isArray(j.cells) ? j.cells : null;
       if (!arr || !arr.length) return null;
-      const cells = arr.map((x: any) => ({ type: x?.type === 'code' ? 'code' : 'md', src: String(x?.src ?? ''), stdin: x?.stdin }));
+      const cells = arr.map((x: any) => ({ type: x?.type === 'code' ? 'code' : 'md', src: String(x?.src ?? ''), stdin: x?.stdin, chRef: typeof x?.chRef === 'number' ? x.chRef : undefined }));
       const stale = j && !Array.isArray(j) && j.pub && j.pub !== publishedHash;
       // The author republished and the reader never edited: show the new version.
       if (stale && hashCells(cells) === j.pub) return null;
       if (stale) setTimeout(() => notify(t('This notebook was updated by the author. Your local edits were kept; use "Reset to published version" to see the new one.')), 0);
-      return cells.map((x: any) => { const c = mkCell(x.type, x.src); if (x.type === 'code' && x.stdin !== undefined) c.stdin = String(x.stdin); return c; });
+      const pub = published();
+      return cells.map((x: any) => {
+        const c = mkCell(x.type, x.src);
+        if (x.type === 'code' && x.stdin !== undefined) c.stdin = String(x.stdin);
+        // The challenge definition always comes from the published notebook, never from local storage.
+        const p = x.type === 'code' && x.chRef !== undefined ? pub.find((u) => u.chRef === x.chRef) : undefined;
+        if (p) { c.challenge = p.challenge; c.chRef = p.chRef; c.starter = p.starter; }
+        return c;
+      });
     } catch { return null; }
   }
 
@@ -245,10 +287,15 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     cur = { ctrl };
     state.busy = true;
     const run = ++generation;
-    for (const c of targets) { c.outs = []; c.running = true; c.count = ++execCount; }
+    for (const c of targets) { c.outs = []; c.result = undefined; c.running = true; c.count = ++execCount; }
     setStatus(t('Running…'), 'run');
     render();
-    const snapshot: Cell[] = state.cells.map((c) => ({ id: c.id, type: c.type, src: c.src, ...(c.stdin !== undefined ? { stdin: c.stdin } : {}) }));
+    const snapshot: Cell[] = state.cells.map((c) => {
+      const base: Cell = { id: c.id, type: c.type, src: c.src, ...(c.stdin !== undefined ? { stdin: c.stdin } : {}) };
+      // A challenge is graded against its own test input, so the learner is not asked for stdin.
+      if (engine.caps.stdin && c.type === 'code' && c.challenge?.testStdin !== undefined) { base.stdin = c.challenge.testStdin; base.stdinLocked = true; }
+      return base;
+    });
     const single = batch ? null : snapshot.findIndex((c) => c.id === targets[0].id);
     const sink = makeSink(snapshot, single, run);
     try {
@@ -263,7 +310,13 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     } finally {
       if (cur?.ctrl === ctrl) {
         cur = null; state.busy = false;
-        for (const c of targets) c.running = false;
+        for (const c of targets) {
+          c.running = false;
+          if (c.type === 'code' && c.challenge) {
+            if (ctrl.signal.aborted) c.result = undefined;
+            else { c.attempts = (c.attempts ?? 0) + 1; c.result = gradeCell(c.challenge, c.outs, hasError(c)); }
+          }
+        }
         if (statusKind !== 'error' && statusKind !== 'result') setStatus(t('Ready'));
         else syncStop();
         if (!destroyed) { render(); ctx.renderSide(); }
@@ -330,6 +383,14 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     state.sel = 0;
     save(); render(); ctx.renderSide();
     prepare();
+  }
+  function resetChallenge(c: UiCell) {
+    if (cur || c.starter === undefined) return;
+    c.src = c.starter; c.outs = []; c.count = null; c.result = undefined; c.hintShown = false; c.solutionShown = false;
+    if (c.challenge?.testStdin === undefined) delete c.stdin;
+    editorStates.delete(c.id); editorScroll.delete(c.id);
+    save(); render();
+    ctx.focusEditor(c.id);
   }
   function resetToPublished() {
     if (cur) stop();
@@ -570,10 +631,19 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     destroy,
     getCells: hostCells,
     resetToPublished,
+    describe: () => state.cells.map(describeCell),
+    async runCellAt(n) {
+      const c = state.cells[n - 1];
+      if (!c || c.type !== 'code') return null;
+      await runCell(c);
+      return describeCell(c, n - 1);
+    },
     setCells(next) {
       replaceCells((next || []).map((m) => {
         const c = mkCell(m.type === 'code' ? 'code' : 'md', String(m.source ?? ''));
         if (c.type === 'code' && m.stdin !== undefined) c.stdin = String(m.stdin);
+        const ch = c.type === 'code' ? cleanChallenge(m.challenge) : undefined;
+        if (ch) { c.challenge = ch; c.starter = c.src; }
         return c;
       }));
     },

@@ -66,7 +66,7 @@ export function prepareNotebook(row) {
       schemaVersion: content.schemaVersion,
       language: content.language || "",
       runtime: row.runtime,
-      cells: content.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}) })),
+      cells: content.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}), ...(c.challenge && typeof c.challenge === "object" ? { challenge: c.challenge } : {}) })),
       // published workspace files [{path,mime,size,sha256,url}], fetched into the virtual folder after mount
       assets: Array.isArray(content.assets) ? content.assets : [],
     },

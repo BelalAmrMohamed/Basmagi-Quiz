@@ -86,7 +86,9 @@ Redesign the whole page:
 
 #### المنصة بالأرقام
 1. **Better more Advanced analytics:** Allow the user to extend the `المشاهدات في آخر 30 يومًا` to cover more/less time, like a year or a week or custom.
-2. **Rich Tooltips**: Give rich tooltips to:
+2. Analytics Accuracy:
+  1. The numbers displayed in the "المنصة بالأرقام" section ![views on 8th of november on the About page](image-4.png) are way different that the numbers that are being displayed in Vercel Analytics ![views on 8th of november on Vercel Analytics](image-3.png). And the difference between them is not small by any means. Vercel Analytics: 103 Views. "المنصة بالأرقام" section: 1103 Views.
+3. **Rich Tooltips**: Give rich tooltips to:
    1. `مسار تعليمي نشط`: Shows the actual `Active learning paths`
    2. `صانع محتوى`: Shows the top admins/developers. 
       1. Suggestion (Not Confirmed): with a link to see all of them.

@@ -62,3 +62,12 @@ type Out = { k: 'text' | 'err' | 'warn'; s: string } | { k: 'img'; ... } | { k: 
 
 ## C++ specifics
 `cpp/src/engine.ts` assembles the cells and calls the `cpp-run` Supabase Edge Function (`supabase/functions/cpp-run`), which compiles through Wandbox, then Piston when `PISTON_TOKEN` is set. Each provider has its own time budget and failures are reported per provider. Autocomplete lives in `cpp/src/completions.ts` and `completion-data.ts`. `node scripts/cpp-run-probe.mjs` times each hop when debugging.
+
+## Challenge cells
+
+A code cell may carry `challenge: { expectedOutput, matchMode?, tolerance?, testStdin?, hint?, solution? }` (schema and limits: `public/src/shared/content-rules.js`, synced with `npm run sync:mcp`).
+
+- Grading is output-only and lives in `runtimes/shared/challenge.ts` (pure, unit-tested). Engines are untouched, except that a cell with `stdinLocked` must use its `stdin` without prompting (C++ `testStdin`).
+- UI: `shared/challenge-view.ts` (header, pass/fail banner, author panel in edit mode) + `shared/styles/challenge.css`; strings in `i18n.ts`.
+- The shell exposes `describe()` / `runCellAt(n)` on its handle for the notebook AI agent (`public/src/features/notebook/notebook-agent*.js`).
+- `solution` is shipped to the browser (learners may reveal it); never put secrets in it.
