@@ -463,6 +463,7 @@ const TOOLS = [
                   tolerance: { type: "number", description: "numeric mode only (default 1e-6): |a-b| ≤ tolerance·max(1,|b|)." },
                   testStdin: { type: "string", description: "C++ only, ≤4000 chars: input fed to cin when graded (learner is not prompted)." },
                   hint: { type: "string", description: "Optional hint (≤1000 chars), shown on demand." },
+                  hideSolution: { type: "boolean", description: "true = learners cannot reveal the solution (default false: they can, after their first run)." },
                   solution: { type: "string", description: "Optional model solution CODE (≤20000 chars). Learners can reveal it after their first run; it is delivered to the browser, so never put secrets in it." },
                 },
                 required: ["expectedOutput"],

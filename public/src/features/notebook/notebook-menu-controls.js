@@ -46,6 +46,7 @@ function positionMenu(details) {
   const viewportHeight = document.documentElement.clientHeight;
   const edge = Math.min(VIEWPORT_GAP, viewportWidth / 4, viewportHeight / 4);
 
+  const keepScroll = content.scrollTop;
   content.style.position = "fixed";
   content.style.inset = "auto";
   content.style.left = "0px";
@@ -94,6 +95,7 @@ function positionMenu(details) {
   content.style.top = `${best.top}px`;
   content.style.maxHeight = `${best.height}px`;
   content.style.visibility = "";
+  content.scrollTop = keepScroll;
 }
 
 function closeMenu(details) {
@@ -150,4 +152,9 @@ document.addEventListener("toggle", (event) => {
 }, true);
 
 window.addEventListener("resize", () => positionMenu(activeMenu));
-window.addEventListener("scroll", () => positionMenu(activeMenu), true);
+// Scrolling INSIDE the open menu must not re-position it: that reset its scroll offset, so the
+// list could not be scrolled at all.
+window.addEventListener("scroll", (event) => {
+  if (activeMenu && event.target instanceof Node && activeMenu.contains(event.target)) return;
+  positionMenu(activeMenu);
+}, true);

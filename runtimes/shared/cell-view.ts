@@ -10,6 +10,7 @@ import { createEditorState } from './editor';
 import { renderMarkdown } from './markdown';
 import { renderOut } from './outputs';
 import { challengeAuthor, challengeHeader, challengeResult } from './challenge-view';
+import { actualOutput, normalizeOutput } from './challenge';
 
 export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
   const { t, state } = ctx, cells = state.cells;
@@ -60,7 +61,7 @@ export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
       menuItem(t('Move cell down'), mv(1)),
       ...(c.outs.length ? [menuItem(t('Clear cell output'), () => { c.outs = []; c.count = null; c.result = undefined; ctx.render(); })] : []),
       ...(c.type === 'code' && ctx.isEdit() ? [menuItem(c.challenge ? t('Remove challenge') : t('Make challenge'), () => {
-        if (c.challenge) { delete c.challenge; c.result = undefined; } else c.challenge = { expectedOutput: '' };
+        if (c.challenge) { delete c.challenge; delete c.starter; c.result = undefined; } else { c.challenge = { expectedOutput: normalizeOutput(actualOutput(c.outs)) }; c.starter = ''; }
         ctx.save(); ctx.render();
       })] : []),
       ...(c.challenge && !ctx.isEdit() ? [] : [menuItem(c.type === 'md' ? t('Convert to code') : t('Convert to text'), () => {

@@ -189,12 +189,38 @@ test('challenge cell: testStdin is passed locked to engines with stdin', async (
   assert.ok(root.querySelector('.ch-result.pass'));
 });
 
-test('edit mode shows the author panel and writes challenge back through onChange', async () => {
+test('edit mode: author code is the solution, expected output is captured from the run, publish form is starter+solution', async () => {
   const dom = env(), w = dom.window, root = w.document.getElementById('root');
   let last;
-  w.T.mountShell(fakeEngine(), { root, mode: 'edit', onChange: (c) => { last = c; }, notebook: nb([{ type: 'code', source: 'a', challenge: { expectedOutput: '1' } }]) });
-  const ta = root.querySelector('.ch-author textarea');
-  assert.ok(ta, 'author panel');
-  ta.value = '2'; ta.dispatchEvent(new w.Event('input'));
-  assert.equal(last[0].challenge.expectedOutput, '2');
+  w.T.mountShell(fakeEngine(), { root, mode: 'edit', onChange: (c) => { last = c; }, notebook: nb([{ type: 'code', source: '', challenge: { expectedOutput: '', solution: 'x=2', hint: 'h' } }]) });
+  assert.equal(w.__mlweb.cells[0].src, 'x=2', 'author sees the solution as the cell code');
+  assert.equal(root.querySelectorAll('.ch-author .ch-input, .ch-author textarea').length, 1, 'only the hint field is left');
+  assert.equal(root.querySelectorAll('.ch-author textarea').length, 0, 'no manual expected-output / stdin / solution fields');
+  await w.__mlweb.runCell(w.__mlweb.cells[0]); await tick(w);
+  assert.equal(last[0].challenge.expectedOutput, 'out:x=2!', 'expected output captured automatically');
+  assert.equal(last[0].challenge.solution, 'x=2');
+  assert.equal(last[0].source, '', 'learners start from the starter, not the solution');
+  assert.ok(!root.querySelector('.ch-result'), 'no self-grading while authoring');
+  const box = root.querySelector('.ch-author input[type=checkbox]');
+  box.checked = false; box.dispatchEvent(new w.Event('change'));
+  assert.equal(last[0].challenge.hideSolution, true);
+});
+
+test('learner: hideSolution removes the reveal button; starter is empty', async () => {
+  const dom = env(), w = dom.window, root = w.document.getElementById('root');
+  w.T.mountShell(fakeEngine(), { root, notebook: nb([{ type: 'code', source: '', challenge: { expectedOutput: 'nope', solution: 'x=2', hideSolution: true } }]) });
+  assert.equal(w.__mlweb.cells[0].src, '');
+  await w.__mlweb.runCell(w.__mlweb.cells[0]); await tick(w);
+  assert.ok(root.querySelector('.ch-result.fail'));
+  assert.ok(![...root.querySelectorAll('.ch-btn')].some((b) => /solution/i.test(b.textContent)));
+});
+
+test('edit mode captures testStdin from the stdin used for the run', async () => {
+  const dom = env(), w = dom.window, root = w.document.getElementById('root');
+  let last;
+  const eng = fakeEngine({ caps: { workspace: false, files: false, images: false, stdin: true, history: false }, async run({ cells, target }, sink) { sink.out({ k: 'text', s: 'in:' + cells[target].stdin }); } });
+  w.T.mountShell(eng, { root, mode: 'edit', onChange: (c) => { last = c; }, notebook: nb([{ type: 'code', source: '', stdin: '3 4', challenge: { expectedOutput: '', solution: 'cin' } }]) });
+  await w.__mlweb.runCell(w.__mlweb.cells[0]); await tick(w);
+  assert.equal(last[0].challenge.testStdin, '3 4');
+  assert.equal(last[0].challenge.expectedOutput, 'in:3 4');
 });

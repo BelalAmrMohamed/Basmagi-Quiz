@@ -9,10 +9,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ### Create Quiz & Create Lesson Pages
 * Pressing (`ctrl` + `S`) to save doesn't always work.
-
-### Notebook Page: UI Issue
-* ![screenshot](image.png)
-* The cell scrollbars don't work, trying to scroll through them doesn't work. 
+* Implement the rich markdown input field from the AI Agent in place of all input fields, which currently just use (textarea).
+  * The Makrdown options stay at the top bar. 
+  * But update the top bar icons to match those that exist in the AI Agent's rich markdown input field, because they are way better.
 
 ### Bottom Nav on phones
 * Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.
@@ -86,9 +85,7 @@ Redesign the whole page:
 
 #### المنصة بالأرقام
 1. **Better more Advanced analytics:** Allow the user to extend the `المشاهدات في آخر 30 يومًا` to cover more/less time, like a year or a week or custom.
-2. Analytics Accuracy:
-  1. The numbers displayed in the "المنصة بالأرقام" section ![views on 8th of november on the About page](image-4.png) are way different that the numbers that are being displayed in Vercel Analytics ![views on 8th of november on Vercel Analytics](image-3.png). And the difference between them is not small by any means. Vercel Analytics: 103 Views. "المنصة بالأرقام" section: 1103 Views.
-3. **Rich Tooltips**: Give rich tooltips to:
+2. **Rich Tooltips**: Give rich tooltips to:
    1. `مسار تعليمي نشط`: Shows the actual `Active learning paths`
    2. `صانع محتوى`: Shows the top admins/developers. 
       1. Suggestion (Not Confirmed): with a link to see all of them.

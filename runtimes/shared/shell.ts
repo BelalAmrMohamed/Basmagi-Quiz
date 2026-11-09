@@ -11,7 +11,7 @@ import type { EditorState } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
 import type { Engine, ImageFile, Out, RunSink, VarInfo, Cell, InputRequest } from './engine';
 import type { Ctx, HostCell, MountOptions, UiCell } from './ctx';
-import { cleanChallenge, gradeCell, type Challenge } from './challenge';
+import { actualOutput, cleanChallenge, gradeCell, normalizeOutput, type Challenge } from './challenge';
 import { createT, type Lang } from './i18n';
 import { h, store, closeDialog } from './dom';
 import { createDialogs } from './dialogs';
@@ -100,22 +100,43 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
   let renderQ = 0, lastD = 0, generation = 0;
 
   const mkCell = (type: 'code' | 'md', src: string): UiCell => ({ id: nextId++, type, src, outs: [], count: null, running: false, mdEdit: false });
+  /**
+   * Challenge on a cell. Published form: `source` = starter code, `challenge.solution` = model solution.
+   * Author (edit) form: the cell's code IS the model solution, so the starter is kept aside and the solution
+   * is folded back in when the notebook is saved (see hostCells).
+   */
+  function attachChallenge(cell: UiCell, raw: unknown) {
+    const ch = cell.type === 'code' ? cleanChallenge(raw) : undefined;
+    if (!ch) return;
+    cell.starter = cell.src;
+    if (edit()) {
+      if (ch.solution !== undefined) cell.src = ch.solution;
+      delete ch.solution;
+    }
+    cell.challenge = ch;
+  }
   const published = (): UiCell[] => {
     const cells = (opts.notebook.cells || []).map((c, i) => {
       const cell = mkCell(c.type === 'code' ? 'code' : 'md', String(c.source ?? ''));
       if (cell.type === 'code' && c.stdin !== undefined) cell.stdin = String(c.stdin);
-      const ch = cell.type === 'code' ? cleanChallenge(c.challenge) : undefined;
-      if (ch) { cell.challenge = ch; cell.chRef = i; cell.starter = cell.src; }
+      attachChallenge(cell, c.challenge);
+      if (cell.challenge) cell.chRef = i;
       return cell;
     });
     return cells.length ? cells : [mkCell('code', '')];
   };
   const publishedHash = hashCells(published());
-  const hostCells = (): HostCell[] => state.cells.map((c, i) => ({
-    id: 'cell-' + (i + 1), type: c.type === 'code' ? 'code' : 'markdown', source: c.src,
-    ...(engine.caps.stdin && c.type === 'code' && c.stdin !== undefined ? { stdin: c.stdin } : {}),
-    ...(c.type === 'code' && c.challenge ? { challenge: cleanChallenge(c.challenge) } : {}),
-  }));
+  const hostCells = (): HostCell[] => state.cells.map((c, i) => {
+    const challenge = c.type === 'code' && c.challenge ? cleanChallenge(c.challenge) : undefined;
+    // Author form -> published form: the author's code becomes the model solution, learners start from the starter.
+    const asAuthor = !!challenge && edit();
+    if (challenge && asAuthor && c.src.trim()) challenge.solution = c.src;
+    return {
+      id: 'cell-' + (i + 1), type: c.type === 'code' ? 'code' : 'markdown', source: asAuthor ? (c.starter ?? '') : c.src,
+      ...(engine.caps.stdin && c.type === 'code' && c.stdin !== undefined ? { stdin: c.stdin } : {}),
+      ...(challenge ? { challenge } : {}),
+    };
+  });
 
   // ---------------- skeleton ----------------
   root.replaceChildren();
@@ -293,7 +314,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     const snapshot: Cell[] = state.cells.map((c) => {
       const base: Cell = { id: c.id, type: c.type, src: c.src, ...(c.stdin !== undefined ? { stdin: c.stdin } : {}) };
       // A challenge is graded against its own test input, so the learner is not asked for stdin.
-      if (engine.caps.stdin && c.type === 'code' && c.challenge?.testStdin !== undefined) { base.stdin = c.challenge.testStdin; base.stdinLocked = true; }
+      if (!edit() && engine.caps.stdin && c.type === 'code' && c.challenge?.testStdin !== undefined) { base.stdin = c.challenge.testStdin; base.stdinLocked = true; }
       return base;
     });
     const single = batch ? null : snapshot.findIndex((c) => c.id === targets[0].id);
@@ -312,7 +333,16 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
         cur = null; state.busy = false;
         for (const c of targets) {
           c.running = false;
-          if (c.type === 'code' && c.challenge) {
+          if (c.type === 'code' && c.challenge && edit()) {
+            // Authoring: the author's own code defines the challenge. Its output is the expected output,
+            // and the stdin typed for the run (if any) becomes the test input.
+            c.result = undefined;
+            if (!ctrl.signal.aborted && !hasError(c)) {
+              c.challenge.expectedOutput = normalizeOutput(actualOutput(c.outs));
+              if (engine.caps.stdin && c.stdin !== undefined) c.challenge.testStdin = c.stdin; else delete c.challenge.testStdin;
+              save();
+            }
+          } else if (c.type === 'code' && c.challenge) {
             if (ctrl.signal.aborted) c.result = undefined;
             else { c.attempts = (c.attempts ?? 0) + 1; c.result = gradeCell(c.challenge, c.outs, hasError(c)); }
           }
@@ -642,8 +672,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
       replaceCells((next || []).map((m) => {
         const c = mkCell(m.type === 'code' ? 'code' : 'md', String(m.source ?? ''));
         if (c.type === 'code' && m.stdin !== undefined) c.stdin = String(m.stdin);
-        const ch = c.type === 'code' ? cleanChallenge(m.challenge) : undefined;
-        if (ch) { c.challenge = ch; c.starter = c.src; }
+        attachChallenge(c, m.challenge);
         return c;
       }));
     },

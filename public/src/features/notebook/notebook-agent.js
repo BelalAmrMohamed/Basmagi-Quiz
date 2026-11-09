@@ -10,21 +10,24 @@ import "../../components/ai-agent/ai-agent-actions.js";
 import { NOTEBOOK_AGENT_TOOLS, buildNotebookContext, runNotebookTool } from "./notebook-agent-tools.js";
 
 /** Mount the floating agent button. `getHandle` is lazy because the runtime mounts asynchronously. */
-export function mountNotebookAgent({ getHandle, notebook, lang }) {
+export function mountNotebookAgent({ getHandle, getNotebook, notebook, lang }) {
+  // Page mode passes a fixed notebook; the editor passes a getter because title/runtime/language change while editing.
+  const info = getNotebook || (() => ({ title: notebook.title, runtime: notebook.runtime, language: lang }));
   if (document.querySelector(".notebook-agent-fab") || document.documentElement.classList.contains("embed-mode")) return null;
   const fab = createAIAgentFab({
     pageKey: "notebook",
-    placeholder: lang === "ar" ? "اطلب من الباشــمبصمج مساعدتك في هذا الدفتر" : "Ask El-Bashmebasamag about this notebook",
+    placeholder: info().language === "ar" ? "اطلب من الباشــمبصمج مساعدتك في هذا الدفتر" : "Ask El-Bashmebasamag about this notebook",
     defaultSystemPrompt: NOTEBOOK_PAGE_SYSTEM_PROMPT,
     suggestedPrompts: NOTEBOOK_PAGE_SUGGESTED_PROMPTS,
     contextPrompt: () => {
       const handle = getHandle();
-      return buildNotebookContext({ title: notebook.title, runtime: notebook.runtime, language: lang, cells: handle ? handle.describe() : [] });
+      const nb = info();
+      return buildNotebookContext({ title: nb.title, runtime: nb.runtime, language: nb.language, cells: handle ? handle.describe() : [] });
     },
     enableTools: true,
     enableFileUpload: true,
     toolNames: NOTEBOOK_AGENT_TOOLS,
-    onToolCall: (toolCall) => runNotebookTool(toolCall, { handle: getHandle(), runtime: notebook.runtime }),
+    onToolCall: (toolCall) => runNotebookTool(toolCall, { handle: getHandle(), runtime: info().runtime }),
   });
   fab.classList.add("notebook-agent-fab");
   document.body.appendChild(fab);

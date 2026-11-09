@@ -23,6 +23,7 @@ import { referencedNotebookAssets, normalizeNotebookContent } from "../../shared
 import "./image-tool-window.js";
 import "./notebook-output-controls.js";
 import "./notebook-menu-controls.js";
+import { mountNotebookAgent } from "./notebook-agent.js";
 
 const $ = (id) => document.getElementById(id);
 let state = M.emptyNotebook();
@@ -321,6 +322,7 @@ export async function startEditor(edit = null) {
   applyChrome();
   try { await mountEditor(); } catch { showIssues(t("loadFail"), [t("runtimeFail")]); }
   void loadDraftAssets();
+  mountNotebookAgent({ getHandle: () => handle, getNotebook: () => ({ title: state.title.trim() || "Untitled notebook", runtime: state.runtime, language: state.language }) });
   import("./notebook-files-strip.js").then(({ mountFilesStrip }) => mountFilesStrip({
     before: $("cnbEditor"), lang: "en", bridge,
     getMeta: () => { readMeta(); return { title: state.title.trim() || "notebook", description: state.description, source: state.source, runtime: state.runtime, language: state.language, cells: currentCells(), assets: state.assets }; },

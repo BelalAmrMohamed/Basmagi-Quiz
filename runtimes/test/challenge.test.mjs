@@ -52,5 +52,6 @@ test('gradeCell uses text outputs only and reports errors', () => {
 test('differingLines and cleanChallenge', () => {
   assert.deepEqual([...differingLines('a\nb\nc', 'a\nX\nc')], [1]);
   assert.deepEqual(cleanChallenge({ expectedOutput: 'x', bogus: 1, matchMode: 'nope', tolerance: 1, hint: ' ' }), { expectedOutput: 'x' });
+  assert.equal(cleanChallenge({ expectedOutput: 'x', hideSolution: true }).hideSolution, true);
   assert.equal(cleanChallenge(null), undefined);
 });

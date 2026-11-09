@@ -61,7 +61,7 @@ export const NOTEBOOK_SCHEMA_VERSION = 1;
 export const NOTEBOOK_LANGUAGES = ["en", "ar"];
 export const NOTEBOOK_CELL_TYPES = ["markdown", "code"];
 export const CHALLENGE_MATCH_MODES = ["exact", "trimmed", "regex", "numeric"];
-export const CHALLENGE_KEYS = ["expectedOutput", "testStdin", "hint", "matchMode", "tolerance", "solution"];
+export const CHALLENGE_KEYS = ["expectedOutput", "testStdin", "hint", "matchMode", "tolerance", "solution", "hideSolution"];
 
 /** File types a notebook workspace may publish. Extend (e.g. csv/txt/mat) when new runtimes need data files. */
 export const NOTEBOOK_ASSET_MIME = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif" };
@@ -473,6 +473,7 @@ export function normalizeChallenge(raw, runtime = "matlab") {
   if (typeof raw.matchMode === "string" && raw.matchMode !== "trimmed") out.matchMode = raw.matchMode;
   if (typeof raw.tolerance === "number" && raw.matchMode === "numeric") out.tolerance = raw.tolerance;
   if (typeof raw.solution === "string" && raw.solution.trim()) out.solution = raw.solution;
+  if (raw.hideSolution === true) out.hideSolution = true;
   return out;
 }
 
@@ -544,6 +545,9 @@ export function checkChallenge(ch, type, runtime, path, n, c) {
   }
   if (ch.hint !== undefined && (typeof ch.hint !== "string" || ch.hint.length > LIMITS.challengeHint)) {
     c.err("CHALLENGE_HINT_INVALID", `${at}.hint`, `الخلية ${n}: hint نص بحد أقصى ${LIMITS.challengeHint} حرف.`);
+  }
+  if (ch.hideSolution !== undefined && typeof ch.hideSolution !== "boolean") {
+    c.err("CHALLENGE_HIDE_SOLUTION_INVALID", `${at}.hideSolution`, `الخلية ${n}: hideSolution قيمة true/false.`);
   }
   if (ch.solution !== undefined && (typeof ch.solution !== "string" || ch.solution.length > LIMITS.challengeSolution)) {
     c.err("CHALLENGE_SOLUTION_INVALID", `${at}.solution`, `الخلية ${n}: solution نص (كود الحل النموذجي) بحد أقصى ${LIMITS.challengeSolution} حرف.`);

@@ -1533,9 +1533,6 @@ export function createChatPanel(options = {}) {
   }
   updateMessagesPadding();
 
-  // inputRow exists now, so it's safe for renderSuggestions() to run
-  renderSuggestions();
-
   function renderEmptyState() {
     // Platform-key access is open to everyone now (see isAiHelperAvailable's
     // own doc in ai-agent-settings.js), so there's no client-known
@@ -1546,6 +1543,9 @@ export function createChatPanel(options = {}) {
     updateAvailabilityGate();
   }
   renderEmptyState();
+  // inputRow exists now. Suggestions go AFTER the empty state: renderEmptyState() replaces
+  // messagesEl's content, so the other order wiped the chips on first open.
+  renderSuggestions();
 
   /**
    * isAiHelperAvailable() always returns true now, so this no longer

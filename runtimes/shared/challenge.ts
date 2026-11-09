@@ -15,8 +15,10 @@ export type Challenge = {
   matchMode?: MatchMode;
   /** numeric mode only: |a-b| <= tolerance * max(1, |b|). Default 1e-6. */
   tolerance?: number;
-  /** Model solution code. Learners can reveal it after their first attempt. */
+  /** Model solution code. Learners can reveal it after their first attempt unless `hideSolution`. */
   solution?: string;
+  /** Keep the solution private: the "Show solution" button is not offered to learners. */
+  hideSolution?: boolean;
 };
 export type ChallengeResult =
   | { state: 'pass'; actual: string }
@@ -86,5 +88,6 @@ export function cleanChallenge(raw: unknown): Challenge | undefined {
   if (r.matchMode === 'exact' || r.matchMode === 'regex' || r.matchMode === 'numeric') out.matchMode = r.matchMode;
   if (typeof r.tolerance === 'number' && Number.isFinite(r.tolerance) && r.tolerance >= 0 && out.matchMode === 'numeric') out.tolerance = r.tolerance;
   if (typeof r.solution === 'string' && r.solution.trim()) out.solution = r.solution;
+  if (r.hideSolution === true) out.hideSolution = true;
   return out;
 }
