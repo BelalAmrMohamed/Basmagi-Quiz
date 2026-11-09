@@ -44,15 +44,6 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 ### Dictation for Essay Questions (Lesson & Quiz Pages)
 Add dictation feature for essays in quizzes and lessons
 
-### Notebook Page
-
-#### Improvements & New features
-* Implement cursor animation style similar to that of VS Code: `expand` blinking.
-* Implement some sort of a quiz/question, a user has to write some code that outputs a specific output. Even if the user's code doesn't perfectly match that of the formal-answer-code, as long as it outputs the same output. 
-
-#### Runtimes
-* There is no error handling while typing, if users forget a simple thing like a semi-column or something it doesn't get highlighted.
-
 ### Update the `createEmptyState`
 * Update the `createEmptyState` to include a link to the `/how-to-create-content`
 
@@ -93,9 +84,6 @@ Redesign the whole page:
 #### Important Update
 * See [update plan.](plans/documentation-pages.md)
 
-### Create Quiz Page
-`create-quiz.js` is 5000+ lines in one file — It's the right time to split it into modules.
-
 ### Connect Canva
 Think of a new way to download quizzes and lessons, maybe through canva.
 
@@ -112,7 +100,7 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 ### Offline Page
 Improve:
 * It's theme Should match the theme of the platform (see themes.css and theme-controller.js), but it shouldn't import these files, it should be independent. It should also default to the default theme of the platform.
-* Its design feels too complicated, I want a simpler version 
+* Its design feels too complicated, I want a simpler version.
 
 ### Profile Page
 * Notebooks (دفتر): Aren't counted anywhere in the page. It wasn't updated since then.
@@ -120,8 +108,6 @@ Improve:
   * Remove the scrollbar, scrolling through them is either by using the 2 buttons on the sides or by hand on phones.
   * It shows emtpy admin profiles that don't have links, these are probably poeple who have been made admin, but haven't signed in for the first time, remove that.
 * Syncing is so messed up for developer/admin profiles.
-
-### What is `PISTON_TOKEN`
 
 ### AI Agent
 Is making an independent page something usefull?
