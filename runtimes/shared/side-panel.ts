@@ -5,7 +5,7 @@
 // =============================================================================
 import type { Ctx } from './ctx';
 import type { ImageFile } from './engine';
-import { h, fmtBytes } from './dom';
+import { h, fmtBytes, download } from './dom';
 import { rawToCanvas, toBlob, downloadImage } from './images';
 
 /** True when the engine has anything to show in the side column. */
@@ -106,8 +106,13 @@ async function copyImage(img: ImageFile): Promise<boolean> {
   } catch { return false; }
 }
 
-function fileMenu(ctx: Ctx, anchor: HTMLElement, name: string, img: ImageFile) {
+function isImageFile(f: any): f is ImageFile {
+  return f && typeof f.width === 'number' && typeof f.height === 'number';
+}
+
+function fileMenu(ctx: Ctx, anchor: HTMLElement, name: string, file: any) {
   const { t } = ctx;
+  const isImg = isImageFile(file);
   const items: MenuItem[] = [
     { label: t('Copy Name'), action: async () => ctx.notify((await copyText(name)) ? t('Copied {name}', { name }) : t('Could not copy to the clipboard.')) },
     ...(ctx.engine.renameFile ? [{
@@ -121,8 +126,17 @@ function fileMenu(ctx: Ctx, anchor: HTMLElement, name: string, img: ImageFile) {
         ctx.renameFile(name, to);
       },
     }] : []),
-    { label: t('Copy Image'), action: async () => ctx.notify((await copyImage(img)) ? t('Image copied to clipboard.') : t('Could not copy the image. Your browser may block clipboard access; use Download instead.')) },
-    { label: t('Download'), action: () => downloadImage(name, img) },
+    ...(isImg ? [{
+      label: t('Copy Image'),
+      action: async () => ctx.notify((await copyImage(file)) ? t('Image copied to clipboard.') : t('Could not copy the image. Your browser may block clipboard access; use Download instead.')),
+    }] : []),
+    {
+      label: t('Download'),
+      action: () => {
+        if (isImg) downloadImage(name, file);
+        else download(name, new Blob([file.data || file.text || ''], { type: 'text/plain' }));
+      },
+    },
     { label: t('Remove'), danger: true, action: () => ctx.removeFile(name) },
   ];
   openMenu(ctx, anchor, items);
@@ -130,17 +144,28 @@ function fileMenu(ctx: Ctx, anchor: HTMLElement, name: string, img: ImageFile) {
 
 function filesPanel(ctx: Ctx): HTMLElement {
   const { t } = ctx;
-  const body = h('div', { class: 'body' }), files = ctx.files();
-  for (const [name, img] of files) {
-    body.append(h('div', { class: 'file' }, rawToCanvas(img),
-      h('span', { class: 'n', title: `${img.width}×${img.height} · ${img.channels === 1 ? 'grayscale' : 'RGB'} · ${fmtBytes(img.fileSize)}` }, name + ' · ' + fmtBytes(img.fileSize)),
+  const body = h('div', { class: 'body' }), files = ctx.files() as Map<string, any>;
+  for (const [name, file] of files) {
+    const isImg = isImageFile(file);
+    const thumb = isImg
+      ? rawToCanvas(file)
+      : h('span', { style: 'font-size:1.3rem;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;' }, '📄');
+    const info = isImg
+      ? `${file.width}×${file.height} · ${file.channels === 1 ? 'grayscale' : 'RGB'} · ${fmtBytes(file.fileSize)}`
+      : fmtBytes(file.fileSize || 0);
+
+    body.append(h('div', { class: 'file' }, thumb,
+      h('span', { class: 'n', title: info }, name + ' · ' + fmtBytes(file.fileSize || 0)),
       h('button', {
         class: 'file-more', title: t('File actions'), 'aria-haspopup': 'menu', 'aria-expanded': 'false',
-        onclick: (e: MouseEvent) => fileMenu(ctx, e.currentTarget as HTMLElement, name, img),
+        onclick: (e: MouseEvent) => fileMenu(ctx, e.currentTarget as HTMLElement, name, file),
       }, '⋮')));
   }
-  if (!files.size) body.append(h('div', { class: 'empty' }, t('No files yet. Upload an image to get started.')));
-  const input = h('input', { type: 'file', accept: 'image/*', multiple: true, style: 'display:none' });
+  const isCpp = ctx.engine.id === 'cpp';
+  if (!files.size) {
+    body.append(h('div', { class: 'empty' }, isCpp ? t('No files yet. Upload a text file to get started.') : t('No files yet. Upload an image to get started.')));
+  }
+  const input = h('input', { type: 'file', accept: isCpp ? '.txt,.csv,.dat,.in,.out,text/*' : 'image/*', multiple: true, style: 'display:none' });
   input.onchange = async () => {
     for (const f of Array.from(input.files ?? [])) {
       try { await ctx.addFile(f); }
@@ -148,7 +173,7 @@ function filesPanel(ctx: Ctx): HTMLElement {
     }
     input.value = '';
   };
-  return h('div', { class: 'panel' }, h('h3', {}, t('Current Folder'), h('button', { title: t('Upload image files'), onclick: () => input.click() }, t('Upload')), input), body);
+  return h('div', { class: 'panel' }, h('h3', {}, t('Current Folder'), h('button', { title: t(isCpp ? 'Upload text files' : 'Upload image files'), onclick: () => input.click() }, t('Upload')), input), body);
 }
 
 function historyPanel(ctx: Ctx): HTMLElement {

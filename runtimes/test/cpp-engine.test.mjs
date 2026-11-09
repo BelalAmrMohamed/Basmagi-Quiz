@@ -48,9 +48,9 @@ test('timeout reports a message', async () => {
   await e.run({ cells: [cells[0]], target: 0, signal: new AbortController().signal }, sink);
   assert.match(log.status.at(-1)[0], /No response from the compile service/);
 });
-test('caps: only stdin', () => {
+test('caps: stdin and files', () => {
   const e = createCppEngine({ execute: async () => ({ ok: true }) });
-  assert.deepEqual(e.caps, { workspace: false, files: false, images: false, stdin: true, history: false });
+  assert.deepEqual(e.caps, { workspace: false, files: true, images: false, stdin: true, history: false });
 });
 test('compile error status names the provider and explains an empty diagnostic', async () => {
   const e = createCppEngine({ execute: async () => ({ ok: false, compile: '', provider: 'wandbox' }) });

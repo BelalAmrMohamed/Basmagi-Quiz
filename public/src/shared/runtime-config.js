@@ -9,7 +9,7 @@ export const RUNTIME_CONFIG = {
     codeExts: [".m", ".ipynb"],                          // imported as notebook cells
     workspaceExts: [".png", ".jpg", ".jpeg", ".webp", ".gif"], // go to the workspace "Current Folder"
   },
-  cpp: { label: "C++", global: "BasmagiCppNotebook", base: "/assets/notebook-runtime-cpp/", kernel: "xcpp17", codeExts: [".cpp", ".cc", ".cxx", ".h", ".hpp"], workspaceExts: [] },
+  cpp: { label: "C++", global: "BasmagiCppNotebook", base: "/assets/notebook-runtime-cpp/", kernel: "xcpp17", codeExts: [".cpp", ".cc", ".cxx", ".h", ".hpp"], workspaceExts: [".txt", ".csv", ".dat", ".in", ".out"] },
 };
 
 const ext = (name) => { const m = String(name || "").toLowerCase().match(/\.[a-z0-9]+$/); return m ? m[0] : ""; };

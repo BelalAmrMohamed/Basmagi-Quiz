@@ -20,7 +20,20 @@ export { createMatlabEngine } from './matlab/src/engine';
 export { createCppEngine } from './cpp/src/engine';`);
 let code;
 try {
-  code = (await build({ absWorkingDir: root, entryPoints: ['_parity-entry.ts'], bundle: true, write: false, format: 'iife', globalName: 'T', loader: { '.css': 'empty' }, define: { 'process.env.NODE_ENV': '"test"' } })).outputFiles[0].text;
+  code = (await build({
+    absWorkingDir: root,
+    entryPoints: ['_parity-entry.ts'],
+    bundle: true,
+    write: false,
+    format: 'iife',
+    globalName: 'T',
+    loader: { '.css': 'empty' },
+    alias: {
+      '@codemirror/state': path.resolve(root, 'node_modules/@codemirror/state'),
+      '@codemirror/view': path.resolve(root, 'node_modules/@codemirror/view'),
+    },
+    define: { 'process.env.NODE_ENV': '"test"' },
+  })).outputFiles[0].text;
 } finally { rmSync(entryFile); }
 
 const CELLS = [{ type: 'code', source: 'x = 1' }, { type: 'markdown', source: '# Title $x^2$' }];
@@ -55,7 +68,7 @@ function skeleton(e) {
   return e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + (e.classList.length ? '.' + [...e.classList].sort().join('.') : '') + (kids.length ? `[${kids.join(',')}]` : '');
 }
 /** Elements that exist only because an engine's caps ask for them (see Engine.caps). */
-const CAPS_PANELS = ['#toggleside', '#side', '#imageTool'];
+const CAPS_PANELS = ['#toggleside', '#side', '#imageTool', '#cppWasmBtn', '#cppWasmDialog'];
 const prune = (el) => { const c = el.cloneNode(true); CAPS_PANELS.forEach((s) => c.querySelectorAll(s).forEach((n) => n.remove())); return c; };
 const rendered = (el) => [...el.children].map(skeleton).join('\n');
 
@@ -69,10 +82,12 @@ test('MATLAB and C++ render the same DOM skeleton; only caps panels differ', () 
   assert.equal(rendered(prune(c.el)), rendered(prune(m.el)));
 });
 test('caps panels appear exactly where the caps are true', () => {
-  for (const s of CAPS_PANELS) {
-    assert.ok(m.el.querySelector(s), `MATLAB should have ${s}`);
-    assert.equal(c.el.querySelector(s), null, `C++ must not have ${s}`);
-  }
+  assert.ok(m.el.querySelector('#toggleside'));
+  assert.ok(m.el.querySelector('#side'));
+  assert.ok(m.el.querySelector('#imageTool'));
+  assert.ok(c.el.querySelector('#toggleside'));
+  assert.ok(c.el.querySelector('#side'));
+  assert.equal(c.el.querySelector('#imageTool'), null, 'C++ must not have #imageTool');
 });
 test('Arabic mode keeps the same skeleton for both runtimes', async () => {
   const am = await mount('matlab', 'ar'), ac = await mount('cpp', 'ar');

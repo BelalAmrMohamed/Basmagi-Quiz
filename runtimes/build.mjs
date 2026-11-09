@@ -25,6 +25,7 @@ const TARGETS = {
     entry: 'cpp/src/index.ts',
     outDir: 'notebook-runtime-cpp',
     globalName: 'BasmagiCppRuntime',
+    extra: [{ entry: 'cpp/src/worker.ts', outfile: 'worker.js' }],
   },
   matlab: {
     entry: 'matlab/src/index.ts',

@@ -28,7 +28,7 @@ const execute: CppExecute = async ({ cells, target, signal }) => {
 };
 
 export function mount(opts: MountOptions): ShellHandle {
-  const engine = createCppEngine({ execute, lang: opts?.lang === 'ar' ? 'ar' : 'en' });
+  const engine = createCppEngine({ execute, lang: opts?.lang === 'ar' ? 'ar' : 'en', baseUrl: opts?.baseUrl });
   try { return mountShell(engine, opts, CPP_AR); } catch (e) { engine.dispose(); throw e; }
 }
 

@@ -8,7 +8,14 @@ import path from 'node:path';
 import { writeFileSync, rmSync } from 'node:fs';
 
 const here = import.meta.dirname, root = path.join(here, '..');
-const bundle = async (entry, format = 'esm', globalName) => (await build({ absWorkingDir: root, entryPoints: [entry], bundle: true, write: false, format, globalName, loader: { '.css': 'empty' }, define: { 'process.env.NODE_ENV': '"test"' } })).outputFiles[0].text;
+const bundle = async (entry, format = 'esm', globalName) => (await build({
+  absWorkingDir: root, entryPoints: [entry], bundle: true, write: false, format, globalName, loader: { '.css': 'empty' },
+  alias: {
+    '@codemirror/state': path.resolve(root, 'node_modules/@codemirror/state'),
+    '@codemirror/view': path.resolve(root, 'node_modules/@codemirror/view'),
+  },
+  define: { 'process.env.NODE_ENV': '"test"' }
+})).outputFiles[0].text;
 
 const unit = await import('data:text/javascript;base64,' + Buffer.from(await bundle('cpp/src/completions.ts')).toString('base64'));
 const { cppCompletions, scanNotebook, lexState, stripNoise } = unit;

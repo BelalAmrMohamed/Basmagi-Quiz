@@ -61,7 +61,11 @@ type Out = { k: 'text' | 'err' | 'warn'; s: string } | { k: 'img'; ... } | { k: 
 - `test/parity.test.mjs` mounts the real shell with both engines and asserts: identical DOM skeleton (except caps panels), every rendered class has a rule in `shared/styles`, no CSS or class names inside engines, and `build-info.json` matches the current sources (so a stale bundle fails the test).
 
 ## C++ specifics
-`cpp/src/engine.ts` assembles the cells and calls the `cpp-run` Supabase Edge Function (`supabase/functions/cpp-run`), which compiles through Wandbox, then Piston when `PISTON_TOKEN` is set. Each provider has its own time budget and failures are reported per provider. Autocomplete lives in `cpp/src/completions.ts` and `completion-data.ts`. `node scripts/cpp-run-probe.mjs` times each hop when debugging.
+`cpp/src/engine.ts` supports dual-engine execution:
+1. **Client-side WebAssembly (Wasm-Clang):** When downloaded via the optional ~20MB toolbar dialog (`cppWasmDialog`), compiles and runs locally in `public/assets/notebook-runtime-cpp/worker.js` via Clang + LLD + MemFS in ~200–400ms with full support for C++ Fundamentals, OOP, and virtual filesystem text file I/O (`<fstream>`).
+2. **Cloud Fallback:** When Wasm is not downloaded, assembles the cells and calls the `cpp-run` Supabase Edge Function (`supabase/functions/cpp-run`), which compiles through Wandbox, then Piston when `PISTON_TOKEN` is set. Each provider has its own time budget and failures are reported per provider.
+
+Autocomplete lives in `cpp/src/completions.ts` and `completion-data.ts`. `node scripts/cpp-run-probe.mjs` times each hop when debugging. Workspace files accept text files (`.txt`, `.csv`, `.dat`, `.in`, `.out`) synchronized with the C++ virtual filesystem.
 
 ## Challenge cells
 

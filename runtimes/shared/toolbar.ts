@@ -48,6 +48,7 @@ export function renderToolbar(ctx: Ctx, importInput: HTMLInputElement) {
       'aria-pressed': String(ctx.q('layout')?.classList.contains('side-open') ?? false),
       onclick: (e: MouseEvent) => { const open = ctx.q('layout')!.classList.toggle('side-open'); (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(open)); },
     }, t('Workspace'))] : []),
+    ...((engine as any).toolbarExtra ? [(engine as any).toolbarExtra(ctx)] : []),
     ...(ctx.opts.onInfo ? [h('button', { type: 'button', title: t('Notebook information'), 'aria-label': t('Notebook information'), onclick: () => ctx.opts.onInfo?.() }, t('ⓘ Info'))] : []),
     menu, importInput);
 }

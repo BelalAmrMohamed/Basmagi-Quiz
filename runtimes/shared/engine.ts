@@ -84,6 +84,7 @@ export interface Engine {
   /** Help dialog content. The shell adds the generic notebook shortcuts itself. */
   help?: { title?: string; intro?: string; searchPlaceholder?: string; items: Array<[title: string, en: string, ar: string]> };
   caps: { workspace: boolean; files: boolean; images: boolean; stdin: boolean; history: boolean };
+  toolbarExtra?: (ctx: any) => HTMLElement;
   /** Script export extension: `.m` or `.cpp`. */
   exportExt: '.m' | '.cpp';
   /** Jupyter kernelspec name written to exported .ipynb files. */
