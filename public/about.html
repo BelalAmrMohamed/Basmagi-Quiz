@@ -210,23 +210,26 @@
 
                 <div class="live-stats" id="liveStats" aria-live="off">
                     <div class="live-stats-block live-stats-block--total platform-stat-loading" id="liveCardTotal">
-                        <span class="live-stats-label">إجمالي مشاهدات المنصة (منذ بدء تسجيل المشاهدات في شهر 10 عام
-                            2026)</span>
-                        <strong class="platform-stat-value live-stats-total" id="liveTotalViews">—</strong>
-                        <span class="live-online" id="liveOnline"><span class="live-dot" aria-hidden="true"></span><b
-                                id="liveOnlineCount">—</b> متصل الآن</span>
+                        <span class="live-stats-label">إجمالي زوار المنصة الفريدين (منذ بدء تسجيل الزوار في شهر 11 عام 2026)</span>
+                        <strong class="platform-stat-value live-stats-total" id="liveTotalVisitors">—</strong>
+                        <div class="live-stats-meta-row">
+                            <span class="live-online" id="liveOnline"><span class="live-dot" aria-hidden="true"></span><b
+                                    id="liveOnlineCount">—</b> متصل الآن</span>
+                            <span class="live-sub-stat">إجمالي المشاهدات: <b id="liveTotalViews">—</b></span>
+                        </div>
                     </div>
                     <div class="live-stats-block live-stats-block--today platform-stat-loading" id="liveCardToday">
                         <span class="live-stats-label">هذا اليوم</span>
-                        <strong class="platform-stat-value" id="liveTodayViews">—</strong>
-                        <span class="platform-stat-label">مشاهدة</span>
+                        <strong class="platform-stat-value" id="liveTodayVisitors">—</strong>
+                        <span class="platform-stat-label">زائر مختلف</span>
+                        <span class="live-sub-views">(<b id="liveTodayViews">—</b> مشاهدة)</span>
                     </div>
                     <figure class="live-stats-block live-stats-block--trend" id="liveCardTrend">
-                        <figcaption class="live-stats-label">المشاهدات في آخر 30 يومًا (على اليسار أحدث يوم)
+                        <figcaption class="live-stats-label">الزوار الفريدون في آخر 30 يومًا (على اليسار أحدث يوم)
                         </figcaption>
                         <div class="live-spark-wrap" id="liveSparkWrap">
                             <svg class="live-spark" id="liveSpark" role="img"
-                                aria-label="رسم بياني لمشاهدات آخر 30 يومًا"></svg>
+                                aria-label="رسم بياني لزوار آخر 30 يومًا"></svg>
                             <div class="live-spark-tip" id="liveSparkTip" hidden></div>
                         </div>
                     </figure>

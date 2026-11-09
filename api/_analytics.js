@@ -97,10 +97,16 @@ export function normalizeLiveStats(raw) {
   };
   const r = raw && typeof raw === "object" ? raw : {};
   const daily = (Array.isArray(r.daily) ? r.daily : [])
-    .map((d) => ({ day: String((d && d.day) || ""), views: int(d && d.views) }))
+    .map((d) => ({
+      day: String((d && d.day) || ""),
+      visitors: int(d && d.visitors),
+      views: int(d && d.views),
+    }))
     .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d.day))
     .slice(-30);
   return {
+    totalVisitors: int(r.totalVisitors),
+    visitorsToday: int(r.visitorsToday),
     totalViews: int(r.totalViews),
     viewsToday: int(r.viewsToday),
     onlineNow: int(r.onlineNow),

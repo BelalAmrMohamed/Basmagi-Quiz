@@ -478,6 +478,43 @@ html[data-theme="dark-slate"] .about-page {
   font-variant-numeric: tabular-nums;
 }
 
+.about-page .live-stats-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.about-page .live-sub-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--about-surface-2, rgba(255, 255, 255, .05));
+  border: 1px solid var(--about-line);
+  color: var(--about-muted);
+  font-size: .78rem;
+}
+
+.about-page .live-sub-stat b {
+  color: var(--about-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.about-page .live-sub-views {
+  color: var(--about-muted);
+  font-size: .78rem;
+  margin-top: 2px;
+}
+
+.about-page .live-sub-views b {
+  color: var(--about-ink);
+  font-variant-numeric: tabular-nums;
+}
+
 .about-page .live-dot {
   width: 8px;
   height: 8px;

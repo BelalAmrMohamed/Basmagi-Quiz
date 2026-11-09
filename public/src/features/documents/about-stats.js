@@ -203,14 +203,15 @@ function renderSparkline(daily) {
     const rtl = getComputedStyle(wrap).direction === "rtl";
     const innerW = w - SPARK_PAD.side * 2;
     const innerH = h - SPARK_PAD.top - SPARK_PAD.bottom;
-    const max = Math.max(1, ...daily.map((d) => d.views));
+    const getVal = (d) => (typeof d.visitors === "number" ? d.visitors : (d.views || 0));
+    const max = Math.max(1, ...daily.map(getVal));
     const n = daily.length;
 
     // Arabic (RTL) pages read the timeline right → left: oldest day on the right.
     const points = daily.map((d, i) => {
         const t = n === 1 ? 0.5 : i / (n - 1);
         const x = SPARK_PAD.side + (rtl ? 1 - t : t) * innerW;
-        const y = SPARK_PAD.top + innerH - (d.views / max) * innerH;
+        const y = SPARK_PAD.top + innerH - (getVal(d) / max) * innerH;
         return { x, y };
     });
     const ordered = rtl ? [...points].reverse() : points; // path must run left → right
@@ -218,11 +219,11 @@ function renderSparkline(daily) {
     const bottom = SPARK_PAD.top + innerH;
     const line = smoothPath(ordered, top, bottom);
     const area = `${line} L${ordered[ordered.length - 1].x.toFixed(1)},${bottom} L${ordered[0].x.toFixed(1)},${bottom} Z`;
-    const total = daily.reduce((sum, d) => sum + d.views, 0);
+    const totalVisitors = daily.reduce((sum, d) => sum + getVal(d), 0);
 
     svg.replaceChildren();
     svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-    svg.setAttribute("aria-label", `رسم بياني لمشاهدات آخر ${formatCount(n)} يومًا، بإجمالي ${formatCount(total)} مشاهدة`);
+    svg.setAttribute("aria-label", `رسم بياني لزوار آخر ${formatCount(n)} يومًا، بإجمالي ${formatCount(totalVisitors)} زائر مختلف`);
 
     const defs = svgEl("defs");
     const grad = svgEl("linearGradient", { id: "liveSparkFill", x1: 0, y1: 0, x2: 0, y2: 1 });
@@ -272,7 +273,10 @@ function renderSparkline(daily) {
         guide.setAttribute("visibility", "visible");
         hoverDot.setAttribute("visibility", "visible");
         if (tip) {
-            tip.textContent = `${formatDay(daily[best].day)} | ${formatCount(daily[best].views)} مشاهدة`;
+            const d = daily[best];
+            const vCount = typeof d.visitors === "number" ? d.visitors : 0;
+            const viewsCount = typeof d.views === "number" ? d.views : 0;
+            tip.textContent = `${formatDay(d.day)} | ${formatCount(vCount)} زائر مختلف (${formatCount(viewsCount)} مشاهدة)`;
             tip.style.left = `${Math.min(Math.max((p.x / w) * 100, 14), 86)}%`;
             tip.hidden = false;
         }
@@ -298,7 +302,9 @@ function applyLiveStats(stats) {
     // The visitor reading this page is online by definition (the beacon's own
     // hit can land after this response), so never show 0.
     if (online) animateNumber(online, Math.max(1, stats.onlineNow || 0));
+    animateNumber(document.getElementById("liveTotalVisitors"), stats.totalVisitors ?? stats.totalViews ?? 0);
     animateNumber(document.getElementById("liveTotalViews"), stats.totalViews || 0);
+    animateNumber(document.getElementById("liveTodayVisitors"), stats.visitorsToday ?? stats.viewsToday ?? 0);
     animateNumber(document.getElementById("liveTodayViews"), stats.viewsToday || 0);
     document.getElementById("liveCardTotal")?.classList.remove("platform-stat-loading");
     document.getElementById("liveCardToday")?.classList.remove("platform-stat-loading");

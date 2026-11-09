@@ -2,12 +2,12 @@
 // Tiny, cookie-less page-view beacon for the platform-wide counter on about.html.
 //
 //   * One "track" call per page view (also when the home SPA navigates via
-//     history.pushState to a different path/query).
+//     history.pushState to a different pathname).
 //   * One "ping" every 2 min while the tab is visible, so "online now" stays
 //     accurate on long reads without counting extra views.
 //   * Nothing is stored in the browser and no identifier is sent: the server
 //     derives an anonymous, daily-rotating hash from the request (see
-//     api/_analytics.js). Skipped on localhost and for automated browsers.
+//     api/_analytics.js). Skipped on localhost, for automated browsers, and for admins.
 (function () {
   "use strict";
   if (window.__basmagiBeacon) return;
@@ -17,14 +17,24 @@
   if (host === "localhost" || host === "127.0.0.1" || host === "[::1]" || /\.local$/.test(host)) return;
   if (navigator.webdriver) return;
 
+  function isAdmin() {
+    try {
+      if (sessionStorage.getItem("__bq_adm") || localStorage.getItem("basmagi_admin_token")) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  if (isAdmin()) return;
+
   var ENDPOINT = "/api/admin";
   var HEARTBEAT_MS = 120000;
-  var MIN_GAP_MS = 800;
-  var lastPath = location.pathname + location.search;
+  var MIN_GAP_MS = 5000;
+  var lastPath = location.pathname;
   var lastSent = 0;
   var lastBeat = Date.now();
 
   function post(action) {
+    if (isAdmin()) return;
     try {
       fetch(ENDPOINT, {
         method: "POST",
@@ -57,13 +67,13 @@
 
   whenVisible(trackView);
 
-  // Home-page SPA: a new path/query is a new view (hash-only changes are not).
+  // Home-page SPA: a new pathname is a new view (query-only or hash-only changes are ignored to prevent inflating views on search/filter).
   var origPush = history.pushState;
   if (typeof origPush === "function") {
     history.pushState = function () {
       var result = origPush.apply(this, arguments);
       try {
-        var p = location.pathname + location.search;
+        var p = location.pathname;
         if (p !== lastPath) {
           lastPath = p;
           trackView();

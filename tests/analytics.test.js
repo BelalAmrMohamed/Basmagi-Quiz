@@ -48,13 +48,35 @@ test("visitorHash: stable per day+ip+ua, rotates daily, never contains the IP", 
 });
 
 test("normalizeLiveStats: defensive shape, 30 days max, bad values become 0", () => {
-  const daily = Array.from({ length: 35 }, (_, i) => ({ day: `2026-10-${String(i + 1).padStart(2, "0")}`, views: i }));
-  const n = normalizeLiveStats({ totalViews: "1234", viewsToday: -5, onlineNow: null, daily: [...daily, { day: "bad", views: 9 }] });
+  const daily = Array.from({ length: 35 }, (_, i) => ({
+    day: `2026-10-${String(i + 1).padStart(2, "0")}`,
+    visitors: i,
+    views: i * 2,
+  }));
+  const n = normalizeLiveStats({
+    totalVisitors: "500",
+    visitorsToday: 25,
+    totalViews: "1234",
+    viewsToday: -5,
+    onlineNow: null,
+    daily: [...daily, { day: "bad", visitors: 5, views: 9 }],
+  });
+  assert.equal(n.totalVisitors, 500);
+  assert.equal(n.visitorsToday, 25);
   assert.equal(n.totalViews, 1234);
   assert.equal(n.viewsToday, 0);
   assert.equal(n.onlineNow, 0);
   assert.equal(n.daily.length, 30);
-  assert.deepEqual(normalizeLiveStats(null), { totalViews: 0, viewsToday: 0, onlineNow: 0, daily: [] });
+  assert.equal(typeof n.daily[0].visitors, "number");
+  assert.equal(typeof n.daily[0].views, "number");
+  assert.deepEqual(normalizeLiveStats(null), {
+    totalVisitors: 0,
+    visitorsToday: 0,
+    totalViews: 0,
+    viewsToday: 0,
+    onlineNow: 0,
+    daily: [],
+  });
 });
 
 test("track handler: records a view, always 204, ignores bots / foreign origins, maps ping to heartbeat", async () => {
