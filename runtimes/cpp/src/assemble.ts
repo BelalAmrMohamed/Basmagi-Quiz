@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // runtimes/cpp/src/assemble.ts
 // Reusable C++ multi-cell notebook code assembler and section splitter.
 // =============================================================================
@@ -115,16 +115,22 @@ export function assemble(cells: Array<{ src?: string; source?: string; stdin?: s
   });
 
   const globals = decl.join('\n');
-  const code = ['#include <iostream>', '#include <sstream>', '#include <exception>', globals, 'int main(){ try {'];
+  // Detect if user included <iostream> — required for std::cin/cout and cin simulation
+  const hasIostream = /^\s*#\s*include\s*[<"](iostream|bits\/stdc\+\+\.h)[">]/m.test(globals);
+  // Auto-includes: <cstdio> for section markers (fputs/fflush); NOT <iostream> — students must write it
+  const code = ['#include <cstdio>', '#include <sstream>', '#include <exception>', globals, 'int main(){ try {'];
   for (const c of body) {
     let d = 'NBSTDIN' + c.k;
     while (c.stdin.includes(d)) d += 'X';
-    code.push(`std::istringstream __nb_in_${c.k}(R"${d}(${c.stdin})${d}"); std::cin.clear(); std::cin.rdbuf(__nb_in_${c.k}.rdbuf());`);
+    // Only redirect cin when user has #include <iostream>
+    if (hasIostream) {
+      code.push(`std::istringstream __nb_in_${c.k}(R"${d}(${c.stdin})${d}"); std::cin.clear(); std::cin.rdbuf(__nb_in_${c.k}.rdbuf());`);
+    }
     for (const s of c.stmts) code.push(`#line ${s.line} "cell-${c.k}"\n${s.t}`);
     if (c.callMain) code.push(c.callMain);
-    code.push(`std::cout << "\\x1e@@NB:${c.k}@@\\x1e" << std::flush; std::cerr << "\\x1e@@NB:${c.k}@@\\x1e";`);
+    code.push(`fputs("\x1e@@NB:${c.k}@@\x1e", stdout); fflush(stdout); fputs("\x1e@@NB:${c.k}@@\x1e", stderr);`);
   }
-  code.push('} catch(const std::exception& e){ std::cerr << "terminate: " << e.what(); } catch(...){ std::cerr << "terminate: unknown exception"; } return 0; }');
+  code.push('} catch(const std::exception& e){ fputs("terminate: ", stderr); fputs(e.what(), stderr); } catch(...){ fputs("terminate: unknown exception", stderr); } return 0; }');
   return code.join('\n');
 }
 

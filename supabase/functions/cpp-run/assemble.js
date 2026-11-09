@@ -1,4 +1,4 @@
-// Pure ESM compiler request assembler. Kept dependency free for Deno and Node tests.
+﻿// Pure ESM compiler request assembler. Kept dependency free for Deno and Node tests.
 const CONTROL = /^(if|for|while|switch|do|try|else|catch)$/;
 export function splitCell(src) {
   const s = String(src || ''), out = []; let start = 0, i = 0, par = 0, br = 0, curl = 0, quote = '', lineComment = false, blockComment = false, rawEnd = '';
@@ -26,9 +26,9 @@ const isDecl = (t) => /^(\s*#|\s*(using\b|typedef\b|namespace\b|template\b|class
 export function assemble(cells, target = 'all') {
   const selected = target === 'all' ? cells : cells.slice(0, Number(target) + 1), decl = [], body = [];
   selected.forEach((cell, ix) => { const k = ix + 1, parts = splitCell(cell.src ?? cell.source ?? ''); const stmts = []; let callMain = ''; for (const p of parts) { let t = p.text; const main = /\bmain\s*\(([^)]*)\)/.exec(t); if (main && isDecl(t)) { const args = main[1].trim(); t = t.replace(/\bmain\s*\(/, `__nb_main_${k}(`); callMain = args ? '__nb_main_' + k + '(0,nullptr);' : '__nb_main_' + k + '();'; } if (isDecl(t) || /\/\/@global/.test(t) || /\/\/@global/.test((cell.src || '').split('\n')[p.line - 2] || '')) { decl.push(`#line ${p.line} "cell-${k}"\n${t.replace(/^\s*\/\/@global\s*\n/, '')}`); } else stmts.push({ t, line: p.line }); } body.push({ k, stdin: String(cell.stdin || ''), stmts, callMain }); });
-  const globals = decl.join('\n'); const code = ['#include <iostream>', '#include <sstream>', '#include <exception>', globals, 'int main(){ try {'];
-  for (const c of body) { let d = 'NBSTDIN' + c.k; while (c.stdin.includes(d)) d += 'X'; code.push(`std::istringstream __nb_in_${c.k}(R"${d}(${c.stdin})${d}"); std::cin.clear(); std::cin.rdbuf(__nb_in_${c.k}.rdbuf());`); for (const s of c.stmts) code.push(`#line ${s.line} "cell-${c.k}"\n${s.t}`); if (c.callMain) code.push(c.callMain); code.push(`std::cout << "\\x1e@@NB:${c.k}@@\\x1e" << std::flush; std::cerr << "\\x1e@@NB:${c.k}@@\\x1e";`); }
-  code.push('} catch(const std::exception& e){ std::cerr << "terminate: " << e.what(); } catch(...){ std::cerr << "terminate: unknown exception"; } return 0; }');
+  const globals = decl.join('\n'); const hasIostream = /^\s*#\s*include\s*[<"](iostream|bits\/stdc\+\+\.h)[>"]/m.test(globals); const code = ['#include <cstdio>', '#include <sstream>', '#include <exception>', globals, 'int main(){ try {'];
+  for (const c of body) { let d = 'NBSTDIN' + c.k; while (c.stdin.includes(d)) d += 'X'; if (hasIostream) { code.push(`std::istringstream __nb_in_${c.k}(R"${d}(${c.stdin})${d}"); std::cin.clear(); std::cin.rdbuf(__nb_in_${c.k}.rdbuf());`); } for (const s of c.stmts) code.push(`#line ${s.line} "cell-${c.k}"\n${s.t}`); if (c.callMain) code.push(c.callMain); code.push(`fputs("\x1e@@NB:${c.k}@@\x1e", stdout); fflush(stdout); fputs("\x1e@@NB:${c.k}@@\x1e", stderr);`); }
+  code.push('} catch(const std::exception& e){ fputs("terminate: ", stderr); fputs(e.what(), stderr); } catch(...){ fputs("terminate: unknown exception", stderr); } return 0; }');
   return code.join('\n');
 }
 export function splitSections(stdout = '', stderr = '', count = 0, target = 'all') { const marks = Array.from({ length: count }, (_, i) => `\x1e@@NB:${i + 1}@@\x1e`); const split = (s) => { const a = String(s).split(/\x1e@@NB:\d+@@\x1e/); return marks.map((_, i) => a[i] || ''); }; const out = split(stdout), err = split(stderr); return out.map((v, i) => ({ stdout: v, stderr: err[i] })).filter((_, i) => target === 'all' || i === Number(target)); }  // target is the zero based cell index, same as assemble()

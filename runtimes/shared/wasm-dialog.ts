@@ -207,6 +207,6 @@ export function attachWasmDialog(ctx: Ctx): HTMLElement {
   const controller = createWasmDialog(ctx, (installed) => {
     (ctx.engine as any).setWasmMode?.(installed);
   });
-  ctx.q('root')?.append(controller.dialogEl);
+  ctx.root.append(controller.dialogEl);
   return controller.buttonEl;
 }
