@@ -28,10 +28,15 @@ self.onmessage = async (e: MessageEvent) => {
   const m = e.data;
   if (!m) return;
 
+  if (m.t === 'warm') {
+    try { await getToolchain().warm(); post({ t: 'warm-done' }); } catch (err: any) { post({ t: 'warm-done', error: err?.message || String(err) }); }
+    return;
+  }
+
   if (m.t === 'run') {
     try {
       const tc = getToolchain();
-      const code = assemble(m.cells, m.target);
+      const code = assemble(m.cells, m.target, { tryCatch: false });
       const rawResult: RunResult = await tc.execute(code, '', m.files || []);
       const sections = rawResult.ok
         ? splitSections(rawResult.stdout, rawResult.stderr, m.cells.length, m.target)

@@ -22,6 +22,8 @@ export type CppEngineOptions = {
   execute: CppExecute;
   lang?: 'en' | 'ar';
   timeoutMs?: number;
+  /** Timeout for the in-browser compiler (default 120000). */
+  localTimeoutMs?: number;
   baseUrl?: string;
   createWorker?: (workerUrl: string) => Worker;
 };
@@ -93,7 +95,11 @@ export function createCppEngine(o: CppEngineOptions): Engine {
 
   const getWorker = (): Worker => {
     if (worker) return worker;
-    const workerUrl = new URL('worker.js', o.baseUrl || (typeof location !== 'undefined' ? location.href : 'http://localhost/')).href;
+    // baseUrl is usually a site-relative path ("/assets/notebook-runtime-cpp/"); resolve it against the page first,
+    // because `new URL(x, '/relative')` throws "Invalid base URL".
+    const pageUrl = typeof location !== 'undefined' ? location.href : 'http://localhost/';
+    const baseHref = new URL(o.baseUrl || './', pageUrl).href.replace(/\/?$/, '/');
+    const workerUrl = new URL('worker.js', baseHref).href;
     if (o.createWorker) {
       worker = o.createWorker(workerUrl);
     } else {
@@ -108,6 +114,15 @@ export function createCppEngine(o: CppEngineOptions): Engine {
     }
     return worker;
   };
+
+  /** Drop the worker (stuck run, Stop, timeout) so the next run starts a clean one. */
+  const killWorker = () => { try { worker?.terminate(); } catch { /* ignore */ } worker = null; };
+
+  /** Compile clang/lld in the background so the first Run doesn't pay for it. */
+  const warmUp = async () => {
+    try { if (await isWasmCached()) getWorker().postMessage({ t: 'warm' }); } catch { /* ignore */ }
+  };
+  void warmUp();
 
   async function go(req: RunRequest, sink: RunSink, all: boolean) {
     const active: Array<{ idx: number; cell: Cell }> = [];
@@ -129,7 +144,9 @@ export function createCppEngine(o: CppEngineOptions): Engine {
     sink.status(tr('Compiling…'), 'run');
     const ctrl = new AbortController();
     let timedOut = false;
-    const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, timeoutMs);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const startTimer = (ms: number) => { clearTimeout(timer); timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, ms); };
+    startTimer(timeoutMs);
     const onAbort = () => ctrl.abort();
     req.signal.addEventListener('abort', onAbort);
 
@@ -139,6 +156,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
 
       const isLocal = await isWasmCached();
       if (isLocal) {
+        startTimer(o.localTimeoutMs ?? 120000);
         const w = getWorker();
         const runId = Math.random().toString(36).slice(2);
         const workspaceFileList = Array.from(files.entries()).map(([name, f]) => ({
@@ -171,6 +189,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
           w.addEventListener('message', handler);
           ctrl.signal.addEventListener('abort', () => {
             w.removeEventListener('message', handler);
+            killWorker();
             reject(new Error('Aborted'));
           }, { once: true });
 
@@ -216,7 +235,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
       void hasErr;
     } catch (e) {
       if (req.signal.aborted) return;
-      const msg = timedOut ? tr('No response from the compile service within 25 s.') : (e as Error)?.message || tr('Compiler request failed.');
+      const msg = timedOut ? (await isWasmCached() ? tr('The local compiler did not finish within 120 s.') : tr('No response from the compile service within 25 s.')) : (e as Error)?.message || tr('Compiler request failed.');
       sink.out({ k: 'err', s: msg + '\n' }, selected[0].idx);
       sink.status(msg, 'error');
     } finally {
@@ -225,7 +244,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
     }
   }
 
-  return {
+  const engine: Engine & { setWasmMode: (on: boolean) => void } = {
     id: 'cpp', label: 'C++17', kernelDisplay: 'C++17', language: 'C++', mimetype: 'text/x-c++src',
     importAccept: '.cpp,.cc,.cxx,.h,.hpp,.ipynb,.notebook.zip',
     legacyStoreKey: (id) => `basmagi:nb:${id}:v1`,
@@ -263,6 +282,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
     runAll: (req, sink) => go(req, sink, true),
     attach(host) { codeSources = host.codeSources; },
     reset() {},
+    setWasmMode: (on: boolean) => { if (on) void warmUp(); },
     dispose() {
       if (worker) {
         worker.terminate();
@@ -270,4 +290,5 @@ export function createCppEngine(o: CppEngineOptions): Engine {
       }
     },
   };
+  return engine;
 }

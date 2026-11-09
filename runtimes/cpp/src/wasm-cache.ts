@@ -4,16 +4,20 @@
 // Guarantees a one-time download with byte-level progress reporting and cleanup.
 // =============================================================================
 
-export const CACHE_NAME = 'basmagi-cpp-wasm-v1';
+export const CACHE_NAME = 'basmagi-cpp-wasm-v2';
+const OLD_CACHE_NAMES = ['basmagi-cpp-wasm-v1'];
+
+/** Origin-absolute cache key. A bare name would resolve against the caller's own URL, so the page and the worker (different paths) would miss each other's entries. */
+const keyOf = (name: string) => new URL('/__cpp-wasm/' + name, self.location.origin).href;
 
 export const WASM_ASSETS = [
-  { name: 'clang', size: 10707845 },
-  { name: 'lld', size: 6828953 },
-  { name: 'memfs', size: 18866 },
-  { name: 'sysroot.tar', size: 1867739 },
+  { name: 'clang', size: 31214472 },
+  { name: 'lld', size: 19490094 },
+  { name: 'memfs', size: 345442 },
+  { name: 'sysroot.tar', size: 9297920 },
 ];
 
-export const TOTAL_WASM_SIZE = WASM_ASSETS.reduce((sum, a) => sum + a.size, 0); // ~19.4 MB
+export const TOTAL_WASM_SIZE = WASM_ASSETS.reduce((sum, a) => sum + a.size, 0); // ~60 MB (sizes of the binji/wasm-clang master files)
 
 const CDN_BASE = 'https://binji.github.io/wasm-clang/';
 
@@ -32,7 +36,7 @@ export async function isWasmCached(): Promise<boolean> {
     if (!hasCache) return false;
     const cache = await caches.open(CACHE_NAME);
     for (const asset of WASM_ASSETS) {
-      const match = await cache.match(asset.name);
+      const match = await cache.match(keyOf(asset.name));
       if (!match) return false;
     }
     return true;
@@ -46,7 +50,7 @@ export async function getCachedAsset(name: string): Promise<ArrayBuffer | null> 
   if (typeof caches === 'undefined') return null;
   try {
     const cache = await caches.open(CACHE_NAME);
-    const match = await cache.match(name);
+    const match = await cache.match(keyOf(name));
     if (!match) return null;
     return await match.arrayBuffer();
   } catch {
@@ -132,6 +136,7 @@ export async function downloadWasmAssets(
   }
 
   // Commit all downloaded assets atomically to CacheStorage
+  for (const old of OLD_CACHE_NAMES) { try { await caches.delete(old); } catch { /* ignore */ } }
   const cache = await caches.open(CACHE_NAME);
   for (const item of downloadedResponses) {
     const res = new Response(item.buffer, {
@@ -140,7 +145,7 @@ export async function downloadWasmAssets(
         'content-length': String(item.buffer.byteLength),
       },
     });
-    await cache.put(item.name, res);
+    await cache.put(keyOf(item.name), res);
   }
 }
 

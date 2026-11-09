@@ -89,6 +89,8 @@ class WasmMemory {
 
 class MemFS {
   hostWrite: (s: string) => void;
+  /** fd 2 output; falls back to hostWrite when unset. */
+  hostWriteErr: ((s: string) => void) | null = null;
   stdinStr = '';
   stdinStrPos = 0;
   hostMem_: WasmMemory | null = null;
@@ -171,7 +173,7 @@ class MemFS {
       size += len;
     }
     this.hostMem_.write32(nwritten_out, size);
-    this.hostWrite(str);
+    if (fd === 2 && this.hostWriteErr) this.hostWriteErr(str); else this.hostWrite(str);
     return ESUCCESS;
   }
 
@@ -369,6 +371,9 @@ export class Toolchain {
     this.opts = opts;
   }
 
+  /** Load memfs + sysroot and compile clang/lld ahead of the first run. */
+  warm(): Promise<void> { return this.prepare(); }
+
   private async prepare() {
     if (this.readyPromise) return this.readyPromise;
 
@@ -384,6 +389,7 @@ export class Toolchain {
       const sysrootBytes = await this.opts.getAssetBuffer('sysroot.tar');
       const tar = new TarReader(sysrootBytes);
       tar.untar(this.memfs);
+      this.memfs.createdFiles.clear(); // sysroot files are not user output
 
       // 3. Compile Clang & LLD WebAssembly modules
       const clangBytes = await this.opts.getAssetBuffer('clang');
@@ -405,7 +411,9 @@ export class Toolchain {
     workspaceFiles: Array<{ name: string; content: string }> = []
   ): Promise<RunResult> {
     const started = Date.now();
+    const t0 = performance.now();
     await this.prepare();
+    const tPrep = performance.now();
 
     let compileOutput = '';
     let runStdout = '';
@@ -423,11 +431,10 @@ export class Toolchain {
     this.memfs.addFile(inputFile, code);
 
     // 1. Compile with Clang
-    const clangHostWrite = (s: string) => { compileOutput += s; };
-    const clangMemfs = new MemFS(clangHostWrite);
-    clangMemfs.instance = this.memfs.instance;
-    clangMemfs.exports = this.memfs.exports;
-    clangMemfs.mem = this.memfs.mem;
+    // One MemFS for every phase: the memfs wasm module's host callbacks are bound to this instance,
+    // so a second MemFS object would never get its hostMem attached and file copies would silently do nothing.
+    this.memfs.hostWrite = (s: string) => { compileOutput += s; };
+    this.memfs.hostWriteErr = null;
 
     const clangArgs = [
       '-cc1', '-emit-obj',
@@ -442,10 +449,11 @@ export class Toolchain {
       '-x', 'c++', inputFile,
     ];
 
-    const clangApp = new WasmApp(clangMemfs, 'clang', ...clangArgs);
+    const clangApp = new WasmApp(this.memfs, 'clang', ...clangArgs);
     await clangApp.init(this.clangModule!);
     const compileExit = clangApp.run();
 
+    const tCompile = performance.now();
     if (compileExit !== 0) {
       return {
         ok: false,
@@ -459,11 +467,8 @@ export class Toolchain {
     }
 
     // 2. Link with LLD
-    const lldHostWrite = (s: string) => { compileOutput += s; };
-    const lldMemfs = new MemFS(lldHostWrite);
-    lldMemfs.instance = this.memfs.instance;
-    lldMemfs.exports = this.memfs.exports;
-    lldMemfs.mem = this.memfs.mem;
+    this.memfs.hostWrite = (s: string) => { compileOutput += s; };
+    this.memfs.hostWriteErr = null;
 
     const libdir = 'lib/wasm32-wasi';
     const crt1 = `${libdir}/crt1.o`;
@@ -477,10 +482,11 @@ export class Toolchain {
       '-o', wasmFile,
     ];
 
-    const lldApp = new WasmApp(lldMemfs, 'wasm-ld', ...lldArgs);
+    const lldApp = new WasmApp(this.memfs, 'wasm-ld', ...lldArgs);
     await lldApp.init(this.lldModule!);
     const linkExit = lldApp.run();
 
+    const tLink = performance.now();
     if (linkExit !== 0) {
       return {
         ok: false,
@@ -512,6 +518,7 @@ export class Toolchain {
       this.opts.onStdout?.(s);
     };
     this.memfs.hostWrite = runHostWrite;
+    this.memfs.hostWriteErr = (s: string) => { runStderr += s; this.opts.onStderr?.(s); };
     this.memfs.setStdinStr(stdin || '');
 
     const appModule = await WebAssembly.compile(wasmBytes.slice().buffer);
@@ -525,6 +532,8 @@ export class Toolchain {
       runStderr += (e?.message || String(e)) + '\n';
       runExit = 1;
     }
+
+    console.log(`[cpp-wasm] prepare ${Math.round(tPrep - t0)}ms · clang ${Math.round(tCompile - tPrep)}ms · lld ${Math.round(tLink - tCompile)}ms · run ${Math.round(performance.now() - tLink)}ms`);
 
     // Collect any workspace files that were written or modified during execution
     const resultingFiles: Array<{ name: string; content: string }> = [];

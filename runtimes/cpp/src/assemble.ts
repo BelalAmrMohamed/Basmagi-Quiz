@@ -86,7 +86,9 @@ const isDecl = (t: string) =>
   /^(\s*(const|constexpr|static\s+const|inline)\b)/.test(t) ||
   (/^[^=;{]*\)\s*(const|noexcept|override|final|\s)*(->[^={;]+)?(:[^;{]*)?\{/.test(t) && !CONTROL.test(t.trim().split(/\W/)[0]));
 
-export function assemble(cells: Array<{ src?: string; source?: string; stdin?: string }>, target: number | 'all' = 'all'): string {
+/** `tryCatch: false` for toolchains built without C++ exceptions (the in-browser clang rejects `try`). */
+export function assemble(cells: Array<{ src?: string; source?: string; stdin?: string }>, target: number | 'all' = 'all', opts: { tryCatch?: boolean } = {}): string {
+  const tryCatch = opts.tryCatch !== false;
   const selected = target === 'all' ? cells : cells.slice(0, Number(target) + 1);
   const decl: string[] = [];
   const body: Array<{ k: number; stdin: string; stmts: Array<{ t: string; line: number }>; callMain: string }> = [];
@@ -118,7 +120,8 @@ export function assemble(cells: Array<{ src?: string; source?: string; stdin?: s
   // Detect if user included <iostream> — required for std::cin/cout and cin simulation
   const hasIostream = /^\s*#\s*include\s*[<"](iostream|bits\/stdc\+\+\.h)[">]/m.test(globals);
   // Auto-includes: <cstdio> for section markers (fputs/fflush); NOT <iostream> — students must write it
-  const code = ['#include <cstdio>', '#include <sstream>', '#include <exception>', globals, 'int main(){ try {'];
+  // <sstream> is only needed for the cin redirect below; libc++ may expose std::cout through it, which would let code without #include <iostream> compile.
+  const code = ['#include <cstdio>', '#include <exception>', ...(hasIostream ? ['#include <sstream>'] : []), globals, tryCatch ? 'int main(){ try {' : 'int main(){ {'];
   for (const c of body) {
     let d = 'NBSTDIN' + c.k;
     while (c.stdin.includes(d)) d += 'X';
@@ -130,7 +133,7 @@ export function assemble(cells: Array<{ src?: string; source?: string; stdin?: s
     if (c.callMain) code.push(c.callMain);
     code.push(`fputs("\x1e@@NB:${c.k}@@\x1e", stdout); fflush(stdout); fputs("\x1e@@NB:${c.k}@@\x1e", stderr);`);
   }
-  code.push('} catch(const std::exception& e){ fputs("terminate: ", stderr); fputs(e.what(), stderr); } catch(...){ fputs("terminate: unknown exception", stderr); } return 0; }');
+  code.push(tryCatch ? '} catch(const std::exception& e){ fputs("terminate: ", stderr); fputs(e.what(), stderr); } catch(...){ fputs("terminate: unknown exception", stderr); } return 0; }' : '} return 0; }');
   return code.join('\n');
 }
 

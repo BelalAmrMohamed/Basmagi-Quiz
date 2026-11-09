@@ -40,7 +40,7 @@ export function renderToolbar(ctx: Ctx, importInput: HTMLInputElement) {
   actions.replaceChildren(
     h('button', { id: 'addcode', title: t('Insert a code cell below the selected cell'), onclick: add('code') }, t('+ Code')),
     h('button', { id: 'addtext', title: t('Insert a text (Markdown) cell below the selected cell'), onclick: add('md') }, t('+ Text')),
-    h('button', { class: 'primary', id: 'runall', title: t('Run all code cells'), onclick: () => void ctx.runAll() }, t('▶ Run all')),
+    h('button', { class: 'primary', id: 'runall', disabled: state.busy, title: t('Run all code cells'), onclick: () => void ctx.runAll() }, t('▶ Run all')),
     h('button', { id: 'stop', title: t('Stop execution and reset the workspace'), hidden: !state.busy, onclick: () => ctx.stop() }, t('■ Stop')),
     h('span', { id: 'status', role: 'status', 'aria-label': status, 'aria-live': 'polite', title: status }, ''),
     ...(hasSidePanels(ctx) ? [h('button', {
