@@ -74,6 +74,14 @@ async function runTarget(name, t) {
     loader: { '.css': 'css', '.woff2': 'file' },
     assetNames: 'fonts/[name]',
     plugins: [katexWoff2Only],
+    alias: {
+      '@codemirror/state': path.resolve(here, 'node_modules/@codemirror/state'),
+      '@codemirror/view': path.resolve(here, 'node_modules/@codemirror/view'),
+      '@codemirror/language': path.resolve(here, 'node_modules/@codemirror/language'),
+      '@codemirror/commands': path.resolve(here, 'node_modules/@codemirror/commands'),
+      '@codemirror/autocomplete': path.resolve(here, 'node_modules/@codemirror/autocomplete'),
+      '@codemirror/lint': path.resolve(here, 'node_modules/@codemirror/lint'),
+    },
     define: { 'process.env.NODE_ENV': '"production"' },
   });
   for (const x of t.extra ?? []) {

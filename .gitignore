@@ -31,6 +31,9 @@ basmagi-quiz.zip
 # Migration backups are stored locally and separately uploaded for safekeeping.
 backups/
 
+_ignored_*
+
+
 docs/secret/
 tests/og-output/
 
