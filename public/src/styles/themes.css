@@ -455,6 +455,10 @@ html[data-animations="enabled"][data-theme="dark"] {
    "الأداء الفائق" / High Performance Mode also strips every
    CSS transition and animation across the whole site, not just the
    background.
+
+   Exempt (keeps animating): the code editor's blinking text cursor
+   (.cm-cursorLayer). It is not decoration: a caret that stops blinking
+   is hard to find, like the loading skeletons and spinners below.
    ===================================================================== */
 html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-wave *,
   .ai-agent-msg-loading, .ai-agent-msg-loading *,
@@ -471,7 +475,8 @@ html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-
   .menu-icon-line,
   .menu-item svg, .menu-item svg *,
   .bottom-nav-icon svg, .bottom-nav-icon svg *,
-  .create-quiz-modal__prompt-hint-arrow, .create-quiz-modal__prompt-hint-arrow *),
+  .create-quiz-modal__prompt-hint-arrow, .create-quiz-modal__prompt-hint-arrow *,
+  .cm-cursorLayer, .cm-cursorLayer *),
 html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-wave *,
   .ai-agent-msg-loading, .ai-agent-msg-loading *,
   .ai-agent-typing, .ai-agent-typing *,
@@ -487,7 +492,8 @@ html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-
   .menu-icon-line,
   .menu-item svg, .menu-item svg *,
   .bottom-nav-icon svg, .bottom-nav-icon svg *,
-  .create-quiz-modal__prompt-hint-arrow, .create-quiz-modal__prompt-hint-arrow *)::before,
+  .create-quiz-modal__prompt-hint-arrow, .create-quiz-modal__prompt-hint-arrow *,
+  .cm-cursorLayer, .cm-cursorLayer *)::before,
 html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-wave *,
   .ai-agent-msg-loading, .ai-agent-msg-loading *,
   .ai-agent-typing, .ai-agent-typing *,
@@ -503,7 +509,8 @@ html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-
   .menu-icon-line,
   .menu-item svg, .menu-item svg *,
   .bottom-nav-icon svg, .bottom-nav-icon svg *,
-  .create-quiz-modal__prompt-hint-arrow, .create-quiz-modal__prompt-hint-arrow *)::after {
+  .create-quiz-modal__prompt-hint-arrow, .create-quiz-modal__prompt-hint-arrow *,
+  .cm-cursorLayer, .cm-cursorLayer *)::after {
   animation-duration: 0.001ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;

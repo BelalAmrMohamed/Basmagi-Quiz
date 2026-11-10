@@ -162,6 +162,7 @@ export const AR: Record<string, string> = {
   "Search commands and notebook shortcuts.": "ابحث عن الأوامر واختصارات دفتر العمل.",
   "{name} source ({ext})": "مصدر {name} ‎({ext})",
   "Line {n}": "السطر {n}",
+  "Cell {c} · Line {n}": "الخلية {c} · السطر {n}",
   "Imported {name}.": "تم استيراد {name}.",
 };
 

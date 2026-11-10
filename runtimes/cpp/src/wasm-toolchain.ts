@@ -20,6 +20,19 @@ export interface RunResult {
   files: Array<{ name: string; content: string }>;
   /** The program is waiting for interactive input (the run was abandoned at that read). */
   needInput?: boolean;
+  /** The program crashed (a wasm trap); the kind lets the UI explain it in the learner's language. */
+  trap?: 'stack' | 'oob' | 'div0' | 'abort' | 'badcall' | 'oom';
+}
+
+function trapKind(e: any): RunResult['trap'] | '' {
+  const m = String(e?.message || e);
+  if (/call stack|stack size/i.test(m)) return 'stack';
+  if (/out of bounds|memory access/i.test(m)) return 'oob';
+  if (/divide by zero|divide result unrepresentable|remainder by zero/i.test(m)) return 'div0';
+  if (/unreachable/i.test(m)) return 'abort';
+  if (/indirect call|null function|table index/i.test(m)) return 'badcall';
+  if (/Invalid typed array length|out of memory|allocation/i.test(m)) return 'oom';
+  return '';
 }
 
 export interface ExecuteOptions {
@@ -104,8 +117,13 @@ class MemFS {
   hostWrite: (s: string) => void;
   /** fd 2 output; falls back to hostWrite when unset. */
   hostWriteErr: ((s: string) => void) | null = null;
-  stdinStr = '';
+  stdinBytes = new Uint8Array(0);
   stdinStrPos = 0;
+  /** Streaming UTF-8 decoders: unbuffered output arrives byte by byte, so a multi-byte character can span writes. */
+  private decOut = new TextDecoder('utf-8');
+  private decErr = new TextDecoder('utf-8');
+  /** Files the user's program created or wrote (not clang/lld temp files); only filled while the program runs. */
+  userWrites = new Set<string>();
   /** Interactive mode: reading past the buffered stdin asks the user instead of returning EOF. */
   stdinLive = false;
   stdinEof = false;
@@ -144,8 +162,10 @@ class MemFS {
   }
 
   setStdinStr(s: string, live = false, eof = false) {
-    this.stdinStr = s;
+    this.stdinBytes = new TextEncoder().encode(s);
     this.stdinStrPos = 0;
+    this.decOut = new TextDecoder('utf-8');
+    this.decErr = new TextDecoder('utf-8');
     this.stdinLive = live;
     this.stdinEof = eof;
   }
@@ -157,6 +177,7 @@ class MemFS {
   }
 
   addFile(path: string, contents: ArrayBuffer | Uint8Array | string) {
+    if (typeof contents === 'string') contents = new TextEncoder().encode(contents); // bytes, so non-Latin text keeps its length
     const length = contents instanceof ArrayBuffer ? contents.byteLength : contents.length;
     this.mem.check();
     this.mem.write(this.exports.GetPathBuf(), path);
@@ -187,7 +208,7 @@ class MemFS {
       iovs += 4;
       const len = this.hostMem_.read32(iovs);
       iovs += 4;
-      str += this.hostMem_.readStr(buf, len);
+      str += (fd === 2 ? this.decErr : this.decOut).decode(this.hostMem_.u8.subarray(buf, buf + len), { stream: true });
       size += len;
     }
     this.hostMem_.write32(nwritten_out, size);
@@ -204,12 +225,12 @@ class MemFS {
       iovs += 4;
       const len = this.hostMem_.read32(iovs);
       iovs += 4;
-      const lenToWrite = Math.min(len, this.stdinStr.length - this.stdinStrPos);
+      const lenToWrite = Math.min(len, this.stdinBytes.length - this.stdinStrPos);
       if (lenToWrite === 0) {
         if (size === 0 && this.stdinLive && !this.stdinEof) throw new NeedInput();
         break;
       }
-      this.hostMem_.write(buf, this.stdinStr.substring(this.stdinStrPos, this.stdinStrPos + lenToWrite));
+      this.hostMem_.write(buf, this.stdinBytes.subarray(this.stdinStrPos, this.stdinStrPos + lenToWrite));
       size += lenToWrite;
       this.stdinStrPos += lenToWrite;
       if (lenToWrite !== len) break;
@@ -301,9 +322,96 @@ class WasmApp {
   exports: any;
   mem!: WasmMemory;
 
+  /** True for the learner's program (not clang/lld): file reads are clamped and writes are tracked. */
+  userProgram = false;
+
   constructor(memfs: MemFS, name: string, ...args: string[]) {
     this.argv = [name, ...args];
     this.memfs = memfs;
+  }
+
+  /**
+   * The memfs fd_read ignores the end of the file: libc++ asks for a 4 KB buffer, gets 4 KB back and keeps
+   * reading whatever sits next to the file in memory (other headers). This shim clamps every read to the real
+   * file size, and records the files the program creates or writes so the UI can show them.
+   */
+  private wrapFileIo(w: Record<string, any>) {
+    const fsx: Record<string, any> = { ...this.memfs.exports };
+    const open = new Map<number, { path: string; pos: number }>();
+    const norm = (p: string) => p.replace(/^(\.?\/)+/, '');
+    const sizeOf = (path: string) => this.memfs.getFileContents(path)?.length ?? 0;
+    /** Shrink the iovec list to what the file can still supply. Returns the fixed iovec count (0 = at end of file) and the original lengths. */
+    const clamp = (iovs: number, n: number, remain: number): { count: number; saved: number[] } => {
+      const saved: number[] = [];
+      let count = 0;
+      for (let i = 0; i < n; i++) {
+        const lenAt = iovs + i * 8 + 4;
+        const len = this.mem.read32(lenAt);
+        saved.push(len);
+        const use = Math.min(len, remain);
+        this.mem.write32(lenAt, use);
+        remain -= use;
+        if (use > 0) count = i + 1;
+      }
+      return { count, saved };
+    };
+    const restore = (iovs: number, saved: number[]) => saved.forEach((len, i) => this.mem.write32(iovs + i * 8 + 4, len));
+
+    w.path_open = (...a: any[]) => {
+      const r = fsx.path_open(...a);
+      if (r === 0) {
+        this.mem.check();
+        const path = norm(this.mem.readStr(a[2], a[3]));
+        open.set(this.mem.read32(a[8]), { path, pos: 0 });
+        if ((Number(a[4]) & (1 | 8)) !== 0) this.memfs.userWrites.add(path); // O_CREAT | O_TRUNC
+      }
+      return r;
+    };
+    w.fd_close = (fd: number) => { open.delete(fd); return fsx.fd_close(fd); };
+    w.fd_read = (fd: number, iovs: number, n: number, nreadPtr: number) => {
+      const f = open.get(fd);
+      if (!f) return fsx.fd_read(fd, iovs, n, nreadPtr);
+      this.mem.check();
+      const { count, saved } = clamp(iovs, n, Math.max(0, sizeOf(f.path) - f.pos));
+      if (count === 0) { restore(iovs, saved); this.mem.write32(nreadPtr, 0); return ESUCCESS; } // end of file
+      const r = fsx.fd_read(fd, iovs, count, nreadPtr);
+      this.mem.check();
+      restore(iovs, saved);
+      if (r === 0) f.pos += this.mem.read32(nreadPtr);
+      return r;
+    };
+    if (fsx.fd_pread) {
+      w.fd_pread = (fd: number, iovs: number, n: number, offset: bigint | number, nreadPtr: number) => {
+        const f = open.get(fd);
+        if (!f) return fsx.fd_pread(fd, iovs, n, offset, nreadPtr);
+        this.mem.check();
+        const { count, saved } = clamp(iovs, n, Math.max(0, sizeOf(f.path) - Number(offset)));
+        if (count === 0) { restore(iovs, saved); this.mem.write32(nreadPtr, 0); return ESUCCESS; }
+        const r = fsx.fd_pread(fd, iovs, count, offset, nreadPtr);
+        this.mem.check();
+        restore(iovs, saved);
+        return r;
+      };
+    }
+    w.fd_seek = (fd: number, offset: bigint | number, whence: number, outPtr: number) => {
+      const r = fsx.fd_seek(fd, offset, whence, outPtr);
+      const f = open.get(fd);
+      if (r === 0 && f) { this.mem.check(); f.pos = this.mem.read32(outPtr); }
+      return r;
+    };
+    w.fd_write = (fd: number, iovs: number, n: number, nwrittenPtr: number) => {
+      const r = fsx.fd_write(fd, iovs, n, nwrittenPtr);
+      const f = open.get(fd);
+      if (f) { this.mem.check(); this.memfs.userWrites.add(f.path); if (r === 0) f.pos += this.mem.read32(nwrittenPtr); }
+      return r;
+    };
+    if (fsx.path_unlink_file) {
+      w.path_unlink_file = (...a: any[]) => {
+        const r = fsx.path_unlink_file(...a);
+        if (r === 0) { this.mem.check(); this.memfs.userWrites.delete(norm(this.mem.readStr(a[1], a[2]))); }
+        return r;
+      };
+    }
   }
 
   async init(module: WebAssembly.Module) {
@@ -363,6 +471,7 @@ class WasmApp {
 
     // Merge MemFS WASI syscall implementations
     Object.assign(wasi_unstable, this.memfs.exports);
+    if (this.userProgram) this.wrapFileIo(wasi_unstable);
 
     this.instance = await WebAssembly.instantiate(module, { wasi_unstable, env: {} });
     this.exports = this.instance.exports;
@@ -390,6 +499,8 @@ export class Toolchain {
   /** Last successfully linked program, so replays with new stdin skip compile and link. */
   private lastCode = '';
   private lastWasm: Uint8Array | null = null;
+  /** Workspace files already copied into MemFS, by name, with the content that was copied. */
+  private mounted = new Map<string, string>();
 
   constructor(opts: ToolchainOptions) {
     this.opts = opts;
@@ -444,9 +555,11 @@ export class Toolchain {
     let runStdout = '';
     let runStderr = '';
 
-    // Mount workspace text files into MemFS
+    // Mount workspace text files into MemFS (only when new or edited, so repeated runs don't pile up copies)
     for (const f of workspaceFiles) {
+      if (this.mounted.get(f.name) === f.content) continue;
       this.memfs.addFile(f.name, f.content);
+      this.mounted.set(f.name, f.content);
     }
 
     const inputFile = 'main.cpp';
@@ -481,6 +594,7 @@ export class Toolchain {
         '-internal-isystem', '/include',
         '-internal-isystem', '/lib/clang/8.0.1/include',
         '-ferror-limit', '19',
+        '-Wuninitialized', // the classic beginner bug: reading a variable before giving it a value
         '-O0',
         '-o', objFile,
         '-x', 'c++', inputFile,
@@ -532,30 +646,32 @@ export class Toolchain {
 
     const appModule = await WebAssembly.compile(wasmBytes.slice().buffer);
     const userApp = new WasmApp(this.memfs, wasmFile);
+    userApp.userProgram = true;
+    this.memfs.userWrites.clear();
     await userApp.init(appModule);
 
     let runExit = 0;
     let needInput = false;
+    let trap: RunResult['trap'] | '' = '';
     try {
       runExit = userApp.run();
     } catch (e: any) {
       if (e instanceof NeedInput) needInput = true;
-      else { runStderr += (e?.message || String(e)) + '\n'; runExit = 1; }
+      else { trap = trapKind(e); if (!trap) runStderr += (e?.message || String(e)) + '\n'; runExit = 1; }
     }
     this.memfs.setStdinStr('');
     console.log(`[cpp-wasm] prepare ${Math.round(tPrep - t0)}ms · clang ${Math.round(tCompile - tPrep)}ms · lld ${Math.round(tLink - tCompile)}ms · run ${Math.round(performance.now() - Math.max(tLink, tCompile, tPrep))}ms${needInput ? ' · waiting for input' : ''}`);
 
-    // Collect any workspace files that were written or modified during execution
+    // Files the program created, plus mounted files whose content changed
     const resultingFiles: Array<{ name: string; content: string }> = [];
-    for (const filename of this.memfs.createdFiles) {
-      if (filename === inputFile || filename === objFile || filename === wasmFile) continue;
-      if (filename.startsWith('include/') || filename.startsWith('lib/')) continue;
-      const data = this.memfs.getFileContents(filename);
-      if (data) {
-        let text = '';
-        for (let i = 0; i < data.length; i++) text += String.fromCharCode(data[i]);
-        resultingFiles.push({ name: filename, content: text });
-      }
+    const dec = new TextDecoder('utf-8');
+    for (const name of new Set([...this.memfs.userWrites, ...this.mounted.keys()])) {
+      if (name === inputFile || name === objFile || name === wasmFile) continue;
+      if (/^(include|lib|share)\//.test(name)) continue;
+      const data = this.memfs.getFileContents(name);
+      if (!data) continue;
+      const text = dec.decode(data);
+      if (this.mounted.get(name) !== text) { resultingFiles.push({ name, content: text }); this.mounted.set(name, text); }
     }
 
     return {
@@ -567,6 +683,7 @@ export class Toolchain {
       timeMs: Date.now() - started,
       files: resultingFiles,
       ...(needInput ? { needInput: true } : {}),
+      ...(trap ? { trap } : {}),
     };
   }
 }

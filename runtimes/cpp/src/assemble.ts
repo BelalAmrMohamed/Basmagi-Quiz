@@ -81,10 +81,79 @@ export function splitCell(src: string): SplitPart[] {
   return out;
 }
 
+/** Drop balanced <...> groups so `vector<vector<int>>` reads as a plain word. */
+const stripGenerics = (t: string) => { let p = ''; while (p !== t) { p = t; t = t.replace(/<[^<>()]*>/g, 'T'); } return t; };
+
+/** Split on commas that are not inside (), [], {} or <>. */
+function splitParams(inner: string): string[] {
+  const out: string[] = []; let depth = 0, cur = '';
+  for (const c of inner) {
+    if ('([{<'.includes(c)) depth++;
+    else if (')]}>'.includes(c)) depth = Math.max(0, depth - 1);
+    if (c === ',' && !depth) { out.push(cur.trim()); cur = ''; } else cur += c;
+  }
+  if (cur.trim() || out.length) out.push(cur.trim());
+  return out;
+}
+
+const BUILTIN = '(?:unsigned|signed|long|short|int|char|bool|float|double|void|size_t|string|auto|wchar_t)';
+/** One parameter of a function prototype: `int`, `const string& s`, `vector<int>& v`, `double x = 2.0`, `int a[]`, `Point p`. */
+const PARAM = new RegExp(
+  '^(?:const\\s+|volatile\\s+)*(?:' +
+    '(?:std::)?' + BUILTIN + '\\b(?:\\s+' + BUILTIN + '\\b)*' +                    // builtin or std::string
+    '|[A-Za-z_]\\w*(?:::\\w+)*\\s*<[^()]*>' +                                      // templated: vector<int>
+    '|[A-Za-z_]\\w*(?:::\\w+)*(?=\\s*[&*]|\\s+(?:const\\b\\s*)?[&*]*\\s*[A-Za-z_]\\w*\\s*(?:\\[[^\\]]*\\])*\\s*(?:=.*)?$)' + // Point& / Point p
+  ')\\s*(?:const\\b\\s*)?[&*]*\\s*(?:const\\b\\s*)?[&*]*\\s*(?:[A-Za-z_]\\w*)?\\s*(?:\\[[^\\]]*\\]\\s*)*(?:=.*)?$',
+  's');
+
+/**
+ * A function prototype (forward declaration) such as `string getName();` or `int add(int a, int b);`.
+ * It must be hoisted to the global section, otherwise it becomes a local declaration inside main and the
+ * definition in another cell never sees it. Constructor-style variable definitions (`Point p(3, 4);`,
+ * `vector<int> v(n);`) and calls (`foo(x);`) are NOT prototypes.
+ */
+export function isPrototype(text: string): boolean {
+  const t = text.trim();
+  if (!t.endsWith(';') || /[{}]/.test(t)) return false;
+  const open = t.indexOf('(');
+  if (open < 1) return false;
+  let depth = 0, close = -1;
+  for (let i = open; i < t.length; i++) {
+    if (t[i] === '(') depth++;
+    else if (t[i] === ')' && --depth === 0) { close = i; break; }
+  }
+  if (close < 0) return false;
+  const head = stripGenerics(t.slice(0, open)).trim();
+  const tail = t.slice(close + 1).replace(/;\s*$/, '').trim();
+  if (/[=.<>!+\-/%|^?]|->|\bnew\b|\bdelete\b|\breturn\b|\bthrow\b|\bgoto\b|\bcase\b|\belse\b|\bsizeof\b/.test(head.replace(/operator\s*\S+/, 'operator'))) return false;
+  if (tail && !/^(?:const|noexcept|override|final|volatile|\s|->\s*[\w:<>,&*\s]+|=\s*(?:0|default|delete))+$/.test(tail)) return false;
+  // return type + name (two or more words, or a type with & / * before the name)
+  if (!/^(?:(?:static|inline|extern|constexpr|virtual|friend|explicit)\s+)*(?:const\s+)?[A-Za-z_][\w:]*(?:\s+[A-Za-z_][\w:]*)*(?:\s*[&*]+\s*|\s+)(?:const\s+)?(?:[A-Za-z_][\w:~]*|operator\s*\S+)$/.test(head)) return false;
+  const first = head.split(/\s+/)[0];
+  if (/^(?:return|delete|new|throw|goto|else|case|using|typedef|cout|cin|cerr|printf)$/.test(first)) return false;
+  const inner = t.slice(open + 1, close).trim();
+  if (!inner || /^void$/.test(inner)) return true;
+  return splitParams(inner).every((p) => p === '...' || PARAM.test(p));
+}
+
 const isDecl = (t: string) =>
-  /^(\s*#|\s*(using\b|typedef\b|namespace\b|template\b|class\b|struct\b|union\b|enum\b|extern\s+"C"))/.test(t) ||
+  /^(\s*#|\s*(using\b|typedef\b|namespace\b|template\b|class\b|struct\b|union\b|enum\b|extern\b))/.test(t) ||
+  isPrototype(t) ||
   /^(\s*(const|constexpr|static\s+const|inline)\b)/.test(t) ||
   (/^[^=;{]*\)\s*(const|noexcept|override|final|\s)*(->[^={;]+)?(:[^;{]*)?\{/.test(t) && !CONTROL.test(t.trim().split(/\W/)[0]));
+
+/** Is this part of a cell a global declaration (hoisted) rather than a statement that runs? */
+function classify(p: SplitPart, cellSrc: string): { decl: boolean; main: RegExpExecArray | null } {
+  const main = /\bmain\s*\(([^)]*)\)/.exec(p.text);
+  const isMain = !!main && isDecl(p.text);
+  const decl = isMain || isDecl(p.text) || /\/\/@global/.test(p.text) || /\/\/@global/.test(cellSrc.split('\n')[p.line - 2] || '');
+  return { decl, main: isMain ? main : null };
+}
+
+/** Does running this cell execute anything (statements or a `main`), or does it only declare things? */
+export function cellRuns(src: string): boolean {
+  return splitCell(src).some((p) => { const c = classify(p, src); return !c.decl || !!c.main; });
+}
 
 /** `tryCatch: false` for toolchains built without C++ exceptions (the in-browser clang rejects `try`). */
 export function assemble(cells: Array<{ src?: string; source?: string; stdin?: string; live?: boolean }>, target: number | 'all' = 'all', opts: { tryCatch?: boolean; unbuffered?: boolean } = {}): string {
@@ -99,15 +168,18 @@ export function assemble(cells: Array<{ src?: string; source?: string; stdin?: s
     const stmts: Array<{ t: string; line: number }> = [];
     let callMain = '';
 
+    const cellSrc = cell.src ?? cell.source ?? '';
     for (const p of parts) {
       let t = p.text;
-      const main = /\bmain\s*\(([^)]*)\)/.exec(t);
-      if (main && isDecl(t)) {
+      const { decl: hoist, main } = classify(p, cellSrc);
+      if (main) {
         const args = main[1].trim();
         t = t.replace(/\bmain\s*\(/, `__nb_main_${k}(`);
+        // A real main() returns 0 when it falls off the end; the renamed copy would otherwise trap at run time.
+        if (/^\s*int\s+__nb_main_/.test(t) && t.lastIndexOf('}') > 0) { const e = t.lastIndexOf('}'); t = t.slice(0, e) + ' return 0;/*nb*/ ' + t.slice(e); }
         callMain = args ? `__nb_main_${k}(0,nullptr);` : `__nb_main_${k}();`;
       }
-      if (isDecl(t) || /\/\/@global/.test(t) || /\/\/@global/.test((cell.src || '').split('\n')[p.line - 2] || '')) {
+      if (hoist) {
         decl.push(`#line ${p.line} "cell-${k}"\n${t.replace(/^\s*\/\/@global\s*\n/, '')}`);
       } else {
         stmts.push({ t, line: p.line });

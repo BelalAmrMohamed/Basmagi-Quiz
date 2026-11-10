@@ -7,6 +7,7 @@
 import { cpp } from '@codemirror/lang-cpp';
 import { cppCompletions } from './completions';
 import { cppLint } from './lint';
+import { cellRuns } from './assemble';
 import { isWasmCached } from './wasm-cache';
 import { attachWasmDialog } from '../../shared/wasm-dialog';
 import type { Engine, Cell, RunRequest, RunSink } from '../../shared/engine';
@@ -18,6 +19,8 @@ export type CppRunResponse = {
   files?: Array<{ name: string; content: string }>;
   /** In-browser run stopped at a stdin read: `needCell` is the index (among code cells run) that wants input. */
   needInput?: boolean; needCell?: number;
+  /** The program crashed: what kind, and which cell (index among the cells run) was executing. */
+  trap?: 'stack' | 'oob' | 'div0' | 'abort' | 'badcall' | 'oom'; crashCell?: number;
 };
 
 /** Ctrl+D in the input box: end of input (EOF). */
@@ -88,24 +91,110 @@ export const CPP_AR: Record<string, string> = {
   'Using the cloud compiler (exceptions are not supported locally)': 'يتم استخدام المترجم السحابي (الاستثناءات غير مدعومة محلياً)',
   'Type here, then press Enter': 'اكتب هنا ثم اضغط Enter',
   'Enter to send · Ctrl+D ends input · Esc stops': 'Enter للإرسال · Ctrl+D لإنهاء الإدخال · Esc للإيقاف',
+  'Cell {n}: ': 'الخلية {n}: ',
+  'Still running… if nothing happens, your program may be in an infinite loop. Press Stop to cancel.': 'ما زال يعمل… إذا لم يظهر شيء فقد يكون برنامجك في حلقة لا نهائية. اضغط إيقاف للإلغاء.',
+  'The program crashed: too much recursion (stack overflow). Check that your recursive function has a base case that stops it.': 'تعطّل البرنامج: تكرار ذاتي مفرط (فيض المكدس). تأكد أن الدالة العودية لها حالة أساسية توقفها.',
+  'The program crashed: it touched memory that is not its own. This is usually an array index out of range, a bad pointer, or endless recursion.': 'تعطّل البرنامج: حاول الوصول إلى ذاكرة لا تخصه. السبب غالباً فهرس مصفوفة خارج النطاق أو مؤشر خاطئ أو تكرار ذاتي لا ينتهي.',
+  'The program crashed: division by zero.': 'تعطّل البرنامج: قسمة على صفر.',
+  'The program stopped itself (abort or an unreachable path). A function that must return a value may have reached its end without returning.': 'أوقف البرنامج نفسه (abort أو مسار غير قابل للوصول). ربما وصلت دالة تُرجع قيمة إلى نهايتها دون return.',
+  'The program crashed: it called a function through an invalid pointer.': 'تعطّل البرنامج: استدعى دالة عبر مؤشر غير صالح.',
+  'The program ran out of memory. Check for an endless loop that keeps adding data, or a very large array.': 'نفدت ذاكرة البرنامج. تحقق من حلقة لا تنتهي تضيف بيانات باستمرار أو مصفوفة ضخمة جداً.',
+  "'{n}' is declared but never defined. Define it in this cell or in an earlier cell that runs with it.": "'{n}' معرَّف (تصريح فقط) لكن دون تعريف فعلي. عرّفه في هذه الخلية أو في خلية سابقة تعمل معها.",
+  'A statement is missing its ending semicolon (;). Check the end of the line shown, or the line before it.': 'تعليمة ينقصها الفاصلة المنقوطة (;) في نهايتها. تحقق من نهاية السطر الظاهر أو السطر الذي قبله.',
+  "'{n}' comes from the standard library: add the matching #include (<iostream> for cout and cin, <string> for string, <vector> for vector, <fstream> for files) and write using namespace std; or use the std:: prefix.": "'{n}' من المكتبة القياسية: أضف الـ #include المناسب (<iostream> لـ cout وcin، <string> لـ string، <vector> لـ vector، <fstream> للملفات) واكتب using namespace std; أو استخدم البادئة std::.",
+  "'{n}' is not declared at this point. Check the spelling, declare it before using it (a forward declaration such as int f(int); works), and make sure the cell that declares it is above this one.": "'{n}' غير معرَّف عند هذه النقطة. تحقق من الإملاء وعرّفه قبل استخدامه (يصلح تصريح مسبق مثل int f(int);) وتأكد أن الخلية التي تعرّفه فوق هذه الخلية.",
+  "'{n}' is not a known type. Check the spelling or add the #include that provides it.": "'{n}' ليس نوعاً معروفاً. تحقق من الإملاء أو أضف الـ #include الذي يوفره.",
+  'std::{n} needs its header: add the matching #include.': 'std::{n} يحتاج إلى ملف الترويسة الخاص به: أضف الـ #include المناسب.',
+  "'{n}' is defined twice. Earlier cells replay on every run, so two cells cannot define the same name.": "'{n}' معرَّف مرتين. الخلايا السابقة تُعاد عند كل تشغيل، لذلك لا يمكن لخليتين تعريف الاسم نفسه.",
+  'The operator does not fit these types. Use cout << value to print and cin >> variable to read.': 'المعامل لا يناسب هذه الأنواع. استخدم cout << قيمة للطباعة وcin >> متغير للقراءة.',
+  'An expression is incomplete here. Check for a missing value, operator or closing bracket.': 'التعبير غير مكتمل هنا. تحقق من قيمة أو معامل أو قوس إغلاق ناقص.',
+  'A function that returns a value must return on every path. Add a return statement at the end.': 'الدالة التي تُرجع قيمة يجب أن تُرجع في كل المسارات. أضف return في نهايتها.',
+  'Give the variable a value before reading it, for example int x = 0;': 'أعطِ المتغير قيمة قبل قراءته، مثلاً int x = 0;',
+  "The call has a different number of arguments than the function expects. Check the function's declaration.": 'عدد المعاملات في الاستدعاء يختلف عما تتوقعه الدالة. راجع تصريح الدالة.',
+  "No version of '{n}' accepts these arguments. Check how many there are and their types.": "لا توجد نسخة من '{n}' تقبل هذه المعاملات. تحقق من عددها وأنواعها.",
+  'A bracket is not closed. Count your ( ) { } [ ] pairs.': 'يوجد قوس غير مغلق. عُدّ أزواج ( ) { } [ ].',
+  "The value's type does not match the variable's type.": 'نوع القيمة لا يطابق نوع المتغير.',
+  'main must return int: write int main() instead of void main().': 'يجب أن تُرجع main قيمة int: اكتب int main() بدلاً من void main().',
   'Upload text files': 'رفع ملفات نصية',
   'No files yet. Upload a text file to get started.': 'لا توجد ملفات بعد. ارفع ملفاً نصياً للبدء.',
 };
 
 const USES_CIN = /(?:\bstd\s*::\s*)?\bcin\b/;
-const DIAG = /cell-(\d+):(\d+)(?::(\d+))?:\s*(fatal error|error|warning)\s*:\s*(.*)/;
+const DIAG = /cell-(\d+):(\d+)(?::(\d+))?:\s*(fatal error|error|warning|note)\s*:\s*(.*)/;
+const GENERATED = /^\d+ (warnings?|errors?)( and \d+ (warnings?|errors?))? generated\.?$/;
 
-/** Turn gcc/clang output into diagnostics keyed by active-list cell (0-based). Unmatched text is returned as `rest`. */
-export function parseCompile(text: string): { diags: Array<{ k: number; line: number; col?: number; sev: 'error' | 'warning'; msg: string }>; rest: string } {
-  const diags: Array<{ k: number; line: number; col?: number; sev: 'error' | 'warning'; msg: string }> = [];
+export type CompileDiag = { k: number; line: number; col?: number; sev: 'error' | 'warning'; msg: string; detail?: string };
+
+/** Show the learner's code, not the assembled program (a cell's `main` is renamed internally, and a `return 0;` is added). */
+const tidy = (x: string) => x.replace(/\s*return 0;\/\*nb\*\/\s*/g, ' ').replace(/__nb_main_\d+/g, 'main');
+
+/**
+ * Turn gcc/clang output into diagnostics keyed by active-list cell (0-based). The source line, caret and notes that clang
+ * prints under a message stay attached to it as `detail`; text that belongs to no diagnostic (linker errors) is returned as `rest`.
+ */
+export function parseCompile(text: string): { diags: CompileDiag[]; rest: string } {
+  const diags: CompileDiag[] = [];
   const rest: string[] = [];
-  for (const ln of text.split('\n')) {
+  let cur: CompileDiag | null = null;
+  const addDetail = (ln: string) => { if (cur) cur.detail = cur.detail ? cur.detail + '\n' + ln : ln; };
+  for (const raw of text.split('\n')) {
+    const ln = tidy(raw);
     const m = DIAG.exec(ln);
-    if (m) diags.push({ k: Number(m[1]) - 1, line: Number(m[2]), ...(m[3] ? { col: Number(m[3]) } : {}), sev: m[4] === 'warning' ? 'warning' : 'error', msg: m[5] });
-    else if (ln.trim()) rest.push(ln.replace(/cell-(\d+):(\d+)(?::\d+)?/g, (_, k, l) => `cell ${k}, line ${l}`));
+    if (m) {
+      if (m[4] === 'note') { addDetail(`note: ${m[5]}`); continue; }
+      cur = { k: Number(m[1]) - 1, line: Number(m[2]), ...(m[3] ? { col: Number(m[3]) } : {}), sev: m[4] === 'warning' ? 'warning' : 'error', msg: m[5] };
+      diags.push(cur);
+    } else if (GENERATED.test(ln.trim()) || /^fatal error: too many errors/.test(ln.trim())) {
+      cur = null;
+    } else if (ln.trim()) {
+      if (cur) addDetail(ln.replace(/\s+$/, '')); else rest.push(ln);
+    }
   }
+  for (const d of diags) if (d.detail) d.detail = d.detail.split('\n').slice(0, 8).join('\n');
   return { diags, rest: rest.join('\n') };
 }
+
+/** Plain-language explanations of the compiler messages beginners hit most. `{n}` is the identifier from the message. */
+const HINTS: Array<[RegExp, string]> = [
+  [/expected ';'/, 'A statement is missing its ending semicolon (;). Check the end of the line shown, or the line before it.'],
+  [/use of undeclared identifier '((?:cout|cin|cerr|endl|string|getline|vector|map|set|pair|sort|ifstream|ofstream|fstream|stringstream|setw|setprecision|sqrt|pow|abs|min|max|swap|to_string|stoi|stod))'/, "'{n}' comes from the standard library: add the matching #include (<iostream> for cout and cin, <string> for string, <vector> for vector, <fstream> for files) and write using namespace std; or use the std:: prefix."],
+  [/use of undeclared identifier '([^']+)'/, "'{n}' is not declared at this point. Check the spelling, declare it before using it (a forward declaration such as int f(int); works), and make sure the cell that declares it is above this one."],
+  [/unknown type name '([^']+)'/, "'{n}' is not a known type. Check the spelling or add the #include that provides it."],
+  [/no (?:member|type) named '([^']+)' in namespace 'std'/, 'std::{n} needs its header: add the matching #include.'],
+  [/redefinition of '([^']+)'/, "'{n}' is defined twice. Earlier cells replay on every run, so two cells cannot define the same name."],
+  [/invalid operands to binary expression/, 'The operator does not fit these types. Use cout << value to print and cin >> variable to read.'],
+  [/expected expression/, 'An expression is incomplete here. Check for a missing value, operator or closing bracket.'],
+  [/control reaches end of non-void function|non-void function does not return a value/, 'A function that returns a value must return on every path. Add a return statement at the end.'],
+  [/variable '[^']+' is uninitialized/, 'Give the variable a value before reading it, for example int x = 0;'],
+  [/too (?:few|many) arguments to (?:function|constructor)/, "The call has a different number of arguments than the function expects. Check the function's declaration."],
+  [/no matching function for call to '([^']+)'/, "No version of '{n}' accepts these arguments. Check how many there are and their types."],
+  [/expected '[})\]]'|expected '\)'|extraneous closing brace/, 'A bracket is not closed. Count your ( ) { } [ ] pairs.'],
+  [/no viable conversion|cannot initialize a (?:variable|parameter) of type/, "The value's type does not match the variable's type."],
+  [/'main' must return 'int'/, 'main must return int: write int main() instead of void main().'],
+];
+
+/** The hint for a compiler message, translated with `translate` (identity for English). */
+export const explain = (msg: string, translate: (s: string) => string = (x) => x): string | undefined => {
+  for (const [re, template] of HINTS) {
+    const m = re.exec(msg);
+    if (m) return translate(template).replace('{n}', m[1] ?? '');
+  }
+  return undefined;
+};
+
+const TRAPS: Record<NonNullable<CppRunResponse['trap']>, string> = {
+  stack: 'The program crashed: too much recursion (stack overflow). Check that your recursive function has a base case that stops it.',
+  oob: 'The program crashed: it touched memory that is not its own. This is usually an array index out of range, a bad pointer, or endless recursion.',
+  div0: 'The program crashed: division by zero.',
+  abort: 'The program stopped itself (abort or an unreachable path). A function that must return a value may have reached its end without returning.',
+  badcall: 'The program crashed: it called a function through an invalid pointer.',
+  oom: 'The program ran out of memory. Check for an endless loop that keeps adding data, or a very large array.',
+};
+
+/** Text for a file every C++ notebook starts with, so reading a file works without uploading one first. */
+const DEFAULT_FILES: Array<{ name: string; text: string }> = [
+  { name: 'test.txt', text: 'Hello World\nWelcome to C++ file input and output!\nRead me with ifstream, line by line.\n42 3.14 Basmagi\n' },
+];
 
 export function createCppEngine(o: CppEngineOptions): Engine {
   // Filled in by the shell through attach(); completions read it lazily on every keystroke.
@@ -113,6 +202,10 @@ export function createCppEngine(o: CppEngineOptions): Engine {
   const tr = (s: string) => (o.lang === 'ar' && CPP_AR[s]) || s;
   const timeoutMs = o.timeoutMs ?? 25000;
   const files = new Map<string, any>();
+  for (const f of DEFAULT_FILES) {
+    const data = new TextEncoder().encode(f.text);
+    files.set(f.name, { filename: '/vfs/' + f.name, fileSize: data.length, data, text: f.text, isText: true, builtin: true });
+  }
   let worker: Worker | null = null;
 
   const getWorker = (): Worker => {
@@ -156,9 +249,13 @@ export function createCppEngine(o: CppEngineOptions): Engine {
     const stdins = new Map<number, string>();
     const isLocal = await isWasmCached();
     // Cloud compile can't pause for input, so it collects every cin answer up front. Local runs are interactive instead.
+    // A cell reads input when it runs code and `cin` appears anywhere in the program being built: a function that reads input
+    // can be defined in this cell, an earlier one, or (with a forward declaration) a later one.
+    const inProgram = all ? active : active.filter((b) => typeof tIdx === 'number' && b.idx <= tIdx);
+    const needsCin = (a: { idx: number; cell: Cell }) => !a.cell.stdinLocked && cellRuns(a.cell.src) && inProgram.some((b) => USES_CIN.test(b.cell.src));
     const collectStdins = async (): Promise<boolean> => {
       for (const a of selected) {
-        if (USES_CIN.test(a.cell.src) && !a.cell.stdinLocked && !stdins.has(a.idx)) {
+        if (needsCin(a) && !stdins.has(a.idx)) {
           const n = req.cells.slice(0, a.idx + 1).filter((c) => c.type === 'code').length;
           const v = await sink.input({ label: tr('Standard input · Cell {n}').replace('{n}', String(n)), value: a.cell.stdin ?? '' }, a.idx);
           if (v === null) return false;
@@ -201,7 +298,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
           name,
           content: f.text ?? (f.data ? new TextDecoder().decode(f.data) : ''),
         }));
-        const live = new Set(selected.filter((a) => USES_CIN.test(a.cell.src) && !a.cell.stdinLocked).map((a) => a.idx));
+        const live = new Set(selected.filter(needsCin).map((a) => a.idx));
         const cellsPayload = active.map((a) => ({ src: a.cell.src, stdin: a.cell.stdin ?? '', live: live.has(a.idx) }));
 
         const callWorker = (extra: Record<string, unknown>) => new Promise<CppRunResponse>((resolve, reject) => {
@@ -239,7 +336,8 @@ export function createCppEngine(o: CppEngineOptions): Engine {
         res = undefined as unknown as CppRunResponse;
         for (let round = 0; round < 2000; round++) {
           startTimer(localMs);
-          res = await callWorker({ live: live.size > 0, liveStdin: typed, eof });
+          const loopNotice = setTimeout(() => sink.status(tr('Still running… if nothing happens, your program may be in an infinite loop. Press Stop to cancel.'), 'run'), 5000);
+          try { res = await callWorker({ live: live.size > 0, liveStdin: typed, eof }); } finally { clearTimeout(loopNotice); }
           clearTimeout(timer); // never count the time the learner spends typing
           if (!res.ok || !res.needInput) break;
           flush(res);
@@ -272,15 +370,24 @@ export function createCppEngine(o: CppEngineOptions): Engine {
 
       if (req.signal.aborted) return;
       const shown = new Set(selected.map((a) => a.idx));
-      let hasErr = false;
+      const codeNo = (idx: number) => req.cells.slice(0, idx + 1).filter((c) => c.type === 'code').length;
       if (res.compile) {
         const { diags, rest } = parseCompile(res.compile);
         for (const d of diags) {
-          const a = active[d.k]; const at = a && shown.has(a.idx) ? a.idx : selected[0].idx;
-          sink.out({ k: 'diag', line: d.line, ...(d.col ? { col: d.col } : {}), sev: d.sev, msg: d.msg }, at);
-          if (d.sev === 'error') hasErr = true;
+          const a = active[d.k];
+          const mine = !!a && shown.has(a.idx);
+          // An earlier cell replays with this one: its warnings were shown when it ran, but its errors still block this run.
+          if (!mine && d.sev === 'warning') continue;
+          const hint = explain(d.msg, tr);
+          sink.out({ k: 'diag', line: d.line, ...(d.col ? { col: d.col } : {}), sev: d.sev, msg: d.msg, ...(d.detail ? { detail: d.detail } : {}), ...(hint ? { hint } : {}), ...(mine || !a ? {} : { cell: codeNo(a.idx) }) }, mine ? a.idx : selected[0].idx);
         }
-        if (rest && (!res.ok || !diags.length)) sink.out({ k: res.ok ? 'warn' : 'err', s: rest + '\n' }, selected[0].idx);
+        if (rest && (!res.ok || !diags.length)) {
+          for (const ln of rest.split('\n')) {
+            const und = /undefined symbol: ([A-Za-z_]\w*)/.exec(ln);
+            const text = und ? `${ln}\n💡 ${tr("'{n}' is declared but never defined. Define it in this cell or in an earlier cell that runs with it.").replace('{n}', und[1])}` : ln;
+            sink.out({ k: res.ok ? 'warn' : 'err', s: text + '\n' }, selected[0].idx);
+          }
+        }
       }
       if (!res.ok) {
         if (!res.compile) sink.out({ k: 'err', s: tr('The compiler returned no diagnostics.') + '\n' }, selected[0].idx);
@@ -288,8 +395,11 @@ export function createCppEngine(o: CppEngineOptions): Engine {
         return;
       }
       flush(res);
+      if (res.trap) {
+        const at = all ? selected[Math.min(res.crashCell ?? 0, selected.length - 1)] : selected[0];
+        sink.out({ k: 'err', s: '💥 ' + tr(TRAPS[res.trap]) + '\n' }, at.idx);
+      }
       sink.status(`${tr('Exit')} ${res.exit ?? 0} · ${res.timeMs ?? 0}ms${res.provider ? ' · ' + res.provider : ''}${res.truncated ? ' · ' + tr('output truncated') : ''}`, 'result');
-      void hasErr;
     } catch (e) {
       if (req.signal.aborted) return;
       const msg = timedOut ? (await isWasmCached() ? tr('The local compiler did not finish within 120 s.') : tr('No response from the compile service within 25 s.')) : (e as Error)?.message || tr('Compiler request failed.');

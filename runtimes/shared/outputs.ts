@@ -40,9 +40,15 @@ function figure(ctx: Ctx, o: ImgOut): HTMLElement {
 /** Compiler/interpreter diagnostics: a jump button (line:col) and the message. */
 function diagnostic(ctx: Ctx, cell: UiCell, o: Extract<Out, { k: 'diag' }>): HTMLElement {
   const where = o.col ? `${o.line}:${o.col}` : String(o.line);
+  // `cell` is set when the problem is in an earlier cell that replayed with this one: no jump, the label names that cell.
+  const label = o.cell ? h('span', { class: 'diag-jump foreign' }, ctx.t('Cell {c} · Line {n}', { c: o.cell, n: where }))
+    : h('button', { type: 'button', class: 'diag-jump', onclick: () => ctx.jumpToLine(cell, o.line, o.col) }, ctx.t('Line {n}', { n: where }));
   return h('div', { class: 'o o-diag ' + (o.sev === 'warning' ? 'warn' : 'err') },
-    h('button', { type: 'button', class: 'diag-jump', onclick: () => ctx.jumpToLine(cell, o.line, o.col) }, ctx.t('Line {n}', { n: where })),
-    h('span', { class: 'diag-msg', dir: 'auto' }, o.msg));
+    label,
+    h('div', { class: 'diag-body' },
+      h('span', { class: 'diag-msg', dir: 'auto' }, o.msg),
+      o.hint ? h('span', { class: 'diag-hint', dir: 'auto' }, '💡 ' + o.hint) : null,
+      o.detail ? h('pre', { class: 'diag-detail', dir: 'ltr' }, o.detail) : null));
 }
 
 export function renderOut(ctx: Ctx, cell: UiCell, o: Out): HTMLElement {

@@ -123,21 +123,21 @@
 
 
 /* ---- Cursor: VS Code "expand" blinking -------------------------------------
-   CodeMirror restarts the blink on every keypress / caret move by swapping the layer's inline
-   animation-name between cm-blink and cm-blink2. We switch the layer's own (stepped) animation
-   off and run the expand animation on each .cm-cursor instead, choosing one of two identical
-   keyframes from that inline name, so every swap restarts the cycle at full size.
-   Only transform + opacity animate: no layout, gutters stay aligned. */
+   Same as Monaco's cursorBlinking "expand": the caret shrinks to nothing from its centre and grows back,
+   0.5 s ease-in-out, alternating. It is a pure scaleY animation: no opacity, no layout, gutters stay aligned.
+   CodeMirror restarts the blink on every keypress / caret move by swapping the layer's inline animation-name
+   between cm-blink and cm-blink2. We switch the layer's own (stepped) animation off and run the expand
+   animation on each .cm-cursor instead, choosing one of two identical keyframes from that inline name,
+   so every swap restarts the cycle at full size.
+   The site's "الأداء الفائق" mode leaves this animation alone (see themes.css): the caret stays visible. */
 @keyframes cm-cursor-expand-a {
-  0%, 45% { transform: scaleY(1); opacity: 1; }
-  80%     { transform: scaleY(0); opacity: 0; }
-  100%    { transform: scaleY(1); opacity: 1; }
+  0%, 20% { transform: scaleY(1); }
+  80%, 100% { transform: scaleY(0); }
 }
 
 @keyframes cm-cursor-expand-b {
-  0%, 45% { transform: scaleY(1); opacity: 1; }
-  80%     { transform: scaleY(0); opacity: 0; }
-  100%    { transform: scaleY(1); opacity: 1; }
+  0%, 20% { transform: scaleY(1); }
+  80%, 100% { transform: scaleY(0); }
 }
 
 .mlweb .code-editor .cm-cursorLayer {
@@ -146,7 +146,7 @@
 
 .mlweb .code-editor .cm-cursorLayer .cm-cursor {
   transform-origin: center;
-  animation: cm-cursor-expand-a 1s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  animation: cm-cursor-expand-a 0.5s ease-in-out 0s infinite alternate;
 }
 
 .mlweb .code-editor .cm-cursorLayer[style*="cm-blink2"] .cm-cursor {
@@ -175,13 +175,20 @@
   text-decoration-color: var(--run, #b7791f);
 }
 
-.mlweb .cm-tooltip.cm-tooltip-lint {
+.mlweb .cm-tooltip {
   background: var(--panel);
   color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
   overflow: hidden;
+}
+
+/* Hover tooltip: div.cm-tooltip > ul.cm-tooltip-lint > li.cm-diagnostic. The gutter marker's tooltip puts both classes on one div. */
+.mlweb .cm-tooltip-lint,
+.mlweb .cm-tooltip.cm-tooltip-lint {
+  background: var(--panel);
+  color: var(--ink);
   font:
     13px/1.4 ui-monospace,
     Cascadia Code,
@@ -190,14 +197,24 @@
     monospace;
 }
 
-.mlweb .cm-tooltip.cm-tooltip-lint .cm-diagnostic {
+.mlweb .cm-tooltip-lint .cm-diagnostic {
   padding: 3px 8px;
   margin: 0;
+  background: var(--panel);
+  color: var(--ink);
   border-inline-start: 3px solid var(--syntax-error);
 }
 
-.mlweb .cm-tooltip.cm-tooltip-lint .cm-diagnostic-warning {
+.mlweb .cm-tooltip-lint .cm-diagnosticText {
+  color: var(--ink);
+}
+
+.mlweb .cm-tooltip-lint .cm-diagnostic-warning {
   border-inline-start-color: var(--run, #b7791f);
+}
+
+.mlweb .cm-tooltip-lint .cm-diagnostic-info {
+  border-inline-start-color: var(--accent);
 }
 
 .mlweb .code-editor .cm-gutter-lint {

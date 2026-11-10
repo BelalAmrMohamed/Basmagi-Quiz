@@ -381,3 +381,35 @@
   margin-top: 3px;
   padding: 0 4px;
 }
+
+/* Compiler diagnostics: message, plain-language hint, and the source line the compiler printed. */
+.mlweb .o-diag .diag-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mlweb .o-diag .diag-jump.foreign {
+  padding: 1px 8px;
+  border: 1px solid currentColor;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.mlweb .o-diag .diag-hint {
+  white-space: pre-wrap;
+  font: 12.5px/1.5 system-ui, sans-serif;
+  opacity: 0.95;
+}
+
+.mlweb .o-diag .diag-detail {
+  margin: 0;
+  padding: 4px 8px;
+  overflow-x: auto;
+  border-radius: 4px;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace;
+  color: inherit;
+}

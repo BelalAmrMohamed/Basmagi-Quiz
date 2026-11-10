@@ -28,7 +28,7 @@ export type Out =
   | { k: 'text' | 'err' | 'warn'; s: string }
   | { k: 'img'; fig: number; w: number; h: number; rgb: Uint8Array; tool: boolean }
   | { k: 'html'; html: string }
-  | { k: 'diag'; line: number; col?: number; sev: 'error' | 'warning'; msg: string }
+  | { k: 'diag'; line: number; col?: number; sev: 'error' | 'warning'; msg: string; detail?: string; hint?: string; cell?: number }
   /** Echo of a line of standard input the user typed into the cell (added by the shell, never by engines). */
   | { k: 'stdin'; label: string; value: string };
 

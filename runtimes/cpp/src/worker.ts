@@ -54,6 +54,7 @@ self.onmessage = async (e: MessageEvent) => {
           files: rawResult.files,
           provider: 'local',
           ...(rawResult.needInput ? { needInput: true, needCell: (rawResult.stdout.match(/\x1e@@NB:\d+@@\x1e/g) || []).length } : {}),
+          ...(rawResult.trap ? { trap: rawResult.trap, crashCell: (rawResult.stdout.match(/\x1e@@NB:\d+@@\x1e/g) || []).length } : {}),
         },
       });
     } catch (err: any) {
