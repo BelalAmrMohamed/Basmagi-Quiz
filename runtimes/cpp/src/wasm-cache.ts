@@ -1,6 +1,6 @@
 // =============================================================================
 // runtimes/cpp/src/wasm-cache.ts
-// Manages the persistent CacheStorage for the ~20MB Wasm-Clang compiler toolchain.
+// Manages the persistent CacheStorage for the ~60 MB Wasm-Clang compiler toolchain.
 // Guarantees a one-time download with byte-level progress reporting and cleanup.
 // =============================================================================
 
@@ -58,7 +58,7 @@ export async function getCachedAsset(name: string): Promise<ArrayBuffer | null> 
   }
 }
 
-/** Delete all cached Wasm-Clang assets to free up space (~20MB). */
+/** Delete all cached Wasm-Clang assets to free up space (~60 MB). */
 export async function deleteWasmCache(): Promise<boolean> {
   if (typeof caches === 'undefined') return false;
   try {

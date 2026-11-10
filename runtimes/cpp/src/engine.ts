@@ -16,7 +16,12 @@ export type CppRunResponse = {
   ok: boolean; compile?: string; sections?: Array<{ stdout?: string; stderr?: string }>;
   exit?: number; timeMs?: number; provider?: string; truncated?: boolean;
   files?: Array<{ name: string; content: string }>;
+  /** In-browser run stopped at a stdin read: `needCell` is the index (among code cells run) that wants input. */
+  needInput?: boolean; needCell?: number;
 };
+
+/** Ctrl+D in the input box: end of input (EOF). */
+const EOT = '\x04';
 export type CppExecute = (r: { cells: Array<{ src: string; stdin?: string }>; target: number | 'all'; signal: AbortSignal }) => Promise<CppRunResponse>;
 export type CppEngineOptions = {
   execute: CppExecute;
@@ -40,32 +45,49 @@ export const CPP_AR: Record<string, string> = {
   'output truncated': 'تم اقتطاع المخرجات',
   'Compiler messages': 'رسائل المترجم',
   'Standard input · Cell {n}': 'الإدخال القياسي · الخلية {n}',
-  '⚡ 20MB Fast Compiler': '⚡ المترجم السريع (20م.ب)',
-  'Download fast offline C++ compiler (~20MB)': 'تحميل مترجم C++ السريع للعمل بدون إنترنت (~20 م.ب)',
-  'Instant C++ Local Compiler': 'المترجم المحلي السريع للـ C++',
-  '~20 MB · One-time download': '~20 م.ب · لمرة واحدة فقط',
-  'One-time download: ': 'تحميل لمرة واحدة: ',
-  'Downloads the Clang compiler (~20 MB) once into your browser cache. Once finished, C++ code compiles instantly (~300ms) right on your machine, 100% offline, with zero server delays. It will not download again on future visits.':
-    'يقوم بتحميل مترجم Clang (~20 م.ب) لمرة واحدة فقط في ذاكرة المتصفح. بعد اكتمال التحميل، سيعمل كود C++ بسرعة فائقة (~300 مللي ثانية) مباشرة على جهازك وبدون إنترنت ودون أي انتظار للخوادم السحابية. لن يُعاد تحميله مرة أخرى في الزيارات القادمة.',
-  'Sub-second execution (~200–400ms) without server queues': 'تنفيذ فوري خلال أجزاء من الثانية دون طوابير انتظار الخوادم',
-  'Full support for C++ Fundamentals & Object-Oriented Programming (OOP)': 'دعم كامل لأساسيات البرمجة والبرمجة الكائنية (OOP)',
-  'Text file reading and writing (<fstream>) with the Current Folder workspace': 'قراءة وكتابة الملفات النصية (<fstream>) في مجلد العمل الحالي',
-  'Works 100% offline without internet connection': 'يعمل بنسبة 100% دون الحاجة إلى اتصال بالإنترنت',
-  'Ready to download': 'جاهز للتحميل',
+  'MB': 'م.ب',
+  '⚡ Instant Compiler': '⚡ المترجم الفوري',
+  '⚡ Local: Active': '⚡ محلي: نشط',
+  'Download the instant in-browser C++ compiler ({size})': 'تحميل المترجم الفوري للـ C++ داخل المتصفح ({size})',
+  'The instant local C++ compiler is installed and active': 'المترجم المحلي الفوري مثبت ونشط',
+  'Instant C++ Local Compiler': 'المترجم المحلي الفوري للـ C++',
+  'Compile and run C++ inside your browser, with no server in the way.': 'اترجم وشغّل كود C++ داخل المتصفح مباشرة، دون الاعتماد على أي خادم.',
+  'one-time download': 'تحميل لمرة واحدة',
+  'typical run time': 'زمن التشغيل المعتاد',
+  'Offline': 'بدون إنترنت',
+  'after the first download': 'بعد التحميل الأول',
+  'Runs in about a second, with no server queue or network delay': 'يعمل خلال ثانية تقريباً دون طوابير خوادم أو تأخير في الشبكة',
+  'Interactive input: your program pauses at cin and waits for you, like a real terminal': 'إدخال تفاعلي: يتوقف البرنامج عند cin وينتظر إدخالك كما في الطرفية الحقيقية',
+  'Reads and writes text files (<fstream>) in the Current Folder': 'قراءة وكتابة الملفات النصية (<fstream>) في مجلد العمل الحالي',
+  'Keeps working without an internet connection': 'يستمر في العمل دون اتصال بالإنترنت',
+  'Good to know: ': 'من المفيد أن تعرف: ',
+  'Programs that use C++ exceptions (try / catch / throw) are not supported by the local compiler, so they run on the cloud compiler automatically. The download ({size}) is stored in your browser and is not repeated on later visits.': 'البرامج التي تستخدم الاستثناءات (try / catch / throw) لا يدعمها المترجم المحلي، لذلك تُشغَّل تلقائياً على المترجم السحابي. التحميل ({size}) يُحفظ في المتصفح ولا يتكرر في الزيارات القادمة.',
+  'The local compiler is installed and active.': 'المترجم المحلي مثبت ونشط.',
+  'It uses about {size} of browser storage.': 'يستخدم حوالي {size} من مساحة تخزين المتصفح.',
+  'Downloading…': 'جارٍ التحميل…',
+  'Downloading {file}…': 'جارٍ تحميل {file}…',
+  '{n}s left': 'متبقي {n} ث',
   'Starting download…': 'بدء التحميل…',
   'Cancel': 'إلغاء',
   'Close': 'إغلاق',
+  'Done': 'تم',
   'Installed': 'مثبت',
-  'Delete & Free 20 MB': 'حذف وتحرير 20 م.ب',
-  'Download Fast Compiler (~20MB)': 'تحميل المترجم السريع (~20 م.ب)',
-  'Keep Cloud Compiler (0 MB)': 'البقاء على المترجم السحابي (0 م.ب)',
-  'Are you sure you want to remove the local C++ compiler and free up ~20MB of browser cache?': 'هل أنت متأكد من رغبتك في حذف المترجم المحلي وتحرير ~20 م.ب من ذاكرة المتصفح؟',
-  'Local compiler removed. Now using Cloud Compiler.': 'تم حذف المترجم المحلي بنجاح، ويتم الآن استخدام المترجم السحابي.',
-  'Fast local C++ compiler ready! Code will now compile instantly.': 'المترجم السريع جاهز الآن! سيتم تشغيل الكود فورياً.',
+  'Not installed': 'غير مثبت',
+  'Not now': 'ليس الآن',
+  'Download ({size})': 'تحميل ({size})',
+  'Remove and free {size}': 'حذف وتحرير {size}',
+  'Remove the local compiler?': 'حذف المترجم المحلي؟',
+  'This frees about {size} of browser storage. C++ will run on the cloud compiler until you download it again.': 'سيحرر هذا حوالي {size} من مساحة المتصفح، وسيعمل C++ على المترجم السحابي إلى أن تحمّل المترجم المحلي مرة أخرى.',
+  'Remove': 'حذف',
+  'Local compiler removed. Now using the cloud compiler.': 'تم حذف المترجم المحلي، ويتم الآن استخدام المترجم السحابي.',
+  'Instant compiler ready. C++ now runs right in your browser.': 'المترجم الفوري جاهز. يعمل C++ الآن مباشرة داخل المتصفح.',
   'Download cancelled.': 'تم إلغاء التحميل.',
   'Download failed: ': 'فشل التحميل: ',
-  '⚡ Local: Active': '⚡ محلي: نشط',
-  'Fast local C++ compiler is installed and active': 'المترجم المحلي السريع مثبت ونشط',
+  'The local compiler did not finish within 120 s.': 'لم يكتمل المترجم المحلي خلال 120 ثانية.',
+  'Waiting for input…': 'بانتظار الإدخال…',
+  'Using the cloud compiler (exceptions are not supported locally)': 'يتم استخدام المترجم السحابي (الاستثناءات غير مدعومة محلياً)',
+  'Type here, then press Enter': 'اكتب هنا ثم اضغط Enter',
+  'Enter to send · Ctrl+D ends input · Esc stops': 'Enter للإرسال · Ctrl+D لإنهاء الإدخال · Esc للإيقاف',
   'Upload text files': 'رفع ملفات نصية',
   'No files yet. Upload a text file to get started.': 'لا توجد ملفات بعد. ارفع ملفاً نصياً للبدء.',
 };
@@ -132,14 +154,20 @@ export function createCppEngine(o: CppEngineOptions): Engine {
     if (!active.length) return;
     const selected = all ? active : active.filter((a) => a.idx === tIdx);
     const stdins = new Map<number, string>();
-    for (const a of selected) {
-      if (USES_CIN.test(a.cell.src) && !a.cell.stdinLocked) {
-        const n = req.cells.slice(0, a.idx + 1).filter((c) => c.type === 'code').length;
-        const v = await sink.input({ label: tr('Standard input · Cell {n}').replace('{n}', String(n)), value: a.cell.stdin ?? '' }, a.idx);
-        if (v === null) return;
-        stdins.set(a.idx, v);
+    const isLocal = await isWasmCached();
+    // Cloud compile can't pause for input, so it collects every cin answer up front. Local runs are interactive instead.
+    const collectStdins = async (): Promise<boolean> => {
+      for (const a of selected) {
+        if (USES_CIN.test(a.cell.src) && !a.cell.stdinLocked && !stdins.has(a.idx)) {
+          const n = req.cells.slice(0, a.idx + 1).filter((c) => c.type === 'code').length;
+          const v = await sink.input({ label: tr('Standard input · Cell {n}').replace('{n}', String(n)), value: a.cell.stdin ?? '' }, a.idx);
+          if (v === null) return false;
+          stdins.set(a.idx, v);
+        }
       }
-    }
+      return true;
+    };
+    if (!isLocal && !(await collectStdins())) return;
     if (req.signal.aborted) return;
     sink.status(tr('Compiling…'), 'run');
     const ctrl = new AbortController();
@@ -154,53 +182,87 @@ export function createCppEngine(o: CppEngineOptions): Engine {
       const targetActive = all ? 'all' as const : active.findIndex((a) => a.idx === tIdx);
       let res: CppRunResponse;
 
-      const isLocal = await isWasmCached();
+      const emittedOut = new Map<number, number>(), emittedErr = new Map<number, number>();
+      /** Print only what is new since the last flush; interactive runs replay the program, so output repeats. */
+      const flush = (r: CppRunResponse) => {
+        const secs = r.sections || [];
+        selected.forEach((a, i) => {
+          const sec = secs[all ? i : 0] || {};
+          const so = sec.stdout || '', se = sec.stderr || '';
+          const po = emittedOut.get(a.idx) || 0, pe = emittedErr.get(a.idx) || 0;
+          if (so.length > po) { sink.out({ k: 'text', s: so.slice(po) }, a.idx); emittedOut.set(a.idx, so.length); }
+          if (se.length > pe) { sink.out({ k: 'err', s: se.slice(pe) }, a.idx); emittedErr.set(a.idx, se.length); }
+        });
+      };
+
       if (isLocal) {
-        startTimer(o.localTimeoutMs ?? 120000);
-        const w = getWorker();
-        const runId = Math.random().toString(36).slice(2);
+        const localMs = o.localTimeoutMs ?? 120000;
         const workspaceFileList = Array.from(files.entries()).map(([name, f]) => ({
           name,
           content: f.text ?? (f.data ? new TextDecoder().decode(f.data) : ''),
         }));
+        const live = new Set(selected.filter((a) => USES_CIN.test(a.cell.src) && !a.cell.stdinLocked).map((a) => a.idx));
+        const cellsPayload = active.map((a) => ({ src: a.cell.src, stdin: a.cell.stdin ?? '', live: live.has(a.idx) }));
 
-        res = await new Promise<CppRunResponse>((resolve, reject) => {
+        const callWorker = (extra: Record<string, unknown>) => new Promise<CppRunResponse>((resolve, reject) => {
+          const w = getWorker();
+          const runId = Math.random().toString(36).slice(2);
+          const cleanup = () => { w.removeEventListener('message', handler); ctrl.signal.removeEventListener('abort', onAb); };
           const handler = (e: MessageEvent) => {
             const m = e.data;
-            if (m && m.t === 'done' && m.id === runId) {
-              w.removeEventListener('message', handler);
-              if (Array.isArray(m.result?.files)) {
-                for (const rf of m.result.files) {
-                  if (!files.has(rf.name) || files.get(rf.name)?.text !== rf.content) {
-                    files.set(rf.name, {
-                      filename: '/vfs/' + rf.name,
-                      fileSize: rf.content.length,
-                      data: new TextEncoder().encode(rf.content),
-                      text: rf.content,
-                      isText: true,
-                    });
-                    sink.files?.();
-                  }
+            if (!m || m.t !== 'done' || m.id !== runId) return;
+            cleanup();
+            if (Array.isArray(m.result?.files)) {
+              for (const rf of m.result.files) {
+                if (!files.has(rf.name) || files.get(rf.name)?.text !== rf.content) {
+                  files.set(rf.name, {
+                    filename: '/vfs/' + rf.name,
+                    fileSize: rf.content.length,
+                    data: new TextEncoder().encode(rf.content),
+                    text: rf.content,
+                    isText: true,
+                  });
+                  sink.files?.();
                 }
               }
-              resolve(m.result);
             }
+            resolve(m.result);
           };
+          const onAb = () => { cleanup(); killWorker(); reject(new Error('Aborted')); };
           w.addEventListener('message', handler);
-          ctrl.signal.addEventListener('abort', () => {
-            w.removeEventListener('message', handler);
-            killWorker();
-            reject(new Error('Aborted'));
-          }, { once: true });
-
-          w.postMessage({
-            t: 'run',
-            id: runId,
-            cells: active.map((a) => ({ src: a.cell.src, stdin: stdins.get(a.idx) ?? a.cell.stdin ?? '' })),
-            target: targetActive,
-            files: workspaceFileList,
-          });
+          ctrl.signal.addEventListener('abort', onAb, { once: true });
+          w.postMessage({ t: 'run', id: runId, cells: cellsPayload, target: targetActive, files: workspaceFileList, ...extra });
         });
+
+        let typed = '', eof = false;
+        const asked = new Set<number>();
+        res = undefined as unknown as CppRunResponse;
+        for (let round = 0; round < 2000; round++) {
+          startTimer(localMs);
+          res = await callWorker({ live: live.size > 0, liveStdin: typed, eof });
+          clearTimeout(timer); // never count the time the learner spends typing
+          if (!res.ok || !res.needInput) break;
+          flush(res);
+          const a = all ? selected[res.needCell ?? 0] : selected[0];
+          if (!a || !live.has(a.idx)) { eof = true; continue; }
+          sink.status(tr('Waiting for input…'), 'run');
+          const v = await sink.input({ inline: true, first: !asked.has(a.idx) }, a.idx);
+          if (v === null || req.signal.aborted) return;
+          asked.add(a.idx);
+          if (v === EOT) eof = true; else typed += v.endsWith('\n') ? v : v + '\n';
+          sink.status(tr('Running…'), 'run');
+        }
+        // The in-browser clang has exceptions disabled: hand such programs to the cloud compiler instead of failing.
+        if (!res.ok && /exceptions disabled/.test(res.compile || '')) {
+          sink.status(tr('Using the cloud compiler (exceptions are not supported locally)'), 'run');
+          clearTimeout(timer);
+          if (!(await collectStdins())) return;
+          startTimer(timeoutMs);
+          res = await o.execute({
+            cells: active.map((a) => ({ src: a.cell.src, stdin: stdins.get(a.idx) ?? a.cell.stdin ?? '' })),
+            target: targetActive, signal: ctrl.signal,
+          });
+        }
       } else {
         res = await o.execute({
           cells: active.map((a) => ({ src: a.cell.src, stdin: stdins.get(a.idx) ?? a.cell.stdin ?? '' })),
@@ -225,12 +287,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
         sink.status(tr('Compile error') + (res.provider ? ' · ' + res.provider : ''), 'error');
         return;
       }
-      const sections = res.sections || [];
-      selected.forEach((a, i) => {
-        const s = sections[all ? i : 0] || {};
-        if (s.stdout) sink.out({ k: 'text', s: s.stdout }, a.idx);
-        if (s.stderr) sink.out({ k: 'err', s: s.stderr }, a.idx);
-      });
+      flush(res);
       sink.status(`${tr('Exit')} ${res.exit ?? 0} · ${res.timeMs ?? 0}ms${res.provider ? ' · ' + res.provider : ''}${res.truncated ? ' · ' + tr('output truncated') : ''}`, 'result');
       void hasErr;
     } catch (e) {

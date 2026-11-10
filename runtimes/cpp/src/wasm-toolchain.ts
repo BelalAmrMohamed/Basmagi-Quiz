@@ -18,9 +18,22 @@ export interface RunResult {
   exit: number;
   timeMs: number;
   files: Array<{ name: string; content: string }>;
+  /** The program is waiting for interactive input (the run was abandoned at that read). */
+  needInput?: boolean;
+}
+
+export interface ExecuteOptions {
+  /** Interactive stdin: `stdin` is everything typed so far; reading past it asks for more unless `eof`. */
+  live?: boolean;
+  eof?: boolean;
 }
 
 const ESUCCESS = 0;
+
+/** Thrown from stdin reads when interactive input is needed and none is buffered; the run is abandoned and replayed with more input. */
+export class NeedInput extends Error {
+  constructor() { super('NEED_INPUT'); }
+}
 
 class ProcExit extends Error {
   code: number;
@@ -93,6 +106,9 @@ class MemFS {
   hostWriteErr: ((s: string) => void) | null = null;
   stdinStr = '';
   stdinStrPos = 0;
+  /** Interactive mode: reading past the buffered stdin asks the user instead of returning EOF. */
+  stdinLive = false;
+  stdinEof = false;
   hostMem_: WasmMemory | null = null;
   instance!: WebAssembly.Instance;
   exports: any;
@@ -127,9 +143,11 @@ class MemFS {
     this.hostMem_ = mem;
   }
 
-  setStdinStr(s: string) {
+  setStdinStr(s: string, live = false, eof = false) {
     this.stdinStr = s;
     this.stdinStrPos = 0;
+    this.stdinLive = live;
+    this.stdinEof = eof;
   }
 
   addDirectory(path: string) {
@@ -187,7 +205,10 @@ class MemFS {
       const len = this.hostMem_.read32(iovs);
       iovs += 4;
       const lenToWrite = Math.min(len, this.stdinStr.length - this.stdinStrPos);
-      if (lenToWrite === 0) break;
+      if (lenToWrite === 0) {
+        if (size === 0 && this.stdinLive && !this.stdinEof) throw new NeedInput();
+        break;
+      }
       this.hostMem_.write(buf, this.stdinStr.substring(this.stdinStrPos, this.stdinStrPos + lenToWrite));
       size += lenToWrite;
       this.stdinStrPos += lenToWrite;
@@ -366,6 +387,9 @@ export class Toolchain {
   private clangModule: WebAssembly.Module | null = null;
   private lldModule: WebAssembly.Module | null = null;
   private readyPromise: Promise<void> | null = null;
+  /** Last successfully linked program, so replays with new stdin skip compile and link. */
+  private lastCode = '';
+  private lastWasm: Uint8Array | null = null;
 
   constructor(opts: ToolchainOptions) {
     this.opts = opts;
@@ -408,7 +432,8 @@ export class Toolchain {
   async execute(
     code: string,
     stdin: string,
-    workspaceFiles: Array<{ name: string; content: string }> = []
+    workspaceFiles: Array<{ name: string; content: string }> = [],
+    xo: ExecuteOptions = {}
   ): Promise<RunResult> {
     const started = Date.now();
     const t0 = performance.now();
@@ -424,116 +449,101 @@ export class Toolchain {
       this.memfs.addFile(f.name, f.content);
     }
 
-    // Write source file
     const inputFile = 'main.cpp';
     const objFile = 'main.o';
     const wasmFile = 'app.wasm';
-    this.memfs.addFile(inputFile, code);
+    const fail = (exit: number, compile: string): RunResult => ({
+      ok: false, compile, stdout: '', stderr: '', exit, timeMs: Date.now() - started, files: [],
+    });
 
-    // 1. Compile with Clang
-    // One MemFS for every phase: the memfs wasm module's host callbacks are bound to this instance,
-    // so a second MemFS object would never get its hostMem attached and file copies would silently do nothing.
-    this.memfs.hostWrite = (s: string) => { compileOutput += s; };
-    this.memfs.hostWriteErr = null;
+    let tCompile = tPrep, tLink = tPrep;
+    let wasmBytes: Uint8Array | null = null;
 
-    const clangArgs = [
-      '-cc1', '-emit-obj',
-      '-disable-free',
-      '-isysroot', '/',
-      '-internal-isystem', '/include/c++/v1',
-      '-internal-isystem', '/include',
-      '-internal-isystem', '/lib/clang/8.0.1/include',
-      '-ferror-limit', '19',
-      '-O0',
-      '-o', objFile,
-      '-x', 'c++', inputFile,
-    ];
+    if (code === this.lastCode && this.lastWasm) {
+      // Replay (interactive input): same program, new stdin.
+      wasmBytes = this.lastWasm;
+    } else {
+      this.lastCode = '';
+      this.lastWasm = null;
+      this.memfs.addFile(inputFile, code);
 
-    const clangApp = new WasmApp(this.memfs, 'clang', ...clangArgs);
-    await clangApp.init(this.clangModule!);
-    const compileExit = clangApp.run();
+      // 1. Compile with Clang
+      // One MemFS for every phase: the memfs wasm module's host callbacks are bound to this instance,
+      // so a second MemFS object would never get its hostMem attached and file copies would silently do nothing.
+      this.memfs.hostWrite = (s: string) => { compileOutput += s; };
+      this.memfs.hostWriteErr = null;
 
-    const tCompile = performance.now();
-    if (compileExit !== 0) {
-      return {
-        ok: false,
-        compile: compileOutput,
-        stdout: '',
-        stderr: '',
-        exit: compileExit,
-        timeMs: Date.now() - started,
-        files: [],
-      };
-    }
+      const clangArgs = [
+        '-cc1', '-emit-obj',
+        '-disable-free',
+        '-isysroot', '/',
+        '-internal-isystem', '/include/c++/v1',
+        '-internal-isystem', '/include',
+        '-internal-isystem', '/lib/clang/8.0.1/include',
+        '-ferror-limit', '19',
+        '-O0',
+        '-o', objFile,
+        '-x', 'c++', inputFile,
+      ];
 
-    // 2. Link with LLD
-    this.memfs.hostWrite = (s: string) => { compileOutput += s; };
-    this.memfs.hostWriteErr = null;
+      const clangApp = new WasmApp(this.memfs, 'clang', ...clangArgs);
+      await clangApp.init(this.clangModule!);
+      const compileExit = clangApp.run();
+      tCompile = performance.now();
+      if (compileExit !== 0) return fail(compileExit, compileOutput);
 
-    const libdir = 'lib/wasm32-wasi';
-    const crt1 = `${libdir}/crt1.o`;
-    const lldArgs = [
-      '--no-threads',
-      '--export-dynamic',
-      '-z', 'stack-size=1048576',
-      `-L${libdir}`,
-      crt1, objFile,
-      '-lc', '-lc++', '-lc++abi',
-      '-o', wasmFile,
-    ];
+      // 2. Link with LLD
+      this.memfs.hostWrite = (s: string) => { compileOutput += s; };
+      this.memfs.hostWriteErr = null;
 
-    const lldApp = new WasmApp(this.memfs, 'wasm-ld', ...lldArgs);
-    await lldApp.init(this.lldModule!);
-    const linkExit = lldApp.run();
+      const libdir = 'lib/wasm32-wasi';
+      const crt1 = `${libdir}/crt1.o`;
+      const lldArgs = [
+        '--no-threads',
+        '--export-dynamic',
+        '-z', 'stack-size=1048576',
+        `-L${libdir}`,
+        crt1, objFile,
+        '-lc', '-lc++', '-lc++abi',
+        '-o', wasmFile,
+      ];
 
-    const tLink = performance.now();
-    if (linkExit !== 0) {
-      return {
-        ok: false,
-        compile: compileOutput || 'Linking error occurred.',
-        stdout: '',
-        stderr: '',
-        exit: linkExit,
-        timeMs: Date.now() - started,
-        files: [],
-      };
+      const lldApp = new WasmApp(this.memfs, 'wasm-ld', ...lldArgs);
+      await lldApp.init(this.lldModule!);
+      const linkExit = lldApp.run();
+      tLink = performance.now();
+      if (linkExit !== 0) return fail(linkExit, compileOutput || 'Linking error occurred.');
+
+      const out = this.memfs.getFileContents(wasmFile);
+      if (!out) return fail(1, 'Failed to read compiled wasm binary.');
+      wasmBytes = out.slice(); // own copy: memfs memory can grow or be reused
+      this.lastCode = code;
+      this.lastWasm = wasmBytes;
     }
 
     // 3. Run the compiled WebAssembly program
-    const wasmBytes = this.memfs.getFileContents(wasmFile);
-    if (!wasmBytes) {
-      return {
-        ok: false,
-        compile: 'Failed to read compiled wasm binary.',
-        stdout: '',
-        stderr: '',
-        exit: 1,
-        timeMs: Date.now() - started,
-        files: [],
-      };
-    }
-
     const runHostWrite = (s: string) => {
       runStdout += s;
       this.opts.onStdout?.(s);
     };
     this.memfs.hostWrite = runHostWrite;
     this.memfs.hostWriteErr = (s: string) => { runStderr += s; this.opts.onStderr?.(s); };
-    this.memfs.setStdinStr(stdin || '');
+    this.memfs.setStdinStr(stdin || '', !!xo.live, !!xo.eof);
 
     const appModule = await WebAssembly.compile(wasmBytes.slice().buffer);
     const userApp = new WasmApp(this.memfs, wasmFile);
     await userApp.init(appModule);
 
     let runExit = 0;
+    let needInput = false;
     try {
       runExit = userApp.run();
     } catch (e: any) {
-      runStderr += (e?.message || String(e)) + '\n';
-      runExit = 1;
+      if (e instanceof NeedInput) needInput = true;
+      else { runStderr += (e?.message || String(e)) + '\n'; runExit = 1; }
     }
-
-    console.log(`[cpp-wasm] prepare ${Math.round(tPrep - t0)}ms · clang ${Math.round(tCompile - tPrep)}ms · lld ${Math.round(tLink - tCompile)}ms · run ${Math.round(performance.now() - tLink)}ms`);
+    this.memfs.setStdinStr('');
+    console.log(`[cpp-wasm] prepare ${Math.round(tPrep - t0)}ms · clang ${Math.round(tCompile - tPrep)}ms · lld ${Math.round(tLink - tCompile)}ms · run ${Math.round(performance.now() - Math.max(tLink, tCompile, tPrep))}ms${needInput ? ' · waiting for input' : ''}`);
 
     // Collect any workspace files that were written or modified during execution
     const resultingFiles: Array<{ name: string; content: string }> = [];
@@ -556,7 +566,7 @@ export class Toolchain {
       exit: runExit,
       timeMs: Date.now() - started,
       files: resultingFiles,
+      ...(needInput ? { needInput: true } : {}),
     };
   }
 }
-

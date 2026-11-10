@@ -287,107 +287,254 @@
   display: none;
 }
 
-/* Wasm-Clang download and compiler management modal */
+/* Instant C++ compiler modal (Wasm-Clang download and management) */
+.mlweb #cppWasmDialog {
+  width: min(560px, calc(100vw - 28px));
+}
+
 .mlweb .wasm-dialog-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
+  gap: 14px;
+  padding: 18px 20px;
   border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent);
 }
 
-.mlweb .wasm-dialog-head h2 {
+.mlweb .wasm-logo {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 22px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+}
+
+.mlweb .wasm-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.mlweb .wasm-head-text h2 {
   margin: 0;
-  font-size: 1.15rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  font-size: 1.1rem;
+  font-weight: 650;
+  line-height: 1.3;
 }
 
-.mlweb .wasm-badge {
-  font-size: 0.75rem;
-  padding: 3px 8px;
-  border-radius: 9999px;
-  background: rgba(59, 130, 246, 0.12);
-  color: var(--accent, #3b82f6);
-  font-weight: 500;
+.mlweb .wasm-head-text p {
+  margin: 2px 0 0;
+  color: var(--mute);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.mlweb .wasm-pill {
+  flex: none;
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--line);
+  color: var(--mute);
+  background: var(--panel-soft);
+}
+
+.mlweb .wasm-pill[data-state="ok"] {
+  color: var(--run);
+  border-color: color-mix(in srgb, var(--run) 45%, transparent);
+  background: color-mix(in srgb, var(--run) 12%, transparent);
+}
+
+.mlweb .wasm-pill[data-state="busy"] {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.mlweb .wasm-close {
+  flex: none;
+  align-self: flex-start;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mute);
+  cursor: pointer;
 }
 
 .mlweb .wasm-dialog-body {
-  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  line-height: 1.5;
+  gap: 16px;
+  padding: 18px 20px;
   font-size: 0.92rem;
+  line-height: 1.55;
+  overflow: auto;
 }
 
-.mlweb .wasm-note-box {
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: rgba(59, 130, 246, 0.08);
-  border: 1px solid var(--line);
-  font-size: 0.9rem;
+.mlweb .wasm-dialog-body [hidden] {
+  display: none !important;
 }
 
-.mlweb .wasm-note-box strong {
-  color: var(--accent, #3b82f6);
+.mlweb .wasm-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.mlweb .wasm-features-list {
+.mlweb .wasm-stat {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 0.88rem;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  text-align: center;
 }
 
-.mlweb .wasm-features-list span {
+.mlweb .wasm-stat strong {
+  font-size: 1.25rem;
+  line-height: 1.2;
+  color: var(--accent);
+}
+
+.mlweb .wasm-stat span {
+  font-size: 0.76rem;
+  color: var(--mute);
+  line-height: 1.35;
+}
+
+.mlweb .wasm-features {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mlweb .wasm-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.mlweb .wasm-features li > span:first-child {
+  flex: none;
+  width: 22px;
+  text-align: center;
+}
+
+.mlweb .wasm-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  border-inline-start: 3px solid var(--accent);
+  background: var(--panel-soft);
+  color: var(--mute);
+  font-size: 0.84rem;
+}
+
+.mlweb .wasm-note strong {
+  color: var(--ink);
 }
 
 .mlweb .wasm-progress-wrap {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 6px;
-  padding: 12px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.05);
+  gap: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--panel-soft);
   border: 1px solid var(--line);
-}
-
-.mlweb .wasm-progress-track {
-  width: 100%;
-  height: 8px;
-  border-radius: 4px;
-  background: var(--line);
-  overflow: hidden;
-}
-
-.mlweb .wasm-progress-fill {
-  height: 100%;
-  background: var(--accent, #3b82f6);
-  width: 0%;
-  transition: width 0.12s linear;
 }
 
 .mlweb .wasm-progress-stats {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.mlweb .wasm-progress-stats strong {
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.mlweb .wasm-progress-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.mlweb .wasm-progress-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.15s linear;
+}
+
+.mlweb .wasm-progress-meta {
+  color: var(--mute);
   font-size: 0.8rem;
-  color: var(--ink-secondary, #888);
+  font-variant-numeric: tabular-nums;
+}
+
+.mlweb .wasm-installed-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--run) 40%, var(--line));
+  background: color-mix(in srgb, var(--run) 10%, transparent);
+}
+
+.mlweb .wasm-installed-box > span {
+  font-size: 1.4rem;
+}
+
+.mlweb .wasm-installed-box div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mlweb .wasm-installed-box div span {
+  color: var(--mute);
+  font-size: 0.85rem;
 }
 
 .mlweb .wasm-dialog-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 14px 20px;
   border-top: 1px solid var(--line);
+}
+
+@media (max-width: 520px) {
+  .mlweb .wasm-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .mlweb .wasm-pill {
+    display: none;
+  }
 }
 
 .mlweb button#cppWasmBtn {
@@ -398,23 +545,19 @@
   gap: 4px;
   padding: 4px 10px;
   border-radius: 6px;
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--accent, #3b82f6);
-  border: 1px solid rgba(59, 130, 246, 0.25);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease;
 }
 
 .mlweb button#cppWasmBtn:hover {
-  background: rgba(59, 130, 246, 0.2);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .mlweb button#cppWasmBtn.wasm-installed {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.3);
+  background: color-mix(in srgb, var(--run) 10%, transparent);
+  color: var(--run);
+  border-color: color-mix(in srgb, var(--run) 30%, transparent);
 }
-
-
-
-

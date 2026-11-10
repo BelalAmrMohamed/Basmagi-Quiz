@@ -87,11 +87,11 @@ const isDecl = (t: string) =>
   (/^[^=;{]*\)\s*(const|noexcept|override|final|\s)*(->[^={;]+)?(:[^;{]*)?\{/.test(t) && !CONTROL.test(t.trim().split(/\W/)[0]));
 
 /** `tryCatch: false` for toolchains built without C++ exceptions (the in-browser clang rejects `try`). */
-export function assemble(cells: Array<{ src?: string; source?: string; stdin?: string }>, target: number | 'all' = 'all', opts: { tryCatch?: boolean } = {}): string {
+export function assemble(cells: Array<{ src?: string; source?: string; stdin?: string; live?: boolean }>, target: number | 'all' = 'all', opts: { tryCatch?: boolean; unbuffered?: boolean } = {}): string {
   const tryCatch = opts.tryCatch !== false;
   const selected = target === 'all' ? cells : cells.slice(0, Number(target) + 1);
   const decl: string[] = [];
-  const body: Array<{ k: number; stdin: string; stmts: Array<{ t: string; line: number }>; callMain: string }> = [];
+  const body: Array<{ k: number; stdin: string; live: boolean; stmts: Array<{ t: string; line: number }>; callMain: string }> = [];
 
   selected.forEach((cell, ix) => {
     const k = ix + 1;
@@ -113,7 +113,7 @@ export function assemble(cells: Array<{ src?: string; source?: string; stdin?: s
         stmts.push({ t, line: p.line });
       }
     }
-    body.push({ k, stdin: String(cell.stdin || ''), stmts, callMain });
+    body.push({ k, stdin: String(cell.stdin || ''), live: !!cell.live, stmts, callMain });
   });
 
   const globals = decl.join('\n');
@@ -122,11 +122,16 @@ export function assemble(cells: Array<{ src?: string; source?: string; stdin?: s
   // Auto-includes: <cstdio> for section markers (fputs/fflush); NOT <iostream> — students must write it
   // <sstream> is only needed for the cin redirect below; libc++ may expose std::cout through it, which would let code without #include <iostream> compile.
   const code = ['#include <cstdio>', '#include <exception>', ...(hasIostream ? ['#include <sstream>'] : []), globals, tryCatch ? 'int main(){ try {' : 'int main(){ {'];
+  // Interactive cells read the real stdin (the host feeds it as the user types); the others replay their stored input.
+  if (opts.unbuffered) code.push('setvbuf(stdout, nullptr, _IONBF, 0); setvbuf(stderr, nullptr, _IONBF, 0);');
+  if (hasIostream && body.some((c) => c.live)) code.push('std::streambuf* __nb_cin_buf = std::cin.rdbuf();');
   for (const c of body) {
     let d = 'NBSTDIN' + c.k;
     while (c.stdin.includes(d)) d += 'X';
     // Only redirect cin when user has #include <iostream>
-    if (hasIostream) {
+    if (hasIostream && c.live) {
+      code.push('std::cin.clear(); std::cin.rdbuf(__nb_cin_buf);');
+    } else if (hasIostream) {
       code.push(`std::istringstream __nb_in_${c.k}(R"${d}(${c.stdin})${d}"); std::cin.clear(); std::cin.rdbuf(__nb_in_${c.k}.rdbuf());`);
     }
     for (const s of c.stmts) code.push(`#line ${s.line} "cell-${c.k}"\n${s.t}`);

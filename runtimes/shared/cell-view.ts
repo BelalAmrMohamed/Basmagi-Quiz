@@ -114,8 +114,12 @@ export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
   }
 
   const outs = h('div', { class: 'outs' });
-  for (const o of c.outs) outs.append(renderOut(ctx, c, o));
-  if (c.pending) outs.append(inputRow(ctx, c, c.pending));
+  const pend = c.pending;
+  const lastOut = c.outs[c.outs.length - 1];
+  // Terminal style: the program's last (unfinished) line of output is the prompt, and the box sits on that same line.
+  const inlinePrompt = pend?.inline && lastOut?.k === 'text' ? lastOut : null;
+  for (const o of c.outs) if (o !== inlinePrompt) outs.append(renderOut(ctx, c, o));
+  if (pend) outs.append(inputRow(ctx, c, pend, inlinePrompt ? inlinePrompt.s : ''));
   if (c.challenge && c.type === 'code' && !c.running) { const banner = challengeResult(ctx, c); if (banner) outs.append(banner); }
   const insert = h('div', { class: 'cell-insert', role: 'group', 'aria-label': t('Insert a cell below') },
     h('button', { onclick: insertAt('code', 1) }, t('+ Code')), h('button', { onclick: insertAt('md', 1) }, t('+ Text')));
@@ -124,8 +128,9 @@ export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
 }
 
 /** Jupyter-style stdin box: label, then a bordered field. Enter submits, Shift+Enter adds a line, Esc cancels. */
-function inputRow(ctx: Ctx, c: UiCell, p: NonNullable<UiCell['pending']>): HTMLElement {
+function inputRow(ctx: Ctx, c: UiCell, p: NonNullable<UiCell['pending']>, priorText = ''): HTMLElement {
   const { t } = ctx, id = `stdin-${c.id}`;
+  if (p.inline) return inlineInputRow(ctx, c, id, priorText, p);
   const field = h('textarea', { id, class: 'o-input-field', dir: 'ltr', rows: 1, spellcheck: false, autocomplete: 'off', 'data-stdin': c.id, maxlength: 4000 });
   field.value = p.value;
   const fit = () => { field.style.height = 'auto'; field.style.height = field.scrollHeight + 'px'; };
@@ -138,4 +143,23 @@ function inputRow(ctx: Ctx, c: UiCell, p: NonNullable<UiCell['pending']>): HTMLE
   return h('div', { class: 'o-input' },
     h('label', { class: 'o-input-label', for: id }, p.label), field,
     h('span', { class: 'o-input-hint' }, t('Enter to run · Shift+Enter for a new line · Esc to cancel')));
+}
+
+/** Terminal-style stdin: earlier output lines, then "prompt text [ box ]" on one line. Enter submits, Ctrl+D ends the input, Esc cancels. */
+function inlineInputRow(ctx: Ctx, c: UiCell, id: string, priorText: string, p: NonNullable<UiCell['pending']>): HTMLElement {
+  const { t } = ctx;
+  const cut = priorText.lastIndexOf('\n') + 1;
+  const head = priorText.slice(0, cut), prompt = priorText.slice(cut);
+  const field = h('input', { id, type: 'text', class: 'o-input-field o-input-inline', dir: 'ltr', spellcheck: false, autocomplete: 'off', 'data-stdin': c.id, maxlength: 4000, 'aria-label': prompt.trim() || t('Standard input'), placeholder: t('Type here, then press Enter') });
+  field.value = p.value; // survives re-renders
+  field.oninput = () => { p.value = field.value; };
+  field.onkeydown = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); ctx.answerInput(c, field.value); }
+    else if (e.key === 'Escape') { e.preventDefault(); ctx.answerInput(c, null); }
+    else if ((e.key === 'd' || e.key === 'D') && e.ctrlKey) { e.preventDefault(); ctx.answerInput(c, '\u0004'); }
+  };
+  return h('div', { class: 'o-term' },
+    head ? h('pre', { class: 'o' }, head) : null,
+    h('label', { class: 'o-term-row', for: id }, h('pre', { class: 'o o-term-prompt' }, prompt), field),
+    h('span', { class: 'o-input-hint' }, t('Enter to send · Ctrl+D ends input · Esc stops')));
 }

@@ -33,7 +33,13 @@ export type Out =
   | { k: 'stdin'; label: string; value: string };
 
 /** Inline, Jupyter-style input box shown under the running cell. */
-export type InputRequest = { label?: string; value?: string };
+export type InputRequest = {
+  label?: string; value?: string;
+  /** Terminal style: a one-line box right after the cell's output (the program's own prompt is the label), echoed into the output and appended to the cell's stdin. Ctrl+D submits the end-of-input marker "\u0004". */
+  inline?: boolean;
+  /** With `inline`: the first answer of this run replaces the cell's stored stdin instead of appending to it. */
+  first?: boolean;
+};
 
 /** Handed to `Engine.run`. All calls refer to the cell being run unless `cell` is given. */
 export interface RunSink {

@@ -36,8 +36,8 @@ self.onmessage = async (e: MessageEvent) => {
   if (m.t === 'run') {
     try {
       const tc = getToolchain();
-      const code = assemble(m.cells, m.target, { tryCatch: false });
-      const rawResult: RunResult = await tc.execute(code, '', m.files || []);
+      const code = assemble(m.cells, m.target, { tryCatch: false, unbuffered: true });
+      const rawResult: RunResult = await tc.execute(code, m.liveStdin || '', m.files || [], { live: !!m.live, eof: !!m.eof });
       const sections = rawResult.ok
         ? splitSections(rawResult.stdout, rawResult.stderr, m.cells.length, m.target)
         : [];
@@ -53,6 +53,7 @@ self.onmessage = async (e: MessageEvent) => {
           timeMs: rawResult.timeMs,
           files: rawResult.files,
           provider: 'local',
+          ...(rawResult.needInput ? { needInput: true, needCell: (rawResult.stdout.match(/\x1e@@NB:\d+@@\x1e/g) || []).length } : {}),
         },
       });
     } catch (err: any) {

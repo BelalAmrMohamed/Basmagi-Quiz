@@ -11,7 +11,7 @@ export interface UiCell {
   id: number; type: 'code' | 'md'; src: string; stdin?: string;
   outs: Out[]; count: number | null; running: boolean; mdEdit: boolean;
   /** Open input box (see Engine RunSink.input). */
-  pending?: { label: string; value: string };
+  pending?: { label: string; value: string; inline?: boolean; first?: boolean };
   /** Challenge cell: graded on its output. `chRef` = index of the published cell it came from (learner mode). */
   challenge?: Challenge; chRef?: number;
   /** Starter code to go back to (the source the cell had when published). */

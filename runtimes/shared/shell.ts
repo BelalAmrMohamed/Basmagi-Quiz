@@ -173,7 +173,9 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     if (!c) return Promise.resolve(null);
     if (resolvers.has(c.id)) answerInput(c, null);
     return new Promise((resolve) => {
-      c.pending = { label: req.label ?? t('Standard input'), value: req.value ?? c.stdin ?? '' };
+      c.pending = req.inline
+        ? { label: '', value: '', inline: true, first: !!req.first }
+        : { label: req.label ?? t('Standard input'), value: req.value ?? c.stdin ?? '' };
       resolvers.set(c.id, resolve);
       focusInputId = c.id;
       render();
@@ -183,7 +185,15 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     const resolve = resolvers.get(c.id), p = c.pending;
     resolvers.delete(c.id);
     c.pending = undefined;
-    if (value !== null && p) {
+    if (value !== null && p?.inline) {
+      // Terminal style: the answer joins the program's own output ("Name: Belal"), and every line typed this run is kept as stdin.
+      if (value !== '\u0004') {
+        const line = value.endsWith('\n') ? value : value + '\n';
+        c.stdin = (p.first ? '' : c.stdin ?? '') + line;
+        applyOut(c, { k: 'text', s: line });
+        save();
+      }
+    } else if (value !== null && p) {
       c.stdin = value;
       c.outs.push({ k: 'stdin', label: p.label, value });
       save();
@@ -263,6 +273,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
   function syncStop() {
     const stopBtn = q('stop');
     stopBtn?.toggleAttribute('disabled', !state.busy);
+    q('runall')?.toggleAttribute('disabled', state.busy);
     if (stopBtn) stopBtn.hidden = !state.busy;
   }
 
@@ -552,11 +563,11 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
       focusEditorId = null; keepText = null; keepEditor = null;
     }
     if (focusInputId !== null) {
-      const t3 = nb.querySelector<HTMLTextAreaElement>(`textarea[data-stdin="${focusInputId}"]`);
+      const t3 = nb.querySelector<HTMLTextAreaElement>(`[data-stdin="${focusInputId}"]`);
       if (t3) { t3.focus(); t3.setSelectionRange(t3.value.length, t3.value.length); t3.scrollIntoView?.({ block: 'nearest' }); }
       focusInputId = null; keepText = null; keepEditor = null;
     } else if (keepInput) {
-      const t3 = nb.querySelector<HTMLTextAreaElement>(`textarea[data-stdin="${keepInput.id}"]`);
+      const t3 = nb.querySelector<HTMLTextAreaElement>(`[data-stdin="${keepInput.id}"]`);
       if (t3) { t3.focus({ preventScroll: true }); t3.setSelectionRange(keepInput.s, keepInput.e); }
     }
     if (keepText) {

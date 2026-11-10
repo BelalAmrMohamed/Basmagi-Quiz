@@ -62,7 +62,10 @@ type Out = { k: 'text' | 'err' | 'warn'; s: string } | { k: 'img'; ... } | { k: 
 
 ## C++ specifics
 `cpp/src/engine.ts` supports dual-engine execution:
-1. **Client-side WebAssembly (Wasm-Clang):** When downloaded via the optional ~20MB toolbar dialog (`cppWasmDialog`), compiles and runs locally in `public/assets/notebook-runtime-cpp/worker.js` via Clang + LLD + MemFS in ~200–400ms with full support for C++ Fundamentals, OOP, and virtual filesystem text file I/O (`<fstream>`).
+1. **Client-side WebAssembly (Wasm-Clang):** When downloaded via the optional toolbar dialog (`cppWasmDialog`, ~58 MB: clang 31 + lld 19 + sysroot 9, sizes in `WASM_ASSETS`), compiles and runs locally in `public/assets/notebook-runtime-cpp/worker.js` via Clang + LLD + MemFS: about 1.5 s for the first compile, then well under a second (the linked program is cached, so replays only re-run it). Supports C++ Fundamentals, OOP, and virtual filesystem text file I/O (`<fstream>`).
+   - **Interactive `cin`:** the program runs unbuffered; a stdin read with nothing buffered throws `NeedInput`, the worker returns `needInput`, the shell shows a terminal-style box after the prompt, and the program is replayed with everything typed so far (output is only appended, never repeated). Ctrl+D sends EOF. The 120 s timeout pauses while the learner types.
+   - No C++ exceptions in the local clang: such programs fall back to the cloud compiler automatically.
+   - One `MemFS` instance is shared by clang, lld and the program (its wasm callbacks are bound to it); the cache keys are origin-absolute so the page and the worker share entries.
 2. **Cloud Fallback:** When Wasm is not downloaded, assembles the cells and calls the `cpp-run` Supabase Edge Function (`supabase/functions/cpp-run`), which compiles through Wandbox, then Piston when `PISTON_TOKEN` is set. Each provider has its own time budget and failures are reported per provider.
 
 Autocomplete lives in `cpp/src/completions.ts` and `completion-data.ts`. `node scripts/cpp-run-probe.mjs` times each hop when debugging. Workspace files accept text files (`.txt`, `.csv`, `.dat`, `.in`, `.out`) synchronized with the C++ virtual filesystem.

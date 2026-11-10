@@ -343,3 +343,41 @@
   white-space: pre-wrap;
   font: inherit;
 }
+
+/* Terminal-style stdin (local C++): the program's prompt and the input box share one line. */
+.mlweb .o-term {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mlweb .o-term-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+  cursor: text;
+}
+
+.mlweb .o-term-row .o-term-prompt {
+  flex: 0 1 auto;
+  margin: 0;
+  padding-inline-end: 0;
+  white-space: pre-wrap;
+  background: transparent;
+  border: 0;
+}
+
+.mlweb .o-input-inline {
+  flex: 1 1 160px;
+  min-height: 0;
+  height: 26px;
+  margin-inline-start: 2px;
+  padding: 0 8px;
+  line-height: 24px;
+}
+
+.mlweb .o-term .o-input-hint {
+  margin-top: 3px;
+  padding: 0 4px;
+}

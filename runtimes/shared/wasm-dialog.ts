@@ -1,10 +1,12 @@
 // =============================================================================
 // runtimes/shared/wasm-dialog.ts
-// Handles the UI dialog and progress bar for the ~20MB Wasm-Clang download.
+// Toolbar button + modal for the optional in-browser C++ compiler (Wasm-Clang):
+// explains it, downloads it with live progress, and removes it again.
+// The download size is never hard-coded in text: it comes from WASM_ASSETS.
 // =============================================================================
 import type { Ctx } from './ctx';
 import { h, openDialog, closeDialog } from './dom';
-import { isWasmCached, downloadWasmAssets, deleteWasmCache } from '../cpp/src/wasm-cache';
+import { isWasmCached, downloadWasmAssets, deleteWasmCache, TOTAL_WASM_SIZE } from '../cpp/src/wasm-cache';
 
 export interface WasmDialogController {
   dialogEl: HTMLDialogElement;
@@ -14,152 +16,145 @@ export interface WasmDialogController {
   dispose(): void;
 }
 
+const mb = (bytes: number) => bytes / (1024 * 1024);
+/** "60 MB": whole megabytes for the headline size, one decimal for progress. */
+
 export function createWasmDialog(
   ctx: Ctx,
   onStatusChange?: (installed: boolean) => void
 ): WasmDialogController {
   const { t } = ctx;
+  const size = `${Math.round(mb(TOTAL_WASM_SIZE))} ${t('MB')}`;
   let abortController: AbortController | null = null;
   let isDownloading = false;
   let isInstalled = false;
 
-  const buttonEl = h('button', {
-    id: 'cppWasmBtn',
-    type: 'button',
-    title: t('Download fast offline C++ compiler (~20MB)'),
-    onclick: () => open(),
-  }, t('⚡ 20MB Fast Compiler'));
+  const buttonEl = h('button', { id: 'cppWasmBtn', type: 'button', onclick: () => open() });
 
-  // Header
-  const titleText = h('span', {}, t('Instant C++ Local Compiler'));
-  const badge = h('span', { class: 'wasm-badge' }, t('~20 MB · One-time download'));
-  const closeHeadBtn = h('button', {
-    type: 'button',
-    style: 'background:none; border:none; cursor:pointer; font-size:1.2rem; color:var(--ink-secondary);',
-    onclick: () => close(),
-  }, '✕');
+  // ---- header ----
+  const pill = h('span', { class: 'wasm-pill' });
+  const closeHeadBtn = h('button', { type: 'button', class: 'wasm-close', 'aria-label': t('Close'), onclick: () => close() }, '✕');
   const head = h('div', { class: 'wasm-dialog-head' },
-    h('h2', {}, titleText, badge),
-    closeHeadBtn
-  );
+    h('span', { class: 'wasm-logo', 'aria-hidden': 'true' }, '⚡'),
+    h('div', { class: 'wasm-head-text' },
+      h('h2', {}, t('Instant C++ Local Compiler')),
+      h('p', {}, t('Compile and run C++ inside your browser, with no server in the way.'))),
+    pill, closeHeadBtn);
 
-  // Body content
-  const noteBox = h('div', { class: 'wasm-note-box' },
-    h('strong', {}, t('One-time download: ')),
-    t('Downloads the Clang compiler (~20 MB) once into your browser cache. Once finished, C++ code compiles instantly (~300ms) right on your machine, 100% offline, with zero server delays. It will not download again on future visits.')
-  );
+  // ---- body ----
+  const stat = (value: string, label: string) => h('div', { class: 'wasm-stat' }, h('strong', { dir: 'auto' }, value), h('span', {}, label));
+  const stats = h('div', { class: 'wasm-stats' },
+    stat(size, t('one-time download')),
+    stat('≈ 1 s', t('typical run time')),
+    stat(t('Offline'), t('after the first download')));
 
-  const featuresList = h('div', { class: 'wasm-features-list' },
-    h('span', {}, '⚡ ' + t('Sub-second execution (~200–400ms) without server queues')),
-    h('span', {}, '💻 ' + t('Full support for C++ Fundamentals & Object-Oriented Programming (OOP)')),
-    h('span', {}, '📁 ' + t('Text file reading and writing (<fstream>) with the Current Folder workspace')),
-    h('span', {}, '📴 ' + t('Works 100% offline without internet connection'))
-  );
+  const feature = (icon: string, text: string) => h('li', {}, h('span', { 'aria-hidden': 'true' }, icon), h('span', {}, text));
+  const features = h('ul', { class: 'wasm-features' },
+    feature('🚀', t('Runs in about a second, with no server queue or network delay')),
+    feature('⌨️', t('Interactive input: your program pauses at cin and waits for you, like a real terminal')),
+    feature('📁', t('Reads and writes text files (<fstream>) in the Current Folder')),
+    feature('📴', t('Keeps working without an internet connection')));
 
-  // Progress Bar container
+  const note = h('p', { class: 'wasm-note' },
+    h('strong', {}, t('Good to know: ')),
+    t('Programs that use C++ exceptions (try / catch / throw) are not supported by the local compiler, so they run on the cloud compiler automatically. The download ({size}) is stored in your browser and is not repeated on later visits.', { size }));
+
   const progressFill = h('div', { class: 'wasm-progress-fill' });
-  const progressTrack = h('div', { class: 'wasm-progress-track' }, progressFill);
-  const progressStatus = h('span', {}, t('Ready to download'));
-  const progressPercent = h('span', {}, '0%');
-  const progressStats = h('div', { class: 'wasm-progress-stats' }, progressStatus, progressPercent);
-  const progressWrap = h('div', { class: 'wasm-progress-wrap', style: 'display:none;' },
-    progressTrack,
-    progressStats
-  );
+  const progressTrack = h('div', { class: 'wasm-progress-track', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100 }, progressFill);
+  const progressStatus = h('span', {}, '');
+  const progressPercent = h('strong', {}, '0%');
+  const progressMeta = h('span', { class: 'wasm-progress-meta' }, '');
+  const progressWrap = h('div', { class: 'wasm-progress-wrap', hidden: true },
+    h('div', { class: 'wasm-progress-stats' }, progressStatus, progressPercent),
+    progressTrack, progressMeta);
 
-  const body = h('div', { class: 'wasm-dialog-body' }, noteBox, featuresList, progressWrap);
+  const installedBox = h('div', { class: 'wasm-installed-box', hidden: true },
+    h('span', { 'aria-hidden': 'true' }, '✅'),
+    h('div', {}, h('strong', {}, t('The local compiler is installed and active.')),
+      h('span', {}, t('It uses about {size} of browser storage.', { size }))));
 
-  // Actions
+  const body = h('div', { class: 'wasm-dialog-body' }, stats, features, note, progressWrap, installedBox);
+
+  // ---- actions ----
   const actionPrimary = h('button', { class: 'primary', type: 'button' });
   const actionSecondary = h('button', { type: 'button' });
   const actions = h('div', { class: 'wasm-dialog-actions' }, actionSecondary, actionPrimary);
 
   const dialogEl = h('dialog', { id: 'cppWasmDialog' }, head, body, actions);
+  // Esc must not close the dialog mid-download; Cancel is the way out.
+  dialogEl.addEventListener('cancel', (e) => { if (isDownloading) e.preventDefault(); });
 
-  function fmtMb(bytes: number) {
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  }
+  const setPill = (kind: 'idle' | 'busy' | 'ok', text: string) => { pill.dataset.state = kind; pill.textContent = text; };
 
   function renderState() {
+    progressWrap.hidden = !isDownloading;
+    installedBox.hidden = !isInstalled || isDownloading;
+    stats.hidden = isInstalled || isDownloading;
+    features.hidden = isDownloading;
+    note.hidden = isDownloading;
+    closeHeadBtn.hidden = isDownloading;
+    actionSecondary.style.color = '';
     if (isDownloading) {
-      progressWrap.style.display = 'flex';
-      actionPrimary.style.display = 'none';
-      actionSecondary.style.display = 'inline-block';
+      setPill('busy', t('Downloading…'));
+      actionPrimary.hidden = true;
+      actionSecondary.hidden = false;
       actionSecondary.textContent = t('Cancel');
-      actionSecondary.onclick = () => {
-        if (abortController) abortController.abort();
-      };
-      closeHeadBtn.style.display = 'none';
+      actionSecondary.onclick = () => abortController?.abort();
     } else if (isInstalled) {
-      progressWrap.style.display = 'none';
-      badge.textContent = t('Installed');
-      badge.style.background = 'rgba(16, 185, 129, 0.15)';
-      badge.style.color = '#10b981';
-
-      actionPrimary.style.display = 'inline-block';
-      actionPrimary.textContent = t('Close');
+      setPill('ok', t('Installed'));
+      actionPrimary.hidden = false;
+      actionPrimary.textContent = t('Done');
       actionPrimary.onclick = () => close();
-
-      actionSecondary.style.display = 'inline-block';
-      actionSecondary.textContent = t('Delete & Free 20 MB');
-      actionSecondary.style.color = '#ef4444';
+      actionSecondary.hidden = false;
+      actionSecondary.textContent = t('Remove and free {size}', { size });
+      actionSecondary.style.color = 'var(--err)';
       actionSecondary.onclick = async () => {
-        if (confirm(t('Are you sure you want to remove the local C++ compiler and free up ~20MB of browser cache?'))) {
+        if (await ctx.confirm(t('Remove the local compiler?'), t('This frees about {size} of browser storage. C++ will run on the cloud compiler until you download it again.', { size }), t('Remove'))) {
           await deleteWasmCache();
           await updateStatus();
-          ctx.notify(t('Local compiler removed. Now using Cloud Compiler.'));
+          ctx.notify(t('Local compiler removed. Now using the cloud compiler.'));
         }
       };
-      closeHeadBtn.style.display = 'inline-block';
     } else {
-      progressWrap.style.display = 'none';
-      badge.textContent = t('~20 MB · One-time download');
-      badge.style.background = 'rgba(59, 130, 246, 0.12)';
-      badge.style.color = 'var(--accent, #3b82f6)';
-
-      actionPrimary.style.display = 'inline-block';
-      actionPrimary.textContent = t('Download Fast Compiler (~20MB)');
-      actionPrimary.onclick = () => startDownload();
-
-      actionSecondary.style.display = 'inline-block';
-      actionSecondary.textContent = t('Keep Cloud Compiler (0 MB)');
-      actionSecondary.style.color = '';
+      setPill('idle', t('Not installed'));
+      actionPrimary.hidden = false;
+      actionPrimary.textContent = t('Download ({size})', { size });
+      actionPrimary.onclick = () => void startDownload();
+      actionSecondary.hidden = false;
+      actionSecondary.textContent = t('Not now');
       actionSecondary.onclick = () => close();
-      closeHeadBtn.style.display = 'inline-block';
     }
   }
 
   async function startDownload() {
     isDownloading = true;
     abortController = new AbortController();
-    renderState();
-
     progressFill.style.width = '0%';
-    progressStatus.textContent = t('Starting download…');
     progressPercent.textContent = '0%';
-
+    progressStatus.textContent = t('Starting download…');
+    progressMeta.textContent = '';
+    renderState();
+    const t0 = performance.now();
     try {
       await downloadWasmAssets((p) => {
         progressFill.style.width = `${p.percent}%`;
+        progressTrack.setAttribute('aria-valuenow', String(p.percent));
         progressPercent.textContent = `${p.percent}%`;
-        progressStatus.textContent = `${fmtMb(p.loaded)} / ${fmtMb(p.total)} · ${p.currentFile}`;
+        progressStatus.textContent = t('Downloading {file}…', { file: p.currentFile });
+        const secs = Math.max(0.5, (performance.now() - t0) / 1000);
+        const speed = mb(p.loaded) / secs;
+        const left = speed > 0 ? Math.max(0, Math.round((mb(p.total) - mb(p.loaded)) / speed)) : 0;
+        progressMeta.textContent = `${mb(p.loaded).toFixed(1)} / ${mb(p.total).toFixed(1)} ${t('MB')} · ${speed.toFixed(1)} ${t('MB')}/s · ${t('{n}s left', { n: left })}`;
         buttonEl.textContent = `⬇ ${p.percent}%`;
       }, abortController.signal);
-
       isDownloading = false;
       await updateStatus();
-      ctx.notify(t('Fast local C++ compiler ready! Code will now compile instantly.'));
-      renderState();
+      ctx.notify(t('Instant compiler ready. C++ now runs right in your browser.'));
     } catch (e: any) {
       isDownloading = false;
       const msg = e?.message || String(e);
-      if (msg.includes('cancelled')) {
-        ctx.notify(t('Download cancelled.'));
-      } else {
-        ctx.notify(t('Download failed: ') + msg);
-      }
+      ctx.notify(msg.includes('cancelled') ? t('Download cancelled.') : t('Download failed: ') + msg);
       await updateStatus();
-      renderState();
     } finally {
       abortController = null;
     }
@@ -170,11 +165,11 @@ export function createWasmDialog(
     if (isInstalled) {
       buttonEl.textContent = t('⚡ Local: Active');
       buttonEl.classList.add('wasm-installed');
-      buttonEl.setAttribute('title', t('Fast local C++ compiler is installed and active'));
+      buttonEl.setAttribute('data-tooltip', t('The instant local C++ compiler is installed and active'));
     } else {
-      buttonEl.textContent = t('⚡ 20MB Fast Compiler');
+      buttonEl.textContent = t('⚡ Instant Compiler');
       buttonEl.classList.remove('wasm-installed');
-      buttonEl.setAttribute('title', t('Download fast offline C++ compiler (~20MB)'));
+      buttonEl.setAttribute('data-tooltip', t('Download the instant in-browser C++ compiler ({size})', { size }));
     }
     renderState();
     onStatusChange?.(isInstalled);
@@ -184,23 +179,13 @@ export function createWasmDialog(
     renderState();
     openDialog(dialogEl);
   }
-
   function close() {
     closeDialog(dialogEl);
   }
 
-  // Initial status check
   void updateStatus();
 
-  return {
-    dialogEl,
-    buttonEl,
-    open,
-    updateStatus,
-    dispose: () => {
-      if (abortController) abortController.abort();
-    },
-  };
+  return { dialogEl, buttonEl, open, updateStatus, dispose: () => abortController?.abort() };
 }
 
 export function attachWasmDialog(ctx: Ctx): HTMLElement {
