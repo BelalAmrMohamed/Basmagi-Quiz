@@ -126,9 +126,9 @@ export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
       h('button', { type: 'button', class: 'primary', onclick: () => {
         const i = ctx.state.cells.indexOf(c);
         if (i < 0) return;
-        const made = offer.parts.slice(1).map((p) => ctx.mkCell('code', p));
-        c.src = offer.parts[0]; delete c.splitOffer; c.outs = []; ctx.editorStates.delete(c.id);
-        ctx.state.cells.splice(i + 1, 0, ...made);
+        const made = offer.parts.map((p) => ctx.mkCell(p.type, p.src));
+        delete c.splitOffer; ctx.editorStates.delete(c.id); ctx.editors.delete(c.id);
+        ctx.state.cells.splice(i, 1, ...made); // replace the pasted cell, don't leave it behind
         ctx.save(); ctx.render();
       } }, t('Split into cells')),
       h('button', { type: 'button', onclick: () => { delete c.splitOffer; ctx.render(); } }, t('Keep as one cell'))));

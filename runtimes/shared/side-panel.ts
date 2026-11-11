@@ -173,7 +173,23 @@ function filesPanel(ctx: Ctx): HTMLElement {
     }
     input.value = '';
   };
-  return h('div', { class: 'panel' }, h('h3', {}, t('Current Folder'), h('button', { title: t(isCpp ? 'Upload text files' : 'Upload image files'), onclick: () => input.click() }, t('Upload')), input), body);
+  const samplesBtn = !isCpp && ctx.engine.samples
+    ? h('button', {
+        title: t('Add the platform sample images'), 'aria-haspopup': 'menu',
+        onclick: async (e: MouseEvent) => {
+          const anchor = e.currentTarget as HTMLElement;
+          const missing = await ctx.missingSamples();
+          if (!missing.length) { ctx.notify(t('All sample images are already in the folder.')); return; }
+          openMenu(ctx, anchor, [
+            ...(missing.length > 1 ? [{ label: t('Add all ({n})', { n: missing.length }), action: () => ctx.addSamples(missing) }] : []),
+            ...missing.map((n) => ({ label: n, action: () => ctx.addSamples([n]) })),
+          ]);
+        },
+      }, t('Samples'))
+    : null;
+  const actions = h('span', { class: 'panel-actions', style: 'display:inline-flex;gap:6px' }, ...(samplesBtn ? [samplesBtn] : []),
+    h('button', { title: t(isCpp ? 'Upload text files' : 'Upload image files'), onclick: () => input.click() }, t('Upload')));
+  return h('div', { class: 'panel' }, h('h3', {}, t('Current Folder'), actions, input), body);
 }
 
 function historyPanel(ctx: Ctx): HTMLElement {

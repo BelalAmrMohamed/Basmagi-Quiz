@@ -18,7 +18,7 @@ export interface UiCell {
   starter?: string;
   result?: ChallengeResult;
   /** A whole program was pasted: the cells it could be split into, offered under the cell until the code changes. */
-  splitOffer?: { src: string; parts: string[] };
+  splitOffer?: { src: string; parts: Array<{ type: 'code' | 'md'; src: string }> };
   /** Learner UI state. */
   hintShown?: boolean; solutionShown?: boolean; targetHidden?: boolean; attempts?: number;
 }
@@ -80,6 +80,9 @@ export interface Ctx {
   openImage(o: Extract<Out, { k: 'img' }>): void;
   addFile(f: File): Promise<void>;
   removeFile(name: string): void;
+  /** Bundled sample files not yet in the folder / add some of them. */
+  missingSamples(): Promise<string[]>;
+  addSamples(names: string[]): Promise<void>;
   /** Validates `to`, renames, tells the host. Returns false (after a notice) when the rename was refused. */
   renameFile(from: string, to: string): boolean;
   files(): Map<string, ImageFile>;

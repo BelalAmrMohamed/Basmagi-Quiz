@@ -7,7 +7,7 @@
 import { cpp } from '@codemirror/lang-cpp';
 import { cppCompletions } from './completions';
 import { cppLint } from './lint';
-import { cellRuns, splitProgram } from './assemble';
+import { cellRuns, splitProgramCells } from './assemble';
 import { isWasmCached } from './wasm-cache';
 import { attachWasmDialog } from '../../shared/wasm-dialog';
 import type { Engine, Cell, RunRequest, RunSink } from '../../shared/engine';
@@ -251,6 +251,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
   /** Compile clang/lld in the background so the first Run doesn't pay for it. */
   const warmUp = async () => {
     try {
+      if (warmState === 'warming' || (warmState === 'ready' && worker)) return; // idempotent: re-entry caused the flashing
       if (!(await isWasmCached())) return;
       const w = getWorker();
       setWarm('warming');
@@ -486,7 +487,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
     runAll: (req, sink) => go(req, sink, true),
     attach(host) { codeSources = host.codeSources; },
     reset() {},
-    splitPaste: (text: string) => splitProgram(text),
+    splitPaste: (text: string) => splitProgramCells(text),
     setWasmMode: (on: boolean) => { if (on) void warmUp(); else setWarm('idle'); },
     /** Subscribe to warm-up changes; the callback is called at once with the current state. Returns an unsubscribe function. */
     onWarm: (cb: (s: WarmState) => void) => { warmListeners.add(cb); cb(warmState); return () => { warmListeners.delete(cb); }; },

@@ -437,3 +437,15 @@
 .mlweb .split-offer > span {
   flex: 1 1 220px;
 }
+
+/* Split offer floats at the bottom of the viewport so it is never off-screen. */
+.mlweb .split-offer {
+  position: fixed;
+  inset-inline: 12px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 60;
+  width: fit-content;
+  max-width: min(560px, calc(100vw - 24px));
+  margin: 0 auto;
+  box-shadow: 0 10px 34px #0006;
+}

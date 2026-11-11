@@ -26,6 +26,7 @@ export function createWasmDialog(
   const { t } = ctx;
   const size = `${Math.round(mb(TOTAL_WASM_DOWNLOAD))} ${t('MB')}`;   // what is downloaded (compressed)
   const stored = `${Math.round(mb(TOTAL_WASM_SIZE))} ${t('MB')}`;      // what it takes once unpacked in browser storage
+  let lastReported: boolean | null = null;
   let warm: 'idle' | 'warming' | 'ready' | 'error' = 'idle';
   let abortController: AbortController | null = null;
   let isDownloading = false;
@@ -178,7 +179,7 @@ export function createWasmDialog(
       buttonEl.setAttribute('data-tooltip', t('Download the instant in-browser C++ compiler ({size})', { size }));
     }
     renderState();
-    onStatusChange?.(isInstalled);
+    if (isInstalled !== lastReported) { lastReported = isInstalled; onStatusChange?.(isInstalled); }
   }
 
   function open() {

@@ -189,6 +189,23 @@ export function splitProgram(src: string): string[] | null {
   return out.length >= 3 ? out : null;
 }
 
+/** splitProgram, with each piece typed: leading `//` comment blocks become markdown cells (`// ## Title` -> `## Title`), `//%%` markers vanish. */
+export function splitProgramCells(src: string): Array<{ type: 'code' | 'md'; src: string }> | null {
+  const parts = splitProgram(src);
+  if (!parts) return null;
+  const out: Array<{ type: 'code' | 'md'; src: string }> = [];
+  for (const p of parts) {
+    const lines = p.split('\n');
+    let i = 0;
+    while (i < lines.length && /^\s*(\/\/.*)?$/.test(lines[i])) i++;
+    const md = lines.slice(0, i).filter((l) => !/^\s*\/\/\s*%%/.test(l)).map((l) => l.replace(/^\s*\/\/ ?/, '')).join('\n').trim();
+    const code = lines.slice(i).join('\n').trim();
+    if (md) out.push({ type: 'md', src: md });
+    if (code) out.push({ type: 'code', src: code });
+  }
+  return out.length >= 2 ? out : null;
+}
+
 /** Does running this cell execute anything (statements or a `main`), or does it only declare things? */
 export function cellRuns(src: string): boolean {
   return splitCell(src).some((p) => { const c = classify(p, src); return !c.decl || !!c.main; });

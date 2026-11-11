@@ -571,3 +571,41 @@
   from { opacity: 1; }
   to { opacity: 0.55; }
 }
+
+/* Instant C++ modal: scrollable body, pinned header/actions, phone sizing. */
+.mlweb #cppWasmDialog[open] {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 28px);
+}
+
+.mlweb #cppWasmDialog .wasm-dialog-head,
+.mlweb #cppWasmDialog .wasm-dialog-actions {
+  flex: 0 0 auto;
+}
+
+.mlweb #cppWasmDialog .wasm-dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 520px) {
+  .mlweb #cppWasmDialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  .mlweb #cppWasmDialog .wasm-dialog-head,
+  .mlweb #cppWasmDialog .wasm-dialog-body,
+  .mlweb #cppWasmDialog .wasm-dialog-actions {
+    padding-inline: 14px;
+  }
+
+  .mlweb #cppWasmDialog .wasm-dialog-head { gap: 10px; flex-wrap: wrap; }
+  .mlweb #cppWasmDialog .wasm-head-text { flex: 1 1 140px; min-width: 0; }
+  .mlweb #cppWasmDialog .wasm-stats { grid-template-columns: minmax(0, 1fr); }
+  .mlweb #cppWasmDialog .wasm-dialog-actions { padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+  .mlweb #cppWasmDialog .wasm-dialog-actions > button { flex: 1 1 100%; }
+}

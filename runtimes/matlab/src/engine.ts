@@ -197,6 +197,8 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
       files.set(f.name, img);
       worker?.postMessage({ t: 'putFile', name: f.name, img });
     },
+    async samples() { await manifestReady; return [...manifest.values()].sort((a, b) => a.localeCompare(b)); },
+    async addSample(name: string) { await manifestReady; await loadAsset(name); },
     removeFile(name: string) { files.delete(name); worker?.postMessage({ t: 'delFile', name }); },
     renameFile(from: string, to: string) {
       // Rebuild the map so the file keeps its place in the list; `files` itself must stay the same object.

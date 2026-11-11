@@ -88,7 +88,7 @@ export interface Engine {
     /** Live syntax check while typing (debounced by the shell). Messages must already be localized. */
     lint?(state: EditorState): Diagnostic[] };
   /** A program pasted into one cell: the cells to offer instead (3 or more), or null when it is not worth splitting. */
-  splitPaste?(text: string): string[] | null;
+  splitPaste?(text: string): Array<{ type: 'code' | 'md'; src: string }> | null;
   /** Help dialog content. The shell adds the generic notebook shortcuts itself. */
   help?: { title?: string; intro?: string; searchPlaceholder?: string; items: Array<[title: string, en: string, ar: string]> };
   caps: { workspace: boolean; files: boolean; images: boolean; stdin: boolean; history: boolean };
@@ -106,6 +106,9 @@ export interface Engine {
   files?: Map<string, ImageFile>;
   addFile?(f: File): Promise<void>;
   removeFile?(name: string): void;
+  /** Bundled sample files the learner can add to the folder (names), and a way to add one. */
+  samples?(): Promise<string[]>;
+  addSample?(name: string): Promise<void>;
   /** Rename a workspace file in place (keeps its position in `files`). The shell validates the name first. */
   renameFile?(from: string, to: string): void;
   /** Called once at mount: lets the engine read notebook state (for autocomplete). */

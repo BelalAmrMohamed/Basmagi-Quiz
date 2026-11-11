@@ -160,7 +160,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     focusCard: (id) => { focusCardId = id; render(); },
     leaveEditor, jumpToLine, runCell, runFromEditor, runAll, stop, resetWorkspace, resetToPublished, resetChallenge, replaceCells,
     openHelp: () => dialogs.help(), openExport: () => exportDialog.open(), openImage: (o) => imageTool?.open(o),
-    addFile, removeFile, renameFile, files: () => engine.files ?? new Map(), clearHistory,
+    addFile, removeFile, renameFile, missingSamples, addSamples, files: () => engine.files ?? new Map(), clearHistory,
   };
   const dialogs = createDialogs(ctx);
   const exportDialog = createExportDialog(ctx);
@@ -450,6 +450,14 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     if (!engine.addFile) { engine.files?.set(f.name, await fileToImage(f)); }
     else await engine.addFile(f);
     window.__mlwebFileHook?.add?.(f);
+    ctx.renderSide();
+  }
+  async function missingSamples(): Promise<string[]> {
+    const all = (await engine.samples?.()) ?? [];
+    return all.filter((n) => !engine.files?.has(n));
+  }
+  async function addSamples(names: string[]) {
+    for (const n of names) await engine.addSample?.(n);
     ctx.renderSide();
   }
   function removeFile(name: string) {

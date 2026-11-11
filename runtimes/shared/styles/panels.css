@@ -1,0 +1,6 @@
+
+.mlweb .panel-actions {
+  display: inline-flex;
+  gap: 6px;
+  margin-inline-start: auto;
+}
