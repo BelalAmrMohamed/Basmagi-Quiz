@@ -107,6 +107,7 @@ export const AR: Record<string, string> = {
   "Current Folder": "المجلد الحالي",
   "Samples": "صور جاهزة",
   "Add the platform sample images": "إضافة صور المنصة الجاهزة",
+  "Browse and add the sample images": "استعراض الصور الجاهزة وإضافتها",
   "All sample images are already in the folder.": "كل الصور الجاهزة موجودة بالفعل في المجلد.",
   "Add all ({n})": "إضافة الكل ({n})",
   "Upload image files": "رفع ملفات الصور",

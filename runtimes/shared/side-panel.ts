@@ -29,20 +29,33 @@ function workspacePanel(ctx: Ctx): HTMLElement {
   return h('div', { class: 'panel' }, h('h3', {}, t('Workspace'), h('button', { title: t('Clear variables'), onclick: () => ctx.resetWorkspace() }, t('Clear'))), body);
 }
 
-type MenuItem = { label: string; action: () => void | Promise<void>; danger?: boolean };
+type MenuItem = { label: string; action: () => void | Promise<void>; danger?: boolean; preview?: Promise<HTMLCanvasElement | null> };
 let closeOpenMenu: (() => void) | null = null;
+let openMenuAnchor: HTMLElement | null = null;
+const samplePreviewCache = new Map<string, Promise<HTMLCanvasElement | null>>();
 
 /**
  * A small floating menu. It is appended to the notebook root with `position: fixed`, because the
  * panel body scrolls and clips anything absolutely positioned inside it.
  */
-function openMenu(ctx: Ctx, anchor: HTMLElement, items: MenuItem[]) {
+function openMenu(ctx: Ctx, anchor: HTMLElement, items: MenuItem[], menuClass = '') {
+  const toggleClosed = openMenuAnchor === anchor;
   closeOpenMenu?.();
-  const menu = h('div', { class: 'file-menu', role: 'menu' });
-  const buttons = items.map((it) => h('button', {
-    type: 'button', role: 'menuitem', class: it.danger ? 'danger' : '',
-    onclick: () => { close(false); void it.action(); },
-  }, it.label));
+  if (toggleClosed) return;
+  const menu = h('div', { class: `file-menu ${menuClass}`.trim(), role: 'menu' });
+  const buttons = items.map((it) => {
+    const button = h('button', {
+      type: 'button', role: 'menuitem', class: it.danger ? 'danger' : '',
+      onclick: () => { close(false); void it.action(); },
+    });
+    if (it.preview) {
+      const thumb = h('span', { class: 'file-menu-thumb', 'aria-hidden': 'true' });
+      button.classList.add('file-menu-sample');
+      button.append(thumb, h('span', { class: 'file-menu-label' }, it.label));
+      void it.preview.then((canvas) => { if (canvas && button.isConnected) thumb.append(canvas); });
+    } else button.textContent = it.label;
+    return button;
+  });
   menu.append(...buttons);
   ctx.root.append(menu);
   anchor.setAttribute('aria-expanded', 'true');
@@ -72,11 +85,12 @@ function openMenu(ctx: Ctx, anchor: HTMLElement, items: MenuItem[]) {
     window.removeEventListener('scroll', onScroll, true);
     menu.remove();
     anchor.setAttribute('aria-expanded', 'false');
-    if (closeOpenMenu === close0) closeOpenMenu = null;
+    if (closeOpenMenu === close0) { closeOpenMenu = null; openMenuAnchor = null; }
     if (refocus && anchor.isConnected) anchor.focus();
   }
   const close0 = () => close(false);
   closeOpenMenu = close0;
+  openMenuAnchor = anchor;
   document.addEventListener('pointerdown', away, true);
   document.addEventListener('keydown', key, true);
   window.addEventListener('resize', dismiss);
@@ -108,6 +122,30 @@ async function copyImage(img: ImageFile): Promise<boolean> {
 
 function isImageFile(f: any): f is ImageFile {
   return f && typeof f.width === 'number' && typeof f.height === 'number';
+}
+
+function sampleImagePreview(ctx: Ctx, name: string): Promise<HTMLCanvasElement | null> {
+  const base = new URL(ctx.opts.baseUrl || './', location.href);
+  const url = new URL(`assets/${encodeURIComponent(name)}.json`, base).href;
+  const cached = samplePreviewCache.get(url);
+  if (cached) return cached;
+  const preview = fetch(url).then(async (response) => {
+    if (!response.ok) return null;
+    const { b64, ...meta } = await response.json();
+    if (typeof b64 !== 'string' || !Number.isFinite(meta.width) || !Number.isFinite(meta.height)) return null;
+    const binary = atob(b64), data = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) data[i] = binary.charCodeAt(i);
+    const source = rawToCanvas({ ...meta, data } as ImageFile);
+    const scale = Math.min(1, 64 / source.width, 48 / source.height);
+    const thumb = document.createElement('canvas');
+    thumb.width = Math.max(1, Math.round(source.width * scale));
+    thumb.height = Math.max(1, Math.round(source.height * scale));
+    thumb.className = 'file-menu-preview';
+    thumb.getContext('2d')?.drawImage(source, 0, 0, thumb.width, thumb.height);
+    return thumb;
+  }).catch(() => null);
+  samplePreviewCache.set(url, preview);
+  return preview;
 }
 
 function fileMenu(ctx: Ctx, anchor: HTMLElement, name: string, file: any) {
@@ -175,15 +213,15 @@ function filesPanel(ctx: Ctx): HTMLElement {
   };
   const samplesBtn = !isCpp && ctx.engine.samples
     ? h('button', {
-        title: t('Add the platform sample images'), 'aria-haspopup': 'menu',
+        title: t('Browse and add the sample images'), 'aria-haspopup': 'menu', 'aria-expanded': 'false',
         onclick: async (e: MouseEvent) => {
           const anchor = e.currentTarget as HTMLElement;
           const missing = await ctx.missingSamples();
           if (!missing.length) { ctx.notify(t('All sample images are already in the folder.')); return; }
           openMenu(ctx, anchor, [
             ...(missing.length > 1 ? [{ label: t('Add all ({n})', { n: missing.length }), action: () => ctx.addSamples(missing) }] : []),
-            ...missing.map((n) => ({ label: n, action: () => ctx.addSamples([n]) })),
-          ]);
+            ...missing.map((n) => ({ label: n, preview: sampleImagePreview(ctx, n), action: () => ctx.addSamples([n]) })),
+          ], 'file-menu--samples');
         },
       }, t('Samples'))
     : null;

@@ -7,6 +7,24 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### A Console Error that appears on most or all pages when testing on Loaclhost
+```
+content.js:1 Uncaught (in promise) Error: Timeout exceeded
+    at content.js:1:195654
+```
+
+### Fix RTL text direction/mixing in Lesson questions
+
+#### **Description:**
+
+Based on student feedback regarding Lesson content and quizzes on the Basmagi Quiz platform, the following improvements are needed:
+
+* **Bi-directional Text Direction & Mixing (RTL/LTR):**
+* Fix text rendering issues when mixing Arabic and English within questions and options.
+* Currently, mixed-language text can sometimes cause inverted ordering or incorrect direction flow, leading to confusion where similar-looking options get mixed up and result in accidental wrong answers. The existing Text Direction Engine should be refined to properly handle bilingual text alignment and flow.
+
+---
+
 ### Offline Page
 Improve:
 * It's theme Should match the theme of the platform (see themes.css and theme-controller.js), but it shouldn't import these files, it should be independent. It should also default to the default theme of the platform.
