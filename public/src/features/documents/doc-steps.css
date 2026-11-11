@@ -53,10 +53,49 @@
 .doc-faq p { padding: 0 16px 14px; margin: 0; text-align: start; }
 
 /* lightbox */
-.doc-lightbox { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 94vh; overflow: visible; }
+.doc-lightbox {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  /* Force consistent shrink-wrap + centering across browsers.
+     Without these the :modal dialog either fills the viewport
+     (img pinned top-left) or leaves the ✕ button off-screen. */
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: fit-content;
+  height: fit-content;
+  max-width: 96vw;
+  max-height: 94vh;
+  overflow: visible;
+}
 .doc-lightbox::backdrop { background: rgba(0, 0, 0, .82); }
-.doc-lightbox img { display: block; max-width: 96vw; max-height: 90vh; border-radius: 10px; }
-.doc-lightbox__close { position: absolute; top: -14px; inset-inline-end: -6px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: #fff; color: #111; font-size: 1.3rem; line-height: 1; cursor: pointer; }
+.doc-lightbox img {
+  display: block;
+  max-width: 96vw;
+  max-height: 90vh;
+  border-radius: 10px;
+}
+.doc-lightbox__close {
+  position: absolute;
+  top: -14px;
+  inset-inline-end: -6px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 0;
+  background: #fff;
+  color: #111;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  z-index: 1;
+  /* Contrast against any screenshot */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
+}
 
 @media (max-width: 720px) {
   .doc-quick { grid-template-columns: repeat(2, 1fr); }
