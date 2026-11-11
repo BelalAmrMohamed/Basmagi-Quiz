@@ -68,7 +68,7 @@ export function buildCreatorSectionHtml(creatorProfile, sectionTitle = "إعدا
         <${WrapperTag} class="quiz-creator-card"${hrefAttr}>
           <img src="${escapeHtml(avatarSrc)}" class="quiz-creator-avatar" alt="" loading="lazy" onerror="this.src='${escapeHtml(getDefaultAvatarDataUrl(displayName || cleanHandle))}'" />
           <div class="quiz-creator-info">
-            <span class="quiz-creator-name">${escapeHtml(displayName || cleanHandle)}</span>
+            <span class="quiz-creator-name" title="${escapeHtml(displayName || cleanHandle)}">${escapeHtml(displayName || cleanHandle)}</span>
             ${cleanHandle ? `<span class="quiz-creator-handle">@${escapeHtml(cleanHandle)}</span>` : ""}
           </div>
           ${profileHref ? `
