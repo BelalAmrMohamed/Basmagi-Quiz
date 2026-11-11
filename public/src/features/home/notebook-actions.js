@@ -30,7 +30,6 @@ function infoBodyHtml(info, url) {
   if (info.description) add("الوصف", escapeHtml(info.description));
   if (info.source) add("المصدر", infoSourceHtml(info.source));
   if (url) add("رابط الدفتر", infoItemLinkHtml(url, info.title, "رابط الدفتر"));
-  add("مكان الحفظ", info.local ? "على جهازك فقط (محتواي)" : "منصة بصمجي (مشترك)");
   const created = formatDateForInfo(info.createdAt);
   if (created) add("تاريخ الإنشاء", `<span dir="ltr">${escapeHtml(created)}</span>`);
   const updated = formatDateForInfo(info.updatedAt && !Number.isNaN(Date.parse(info.updatedAt)) ? new Date(info.updatedAt).toLocaleString("en-US") : info.updatedAt);
