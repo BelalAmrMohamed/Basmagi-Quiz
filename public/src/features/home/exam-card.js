@@ -436,6 +436,17 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
       const adminSubmenu = createActionGroupSubmenu(
         [
           {
+            // تغيير العنوان — quizzes/folders/courses.
+            label: "تغيير العنوان",
+            icon: RENAME_ICON_SVG,
+            onClick: () => renameSharedItem(exam),
+          },
+          {
+            label: "تعديل التفاصيل",
+            icon: EDIT_ICON_SVG,
+            onClick: () => editSharedItemMetadata(exam),
+          },
+          {
             // تعديل — quizzes only: deep-link into create-quiz edit mode
             // (the create-quiz page pre-fills from ?id=<dbId>&mode=edit,
             // step 9).
@@ -447,22 +458,11 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
             },
           },
           {
-            label: "تعديل التفاصيل",
-            icon: EDIT_ICON_SVG,
-            onClick: () => editSharedItemMetadata(exam),
-          },
-          {
             // نقل — shared Move-Source dialog over the DB courses+folders
             // tree.
             label: "نقل",
             icon: MOVE_TO_ICON_SVG,
             onClick: () => openSharedMoveToDialog(exam),
-          },
-          {
-            // تغيير العنوان — quizzes/folders/courses.
-            label: "تغيير العنوان",
-            icon: RENAME_ICON_SVG,
-            onClick: () => renameSharedItem(exam),
           },
           {
             // حذف — soft delete (to the shared trash, fully restorable

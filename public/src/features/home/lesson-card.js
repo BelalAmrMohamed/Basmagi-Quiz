@@ -201,6 +201,7 @@ function openLessonActionsMenu(lesson, trigger) {
 
     if (canManageItem({ ...lesson, itemType: "lesson" })) {
       const adminMenu = createActionGroupSubmenu([
+        { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameSharedItem({ ...lesson, itemType: "lesson" }) },
         {
           label: "تعديل التفاصيل", icon: EDIT_ICON_SVG,
           onClick: () => editSharedItemMetadata({ ...lesson, itemType: "lesson" }),
@@ -210,7 +211,6 @@ function openLessonActionsMenu(lesson, trigger) {
           onClick: () => { window.location.href = `/create-lesson?edit=${encodeURIComponent(lesson.id)}`; },
         },
         { label: "نقل", icon: MOVE_TO_ICON_SVG, onClick: () => openSharedMoveToDialog({ ...lesson, itemType: "lesson" }) },
-        { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameSharedItem({ ...lesson, itemType: "lesson" }) },
         { label: "حذف الدرس", icon: TRASH_ICON_SVG, danger: true, onClick: () => deleteSharedItem({ ...lesson, itemType: "lesson" }) },
       ], closeMenu, reposition);
       menu.appendChild(adminMenu);
