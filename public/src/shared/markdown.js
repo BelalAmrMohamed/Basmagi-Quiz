@@ -2,8 +2,7 @@
  * public/src/shared/markdown.js
  *
  * Shared Markdown + KaTeX rendering engine (ES Module).
- * Used by both quiz.html and result.html — do NOT add any
- * page-specific logic here.
+ * do NOT add any page-specific logic here.
  *
  * Exports:
  * renderMarkdown(str, options)   → HTML string
@@ -2125,8 +2124,11 @@ export function _renderMarkdownCore(str, options = {}) {
 export const _ARABIC_REGEX =
   /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
-export const _FIRST_STRONG_CHAR_REGEX =
-  /[A-Za-z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+// Letters carry strong bidi direction; Arabic-Indic digits, punctuation,
+// and combining marks do not. Matching Unicode letters here keeps the
+// fallback direction scan aligned with the browser's `dir="auto"` behavior
+// when a line starts with a number or diacritic.
+export const _FIRST_STRONG_CHAR_REGEX = /\p{L}/u;
 
 // Block-level child selector — each of these gets its own direction verdict.
 export const _BLOCK_CHILD_SELECTOR =

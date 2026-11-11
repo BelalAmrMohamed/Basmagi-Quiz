@@ -11,7 +11,7 @@
 // single innerHTML write instead of per-block node surgery.
 // ============================================================================
 
-import { renderMarkdown, renderInlineMediaTag } from "../../shared/markdown.js";
+import { detectDirection, renderMarkdown, renderInlineMediaTag } from "../../shared/markdown.js";
 import { escapeHtml } from "../home/escape-html.js";
 import { recordQuestionAnswer, appendEssayAnswerText, resetLessonQuestionAnswers, resetQuestionAnswersByIds, getLessonProgress } from "./lesson-schema.js";
 import { _confirm } from "../../components/notifications/notifications.js";
@@ -311,11 +311,14 @@ function renderMcqQuestionBody(block, questionId, options, prior, header) {
   // from progress by resolveRevealedSections, so these must agree).
   const optionsHtml = options
     .map(
-      (opt, i) =>
-        `<button type="button" class="lesson-question__option" dir="auto" data-option-index="${i}" aria-pressed="false">` +
-        `<span class="lesson-question__option-marker" aria-hidden="true">${String.fromCharCode(65 + i)}</span>` +
-        `<span class="lesson-question__option-text md-content">${renderMarkdown(String(opt))}</span>` +
-        `</button>`,
+      (opt, i) => {
+        const optionText = String(opt);
+        const direction = detectDirection(optionText);
+        return `<button type="button" class="lesson-question__option" dir="${direction}" data-option-index="${i}" aria-pressed="false">` +
+          `<span class="lesson-question__option-marker" dir="ltr" aria-hidden="true">${String.fromCharCode(65 + i)}</span>` +
+          `<span class="lesson-question__option-text md-content">${renderMarkdown(optionText)}</span>` +
+          `</button>`;
+      },
     )
     .join("");
   const correctAnswers = correctIndexes.map((index) => options[index]).filter(Boolean);
