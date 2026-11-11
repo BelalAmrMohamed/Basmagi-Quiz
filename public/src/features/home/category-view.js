@@ -423,7 +423,7 @@ export function createCategoryCard(
           "معلومات المجلد",
         ));
 
-        // ── Admin manage group — نقل / إعادة تسمية / حذف (→ trash) ──────
+        // ── Admin manage group — نقل / تغيير العنوان / حذف (→ trash) ──────
         // Folders only: gated on the same canManageItem() 3-tier check as
         // quizzes (owner → creator match → scope match), grouped below the
         // public actions with a divider, collapsed into a single "إدارة"
@@ -445,8 +445,8 @@ export function createCategoryCard(
                 onClick: () => openSharedMoveToDialog(courseData),
               },
               {
-                // إعادة تسمية.
-                label: "إعادة تسمية",
+                // تغيير العنوان.
+                label: "تغيير العنوان",
                 icon: RENAME_ICON_SVG,
                 onClick: () => renameSharedItem(courseData),
               },

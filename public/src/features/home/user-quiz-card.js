@@ -470,7 +470,7 @@ export function showUserNotebookActionsOverlay(nb, triggerBtn) {
             onSave: ({ description, source }) => saveLocalItemMetadata(nbId, description, source),
           }),
       },
-      { label: "إعادة تسمية", icon: RENAME_ICON_SVG, onClick: () => renameItem(nbId, title) },
+      { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameItem(nbId, title) },
     ]);
     appendMoveGroup(menu, closeMenu, reposition, nbId);
     appendNotebookMenuEntries(menu, closeMenu, reposition, nb);
@@ -539,7 +539,7 @@ export function showUserLessonActionsOverlay(lesson, triggerBtn) {
             onSave: ({ description, source }) => saveLocalItemMetadata(lessonId, description, source),
           }),
       },
-      { label: "إعادة تسمية", icon: RENAME_ICON_SVG, onClick: () => renameItem(lessonId, title) },
+      { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameItem(lessonId, title) },
     ]);
 
     // ── "معلومات الدرس" submenu — same quick-rows-then-"كل المعلومات"
@@ -692,7 +692,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
 
     appendSelectOption(menu, closeMenu, quiz.id || quiz.meta?.id);
 
-    // ── Edit group — تعديل الامتحان / تعديل التفاصيل / إعادة تسمية in one
+    // ── Edit group — تعديل الامتحان / تعديل التفاصيل / تغيير العنوان in one
     // submenu (this menu is the single entry-point for editing; the card has
     // no standalone edit icon).
     appendEditGroup(menu, closeMenu, reposition, [
@@ -712,7 +712,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
             onSave: ({ description, source }) => saveLocalItemMetadata(quiz.id || quiz.meta?.id, description, source),
           }),
       },
-      { label: "إعادة تسمية", icon: RENAME_ICON_SVG, onClick: () => renameItem(quiz.id || quiz.meta?.id, qz(quiz, "title")) },
+      { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameItem(quiz.id || quiz.meta?.id, qz(quiz, "title")) },
     ]);
 
     // ── "معلومات الامتحان" submenu — user quizzes carry everything already

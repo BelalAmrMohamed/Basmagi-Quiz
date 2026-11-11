@@ -421,7 +421,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     };
     menu.appendChild(askAiOpt);
 
-    // ── Admin manage group — تعديل / نقل / إعادة تسمية / حذف (→ trash) ────
+    // ── Admin manage group — تعديل / نقل / تغيير العنوان / حذف (→ trash) ────
     // Visible for database quizzes whose admin passes the generalized 3-tier
     // canManageItem() gate (owner → creator match → scope match). Grouped
     // below the public actions with a divider, collapsed into a single
@@ -459,8 +459,8 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
             onClick: () => openSharedMoveToDialog(exam),
           },
           {
-            // إعادة تسمية — quizzes/folders/courses.
-            label: "إعادة تسمية",
+            // تغيير العنوان — quizzes/folders/courses.
+            label: "تغيير العنوان",
             icon: RENAME_ICON_SVG,
             onClick: () => renameSharedItem(exam),
           },

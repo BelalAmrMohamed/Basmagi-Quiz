@@ -270,7 +270,7 @@ export function createExamInfoSubmenu(basicRows, onShowFull, closeDropdown, repo
 }
 
 /**
- * Builds a grouped row of admin actions (تعديل / نقل / إعادة تسمية / حذف…)
+ * Builds a grouped row of admin actions (تعديل / نقل / تغيير العنوان / حذف…)
  * as a single submenu-trigger row, rather than appending each action as its
  * own top-level row in the dropdown. Keeps the outer ⋮ menu from growing
  * tall on items with many admin actions, and reads as one cohesive "إدارة"

@@ -856,7 +856,7 @@ function renderEntryItemsGrid() {
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
               </svg>
-              <span>إعادة تسمية</span>
+              <span>تغيير العنوان</span>
             </button>
             <button type="button" class="entry-item-menu-option entry-item-menu-option-danger"
               onclick="deleteEntryItem(event, '${item.id}')">

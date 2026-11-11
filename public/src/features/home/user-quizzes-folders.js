@@ -25,7 +25,7 @@ let folderPathStack = [];
  * throws synchronously and *uncaught*, silently aborting whichever
  * delete/rename/move function was mid-call with no error shown to the user
  * and no re-render. That reads exactly like "nothing happens when I click
- * حذف/إعادة تسمية/نقل إلى" — this is one of two fixes made for that report
+ * حذف/تغيير العنوان/نقل إلى" — this is one of two fixes made for that report
  * (see saveUserQuizzes below for the other). Falls back to an empty tree
  * and warns via showNotification rather than crashing the calling action.
  * @returns {Array}
@@ -863,7 +863,7 @@ function buildItemMenuItems(targetType, targetId, targetTitle) {
 
   const targetRow = readUserQuizzes().find((q) => (q.id || q.meta?.id) === targetId);
   const isLesson = targetRow?.meta?.type === "lesson";
-  const rename = { icon: RENAME_SVG, label: "إعادة تسمية", onClick: () => renameItem(targetId, targetTitle) };
+  const rename = { icon: RENAME_SVG, label: "تغيير العنوان", onClick: () => renameItem(targetId, targetTitle) };
 
   if (targetType === "item") {
     // "item" covers both quizzes and lessons — send each to its own editor.

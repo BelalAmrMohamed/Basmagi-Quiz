@@ -132,13 +132,15 @@ const REF_KIND_META = {
 };
 
 /**
- * Shared card for every embed kind. quiz/lesson cards get the full action row
- * (start/download/info/ask, wired by equipReferenceCardActions); notebook /
- * folder / course cards are pure link-outs (`href`) — nothing runs inline.
+ * Shared card for every embed kind. Quiz and lesson references get the full
+ * action row. Notebook references keep an open link and add download/info/ask;
+ * folder and course cards remain pure link-outs.
  */
 function renderReferenceCard({ kind, id, title, description, countLabel, available, protectedContent, thumbUrl = null, href = null }) {
   const meta = REF_KIND_META[kind] || REF_KIND_META.lesson;
   const linkOut = kind !== "quiz" && kind !== "lesson";
+  const hasNotebookActions = kind === "notebook";
+  const hasInlineActions = !linkOut || hasNotebookActions;
   const bodyTitle = title || meta.missing;
   return (
     `<article class="lesson-ref-card lesson-ref-card--${kind} lesson-ref-card--has-thumb${available ? "" : " is-unavailable"}" data-reference-card data-reference-kind="${kind}">` +
@@ -158,10 +160,13 @@ function renderReferenceCard({ kind, id, title, description, countLabel, availab
       ? (available && href
         ? `<a class="lesson-ref-card__action lesson-ref-card__action--start" href="${escapeHtml(href)}">${lessonIcon(meta.icon)}<span>${escapeHtml(meta.start)}</span></a>`
         : `<span class="lesson-ref-card__action lesson-ref-card__action--start" aria-disabled="true">${lessonIcon(meta.icon)}<span>${escapeHtml(meta.start)}</span></span>`)
-      : referenceActionButton(kind, "start", id, bodyTitle, meta.start, kind === "quiz" ? "play" : "book", !available) +
+      : referenceActionButton(kind, "start", id, bodyTitle, meta.start, kind === "quiz" ? "play" : "book", !available)) +
+    (hasInlineActions
+      ?
         referenceActionButton(kind, "download", id, bodyTitle, "تنزيل", "download", !available) +
-        referenceActionButton(kind, "info", id, bodyTitle, "معلومات", "info", false) +
-        referenceActionButton(kind, "ask", id, bodyTitle, "اسأل الباشـمبصمج", "sparkle", !available)) +
+        referenceActionButton(kind, "info", id, bodyTitle, "معلومات", "info", hasNotebookActions ? !available : false) +
+        referenceActionButton(kind, "ask", id, bodyTitle, "اسأل الباشـمبصمج", "sparkle", !available)
+      : "") +
     `</div></article>`
   );
 }

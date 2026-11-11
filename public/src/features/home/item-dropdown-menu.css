@@ -126,7 +126,7 @@
     color: white;
 }
 
-/* Divider that groups the admin manage actions (تعديل / نقل / إعادة تسمية /
+/* Divider that groups the admin manage actions (تعديل / نقل / تغيير العنوان /
    حذف) below the public ones inside the ⋮ dropdown — see
    docs/plans/Admin actions and deletion flow for quizzes.md §5. A thin,
    full-width hairline with hairline margins on both sides. */

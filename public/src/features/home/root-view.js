@@ -139,7 +139,7 @@ function attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe =
         "معلومات المادة",
       ));
 
-      // ── Admin manage group — إعادة تسمية / حذف (→ trash) ─────────────────
+      // ── Admin manage group — تغيير العنوان / حذف (→ trash) ─────────────────
       // Courses only: rename + soft-delete (move is intentionally absent —
       // courses are top-level by construction; edit is quizzes-only). Gated
       // on the canManageItem() 3-tier check (owner → creator match → scope
@@ -155,7 +155,7 @@ function attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe =
         const adminSubmenu = createActionGroupSubmenu(
           [
             {
-              label: "إعادة تسمية",
+              label: "تغيير العنوان",
               icon: RENAME_ICON_SVG,
               onClick: () => renameSharedItem(course),
             },

@@ -2,7 +2,7 @@
 // public/src/features/home/admin-item-actions.js
 // ADMIN ITEM ACTIONS — the shared/admin (Supabase-backed) ⋮ dropdown action
 // set for quizzes, folders, and courses: تعديل (edit), نقل (move),
-// إعادة تسمية (rename), حذف (soft-delete → trash). See
+// تغيير العنوان (rename), حذف (soft-delete → trash). See
 // docs/plans/Admin actions and deletion flow for quizzes.md §5.
 //
 //   - canManageItem() — per-item UX gate (owner → creator match → scope match),
@@ -235,7 +235,7 @@ export async function renameSharedItem(item) {
   const itemType = resolveItemType(item);
   const itemId = resolveItemId(item);
   if (!itemType || !itemId) {
-    showNotification("تعذّرت إعادة التسمية", "تعذّر تحديد المجلد أو العنصر المطلوب. حدّث الصفحة وحاول مرة أخرى.", "error");
+    showNotification("تعذّرت تغيير العنوان", "تعذّر تحديد المجلد أو العنصر المطلوب. حدّث الصفحة وحاول مرة أخرى.", "error");
     return false;
   }
 
@@ -252,7 +252,7 @@ export async function renameSharedItem(item) {
 
   const label = item.title || item.name || "العنصر";
   showNotification(
-    "تمت إعادة التسمية",
+    "تمت تغيير العنوان",
     `تم تغيير اسم "${label}" بنجاح`,
     "success",
   );

@@ -1837,7 +1837,7 @@
 }
 
 /* PHASE 5: renamed from -delete to -more — this button now opens the
-   حذف/إعادة تسمية/تثبيت menu (openItemMenu in ai-agent-history.js) rather
+   حذف/تغيير العنوان/تثبيت menu (openItemMenu in ai-agent-history.js) rather
    than deleting directly. Same shape/hover treatment as the old delete
    button, just without the danger-red hover tint (deletion is now one
    menu row among three, not this button's own single action). */

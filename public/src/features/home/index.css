@@ -836,7 +836,7 @@ body.sidebar-expanded {
   margin-top: 4px;
 }
 
-/* Admin action-group submenu (تعديل / نقل / إعادة تسمية / حذف…) — same
+/* Admin action-group submenu (تعديل / نقل / تغيير العنوان / حذف…) — same
    popover shell as the info submenu above, but its content is a stack of
    full .exam-action-btn rows instead of read-only tooltip rows, so it needs
    its own padding/width/gap rather than the tighter tooltip-row spacing. */

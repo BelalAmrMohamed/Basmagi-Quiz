@@ -1141,7 +1141,7 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
 // field, for title; see quizManifest.js). Folders/courses use `name`.
 async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
   const { itemType, itemId, newName } = req.body || {};
-  if (!itemType || !itemId) return res.status(400).json({ error: "بيانات إعادة التسمية غير مكتملة." });
+  if (!itemType || !itemId) return res.status(400).json({ error: "بيانات تغيير العنوان غير مكتملة." });
 
   const nameCheck = validateItemName(newName);
   if (!nameCheck.ok) return res.status(400).json({ error: nameCheck.error });
@@ -1150,7 +1150,7 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
   if (!fetched) return res.status(404).json({ error: "العنصر غير موجود." });
 
   if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
-    return res.status(403).json({ error: "ليس لديك صلاحية لإعادة تسمية هذا العنصر." });
+    return res.status(403).json({ error: "ليس لديك صلاحية لتغيير العنوان هذا العنصر." });
   }
 
   if (itemType === "quiz") {
@@ -1171,7 +1171,7 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
       .eq("id", itemId);
     if (error) {
       console.error("[admin:rename-item] quiz rename failed:", error.message);
-      return res.status(500).json({ error: "فشل إعادة تسمية الامتحان." });
+      return res.status(500).json({ error: "فشل تغيير العنوان الامتحان." });
     }
     // Fire-and-forget SEO/GEO publish signal (plan §7.2). A quiz's URL is
     // /quiz/{meta.id}, which a title-only rename never changes — so this is
@@ -1198,7 +1198,7 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
       .eq("id", itemId);
     if (error) {
       console.error("[admin:rename-item] lesson rename failed:", error.message);
-      return res.status(500).json({ error: "فشل إعادة تسمية الدرس." });
+      return res.status(500).json({ error: "فشل تغيير العنوان الدرس." });
     }
     // A lesson's URL only changes on a *slug* change, not a title-only
     // rename (see the lessons migration's comment on slug being separate
@@ -1222,7 +1222,7 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
       .eq("id", itemId);
     if (error) {
       console.error("[admin:rename-item] notebook rename failed:", error.message);
-      return res.status(500).json({ error: "فشل إعادة تسمية الدفتر." });
+      return res.status(500).json({ error: "فشل تغيير العنوان الدفتر." });
     }
     notifySearchEngines({ add: [notebookUrl(fetched.row.slug || itemId)], reason: "rename-item:notebook" });
   } else {
@@ -1245,7 +1245,7 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
         return res.status(400).json({ error: "يوجد عنصر آخر بهذا الاسم في نفس المكان." });
       }
       console.error("[admin:rename-item] failed:", error.message);
-      return res.status(500).json({ error: "فشل إعادة التسمية." });
+      return res.status(500).json({ error: "فشل تغيير العنوان." });
     }
     // Fire-and-forget SEO/GEO publish signal (plan §7.2): a course/folder
     // rename changes its slug, i.e. its URL — both the OLD url (now 404,

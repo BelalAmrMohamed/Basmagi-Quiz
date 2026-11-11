@@ -126,7 +126,7 @@ export function createHistoryPanel(options = {}) {
   }
 
   /**
-   * PHASE 5: the per-item "⋮" menu — حذف / إعادة تسمية / تثبيت·إلغاء
+   * PHASE 5: the per-item "⋮" menu — حذف / تغيير العنوان / تثبيت·إلغاء
    * التثبيت. Uses openAgentDropdown (ai-agent-dropdown.js) — the agent's own
    * self-contained anchored-dropdown engine, forked from item-dropdown-menu.js
    * so this module no longer depends on features/home.
@@ -157,7 +157,7 @@ export function createHistoryPanel(options = {}) {
       const renameOpt = document.createElement("button");
       renameOpt.type = "button";
       renameOpt.className = "ai-agent-dropdown-item";
-      renameOpt.innerHTML = `${RENAME_ICON_SVG}<span>إعادة تسمية</span>`;
+      renameOpt.innerHTML = `${RENAME_ICON_SVG}<span>تغيير العنوان</span>`;
       renameOpt.onclick = (e) => {
         e.stopPropagation();
         closeMenu();

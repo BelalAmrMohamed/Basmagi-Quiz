@@ -1205,7 +1205,7 @@ function renderEntryItemsGrid() {
           <div class="entry-item-menu" id="entryItemMenu-${id}">
             <button type="button" class="entry-item-menu-option" onclick="renameEntryItem(event, '${id}')">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
-              <span>إعادة تسمية</span>
+              <span>تغيير العنوان</span>
             </button>
             <button type="button" class="entry-item-menu-option entry-item-menu-option-danger" onclick="deleteEntryItem(event, '${id}')">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
@@ -3449,7 +3449,9 @@ window.previewLesson = async function () {
     const article = overlay.querySelector(".lesson-view");
     mods.applyReaderPrefs(article, readerPrefsFromData());
     mods.equipReferenceThumbs(article);
-    mods.equipReferenceCardActions(article, { id: currentPreviewId, title: lessonData.title || "درس بدون عنوان", description: lessonData.description || "", reader_prefs_default: readerPrefsFromData(), content }, quizLookup, lessonLookup);
+    mods.equipReferenceCardActions(article, { id: currentPreviewId, title: lessonData.title || "درس بدون عنوان", description: lessonData.description || "", reader_prefs_default: readerPrefsFromData(), content }, quizLookup, lessonLookup, {
+        notebookLookup: embedLookups.notebookLookup,
+    });
 
     const previewCloseButton = overlay.querySelector("#lessonPreviewClose");
     previewCloseButton?.addEventListener("click", closeLessonPreview);

@@ -53,7 +53,7 @@ import { isLessonProtected, requestLessonPassword, unlockRemoteLesson, verifyLoc
 import { downloadLesson } from "../home/lesson-download.js";
 import { showLessonInfoModal } from "../home/lesson-info-modal.js";
 import { showQuizInfoModal, showUserQuizInfoModal } from "../home/quiz-info-modal.js";
-import { openAIAgentWithAttachment, buildPlatformQuizAttachment, buildPlatformLessonAttachment, resolveUserItemAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
+import { openAIAgentWithAttachment, buildPlatformQuizAttachment, buildPlatformLessonAttachment, buildPlatformNotebookAttachment, resolveUserItemAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { createFlashcardDeckResult } from "../../components/ai-agent/ai-agent-result-cards.js";
 import { resolveUserItemById, readUserQuizzes } from "../../components/ai-agent/ai-agent-item-lookup.js";
@@ -412,8 +412,8 @@ export function estimateReadingMinutes(sections, lang = "ar") {
 }
 
 /**
- * Wires the Start/Download/Info/Ask buttons on every embedded quiz- and
- * lesson-reference card inside `root`. Exported so create-lesson.js's
+ * Wires the Start/Download/Info/Ask buttons on embedded quiz, lesson, and
+ * notebook reference cards inside `root`. Exported so create-lesson.js's
  * preview overlay (which renders lesson content through this same module's
  * renderBlock/renderSection output) can give its reference cards identical,
  * fully-working actions instead of a second, divergent implementation —
@@ -422,8 +422,9 @@ export function estimateReadingMinutes(sections, lang = "ar") {
  * @param {object} lesson - the (preview or real) lesson the cards live in, only used for future context; may be a lightweight stand-in
  * @param {Map} quizLookup - reference id -> quiz metadata (id/dbId/title/source/password/...)
  * @param {Map} lessonLookup - reference id -> lesson metadata (id/title/slug/localRow/...)
+ * @param {{notebookLookup?: Map, onAsk?: Function}} [options]
  */
-export function equipReferenceCardActions(root, lesson, quizLookup, lessonLookup, { onAsk = null } = {}) {
+export function equipReferenceCardActions(root, lesson, quizLookup, lessonLookup, { notebookLookup = null, onAsk = null } = {}) {
   const buttons = root.querySelectorAll("[data-reference-kind][data-reference-action]");
   buttons.forEach((button) => {
     button.addEventListener("click", async (event) => {
@@ -433,7 +434,7 @@ export function equipReferenceCardActions(root, lesson, quizLookup, lessonLookup
       const kind = button.dataset.referenceKind;
       const action = button.dataset.referenceAction;
       const id = button.dataset.referenceId || "";
-      const target = (kind === "quiz" ? quizLookup?.get(id) : lessonLookup?.get(id)) || null;
+      const target = (kind === "quiz" ? quizLookup?.get(id) : kind === "lesson" ? lessonLookup?.get(id) : kind === "notebook" ? notebookLookup?.get(id) : null) || null;
       const fallback = { id, title: button.dataset.referenceTitle || "بدون عنوان" };
       const entity = target || fallback;
       try {
@@ -444,6 +445,11 @@ export function equipReferenceCardActions(root, lesson, quizLookup, lessonLookup
         }
         if (action === "download") {
           if (kind === "quiz") await showQuizDownloadPopupForReference(entity, button);
+          else if (kind === "notebook") {
+            const notebookActions = await import("../home/notebook-actions.js");
+            const fullRow = await notebookActions.fetchPlatformNotebookRow(entity);
+            notebookActions.showNotebookDownloadModal(fullRow, button);
+          }
           else await downloadLesson(entity, button);
           return;
         }
@@ -451,15 +457,28 @@ export function equipReferenceCardActions(root, lesson, quizLookup, lessonLookup
           if (kind === "quiz") {
             if (entity.source === "local" || entity.meta?.type === "quiz") showUserQuizInfoModal(entity);
             else showQuizInfoModal(entity);
+          } else if (kind === "notebook") {
+            const notebookActions = await import("../home/notebook-actions.js");
+            const fullRow = await notebookActions.fetchPlatformNotebookRow(entity);
+            notebookActions.showNotebookInfoModal(fullRow);
           } else {
             showLessonInfoModal(entity.localRow || entity);
           }
           return;
         }
         if (action === "ask") {
-          const attachment = kind === "quiz"
-            ? (entity.source === "local" ? resolveUserItemAttachment(id) : buildPlatformQuizAttachment(entity, { id, meta: entity.meta || { title: entity.title, id }, stats: { questionCount: entity.questionCount || 0 } }))
-            : (entity.localRow ? resolveUserItemAttachment(id) : withAttachmentId(buildPlatformLessonAttachment(entity), id));
+          let attachment;
+          if (kind === "quiz") {
+            attachment = entity.source === "local"
+              ? resolveUserItemAttachment(id)
+              : buildPlatformQuizAttachment(entity, { id, meta: entity.meta || { title: entity.title, id }, stats: { questionCount: entity.questionCount || 0 } });
+          } else if (kind === "notebook") {
+            const notebookActions = await import("../home/notebook-actions.js");
+            const fullRow = await notebookActions.fetchPlatformNotebookRow(entity);
+            attachment = buildPlatformNotebookAttachment(fullRow);
+          } else {
+            attachment = entity.localRow ? resolveUserItemAttachment(id) : withAttachmentId(buildPlatformLessonAttachment(entity), id);
+          }
           if (!attachment) return;
           // On a lesson page the ask button continues THIS lesson's
           // conversation (same pageKey as the FAB). The standalone home
@@ -1259,6 +1278,7 @@ export async function renderLessonView() {
   });
 
   equipReferenceCardActions(lessonEl, lesson, quizLookup, lessonLookup, {
+    notebookLookup: embedLookups.notebookLookup,
     onAsk: (attachment) => openLessonAgentWithAttachment(lesson, normalized, attachment),
   });
   equipReferenceThumbs(lessonEl);

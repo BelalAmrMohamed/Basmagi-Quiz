@@ -210,7 +210,7 @@ function openLessonActionsMenu(lesson, trigger) {
           onClick: () => { window.location.href = `/create-lesson?edit=${encodeURIComponent(lesson.id)}`; },
         },
         { label: "نقل", icon: MOVE_TO_ICON_SVG, onClick: () => openSharedMoveToDialog({ ...lesson, itemType: "lesson" }) },
-        { label: "إعادة تسمية", icon: RENAME_ICON_SVG, onClick: () => renameSharedItem({ ...lesson, itemType: "lesson" }) },
+        { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameSharedItem({ ...lesson, itemType: "lesson" }) },
         { label: "حذف الدرس", icon: TRASH_ICON_SVG, danger: true, onClick: () => deleteSharedItem({ ...lesson, itemType: "lesson" }) },
       ], closeMenu, reposition);
       menu.appendChild(adminMenu);

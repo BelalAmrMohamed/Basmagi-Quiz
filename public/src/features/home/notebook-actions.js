@@ -18,7 +18,7 @@ import {
 } from "../../shared/notebook-export.js";
 
 const LANG_LABEL = { en: "الإنجليزية (من اليسار لليمين)", ar: "العربية (من اليمين لليسار)" };
-const RUNTIME_LABEL = { matlab: "MATLAB (مفسّر تعليمي داخل المتصفح)", cpp: "C++ (مترجم داخل المتصفح أو سحابي)" };
+const RUNTIME_LABEL = { matlab: "MATLAB", cpp: "C++" };
 
 function infoBodyHtml(info, url) {
   const rows = [];
