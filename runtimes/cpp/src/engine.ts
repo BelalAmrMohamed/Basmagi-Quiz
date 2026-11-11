@@ -96,6 +96,8 @@ export const CPP_AR: Record<string, string> = {
   'The local compiler did not finish within 120 s.': 'لم يكتمل المترجم المحلي خلال 120 ثانية.',
   'Waiting for input…': 'بانتظار الإدخال…',
   'Using the cloud compiler (exceptions are not supported locally)': 'يتم استخدام المترجم السحابي (الاستثناءات غير مدعومة محلياً)',
+  'The online C++ compiler couldn’t finish running your program in time, and a second online compiler isn’t available right now. This may be a temporary delay, or your program may be taking too long to finish (for example, an infinite loop). This message doesn’t necessarily mean your code is wrong. Try again, or click ⚡ Instant Compiler in the notebook toolbar to download a compiler that runs in your browser.': 'لم يتمكن مترجم C++ عبر الإنترنت من تشغيل برنامجك في الوقت المحدد، والمترجم الآخر غير متاح الآن. قد يكون السبب تأخراً مؤقتاً في الخدمة، أو أن برنامجك يستغرق وقتاً طويلاً لينتهي (مثل حلقة لا نهائية). لا يعني هذا بالضرورة أن في كودك خطأ. حاول مرة أخرى، أو اضغط على ⚡ المترجم الفوري في شريط الدفتر لتحميل مترجم يعمل داخل المتصفح.',
+  'The online compiler took too long. Try ⚡ Instant Compiler.': 'استغرق المترجم عبر الإنترنت وقتاً طويلاً. جرّب ⚡ المترجم الفوري.',
   'Type here, then press Enter': 'اكتب هنا ثم اضغط Enter',
   'Enter to send · Ctrl+D ends input · Esc stops': 'Enter للإرسال · Ctrl+D لإنهاء الإدخال · Esc للإيقاف',
   'Cell {n}: ': 'الخلية {n}: ',
@@ -440,9 +442,15 @@ export function createCppEngine(o: CppEngineOptions): Engine {
       sink.status(`${tr('Exit')} ${res.exit ?? 0} · ${res.timeMs ?? 0}ms${res.provider ? ' · ' + res.provider : ''}${res.truncated ? ' · ' + tr('output truncated') : ''}`, 'result');
     } catch (e) {
       if (req.signal.aborted) return;
-      const msg = timedOut ? (await isWasmCached() ? tr('The local compiler did not finish within 120 s.') : tr('No response from the compile service within 25 s.')) : (e as Error)?.message || tr('Compiler request failed.');
+      const error = (e as Error)?.message || tr('Compiler request failed.');
+      const wandboxTimedOutWithoutBackup = /Compiler unavailable\..*Wandbox: timed out after \d+(?:\.\d+)? s; Piston: not configured/.test(error);
+      const msg = timedOut
+        ? (await isWasmCached() ? tr('The local compiler did not finish within 120 s.') : tr('No response from the compile service within 25 s.'))
+        : wandboxTimedOutWithoutBackup
+          ? tr('The online C++ compiler couldn’t finish running your program in time, and a second online compiler isn’t available right now. This may be a temporary delay, or your program may be taking too long to finish (for example, an infinite loop). This message doesn’t necessarily mean your code is wrong. Try again, or click ⚡ Instant Compiler in the notebook toolbar to download a compiler that runs in your browser.')
+          : error;
       sink.out({ k: 'err', s: msg + '\n' }, selected[0].idx);
-      sink.status(msg, 'error');
+      sink.status(wandboxTimedOutWithoutBackup ? tr('The online compiler took too long. Try ⚡ Instant Compiler.') : msg, 'error');
     } finally {
       clearTimeout(timer);
       req.signal.removeEventListener('abort', onAbort);

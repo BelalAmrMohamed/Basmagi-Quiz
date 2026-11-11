@@ -4,12 +4,18 @@
 - Build the doc pages from one template: a small script that reads each page's content file, so a nav or footer change happens once.
 - Group the sidebar into **Start / Create / Connect AI** instead of one flat list. A better order for the pages:
   1. How to create an exam
-  2. How to upload an exam (admins)
+  2. How to upload an exam
   3. Connect Claude/ChatGPT
   4. The built-in AI assistant
 - Add a "last updated" date.
 
-**Fix the language.** The pages mix formal Arabic with Egyptian dialect: the skill card says "دلوقتي Claude بقى عنده…". Pick one register for the docs. Use simple Modern Standard Arabic and keep dialect for the app UI.
+**Only 3 Shells**:
+1. The about Page (in its own shell).
+2. The "How to" Pages (all in one shell).
+3. The "Privacy" and "Terms" Pages (all in one shell)
+
+**Fix the language.** The pages mix formal Arabic with Egyptian dialect: the skill card says "دلوقتي Claude بقى عنده…". Pick one 
+register for the docs. Use simple Modern Standard Arabic and keep dialect for the app UI.
 
 **Product ideas that make the docs shorter:**
 - A **"Connect" card inside the app**, in My Content or Settings, showing the URL with a copy button. Most people would never open the docs.

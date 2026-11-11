@@ -23,7 +23,7 @@ Improve:
 ### Sign in
 ![Screenshot](image.png).
 * This is extremely annoying, it's telling me my session has ended, but its still showing me that I'm signed in in the sidebar's dropdown and in the profile page, and I don't know why are sessions ending quickly.
-* Sometimes it tells me that, then
+* Sometimes it tells me that, then when the page reloads automatically and I find that I'm still signed in, I try again, and it works this time.
 
 ### Create Quiz & Create Lesson Pages
 * Pressing (`ctrl` + `S`) to save doesn't always work.

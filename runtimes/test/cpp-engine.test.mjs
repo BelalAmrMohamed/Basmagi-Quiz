@@ -107,13 +107,15 @@ test('compile error status names the provider and explains an empty diagnostic',
   assert.deepEqual(log.status.at(-1), ['Compile error · wandbox', 'error']);
   assert.match(log.out[0][1].s, /no diagnostics/);
 });
-test('service errors from the Edge Function are shown verbatim in the cell and status', async () => {
+test('Wandbox timeout explains the problem and recommends the Instant Compiler', async () => {
   const msg = 'Compiler unavailable. Wandbox: timed out after 12.0 s; Piston: not configured (set PISTON_TOKEN). Please retry in a moment.';
   const e = createCppEngine({ execute: async () => { throw new Error(msg); } });
   const { sink, log } = sinkOf();
   await e.run({ cells: [cells[0]], target: 0, signal: new AbortController().signal }, sink);
-  assert.equal(log.out[0][1].s, msg + '\n');
-  assert.deepEqual(log.status.at(-1), [msg, 'error']);
+  assert.match(log.out[0][1].s, /online C\+\+ compiler couldn’t finish running your program in time/);
+  assert.match(log.out[0][1].s, /doesn’t necessarily mean your code is wrong/);
+  assert.match(log.out[0][1].s, /⚡ Instant Compiler in the notebook toolbar/);
+  assert.deepEqual(log.status.at(-1), ['The online compiler took too long. Try ⚡ Instant Compiler.', 'error']);
 });
 test('attach() feeds notebook cells to the completion source', async () => {
   const e = createCppEngine({ execute: async () => ({ ok: true }) });
