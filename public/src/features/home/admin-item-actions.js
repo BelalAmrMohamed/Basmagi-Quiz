@@ -265,7 +265,7 @@ export function editSharedItemMetadata(item) {
   const itemType = resolveItemType(item);
   const itemId = resolveItemId(item);
   if (!["quiz", "lesson", "notebook"].includes(itemType) || !itemId) {
-    showNotification("تعذّر تعديل التفاصيل", "تعذّر تحديد الامتحان أو الدرس أو الدفتر المطلوب.", "error");
+    showNotification("تعذّر الوصف والمصدر", "تعذّر تحديد الامتحان أو الدرس أو الدفتر المطلوب.", "error");
     return;
   }
   openDescriptionSourceModal({

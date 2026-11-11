@@ -203,11 +203,11 @@ function openLessonActionsMenu(lesson, trigger) {
       const adminMenu = createActionGroupSubmenu([
         { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameSharedItem({ ...lesson, itemType: "lesson" }) },
         {
-          label: "تعديل التفاصيل", icon: EDIT_ICON_SVG,
+          label: "الوصف والمصدر", icon: EDIT_ICON_SVG,
           onClick: () => editSharedItemMetadata({ ...lesson, itemType: "lesson" }),
         },
         {
-          label: "تعديل", icon: EDIT_ICON_SVG,
+          label: "تعديل الدرس", icon: EDIT_ICON_SVG,
           onClick: () => { window.location.href = `/create-lesson?edit=${encodeURIComponent(lesson.id)}`; },
         },
         { label: "نقل", icon: MOVE_TO_ICON_SVG, onClick: () => openSharedMoveToDialog({ ...lesson, itemType: "lesson" }) },

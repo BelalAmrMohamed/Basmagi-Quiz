@@ -881,7 +881,7 @@ function buildItemMenuItems(targetType, targetId, targetTitle) {
         },
         {
           icon: EDIT_SVG,
-          label: "تعديل التفاصيل",
+          label: "الوصف والمصدر",
           onClick: async () => {
             const [{ openDescriptionSourceModal }, { saveLocalItemMetadata }] = await Promise.all([
               import("./description-source-modal.js"),

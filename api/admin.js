@@ -1283,7 +1283,7 @@ async function handleUpdateItemMetadata(req, res, adminPayload, adminId, supabas
   const fetched = await fetchItemForAuth(supabase, itemType, itemId);
   if (!fetched) return res.status(404).json({ error: "العنصر غير موجود." });
   if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
-    return res.status(403).json({ error: "ليس لديك صلاحية لتعديل تفاصيل هذا العنصر." });
+    return res.status(403).json({ error: "ليس لديك صلاحية لتعديل الوصف والمصدر لهذا العنصر." });
   }
 
   let query;

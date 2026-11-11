@@ -442,7 +442,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
             onClick: () => renameSharedItem(exam),
           },
           {
-            label: "تعديل التفاصيل",
+            label: "الوصف والمصدر",
             icon: EDIT_ICON_SVG,
             onClick: () => editSharedItemMetadata(exam),
           },
@@ -450,7 +450,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
             // تعديل — quizzes only: deep-link into create-quiz edit mode
             // (the create-quiz page pre-fills from ?id=<dbId>&mode=edit,
             // step 9).
-            label: "تعديل",
+            label: "تعديل الامتحان",
             icon: EDIT_ICON_SVG,
             onClick: () => {
               if (!exam.dbId) return;

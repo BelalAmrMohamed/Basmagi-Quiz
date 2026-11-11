@@ -460,7 +460,7 @@ export function showUserNotebookActionsOverlay(nb, triggerBtn) {
         onClick: () => { window.location.href = `/notebook/edit/${encodeURIComponent(nbId)}`; },
       },
       {
-        label: "تعديل التفاصيل",
+        label: "الوصف والمصدر",
         icon: EDIT_ICON_SVG,
         onClick: () =>
           openDescriptionSourceModal({
@@ -529,7 +529,7 @@ export function showUserLessonActionsOverlay(lesson, triggerBtn) {
         onClick: () => { window.location.href = `/create-lesson?edit=${encodeURIComponent(lessonId)}`; },
       },
       {
-        label: "تعديل التفاصيل",
+        label: "الوصف والمصدر",
         icon: EDIT_ICON_SVG,
         onClick: () =>
           openDescriptionSourceModal({
@@ -692,7 +692,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
 
     appendSelectOption(menu, closeMenu, quiz.id || quiz.meta?.id);
 
-    // ── Edit group — تعديل الامتحان / تعديل التفاصيل / تغيير العنوان in one
+    // ── Edit group — تعديل الامتحان / الوصف والمصدر / تغيير العنوان in one
     // submenu (this menu is the single entry-point for editing; the card has
     // no standalone edit icon).
     appendEditGroup(menu, closeMenu, reposition, [
@@ -702,7 +702,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
         onClick: () => { window.location.href = `create-quiz?edit=${encodeURIComponent(quiz.id)}`; },
       },
       {
-        label: "تعديل التفاصيل",
+        label: "الوصف والمصدر",
         icon: EDIT_ICON_SVG,
         onClick: () =>
           openDescriptionSourceModal({
