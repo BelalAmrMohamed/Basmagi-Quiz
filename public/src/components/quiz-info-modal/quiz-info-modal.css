@@ -364,3 +364,34 @@ a.quiz-creator-card:hover .quiz-creator-cta {
 .info-copy-btn { display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 23px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--color-text-secondary, #64748b); cursor: pointer; }
 .info-copy-btn:hover, .info-copy-btn:focus-visible { color: var(--color-primary, #3b82f6); background: var(--color-background-secondary, #f1f5f9); }
 .info-copy-btn.copied { color: #16a34a; background: rgba(22, 163, 74, 0.12); }
+
+/* ─── Unified info modal (quiz / lesson / notebook): chips, trail, date tiles ─── */
+.info-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 16px 24px 4px; direction: rtl; }
+.info-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 12px; border-radius: 12px; background: color-mix(in srgb, var(--color-primary, #6366f1) 8%, var(--color-background, #fff)); border: 1px solid color-mix(in srgb, var(--color-primary, #6366f1) 20%, transparent); font-size: 0.85rem; }
+.info-chip__label { color: var(--color-text-secondary, #6b7280); font-size: 0.75rem; font-weight: 600; }
+.info-chip__value { color: var(--color-text-primary, #111); font-weight: 700; }
+
+.info-location { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 24px 4px; direction: rtl; }
+.info-location__label { font-size: 0.75rem; font-weight: 700; color: var(--color-text-secondary, #6b7280); }
+.info-trail { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; font-size: 0.9rem; }
+.info-trail__course { font-weight: 700; color: var(--color-text-primary, #111); overflow-wrap: anywhere; }
+.info-trail__folder { color: var(--color-text-secondary, #4b5563); overflow-wrap: anywhere; }
+.info-trail__sep { color: var(--color-text-secondary, #9ca3af); }
+.info-local-badge { padding: 3px 10px; border-radius: 9999px; font-size: 0.78rem; font-weight: 700; color: var(--color-text-secondary, #4b5563); background: var(--color-background-secondary, #f3f4f6); border: 1px dashed var(--color-border, #cbd5e1); }
+
+.info-dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; padding: 12px 24px 16px; border-bottom: 1px solid var(--color-border, rgba(0, 0, 0, 0.08)); direction: rtl; }
+.info-date-tile { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 12px; background: var(--color-background-secondary, #f3f4f6); border: 1px solid var(--color-border, rgba(0, 0, 0, 0.05)); }
+.info-date-tile__label { font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary, #6b7280); }
+.info-date-tile__value { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; color: var(--color-text-primary, #111); }
+
+.info-specific > summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
+.info-specific > summary::-webkit-details-marker { display: none; }
+.info-specific > summary::after { content: "⌄"; font-size: 1rem; transition: transform 0.15s; }
+.info-specific[open] > summary { margin-bottom: 12px; }
+.info-specific[open] > summary::after { transform: rotate(180deg); }
+@media (max-width: 600px) { .info-chips, .info-location, .info-dates { padding-inline: 16px; } }
+
+.info-id-footer { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px 18px; font-size: 0.75rem; color: var(--color-text-secondary, #6b7280); }
+.info-id-footer > span:first-child { font-weight: 700; }
+
+.info-specific .quiz-meta-value { direction: rtl; unicode-bidi: plaintext; text-align: start; }

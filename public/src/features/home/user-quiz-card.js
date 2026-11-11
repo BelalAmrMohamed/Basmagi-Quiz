@@ -23,6 +23,7 @@ import {
 import { createUploadButton, createLessonUploadButton, createNotebookUploadButton } from "./adminUpload.js";
 import { showUserQuizDownloadPopup } from "./download-modal.js";
 import { showUserQuizInfoModal, formatDateForInfo } from "./quiz-info-modal.js";
+import { normalizeSource } from "../../components/quiz-info-modal/info-model.js";
 import { showUserLessonInfoModal, collectLessonInfo } from "./lesson-info-modal.js";
 import {
   createExamInfoSubmenu,
@@ -726,7 +727,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
       { label: "التاريخ", val: formatDateForInfo(qz(quiz, "createdAt")), ltr: true },
       {
         label: "المصدر",
-        val: qz(quiz, "source") || null,
+        val: normalizeSource(qz(quiz, "source")),
         multiline: true,
         copyable: true,
       },

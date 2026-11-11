@@ -113,6 +113,7 @@ async function init() {
 
   const prepared = prepareNotebook(row);
   if (!prepared.ok) return showError(prepared.message);
+  if (!isLocal && row?.id) import("../home/info-details.js").then((m) => m.recordNotebookView(row.id)).catch(() => {});
   const { notebook } = prepared;
   const lang = resolveNotebookLang(row.language || row.content?.language, notebook);
   applyPageLang(lang);

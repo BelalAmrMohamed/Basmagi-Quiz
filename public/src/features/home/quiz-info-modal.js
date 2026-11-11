@@ -8,7 +8,7 @@
 import { qz, formatQuestionTypesForDownload } from "./quiz-schema.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
 import { buildQuizInfoModalHtml, fetchCreatorProfile } from "../../components/quiz-info-modal/quiz-info-html.js";
-import { fetchQuizDetails, buildInfoSkeletonDialogHtml } from "./info-details.js";
+import { fetchQuizDetails, applyQuizDetails, buildInfoSkeletonDialogHtml } from "./info-details.js";
 import { getEduTypeLabel } from "./course-info-fields.js";
 import { bindInfoCopyButtons } from "../../shared/info-link.js";
 export { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
@@ -107,16 +107,8 @@ export async function showQuizInfoModal(exam) {
 
   const details = await detailsPromise;
   if (details) {
-    if (!config.createdAt) config.createdAt = details.created_at || null;
-    config.syncedAt = details.synced_at || null;
+    applyQuizDetails(config, details);
     if (!config.authorId && !config.authorHandle) config.authorId = details.uploaded_by || null;
-    if (details.college && details.college !== "All") config.college = details.college;
-    if (details.year) config.year = details.year;
-    if (details.term) config.term = details.term;
-    if (!config.eduTypeLabel && details.education_type) {
-      config.eduTypeLabel = getEduTypeLabel({ education_type: details.education_type });
-    }
-    if (typeof details.attempt_count === "number") config.attemptCount = details.attempt_count;
   }
 
   let creatorProfile = null;
@@ -159,6 +151,7 @@ export function showUserQuizInfoModal(quiz) {
     mode: qz(quiz, "mode") || null,
     view: qz(quiz, "view") || null,
     questionTypes: formatQuestionTypesForDownload(quiz.stats?.questionTypes),
+    local: true,
   };
   const questionCount = qz(quiz, "count") || null;
 

@@ -192,6 +192,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       resultMeta.author_id ||
       (manifestEntry && manifestEntry.authorId) ||
       null,
+    path: resultMeta.path || (manifestEntry && manifestEntry.path) || null,
     category:
       result.category ||
       resultMeta.category ||
@@ -326,7 +327,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (resolvedQuizDbId) {
       const details = await import("../home/info-details.js").then((m) => m.fetchQuizDetails(resolvedQuizDbId)).catch(() => null);
-      if (typeof details?.attempt_count === "number") config.attemptCount = details.attempt_count;
+      if (details) await import("../home/info-details.js").then((m) => m.applyQuizDetails(config, details));
     }
 
     els.quizInfoDialog.innerHTML = buildQuizInfoModalHtml(

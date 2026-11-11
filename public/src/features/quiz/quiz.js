@@ -36,6 +36,7 @@ import {
   resolveMediaUrl as _resolveMediaUrl,
   renderMediaElement as _renderMediaElement,
 } from "../../shared/media-resolve.js";
+import { parseQuizPath } from "../../components/quiz-info-modal/info-model.js";
 import {
   buildQuizInfoModalHtml,
   fetchCreatorProfile,
@@ -916,31 +917,11 @@ window.switchQuizStyle = function switchQuizStyle(newStyle) {
 function updateBreadcrumb(meta) {
   if (!meta.path) return { courseName: "", fullBreadcrumb: "" };
 
-  // const parts = meta.path.split("/");
-  let rawPath = meta.path;
-  try {
-    const qIdx = rawPath.indexOf("?");
-    if (qIdx !== -1) {
-      const params = new URLSearchParams(rawPath.slice(qIdx + 1));
-      const p = params.get("path");
-      if (p) rawPath = decodeURIComponent(p);
-    }
-  } catch (_) { }
-  const parts = rawPath.split("/");
-  let courseName = "";
-  let intermediate = [];
-
-  const quizzesIdx = parts.indexOf("quizzes");
-  if (quizzesIdx !== -1 && quizzesIdx + 4 < parts.length) {
-    courseName = parts[quizzesIdx + 4];
-    if (quizzesIdx + 5 < parts.length - 1) {
-      intermediate = parts.slice(quizzesIdx + 5, parts.length - 1);
-    }
-  } else if (parts.length >= 3) {
-    courseName = parts[parts.length - 2];
-  }
-
-  if (!courseName) courseName = meta.category || "";
+  // Layout is Root/college/year/term/course/folders…; parseQuizPath knows it,
+  // so a term/year number can never be mistaken for the course.
+  const parsed = parseQuizPath(meta.path, { hasFile: true });
+  const courseName = parsed.course || meta.category || "";
+  const intermediate = parsed.folders;
 
   // The full, untruncated trail — e.g. "IELTS Exams → Cambridge IELTS 2020 → Test 2"
   const fullBreadcrumb =
@@ -1333,7 +1314,7 @@ async function init() {
       }
       if (quizDbId) {
         const details = await import("../home/info-details.js").then((m) => m.fetchQuizDetails(quizDbId)).catch(() => null);
-        if (typeof details?.attempt_count === "number") config.attemptCount = details.attempt_count;
+        if (details) await import("../home/info-details.js").then((m) => m.applyQuizDetails(config, details));
       }
 
       dialog.innerHTML = buildQuizInfoModalHtml(

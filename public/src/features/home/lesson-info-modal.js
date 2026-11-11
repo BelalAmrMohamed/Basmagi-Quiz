@@ -18,10 +18,10 @@
 // index.html already loads via quiz-info-modal.css. Nothing here needs new CSS.
 // ============================================================================
 
-import { bindInfoCopyButtons, infoItemLinkHtml, infoSourceHtml } from "../../shared/info-link.js";
-import { escapeHtml } from "./escape-html.js";
-import { buildInfoSkeletonHtml, buildCreatorSectionHtml, fetchCreatorById, fetchLessonViewCount } from "./info-details.js";
-import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
+import { bindInfoCopyButtons } from "../../shared/info-link.js";
+import { buildCreatorSectionHtml, fetchCreatorById, fetchLessonViewCount, fetchLessonDetails, fetchItemLocation } from "./info-details.js";
+import { buildInfoBodyHtml, buildInfoDialogHtml, infoPill, INFO_ICONS } from "../../components/quiz-info-modal/quiz-info-html.js";
+import { buildInfoModel } from "../../components/quiz-info-modal/info-model.js";
 import { normalizeLessonContent } from "../lesson/lesson-schema.js";
 import { FONT_CHOICES } from "../lesson/lesson-reader-prefs.js";
 
@@ -86,6 +86,14 @@ export function collectLessonInfo(row) {
         title: row?.meta?.title || row?.title || "درس بدون عنوان",
         description: row?.description || row?.meta?.description || "",
         source: row?.source || row?.meta?.source || "",
+        local: !(row?.created_by || row?.createdBy || row?.course_id || row?.courseId) && (row?.meta?.type === "lesson" || String(row?.id || "").startsWith("user_lesson_")),
+        courseId: row?.course_id || row?.courseId || null,
+        folderId: row?.folder_id || row?.folderId || null,
+        eduType: row?.education_type || null,
+        college: row?.college || null,
+        year: row?.year ?? null,
+        term: row?.term ?? null,
+        dbId: row?.dbId || (/^[0-9a-f]{8}-/i.test(String(row?.id || "")) ? row.id : null),
         url: `${window.location.origin}/lesson/${encodeURIComponent(row?.slug || row?.id || row?.meta?.id || "")}${row?.meta?.type === "lesson" && row?.id?.startsWith("user_lesson_") ? "?type=user" : ""}`,
         passwordProtected: Boolean(row?.passwordProtected || row?.password_protected || row?.meta?.passwordProtected || row?.passwordHash || row?.password_hash),
         createdBy: row?.createdBy || row?.created_by || null,
@@ -102,116 +110,105 @@ export function collectLessonInfo(row) {
     };
 }
 
-/** "١٢٣" style is avoided on purpose: the quiz modal shows Latin digits, and
- * mixing numeral systems between the two dialogs would look inconsistent. */
-function pill(iconPath, text, title) {
-    return `
-    <span class="quiz-metric-pill" title="${escapeHtml(title)}">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconPath}</svg>
-      ${escapeHtml(text)}
-    </span>`;
-}
-
-const ICON_SECTIONS = '<rect x="3" y="3" width="18" height="6" rx="1"/><rect x="3" y="12" width="18" height="9" rx="1"/>';
-const ICON_QUESTION = '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>';
-const ICON_HIDDEN =
-    '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>';
-const ICON_BRANCH = '<line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>';
+const plural = (n, one, two, many) => (n === 1 ? one : n === 2 ? two : many);
 
 /**
- * Markup for the dialog's inner contents. Every interpolated value passes
- * through escapeHtml() — titles are user-typed free text (the same stored-XSS
- * class user-quiz-card.js's header comment documents).
+ * Inner markup of the shared info core for a lesson (hero, chips, location,
+ * dates, lesson specifics, links, creator). Pure: every value is escaped by
+ * the shared renderer. `info` is enriched later by hydrateLessonCreator().
  * @param {ReturnType<typeof collectLessonInfo>} info
- * @returns {string}
  */
-export function buildLessonInfoBodyHtml(info) {
-    const plural = (n, one, two, many) => (n === 1 ? one : n === 2 ? two : many);
-
-    const pills = [
-        pill(ICON_SECTIONS, `${info.sectionCount} ${plural(info.sectionCount, "قسم", "قسمان", "أقسام")}`, "عدد الأقسام"),
-    ];
+export function buildLessonCoreHtml(info) {
+    const pills = [infoPill(INFO_ICONS.sections, `${info.sectionCount} ${plural(info.sectionCount, "قسم", "قسمان", "أقسام")}`, "عدد الأقسام")];
     if (info.questionCount) {
-        pills.push(
-            pill(ICON_QUESTION, `${info.questionCount} ${plural(info.questionCount, "سؤال مدمج", "سؤالان مدمجان", "أسئلة مدمجة")}`, "الأسئلة المدمجة"),
-        );
+        pills.push(infoPill(INFO_ICONS.question, `${info.questionCount} ${plural(info.questionCount, "سؤال مدمج", "سؤالان مدمجان", "أسئلة مدمجة")}`, "الأسئلة المدمجة"));
     }
-    if (info.hiddenSectionCount) {
-        pills.push(pill(ICON_HIDDEN, `${info.hiddenSectionCount} مخفي افتراضياً`, "أقسام تظهر حسب الإجابة"));
-    }
-    if (info.adaptiveRuleCount) {
-        pills.push(pill(ICON_BRANCH, `${info.adaptiveRuleCount} شرط كشف`, "أسئلة تكشف قسماً عند الإجابة"));
-    }
+    if (info.hiddenSectionCount) pills.push(infoPill(INFO_ICONS.hidden, `${info.hiddenSectionCount} مخفي افتراضياً`, "أقسام تظهر حسب الإجابة"));
+    if (info.adaptiveRuleCount) pills.push(infoPill(INFO_ICONS.branch, `${info.adaptiveRuleCount} شرط كشف`, "أسئلة تكشف قسماً عند الإجابة"));
 
-    // One row per present block type (not a single "·"-joined cell) — each
-    // content type gets its own label/value pair in the meta grid, same as
-    // every other fact in this dialog.
-    const rows = [];
-    const addRow = (label, valueHtml) => {
-        rows.push(`
-      <div class="quiz-meta-label">${escapeHtml(label)}</div>
-      <div class="quiz-meta-value">${valueHtml}</div>`);
-    };
+    // Block-type counts: only types that are actually present (no "empty" row).
+    const specific = Object.keys(BLOCK_LABELS)
+        .filter((type) => info.blockCounts[type])
+        .map((type) => [BLOCK_LABELS[type], String(info.blockCounts[type])]);
+    if (info.essayCount) specific.push(["أسئلة مقالية", String(info.essayCount)]);
+    if (info.fontLabel) specific.push(["خط القراءة", info.fontLabel]);
 
-    const presentTypes = Object.keys(BLOCK_LABELS).filter((type) => info.blockCounts[type]);
-    if (presentTypes.length) {
-        for (const type of presentTypes) {
-            addRow(BLOCK_LABELS[type], escapeHtml(String(info.blockCounts[type])));
-        }
-    } else {
-        addRow("المحتوى", "فارغ");
-    }
-    if (info.essayCount) addRow("أسئلة مقالية", escapeHtml(String(info.essayCount)));
-    if (info.description) addRow("الوصف", escapeHtml(info.description));
-    if (info.source) {
-        addRow("المصدر", infoSourceHtml(info.source));
-    }
-    if (info.url && !info.url.endsWith("/lesson/")) {
-        addRow("رابط الدرس", infoItemLinkHtml(info.url, info.title, "رابط الدرس"));
-    }
-    if (info.passwordProtected) addRow("الحماية", "محمي بكلمة مرور");
-    if (info.fontLabel) addRow("خط القراءة", escapeHtml(info.fontLabel));
-    const created = formatDateForInfo(info.createdAt);
-    if (created) addRow("تاريخ الإنشاء", `<span dir="ltr">${escapeHtml(created)}</span>`);
-    const updated = formatDateForInfo(info.updatedAt ? new Date(info.updatedAt).toLocaleString("en-US") : null);
-    if (updated && updated !== created) addRow("آخر تعديل", `<span dir="ltr">${escapeHtml(updated)}</span>`);
-    if (info.id) addRow("ID", `<span class="quiz-id-badge">${escapeHtml(info.id)}</span>`);
+    const hasLink = info.url && !info.url.endsWith("/lesson/") && !info.local;
+    const model = buildInfoModel("lesson", {
+        id: info.id,
+        title: info.title,
+        description: info.description,
+        passwordProtected: info.passwordProtected,
+        eduType: info.eduType,
+        college: info.college,
+        year: info.year,
+        term: info.term,
+        course: info.courseName,
+        folders: info.folderNames,
+        local: info.local,
+        createdAt: info.createdAt,
+        updatedAt: info.updatedAt,
+        source: info.source,
+        link: hasLink ? info.url : null,
+        linkLabel: "رابط الدرس",
+        engagementCount: typeof info.viewCount === "number" ? info.viewCount : (info.local || !info.dbId ? undefined : null),
+        engagementLabel: "مشاهدة لهذا الدرس",
+        pills,
+        specific,
+        specificTitle: "محتوى الدرس",
+    });
+    const creatorHtml = info.creator ? buildCreatorSectionHtml(info.creator) : "";
+    return buildInfoBodyHtml(model, { creatorHtml, creatorSlot: Boolean(info.createdBy) && !info.creator && !info.creatorDone });
+}
 
-    return `
-        <div class="quiz-info-hero">
-          <h3>${escapeHtml(info.title)}</h3>
-          <div class="quiz-attempts-stat lesson-views-stat" data-lesson-views hidden title="عدد مشاهدات الدرس"><span class="quiz-attempts-stat__value" data-lesson-views-value></span><span class="quiz-attempts-stat__label">مشاهدة لهذا الدرس</span></div>
-          <div class="quiz-metrics-row">${pills.join("")}</div>
-        </div>
-        <div class="quiz-info-section">
-          <div class="quiz-info-section-title">تفاصيل الدرس</div>
-          <div class="quiz-meta-grid">${rows.join("")}</div>
-        </div>
-        ${info.createdBy ? `<div data-lesson-creator-slot>${buildInfoSkeletonHtml({ title: false, pills: 0, rows: 0, card: true })}</div>` : ""}`;
+/** Body for the standalone / lesson-page dialogs: a re-renderable core wrapper. */
+export function buildLessonInfoBodyHtml(info) {
+    return `<div data-info-core>${buildLessonCoreHtml(info)}</div>`;
 }
 
 /**
- * Fills the creator slot rendered by buildLessonInfoBodyHtml() once the
- * creator's profile resolves. Shared by every lesson info modal (home,
- * lesson page, embedded lesson cards) so they all show the same facts.
+ * Enriches a rendered lesson info core once the async facts arrive:
+ * classification and course/folder from the DB, the view count and the creator
+ * card. Re-renders only the `[data-info-core]` wrapper, so sections a caller
+ * appended after it (progress, bookmarks, reader prefs) are untouched. Shared by
+ * every lesson info modal (home, lesson page, embedded lesson cards).
  * @param {ParentNode} root - element containing the modal body
- * @param {{createdBy?: string|null}} info
+ * @param {ReturnType<typeof collectLessonInfo>} info
  */
 export function hydrateLessonCreator(root, info) {
-    const viewsEl = root.querySelector("[data-lesson-views]");
-    if (viewsEl && info?.id) {
-        fetchLessonViewCount(info.id).then((count) => {
-            if (typeof count !== "number" || !viewsEl.isConnected) return;
-            viewsEl.querySelector("[data-lesson-views-value]").textContent = count.toLocaleString("en-US");
-            viewsEl.hidden = false;
-        }).catch(() => {});
+    const core = root.querySelector("[data-info-core]");
+    if (!core || !info) return;
+    const rerender = () => {
+        if (!core.isConnected) return;
+        core.innerHTML = buildLessonCoreHtml(info);
+        bindInfoCopyButtons(core);
+    };
+    const tasks = [];
+    if (info.dbId) {
+        tasks.push(fetchLessonDetails(info.dbId).then(async (d) => {
+            if (!d) return;
+            info.eduType = info.eduType || d.education_type || null;
+            info.college = info.college || d.college || null;
+            info.year = info.year ?? d.year ?? null;
+            info.term = info.term ?? d.term ?? null;
+            info.createdAt = info.createdAt || d.created_at || null;
+            info.updatedAt = info.updatedAt || d.updated_at || null;
+            info.createdBy = info.createdBy || d.created_by || null;
+            info.courseId = info.courseId || d.course_id || null;
+            info.folderId = info.folderId || d.folder_id || null;
+            if (!info.courseName && (info.courseId || info.folderId)) {
+                const loc = await fetchItemLocation(info.courseId, info.folderId);
+                info.courseName = loc.course;
+                info.folderNames = loc.folders;
+            }
+        }));
+        tasks.push(fetchLessonViewCount(info.dbId).then((count) => { if (typeof count === "number") info.viewCount = count; }));
     }
-    const slot = root.querySelector("[data-lesson-creator-slot]");
-    if (!slot || !info?.createdBy) return;
-    fetchCreatorById(info.createdBy).then((creator) => {
-        if (!slot.isConnected) return;
-        slot.innerHTML = buildCreatorSectionHtml(creator);
-    });
+    Promise.allSettled(tasks)
+        .then(() => (info.createdBy
+            ? fetchCreatorById(info.createdBy).then((creator) => { info.creator = creator; }).catch(() => {})
+            : null))
+        .finally(() => { info.creatorDone = true; rerender(); });
 }
 
 /**
@@ -220,18 +217,7 @@ export function hydrateLessonCreator(root, info) {
  * @returns {string}
  */
 export function buildLessonInfoHtml(info) {
-    return `
-    <div class="quiz-info-dialog-inner">
-      <div class="quiz-info-dialog-header">
-        <h2 id="lessonInfoDialogTitle">معلومات الدرس</h2>
-        <button class="quiz-info-dialog-close" type="button" aria-label="إغلاق">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      <div class="quiz-info-dialog-body">${buildLessonInfoBodyHtml(info)}</div>
-    </div>`;
+    return buildInfoDialogHtml("معلومات الدرس", buildLessonInfoBodyHtml(info), { titleId: "lessonInfoDialogTitle" });
 }
 
 /**

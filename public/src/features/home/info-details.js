@@ -8,6 +8,7 @@
 
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { escapeHtml } from "./escape-html.js";
+import { getEduTypeLabel } from "./course-info-fields.js";
 import {
   fetchCreatorProfile,
   buildCreatorSectionHtml,
@@ -38,6 +39,49 @@ async function fetchRow(table, id, columns) {
 export async function fetchQuizDetails(dbId) {
   const base = "created_at, synced_at, uploaded_by, college, year, term, education_type";
   return (await fetchRow("quizzes", dbId, `${base}, attempt_count`)) || (await fetchRow("quizzes", dbId, base));
+}
+
+/** Copies DB facts onto a quiz info `config` without overwriting values already known. */
+export function applyQuizDetails(config, details) {
+  if (!details) return config;
+  if (!config.createdAt) config.createdAt = details.created_at || null;
+  config.syncedAt = details.synced_at || config.syncedAt || null;
+  if (details.college && details.college !== "All" && !config.college) config.college = details.college;
+  if (details.year && !config.year) config.year = details.year;
+  if (details.term && !config.term) config.term = details.term;
+  if (!config.eduTypeLabel && details.education_type) config.eduTypeLabel = getEduTypeLabel({ education_type: details.education_type });
+  if (typeof details.attempt_count === "number") config.attemptCount = details.attempt_count;
+  return config;
+}
+
+const CLASSIFICATION_COLS = "education_type, college, year, term";
+// The classification columns need the 20261111100000 migration; if it has not
+// been applied yet the first query errors, so retry without them.
+async function fetchPublicItemRow(view, id, base) {
+  return (await fetchRow(view, id, `${base}, ${CLASSIFICATION_COLS}`)) || (await fetchRow(view, id, base));
+}
+export const fetchLessonDetails = (id) => fetchPublicItemRow("lesson_public", id, "course_id, folder_id, created_at, updated_at, created_by");
+export const fetchNotebookDetails = (id) => fetchPublicItemRow("notebook_public", id, "course_id, folder_id, created_at, updated_at, created_by");
+
+/** Course name + folder-name chain for a platform item, from the DB (best effort). */
+export async function fetchItemLocation(courseId, folderId) {
+  const out = { course: "", folders: [] };
+  try {
+    const supabase = await ensureSharedSupabaseClient();
+    if (!supabase) return out;
+    if (courseId) {
+      const { data } = await supabase.from("courses").select("name").eq("id", courseId).maybeSingle();
+      out.course = data?.name || "";
+    }
+    let current = folderId;
+    for (let depth = 0; current && depth < 12; depth += 1) {
+      const { data } = await supabase.from("folders").select("name, parent_folder_id").eq("id", current).maybeSingle();
+      if (!data) break;
+      out.folders.unshift(data.name);
+      current = data.parent_folder_id;
+    }
+  } catch (_) { /* best effort */ }
+  return out;
 }
 
 export const fetchCourseDetails = (id) => fetchRow("courses", id, "created_at, updated_at, created_by");
@@ -169,6 +213,34 @@ export function recordLessonView(lessonId) {
   } catch (_) { /* storage blocked — count anyway */ }
   ensureSharedSupabaseClient()
     .then((supabase) => supabase?.rpc("increment_lesson_view", { p_lesson_id: lessonId }))
+    .catch(() => {});
+}
+
+// ── Notebook views ──────────────────────────────────────────────────────────
+
+/** Public notebook view total, or null (unknown id, local notebook, migration not applied). */
+export async function fetchNotebookViewCount(notebookId) {
+  if (!UUID_RE.test(String(notebookId || ""))) return null;
+  try {
+    const supabase = await ensureSharedSupabaseClient();
+    const { data, error } = await supabase.rpc("get_notebook_view_count", { p_notebook_id: notebookId });
+    if (error || data === null || data === undefined) return null;
+    return Number(data);
+  } catch (_) {
+    return null;
+  }
+}
+
+/** Counts one view per notebook per browser session. Fire-and-forget. */
+export function recordNotebookView(notebookId) {
+  if (!UUID_RE.test(String(notebookId || ""))) return;
+  const key = `notebook_viewed_${notebookId}`;
+  try {
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+  } catch (_) { /* storage blocked — count anyway */ }
+  ensureSharedSupabaseClient()
+    .then((supabase) => supabase?.rpc("increment_notebook_view", { p_notebook_id: notebookId }))
     .catch(() => {});
 }
 

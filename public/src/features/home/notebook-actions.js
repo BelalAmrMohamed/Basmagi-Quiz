@@ -10,8 +10,10 @@ import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-ht
 import { renderMarkdown } from "../../shared/markdown.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { exportNotebookZip } from "../../shared/notebook-bundle.js";
-import { bindInfoCopyButtons, infoItemLinkHtml, infoSourceHtml } from "../../shared/info-link.js";
-import { buildInfoSkeletonHtml, buildCreatorSectionHtml, fetchCreatorById, fetchCreatorName } from "./info-details.js";
+import { bindInfoCopyButtons } from "../../shared/info-link.js";
+import { buildCreatorSectionHtml, fetchCreatorById, fetchCreatorName, fetchNotebookDetails, fetchNotebookViewCount, fetchItemLocation } from "./info-details.js";
+import { buildInfoBodyHtml, buildInfoDialogHtml, infoPill, INFO_ICONS } from "../../components/quiz-info-modal/quiz-info-html.js";
+import { buildInfoModel } from "../../components/quiz-info-modal/info-model.js";
 import { buildExportCard, buildSourceActions } from "../../components/download-quiz-modal/export-card.js";
 import {
   rowToNotebook, collectNotebookInfo, notebookToIpynb, notebookToMScript, notebookToCppScript, notebookToJson, notebookToHtml, safeFileName,
@@ -20,31 +22,72 @@ import {
 const LANG_LABEL = { en: "الإنجليزية (من اليسار لليمين)", ar: "العربية (من اليمين لليسار)" };
 const RUNTIME_LABEL = { matlab: "MATLAB", cpp: "C++" };
 
-function infoBodyHtml(info, url) {
-  const rows = [];
-  const add = (label, valueHtml) => rows.push(`<div class="quiz-meta-label">${escapeHtml(label)}</div><div class="quiz-meta-value">${valueHtml}</div>`);
-  add("نص (Markdown)", escapeHtml(String(info.markdownCount)));
-  add("كود", escapeHtml(`${info.codeCount} (${info.codeLines} سطر)`));
-  add("بيئة التشغيل", escapeHtml(RUNTIME_LABEL[info.runtime] || info.runtime));
-  add("لغة الدفتر", escapeHtml(LANG_LABEL[info.language] || info.language));
-  if (info.description) add("الوصف", escapeHtml(info.description));
-  if (info.source) add("المصدر", infoSourceHtml(info.source));
-  if (url) add("رابط الدفتر", infoItemLinkHtml(url, info.title, "رابط الدفتر"));
-  const created = formatDateForInfo(info.createdAt);
-  if (created) add("تاريخ الإنشاء", `<span dir="ltr">${escapeHtml(created)}</span>`);
-  const updated = formatDateForInfo(info.updatedAt && !Number.isNaN(Date.parse(info.updatedAt)) ? new Date(info.updatedAt).toLocaleString("en-US") : info.updatedAt);
-  if (updated && updated !== created) add("آخر تعديل", `<span dir="ltr">${escapeHtml(updated)}</span>`);
-  if (info.id) add("ID", `<span class="quiz-id-badge">${escapeHtml(info.id)}</span>`);
-  return `
-    <div class="quiz-info-hero">
-      <h3 dir="auto">${escapeHtml(info.title)}</h3>
-      <div class="quiz-metrics-row"><span class="quiz-metric-pill">${escapeHtml(`${info.cellCount} خلية`)}</span></div>
-    </div>
-    <div class="quiz-info-section">
-      <div class="quiz-info-section-title">تفاصيل الدفتر</div>
-      <div class="quiz-meta-grid">${rows.join("")}</div>
-    </div>
-    ${info.createdBy ? `<div data-notebook-creator-slot>${buildInfoSkeletonHtml({ title: false, pills: 0, rows: 0, card: true })}</div>` : ""}`;
+function notebookCoreHtml(info, url) {
+  const pills = [infoPill(INFO_ICONS.cells, `${info.cellCount} خلية`, "عدد الخلايا")];
+  const model = buildInfoModel("notebook", {
+    id: info.id,
+    title: info.title,
+    description: info.description,
+    eduType: info.eduType,
+    college: info.college,
+    year: info.year,
+    term: info.term,
+    course: info.courseName,
+    folders: info.folderNames,
+    local: info.local,
+    createdAt: info.createdAt,
+    updatedAt: info.updatedAt,
+    source: info.source,
+    link: url || null,
+    linkLabel: "رابط الدفتر",
+    engagementCount: typeof info.viewCount === "number" ? info.viewCount : (info.local ? undefined : null),
+    engagementLabel: "مشاهدة لهذا الدفتر",
+    pills,
+    specificTitle: "محتوى الدفتر",
+    specific: [
+      ["نص (Markdown)", String(info.markdownCount)],
+      ["كود", `${info.codeCount} (${info.codeLines} سطر)`],
+      ["بيئة التشغيل", RUNTIME_LABEL[info.runtime] || info.runtime],
+      ["لغة الدفتر", LANG_LABEL[info.language] || info.language],
+    ],
+  });
+  const creatorHtml = info.creator ? buildCreatorSectionHtml(info.creator) : "";
+  return buildInfoBodyHtml(model, { creatorHtml, creatorSlot: Boolean(info.createdBy) && !info.creator && !info.creatorDone });
+}
+
+/** Loads the async facts (classification, course/folder, views, creator) and re-renders the core. */
+function hydrateNotebookInfo(core, info, url) {
+  const rerender = () => {
+    if (!core.isConnected) return;
+    core.innerHTML = notebookCoreHtml(info, url);
+    bindInfoCopyButtons(core);
+  };
+  const tasks = [];
+  if (!info.local && info.id) {
+    tasks.push(fetchNotebookDetails(info.id).then(async (d) => {
+      if (!d) return;
+      info.eduType = info.eduType || d.education_type || null;
+      info.college = info.college || d.college || null;
+      info.year = info.year ?? d.year ?? null;
+      info.term = info.term ?? d.term ?? null;
+      info.createdAt = info.createdAt || d.created_at || null;
+      info.updatedAt = info.updatedAt || d.updated_at || null;
+      info.createdBy = info.createdBy || d.created_by || null;
+      info.courseId = info.courseId || d.course_id || null;
+      info.folderId = info.folderId || d.folder_id || null;
+      if (info.courseId || info.folderId) {
+        const loc = await fetchItemLocation(info.courseId, info.folderId);
+        info.courseName = loc.course;
+        info.folderNames = loc.folders;
+      }
+    }));
+    tasks.push(fetchNotebookViewCount(info.id).then((count) => { if (typeof count === "number") info.viewCount = count; }));
+  }
+  Promise.allSettled(tasks)
+    .then(() => (info.createdBy
+      ? fetchCreatorById(info.createdBy).then((creator) => { info.creator = creator; }).catch(() => {})
+      : null))
+    .finally(() => { info.creatorDone = true; rerender(); });
 }
 
 export function showNotebookInfoModal(row) {
@@ -54,16 +97,7 @@ export function showNotebookInfoModal(row) {
   const dialog = document.createElement("dialog");
   dialog.className = "quiz-info-dialog lesson-info-dialog";
   dialog.setAttribute("aria-labelledby", "notebookInfoDialogTitle");
-  dialog.innerHTML = `
-    <div class="quiz-info-dialog-inner">
-      <div class="quiz-info-dialog-header">
-        <h2 id="notebookInfoDialogTitle">معلومات الدفتر</h2>
-        <button class="quiz-info-dialog-close" type="button" aria-label="إغلاق">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-        </button>
-      </div>
-      <div class="quiz-info-dialog-body">${infoBodyHtml(info, url)}</div>
-    </div>`;
+  dialog.innerHTML = buildInfoDialogHtml("معلومات الدفتر", `<div data-info-core>${notebookCoreHtml(info, url)}</div>`, { titleId: "notebookInfoDialogTitle" });
   bindInfoCopyButtons(dialog);
   document.body.appendChild(dialog);
   const close = () => {
@@ -75,15 +109,7 @@ export function showNotebookInfoModal(row) {
   dialog.addEventListener("click", (e) => { if (e.target === dialog) close(); });
   dialog.addEventListener("close", () => dialog.remove());
   dialog.showModal();
-  // Uploader card («إعداد»), same as the quiz / lesson dialogs — platform notebooks only
-  // (local notebooks have no uploader).
-  const slot = dialog.querySelector("[data-notebook-creator-slot]");
-  if (slot && info.createdBy) {
-    fetchCreatorById(info.createdBy).then((creator) => {
-      if (!slot.isConnected) return;
-      slot.innerHTML = creator ? buildCreatorSectionHtml(creator) : "";
-    }).catch(() => { slot.remove(); });
-  }
+  hydrateNotebookInfo(dialog.querySelector("[data-info-core]"), info, url);
   return dialog;
 }
 

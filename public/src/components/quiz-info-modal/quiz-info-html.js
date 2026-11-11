@@ -2,17 +2,11 @@
 import { infoItemLinkHtml, infoSourceHtml } from "../../shared/info-link.js";
 import { escapeHtml } from "../../features/home/escape-html.js";
 import { avatarEngine } from "../../shared/avatarEngine.js";
+import { buildInfoModel, formatInfoDate, parseQuizPath } from "./info-model.js";
 
-/** Normalise a stored date string down to just its date portion. */
+/** Any stored date → "YYYY-MM-DD" (shared by every info modal). */
 export function formatDateForInfo(raw) {
-  if (!raw) return null;
-  let d = String(raw);
-  // ISO timestamps from the database ("2026-10-28T10:00:00+00:00") → date only.
-  if (/^\d{4}-\d{2}-\d{2}T/.test(d)) return d.slice(0, 10);
-  if (d.includes(",")) d = d.split(",")[0];
-  else if (d.includes(" - ")) d = d.split(" - ")[0];
-  else if (d.includes(" ")) d = d.split(" ")[0];
-  return d || null;
+  return formatInfoDate(raw);
 }
 
 /** Generate a fallback data-URL avatar from a name using avatarEngine */
@@ -87,200 +81,160 @@ export function buildCreatorSectionHtml(creatorProfile, sectionTitle = "إعدا
     `;
 }
 
-/**
- * Builds the modern modular HTML for the quiz info dialog inner contents.
- * Replaces the old single table with semantic sections.
- *
- * @param {object} config       - Quiz metadata (id, title, description, category, path, etc.)
- * @param {number|null} questionCount
- * @param {object|null} creatorProfile - Account data: { displayName, handle, avatarUrl }
- *                                       Pass null to skip the creator card.
- */
-export function buildQuizInfoModalHtml(config, questionCount = null, creatorProfile = null) {
-  // 1. Header
-  const headerHtml = `
-    <div class="quiz-info-dialog-header">
-      <h2 id="quizInfoDialogTitle">معلومات الامتحان</h2>
-      <button class="quiz-info-dialog-close" id="quizInfoDialogClose" type="button" aria-label="إغلاق">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-  `;
+const svg = (d) => `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+export const INFO_ICONS = {
+  question: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  layout: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+  sections: '<rect x="3" y="3" width="18" height="6" rx="1"/><rect x="3" y="12" width="18" height="9" rx="1"/>',
+  hidden: '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>',
+  branch: '<line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
+  cells: '<rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/>',
+};
 
-  // 2. Overview / Hero
-  const title = config.title || config.id || "بدون عنوان";
-  const descHtml = config.description
-    ? `<p class="quiz-desc">${escapeHtml(config.description)}</p>`
+/** Metric pill (icon + text); every value escaped. */
+export function infoPill(iconPath, text, title = "") {
+  return `<span class="quiz-metric-pill" title="${escapeHtml(title)}">${svg(iconPath)}${escapeHtml(text)}</span>`;
+}
+
+const CHAIN_SEP = '<span class="info-trail__sep" aria-hidden="true">›</span>';
+
+/**
+ * Shared body of every info modal (quiz / lesson / notebook): hero + stat,
+ * classification chips, course › folder trail, date tiles, type-specific
+ * section, link rows, creator and ID. Empty parts are omitted, never
+ * replaced by placeholders. `model` comes from buildInfoModel().
+ * @param {ReturnType<typeof buildInfoModel>} model
+ * @param {{creatorHtml?: string, creatorSlot?: boolean}} [opts]
+ */
+export function buildInfoBodyHtml(model, { creatorHtml = "", creatorSlot = false } = {}) {
+  const m = model;
+  const pills = [...m.pills];
+  if (m.passwordProtected) pills.push(infoPill(INFO_ICONS.lock, "محمي بكلمة مرور", "الخصوصية"));
+  const e = m.engagement;
+  const statHtml = e
+    ? `<div class="quiz-attempts-stat" data-info-engagement${e.count === null ? " hidden" : ""} title="${escapeHtml(e.label)}">
+        <span class="quiz-attempts-stat__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></span>
+        <span class="quiz-attempts-stat__value" data-info-engagement-value>${e.count === null ? "" : Number(e.count).toLocaleString("en-US")}</span>
+        <span class="quiz-attempts-stat__label">${escapeHtml(e.label)}</span>
+      </div>`
+    : "";
+  const hero = `
+    <div class="quiz-info-hero">
+      <h3 dir="auto">${escapeHtml(m.title || "بدون عنوان")}</h3>
+      ${m.description ? `<p class="quiz-desc">${escapeHtml(m.description)}</p>` : ""}
+      ${statHtml}
+      ${pills.length ? `<div class="quiz-metrics-row">${pills.join("")}</div>` : ""}
+    </div>`;
+
+  const chips = m.classification.length
+    ? `<div class="info-chips" role="list">${m.classification.map(([label, value]) =>
+        `<span class="info-chip" role="listitem"><span class="info-chip__label">${escapeHtml(label)}</span><span class="info-chip__value">${escapeHtml(value)}</span></span>`).join("")}</div>`
     : "";
 
-  const pills = [];
-  if (questionCount !== null) {
-    pills.push(`
-      <span class="quiz-metric-pill" title="عدد الأسئلة">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-        ${questionCount} سؤال
-      </span>`);
-  }
-  if (config.questionTypes) {
-    pills.push(`
-      <span class="quiz-metric-pill" title="أنواع الأسئلة">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        ${escapeHtml(config.questionTypes)}
-      </span>`);
-  }
-  if (config.passwordProtected === true) {
-    pills.push(`
-      <span class="quiz-metric-pill" title="الخصوصية">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        محمي بكلمة مرور
-      </span>`);
-  }
-  if (config.mode) {
-    pills.push(`
-      <span class="quiz-metric-pill" title="الوضع الإجباري">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        ${escapeHtml(config.mode)}
-      </span>`);
-  }
-  if (config.view) {
-    const viewLabel = config.view === "pagination" ? "Pagination" : (config.view === "vertical" ? "Vertical" : config.view);
-    pills.push(`
-      <span class="quiz-metric-pill" title="الشكل الإجباري">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-        ${escapeHtml(viewLabel)}
-      </span>`);
-  }
-
-  const pillsHtml = pills.length > 0 ? `<div class="quiz-metrics-row">${pills.join("")}</div>` : "";
-
-  // Attempts get their own highlighted stat (not a plain pill) — it's the
-  // one number that tells a student how popular the quiz is.
-  const attemptsHtml = typeof config.attemptCount === "number"
-    ? `<div class="quiz-attempts-stat" title="عدد مرات حل الامتحان">
-        <span class="quiz-attempts-stat__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></span>
-        <span class="quiz-attempts-stat__value">${Number(config.attemptCount).toLocaleString("en-US")}</span>
-        <span class="quiz-attempts-stat__label">مرة تم حل هذا الامتحان</span>
+  const trail = [];
+  if (m.course) trail.push(`<span class="info-trail__course" title="المادة">${escapeHtml(m.course)}</span>`);
+  for (const f of m.folders) trail.push(`<span class="info-trail__folder" title="المجلد">${escapeHtml(f)}</span>`);
+  const locationHtml = trail.length || m.local
+    ? `<div class="info-location">
+        ${trail.length ? `<span class="info-location__label">${m.folders.length ? "المادة › المجلد" : "المادة"}</span><div class="info-trail">${trail.join(CHAIN_SEP)}</div>` : ""}
+        ${m.local ? '<span class="info-local-badge">محلي · على جهازك</span>' : ""}
       </div>`
     : "";
 
-  const heroHtml = `
-    <div class="quiz-info-hero">
-      <h3>${escapeHtml(title)}</h3>
-      ${descHtml}
-      ${attemptsHtml}
-      ${pillsHtml}
-    </div>
-  `;
+  const tile = (label, value, title) =>
+    `<div class="info-date-tile"><span class="info-date-tile__label">${label}</span><span class="info-date-tile__value" dir="ltr"${title ? ` title="${escapeHtml(title)}"` : ""}>${escapeHtml(value)}</span></div>`;
+  const dates = m.created || m.updated
+    ? `<div class="info-dates">${m.created ? tile("تاريخ الإنشاء", m.created, m.createdTitle) : ""}${m.updated ? tile("آخر تعديل", m.updated, m.updatedTitle) : ""}</div>`
+    : "";
 
-  // 3. Classification & Source Grid
-  const gridItems = [];
+  const specific = m.specific.length
+    ? `<details class="quiz-info-section info-specific" open>
+        <summary class="quiz-info-section-title">${escapeHtml(m.specificTitle || "التفاصيل")}</summary>
+        <div class="quiz-meta-grid">${m.specific.map(([label, value]) =>
+          `<div class="quiz-meta-label">${escapeHtml(label)}</div><div class="quiz-meta-value">${typeof value === "object" && value?.html ? value.html : escapeHtml(String(value))}</div>`).join("")}</div>
+      </details>`
+    : "";
 
-  // Subject (المادة) + folder path. `category` is the category-tree key
-  // ("Course/Folder/Sub"), so the first segment is the course and the rest
-  // is the folder path inside it.
-  const categorySegments = String(config.category || "").split("/").filter(Boolean);
-  const subject = categorySegments[0] || "";
-  if (subject) {
-    gridItems.push(`
-      <div class="quiz-meta-label">المادة</div>
-      <div class="quiz-meta-value">${escapeHtml(subject)}</div>
-    `);
+  const linkRows = [];
+  if (m.source) linkRows.push(`<div class="quiz-meta-label">المصدر</div><div class="quiz-meta-value">${infoSourceHtml(m.source)}</div>`);
+  if (m.link) {
+    linkRows.push(`<div class="quiz-meta-label">${escapeHtml(m.linkLabel || "الرابط")}</div><div class="quiz-meta-value" dir="ltr">${infoItemLinkHtml(m.link, m.title, m.linkLabel || "الرابط")}</div>`);
   }
-  if (categorySegments.length > 1) {
-    gridItems.push(`
-      <div class="quiz-meta-label">المجلد</div>
-      <div class="quiz-meta-value">${escapeHtml(categorySegments.slice(1).join(" › "))}</div>
-    `);
-  }
-  const extraRows = [
-    ["نوع التعليم", config.eduTypeLabel],
-    ["الكلية", config.college],
-    ["العام", config.year],
-    ["الترم", config.term],
-  ];
-  for (const [label, val] of extraRows) {
-    if (val === null || val === undefined || val === "") continue;
-    gridItems.push(`
-      <div class="quiz-meta-label">${label}</div>
-      <div class="quiz-meta-value">${escapeHtml(String(val))}</div>
-    `);
-  }
-  if (typeof config.passwordProtected === "boolean") {
-    gridItems.push(`
-      <div class="quiz-meta-label">الخصوصية</div>
-      <div class="quiz-meta-value">${config.passwordProtected ? "محمي بكلمة مرور" : "عام"}</div>
-    `);
-  }
+  const links = linkRows.length
+    ? `<div class="quiz-info-section"><div class="quiz-info-section-title">الروابط</div><div class="quiz-meta-grid">${linkRows.join("")}</div></div>`
+    : "";
 
-  // Date
-  const date = formatDateForInfo(config.createdAt);
-  if (date) {
-    gridItems.push(`
-      <div class="quiz-meta-label">التاريخ</div>
-      <div class="quiz-meta-value">${escapeHtml(date)}</div>
-    `);
-  }
+  const creator = creatorHtml || (creatorSlot ? '<div data-info-creator-slot><div class="info-skel info-skel--card"></div></div>' : "");
+  const idFooter = m.id ? `<div class="info-id-footer"><span>ID</span><span class="quiz-id-badge">${escapeHtml(m.id)}</span></div>` : "";
 
-  const updated = formatDateForInfo(config.syncedAt);
-  if (updated && updated !== date) {
-    gridItems.push(`
-      <div class="quiz-meta-label">آخر تحديث</div>
-      <div class="quiz-meta-value">${escapeHtml(updated)}</div>
-    `);
-  }
+  return `${hero}${chips}${locationHtml}${dates}${specific}${links}${creator}${idFooter}`;
+}
 
-  // Source
-  if (config.source) {
-    gridItems.push(`
-      <div class="quiz-meta-label">المصدر</div>
-      <div class="quiz-meta-value">${infoSourceHtml(config.source)}</div>
-    `);
-  }
-
-  // On the quiz-taking page the URL is informational text; in library
-  // dialogs it is a convenient shareable link.
-  if (config.quizUrl) {
-    const urlHtml = infoItemLinkHtml(config.quizUrl, title, "رابط الامتحان");
-    gridItems.push(`
-      <div class="quiz-meta-label">رابط الامتحان</div>
-      <div class="quiz-meta-value" dir="ltr">${urlHtml}</div>
-    `);
-  }
-
-  // ID
-  if (config.id) {
-    gridItems.push(`
-      <div class="quiz-meta-label">ID</div>
-      <div class="quiz-meta-value"><span class="quiz-id-badge">${escapeHtml(config.id)}</span></div>
-    `);
-  }
-
-  let classificationHtml = "";
-  if (gridItems.length > 0) {
-    classificationHtml = `
-      <div class="quiz-info-section">
-        <div class="quiz-info-section-title">التصنيف والمصدر</div>
-        <div class="quiz-meta-grid">
-          ${gridItems.join("")}
-        </div>
-      </div>
-    `;
-  }
-
-  // 4. Creator Card — use creatorProfile from account, not quiz meta
-  const creatorHtml = buildCreatorSectionHtml(creatorProfile);
-
-  // Assemble full inner body
+/** Wraps a body in the standard dialog frame (header + close button). */
+export function buildInfoDialogHtml(headerTitle, bodyHtml, { titleId = "quizInfoDialogTitle" } = {}) {
   return `
     <div class="quiz-info-dialog-inner">
-      ${headerHtml}
-      <div class="quiz-info-dialog-body">
-        ${heroHtml}
-        ${classificationHtml}
-        ${creatorHtml}
+      <div class="quiz-info-dialog-header">
+        <h2 id="${titleId}">${escapeHtml(headerTitle)}</h2>
+        <button class="quiz-info-dialog-close" type="button" aria-label="إغلاق">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        </button>
       </div>
-    </div>
-  `;
+      <div class="quiz-info-dialog-body">${bodyHtml}</div>
+    </div>`;
+}
+
+/**
+ * Quiz info dialog contents.
+ * @param {object} config - Quiz metadata (id, title, description, category, path, college, year, term, …)
+ * @param {number|null} questionCount
+ * @param {object|null} creatorProfile - { displayName, handle, avatarUrl } or null
+ */
+export function buildQuizInfoModalHtml(config, questionCount = null, creatorProfile = null) {
+  // Course + folders: explicit values win; otherwise parse the stored path.
+  // `category` (legacy "A → B" / "A/B" trail) is only a last resort.
+  const parsed = parseQuizPath(config.path, { hasFile: true });
+  let course = config.course || parsed.course || "";
+  let folders = config.folders || parsed.folders || [];
+  if (!course && config.category) {
+    const segs = String(config.category).split(/\s*(?:\/|→)\s*/).filter((x) => x && !/^\d+$/.test(x));
+    course = segs[0] || "";
+    if (!folders.length) folders = segs.slice(1);
+  }
+
+  const pills = [];
+  if (questionCount !== null) pills.push(infoPill(INFO_ICONS.question, `${questionCount} سؤال`, "عدد الأسئلة"));
+  if (config.questionTypes) pills.push(infoPill(INFO_ICONS.upload, config.questionTypes, "أنواع الأسئلة"));
+  if (config.mode) pills.push(infoPill(INFO_ICONS.lock, config.mode, "الوضع الإجباري"));
+  if (config.view) {
+    const viewLabel = config.view === "pagination" ? "Pagination" : (config.view === "vertical" ? "Vertical" : config.view);
+    pills.push(infoPill(INFO_ICONS.layout, viewLabel, "الشكل الإجباري"));
+  }
+
+  const model = buildInfoModel("quiz", {
+    id: config.id,
+    title: config.title || config.id,
+    description: config.description,
+    passwordProtected: config.passwordProtected,
+    eduTypeLabel: config.eduTypeLabel,
+    eduType: parsed.eduType,
+    college: config.college ?? parsed.college,
+    year: config.year ?? parsed.year,
+    term: config.term ?? parsed.term,
+    course,
+    folders,
+    local: config.local,
+    createdAt: config.createdAt,
+    updatedAt: config.syncedAt || config.updatedAt,
+    source: config.source,
+    link: config.quizUrl,
+    linkLabel: "رابط الامتحان",
+    engagementCount: typeof config.attemptCount === "number" ? config.attemptCount : undefined,
+    engagementLabel: "مرة تم حل هذا الامتحان",
+    pills,
+  });
+
+  return buildInfoDialogHtml("معلومات الامتحان", buildInfoBodyHtml(model, { creatorHtml: buildCreatorSectionHtml(creatorProfile) }));
 }
