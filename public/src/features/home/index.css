@@ -5644,7 +5644,7 @@ kbd {
 .mcp-new-badge {
   position: absolute;
   top: 10px;
-  inset-inline-start: 10px;
+  inset-inline-end: 10px;
   z-index: 5;
   display: inline-flex;
   align-items: center;

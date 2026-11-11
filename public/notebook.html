@@ -74,6 +74,51 @@
     })();
   </script>
 
+  <!-- Critical notebook loading styles: keep the first paint composed before external CSS arrives. -->
+  <style>
+    #notebookStatus.notebook-status--loading:not([hidden]) {
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: max-content;
+      max-width: calc(100% - 32px);
+      min-height: 70px;
+      margin: clamp(64px, 16vh, 150px) auto;
+      padding: 16px 22px;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      background: #fff;
+      color: #344054;
+      box-shadow: 0 12px 34px rgba(16, 24, 40, .08);
+      font: 500 14px/1.5 system-ui, sans-serif;
+    }
+
+    html[data-theme="dark"] #notebookStatus.notebook-status--loading:not([hidden]),
+    html[data-theme="dark-slate"] #notebookStatus.notebook-status--loading:not([hidden]) {
+      border-color: #334155;
+      background: #1e293b;
+      color: #e2e8f0;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, .22);
+    }
+
+    #notebookStatus.notebook-status--loading .notebook-spinner {
+      flex: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(59, 130, 246, .22);
+      border-top-color: #3b82f6;
+      animation: notebook-load-spin .8s linear infinite;
+    }
+
+    @keyframes notebook-load-spin { to { transform: rotate(360deg); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      #notebookStatus.notebook-status--loading .notebook-spinner { animation: none; }
+    }
+  </style>
+
   <!-- CRITICAL: Anti-flash script -->
   <script>
     (function () {
@@ -107,6 +152,7 @@
   <link rel="stylesheet" href="/assets/notebook-runtime/runtime.css">
   <link rel="stylesheet" href="/src/components/ai-agent/ai-agent.css">
   <link rel="stylesheet" href="/src/features/notebook/notebook.css">
+  <link rel="stylesheet" id="cnbEditorCss" href="/src/features/notebook/notebook-editor.css">
   <link rel="stylesheet" href="/src/features/notebook/image-tool-window.css">
 
   <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
@@ -630,8 +676,9 @@
 
 
   <main id="contentArea" class="notebook-page-shell" aria-live="polite" aria-busy="true">
-    <div id="notebookStatus" class="notebook-status" role="status">
-      <span class="notebook-spinner" aria-hidden="true"></span> جاري تحميل الدفتر…
+    <div id="notebookStatus" class="notebook-status notebook-status--loading" role="status" aria-live="polite">
+      <span class="notebook-spinner" aria-hidden="true"></span>
+      <span class="notebook-loading-label">جاري تجهيز الدفتر…</span>
     </div>
     <p id="notebookDisclaimer" class="notebook-disclaimer" hidden></p>
     <div id="notebookRoot" class="notebook-root"></div>
@@ -680,7 +727,10 @@
       <div id="cnbStorage" class="storage-banner" hidden></div>
       <div id="cnbIssues" class="cnb-issues" role="alert" aria-live="assertive" hidden></div>
       <div id="cnbEditor" class="cnb-editor" aria-busy="true">
-        <div class="cnb-loading">Loading editor…</div>
+        <div class="cnb-loading" role="status" aria-live="polite">
+          <span class="cnb-loading-spinner" aria-hidden="true"></span>
+          <span>Loading editor…</span>
+        </div>
       </div>
     </section>
   </main>

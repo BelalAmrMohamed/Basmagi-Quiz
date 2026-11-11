@@ -75,8 +75,24 @@
 .cnb-issues strong { display: block; margin-bottom: 3px; }
 .cnb-issues ul { margin: 0; padding-inline-start: 20px; }
 .cnb-issues--warn { border-color: color-mix(in srgb, var(--color-warning, #d97706) 55%, var(--color-border)); background: color-mix(in srgb, var(--color-warning, #d97706) 10%, var(--color-surface)); }
-.cnb-editor { min-height: 320px; min-width: 0; max-width: 100%; }
-.cnb-loading { padding: 28px; text-align: center; color: var(--color-text-secondary); }
+.cnb-editor { position: relative; min-height: 320px; min-width: 0; max-width: 100%; }
+.cnb-loading {
+  position: absolute; z-index: 20; inset: 0;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  box-sizing: border-box; min-height: 100%; padding: 24px;
+  border: 1px solid var(--color-border); border-radius: 12px;
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  color: var(--color-text-secondary); font-size: .9rem; font-weight: 550;
+  backdrop-filter: blur(3px);
+}
+.cnb-loading-spinner {
+  flex: none; width: 18px; height: 18px; box-sizing: border-box;
+  border: 2px solid color-mix(in srgb, var(--color-primary) 24%, transparent);
+  border-top-color: var(--color-primary); border-radius: 50%;
+  animation: cnb-spin .8s linear infinite;
+}
+@keyframes cnb-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .cnb-loading-spinner { animation: none; } }
 .storage-banner { margin: 0 0 10px; padding: 8px 11px; border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-primary); font-size: .84rem; }
 .storage-banner--warn { background: color-mix(in srgb, var(--color-warning, #f59e0b) 14%, var(--color-surface)); border-color: var(--color-warning, #f59e0b); font-weight: 650; }
 @media (max-width: 680px) {

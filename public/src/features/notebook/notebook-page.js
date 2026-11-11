@@ -89,6 +89,8 @@ function applyPageLang(lang) {
   const area = $("contentArea");
   area.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
   area.setAttribute("lang", lang);
+  const loadingLabel = $("notebookStatus").querySelector(".notebook-loading-label");
+  if (loadingLabel) loadingLabel.textContent = lang === "ar" ? "جاري تجهيز الدفتر…" : "Preparing your notebook…";
 }
 
 async function init() {

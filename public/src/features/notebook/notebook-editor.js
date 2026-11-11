@@ -45,7 +45,7 @@ const STR = {
     identityHeading: "Notebook details", identityIntro: "Give learners enough context to know what they’ll open.", titleHint: "A concise title makes this notebook easier to find.", descriptionHint: "Describe the topic, goal, or expected starting point.", sourceHint: "Add a reference learners can open for more detail.",
     settingsHeading: "Language and runtime", settingsIntro: "Choose how the notebook reads and which engine runs its code.", languageHint: "Controls notebook text direction and interface language.", runtimeHintMatlab: "Runs in the browser with the MATLAB learning runtime.", runtimeHintCpp: "Runs C++ code using the online compiler service.", runtimeLock: "Locked after save",
     placementHeading: "Publishing location", placementIntro: "Choose where learners will find this notebook.", course: "Course", folder: "Folder", slug: "URL slug", compressTitle: "Optimize notebook images", compressShort: "Compress images to WebP when publishing.", compressHint: "Image names and references are updated automatically.",
-    import: "Import .ipynb / .m", save: "Save to My Content", saveEdit: "Save changes", savePlatform: "Save and publish", loading: "Loading editor…",
+    import: "Import .ipynb / .m", save: "Save to My Content", saveEdit: "Save changes", savePlatform: "Save and publish", loading: "Loading editor…", runtimeLoading: (name) => `Loading ${name}…`,
     saved: "Saved", savedMsg: "The notebook was saved to My Content.", driveDone: (n, f) => `Also backed up to Google Drive: “${n}” in “${f}”.`, publishedMsg: "The notebook was published.",
     fail: "Could not save", problems: (n) => `Fix ${n} problem${n === 1 ? "" : "s"} before saving`, importFail: "Import failed", importNotes: "Import notes",
     loadFail: "Could not load", runtimeFail: "Could not load the notebook editor. Check your connection and reload the page.", dup: "A notebook with this title already exists here. Choose a different title.",
@@ -60,7 +60,7 @@ const STR = {
     identityHeading: "تفاصيل الدفتر", identityIntro: "أضف سياقاً يساعد المتعلمين على معرفة محتوى الدفتر.", titleHint: "يساعد العنوان المختصر على العثور على الدفتر.", descriptionHint: "اشرح الموضوع أو الهدف أو نقطة البداية المتوقعة.", sourceHint: "أضف مرجعاً يمكن للمتعلمين فتحه لمعرفة المزيد.",
     settingsHeading: "اللغة وبيئة التشغيل", settingsIntro: "اختر لغة الدفتر والمحرك الذي يشغّل الشيفرة.", languageHint: "تحدد اتجاه النص ولغة واجهة الدفتر.", runtimeHintMatlab: "يعمل في المتصفح باستخدام بيئة MATLAB التعليمية.", runtimeHintCpp: "يشغّل شيفرة C++ عبر خدمة المترجم على الإنترنت.", runtimeLock: "مقفل بعد الحفظ",
     placementHeading: "مكان النشر", placementIntro: "اختر المكان الذي سيجد فيه المتعلمون هذا الدفتر.", course: "المادة", folder: "المجلد", slug: "معرّف الرابط", compressTitle: "تحسين صور الدفتر", compressShort: "ضغط الصور إلى WebP عند النشر.", compressHint: "سيتم تحديث أسماء الصور ومراجعها تلقائياً.",
-    import: "استيراد .ipynb / .m", save: "حفظ في امتحاناتك", saveEdit: "حفظ التغييرات", savePlatform: "حفظ ونشر", loading: "جاري تحميل المحرر…",
+    import: "استيراد .ipynb / .m", save: "حفظ في امتحاناتك", saveEdit: "حفظ التغييرات", savePlatform: "حفظ ونشر", loading: "جاري تحميل المحرر…", runtimeLoading: (name) => `جارٍ تجهيز ${name}…`,
     saved: "تم الحفظ", savedMsg: "تم حفظ الدفتر في «امتحاناتك».", driveDone: (n, f) => `ونُسخ احتياطياً إلى Google Drive: «${n}» داخل «${f}».`, publishedMsg: "تم نشر الدفتر.",
     fail: "تعذر الحفظ", problems: (n) => `أصلح ${n} من المشاكل قبل الحفظ`, importFail: "فشل الاستيراد", importNotes: "ملاحظات الاستيراد",
     loadFail: "تعذر التحميل", runtimeFail: "تعذر تحميل محرر الدفاتر. تحقق من اتصالك وأعد تحميل الصفحة.", dup: "يوجد دفتر بنفس العنوان هنا بالفعل. اختر عنواناً مختلفاً.",
@@ -156,26 +156,53 @@ function writeMeta() {
 }
 const markDirty = () => { dirtyFlag = true; };
 
-let runtimePromise = null;
-async function mountEditor() {
-  const runtime = await loadRuntime(state.runtime);
-  if (!bridge) bridge = createWorkspaceBridge(editId || "draft", { onWarn: (m) => showNotification("", m, "info"), onChange: markDirty });
-  if (handle) { try { handle.destroy(); } catch { /* ignore */ } }
+let editorMountVersion = 0;
+
+function setEditorLoading(loading) {
   const host = $("cnbEditor");
-  host.replaceChildren();
-  host.setAttribute("aria-busy", "false");
-  mountedLang = state.language;
-  mountedRuntime = state.runtime;
-  handle = runtime.mount({
-    root: host,
-    baseUrl: RUNTIME_CONFIG[state.runtime].base,
-    mode: "edit",
-    lang: state.language,
-    notebook: { id: editId || "draft", title: state.title, schemaVersion: 1, runtime: state.runtime, cells: state.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, ...cellToPlain(c) })) },
-    onChange: (cells) => { state = { ...state, cells: cells.map(cellToPlain) }; markDirty(); },
-    onNotice: (m) => showNotification("", m, "info"),
-  });
-  void restoreWorkspace();
+  host.setAttribute("aria-busy", String(loading));
+  let status = host.querySelector(".cnb-loading");
+  if (!loading) { status?.remove(); return; }
+  if (!status) {
+    status = document.createElement("div");
+    status.className = "cnb-loading";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    host.append(status);
+  }
+  const spinner = document.createElement("span");
+  spinner.className = "cnb-loading-spinner";
+  spinner.setAttribute("aria-hidden", "true");
+  const label = document.createElement("span");
+  label.textContent = t("runtimeLoading", RUNTIME_CONFIG[state.runtime]?.label || state.runtime);
+  status.replaceChildren(spinner, label);
+}
+
+async function mountEditor() {
+  const mountVersion = ++editorMountVersion;
+  const host = $("cnbEditor");
+  setEditorLoading(true);
+  try {
+    const runtime = await loadRuntime(state.runtime);
+    if (mountVersion !== editorMountVersion) return;
+    if (!bridge) bridge = createWorkspaceBridge(editId || "draft", { onWarn: (m) => showNotification("", m, "info"), onChange: markDirty });
+    if (handle) { try { handle.destroy(); } catch { /* ignore */ } handle = null; }
+    host.replaceChildren();
+    mountedLang = state.language;
+    mountedRuntime = state.runtime;
+    handle = runtime.mount({
+      root: host,
+      baseUrl: RUNTIME_CONFIG[state.runtime].base,
+      mode: "edit",
+      lang: state.language,
+      notebook: { id: editId || "draft", title: state.title, schemaVersion: 1, runtime: state.runtime, cells: state.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, ...cellToPlain(c) })) },
+      onChange: (cells) => { state = { ...state, cells: cells.map(cellToPlain) }; markDirty(); },
+      onNotice: (m) => showNotification("", m, "info"),
+    });
+    void restoreWorkspace();
+  } finally {
+    if (mountVersion === editorMountVersion) setEditorLoading(false);
+  }
 }
 
 /** Workspace files an MCP draft carries (temporary Storage, signed URLs): copied into the browser workspace. */
@@ -294,10 +321,6 @@ export async function startEditor(edit = null) {
   const admin = isAdminAuthenticated();
   // Published notebooks are edited by admins only; everyone else is sent to the reading page.
   if (edit && !/^user_notebook_/.test(edit) && !admin) { location.replace(`/notebook/${encodeURIComponent(edit)}`); return; }
-  if (!document.getElementById("cnbEditorCss")) {
-    const l = Object.assign(document.createElement("link"), { id: "cnbEditorCss", rel: "stylesheet", href: "/src/features/notebook/notebook-editor.css" });
-    document.head.append(l);
-  }
   const editIsLocal = !!edit && /^user_notebook_/.test(edit);
   localMode = !(admin && ((edit && !editIsLocal) || params.get("draft")));
   if (!localMode) { $("cnbPlacementRow").hidden = false; void mountStorageBanner($("cnbStorage")); await loadPlacement(); }
