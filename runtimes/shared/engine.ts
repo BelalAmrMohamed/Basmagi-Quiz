@@ -87,6 +87,8 @@ export interface Engine {
   editor: { extensions(): Extension[]; completions?: CompletionSource | CompletionSource[];
     /** Live syntax check while typing (debounced by the shell). Messages must already be localized. */
     lint?(state: EditorState): Diagnostic[] };
+  /** A program pasted into one cell: the cells to offer instead (3 or more), or null when it is not worth splitting. */
+  splitPaste?(text: string): string[] | null;
   /** Help dialog content. The shell adds the generic notebook shortcuts itself. */
   help?: { title?: string; intro?: string; searchPlaceholder?: string; items: Array<[title: string, en: string, ar: string]> };
   caps: { workspace: boolean; files: boolean; images: boolean; stdin: boolean; history: boolean };

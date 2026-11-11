@@ -7,7 +7,7 @@ import { EditorView } from '@codemirror/view';
 import type { Ctx, UiCell } from './ctx';
 import { h } from './dom';
 import { createEditorState } from './editor';
-import { renderMarkdown } from './markdown';
+import { renderMarkdown, mdDirection } from './markdown';
 import { renderOut } from './outputs';
 import { challengeAuthor, challengeHeader, challengeResult } from './challenge-view';
 import { actualOutput, normalizeOutput } from './challenge';
@@ -81,7 +81,7 @@ export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
   });
 
   if (c.type === 'md' && !c.mdEdit) {
-    const v = h('div', { class: 'md' });
+    const v = h('div', { class: 'md', dir: mdDirection(c.src) });
     v.innerHTML = renderMarkdown(c.src);
     v.ondblclick = () => { c.mdEdit = true; ctx.render(); };
     el.append(v);
@@ -106,12 +106,33 @@ export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
       runStay: () => ctx.runFromEditor(c, false),
       escape: () => ctx.leaveEditor(c),
       change: (src, s) => { c.src = src; ctx.editorStates.set(c.id, s); ctx.save(); },
+      pasteReplaced: (text) => {
+        const parts = ctx.engine.splitPaste?.(text.replace(/\r\n?/g, '\n'));
+        if (!parts) return;
+        c.splitOffer = { src: text.replace(/\r\n?/g, '\n'), parts };
+        setTimeout(() => { if (c.src.replace(/\r\n?/g, '\n') === c.splitOffer?.src) ctx.render(); else delete c.splitOffer; }, 0);
+      },
     });
     const view = new EditorView({ state: st, parent: host });
     ctx.editors.set(c.id, view);
     ctx.editorStates.set(c.id, view.state);
     requestAnimationFrame(() => view.requestMeasure());
   }
+
+  if (c.type === 'code' && c.splitOffer && c.src.replace(/\r\n?/g, '\n') === c.splitOffer.src) {
+    const offer = c.splitOffer;
+    el.append(h('div', { class: 'split-offer', role: 'status' },
+      h('span', { dir: 'auto' }, '✂️ ' + t('You pasted a whole program. Split it into {n} cells?', { n: offer.parts.length })),
+      h('button', { type: 'button', class: 'primary', onclick: () => {
+        const i = ctx.state.cells.indexOf(c);
+        if (i < 0) return;
+        const made = offer.parts.slice(1).map((p) => ctx.mkCell('code', p));
+        c.src = offer.parts[0]; delete c.splitOffer; c.outs = []; ctx.editorStates.delete(c.id);
+        ctx.state.cells.splice(i + 1, 0, ...made);
+        ctx.save(); ctx.render();
+      } }, t('Split into cells')),
+      h('button', { type: 'button', onclick: () => { delete c.splitOffer; ctx.render(); } }, t('Keep as one cell'))));
+  } else if (c.splitOffer) delete c.splitOffer;
 
   const outs = h('div', { class: 'outs' });
   const pend = c.pending;

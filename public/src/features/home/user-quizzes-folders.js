@@ -1538,6 +1538,16 @@ function lessonToPayload(entry) {
  * the only difference between the two callers is what ancestorNames starts
  * as and what rootName is stamped on each item.
  */
+function notebookToPayload(nb, name) {
+  return {
+    title: name || (nb.meta?.title || "").trim() || "دفتر بدون عنوان",
+    description: nb.meta?.description || "",
+    source: nb.meta?.source || "",
+    runtime: nb.notebook?.runtime || "matlab",
+    content: nb.notebook?.content || { schemaVersion: 1, cells: [] },
+  };
+}
+
 function appendSubtree(userQuizzes, node, ancestorNames, rootName, items) {
   const children = walkChildren(userQuizzes, node.id || node.meta?.id);
   for (const child of children) {
@@ -1561,13 +1571,7 @@ function appendSubtree(userQuizzes, node, ancestorNames, rootName, items) {
         folderSegments: [...ancestorNames],
         rootName,
         localId: child.id, // workspace key: lets the upload step publish this notebook's images
-        notebook: {
-          title: childName || "دفتر بدون عنوان",
-          description: child.meta?.description || "",
-          source: child.meta?.source || "",
-          runtime: child.notebook?.runtime || "matlab",
-          content: child.notebook?.content || { schemaVersion: 1, cells: [] },
-        },
+        notebook: notebookToPayload(child, childName),
       });
       continue;
     }
@@ -1628,7 +1632,7 @@ export function buildCourseUploadPayload(userQuizzes, courseItems) {
  *   names under the course to nest everything one level deeper into
  * @returns {{ items: Array, rootName: string }}
  */
-export function buildFolderUploadPayload(userQuizzes, folderItems, additionalQuizzes, targetCourseName, targetSubfolderPath = [], additionalLessons = []) {
+export function buildFolderUploadPayload(userQuizzes, folderItems, additionalQuizzes, targetCourseName, targetSubfolderPath = [], additionalLessons = [], additionalNotebooks = []) {
   const items = [];
   const baseChain = [targetCourseName, ...targetSubfolderPath];
 
@@ -1660,6 +1664,18 @@ export function buildFolderUploadPayload(userQuizzes, folderItems, additionalQui
       folderSegments: [...baseChain],
       rootName: targetCourseName,
       lesson: lessonToPayload(lesson),
+    });
+  }
+
+  for (const nb of additionalNotebooks || []) {
+    const name = (nb.meta?.title || "").trim() || "دفتر بدون عنوان";
+    items.push({
+      type: "notebook",
+      name,
+      folderSegments: [...baseChain],
+      rootName: targetCourseName,
+      localId: nb.id || nb.meta?.id,
+      notebook: notebookToPayload(nb, name),
     });
   }
 

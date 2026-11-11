@@ -46,6 +46,7 @@ export type EditorHooks = {
   /** Ctrl/Cmd+Enter */ runStay(): void;
   /** Escape: leave the editor and enter command mode. */ escape(): void;
   /** Document changed. */ change(src: string, state: EditorState): void;
+  /** Text was pasted into an editor that held nothing else (or all of it was selected). */ pasteReplaced?(text: string): void;
 };
 
 /** Build an editor state. Kept per cell by the shell so undo history survives re-renders. */
@@ -72,6 +73,15 @@ export function createEditorState(engine: Engine, doc: string, hooks: EditorHook
       indentWithTab,
     ])),
     keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap, ...completionKeymap]),
+    EditorView.domEventHandlers({
+      paste(e, view) {
+        const text = e.clipboardData?.getData('text/plain');
+        const sel = view.state.selection.main;
+        const replacesAll = view.state.doc.length === 0 || (sel.from === 0 && sel.to === view.state.doc.length);
+        if (text && hooks.pasteReplaced && replacesAll) hooks.pasteReplaced(text); // the paste itself proceeds normally
+        return false;
+      },
+    }),
     EditorView.updateListener.of((u) => { if (u.docChanged) hooks.change(u.state.doc.toString(), u.state); }),
   ];
   return EditorState.create({ doc, extensions: base });

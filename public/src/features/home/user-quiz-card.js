@@ -20,7 +20,7 @@ import {
   isAdminAuthenticated,
   hasAdminSessionHint,
 } from "../../shared/adminAuth.js";
-import { createUploadButton, createLessonUploadButton } from "./adminUpload.js";
+import { createUploadButton, createLessonUploadButton, createNotebookUploadButton } from "./adminUpload.js";
 import { showUserQuizDownloadPopup } from "./download-modal.js";
 import { showUserQuizInfoModal, formatDateForInfo } from "./quiz-info-modal.js";
 import { showUserLessonInfoModal, collectLessonInfo } from "./lesson-info-modal.js";
@@ -447,6 +447,11 @@ export function showUserNotebookActionsOverlay(nb, triggerBtn) {
   const nbId = nb.id || nb.meta?.id;
   const title = nb.meta?.title || "دفتر بدون عنوان";
   openItemDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
+    if (isAdminAuthenticated() || hasAdminSessionHint()) {
+      const uploadBtn = createNotebookUploadButton(nb);
+      uploadBtn.addEventListener("click", () => closeMenu());
+      menu.appendChild(uploadBtn);
+    }
     appendSelectOption(menu, closeMenu, nbId);
     appendEditGroup(menu, closeMenu, reposition, [
       {

@@ -7,23 +7,32 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Offline Page
+Improve:
+* It's theme Should match the theme of the platform (see themes.css and theme-controller.js), but it shouldn't import these files, it should be independent. It should also default to the default theme of the platform.
+* Its design feels too complicated, I want a simpler version.
+* Some Features should work offline (for people who installed the website), like the notebook and its local compiler, or the home page and its `/my-content` sub-page, so make sure the offline page doesn't block them if they are cached.
+
+### Profile Page
+* Notebooks (دفتر): Aren't counted anywhere in the page. It wasn't updated since then.
+* `أفضل المشرفين`: 
+  * Remove the scrollbar, scrolling through them is either by using the 2 buttons on the sides or by hand on phones.
+  * It shows emtpy admin profiles that don't have links, these are probably poeple who have been made admin, but haven't signed in for the first time, remove that.
+* Syncing is so messed up for developer/admin profiles.
+
+### Sign in
+![Screenshot](image.png).
+* This is extremely annoying, it's telling me my session has ended, but its still showing me that I'm signed in in the sidebar's dropdown and in the profile page, and I don't know why are sessions ending quickly.
+* Sometimes it tells me that, then
+
 ### Create Quiz & Create Lesson Pages
 * Pressing (`ctrl` + `S`) to save doesn't always work.
 * Implement the rich markdown input field from the AI Agent in place of all input fields, which currently just use (textarea).
   * The Makrdown options stay at the top bar. 
   * But update the top bar icons to match those that exist in the AI Agent's rich markdown input field, because they are way better.
 
-### Bottom Nav on phones
-* Phones bottom nav has 2 create buttons, they are missing the 3rd (create-notebook), although its reachable from the sidebar that pops from the bottom. Swap it with settings.
-* I honestly don't know what is the best decision, maybe keeping settings 
-
 ### Home Page: Passwords are exposed
 The home page downloads every password (Of lessons and quizzes) to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be patched.
-
-### Notebooks Download modal
-* ![screenshot](image-1.png)
-* This Notebook, which is a C++ runtime, its download modal has an `.m` export, which is MATLAB runtime specific, and it doesn't have the Cpp export `.cpp`.
-* Each new runtime should get its own specific exports, and not the MATLAB's. 
 
 ### AI Agent (الباشــمبصمج): Dictation
 Fix Dictation: The dictation doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser when using the browser api for dictation.
@@ -76,7 +85,8 @@ Redesign the whole page:
 
 #### المنصة بالأرقام
 1. **Better more Advanced analytics:** Allow the user to extend the `المشاهدات في آخر 30 يومًا` to cover more/less time, like a year or a week or custom.
-2. **Rich Tooltips**: Give rich tooltips to:
+2. The section is owfull to deal with on phones, specially the analytics. Improve resposiveness and interactions (UI/UX) 
+3. **Rich Tooltips**: Give rich tooltips to:
    1. `مسار تعليمي نشط`: Shows the actual `Active learning paths`
    2. `صانع محتوى`: Shows the top admins/developers. 
       1. Suggestion (Not Confirmed): with a link to see all of them.
@@ -87,7 +97,7 @@ Redesign the whole page:
 ### Connect Canva
 Think of a new way to download quizzes and lessons, maybe through canva.
 
-### Download Lessons as Python Manim (MCP Server Export)
+### Download Lessons as Video (MCP Server Export)
 [plan](plans/lesson-video-export-plan.md).
 * Claude sometimes gets confused and doesn't know how to install Manim to render the code, so tell it context on how to do it. Or maybe Manim isn't even the best way to make videos, maybe chromium is.
 * Test the VO That can be downloaded in the Claude Sandbox.
@@ -96,18 +106,6 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 
 ### Translation and content expansion (Suggestion)
 * Native English translation support with native LTR pages.
-
-### Offline Page
-Improve:
-* It's theme Should match the theme of the platform (see themes.css and theme-controller.js), but it shouldn't import these files, it should be independent. It should also default to the default theme of the platform.
-* Its design feels too complicated, I want a simpler version.
-
-### Profile Page
-* Notebooks (دفتر): Aren't counted anywhere in the page. It wasn't updated since then.
-* `أفضل المشرفين`: 
-  * Remove the scrollbar, scrolling through them is either by using the 2 buttons on the sides or by hand on phones.
-  * It shows emtpy admin profiles that don't have links, these are probably poeple who have been made admin, but haven't signed in for the first time, remove that.
-* Syncing is so messed up for developer/admin profiles.
 
 ### AI Agent
 Is making an independent page something usefull?

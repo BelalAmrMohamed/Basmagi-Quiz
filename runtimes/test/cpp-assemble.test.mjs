@@ -8,7 +8,7 @@ const f = path.join(here, '..', '_cpp-assemble-entry.ts');
 writeFileSync(f, `export * from './cpp/src/assemble';`);
 const out = (await build({ absWorkingDir: path.join(here, '..'), entryPoints: ['_cpp-assemble-entry.ts'], bundle: true, write: false, format: 'esm' })).outputFiles[0].text;
 rmSync(f);
-const { assemble, isPrototype, cellRuns } = await import('data:text/javascript;base64,' + Buffer.from(out).toString('base64'));
+const { assemble, isPrototype, cellRuns, splitProgram } = await import('data:text/javascript;base64,' + Buffer.from(out).toString('base64'));
 
 const io = '#include <iostream>\nint n; std::cin >> n;';
 
@@ -55,4 +55,47 @@ test('cellRuns tells running cells from declaration-only cells', () => {
   assert.equal(cellRuns('string getName();'), false);
   assert.equal(cellRuns('int main() { }'), true);
   assert.equal(cellRuns('int x = 1;'), true);
+});
+
+test('splitProgram cuts a pasted program into header / prototypes / functions / main cells', () => {
+  const src = `#include <iostream>
+#include <string>
+using namespace std;
+
+string getName();
+int add(int a, int b);
+
+// asks for the name
+string getName() {
+    cout << "Name: ";
+    string n; cin >> n;
+    return n;
+}
+
+int add(int a, int b) { return a + b; }
+
+int main() {
+    cout << add(1, 2) << getName();
+    return 0;
+}
+`;
+  const parts = splitProgram(src);
+  assert.equal(parts.length, 5);
+  assert.match(parts[0], /^#include <iostream>[\s\S]*using namespace std;$/);
+  assert.equal(parts[1], 'string getName();\nint add(int a, int b);');
+  assert.match(parts[2], /^\/\/ asks for the name\nstring getName\(\) \{/); // the comment travels with its function
+  assert.match(parts[3], /^int add/);
+  assert.match(parts[4], /^int main\(\)/);
+  // The pieces together are the same program: running them as cells keeps every definition.
+  const code = assemble(parts.map((p) => ({ src: p })), 'all', { tryCatch: false });
+  assert.ok(code.includes('string getName() {') && code.includes('__nb_main_5()'));
+});
+test('splitProgram leaves small snippets alone', () => {
+  assert.equal(splitProgram('int x = 1;\ncout << x;'), null);
+  assert.equal(splitProgram('#include <iostream>\nint main() { return 0; }'), null);
+  assert.equal(splitProgram(''), null);
+});
+
+test('a main preceded by a comment still gets the implicit return 0', () => {
+  assert.match(assemble([{ src: '// sums\nint main() { int x = 1; }' }], 'all', { tryCatch: false }), /return 0;\/\*nb\*\//);
 });

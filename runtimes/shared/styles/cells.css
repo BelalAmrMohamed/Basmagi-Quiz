@@ -14,6 +14,7 @@
 }
 
 .mlweb #nb {
+  overflow-anchor: none; /* render() restores the reader's place itself, by cell */
   min-width: 0;
 }
 
@@ -417,3 +418,22 @@
 
 }
 
+
+/* Offer shown under a cell after a whole program was pasted into it. */
+.mlweb .split-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 6px 0 0;
+  padding: 8px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+  color: var(--ink);
+  font-size: 13.5px;
+}
+
+.mlweb .split-offer > span {
+  flex: 1 1 220px;
+}

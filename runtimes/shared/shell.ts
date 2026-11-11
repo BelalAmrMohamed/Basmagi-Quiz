@@ -532,6 +532,14 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
   function render() {
     if (destroyed) return;
     const nb = q('nb')!, y = window.scrollY, active = document.activeElement as HTMLElement | null;
+    // Keep the reader's place by the CELL at the top of the screen, not by a pixel offset: outputs above the viewport grow and
+    // shrink while code runs, and a fixed offset would then slide the page under the reader's eyes.
+    let anchor: { id: number; top: number } | null = null;
+    for (let i = 0; i < nb.children.length && i < state.cells.length; i++) {
+      const r = (nb.children[i] as HTMLElement).getBoundingClientRect();
+      if (r.bottom > 0) { anchor = { id: state.cells[i].id, top: r.top }; break; }
+    }
+    let reveal: HTMLElement | null = null; // only an explicit request (new cell, input prompt, moving to the next cell) may scroll
     const ta = active as HTMLTextAreaElement | null;
     let keepText = ta && ta.dataset?.cell ? { id: ta.dataset.cell, s: ta.selectionStart, e: ta.selectionEnd } : null;
     const keepInput = ta && ta.dataset?.stdin ? { id: ta.dataset.stdin, s: ta.selectionStart, e: ta.selectionEnd } : null;
@@ -556,15 +564,16 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
         view.dispatch({ selection: { anchor: view.state.doc.length } });
         view.focus();
         view.scrollDOM.scrollTop = view.scrollDOM.scrollHeight;
+        reveal = view.dom.closest<HTMLElement>('.cell') ?? view.dom;
       } else {
         const t2 = nb.querySelector<HTMLTextAreaElement>(`textarea[data-cell="${focusEditorId}"]`);
-        if (t2) { t2.focus(); t2.setSelectionRange(t2.value.length, t2.value.length); t2.scrollIntoView?.({ block: 'nearest' }); }
+        if (t2) { t2.focus({ preventScroll: true }); t2.setSelectionRange(t2.value.length, t2.value.length); reveal = t2.closest<HTMLElement>('.cell') ?? t2; }
       }
       focusEditorId = null; keepText = null; keepEditor = null;
     }
     if (focusInputId !== null) {
       const t3 = nb.querySelector<HTMLTextAreaElement>(`[data-stdin="${focusInputId}"]`);
-      if (t3) { t3.focus(); t3.setSelectionRange(t3.value.length, t3.value.length); t3.scrollIntoView?.({ block: 'nearest' }); }
+      if (t3) { t3.focus({ preventScroll: true }); t3.setSelectionRange(t3.value.length, t3.value.length); reveal = t3; }
       focusInputId = null; keepText = null; keepEditor = null;
     } else if (keepInput) {
       const t3 = nb.querySelector<HTMLTextAreaElement>(`[data-stdin="${keepInput.id}"]`);
@@ -579,12 +588,22 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     }
     if (focusCardId !== null) {
       const i = state.cells.findIndex((c) => c.id === focusCardId);
-      nb.querySelectorAll<HTMLElement>('.cell')[i]?.focus();
+      const card = nb.querySelectorAll<HTMLElement>('.cell')[i];
+      card?.focus({ preventScroll: true }); if (card) reveal = card;
       focusCardId = null;
     } else if (keepCard >= 0 && !document.activeElement?.closest?.('.cell')) {
       nb.querySelectorAll<HTMLElement>('.cell')[Math.min(keepCard, state.cells.length - 1)]?.focus({ preventScroll: true });
     }
-    window.scrollTo(0, y);
+    const now = anchor ? state.cells.findIndex((c) => c.id === anchor!.id) : -1;
+    if (anchor && now >= 0) {
+      const dy = (nb.children[now] as HTMLElement).getBoundingClientRect().top - anchor.top;
+      if (Math.abs(dy) > 0.5) window.scrollBy({ top: dy, behavior: 'instant' });
+    } else window.scrollTo({ top: y, behavior: 'instant' }); // never animated: a page-level `scroll-behavior: smooth` would make every re-render glide
+    if (reveal) {
+      const r = reveal.getBoundingClientRect(), vh = window.innerHeight;
+      // Smallest move that shows the target; a tall cell is aligned by its top so the first lines stay visible.
+      if (r.top < 0 || r.bottom > vh) window.scrollBy({ top: r.height > vh * 0.8 || r.top < 0 ? r.top - 16 : r.bottom - vh + 16, behavior: 'instant' });
+    }
     syncStop();
   }
 

@@ -30,7 +30,34 @@
 }
 
 .mlweb :is(.md ul, .md ol) {
-  padding-inline-start: 24px;
+  padding-inline-start: 1.6em;
+  margin-block: 0.5em;
+}
+
+.mlweb .md li {
+  text-align: start;
+}
+
+.mlweb .md :is(ul, ol) :is(ul, ol) {
+  margin-block: 0.2em;
+}
+
+.mlweb .md blockquote {
+  margin-inline: 0;
+  padding-inline: 1em 0;
+  border-inline-start: 3px solid var(--line);
+}
+
+.mlweb .md :is(pre, pre code, .katex) {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+}
+
+.mlweb .md .katex-display,
+.mlweb .md .katex-display > .katex {
+  direction: ltr;
+  text-align: center;
 }
 
 .mlweb .md p {

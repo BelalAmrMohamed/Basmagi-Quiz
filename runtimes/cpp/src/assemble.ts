@@ -150,6 +150,45 @@ function classify(p: SplitPart, cellSrc: string): { decl: boolean; main: RegExpE
   return { decl, main: isMain ? main : null };
 }
 
+/**
+ * Cut a whole program (pasted into one cell) into notebook-sized cells: the #include / using lines, then every function,
+ * class or struct on its own, the prototypes together, and main last. Returns null unless it clearly is a program of 3+ pieces.
+ */
+export function splitProgram(src: string): string[] | null {
+  const text = String(src || '').replace(/\r\n?/g, '\n');
+  const parts = splitCell(text);
+  if (parts.length < 3) return null;
+  type Kind = 'header' | 'proto' | 'def' | 'main' | 'stmt';
+  const kindOf = (p: SplitPart): Kind => {
+    const t = p.text.trim();
+    if (/^#/.test(t) || /^(using|typedef)\b/.test(t)) return 'header';
+    const c = classify(p, text);
+    if (c.main) return 'main';
+    if (isPrototype(t) || /^(class|struct|union|enum)\b[^{]*;$/.test(t) || /^extern\b/.test(t)) return 'proto';
+    return c.decl ? 'def' : 'stmt';
+  };
+  // Consecutive headers / prototypes / loose statements share a cell; every definition and main gets its own.
+  const groups: Array<{ kind: Kind; line: number }> = [];
+  for (const p of parts) {
+    const k = kindOf(p), last = groups[groups.length - 1];
+    if (last && last.kind === k && (k === 'header' || k === 'proto' || k === 'stmt')) continue;
+    groups.push({ kind: k, line: p.line });
+  }
+  if (groups.length < 3 || !groups.some((g) => g.kind === 'def' || g.kind === 'main')) return null;
+  const lines = text.split('\n');
+  const cuts = groups.map((g) => Math.max(0, g.line - 1));
+  cuts[0] = 0;
+  const chunks = cuts.map((from, i) => lines.slice(from, i + 1 < cuts.length ? cuts[i + 1] : lines.length));
+  // Comments and blank lines hanging at the end of a chunk belong to the code that follows them.
+  for (let i = 0; i + 1 < chunks.length; i++) {
+    const tail: string[] = [];
+    while (chunks[i].length && /^\s*(\/\/.*)?$/.test(chunks[i][chunks[i].length - 1])) tail.unshift(chunks[i].pop()!);
+    chunks[i + 1] = [...tail, ...chunks[i + 1]];
+  }
+  const out = chunks.map((c) => c.join('\n').replace(/^\n+|\s+$/g, '')).filter((c) => c.trim());
+  return out.length >= 3 ? out : null;
+}
+
 /** Does running this cell execute anything (statements or a `main`), or does it only declare things? */
 export function cellRuns(src: string): boolean {
   return splitCell(src).some((p) => { const c = classify(p, src); return !c.decl || !!c.main; });
@@ -176,7 +215,7 @@ export function assemble(cells: Array<{ src?: string; source?: string; stdin?: s
         const args = main[1].trim();
         t = t.replace(/\bmain\s*\(/, `__nb_main_${k}(`);
         // A real main() returns 0 when it falls off the end; the renamed copy would otherwise trap at run time.
-        if (/^\s*int\s+__nb_main_/.test(t) && t.lastIndexOf('}') > 0) { const e = t.lastIndexOf('}'); t = t.slice(0, e) + ' return 0;/*nb*/ ' + t.slice(e); }
+        if (/\bint\s+__nb_main_/.test(t) && t.lastIndexOf('}') > 0) { const e = t.lastIndexOf('}'); t = t.slice(0, e) + ' return 0;/*nb*/ ' + t.slice(e); }
         callMain = args ? `__nb_main_${k}(0,nullptr);` : `__nb_main_${k}();`;
       }
       if (hoist) {

@@ -70,7 +70,7 @@ export function notebookAttachmentPayload(row) {
       source: nb.source,
       runtime: nb.runtime,
       language: nb.language,
-      note: "Executable educational MATLAB-style notebook. Cells are in order; 'code' cells are MATLAB code, 'markdown' cells are explanations.",
+      note: `Executable educational notebook (${runtimeName(nb.runtime)}). Cells are in order; 'code' cells are ${nb.runtime === "cpp" ? "C++" : "MATLAB"} code, 'markdown' cells are explanations.`,
       cells: nb.cells.map((c, i) => ({ n: i + 1, type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}), ...(c.challenge ? { challenge: c.challenge } : {}) })),
     },
   };
@@ -88,7 +88,7 @@ export function notebookToIpynb(input) {
       title: nb.title,
       kernelspec: nb.runtime === "cpp" ? { name: "xcpp17", display_name: "C++17", language: "C++" } : { name: "matlab", display_name: "MATLAB (educational subset)", language: "matlab" },
       language_info: nb.runtime === "cpp" ? { name: "C++", file_extension: ".cpp", mimetype: "text/x-c++src" } : { name: "matlab", file_extension: ".m", mimetype: "text/x-matlab" },
-      basmagi: { language: nb.language, description: nb.description, source: nb.source },
+      basmagi: { title: nb.title, runtime: nb.runtime, language: nb.language, description: nb.description, source: nb.source },
     },
     cells: nb.cells.map((c, i) => {
       const id = (c.id || `cell-${i + 1}`).replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 64) || `cell-${i + 1}`;
@@ -97,6 +97,53 @@ export function notebookToIpynb(input) {
         : { id, cell_type: "markdown", metadata: {}, source: lines(c.source) };
     }),
   };
+}
+
+/** Display name of a runtime ("C++" / "MATLAB (educational subset)"). */
+export const runtimeName = (runtime) => (runtime === "cpp" ? "C++" : "MATLAB (educational subset)");
+
+/**
+ * Everything the notebook is, as one JSON document: title, description, source link, language, runtime and every cell
+ * (with its stdin and challenge). It has the same shape the "new notebook" importer reads, so it can be imported again.
+ */
+export function notebookToJson(input) {
+  const nb = input?.cells && input?.title !== undefined && !input.meta ? input : rowToNotebook(input);
+  return {
+    format: "basmagi-notebook",
+    version: 1,
+    title: nb.title,
+    description: nb.description,
+    source: nb.source,
+    runtime: nb.runtime,
+    language: nb.language,
+    createdAt: nb.createdAt,
+    updatedAt: nb.updatedAt,
+    cells: nb.cells.map((c) => ({
+      type: c.type,
+      source: c.source,
+      ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}),
+      ...(c.challenge ? { challenge: c.challenge } : {}),
+    })),
+    assets: nb.assets,
+  };
+}
+
+/** A C++ source file: cells are separated by `//%%` lines; Markdown cells become comments. The runtime's own .cpp import reads this back. */
+export function notebookToCppScript(input) {
+  const nb = input?.cells && input?.title !== undefined && !input.meta ? input : rowToNotebook(input);
+  const out = [`// ${nb.title}`];
+  if (nb.description) out.push(...nb.description.split("\n").map((l) => `// ${l}`));
+  if (nb.source) out.push(`// Source: ${nb.source}`);
+  out.push("// Exported from Basmagi Quiz (C++ notebook).", "");
+  for (const c of nb.cells) {
+    if (c.type === "code") out.push("//%%", c.source.replace(/\s+$/, ""), "");
+    else {
+      const text = c.source.replace(/\s+$/, "").split("\n");
+      if (!text.some((l) => l.trim())) continue;
+      out.push("//%%", ...text.map((l) => (l.trim() ? `// ${l}` : "//")), "");
+    }
+  }
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").replace(/\s+$/, "") + "\n";
 }
 
 /** A MATLAB script using `%%` sections. Markdown cells become comment sections; code cells are kept verbatim. */
@@ -163,7 +210,7 @@ export function notebookToHtml(input, { renderMarkdown } = {}) {
 <body>
 <h1 class="title">${escHtml(nb.title)}</h1>
 ${nb.description ? `<p class="desc">${escHtml(nb.description)}</p>` : ""}
-<div class="meta">${nb.source ? `<a href="${escHtml(nb.source)}">${escHtml(nb.source)}</a> · ` : ""}${nb.cells.length} cells · MATLAB (educational subset)</div>
+<div class="meta">${nb.source ? `<a href="${escHtml(nb.source)}">${escHtml(nb.source)}</a> · ` : ""}${nb.cells.length} cells · ${runtimeName(nb.runtime)}</div>
 ${body}
 </body>
 </html>

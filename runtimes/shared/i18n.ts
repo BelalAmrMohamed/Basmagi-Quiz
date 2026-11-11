@@ -163,6 +163,9 @@ export const AR: Record<string, string> = {
   "{name} source ({ext})": "مصدر {name} ‎({ext})",
   "Line {n}": "السطر {n}",
   "Cell {c} · Line {n}": "الخلية {c} · السطر {n}",
+  "You pasted a whole program. Split it into {n} cells?": "لصقت برنامجاً كاملاً. هل تريد تقسيمه إلى {n} خلايا؟",
+  "Split into cells": "قسّم إلى خلايا",
+  "Keep as one cell": "أبقِه خلية واحدة",
   "Imported {name}.": "تم استيراد {name}.",
 };
 

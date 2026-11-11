@@ -17,6 +17,8 @@ export interface UiCell {
   /** Starter code to go back to (the source the cell had when published). */
   starter?: string;
   result?: ChallengeResult;
+  /** A whole program was pasted: the cells it could be split into, offered under the cell until the code changes. */
+  splitOffer?: { src: string; parts: string[] };
   /** Learner UI state. */
   hintShown?: boolean; solutionShown?: boolean; targetHidden?: boolean; attempts?: number;
 }

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { rowToNotebook, collectNotebookInfo, notebookToIpynb, notebookToMScript, notebookToHtml, notebookAttachmentPayload, safeFileName } from "../public/src/shared/notebook-export.js";
-import { notebookFromIpynb } from "../public/src/shared/notebook-convert.js";
+import { rowToNotebook, collectNotebookInfo, notebookToIpynb, notebookToMScript, notebookToHtml, notebookToCppScript, notebookToJson, notebookAttachmentPayload, safeFileName } from "../public/src/shared/notebook-export.js";
+import { notebookFromIpynb, notebookFromFile } from "../public/src/shared/notebook-convert.js";
 import { detectNotebookLang, resolveNotebookLang } from "../public/src/shared/notebook-lang.js";
 import { normalizeNotebookContent, checkNotebook } from "../public/src/shared/content-rules.js";
 
@@ -68,4 +68,24 @@ test("safeFileName", () => {
   assert.equal(safeFileName('a/b:c*"d'), "a b c d");
   assert.equal(safeFileName("   "), "notebook");
   assert.equal(safeFileName("دفتر المصفوفات"), "دفتر المصفوفات");
+});
+
+test("C++ notebooks export as .cpp with //%% cells and import back as the same cells", () => {
+  const nb = { title: "Pointers", description: "d", source: "https://x.y", runtime: "cpp", language: "en", cells: [
+    { type: "markdown", source: "# Intro\ntext" }, { type: "code", source: "#include <iostream>\nint main() { return 0; }" }, { type: "code", source: "int x = 1;" } ], assets: [] };
+  const cpp = notebookToCppScript(nb);
+  assert.match(cpp, /^\/\/ Pointers/); assert.equal((cpp.match(/^\/\/%%$/gm) || []).length, 3);
+  const back = notebookFromFile("Pointers.cpp", cpp);
+  assert.equal(back.runtime, "cpp");
+  assert.deepEqual(back.content.cells.map((c) => [c.type, c.source]), [["markdown", "# Intro\ntext"], ["code", "#include <iostream>\nint main() { return 0; }"], ["code", "int x = 1;"]]);
+  assert.equal(notebookFromFile("plain.cpp", "int main() {}\n").content.cells.length, 1);
+});
+
+test("JSON export keeps title, description, source, language, runtime and every cell field", () => {
+  const j = notebookToJson({ title: "T", description: "D", source: "https://s", runtime: "cpp", language: "ar", createdAt: null, updatedAt: null, assets: [], cells: [
+    { id: "a", type: "code", source: "x", stdin: "5", challenge: { expectedOutput: "5" } }, { id: "b", type: "markdown", source: "m" } ] });
+  assert.equal(j.format, "basmagi-notebook");
+  assert.deepEqual([j.title, j.description, j.source, j.runtime, j.language], ["T", "D", "https://s", "cpp", "ar"]);
+  assert.deepEqual(j.cells[0], { type: "code", source: "x", stdin: "5", challenge: { expectedOutput: "5" } });
+  assert.equal(notebookToIpynb({ title: "T", description: "D", source: "s", runtime: "cpp", language: "en", cells: [], assets: [] }).metadata.basmagi.runtime, "cpp");
 });

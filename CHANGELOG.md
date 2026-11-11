@@ -1,3 +1,11 @@
+## Unreleased - C++ notebooks round 2
+- Local compiler: gzip copies (about 19 MB instead of 60 MB) in `public/assets/wasm-clang/`, unpacked in the browser; the download no longer blocks the page (close the dialog, keep editing; the toolbar button shows progress) and the button shows a "warming up" state until the first run is instant.
+- Pasting a whole program into an empty cell offers to split it into cells (header, prototypes, each function, main).
+- "Run" on one cell now explains that a function defined in a later cell needs "Run all".
+- Fixed page scroll jumping when running or adding cells (scroll position is kept by cell, never animated).
+- Notebook download: C++ notebooks offer `.cpp` (not `.m`); new `.json` export with title, description, source, language, runtime and all cells. `.cpp` files with `//%%` separators import back as separate cells.
+- Fixed `main` after a leading comment trapping at the end instead of returning 0.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -526,3 +534,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Bookmarks are scoped by lesson ID and stored locally; they work for database-backed and session/user-created lessons without adding backend storage.
 - Added focus-visible section navigation styling and reduced-motion handling for lesson interactions.
 - Verified JavaScript syntax across all `public` and `api` JavaScript/MJS files with `node --check`.
+
+## Round 3
+- Admins now get "رفع لقاعدة البيانات" on local notebook cards (⋮ menu) and notebooks can be bulk-uploaded with other items.
+- Markdown cells in RTL notebooks use one direction for the whole cell (headings, lists, tables align with the paragraphs); math/code stay LTR, display math centered.

@@ -98,6 +98,16 @@ export function notebookFromFile(fileName, text) {
   }
   if (/\.(cpp|cc|cxx|h|hpp)$/i.test(fileName)) {
     const source = trimBlankEdges(normalizeEol(text)); if (!source.trim()) throw new Error("ملف C++ فارغ.");
+    if (/^\/\/\s*%%/m.test(source)) {
+      // A file exported from a notebook: `//%%` lines separate the cells; comment-only sections are the text cells.
+      const isComment = (x) => x.split("\n").every((l) => /^\s*\/\//.test(l) || !l.trim());
+      const parts = source.split(/^\/\/\s*%%.*$/m).map((x) => trimBlankEdges(x));
+      if (parts[0] === "" || isComment(parts[0])) parts.shift(); // the header comment (title, description, source) is not a cell
+      const cells = parts.filter((x) => x.trim()).map((x) => (isComment(x)
+        ? { type: "markdown", source: x.split("\n").map((l) => l.replace(/^\s*\/\/ ?/, "")).join("\n") }
+        : { type: "code", source: x }));
+      return { title: titleFromFileName(fileName), runtime: "cpp", content: toDoc(cells), warnings: [] };
+    }
     return { title: titleFromFileName(fileName), runtime: "cpp", content: toDoc([{ type: "code", source }]), warnings: [] };
   }
   if (/\.m$/i.test(fileName)) {

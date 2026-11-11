@@ -7,7 +7,7 @@
 import { cpp } from '@codemirror/lang-cpp';
 import { cppCompletions } from './completions';
 import { cppLint } from './lint';
-import { cellRuns } from './assemble';
+import { cellRuns, splitProgram } from './assemble';
 import { isWasmCached } from './wasm-cache';
 import { attachWasmDialog } from '../../shared/wasm-dialog';
 import type { Engine, Cell, RunRequest, RunSink } from '../../shared/engine';
@@ -51,6 +51,13 @@ export const CPP_AR: Record<string, string> = {
   'MB': 'م.ب',
   '⚡ Instant Compiler': '⚡ المترجم الفوري',
   '⚡ Local: Active': '⚡ محلي: نشط',
+  '⚡ Local: Warming up…': '⚡ محلي: جارٍ التجهيز…',
+  'The local compiler is warming up in the background; your first run will start in a moment.': 'المترجم المحلي يتجهز في الخلفية؛ ستبدأ أول عملية تشغيل خلال لحظات.',
+  'Download will unpack to about {stored} of browser storage. You can keep editing while it downloads.': 'سيتحول التحميل إلى نحو {stored} من مساحة تخزين المتصفح. يمكنك متابعة التعديل أثناء التحميل.',
+  'You can close this window and keep editing the notebook. The download continues in the background; the toolbar button shows its progress.': 'يمكنك إغلاق هذه النافذة ومتابعة تعديل الدفتر. يستمر التحميل في الخلفية، ويعرض زر شريط الأدوات تقدّمه.',
+  'Continue editing': 'متابعة التعديل',
+  'Cancel download': 'إلغاء التحميل',
+  'Unpacking…': 'جارٍ فك الضغط…',
   'Download the instant in-browser C++ compiler ({size})': 'تحميل المترجم الفوري للـ C++ داخل المتصفح ({size})',
   'The instant local C++ compiler is installed and active': 'المترجم المحلي الفوري مثبت ونشط',
   'Instant C++ Local Compiler': 'المترجم المحلي الفوري للـ C++',
@@ -92,6 +99,8 @@ export const CPP_AR: Record<string, string> = {
   'Type here, then press Enter': 'اكتب هنا ثم اضغط Enter',
   'Enter to send · Ctrl+D ends input · Esc stops': 'Enter للإرسال · Ctrl+D لإنهاء الإدخال · Esc للإيقاف',
   'Cell {n}: ': 'الخلية {n}: ',
+  "'{n}' is defined in a later cell (cell {c}), so it is missing when only this cell runs. Use “Run all” from the top of the page to avoid this error.": "'{n}' معرَّف في خلية لاحقة (الخلية {c})، لذلك يكون ناقصاً عند تشغيل هذه الخلية وحدها. استخدم «تشغيل الكل» من أعلى الصفحة لتجنب هذا الخطأ.",
+  "'{n}' is declared but never defined here. If a later cell defines it, use “Run all” from the top of the page to avoid this error.": "'{n}' مُصرَّح به لكن غير معرَّف هنا. إن كانت خلية لاحقة تعرّفه فاستخدم «تشغيل الكل» من أعلى الصفحة لتجنب هذا الخطأ.",
   'Still running… if nothing happens, your program may be in an infinite loop. Press Stop to cancel.': 'ما زال يعمل… إذا لم يظهر شيء فقد يكون برنامجك في حلقة لا نهائية. اضغط إيقاف للإلغاء.',
   'The program crashed: too much recursion (stack overflow). Check that your recursive function has a base case that stops it.': 'تعطّل البرنامج: تكرار ذاتي مفرط (فيض المكدس). تأكد أن الدالة العودية لها حالة أساسية توقفها.',
   'The program crashed: it touched memory that is not its own. This is usually an array index out of range, a bad pointer, or endless recursion.': 'تعطّل البرنامج: حاول الوصول إلى ذاكرة لا تخصه. السبب غالباً فهرس مصفوفة خارج النطاق أو مؤشر خاطئ أو تكرار ذاتي لا ينتهي.',
@@ -231,11 +240,28 @@ export function createCppEngine(o: CppEngineOptions): Engine {
   };
 
   /** Drop the worker (stuck run, Stop, timeout) so the next run starts a clean one. */
-  const killWorker = () => { try { worker?.terminate(); } catch { /* ignore */ } worker = null; };
+  const killWorker = () => { try { worker?.terminate(); } catch { /* ignore */ } worker = null; setWarm('idle'); };
+
+  // Compiler warm-up state, for the toolbar button: the first run after a page load pays for compiling clang/lld (a few seconds).
+  type WarmState = 'idle' | 'warming' | 'ready' | 'error';
+  let warmState: WarmState = 'idle';
+  const warmListeners = new Set<(s: WarmState) => void>();
+  function setWarm(s: WarmState) { if (s === warmState) return; warmState = s; warmListeners.forEach((f) => f(s)); }
 
   /** Compile clang/lld in the background so the first Run doesn't pay for it. */
   const warmUp = async () => {
-    try { if (await isWasmCached()) getWorker().postMessage({ t: 'warm' }); } catch { /* ignore */ }
+    try {
+      if (!(await isWasmCached())) return;
+      const w = getWorker();
+      setWarm('warming');
+      const onMsg = (e: MessageEvent) => {
+        if (e.data?.t !== 'warm-done') return;
+        w.removeEventListener('message', onMsg);
+        if (w === worker) setWarm(e.data.error ? 'error' : 'ready');
+      };
+      w.addEventListener('message', onMsg);
+      w.postMessage({ t: 'warm' });
+    } catch { /* ignore */ }
   };
   void warmUp();
 
@@ -339,6 +365,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
           const loopNotice = setTimeout(() => sink.status(tr('Still running… if nothing happens, your program may be in an infinite loop. Press Stop to cancel.'), 'run'), 5000);
           try { res = await callWorker({ live: live.size > 0, liveStdin: typed, eof }); } finally { clearTimeout(loopNotice); }
           clearTimeout(timer); // never count the time the learner spends typing
+          if (res && res.ok !== undefined) setWarm('ready');
           if (!res.ok || !res.needInput) break;
           flush(res);
           const a = all ? selected[res.needCell ?? 0] : selected[0];
@@ -384,7 +411,17 @@ export function createCppEngine(o: CppEngineOptions): Engine {
         if (rest && (!res.ok || !diags.length)) {
           for (const ln of rest.split('\n')) {
             const und = /undefined symbol: ([A-Za-z_]\w*)/.exec(ln);
-            const text = und ? `${ln}\n💡 ${tr("'{n}' is declared but never defined. Define it in this cell or in an earlier cell that runs with it.").replace('{n}', und[1])}` : ln;
+            let text = ln;
+            if (und) {
+              const name = und[1];
+              const later = all || typeof tIdx !== 'number' ? -1 : req.cells.findIndex((c, i) => i > tIdx && c.type === 'code' && new RegExp(`\\b${name}\\s*\\([^;{)]*\\)\\s*(?:const\\s*)?\\{`).test(c.src));
+              const hint = later >= 0
+                ? tr("'{n}' is defined in a later cell (cell {c}), so it is missing when only this cell runs. Use “Run all” from the top of the page to avoid this error.").replace('{n}', name).replace('{c}', String(codeNo(later)))
+                : all
+                  ? tr("'{n}' is declared but never defined. Define it in this cell or in an earlier cell that runs with it.").replace('{n}', name)
+                  : tr("'{n}' is declared but never defined here. If a later cell defines it, use “Run all” from the top of the page to avoid this error.").replace('{n}', name);
+              text = `${ln}\n💡 ${hint}`;
+            }
             sink.out({ k: res.ok ? 'warn' : 'err', s: text + '\n' }, selected[0].idx);
           }
         }
@@ -411,7 +448,7 @@ export function createCppEngine(o: CppEngineOptions): Engine {
     }
   }
 
-  const engine: Engine & { setWasmMode: (on: boolean) => void } = {
+  const engine: Engine & { setWasmMode: (on: boolean) => void; onWarm: (cb: (s: 'idle' | 'warming' | 'ready' | 'error') => void) => () => void } = {
     id: 'cpp', label: 'C++17', kernelDisplay: 'C++17', language: 'C++', mimetype: 'text/x-c++src',
     importAccept: '.cpp,.cc,.cxx,.h,.hpp,.ipynb,.notebook.zip',
     legacyStoreKey: (id) => `basmagi:nb:${id}:v1`,
@@ -449,7 +486,10 @@ export function createCppEngine(o: CppEngineOptions): Engine {
     runAll: (req, sink) => go(req, sink, true),
     attach(host) { codeSources = host.codeSources; },
     reset() {},
-    setWasmMode: (on: boolean) => { if (on) void warmUp(); },
+    splitPaste: (text: string) => splitProgram(text),
+    setWasmMode: (on: boolean) => { if (on) void warmUp(); else setWarm('idle'); },
+    /** Subscribe to warm-up changes; the callback is called at once with the current state. Returns an unsubscribe function. */
+    onWarm: (cb: (s: WarmState) => void) => { warmListeners.add(cb); cb(warmState); return () => { warmListeners.delete(cb); }; },
     dispose() {
       if (worker) {
         worker.terminate();

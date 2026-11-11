@@ -1,6 +1,6 @@
 // Shared notebook card actions for BOTH local (محتواي) and platform notebooks:
 //   • «معلومات الدفتر»  info dialog (same shell as the lesson info dialog)
-//   • downloads: .ipynb (Jupyter), .m (MATLAB script), HTML, print / save as PDF
+//   • downloads: .ipynb (Jupyter), .m / .cpp (script, by runtime), .json (everything), HTML, print / save as PDF
 //   • «اسأل الباشـمبصمج»  attaches the whole notebook (as reading material) to the AI agent
 // The info/download logic lives in shared/notebook-export.js (pure, unit-tested).
 import { escapeHtml } from "./escape-html.js";
@@ -14,11 +14,11 @@ import { bindInfoCopyButtons, infoItemLinkHtml, infoSourceHtml } from "../../sha
 import { buildInfoSkeletonHtml, buildCreatorSectionHtml, fetchCreatorById, fetchCreatorName } from "./info-details.js";
 import { buildExportCard, buildSourceActions } from "../../components/download-quiz-modal/export-card.js";
 import {
-  rowToNotebook, collectNotebookInfo, notebookToIpynb, notebookToMScript, notebookToHtml, safeFileName,
+  rowToNotebook, collectNotebookInfo, notebookToIpynb, notebookToMScript, notebookToCppScript, notebookToJson, notebookToHtml, safeFileName,
 } from "../../shared/notebook-export.js";
 
 const LANG_LABEL = { en: "الإنجليزية (من اليسار لليمين)", ar: "العربية (من اليمين لليسار)" };
-const RUNTIME_LABEL = { matlab: "MATLAB (مفسّر تعليمي داخل المتصفح)" };
+const RUNTIME_LABEL = { matlab: "MATLAB (مفسّر تعليمي داخل المتصفح)", cpp: "C++ (مترجم داخل المتصفح أو سحابي)" };
 
 function infoBodyHtml(info, url) {
   const rows = [];
@@ -115,6 +115,8 @@ export function downloadNotebook(row, kind) {
   try {
     if (kind === "ipynb") saveBlob(`${base}.ipynb`, new Blob([JSON.stringify(notebookToIpynb(nb), null, 1)], { type: "application/x-ipynb+json" }));
     else if (kind === "m") saveBlob(`${base}.m`, new Blob([notebookToMScript(nb).replace(/\n/g, "\r\n")], { type: "text/plain;charset=utf-8" }));
+    else if (kind === "cpp") saveBlob(`${base}.cpp`, new Blob([notebookToCppScript(nb).replace(/\n/g, "\r\n")], { type: "text/plain;charset=utf-8" }));
+    else if (kind === "json") saveBlob(`${base}.json`, new Blob([JSON.stringify(notebookToJson(nb), null, 2)], { type: "application/json;charset=utf-8" }));
     else if (kind === "html") saveBlob(`${base}.html`, new Blob([htmlOf(nb)], { type: "text/html;charset=utf-8" }));
     else if (kind === "pdf") printNotebook(nb);
     else throw new Error(`unknown format ${kind}`);
@@ -147,13 +149,19 @@ export function showNotebookDownloadModal(row, triggerBtn = null) {
   grid.setAttribute("role", "group");
   grid.setAttribute("aria-label", "خيارات تنزيل الدفتر");
 
-  const formats = [
+  const isCpp = rowToNotebook(row).runtime === "cpp";
+  const CPP_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 15l-2 -2 2-2M15 11l2 2-2 2"/></svg>';
+  const allFormats = [
     { kind: "ipynb", label: "Jupyter Notebook", extension: ".ipynb", icon: JSON_FILE_ICON_SVG },
     { kind: "m", label: "MATLAB", extension: ".m", icon: '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 17-5-5 5-5"/><path d="m16 7 5 5-5 5"/><path d="m14 4-4 16"/></svg>' },
+    { kind: "cpp", label: "C++", extension: ".cpp", icon: CPP_ICON },
+    { kind: "json", label: "JSON (كل المحتوى)", extension: ".json", icon: JSON_FILE_ICON_SVG },
     { kind: "html", label: "HTML", extension: ".html", icon: '<img src="/assets/images/HTML_Icon.png" alt="" aria-hidden="true">' },
     { kind: "zip", label: "Notebook + Files", extension: ".zip", icon: '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>' },
     { kind: "pdf", label: "PDF", extension: "طباعة / حفظ كـ PDF", icon: '<img src="/assets/images/PDF_Icon.png" alt="" aria-hidden="true">' },
   ];
+  // The script format follows the notebook's runtime: .cpp for C++ notebooks, .m for MATLAB ones.
+  const formats = allFormats.filter((f) => (f.kind === "m" ? !isCpp : f.kind === "cpp" ? isCpp : true));
 
   const close = () => {
     document.removeEventListener("keydown", onKeyDown);
@@ -165,7 +173,7 @@ export function showNotebookDownloadModal(row, triggerBtn = null) {
   };
 
   for (const option of formats) {
-    const copyable = ["ipynb", "m", "html"].includes(option.kind);
+    const copyable = ["ipynb", "m", "cpp", "json", "html"].includes(option.kind);
     grid.appendChild(buildExportCard({
       format: option.kind,
       label: option.label,
@@ -176,6 +184,8 @@ export function showNotebookDownloadModal(row, triggerBtn = null) {
         const nb = rowToNotebook(row);
         if (option.kind === "ipynb") return JSON.stringify(notebookToIpynb(nb), null, 1);
         if (option.kind === "m") return notebookToMScript(nb).replace(/\n/g, "\r\n");
+        if (option.kind === "cpp") return notebookToCppScript(nb).replace(/\n/g, "\r\n");
+        if (option.kind === "json") return JSON.stringify(notebookToJson(nb), null, 2);
         return htmlOf(nb);
       },
       onDownload: () => {

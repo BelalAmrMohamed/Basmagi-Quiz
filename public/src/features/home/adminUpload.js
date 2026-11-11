@@ -1248,9 +1248,9 @@ function renderFolderUploadTargetStep(step1Vals) {
 
 // ─── Folder Upload mode: Review step (Step 3 of 4) ─────────────────────────
 function renderFolderUploadReviewStep(step1Vals) {
-  const { folderRows, quizRows, lessonRows, userQuizzes } = _folderUploadItems;
+  const { folderRows, quizRows, lessonRows, notebookRows, userQuizzes } = _folderUploadItems;
   const { courseName, subfolderPath } = _folderUploadTarget;
-  const { items } = buildFolderUploadPayload(userQuizzes, folderRows, quizRows, courseName, subfolderPath, lessonRows);
+  const { items } = buildFolderUploadPayload(userQuizzes, folderRows, quizRows, courseName, subfolderPath, lessonRows, notebookRows);
 
   const folderCount = items.filter((i) => i.type === "folder").length;
   const quizCount = items.filter((i) => i.type === "quiz").length;
@@ -1284,9 +1284,9 @@ function renderFolderUploadReviewStep(step1Vals) {
 
 // ─── Folder Upload mode: Upload step (Step 4 of 4) ─────────────────────────
 async function doFolderUploadToExisting({ educationType, college, year, term }) {
-  const { folderRows, quizRows, lessonRows, userQuizzes } = _folderUploadItems;
+  const { folderRows, quizRows, lessonRows, notebookRows, userQuizzes } = _folderUploadItems;
   const { courseName, subfolderPath } = _folderUploadTarget;
-  const { items } = buildFolderUploadPayload(userQuizzes, folderRows, quizRows, courseName, subfolderPath, lessonRows);
+  const { items } = buildFolderUploadPayload(userQuizzes, folderRows, quizRows, courseName, subfolderPath, lessonRows, notebookRows);
 
   _overlay.innerHTML = `<div class="adm-card">
     ${hdr("رفع المجلد إلى المنصة")}
@@ -1742,7 +1742,7 @@ export async function openCourseUploadModal(courseRows, userQuizzes) {
  *   - quizzes/lessons: selected plain items to upload alongside the folders
  *   - userQuizzes: full local user_quizzes collection
  */
-export async function openFolderUploadModal({ folders, quizzes, lessons, userQuizzes }) {
+export async function openFolderUploadModal({ folders, quizzes, lessons, notebooks, userQuizzes }) {
   if (_overlay) return;
   if (!isAdminAuthenticated()) {
     showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
@@ -1752,7 +1752,8 @@ export async function openFolderUploadModal({ folders, quizzes, lessons, userQui
   const folderRows = folders || [];
   const quizRows = quizzes || [];
   const lessonRows = lessons || [];
-  if (folderRows.length === 0 && quizRows.length === 0 && lessonRows.length === 0) {
+  const notebookRows = notebooks || [];
+  if (folderRows.length === 0 && quizRows.length === 0 && lessonRows.length === 0 && notebookRows.length === 0) {
     showNotification("لا توجد عناصر لرفعها", "warning");
     return;
   }
@@ -1761,7 +1762,7 @@ export async function openFolderUploadModal({ folders, quizzes, lessons, userQui
 
   try {
     _mode = "folderUpload";
-    _folderUploadItems = { folderRows, quizRows, lessonRows, userQuizzes };
+    _folderUploadItems = { folderRows, quizRows, lessonRows, notebookRows, userQuizzes };
     _folderUploadTarget = null;
     _courseUploadItems = null;
     _folderTree = null;
@@ -1900,6 +1901,21 @@ export function createLessonUploadButton(lesson) {
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     openFolderUploadModal({ folders: [], quizzes: [], lessons: [lesson], userQuizzes: [] });
+  });
+  return btn;
+}
+
+/** Upload one locally saved notebook into a selected existing platform course. */
+export function createNotebookUploadButton(nb) {
+  injectStyles();
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "exam-action-btn";
+  btn.setAttribute("aria-label", `رفع دفتر "${nb.meta?.title || "دفتر"}" إلى المنصة`);
+  btn.innerHTML = `${UPLOAD_ICON_SVG}<span>رفع لقاعدة البيانات</span>`;
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openFolderUploadModal({ folders: [], quizzes: [], lessons: [], notebooks: [nb], userQuizzes: [] });
   });
   return btn;
 }
