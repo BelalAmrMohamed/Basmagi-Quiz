@@ -712,8 +712,8 @@ export function createRichInput(options = {}) {
             <span class="rmci-menu-arrow">${icon("chevronLeft", 14)}</span>
           `;
 
-          subTrigger.addEventListener("mouseenter", () => openSubmenu(subTrigger, fillEffort));
-          subTrigger.addEventListener("mouseleave", scheduleCloseSubmenu);
+          subTrigger.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") openSubmenu(subTrigger, fillEffort); });
+          subTrigger.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") scheduleCloseSubmenu(); });
           subTrigger.addEventListener("click", (e) => {
             e.stopPropagation();
             cancelCloseSubmenu();
@@ -741,8 +741,8 @@ export function createRichInput(options = {}) {
             <span class="rmci-menu-arrow">${icon("chevronLeft", 14)}</span>
           `;
           usageTrigger.addEventListener("mousedown", (e) => e.preventDefault());
-          usageTrigger.addEventListener("mouseenter", () => openSubmenu(usageTrigger, fillUsage));
-          usageTrigger.addEventListener("mouseleave", scheduleCloseSubmenu);
+          usageTrigger.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") openSubmenu(usageTrigger, fillUsage); });
+          usageTrigger.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") scheduleCloseSubmenu(); });
           usageTrigger.addEventListener("click", (e) => {
             e.stopPropagation();
             cancelCloseSubmenu();
