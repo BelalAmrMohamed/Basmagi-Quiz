@@ -455,11 +455,7 @@ export function showUserNotebookActionsOverlay(nb, triggerBtn) {
     }
     appendSelectOption(menu, closeMenu, nbId);
     appendEditGroup(menu, closeMenu, reposition, [
-      {
-        label: "تعديل الدفتر",
-        icon: EDIT_ICON_SVG,
-        onClick: () => { window.location.href = `/notebook/edit/${encodeURIComponent(nbId)}`; },
-      },
+      { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameItem(nbId, title) },
       {
         label: "الوصف والمصدر",
         icon: EDIT_ICON_SVG,
@@ -471,7 +467,12 @@ export function showUserNotebookActionsOverlay(nb, triggerBtn) {
             onSave: ({ description, source }) => saveLocalItemMetadata(nbId, description, source),
           }),
       },
-      { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameItem(nbId, title) },
+      {
+        label: "تعديل الدفتر",
+        icon: EDIT_ICON_SVG,
+        onClick: () => { window.location.href = `/notebook/edit/${encodeURIComponent(nbId)}`; },
+      },
+
     ]);
     appendMoveGroup(menu, closeMenu, reposition, nbId);
     appendNotebookMenuEntries(menu, closeMenu, reposition, nb);
@@ -524,11 +525,7 @@ export function showUserLessonActionsOverlay(lesson, triggerBtn) {
     appendSelectOption(menu, closeMenu, lessonId);
 
     appendEditGroup(menu, closeMenu, reposition, [
-      {
-        label: "تعديل الدرس",
-        icon: EDIT_ICON_SVG,
-        onClick: () => { window.location.href = `/create-lesson?edit=${encodeURIComponent(lessonId)}`; },
-      },
+      { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameItem(lessonId, title) },
       {
         label: "الوصف والمصدر",
         icon: EDIT_ICON_SVG,
@@ -540,7 +537,11 @@ export function showUserLessonActionsOverlay(lesson, triggerBtn) {
             onSave: ({ description, source }) => saveLocalItemMetadata(lessonId, description, source),
           }),
       },
-      { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameItem(lessonId, title) },
+      {
+        label: "تعديل الدرس",
+        icon: EDIT_ICON_SVG,
+        onClick: () => { window.location.href = `/create-lesson?edit=${encodeURIComponent(lessonId)}`; },
+      },
     ]);
 
     // ── "معلومات الدرس" submenu — same quick-rows-then-"كل المعلومات"
@@ -697,11 +698,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
     // submenu (this menu is the single entry-point for editing; the card has
     // no standalone edit icon).
     appendEditGroup(menu, closeMenu, reposition, [
-      {
-        label: "تعديل الامتحان",
-        icon: EDIT_ICON_SVG,
-        onClick: () => { window.location.href = `create-quiz?edit=${encodeURIComponent(quiz.id)}`; },
-      },
+      { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameItem(quiz.id || quiz.meta?.id, qz(quiz, "title")) },
       {
         label: "الوصف والمصدر",
         icon: EDIT_ICON_SVG,
@@ -713,7 +710,11 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
             onSave: ({ description, source }) => saveLocalItemMetadata(quiz.id || quiz.meta?.id, description, source),
           }),
       },
-      { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameItem(quiz.id || quiz.meta?.id, qz(quiz, "title")) },
+      {
+        label: "تعديل الامتحان",
+        icon: EDIT_ICON_SVG,
+        onClick: () => { window.location.href = `create-quiz?edit=${encodeURIComponent(quiz.id)}`; },
+      },
     ]);
 
     // ── "معلومات الامتحان" submenu — user quizzes carry everything already

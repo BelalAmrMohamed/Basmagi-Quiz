@@ -870,15 +870,7 @@ function buildItemMenuItems(targetType, targetId, targetTitle) {
     // Edit actions are grouped in one "تعديل" submenu to keep the menu short.
     contextMenuEl.appendChild(
       createSubmenuItem(EDIT_SVG, "تعديل", [
-        {
-          icon: EDIT_SVG,
-          label: isLesson ? "تعديل الدرس" : "تعديل الامتحان",
-          onClick: () => {
-            window.location.href = isLesson
-              ? `/create-lesson?edit=${encodeURIComponent(targetId)}`
-              : `create-quiz?edit=${encodeURIComponent(targetId)}`;
-          },
-        },
+        rename,
         {
           icon: EDIT_SVG,
           label: "الوصف والمصدر",
@@ -895,7 +887,15 @@ function buildItemMenuItems(targetType, targetId, targetTitle) {
             });
           },
         },
-        rename,
+        {
+          icon: EDIT_SVG,
+          label: isLesson ? "تعديل الدرس" : "تعديل الامتحان",
+          onClick: () => {
+            window.location.href = isLesson
+              ? `/create-lesson?edit=${encodeURIComponent(targetId)}`
+              : `create-quiz?edit=${encodeURIComponent(targetId)}`;
+          },
+        },
       ]),
     );
   } else {
