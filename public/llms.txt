@@ -13,7 +13,7 @@
 - [كيفية رفع امتحان للمشرفين](https://basmagi.vercel.app/how-to-upload-content): دليل الإدخال الجماعي للامتحانات والدروس والدفاتر.
 - [ربط Claude و ChatGPT بالمنصة (MCP)](https://basmagi.vercel.app/how-to-connect-mcp): دليل بالصور لربط خادم MCP وإنشاء امتحان أو درس أو دفتر من محاضرتك وحفظه مباشرة في «محتواي».
 - [الباشــمبصمج — مساعد AI](https://basmagi.vercel.app/how-to-use-ai-agent): مساعد ذكاء اصطناعي لفهم وشرح الأسئلة وتحضير الامتحانات، وربط المنصة بـ Claude عبر MCP.
-- [Skill كتابة الامتحانات والدروس لـ Claude](https://basmagi.vercel.app/assets/downloads/basmagi-quiz-authoring.skill): ملف Skill للتحميل يعرّف Claude بطريقة العمل مع موصّل المنصة.
+- [Skill كتابة الامتحانات والدروس لـ Claude](https://basmagi.vercel.app/assets/downloads/basmagi-authoring.skill): ملف Skill للتحميل يعرّف Claude بطريقة العمل مع موصّل المنصة.
 
 ## التخصصات والمواد (قائمة كاملة محدثة باستمرار)
 - [القائمة الكاملة للمواد والمجلدات والامتحانات والدروس والدفاتر العامة](https://basmagi.vercel.app/llms-full.txt)

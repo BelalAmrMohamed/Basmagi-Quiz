@@ -26,7 +26,7 @@ node_modules/
 # Service Worker cache
 sw-cache/
 
-basmagi-quiz.zip
+basmagi.zip
 
 # Migration backups are stored locally and separately uploaded for safekeeping.
 backups/

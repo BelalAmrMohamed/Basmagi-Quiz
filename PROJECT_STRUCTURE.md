@@ -82,7 +82,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 ├── public/ [14.64 MB, 149848 LOC]
 │   ├── assets/ [8.95 MB, 1021 LOC]
 │   │   ├── downloads/ [2.63 KB, 12 LOC]
-│   │   │   └── basmagi-quiz-authoring.skill
+│   │   │   └── basmagi-authoring.skill
 │   │   │
 │   │   ├── fonts/ [62.94 KB, 94 LOC]
 │   │   │   ├── OFL.txt
