@@ -1,5 +1,6 @@
 // public/src/features/documents/documents-shell.js
 import "../../shared/flow-field.js";
+import { DOCS_GROUPS } from "./docs-nav.js";
 
 const sidebarMarkup = `
   <div class="side-menu-backdrop" id="sideMenuBackdrop" aria-hidden="true" role="presentation"></div>
@@ -174,54 +175,24 @@ if (sidebarNav) {
 // themselves (about/privacy/terms/how-to-*), not the main app pages, so
 // this section only ever renders there — the main app sidebar (rendered by
 // side-menu.js alone, without this shell) is intentionally left untouched.
-// A flat list (rather than a collapsible submenu) is used since there's no
-// existing collapsible-group pattern in side-menu.js to reuse, and six
-// links don't really need one.
-const DOCS_LINKS = [
-  {
-    href: "/about",
-    label: "عن المنصة",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
-  },
-  {
-    href: "/privacy-policy",
-    label: "سياسة الخصوصية",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>`,
-  },
-  {
-    href: "/terms-of-service",
-    label: "شروط الخدمة",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
-  },
-  {
-    href: "/how-to-create-content",
-    label: "إنشاء امتحان",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m15 5 3 3"/></svg>`,
-  },
-  {
-    href: "/how-to-upload-content",
-    label: "رفع امتحان",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
-  },
-  {
-    href: "/how-to-connect-mcp",
-    label: "ربط Claude / ChatGPT",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
-  },
-  {
-    href: "/how-to-use-ai-agent",
-    label: "الباشــمبصمج",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>`,
-  },
-];
+// Links come from docs-nav.js, grouped as Start / Create / AI / Legal. Plain
+// labelled groups (not collapsible submenus) since seven links don't need one.
+
 
 if (sidebarNav) {
-  const docsLinksHtml = DOCS_LINKS.map(
-    ({ href, label, soon, icon }) =>
-      `<a href="${href}" class="menu-item docs-menu-link" title="${label}" data-tooltip="${label}" data-docs-label="${label}">` +
-      icon +
-      `<span class="menu-label">${label}${soon ? ' <small class="docs-menu-soon-badge">قريباً</small>' : ""}</span>` +
-      `</a>`,
+  const linkHtml = ({ href, label, soon, icon }) =>
+    `<a href="${href}" class="menu-item docs-menu-link" title="${label}" data-tooltip="${label}" data-docs-label="${label}">` +
+    icon +
+    `<span class="menu-label">${label}${soon ? ' <small class="docs-menu-soon-badge">قريباً</small>' : ""}</span>` +
+    `</a>`;
+  // Grouped: Start / Create / Connect AI / Legal. Group labels only show in the
+  // expanded sidebar; the collapsed rail keeps its icon-only list.
+  const docsLinksHtml = DOCS_GROUPS.map(
+    (group) =>
+      `<div class="docs-menu-group" data-group="${group.id}">` +
+      `<div class="docs-menu-group-label sidebar-expanded-only" aria-hidden="true">${group.label}</div>` +
+      group.links.map(linkHtml).join("") +
+      `</div>`,
   ).join("");
 
   sidebarNav.insertAdjacentHTML(
@@ -266,7 +237,7 @@ if (sidebarNav) {
   const docsSection = sidebarNav.querySelector(".docs-menu-section");
   const emptyState = docsSection?.querySelector(".docs-menu-empty");
   if (searchInput && docsSection) {
-    const CONTENT_CACHE_KEY = "docs_search_content_cache_v1";
+    const CONTENT_CACHE_KEY = "docs_search_content_cache_v2";
     let contentCache = null; // href -> lowercased plain text, lazily loaded
     function loadContentCache() {
       if (contentCache) return contentCache;
@@ -347,11 +318,18 @@ if (sidebarNav) {
       const links = Array.from(docsSection.querySelectorAll(".docs-menu-link"));
       let anyVisible = false;
 
+      const syncGroups = () => {
+        docsSection.querySelectorAll(".docs-menu-group").forEach((group) => {
+          group.hidden = !group.querySelector(".docs-menu-link:not([hidden])");
+        });
+      };
+
       if (!query) {
         links.forEach((link) => {
           link.hidden = false;
           clearSnippet(link);
         });
+        syncGroups();
         if (emptyState) emptyState.hidden = true;
         return;
       }
@@ -381,6 +359,7 @@ if (sidebarNav) {
           link.querySelector(".menu-label")?.appendChild(snippetEl);
         }
       });
+      syncGroups();
       if (emptyState) emptyState.hidden = anyVisible;
     }
 

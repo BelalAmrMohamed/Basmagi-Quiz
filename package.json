@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "seo:check": "node scripts/seo-check.mjs",
+    "docs:build": "node scripts/build-docs.mjs",
+    "docs:check": "node scripts/build-docs.mjs --check",
     "og:test": "node --test tests/og-render.test.js",
     "og:snapshot": "node scripts/og-snapshot.mjs",
     "sync:mcp": "node scripts/sync-mcp-rules.js",

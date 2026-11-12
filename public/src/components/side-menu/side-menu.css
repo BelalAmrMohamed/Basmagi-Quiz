@@ -884,6 +884,29 @@
   gap: 2px;
 }
 
+.docs-menu-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.docs-menu-group[hidden] {
+  display: none;
+}
+
+.docs-menu-group + .docs-menu-group {
+  margin-top: 8px;
+}
+
+.docs-menu-group-label {
+  padding: 6px 12px 2px;
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+}
+
 .docs-menu-soon-badge {
   font-size: 0.62rem;
   font-weight: 500;

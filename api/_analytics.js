@@ -114,14 +114,89 @@ export function normalizeLiveStats(raw) {
   };
 }
 
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+export const MAX_RANGE_DAYS = 731;
+
+function isoDay(d) {
+  return d.toISOString().slice(0, 10);
+}
+
+// Cairo calendar day, matching the SQL functions.
+function cairoToday(now = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(now);
+}
+
+// Reads ?days=N or ?from=YYYY-MM-DD&to=YYYY-MM-DD. Returns null for the default
+// 30-day payload, otherwise a clamped { from, to } window (max 731 days, never future).
+export function parseRange(query, now = new Date()) {
+  const q = query || {};
+  const today = cairoToday(now);
+  const shift = (day, n) => isoDay(new Date(Date.parse(`${day}T00:00:00Z`) - n * 86400000));
+  if (q.from && DAY_RE.test(String(q.from))) {
+    let to = q.to && DAY_RE.test(String(q.to)) ? String(q.to) : today;
+    if (to > today) to = today;
+    let from = String(q.from);
+    if (Number.isNaN(Date.parse(`${from}T00:00:00Z`)) || Number.isNaN(Date.parse(`${to}T00:00:00Z`))) return null;
+    if (from > to) from = to;
+    const earliest = shift(to, MAX_RANGE_DAYS - 1);
+    if (from < earliest) from = earliest;
+    return { from, to };
+  }
+  const days = Math.floor(Number(q.days));
+  if (Number.isFinite(days) && days > 0 && days !== 30) {
+    const n = Math.min(days, MAX_RANGE_DAYS);
+    return { from: shift(today, n - 1), to: today };
+  }
+  return null;
+}
+
+// Shapes analytics_range_stats() into the live payload (+ range totals), no 30-day cap.
+export function normalizeRangeStats(raw) {
+  const int = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  };
+  const r = raw && typeof raw === "object" ? raw : {};
+  const daily = (Array.isArray(r.daily) ? r.daily : [])
+    .map((d) => ({
+      day: String((d && d.day) || ""),
+      visitors: int(d && d.visitors),
+      views: int(d && d.views),
+    }))
+    .filter((d) => DAY_RE.test(d.day))
+    .slice(-MAX_RANGE_DAYS);
+  return {
+    from: DAY_RE.test(String(r.from)) ? r.from : null,
+    to: DAY_RE.test(String(r.to)) ? r.to : null,
+    firstDay: DAY_RE.test(String(r.firstDay)) ? r.firstDay : null,
+    rangeVisitors: int(r.rangeVisitors),
+    rangeViews: int(r.rangeViews),
+    daily,
+  };
+}
+
 export async function handleAnalyticsLive(req, res, supabaseAnon) {
   try {
     const { data, error } = await supabaseAnon.rpc("analytics_live_stats");
     if (error) throw error;
+    const payload = normalizeLiveStats(data);
+
+    // Optional custom window for the chart (?days=7|90|365 or ?from=&to=).
+    const range = parseRange(req.query);
+    if (range) {
+      const { data: rangeData, error: rangeError } = await supabaseAnon.rpc("analytics_range_stats", {
+        p_from: range.from,
+        p_to: range.to,
+      });
+      if (rangeError) throw rangeError;
+      const r = normalizeRangeStats(rangeData);
+      payload.daily = r.daily;
+      payload.range = { from: r.from || range.from, to: r.to || range.to, visitors: r.rangeVisitors, views: r.rangeViews, firstDay: r.firstDay };
+    }
     // Edge-cached for a few seconds: however many tabs poll, the database is hit
-    // roughly once per 10 s.
+    // roughly once per 10 s (the cache key includes the query string).
     res.setHeader("Cache-Control", "public, max-age=0, s-maxage=10, stale-while-revalidate=20");
-    return res.status(200).json(normalizeLiveStats(data));
+    return res.status(200).json(payload);
   } catch (err) {
     console.error("[analytics] live stats failed:", err && err.message ? err.message : err);
     res.setHeader("Cache-Control", "no-store");

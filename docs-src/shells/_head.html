@@ -1,0 +1,48 @@
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+        (function () {
+            try {
+                const theme = localStorage.getItem("quiz_theme_pref") || "light";
+                const animations = localStorage.getItem("quiz_animations_pref") !== "disabled";
+                const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                document.documentElement.setAttribute("data-theme", theme);
+                document.documentElement.setAttribute("data-animations", animations && !reduced ? "enabled" : "disabled");
+                document.documentElement.setAttribute("data-motion", reduced ? "reduced" : "normal");
+            } catch (_) { }
+        })();
+    </script>
+    <meta name="description" content="{{description}}" />
+    <meta name="keywords" content="{{keywords}}" />
+    <meta name="author" content="بلال عمرو محمد" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#1a1a2e" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="{{title}} | منصة امتحانات بصمجي" />
+    <meta property="og:description" content="{{description}}" />
+    <meta property="og:url" content="{{url}}" />
+    <meta property="og:image" content="{{ogImage}}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="{{title}} | منصة امتحانات بصمجي" />
+    <meta property="og:site_name" content="منصة امتحانات بصمجي" />
+    <meta property="og:locale" content="ar_AR" />
+    <meta property="article:modified_time" content="{{updated}}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{title}} | منصة امتحانات بصمجي" />
+    <meta name="twitter:description" content="{{description}}" />
+    <meta name="twitter:image" content="{{ogImage}}" />
+    <link rel="canonical" href="{{url}}" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{{title}} | منصة امتحانات بصمجي</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="src/styles/themes.css" />
+    <link rel="stylesheet" href="src/components/side-menu/side-menu.css" />
+    <link rel="stylesheet" href="src/features/documents/documents.css" />
+{{{extraStyles}}}{{{jsonLd}}}

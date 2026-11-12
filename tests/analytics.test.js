@@ -105,3 +105,30 @@ test("track handler: records a view, always 204, ignores bots / foreign origins,
   await handleAnalyticsTrack(req({ body: { action: "nope" } }), res, fakeDb());
   assert.equal(res.statusCode, 400);
 });
+
+import { parseRange, normalizeRangeStats, MAX_RANGE_DAYS } from "../api/_analytics.js";
+
+test("parseRange: default 30 days returns null, days/from-to are clamped", () => {
+  const now = new Date("2026-11-11T10:00:00Z");
+  assert.equal(parseRange({}, now), null);
+  assert.equal(parseRange({ days: "30" }, now), null);
+  assert.equal(parseRange({ days: "abc" }, now), null);
+  assert.deepEqual(parseRange({ days: "7" }, now), { from: "2026-11-05", to: "2026-11-11" });
+  const year = parseRange({ days: "365" }, now);
+  assert.equal(year.to, "2026-11-11");
+  assert.equal(year.from, "2025-11-12");
+  const huge = parseRange({ days: "99999" }, now);
+  assert.equal((Date.parse(huge.to) - Date.parse(huge.from)) / 86400000, MAX_RANGE_DAYS - 1);
+  assert.deepEqual(parseRange({ from: "2026-11-01", to: "2026-11-05" }, now), { from: "2026-11-01", to: "2026-11-05" });
+  assert.deepEqual(parseRange({ from: "2026-11-09", to: "2030-01-01" }, now), { from: "2026-11-09", to: "2026-11-11" });
+  assert.deepEqual(parseRange({ from: "2026-11-09", to: "2026-11-02" }, now), { from: "2026-11-02", to: "2026-11-02" });
+  assert.equal(parseRange({ from: "nope" }, now), null);
+});
+
+test("normalizeRangeStats: keeps long ranges, drops bad rows", () => {
+  const daily = Array.from({ length: 400 }, (_, i) => ({ day: new Date(Date.UTC(2025, 9, 1 + i)).toISOString().slice(0, 10), visitors: i, views: i }));
+  const n = normalizeRangeStats({ from: "2025-10-01", to: "2026-11-04", rangeVisitors: "10", daily: [...daily, { day: "x" }] });
+  assert.equal(n.daily.length, 400);
+  assert.equal(n.rangeVisitors, 10);
+  assert.equal(n.firstDay, null);
+});

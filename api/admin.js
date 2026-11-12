@@ -2332,9 +2332,37 @@ async function handleStats(req, res) {
       .neq("education_type", "Featured");
     const uniqueEducationTracks = new Set((courseTracks || []).map((row) => row.education_type).filter(Boolean));
 
+    // Tooltip data: the active tracks with how many courses each holds.
+    const trackCounts = new Map();
+    (courseTracks || []).forEach((row) => {
+      if (row.education_type) trackCounts.set(row.education_type, (trackCounts.get(row.education_type) || 0) + 1);
+    });
+    const educationTracks = [...trackCounts.entries()]
+      .map(([type, courses]) => ({ type, courses }))
+      .sort((a, b) => b.courses - a.courses);
+
     const { count: creatorCount } = await supabase
       .from("admin_users")
       .select("id", { count: "exact", head: true });
+
+    // Tooltip data: top creators by quizzes + lessons. Same public fields the
+    // ?leaderboard=true endpoint already exposes (never the email).
+    const { data: creatorRows } = await supabase
+      .from("admin_users")
+      .select("display_name, handle, uploaded_quizzes, uploaded_lessons, avatar_url, thumbnail_url, email")
+      .limit(200);
+    const ownerEmailList = getOwnerEmails();
+    const topCreators = (creatorRows || [])
+      .map((row) => ({
+        handle: row.handle || null,
+        displayName: row.display_name || null,
+        quizzes: row.uploaded_quizzes || 0,
+        lessons: row.uploaded_lessons || 0,
+        avatarUrl: row.avatar_url || row.thumbnail_url || null,
+        isOwner: !!(row.email && ownerEmailList.includes(row.email.trim().toLowerCase())),
+      }))
+      .sort((a, b) => b.quizzes + b.lessons - (a.quizzes + a.lessons))
+      .slice(0, 5);
 
     return res.status(200).json({
       totalQuizzes: quizCount ?? 0,
@@ -2343,6 +2371,8 @@ async function handleStats(req, res) {
       totalCourses: courseCount ?? 0,
       totalEducationTracks: uniqueEducationTracks.size,
       totalCreators: creatorCount ?? 0,
+      educationTracks,
+      topCreators,
     });
   }
 
