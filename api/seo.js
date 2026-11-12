@@ -34,7 +34,7 @@ import { loadPublicCatalog, filterRecentlyChanged } from "./_catalog.js";
 import { escapeXml, absUrl } from "./_urls.js";
 import { notifySearchEngines } from "./_seoNotify.js";
 
-const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
+const SITE_ORIGIN = "https://basmagi.vercel.app";
 
 // Cache-Control shared by every read-only discovery document here (plan §6.3,
 // user-adjustment #3): 1h fresh, 24h stale-while-revalidate. Vercel's Edge

@@ -17,7 +17,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = path.join(ROOT, "docs-src");
 const PUBLIC = path.join(ROOT, "public");
-const ORIGIN = "https://basmagi-quiz.vercel.app";
+const ORIGIN = "https://basmagi.vercel.app";
 const DEFAULT_OG = `${ORIGIN}/assets/images/thumbnails/thumbnail.png`;
 const BASE_STYLES = new Set([
   "src/styles/themes.css",

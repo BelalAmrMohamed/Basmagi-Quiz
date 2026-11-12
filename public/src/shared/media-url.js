@@ -10,7 +10,7 @@
 // .md file, a .json file) has no such origin to resolve against — so
 // relative paths need to be rewritten to absolute URLs at export time.
 
-export const PLATFORM_ORIGIN = "https://basmagi-quiz.vercel.app";
+export const PLATFORM_ORIGIN = "https://basmagi.vercel.app";
 
 /**
  * True if `url` is a path relative to the platform's own origin (as opposed

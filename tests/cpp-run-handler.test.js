@@ -4,7 +4,7 @@ import { handle } from '../supabase/functions/cpp-run/handler.ts';
 import { runProviders, ProvidersFailed } from '../supabase/functions/cpp-run/providers.ts';
 
 const HELLO = '#include <iostream>\n\nusing namespace std;\n\nint main(){\n    cout << "Hello World";\n    return 0;\n}\n\n';
-const post = (body, headers = {}) => new Request('https://f.test/cpp-run', { method: 'POST', headers: { origin: 'https://basmagi-quiz.vercel.app', ...headers }, body: typeof body === 'string' ? body : JSON.stringify(body) });
+const post = (body, headers = {}) => new Request('https://f.test/cpp-run', { method: 'POST', headers: { origin: 'https://basmagi.vercel.app', ...headers }, body: typeof body === 'string' ? body : JSON.stringify(body) });
 const deps = (over = {}) => ({ env: (k) => ({ IP_SALT: 's' })[k], hitQuota: async () => true, runProviders: async () => ({ ok: true, stdout: 'Hello World\x1e@@NB:1@@\x1e', stderr: '\x1e@@NB:1@@\x1e', compile: '', exit: 0, signal: null, provider: 'wandbox' }), ...over });
 const hang = (signal) => new Promise((_, reject) => signal?.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
 

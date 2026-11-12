@@ -259,7 +259,7 @@ export async function renderQuizImage(quizId) {
               fontWeight: "400",
               direction: "ltr",
             },
-            children: "basmagi-quiz.vercel.app",
+            children: "basmagi.vercel.app",
           },
         },
 

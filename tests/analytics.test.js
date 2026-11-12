@@ -24,7 +24,7 @@ function fakeDb() {
 }
 const req = (over = {}) => ({
   body: { action: "track" },
-  headers: { "user-agent": CHROME, host: "basmagi-quiz.vercel.app", "x-forwarded-for": "10.1.2.3" },
+  headers: { "user-agent": CHROME, host: "basmagi.vercel.app", "x-forwarded-for": "10.1.2.3" },
   ...over,
 });
 

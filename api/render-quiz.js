@@ -51,7 +51,7 @@ const TEMPLATE_PATH = path.join(process.cwd(), "public", "quiz.html");
 
 
 // ── Canonical site origin ────────────────────────────────────────────────────
-const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
+const SITE_ORIGIN = "https://basmagi.vercel.app";
 
 // ── Question type translation (Arabic) ────────────────────────────────────────
 // Mirrors og.js's QUESTION_TYPE_AR — kept in sync so the page <title>/OG title

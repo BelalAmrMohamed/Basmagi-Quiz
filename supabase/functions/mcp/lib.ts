@@ -7,7 +7,7 @@
 //   - CREATOR_INFO / AUTHORING_GUIDE → static content returned by tools
 // =============================================================================
 
-export const SITE = "https://basmagi-quiz.vercel.app";
+export const SITE = "https://basmagi.vercel.app";
 
 import { LIMITS as RULE_LIMITS, EMBED_REF_BY_TYPE, NOTEBOOK_RUNTIMES, checkQuiz, checkLesson, checkNotebook, normalizeNotebookContent } from "./content-rules.js";
 

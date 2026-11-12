@@ -44,7 +44,7 @@ const DEVELOPERS_EMAILS = (process.env.DEVELOPERS_EMAILS || "")
   .filter(Boolean);
 
 const TEMPLATE_PATH = path.join(process.cwd(), "public", "profile.html");
-const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
+const SITE_ORIGIN = "https://basmagi.vercel.app";
 
 // Upper bound on how long we'll wait for the handle lookup before falling back
 // to an un-personalised shell. Sits comfortably under Vercel's own function

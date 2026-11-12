@@ -374,13 +374,13 @@ async function handleGetCourseContents(args, supabase) {
         db_id: q.id,
         title: q.title,
         questionCount: q.data?.questions?.length || 0,
-        url: `https://basmagi-quiz.vercel.app/quiz/${metaId}`,
+        url: `https://basmagi.vercel.app/quiz/${metaId}`,
       };
     }),
     lessons: (lessons || []).map((l) => ({
       id: l.id,
       title: l.title,
-      url: `https://basmagi-quiz.vercel.app/lesson/${l.id}`,
+      url: `https://basmagi.vercel.app/lesson/${l.id}`,
     })),
     totalFolders: (folders || []).length,
     totalQuizzes: (quizzes || []).length,
@@ -428,7 +428,7 @@ async function handleFetchQuiz(args, supabase) {
       answer: q.answer,
       explanation: q.explanation,
     })),
-    url: `https://basmagi-quiz.vercel.app/quiz/${metaId}`,
+    url: `https://basmagi.vercel.app/quiz/${metaId}`,
   };
 }
 
@@ -493,7 +493,7 @@ async function handleFetchLesson(args, supabase) {
       id: data.id,
       title: data.title,
       description: data.description || "",
-      url: `https://basmagi-quiz.vercel.app/lesson/${data.id}`,
+      url: `https://basmagi.vercel.app/lesson/${data.id}`,
       note: "This lesson is password-protected. The user must open it on the website to access the full content.",
     };
   }
@@ -509,7 +509,7 @@ async function handleFetchLesson(args, supabase) {
           contentPreview: (s.content || "").slice(0, 500),
         }))
       : [],
-    url: `https://basmagi-quiz.vercel.app/lesson/${data.id}`,
+    url: `https://basmagi.vercel.app/lesson/${data.id}`,
   };
 }
 

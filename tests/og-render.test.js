@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC = path.join(ROOT, "public");
-const ORIGIN = "https://basmagi-quiz.vercel.app";
+const ORIGIN = "https://basmagi.vercel.app";
 const SB = "https://mock.supabase.co";
 process.env.SUPABASE_URL = SB;
 process.env.SUPABASE_ANON_KEY = "mock-key";

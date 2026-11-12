@@ -2,7 +2,7 @@
 
 Welcome to the inaugural release of **Basmagi Quiz**, a sophisticated, beginner-friendly web application designed to elevate your understanding, interactive quiz experience. This release marks the foundation of an educational tool tailored for aspiring web developers, students, and programming enthusiasts. Built with modern web technologies, it combines intuitive design with robust functionality to foster learning in a fun, progressive manner.
 
-- [منصة امتحانات بصمجي](https://basmagi-quiz.vercel.app/)
+- [منصة امتحانات بصمجي](https://basmagi.vercel.app/)
 - [Project Map](docs/map/context-map.md)
 - [Database Schema Context](docs/Database-Schema-Context.md)
 - [issues](docs/issues.md)
@@ -37,7 +37,7 @@ Welcome to the inaugural release of **Basmagi Quiz**, a sophisticated, beginner-
 ## Live Link
 
 Access the hosted version:
-[https://basmagi-quiz.vercel.app/](https://basmagi-quiz.vercel.app/)
+[https://basmagi.vercel.app/](https://basmagi.vercel.app/)
 
 **Customization:**
 

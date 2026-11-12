@@ -188,16 +188,16 @@ export async function renderCourseImage(courseId, folderPath) {
     : "";
   const fullLinkPath =
     folderPath && folderPath.length > 0
-      ? `basmagi-quiz.vercel.app/course/${courseSlug}/${folderPath
+      ? `basmagi.vercel.app/course/${courseSlug}/${folderPath
         .map((seg) => renderBidiSlugSegment(slugify(seg)))
         .join("/")}`
-      : `basmagi-quiz.vercel.app/course/${courseSlug}`;
+      : `basmagi.vercel.app/course/${courseSlug}`;
 
   // Footer link — MUST stay on one line. Long paths used to wrap onto a
   // second line (ugly). Fix: hard single-line + truncate from the FRONT
   // ("…" + tail) once it's too long to fit, so the most identifying part
   // — the actual course/folder slug at the end of the path — stays
-  // visible instead of the always-identical "basmagi-quiz.vercel.app/
+  // visible instead of the always-identical "basmagi.vercel.app/
   // course/" prefix. Budget is generous (the footer now spans the full
   // centered canvas width, ~1120px, not just the narrow right-hand
   // content column) — this is a plain character-count clamp, not a
@@ -430,7 +430,7 @@ export async function renderCourseImage(courseId, folderPath) {
               fontWeight: "400",
               direction: "ltr",
             },
-            children: "basmagi-quiz.vercel.app",
+            children: "basmagi.vercel.app",
           },
         },
 

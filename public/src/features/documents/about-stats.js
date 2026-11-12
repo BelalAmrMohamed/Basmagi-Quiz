@@ -97,7 +97,7 @@ async function loadPlatformProfile() {
 
         if (nameEl) nameEl.textContent = data.displayName || "بلال عمرو محمد";
         if (handleEl && data.handle) {
-            handleEl.textContent = `basmagi-quiz.vercel.app/@${data.handle}`;
+            handleEl.textContent = `basmagi.vercel.app/@${data.handle}`;
         }
 
         if (levelEl && data.currentLevel) {

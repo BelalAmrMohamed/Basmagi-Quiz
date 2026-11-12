@@ -23,7 +23,7 @@ export const BRAND_BLUE = "#0088cc";
 // asset — this is what broke the manifest fetch. Always prefer the known
 // production origin; set SITE_ORIGIN as an env var if this ever needs to
 // point elsewhere (e.g. a genuine staging domain).
-export const SITE_ORIGIN = process.env.SITE_ORIGIN || "https://basmagi-quiz.vercel.app";
+export const SITE_ORIGIN = process.env.SITE_ORIGIN || "https://basmagi.vercel.app";
 
 // ── Font (self-hosted Tajawal Bold) ──────────────────────────────────────────
 // Served from our own origin (public/assets/fonts/Tajawal-Bold.ttf, OFL

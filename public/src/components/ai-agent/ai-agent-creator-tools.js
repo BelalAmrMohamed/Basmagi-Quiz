@@ -8,7 +8,7 @@ const CREATOR = {
   image: "/assets/images/developer.jpg",
   description: "مطور منصة بصمجي ومهتم ببناء أدوات عربية عملية للتعلم وإنشاء المحتوى.",
   portfolio: "https://belal-amr.vercel.app/",
-  platformProfile: "https://basmagi-quiz.vercel.app/@belalamrofficial",
+  platformProfile: "https://basmagi.vercel.app/@belalamrofficial",
   youtube: "https://www.youtube.com/@طالب-حاسبات",
   github: "https://github.com/BelalAmrMohamed/",
   mostaql: "https://mostaql.com/u/BelalAmrMohamed/portfolio",

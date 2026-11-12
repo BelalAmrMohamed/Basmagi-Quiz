@@ -12,7 +12,7 @@
 // No dependencies beyond Node's built-in fetch (Node 18+).
 // =============================================================================
 
-const BASE_URL = (process.env.BASE_URL || "https://basmagi-quiz.vercel.app").replace(/\/+$/, "");
+const BASE_URL = (process.env.BASE_URL || "https://basmagi.vercel.app").replace(/\/+$/, "");
 
 const AI_BOTS = [
     "GPTBot",

@@ -3,7 +3,7 @@
 import { assemble, splitSections, validRunRequest, truncateOutput, truncateSections } from './assemble.js';
 import { LIMITS, ProvidersFailed } from './providers.ts';
 
-const DEFAULT_ORIGINS = ['https://basmagi-quiz.vercel.app', 'http://localhost:8080', 'http://localhost:8081'];
+const DEFAULT_ORIGINS = ['https://basmagi.vercel.app', 'http://localhost:8080', 'http://localhost:8081'];
 
 export type Deps = {
   env: (key: string) => string | undefined;

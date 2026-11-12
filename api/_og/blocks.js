@@ -35,9 +35,9 @@ export function layoutDescription(raw, columnWidth, titleLineCount) {
   return { isArabic, fontSize, lines };
 }
 
-/** "basmagi-quiz.vercel.app/<kind>/<slug>" footer text, front-truncated to one line. */
+/** "basmagi.vercel.app/<kind>/<slug>" footer text, front-truncated to one line. */
 export function footerPath(kind, slugOrId) {
-  const full = `basmagi-quiz.vercel.app/${kind}/${slugOrId ? renderBidiSlugSegment(slugOrId) : ""}`;
+  const full = `basmagi.vercel.app/${kind}/${slugOrId ? renderBidiSlugSegment(slugOrId) : ""}`;
   return full.length > 90 ? "…" + full.slice(full.length - 89) : full;
 }
 

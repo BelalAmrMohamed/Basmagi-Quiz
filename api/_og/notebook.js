@@ -273,7 +273,7 @@ export async function renderNotebookImage(notebookId) {
       },
       children: [
         accentStripe(NB_ACCENT, BRAND_BLUE),
-        { type: "div", props: { style: { display: "flex", position: "absolute", right: "40px", top: "24px", fontSize: "16px", color: "#64748b", direction: "ltr" }, children: "basmagi-quiz.vercel.app" } },
+        { type: "div", props: { style: { display: "flex", position: "absolute", right: "40px", top: "24px", fontSize: "16px", color: "#64748b", direction: "ltr" }, children: "basmagi.vercel.app" } },
         sheet,
         windowCard,
         rightColumn([kindRow, crumb, titleEl, descEl, chipsEl], NB_COLUMN),

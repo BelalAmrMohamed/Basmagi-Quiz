@@ -1028,7 +1028,7 @@ export async function exportToWord(
           new ExternalHyperlink({
             children: [
               new TextRun({
-                text: "https://basmagi-quiz.vercel.app/",
+                text: "https://basmagi.vercel.app/",
                 bold: true,
                 size: 24,
                 color: "0563C1", // Standard blue link color
@@ -1037,7 +1037,7 @@ export async function exportToWord(
                 },
               }),
             ],
-            link: "https://basmagi-quiz.vercel.app/",
+            link: "https://basmagi.vercel.app/",
           }),
         ],
       }),

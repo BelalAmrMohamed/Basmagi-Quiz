@@ -13,7 +13,7 @@
 // fourth copy-paste.
 // =============================================================================
 
-export const SITE_ORIGIN = process.env.SITE_ORIGIN || "https://basmagi-quiz.vercel.app";
+export const SITE_ORIGIN = process.env.SITE_ORIGIN || "https://basmagi.vercel.app";
 
 /**
  * Convert a display name to a URL slug. Mirrors

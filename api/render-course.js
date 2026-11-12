@@ -71,7 +71,7 @@ const NOTEBOOK_TEMPLATE_PATH = path.join(process.cwd(), "public", "notebook.html
 
 // OG image versions live in api/_og/version.js (layout version + content stamp).
 
-const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
+const SITE_ORIGIN = "https://basmagi.vercel.app";
 
 // Mirrors public/src/features/home/slug-utils.js's toSlug() exactly (kept in
 // sync manually — this is a Node serverless function and can't import an ES

@@ -237,7 +237,7 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        url_or_id: { type: "string", description: "A Basmagi quiz URL (e.g. https://basmagi-quiz.vercel.app/quiz/...), short ID, or UUID." },
+        url_or_id: { type: "string", description: "A Basmagi quiz URL (e.g. https://basmagi.vercel.app/quiz/...), short ID, or UUID." },
         format: { type: "string", enum: ["text", "json", "outline"], description: "'text' (default), 'json', or 'outline' (compact numbered list + folder path)." },
       },
       required: ["url_or_id"],
@@ -572,7 +572,7 @@ async function handleSearchCatalog(args: { query: string; scope?: string }) {
           const id = q.meta?.id || q.id || q.pk || "unknown";
           const title = q.meta?.title || q.title || "امتحان بدون عنوان";
           const qCount = q.questions?.length || 0;
-          return `  - 📝 [امتحان] ${title} (${qCount} أسئلة) — id: ${id}\n    رابط: https://basmagi-quiz.vercel.app/quiz/${id}`;
+          return `  - 📝 [امتحان] ${title} (${qCount} أسئلة) — id: ${id}\n    رابط: https://basmagi.vercel.app/quiz/${id}`;
         });
         sections.push(`### امتحانات مطابقة (${matched.length}):\n${lines.join("\n")}`);
       }
@@ -588,7 +588,7 @@ async function handleSearchCatalog(args: { query: string; scope?: string }) {
 
     if (lessons && lessons.length > 0) {
       const lines = lessons.map((l: any) =>
-        `  - 📖 [درس] ${l.title} — id: ${l.id}\n    رابط: https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`
+        `  - 📖 [درس] ${l.title} — id: ${l.id}\n    رابط: https://basmagi.vercel.app/lesson/${l.slug || l.id}`
       );
       sections.push(`### دروس مطابقة (${lessons.length}):\n${lines.join("\n")}`);
     }
@@ -603,7 +603,7 @@ async function handleSearchCatalog(args: { query: string; scope?: string }) {
 
     if (notebooks && notebooks.length > 0) {
       const lines = notebooks.map((n: any) =>
-        `  - 💻 [دفتر ${n.runtime}] ${n.title} — id: ${n.id}\n    رابط: https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(n.slug || n.id)}`
+        `  - 💻 [دفتر ${n.runtime}] ${n.title} — id: ${n.id}\n    رابط: https://basmagi.vercel.app/notebook/${encodeURIComponent(n.slug || n.id)}`
       );
       sections.push(`### دفاتر مطابقة (${notebooks.length}):\n${lines.join("\n")}`);
     }
@@ -768,13 +768,13 @@ async function handleGetCourseContentsBase(args: {
             folder_id: q.folder_id,
             folder_path: q.folder_id ? getFolderPath(q.folder_id) : "جذر المادة (Root)",
             questionCount: q.data?.questions?.length || 0,
-            url: `https://basmagi-quiz.vercel.app/quiz/${m.id || q.id}`,
+            url: `https://basmagi.vercel.app/quiz/${m.id || q.id}`,
           };
         }),
         lessons: allLessons.map((l: any) => ({
           ...l,
           folder_path: l.folder_id ? getFolderPath(l.folder_id) : "جذر المادة (Root)",
-          url: `https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`,
+          url: `https://basmagi.vercel.app/lesson/${l.slug || l.id}`,
         })),
       }, null, 2);
     }
@@ -794,11 +794,11 @@ async function handleGetCourseContentsBase(args: {
       for (const q of rootQuizzes) {
         const m = q.data?.meta || {};
         const id = m.id || q.id;
-        rootLines.push(`  - 📝 ${m.title || "امتحان"} (${q.data?.questions?.length || 0} أسئلة) — id: ${id} — https://basmagi-quiz.vercel.app/quiz/${id}`);
+        rootLines.push(`  - 📝 ${m.title || "امتحان"} (${q.data?.questions?.length || 0} أسئلة) — id: ${id} — https://basmagi.vercel.app/quiz/${id}`);
       }
       for (const l of rootLessons) {
         const lock = l.password_protected ? " 🔒" : "";
-        rootLines.push(`  - 📖 ${l.title}${lock} (${l.section_count || 0} أقسام) — id: ${l.id} — https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`);
+        rootLines.push(`  - 📖 ${l.title}${lock} (${l.section_count || 0} أقسام) — id: ${l.id} — https://basmagi.vercel.app/lesson/${l.slug || l.id}`);
       }
       output.push(`## 📂 محتويات جذر المادة (مباشرة):\n${rootLines.join("\n")}`);
     }
@@ -815,11 +815,11 @@ async function handleGetCourseContentsBase(args: {
         for (const q of fQuizzes) {
           const m = q.data?.meta || {};
           const id = m.id || q.id;
-          itemLines.push(`    - 📝 ${m.title || "امتحان"} (${q.data?.questions?.length || 0} أسئلة) — id: ${id} — https://basmagi-quiz.vercel.app/quiz/${id}`);
+          itemLines.push(`    - 📝 ${m.title || "امتحان"} (${q.data?.questions?.length || 0} أسئلة) — id: ${id} — https://basmagi.vercel.app/quiz/${id}`);
         }
         for (const l of fLessons) {
           const lock = l.password_protected ? " 🔒" : "";
-          itemLines.push(`    - 📖 ${l.title}${lock} (${l.section_count || 0} أقسام) — id: ${l.id} — https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`);
+          itemLines.push(`    - 📖 ${l.title}${lock} (${l.section_count || 0} أقسام) — id: ${l.id} — https://basmagi.vercel.app/lesson/${l.slug || l.id}`);
         }
 
         const countBadge = `[${fQuizzes.length} امتحان، ${fLessons.length} درس]`;
@@ -860,11 +860,11 @@ async function handleGetCourseContentsBase(args: {
         id: q.data?.meta?.id || q.id,
         title: q.data?.meta?.title || "امتحان بدون عنوان",
         questionCount: q.data?.questions?.length || 0,
-        url: `https://basmagi-quiz.vercel.app/quiz/${q.data?.meta?.id || q.id}`,
+        url: `https://basmagi.vercel.app/quiz/${q.data?.meta?.id || q.id}`,
       })),
       lessons: lessons.map((l: any) => ({
         ...l,
-        url: `https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`,
+        url: `https://basmagi.vercel.app/lesson/${l.slug || l.id}`,
       })),
     }, null, 2);
   }
@@ -882,7 +882,7 @@ async function handleGetCourseContentsBase(args: {
       const id = meta.id || q.id || "unknown";
       const title = meta.title || "امتحان بدون عنوان";
       const qCount = q.data?.questions?.length || 0;
-      return `  - 📝 ${title} (${qCount} أسئلة)\n    id: ${id}\n    https://basmagi-quiz.vercel.app/quiz/${id}`;
+      return `  - 📝 ${title} (${qCount} أسئلة)\n    id: ${id}\n    https://basmagi.vercel.app/quiz/${id}`;
     });
     output.push(`## الامتحانات المباشرة (${quizzes.length}):\n\n${lines.join("\n\n")}`);
   }
@@ -890,7 +890,7 @@ async function handleGetCourseContentsBase(args: {
   if (lessons.length > 0) {
     const lines = lessons.map((l: any) => {
       const lock = l.password_protected ? " 🔒" : "";
-      return `  - 📖 ${l.title}${lock} (${l.section_count || 0} أقسام)\n    id: ${l.id}\n    https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`;
+      return `  - 📖 ${l.title}${lock} (${l.section_count || 0} أقسام)\n    id: ${l.id}\n    https://basmagi.vercel.app/lesson/${l.slug || l.id}`;
     });
     output.push(`## الدروس المباشرة (${lessons.length}):\n\n${lines.join("\n\n")}`);
   }
@@ -980,11 +980,11 @@ async function handleGetFolderContentsBase(args: {
           title: q.data?.meta?.title || "امتحان بدون عنوان",
           folder_id: q.folder_id,
           questionCount: q.data?.questions?.length || 0,
-          url: `https://basmagi-quiz.vercel.app/quiz/${q.data?.meta?.id || q.id}`,
+          url: `https://basmagi.vercel.app/quiz/${q.data?.meta?.id || q.id}`,
         })),
         lessons: allLessons.map((l: any) => ({
           ...l,
-          url: `https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`,
+          url: `https://basmagi.vercel.app/lesson/${l.slug || l.id}`,
         })),
       }, null, 2);
     }
@@ -1002,11 +1002,11 @@ async function handleGetFolderContentsBase(args: {
       for (const q of directQuizzes) {
         const m = q.data?.meta || {};
         const id = m.id || q.id;
-        lines.push(`  - 📝 ${m.title || "امتحان"} (${q.data?.questions?.length || 0} أسئلة) — id: ${id} — https://basmagi-quiz.vercel.app/quiz/${id}`);
+        lines.push(`  - 📝 ${m.title || "امتحان"} (${q.data?.questions?.length || 0} أسئلة) — id: ${id} — https://basmagi.vercel.app/quiz/${id}`);
       }
       for (const l of directLessons) {
         const lock = l.password_protected ? " 🔒" : "";
-        lines.push(`  - 📖 ${l.title}${lock} (${l.section_count || 0} أقسام) — id: ${l.id} — https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`);
+        lines.push(`  - 📖 ${l.title}${lock} (${l.section_count || 0} أقسام) — id: ${l.id} — https://basmagi.vercel.app/lesson/${l.slug || l.id}`);
       }
       output.push(`## 📂 محتويات المجلد مباشرة (${folder.name}):\n${lines.join("\n")}`);
     }
@@ -1022,11 +1022,11 @@ async function handleGetFolderContentsBase(args: {
         for (const q of subQuizzes) {
           const m = q.data?.meta || {};
           const id = m.id || q.id;
-          lines.push(`    - 📝 ${m.title || "امتحان"} (${q.data?.questions?.length || 0} أسئلة) — id: ${id} — https://basmagi-quiz.vercel.app/quiz/${id}`);
+          lines.push(`    - 📝 ${m.title || "امتحان"} (${q.data?.questions?.length || 0} أسئلة) — id: ${id} — https://basmagi.vercel.app/quiz/${id}`);
         }
         for (const l of subLessons) {
           const lock = l.password_protected ? " 🔒" : "";
-          lines.push(`    - 📖 ${l.title}${lock} (${l.section_count || 0} أقسام) — id: ${l.id} — https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`);
+          lines.push(`    - 📖 ${l.title}${lock} (${l.section_count || 0} أقسام) — id: ${l.id} — https://basmagi.vercel.app/lesson/${l.slug || l.id}`);
         }
 
         const badge = `[${subQuizzes.length} امتحان، ${subLessons.length} درس]`;
@@ -1066,11 +1066,11 @@ async function handleGetFolderContentsBase(args: {
         id: q.data?.meta?.id || q.id,
         title: q.data?.meta?.title || "امتحان بدون عنوان",
         questionCount: q.data?.questions?.length || 0,
-        url: `https://basmagi-quiz.vercel.app/quiz/${q.data?.meta?.id || q.id}`,
+        url: `https://basmagi.vercel.app/quiz/${q.data?.meta?.id || q.id}`,
       })),
       lessons: lessons.map((l: any) => ({
         ...l,
-        url: `https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`,
+        url: `https://basmagi.vercel.app/lesson/${l.slug || l.id}`,
       })),
     }, null, 2);
   }
@@ -1088,7 +1088,7 @@ async function handleGetFolderContentsBase(args: {
       const id = meta.id || q.id || "unknown";
       const title = meta.title || "امتحان بدون عنوان";
       const qCount = q.data?.questions?.length || 0;
-      return `  - 📝 ${title} (${qCount} أسئلة)\n    id: ${id}\n    https://basmagi-quiz.vercel.app/quiz/${id}`;
+      return `  - 📝 ${title} (${qCount} أسئلة)\n    id: ${id}\n    https://basmagi.vercel.app/quiz/${id}`;
     });
     output.push(`## الامتحانات (${quizzes.length}):\n\n${quizLines.join("\n\n")}`);
   }
@@ -1096,7 +1096,7 @@ async function handleGetFolderContentsBase(args: {
   if (lessons.length > 0) {
     const lines = lessons.map((l: any) => {
       const lock = l.password_protected ? " 🔒" : "";
-      return `  - 📖 ${l.title}${lock} (${l.section_count || 0} أقسام)\n    id: ${l.id}\n    https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`;
+      return `  - 📖 ${l.title}${lock} (${l.section_count || 0} أقسام)\n    id: ${l.id}\n    https://basmagi.vercel.app/lesson/${l.slug || l.id}`;
     });
     output.push(`## الدروس (${lessons.length}):\n\n${lines.join("\n\n")}`);
   }
@@ -1114,7 +1114,7 @@ async function notebookInventory(scope: { courseId?: string; folderId?: string }
   else if (scope.courseId) q = recursive ? q.eq("course_id", scope.courseId) : q.eq("course_id", scope.courseId).is("folder_id", null);
   const { data } = await q.order("sort_order", { ascending: true, nullsFirst: false }).limit(200);
   if (!data || !data.length) return "";
-  const lines = data.map((n: any) => `  - 💻 ${n.title} (${n.runtime}، ${n.cell_count || 0} خلايا) — id: ${n.id} — https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(n.slug || n.id)}`);
+  const lines = data.map((n: any) => `  - 💻 ${n.title} (${n.runtime}، ${n.cell_count || 0} خلايا) — id: ${n.id} — https://basmagi.vercel.app/notebook/${encodeURIComponent(n.slug || n.id)}`);
   return `## الدفاتر التفاعلية (${data.length}):\n${lines.join("\n")}`;
 }
 
@@ -1254,7 +1254,7 @@ async function handleGetQuiz(args: { quizId: string; format?: string }) {
 
   const id = quizData.meta?.id || quizId;
   const sourceLine = source ? `المصدر: ${source}\n` : "";
-  return `# 📝 ${title}\n${desc ? desc + "\n\n" : "\n"}${sourceLine}عدد الأسئلة: ${questions.length}\nالرابط المباشر: https://basmagi-quiz.vercel.app/quiz/${id}\n\n${formattedQuestions.join("\n\n")}`;
+  return `# 📝 ${title}\n${desc ? desc + "\n\n" : "\n"}${sourceLine}عدد الأسئلة: ${questions.length}\nالرابط المباشر: https://basmagi.vercel.app/quiz/${id}\n\n${formattedQuestions.join("\n\n")}`;
 }
 
 async function handleGetQuizByUrl(args: { url_or_id: string; format?: string }) {
@@ -1282,7 +1282,7 @@ async function handleGetLesson(args: { lessonId: string }) {
 
   const protectedNote = data.password_protected ? "\n⚠️ هذا الدرس محمي بكلمة مرور." : "";
 
-  return `# 📖 ${data.title}\n\n${data.description || ""}\n\nالمصدر: ${data.source || "منصة بصمجي"}\nعدد الأقسام: ${data.section_count ?? "غير محدد"}${protectedNote}\n\n💡 *للحصول على المحتوى الكامل للدرس، استخدم get_lesson_content.*\nرابط الدرس: https://basmagi-quiz.vercel.app/lesson/${data.slug || data.id}`;
+  return `# 📖 ${data.title}\n\n${data.description || ""}\n\nالمصدر: ${data.source || "منصة بصمجي"}\nعدد الأقسام: ${data.section_count ?? "غير محدد"}${protectedNote}\n\n💡 *للحصول على المحتوى الكامل للدرس، استخدم get_lesson_content.*\nرابط الدرس: https://basmagi.vercel.app/lesson/${data.slug || data.id}`;
 }
 
 async function handleGetLessonContent(args: { lessonId: string; format?: string }) {
@@ -1297,7 +1297,7 @@ async function handleGetLessonContent(args: { lessonId: string; format?: string 
 
   if (error || !data) return `لم يتم العثور على الدرس بالمعرف "${lessonId}".`;
 
-  const lessonUrl = `https://basmagi-quiz.vercel.app/lesson/${data.slug || data.id}`;
+  const lessonUrl = `https://basmagi.vercel.app/lesson/${data.slug || data.id}`;
 
   if (data.password_protected) {
     return `# ${data.title}\n\n⚠️ هذا الدرس محمي بكلمة مرور ولا يمكن عرض محتواه.\nرابط الدرس: ${lessonUrl}`;
@@ -1392,7 +1392,7 @@ async function handleListRecentContent(args: { limit?: number; type?: string }) 
         const id = m.id || q.id;
         const title = m.title || "امتحان بدون عنوان";
         const date = q.created_at ? new Date(q.created_at).toLocaleDateString("ar-EG") : "";
-        return `- 📝 ${title} (${q.data?.questions?.length || 0} أسئلة) ${date ? `[${date}]` : ""}\n  id: ${id} — https://basmagi-quiz.vercel.app/quiz/${id}`;
+        return `- 📝 ${title} (${q.data?.questions?.length || 0} أسئلة) ${date ? `[${date}]` : ""}\n  id: ${id} — https://basmagi.vercel.app/quiz/${id}`;
       });
       output.push(`## أحدث الامتحانات:\n${lines.join("\n")}`);
     }
@@ -1409,7 +1409,7 @@ async function handleListRecentContent(args: { limit?: number; type?: string }) 
       const lines = lessons.map((l: any) => {
         const lock = l.password_protected ? " 🔒" : "";
         const date = l.created_at ? new Date(l.created_at).toLocaleDateString("ar-EG") : "";
-        return `- 📖 ${l.title}${lock} (${l.section_count || 0} أقسام) ${date ? `[${date}]` : ""}\n  id: ${l.id} — https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`;
+        return `- 📖 ${l.title}${lock} (${l.section_count || 0} أقسام) ${date ? `[${date}]` : ""}\n  id: ${l.id} — https://basmagi.vercel.app/lesson/${l.slug || l.id}`;
       });
       output.push(`## أحدث الدروس:\n${lines.join("\n")}`);
     }
@@ -1425,7 +1425,7 @@ async function handleListRecentContent(args: { limit?: number; type?: string }) 
     if (notebooks && notebooks.length > 0) {
       const lines = notebooks.map((n: any) => {
         const date = n.created_at ? new Date(n.created_at).toLocaleDateString("ar-EG") : "";
-        return `- 💻 ${n.title} (${n.runtime}، ${n.cell_count || 0} خلايا) ${date ? `[${date}]` : ""}\n  id: ${n.id} — https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(n.slug || n.id)}`;
+        return `- 💻 ${n.title} (${n.runtime}، ${n.cell_count || 0} خلايا) ${date ? `[${date}]` : ""}\n  id: ${n.id} — https://basmagi.vercel.app/notebook/${encodeURIComponent(n.slug || n.id)}`;
       });
       output.push(`## أحدث الدفاتر:\n${lines.join("\n")}`);
     }
@@ -1452,7 +1452,7 @@ async function handleGetPlatformStats() {
 - 💻 إجمالي الدفاتر التفاعلية العامة: ${notebooksCount.count ?? "غير متوفر"}
 - 🏛️ إجمالي الكليات والمؤسسات: ${collegesCount.count ?? "غير متوفر"}
 
-المنصة مجانية ومفتوحة لجميع الطلاب والمعلمين: https://basmagi-quiz.vercel.app`;
+المنصة مجانية ومفتوحة لجميع الطلاب والمعلمين: https://basmagi.vercel.app`;
 }
 
 function handleGetPrompts(args: { name: string }) {
@@ -1519,14 +1519,14 @@ async function handleGetNotebook(args: { notebookId: string }) {
   if (!String(args?.notebookId || "").trim()) return "الرجاء تحديد معرف الدفتر (notebookId).";
   const d = await fetchNotebook(args.notebookId);
   if (!d) return `لم يتم العثور على الدفتر بالمعرف "${args.notebookId}".`;
-  return `# 💻 ${d.title}\n\n${d.description || ""}\n\nالمصدر: ${d.source || "منصة بصمجي"}\nبيئة التشغيل: ${d.runtime}\nعدد الخلايا: ${d.cell_count ?? "غير محدد"}\n\n${NOTEBOOK_NOTE[d.runtime] || NOTEBOOK_NOTE.matlab}\n💡 للمحتوى الكامل استخدم get_notebook_content.\nرابط الدفتر: https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(d.slug || d.id)}`;
+  return `# 💻 ${d.title}\n\n${d.description || ""}\n\nالمصدر: ${d.source || "منصة بصمجي"}\nبيئة التشغيل: ${d.runtime}\nعدد الخلايا: ${d.cell_count ?? "غير محدد"}\n\n${NOTEBOOK_NOTE[d.runtime] || NOTEBOOK_NOTE.matlab}\n💡 للمحتوى الكامل استخدم get_notebook_content.\nرابط الدفتر: https://basmagi.vercel.app/notebook/${encodeURIComponent(d.slug || d.id)}`;
 }
 
 async function handleGetNotebookContent(args: { notebookId: string; format?: string }) {
   if (!String(args?.notebookId || "").trim()) return "الرجاء تحديد معرف الدفتر (notebookId).";
   const d = await fetchNotebook(args.notebookId);
   if (!d) return `لم يتم العثور على الدفتر بالمعرف "${args.notebookId}".`;
-  const url = `https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(d.slug || d.id)}`;
+  const url = `https://basmagi.vercel.app/notebook/${encodeURIComponent(d.slug || d.id)}`;
   if (!d.content?.cells) return `# ${d.title}\n\nلا يوجد محتوى متاح لهذا الدفتر.\nرابط الدفتر: ${url}`;
   if (args?.format === "outline") return outlineNotebook({ ...d, cells: d.content.cells });
   if (args?.format === "json") {
@@ -1975,7 +1975,7 @@ Deno.serve(async (req: Request) => {
         protocol: "mcp-jsonrpc-2.0",
         name: "Basmagi Quiz Model Context Protocol (MCP) Server",
         version: "3.1.0",
-        homepage: "https://basmagi-quiz.vercel.app",
+        homepage: "https://basmagi.vercel.app",
         toolsCount: TOOLS.length,
         toolsAvailable: TOOLS.map((t) => t.name),
       }, null, 2),
