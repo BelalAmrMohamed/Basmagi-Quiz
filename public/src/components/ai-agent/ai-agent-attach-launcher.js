@@ -11,8 +11,7 @@
 //     user-quizzes-folders.js). Fully resolvable client-side — this module
 //     builds a real summary (question count/types for a quiz, child counts
 //     for a folder/course) from data already on hand.
-//   - Server-hosted main-page courses (see course-info-tooltip.js /
-//     root-view.js): identified only by `.key`/`.name` from the static
+//   - Server-hosted main-page courses (see root-view.js): identified only by `.key`/`.name` from the static
 //     category manifest at attach time — their quiz list isn't loaded
 //     client-side at that point, so these resolve to a title-only
 //     attachment (no deep summary). ai-agent-chat.js's own
@@ -61,7 +60,7 @@ export function resolveUserItemAttachment(id) {
 
 /**
  * Builds the attachment shape directly for a server-hosted main-page
- * course (see course-info-tooltip.js) — these aren't in `user_quizzes` at
+ * course — these aren't in `user_quizzes` at
  * all, so there's nothing to look up; just the name the tooltip already
  * has on hand. No `summary` — see this file's own header comment on why
  * that's an acceptable, gracefully-handled gap for this source.

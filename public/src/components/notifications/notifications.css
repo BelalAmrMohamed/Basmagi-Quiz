@@ -343,7 +343,7 @@
 }
 
 /* Dark Mode specific overrides if needed (though vars handle most) */
-[data-theme="dark-slate"] .confirmation-overlay,
+
 [data-theme="dark"] .confirmation-overlay {
   background: rgba(0, 0, 0, 0.6);
 }
@@ -354,20 +354,8 @@
   color: #fff;
 }
 
-[data-theme="dark-slate"] .notification.glass-toast {
-  background: rgba(30, 41, 59, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
-}
-
 [data-theme="dark"] .close-btn-notification {
   background: rgba(50, 50, 50, 0.9);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
-[data-theme="dark-slate"] .close-btn-notification {
-  background: rgba(30, 41, 59, 0.9);
   border-color: rgba(255, 255, 255, 0.2);
   color: #fff;
 }

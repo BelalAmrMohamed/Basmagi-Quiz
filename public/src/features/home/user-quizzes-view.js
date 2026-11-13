@@ -52,7 +52,7 @@ import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
-import { createUserQuizCard, createUserLessonCard, createUserNotebookCard } from "./user-quiz-card.js";
+import { createUserQuizCard, createUserLessonCard, createUserNotebookCard } from "./item-card.js";
 import { takePendingHighlight } from "./mcp-draft-import.js";
 import { openInlineCreateQuizModal } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";

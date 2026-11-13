@@ -49,7 +49,7 @@ function resolveTooltipData(target) {
 
   // 1. Folders and courses: NO tooltips on cards, icons, or subtext;
   // only show on the title (h3) if the title is actually clamped/truncated.
-  const categoryCard = target.closest(".category-card");
+  const categoryCard = target.closest('.item-card[data-card-kind="folder"]');
   if (categoryCard) {
     const heading = target.closest("h3");
     if (!heading || !categoryCard.contains(heading)) {
@@ -64,7 +64,7 @@ function resolveTooltipData(target) {
   }
 
   // 2. Card descriptions on content cards: only show if clamped/truncated
-  const desc = target.closest(".lesson-card-description");
+  const desc = target.closest(".ic-desc");
   if (desc) {
     if (!isTextClamped(desc)) {
       return null;
@@ -75,21 +75,11 @@ function resolveTooltipData(target) {
 
   // 3. Content card headings (quizzes, lessons, notebooks):
   // ALWAYS show on hover with type badge so desktop users can distinguish card kinds easily
-  const examHeading = target.closest(".exam-card .card-text > h3, .exam-card h3");
+  const examHeading = target.closest(".item-card h3");
   if (examHeading) {
     const text = examHeading.getAttribute("data-tooltip-text") || examHeading.textContent.trim();
-    let badge = examHeading.getAttribute("data-tooltip-badge") || "";
-    if (!badge) {
-      const card = examHeading.closest(".exam-card");
-      if (card) {
-        if (card.classList.contains("lesson-card")) badge = "📘 درس تفاعلي";
-        else if (card.classList.contains("notebook-card")) badge = "💻 دفتر تفاعلي";
-        else if (card.classList.contains("exam-card")) badge = "📝 امتحان";
-      }
-    }
-    if (text) {
-      return { element: examHeading, text, badge };
-    }
+    const badge = examHeading.getAttribute("data-tooltip-badge") || "";
+    if (text) return { element: examHeading, text, badge };
   }
 
   // 4. Explicitly clamped-only elements
@@ -102,7 +92,7 @@ function resolveTooltipData(target) {
 
   // 5. Generic direct data attributes (outside category cards)
   const directEl = target.closest("[data-tooltip-text], [data-tooltip-badge]");
-  if (directEl && !directEl.closest(".category-card")) {
+  if (directEl && !directEl.closest('.item-card[data-card-kind="folder"]')) {
     const text = directEl.getAttribute("data-tooltip-text") || "";
     const badge = directEl.getAttribute("data-tooltip-badge") || "";
     if (text || badge) {

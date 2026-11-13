@@ -21,7 +21,6 @@ import "./console-ui.js";
 
 // 2. Logic imports
 import { initPWA } from "../../shared/pwa-manager.js";
-import { installHoverSpotlight } from "../../shared/hover-spotlight.js";
 import { syncAdminSessionWithSupabase } from "./session-sync.js";
 import { initApp, restoreViewFromURL } from "./navigation.js";
 import { renderRootCategories } from "./root-view.js";
@@ -54,18 +53,6 @@ window.navigateToRootHome = () => {
   renderRootCategories();
 };
 
-// ── Global click listener: close course-info tooltips on outside click ───────
-// Ported verbatim from original lines 5499-5513 (the last lines of index.js).
-document.addEventListener("click", (e) => {
-  if (!e.target.closest(".course-info-container")) {
-    document
-      .querySelectorAll(".course-info-tooltip.show")
-      .forEach((tooltip) => {
-        tooltip.classList.remove("show");
-      });
-  }
-});
-
 // ── Global error boundary ─────────────────────────────────────────────────────
 // Ported from original lines 5401-5404.
 window.addEventListener("unhandledrejection", (event) => {
@@ -92,7 +79,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // banner are active regardless of which page the user is on.
   initPWA();
   initCustomTooltips();
-  installHoverSpotlight();
 
   // ── Page guard ────────────────────────────────────────────────────────────
   // index-entrypoint.js is imported as an ES module by side-menu.js (for the

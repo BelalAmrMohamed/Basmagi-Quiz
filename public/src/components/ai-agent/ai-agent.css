@@ -1361,48 +1361,6 @@
   font-weight: 700;
 }
 
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-keyword,
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-function {
-  color: #82aaff;
-}
-
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-string {
-  color: #c3e88d;
-}
-
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-number,
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-interp {
-  color: #f78c6c;
-}
-
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-comment {
-  color: #546e7a;
-  font-style: italic;
-}
-
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-type {
-  color: #ffcb6b;
-}
-
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-builtin,
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-operator {
-  color: #89ddff;
-}
-
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-attr,
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-property,
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-interp-body {
-  color: #b2ccd6;
-}
-
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-tag {
-  color: #f07178;
-}
-
-[data-theme="dark-slate"] .rich-input-highlight--code-block .sh-variable {
-  color: #eeffff;
-}
-
 .rich-input-highlight--unordered-list,
 .rich-input-highlight--ordered-list,
 .rich-input-highlight--task-list,
@@ -2948,7 +2906,7 @@ body.sidebar-expanded .ai-agent-fab {
    two categories need different treatment below.
 
    Every var(--color-...) used below was checked against a real search of
-   themes.css (all three themes: light, dark, dark-slate) — none are
+   themes.css (all three themes: light, dark) — none are
    invented. --color-selected-bg / --color-hover-overlay / --color-focus-ring
    are the theme's own "interactive state" tokens, used for the persistent
    attached / hover / keyboard-focus states respectively so they read as
@@ -3077,7 +3035,7 @@ body.sidebar-expanded .ai-agent-fab {
    so an attached row reads as both permanently checked and inert.
    --color-selected-bg is every theme's own token for exactly a persistent
    selected/checked state (distinct from --color-hover-overlay's transient
-   hover tint above), confirmed present in light/dark/dark-slate. */
+   hover tint above), confirmed present in light/dark. */
 .ai-agent-mention-row.is-attached {
   background: var(--color-selected-bg);
 }

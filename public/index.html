@@ -207,8 +207,9 @@
     <script>
         (function () {
             try {
-                const savedTheme = localStorage.getItem("quiz_theme_pref") || "light";
-                const savedAnimations = localStorage.getItem("quiz_animations_pref") !== "disabled";
+                let savedTheme = localStorage.getItem("quiz_theme_pref") || "light";
+                if (savedTheme === "dark-slate") savedTheme = "dark";
+                const savedAnimations = localStorage.getItem("quiz_animations_pref") === "enabled";
                 const savedHighPerformance = localStorage.getItem("quiz_high_performance_pref") === "enabled";
                 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -300,7 +301,6 @@
     <!-- CSS Files -->
     <link rel="stylesheet" href="src/styles/themes.css">
     <link rel="stylesheet" href="src/features/home/index.css">
-    <link rel="stylesheet" href="src/features/home/card-types.css">
     <link rel="stylesheet" href="src/components/quiz-info-modal/quiz-info-modal.css">
     <!-- Local ("امتحاناتك") trash panel — extends the .quiz-info-dialog shell
          above, so it must load after quiz-info-modal.css. -->
@@ -713,23 +713,6 @@
                             </span>
                             <span class="theme-btn-label">السوداء</span>
                         </button>
-                        <button class="theme-selector-btn" title="الخلفية الزرقاء" data-theme="dark-slate"
-                            aria-pressed="false">
-                            <span class="theme-btn-preview" aria-hidden="true">
-                                <span class="theme-btn-preview-header"></span>
-                                <span class="theme-btn-preview-list">
-                                    <span class="theme-btn-preview-row"></span>
-                                    <span class="theme-btn-preview-row"></span>
-                                </span>
-                            </span>
-                            <span class="theme-btn-check" aria-hidden="true">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                            </span>
-                            <span class="theme-btn-label">الزرقاء</span>
-                        </button>
                         <button class="theme-selector-btn" title="الخلفية البيضاء" data-theme="light"
                             aria-pressed="false">
                             <span class="theme-btn-preview" aria-hidden="true">
@@ -753,7 +736,7 @@
                         title="تفعيل و تعطيل الرسوم المتحركة في الخلفية (عطّل الرسوم لتحسين الأداء)">
                         <span class="animation-toggle-label">رسوم الخلفية</span>
                         <input type="checkbox" id="animationToggle" class="toggle-input" data-control="animations"
-                            checked aria-label="رسوم الخلفية المتحركة">
+                            aria-label="رسوم الخلفية المتحركة">
                         <span class="toggle-switch" aria-hidden="true"></span>
                     </label>
 
@@ -1152,6 +1135,13 @@
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
             </button>
+            <svg class="header-notch" aria-hidden="true">
+                <defs><pattern id="hdrTeeth" width="56" height="20" patternUnits="userSpaceOnUse">
+                    <polygon points="0,0 56,0 56,6 28,19 0,6"/>
+                    <polyline points="0,6 28,19 56,6"/>
+                </pattern></defs>
+                <rect width="100%" height="20" fill="url(#hdrTeeth)" stroke="none"/>
+            </svg>
         </header>
 
         <main id="contentArea" role="main" aria-live="polite" aria-busy="true" aria-label="محتوى الصفحة الرئيسية">

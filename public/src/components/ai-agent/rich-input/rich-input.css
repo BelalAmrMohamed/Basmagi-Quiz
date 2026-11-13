@@ -2,7 +2,7 @@
    rich-input.css — styles for the AI Agent rich input (rich-input.js).
    Plain-CSS conversion of the 21st.dev component's Tailwind classes, mapped
    onto this site's theme tokens (--color-*), so it follows light / dark /
-   dark-slate automatically.
+   dark automatically.
    ============================================================================= */
 
 .rmci-root,
@@ -19,8 +19,7 @@
   --rmci-fn: #8250df; --rmci-type: #953800; --rmci-attr: #116329; --rmci-del: #82071e;
 }
 
-html[data-theme="dark"] .rmci-root,
-html[data-theme="dark-slate"] .rmci-root {
+html[data-theme="dark"] .rmci-root {
   --rmci-comment: #7d8590; --rmci-kw: #ff7b72; --rmci-str: #a5d6ff; --rmci-num: #79c0ff;
   --rmci-fn: #d2a8ff; --rmci-type: #ffa657; --rmci-attr: #7ee787; --rmci-del: #ffa198;
 }

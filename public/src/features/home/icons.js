@@ -73,7 +73,7 @@ export const CHECK_SQUARE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" wi
 export const MOVE_TO_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9V5c0-1.1.9-2 2-2h3.9c.7 0 1.3.3 1.7.9l.8 1.2c.4.6 1 .9 1.7.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2"/><path d="M2 13h10"/><path d="m9 16 3-3-3-3"/></svg>`;
 
 // PHASE 2: shared sparkle glyph for "اسأل الباشـمبصمج" entry points
-// (course-info-tooltip.js, user-quiz-card.js) — same icon ai-agent.js
+// (user-quiz-card.js) — same icon ai-agent.js
 // already uses for its own FAB/header (SPARKLE_ICON_SVG, defined locally
 // there), duplicated here as a shared export so both entry-point call
 // sites and the AI Agent module itself stay visually consistent without

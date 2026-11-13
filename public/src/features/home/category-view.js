@@ -5,7 +5,6 @@
 // ============================================================================
 
 import { toSlug } from "./slug-utils.js";
-import { addCardShape } from "./card-type.js";
 import { getItemText } from "./item-text.js";
 import { container, title } from "./dom-refs.js";
 import {
@@ -22,9 +21,7 @@ import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { refreshUserQuizzesCard } from "./course-count.js";
 import { isRecentlyAdded } from "./date-utils.js";
 import { getSubjectIcon } from "./subject-icons.js";
-import { createExamCard } from "./exam-card.js";
-import { createLessonCard } from "./lesson-card.js";
-import { createNotebookCard } from "./notebook-card.js";
+import { createExamCard, createLessonCard, createNotebookCard, createFolderCard } from "./item-card.js";
 import { buildContainerInfoRows } from "./info-details.js";
 import { openItemDropdownMenu, createActionGroupSubmenu, createExamInfoSubmenu } from "./item-dropdown-menu.js";
 import { showFolderInfoModal } from "./folder-info-modal.js";
@@ -271,210 +268,136 @@ function createCourseSubscribeBanner(course) {
   return banner;
 }
 
-/**
- * Returns an Arabic pluralised label for the exam count on a category card.
- * @param {number} count
- * @returns {string}
- */
-export function createCategoryCard(
-  name,
-  itemCount,
-  isFolder = false,
-  courseData = null,
-  isSubfolder = false, // ← new param: true for subcategories inside a course
-  subtextOverride = null, // ← optional: exact subtext string, bypassing the
-  // generic itemCount/getItemText() "N امتحان(ات)" phrasing below. Used by
-  // the "امتحاناتك" root card, whose contents aren't purely quizzes (can
-  // include folders/courses too), so a single "N امتحان" label is wrong for
-  // it — see getUserQuizzesBreakdown()/formatUserQuizzesBreakdown().
-) {
-  const card = document.createElement("div");
+/** Folder card for a subcategory inside a course. */
+export function createCategoryCard(name, itemCount, isFolder = false, courseData = null, isSubfolder = true, subtextOverride = null) {
+  const subtext = subtextOverride || `${itemCount > 2 ? itemCount : ""} ${getItemText(itemCount)}`.trim();
+  return createFolderCard({
+    title: name,
+    subtext,
+    isNew: !!courseData && isRecentlyAdded(courseData.createdAt),
+    onMore: courseData ? (btn) => openFolderMenu(btn, courseData) : null,
+    onOpen: null,
+  });
+}
 
-  card.className = "card category-card";
-  card.setAttribute("role", "button");
-  card.setAttribute("tabindex", "0");
+function openFolderMenu(btn, courseData) {
+  openItemDropdownMenu(btn, (menu, closeMenu, reposition) => {
+    // Build a shareable URL matching the real-path scheme used by
+    // renderCategory(): /course/{courseSlug}/{subSlug}/{subSlug2}/...
+    // (all real path segments now, not a #hash — see renderCategory()'s
+    // comment for why: a hash is never sent to the server, so a shared
+    // link to a nested folder needs a real path segment to get its own
+    // accurate OG image.)
+    const pathSegments = courseData.path || [courseData.name];
+    const folderUrl = `${window.location.origin}/course/` +
+      pathSegments.map((seg) => encodeURIComponent(toSlug(seg))).join("/");
+    const copyLink = document.createElement("button");
+    copyLink.type = "button";
+    copyLink.className = "exam-action-btn";
+    copyLink.innerHTML = `${COPY_ICON_SVG}<span>نسخ الرابط</span>`;
+    copyLink.onclick = async (e) => {
+      e.stopPropagation();
+      await navigator.clipboard.writeText(folderUrl);
+      closeMenu();
+      showNotification("تم النسخ", "تم نسخ رابط المجلد.", "success");
+    };
+    menu.appendChild(copyLink);
 
-  card.setAttribute(
-    "aria-label",
-    `${name}, ${subtextOverride || `${itemCount} ${getItemText(itemCount)}`}`,
-  );
+    const shareLink = document.createElement("button");
+    shareLink.type = "button";
+    shareLink.className = "exam-action-btn";
+    shareLink.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الرابط</span>`;
+    shareLink.onclick = async (e) => {
+      e.stopPropagation();
+      closeMenu();
+      if (navigator.share) {
+        await navigator.share({ title: courseData.name, url: folderUrl }).catch(() => { });
+      } else {
+        await navigator.clipboard.writeText(folderUrl);
+        showNotification("تم النسخ", "تم نسخ رابط المجلد.", "success");
+      }
+    };
+    menu.appendChild(shareLink);
 
-  if (courseData && isRecentlyAdded(courseData.createdAt)) {
-    const newBadge = document.createElement("span");
-    newBadge.className = "new-badge";
-    newBadge.textContent = "جديد";
-    newBadge.setAttribute("aria-label", "مضاف حديثاً");
-    card.appendChild(newBadge);
-  }
+    const copyToMine = document.createElement("button");
+    copyToMine.type = "button";
+    copyToMine.className = "exam-action-btn";
+    copyToMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ إلى محتواي</span>`;
+    copyToMine.onclick = async (e) => {
+      e.stopPropagation();
+      await withCopyButtonLoadingState(copyToMine, () =>
+        copyCategoryTreeToUserQuizzes(courseData, getCategoryTree(), "folder"),
+      );
+      refreshUserQuizzesCard();
+      closeMenu();
+    };
+    menu.appendChild(copyToMine);
 
-  const icon = getSubjectIcon(name, isSubfolder);
-
-  const iconDiv = document.createElement("div");
-  iconDiv.className = "icon";
-  iconDiv.textContent = icon;
-  iconDiv.setAttribute("aria-hidden", "true");
-
-  const h3 = document.createElement("h3");
-  h3.textContent = name;
-  h3.setAttribute("data-tooltip-text", name);
-  h3.setAttribute("data-tooltip-clamped-only", "true");
-
-  const p = document.createElement("p");
-
-  p.textContent = subtextOverride || `${itemCount > 2 ? itemCount : ""} ${getItemText(itemCount)}`;
-
-  // Wrap text elements — display:contents on desktop (transparent), flex col on mobile
-  const textWrap = document.createElement("div");
-  textWrap.className = "card-text";
-  textWrap.appendChild(h3);
-
-  // tags removed for cleaner UI
-  textWrap.appendChild(p);
-
-  card.appendChild(iconDiv);
-  card.appendChild(textWrap);
-
-  if (isSubfolder && courseData) {
-    const moreBtn = document.createElement("button");
-    moreBtn.type = "button";
-    moreBtn.className = "exam-more-btn exam-more-btn--lg";
-    moreBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>`;
-    moreBtn.setAttribute("aria-label", `خيارات ${name}`);
-    moreBtn.onclick = (event) => {
-      event.stopPropagation();
-      openItemDropdownMenu(moreBtn, (menu, closeMenu, reposition) => {
-        // Build a shareable URL matching the real-path scheme used by
-        // renderCategory(): /course/{courseSlug}/{subSlug}/{subSlug2}/...
-        // (all real path segments now, not a #hash — see renderCategory()'s
-        // comment for why: a hash is never sent to the server, so a shared
-        // link to a nested folder needs a real path segment to get its own
-        // accurate OG image.)
-        const pathSegments = courseData.path || [courseData.name];
-        const folderUrl = `${window.location.origin}/course/` +
-          pathSegments.map((seg) => encodeURIComponent(toSlug(seg))).join("/");
-        const copyLink = document.createElement("button");
-        copyLink.type = "button";
-        copyLink.className = "exam-action-btn";
-        copyLink.innerHTML = `${COPY_ICON_SVG}<span>نسخ الرابط</span>`;
-        copyLink.onclick = async (e) => {
-          e.stopPropagation();
-          await navigator.clipboard.writeText(folderUrl);
-          closeMenu();
-          showNotification("تم النسخ", "تم نسخ رابط المجلد.", "success");
-        };
-        menu.appendChild(copyLink);
-
-        const shareLink = document.createElement("button");
-        shareLink.type = "button";
-        shareLink.className = "exam-action-btn";
-        shareLink.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الرابط</span>`;
-        shareLink.onclick = async (e) => {
-          e.stopPropagation();
-          closeMenu();
-          if (navigator.share) {
-            await navigator.share({ title: courseData.name, url: folderUrl }).catch(() => { });
-          } else {
-            await navigator.clipboard.writeText(folderUrl);
-            showNotification("تم النسخ", "تم نسخ رابط المجلد.", "success");
-          }
-        };
-        menu.appendChild(shareLink);
-
-        const copyToMine = document.createElement("button");
-        copyToMine.type = "button";
-        copyToMine.className = "exam-action-btn";
-        copyToMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ إلى محتواي</span>`;
-        copyToMine.onclick = async (e) => {
-          e.stopPropagation();
-          await withCopyButtonLoadingState(copyToMine, () =>
-            copyCategoryTreeToUserQuizzes(courseData, getCategoryTree(), "folder"),
-          );
-          refreshUserQuizzesCard();
-          closeMenu();
-        };
-        menu.appendChild(copyToMine);
-
-        const askAi = document.createElement("button");
-        askAi.type = "button";
-        askAi.className = "exam-action-btn";
-        askAi.innerHTML = `${SPARKLE_ICON_SVG}<span>اسأل الباشـمبصمج</span>`;
-        askAi.onclick = () => {
-          closeMenu();
-          openAIAgentWithAttachment(buildPlatformFolderAttachment(courseData, getCategoryTree()), {
-            defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
-          });
-        };
-        menu.appendChild(askAi);
-
-        // "معلومات المجلد" — quick rows inline, "كل المعلومات" opens the
-        // full folder info modal (dates, path, creator, counts).
-        const folderRows = buildContainerInfoRows(getCategoryTree(), courseData);
-        menu.appendChild(createExamInfoSubmenu(
-          folderRows,
-          () => showFolderInfoModal(courseData),
-          closeMenu,
-          reposition,
-          "معلومات المجلد",
-        ));
-
-        // ── Admin manage group — نقل / تغيير العنوان / حذف (→ trash) ──────
-        // Folders only: gated on the same canManageItem() 3-tier check as
-        // quizzes (owner → creator match → scope match), grouped below the
-        // public actions with a divider, collapsed into a single "إدارة"
-        // submenu-trigger row. `courseData` here is the category-tree
-        // folder node, which quizManifest.js now threads with the DB
-        // folder id / course_id / parent_folder_id / created_by it needs.
-        if (canManageItem(courseData)) {
-          const divider = document.createElement("div");
-          divider.className = "exam-action-divider";
-          menu.appendChild(divider);
-
-          const adminSubmenu = createActionGroupSubmenu(
-            [
-              {
-                // نقل — shared Move-Source dialog over the DB
-                // courses+folders tree.
-                label: "نقل",
-                icon: MOVE_TO_ICON_SVG,
-                onClick: () => openSharedMoveToDialog(courseData),
-              },
-              {
-                // تغيير العنوان.
-                label: "تغيير العنوان",
-                icon: RENAME_ICON_SVG,
-                onClick: () => renameSharedItem(courseData),
-              },
-              {
-                // حذف — soft-deletes the folder + its whole subtree to the
-                // shared trash (one batch, fully restorable until purged).
-                label: "حذف المجلد",
-                icon: TRASH_ICON_SVG,
-                danger: true,
-                onClick: () => deleteSharedItem(courseData),
-              },
-            ],
-            closeMenu,
-            reposition,
-          );
-          menu.appendChild(adminSubmenu);
-        }
+    const askAi = document.createElement("button");
+    askAi.type = "button";
+    askAi.className = "exam-action-btn";
+    askAi.innerHTML = `${SPARKLE_ICON_SVG}<span>اسأل الباشـمبصمج</span>`;
+    askAi.onclick = () => {
+      closeMenu();
+      openAIAgentWithAttachment(buildPlatformFolderAttachment(courseData, getCategoryTree()), {
+        defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
       });
     };
-    card.appendChild(moreBtn);
-  }
+    menu.appendChild(askAi);
 
-  // Keyboard support
-  card.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      card.click();
+    // "معلومات المجلد" — quick rows inline, "كل المعلومات" opens the
+    // full folder info modal (dates, path, creator, counts).
+    const folderRows = buildContainerInfoRows(getCategoryTree(), courseData);
+    menu.appendChild(createExamInfoSubmenu(
+      folderRows,
+      () => showFolderInfoModal(courseData),
+      closeMenu,
+      reposition,
+      "معلومات المجلد",
+    ));
+
+    // ── Admin manage group — نقل / تغيير العنوان / حذف (→ trash) ──────
+    // Folders only: gated on the same canManageItem() 3-tier check as
+    // quizzes (owner → creator match → scope match), grouped below the
+    // public actions with a divider, collapsed into a single "إدارة"
+    // submenu-trigger row. `courseData` here is the category-tree
+    // folder node, which quizManifest.js now threads with the DB
+    // folder id / course_id / parent_folder_id / created_by it needs.
+    if (canManageItem(courseData)) {
+      const divider = document.createElement("div");
+      divider.className = "exam-action-divider";
+      menu.appendChild(divider);
+
+      const adminSubmenu = createActionGroupSubmenu(
+        [
+          {
+            // نقل — shared Move-Source dialog over the DB
+            // courses+folders tree.
+            label: "نقل",
+            icon: MOVE_TO_ICON_SVG,
+            onClick: () => openSharedMoveToDialog(courseData),
+          },
+          {
+            // تغيير العنوان.
+            label: "تغيير العنوان",
+            icon: RENAME_ICON_SVG,
+            onClick: () => renameSharedItem(courseData),
+          },
+          {
+            // حذف — soft-deletes the folder + its whole subtree to the
+            // shared trash (one batch, fully restorable until purged).
+            label: "حذف المجلد",
+            icon: TRASH_ICON_SVG,
+            danger: true,
+            onClick: () => deleteSharedItem(courseData),
+          },
+        ],
+        closeMenu,
+        reposition,
+      );
+      menu.appendChild(adminSubmenu);
     }
   });
-
-  // Subfolders (inside a course) get the manila-folder look (cards-v2.css).
-  // Root course cells are styled by the honeycomb, so they are left untouched.
-  if (isSubfolder) addCardShape(card, "folder");
-  return card;
 }
 
 function getCategoryContentsStats(category) {

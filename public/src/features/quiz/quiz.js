@@ -3248,7 +3248,7 @@ init();
     // Sync animation toggle state
     if (animationToggle) {
       const animsEnabled =
-        document.documentElement.getAttribute("data-animations") !== "disabled";
+        document.documentElement.getAttribute("data-animations") === "enabled";
       animationToggle.checked = animsEnabled;
     }
 

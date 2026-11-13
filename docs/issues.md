@@ -7,6 +7,11 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Performance Issues that Caused Vercel to pause all of my deployments and all of my websites on my hoppy account
+* My deployments were paused because I exceeded Vercel's Hobby fair use limits for Edge and CDN requests, reaching a total of 1,044,084 requests over the past 30 days due to a significant traffic surge that began in late October and peaked in early November (Midterm season, so I was getting a lot of traffic on this website).
+* I think that the issue is with the number of files that have to be served in from the website for users, specifically the number of files in the home page (`public/src/features/home`), which has tens upon tens of files that get served to users on the first visit just for the initial load. Solution: We must merge as much files as possible in one file, or we could do something advanced, like keeping them separate, but making some sort of a bundle that bundles them all in one file for shipping. 
+* And also the number and volume of serverless functions and edge functions I use in this platform, which are extremely hard on processing power. Solution: Some of which could be moved to Supabase functions instead of Vercel, or atleast parts of functions, like the OG thumbnails function, we could move parts of it that don't use assets that are stored on Vercel to Supabase.
+
 ### Offline Page
 Improve:
 * It's theme Should match the theme of the platform (see themes.css and theme-controller.js), but it shouldn't import these files, it should be independent. It should also default to the default theme of the platform.
@@ -79,17 +84,8 @@ Redesign the whole page:
 * It lacks images or visual elements.
 
 #### Suggestions
-* Add an open-source Angle (Since the repo is currently open source).
 * Add a short testimonial or review.
 * **Make all the docs measurable.** We already have an analytics beacon, so add one event for "copied MCP URL" and one for "opened My Content from a draft link". That tells us whether people finish setup. A "Was this helpful?" thumbs row per section would also show which steps confuse people.
-
-#### المنصة بالأرقام
-1. **Better more Advanced analytics:** Allow the user to extend the `المشاهدات في آخر 30 يومًا` to cover more/less time, like a year or a week or custom.
-2. The section is owfull to deal with on phones, specially the analytics. Improve resposiveness and interactions (UI/UX) 
-3. **Rich Tooltips**: Give rich tooltips to:
-   1. `مسار تعليمي نشط`: Shows the actual `Active learning paths`
-   2. `صانع محتوى`: Shows the top admins/developers. 
-      1. Suggestion (Not Confirmed): with a link to see all of them.
 
 #### Important Update
 * See [update plan.](plans/documentation-pages.md)

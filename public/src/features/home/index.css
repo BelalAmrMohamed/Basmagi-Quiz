@@ -1,8 +1,4 @@
 ﻿/* ============================================================================ */
-/* public/src/features/home/index.css */
-/* CSS variables at themes.css */
-/* All animations are in `public/src/shared/flow-field.js` */
-/* ============================================================================ */
 
 * {
   margin: 0;
@@ -28,7 +24,7 @@ body {
   padding-bottom: 40px;
   transition: padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  overflow-x: hidden;
+  overflow-x: clip;
   display: flex;
   flex-direction: column;
 }
@@ -151,8 +147,7 @@ body {
   .item-metadata-modal__body { padding: 20px 18px 17px; gap: 18px; }
   .item-metadata-modal__footer { align-items: stretch; flex-direction: column; padding: 15px 18px 18px; }
   .item-metadata-modal__hint { order: 2; }
-  .item-metadata-modal__actions { justify-content: flex-end; }
-}
+  .item-metadata-modal__actions { justify-content: flex-end; }}
 
 body.sidebar-expanded {
   padding-right: calc(var(--sidebar-expanded-width) + 16px);
@@ -221,15 +216,7 @@ body.sidebar-expanded {
   font-weight: 600;
 }
 
-/* ============================================================================
-   exam-more-btn — shared 3-dots trigger for the "more actions" dropdown.
-   Base size is tuned for QUIZ cards specifically: quiz titles sit close to
-   the top-right corner, so the trigger has to stay small/unobtrusive to
-   avoid overlapping the title. Courses and folders don't have that overlap
-   constraint and read as visually "too small"/fiddly to tap at this size —
-   see the --lg modifier below, applied via JS for course/folder contexts
-   (category-view.js, root-view.js, user-quizzes-folders.js).
-   ============================================================================ */
+/* Shared ⋮ trigger (item cards, folders, honeycomb cells). --lg is the larger variant. */
 .exam-more-btn {
   position: absolute;
   top: 5px;
@@ -259,10 +246,6 @@ body.sidebar-expanded {
   background: var(--color-border);
 }
 
-/* Courses & folders (category-view.js, root-view.js,
-   user-quizzes-folders.js) — larger, more clickable, with a visible resting
-   border so it reads as a deliberate control rather than a stray dot, matching
-   the weight of .course-kebab-btn used elsewhere for the same kind of card. */
 .exam-more-btn--lg {
   width: 30px;
   height: 30px;
@@ -279,215 +262,13 @@ body.sidebar-expanded {
   border-color: var(--color-primary);
 }
 
-/*
- * Mobile (≤768px): .exam-more-btn is a DOM child of .exam-card-actions-wrap,
- * sitting alongside .start-btn (which has an inline `flex: 1` style). Taking
- * the dots button out of absolute positioning here makes it a normal flex
- * item in that row instead — vertically centered, no overlap — while
- * order: 1 pins it to the end of the row (the right side) regardless of
- * where it actually falls in DOM order among its .start-btn siblings.
- */
-/* ============================================================================
-   Course Card Kebab & Info Buttons
-   ============================================================================ */
-.course-kebab-btn,
-.course-info-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: var(--color-background-secondary);
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  z-index: 2;
-}
-
-.course-kebab-btn:hover,
-.course-info-btn:hover {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-  transform: scale(1.05);
-}
-
-.course-info-container {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: var(--z-base);
-}
-
-.course-info-container .course-info-btn {
-  position: static;
-}
-
-/* Styled as a visual clone of .item-dropdown-menu (see
-   item-dropdown-menu.js / floating-position.js) — same card chrome,
-   same entrance animation, same z-index tier — so the two "anchored
-   popover" patterns in the app look and feel identical. Positioned
-   entirely by JS: positionCourseInfoTooltip() (tooltip-position.js)
-   always sets `position: fixed` plus explicit top/left pixel
-   coordinates inline once it runs, same technique
-   positionItemDropdownMenu() uses for .item-dropdown-menu. The
-   .course-info-tooltip class itself only needs to exist (this base
-   rule) for the brief instant before that JS call lands. */
-.course-info-tooltip {
-  position: fixed;
-  margin: 0;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  padding: 6px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
-  width: max-content;
-  max-width: calc(100vw - 16px);
-  max-height: calc(100vh - 16px);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  transition:
-    opacity 0.15s ease,
-    transform 0.15s ease,
-    visibility 0.15s;
-  pointer-events: none;
-  direction: rtl;
-  text-align: right;
-  font-size: 0.85rem;
-  color: var(--color-text-primary);
-  z-index: var(--z-tooltip);
-  box-sizing: border-box;
-}
-
-.course-info-tooltip.tooltip-interactive {
-  pointer-events: auto;
-}
-
-.course-info-tooltip.show {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-/* positionCourseInfoTooltip() only ever sets an explicit inline `top`
-   (never relies on `bottom`), so — unlike the old absolute-positioned
-   layout — no separate flip-above transform is needed here; JS already
-   picks the correct `top` value whether it placed the tooltip above or
-   below the trigger. */
-
-.course-info-tooltip .tooltip-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 4px 6px;
-  white-space: nowrap;
-}
-
-.course-info-tooltip .tooltip-row span:first-child {
-  color: var(--color-text-secondary);
-  font-weight: 600;
-}
-
 .tooltip-divider {
   border: none;
   border-top: 1px solid var(--color-border);
   margin: 4px 4px;
 }
 
-/* Styled as a clone of .exam-action-btn--danger so the unsubscribe
-   action matches the delete action in .item-dropdown-menu. */
-.tooltip-delete-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  background: var(--color-error-light);
-  border: 1.5px solid transparent;
-  border-radius: 10px;
-  color: var(--color-error);
-  padding: 10px 12px;
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
 
-.tooltip-delete-btn:hover {
-  background: var(--color-error);
-  border-color: var(--color-error);
-  color: white;
-}
-
-/* "اسأل الباشـمبصمج" — same shape/sizing as .tooltip-delete-btn (a full-
-   width action row below the divider), primary accent instead of danger
-   red since this isn't a destructive action. Sits above the delete
-   button when both are present (see course-info-tooltip.js's markup
-   order) so the safe action reads before the destructive one. */
-.tooltip-ask-ai-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  background: var(--color-primary-light);
-  border: 1.5px solid transparent;
-  border-radius: 10px;
-  color: var(--color-primary);
-  padding: 10px 12px;
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-bottom: 6px;
-}
-
-.tooltip-ask-ai-btn:hover {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: white;
-}
-
-@media (max-width: 640px) {
-  .exam-more-btn {
-    position: static;
-    order: 1;
-    flex-shrink: 0;
-    width: 30px;
-    height: 30px;
-  }
-
-  .exam-card:not(.user-quiz-card) .exam-card-actions-wrap {
-    align-items: center;
-  }
-}
-
-@media (max-width: 640px) {
-
-  .course-kebab-btn,
-  .course-info-container {
-    /* position: relative;  */
-    /* was static — kept the tooltip inside the card's
-      containing block, which clips it (.category-card has overflow:hidden),
-      so it was invisible on phones no matter what JS toggled. Positioning
-      it here instead re-anchors the tooltip to this element directly. */
-    margin-left: 0;
-    margin-right: auto;
-    flex-shrink: 0;
-  }
-}
 
 /* ============================================================================
    exam-actions-overlay — legacy full-screen wrapper, kept only for the
@@ -506,8 +287,7 @@ body.sidebar-expanded {
   .exam-actions-overlay .modal-overlay,
   .exam-actions-overlay {
     align-items: center;
-  }
-}
+  }}
 
 .course-info-modal-card {
   position: relative;
@@ -521,14 +301,12 @@ body.sidebar-expanded {
 }
 
 .course-info-modal-card h2 {
-  padding-left: 40px; /* keep the title clear of the close button */
-}
+  padding-left: 40px; }
 
 @media (max-width: 640px) {
   .course-info-modal-card {
     max-height: calc(100dvh - var(--bottom-nav-height, 64px) - env(safe-area-inset-bottom, 0px) - 32px);
-  }
-}
+  }}
 
 .info-overlay-close {
   position: absolute;
@@ -561,35 +339,6 @@ body.sidebar-expanded {
 
 .course-info-modal-card .quiz-info-table td {
   text-align: left;
-}
-
-.course-info-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.course-info-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 14px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
-}
-
-.course-info-stat strong {
-  color: var(--color-primary);
-  font-size: 1.35rem;
-  line-height: 1;
-}
-
-.course-info-stat span {
-  color: var(--color-text-secondary);
-  font-size: 0.82rem;
 }
 
 /* ============================================================================
@@ -855,8 +604,7 @@ body.sidebar-expanded {
 @media (max-width: 480px) {
   .submenu-content--actions {
     padding: 8px 0 0;
-  }
-}
+  }}
 
 /* "امتحاناتك" root card dropdown — contents breakdown block (quizzes /
    courses / folders). Same tooltip-row layout as the course/folder info
@@ -922,25 +670,17 @@ body.sidebar-expanded {
     box-shadow: none;
     border-style: dashed;
     display: none;
-    /* Prevents taking up space when hidden */
-  }
+    }
 
   .submenu-content.show {
     transform: none;
     display: flex;
-    /* Restores layout when visible */
-  }
-}
+    }}
 
 @media (min-width: 641px) {
   .mobile-only {
     display: none !important;
-  }
-}
-
-/* ============================================================================
-   BREADCRUMB MOBILE RESPONSIVE FIXES
-   ============================================================================ */
+  }}
 
 /* Tablet styles */
 @media (max-width: 768px) {
@@ -954,8 +694,7 @@ body.sidebar-expanded {
 
   .breadcrumb-text {
     font-size: 0.85rem;
-  }
-}
+  }}
 
 /* Mobile styles */
 @media (max-width: 640px) {
@@ -976,8 +715,7 @@ body.sidebar-expanded {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: calc(100vw - 80px);
-  }
-}
+  }}
 
 /* Very small screens */
 @media (max-width: 380px) {
@@ -992,8 +730,7 @@ body.sidebar-expanded {
   .breadcrumb-text {
     font-size: 0.75rem;
     max-width: calc(100vw - 60px);
-  }
-}
+  }}
 
 /* Premium Header */
 .header {
@@ -1114,8 +851,7 @@ HEADER BADGE – GAMIFIED WELCOME
   padding: 2px 6px;
   border-radius: 6px;
   margin-inline: 0;
-  /* logical: replaces margin-right: 0; margin-left: 0 */
-}
+  }
 
 [data-animations="enabled"] .header-badge .user-name {
   animation: namePulse 3s ease-in-out infinite;
@@ -1174,26 +910,6 @@ html:not([data-motion="reduced"]) .header-badge::after {
   background: var(--color-primary-light);
 }
 
-[data-theme="dark-slate"] .header-badge {
-  background: var(--glass-bg-light);
-  color: var(--color-text-primary);
-}
-
-[data-theme="dark-slate"] .header-badge .user-name {
-  color: var(--color-primary);
-  background: var(--color-primary-light);
-}
-
-/* For the animation */
-[data-theme="dark-slate"] .header-badge::after {
-  background: linear-gradient(90deg,
-      transparent 0%,
-
-      /* Pink animation */
-      rgba(255, 192, 203, 0.6) 50%,
-      transparent 100%);
-}
-
 /* ============================================================================
 ANIMATIONS
 ============================================================================ */
@@ -1250,17 +966,6 @@ ANIMATIONS
   }
 }
 
-/* ============================================================================
-#Subjects-text — Contextual Section Label
-============================================================================ */
-
-/* ============================================================================
-   #Subjects-text — Contextual Section Label
-   Placement: inside .header-content, below the subtitle <p>
-   Theme: Frosted-glass pill with gradient border ring + accent text
-   RTL: direction: rtl ensures icon flows after the text (left side in Arabic)
-   ============================================================================ */
-
 /* ── Base element ─────────────────────────────────────────────────────────── */
 #Subjects-text {
   /* Layout */
@@ -1269,8 +974,6 @@ ANIMATIONS
   align-items: center;
   gap: 8px;
   direction: rtl;
-  /* Arabic RTL: icon ends up on the visual left */
-
   /* Spacing */
   margin-top: 28px;
   padding: 9px 22px 9px 18px;
@@ -1294,8 +997,6 @@ ANIMATIONS
     0 4px 16px rgba(99, 102, 241, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
 
-  /* Entrance animation (fires once on load / re-render) */
-
   /* Hover lift */
   transition:
     transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
@@ -1313,8 +1014,6 @@ ANIMATIONS
     inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
-/* ── Gradient border ring ─────────────────────────────────────────────────── */
-/* Technique: set padding on the pseudo-element equal to border width,        */
 /* then mask out the content-box so only the ring is painted.                 */
 #Subjects-text::before {
   content: "";
@@ -1351,10 +1050,7 @@ ANIMATIONS
   opacity: 0.85;
   position: relative;
   z-index: var(--z-base);
-}
-
-[data-theme="dark"] #Subjects-text,
-[data-theme="dark-slate"] #Subjects-text {
+}[data-theme="dark"] #Subjects-text {
   background: rgba(99, 102, 241, 0.12);
   box-shadow:
     0 4px 20px rgba(99, 102, 241, 0.2),
@@ -1374,8 +1070,6 @@ ANIMATIONS
   }
 }
 
-/* ── Dark-theme awareness ─────────────────────────────────────────────────── */
-
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
   #Subjects-text {
@@ -1389,8 +1083,7 @@ ANIMATIONS
   #Subjects-text:has(.title-breadcrumb) {
     padding: 6px 14px 6px 10px;
     max-width: 100%;
-  }
-}
+  }}
 
 /* ── #Subjects-text when it holds a breadcrumb nav ────────────────────────
    When renderTitleBreadcrumb() injects a <nav>, the pill needs to stretch
@@ -1408,12 +1101,6 @@ ANIMATIONS
 .header.is-open #Subjects-text {
   visibility: hidden;
 }
-
-/* ============================================================================
-   TITLE BREADCRUMB — smart collapsible inline breadcrumb
-   Rendered by renderTitleBreadcrumb() (title-breadcrumb.js) inside
-   #Subjects-text (and possibly other title elements).
-   ============================================================================ */
 
 /* ── Wrapper <nav> ───────────────────────────────────────────────────────── */
 .title-breadcrumb {
@@ -1481,8 +1168,7 @@ ANIMATIONS
 
   .title-breadcrumb-item--current {
     max-width: 180px;
-  }
-}
+  }}
 
 /* ── Separator ───────────────────────────────────────────────────────────── */
 .title-breadcrumb-sep {
@@ -1605,19 +1291,11 @@ ANIMATIONS
   color: var(--color-primary);
 }
 
-/* ── Dark theme overrides ────────────────────────────────────────────────── */
-[data-theme="dark"] .title-breadcrumb-sep,
-[data-theme="dark-slate"] .title-breadcrumb-sep {
+/* ── Dark theme overrides ────────────────────────────────────────────────── */[data-theme="dark"] .title-breadcrumb-sep {
   color: rgba(255, 255, 255, 0.3);
-}
-
-[data-theme="dark"] .title-breadcrumb-ellipsis,
-[data-theme="dark-slate"] .title-breadcrumb-ellipsis {
+}[data-theme="dark"] .title-breadcrumb-ellipsis {
   background: rgba(255, 255, 255, 0.07);
-}
-
-[data-theme="dark"] .title-breadcrumb-dropdown,
-[data-theme="dark-slate"] .title-breadcrumb-dropdown {
+}[data-theme="dark"] .title-breadcrumb-dropdown {
   box-shadow:
     0 8px 32px -4px rgba(0, 0, 0, 0.5),
     0 2px 8px -2px rgba(0, 0, 0, 0.3);
@@ -1628,268 +1306,12 @@ ANIMATIONS
   animation: none;
 }
 
-
-/* ============================================================================
-Container
-============================================================================ */
-
-/* Premium Grid */
-/* Premium Grid — 4 columns desktop → 2 tablet → stacked list mobile */
+/* Shelf of item cards; the honeycomb overrides the columns (hive.css). */
 .grid-container {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
   margin-bottom: 48px;
-}
-
-@media (max-width: 1280px) {
-  .grid-container {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-  }
-}
-
-@media (max-width: 960px) {
-  .grid-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-  }
-}
-
-/* Mobile: full-width flex column handled in the mobile list-row block below */
-
-/* ── Tablet card padding ── Obj 2B */
-@media (max-width: 960px) {
-
-  .card,
-  .category-card,
-  .exam-card {
-    padding: 14px 16px;
-  }
-}
-
-/* ── .card-text wrapper: transparent on desktop, flex column on mobile ─────── */
-/* display:contents makes it invisible to layout — children behave as if     */
-/* they are direct children of the card. Perfect for desktop card centering. */
-.card-text {
-  display: contents;
-}
-
-/* ── Obj 1: Mobile List-Row Design (≤640px) ─────────────────────────────── */
-@media (max-width: 640px) {
-
-  /* ── Grid becomes a flex column with border wrapping the whole list ──────── */
-  .grid-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    max-width: 100%;
-    overflow-x: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: 14px;
-    overflow: hidden;
-    /* clip children to the border-radius */
-  }
-
-  /* ── Each card becomes a compact horizontal list-row ─────────────────────── */
-  .card,
-  .category-card,
-  .exam-card {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    padding: 0 10px;
-    min-height: 58px;
-    width: 100%;
-    box-sizing: border-box;
-    border-radius: 0;
-    box-shadow: none;
-    border: none;
-    border-top: 1px solid var(--color-border);
-    background: var(--color-surface);
-    transition: background-color 0.12s ease;
-    overflow: hidden;
-    /* LTR physical layout so icon is on the visual left and text flows left→right */
-    direction: ltr;
-    text-align: left;
-  }
-
-  /* First card has no top border */
-  .card:first-child,
-  .category-card:first-child,
-  .exam-card:first-child {
-    border-top: none;
-  }
-
-  /* Remove the decorative top-accent strip */
-  .card::before,
-  .category-card::before,
-  .exam-card::before {
-    display: none;
-  }
-
-  /* Subtle hover — no lift and no spotlight on mobile */
-  .card::after,
-  .category-card::after,
-  .exam-card::after {
-    display: none;
-  }
-
-  .card:hover,
-  .category-card:hover,
-  .exam-card:hover {
-    transform: none;
-    box-shadow: none;
-    background: var(--color-background-secondary, #f5f5f5);
-  }
-
-  /* ── .card-text: takes up remaining middle space ─────────────────────────── */
-  .card-text {
-  unicode-bidi: plaintext; /* truncate by the text's own direction */
-  text-align: start;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    flex: 1;
-    min-width: 0;
-    /* allows text-overflow: ellipsis */
-  }
-
-  /* ── Category card icon: compact emoji on the left ───────────────────────── */
-  .category-card .icon {
-    font-size: 1.25rem;
-    flex-shrink: 0;
-    width: 34px;
-    height: 34px;
-    text-align: center;
-    margin-bottom: 0;
-    filter: none;
-    transform: none !important;
-    transition: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-background-secondary);
-    border-radius: 8px;
-  }
-
-  /* ── Title line: LTR, left-aligned, English friendly ────────────────────── */
-  .card-text h3,
-  .card h3,
-  .category-card h3,
-  .exam-card h3 {
-  unicode-bidi: plaintext; /* truncate by the text's own direction */
-    font-size: 0.83rem;
-    font-weight: 600;
-    margin-bottom: 0;
-    line-height: 1.3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    direction: ltr;
-    text-align: left;
-  }
-
-  /* ── Subtext (question count, types): muted, compact, left-aligned ───────── */
-  .card-text p,
-  .card p,
-  .category-card p,
-  .exam-card p {
-  unicode-bidi: plaintext; /* truncate by the text's own direction */
-    font-size: 0.7rem;
-    color: var(--color-text-tertiary, #888);
-    margin-bottom: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.2;
-    text-align: left;
-    direction: ltr;
-    font-weight: 400;
-  }
-
-  /* ── Exam meta wrapper: row with types · count, pushed to right ─────────── */
-  .exam-card-meta {
-    position: static !important;
-    /* reset desktop absolute */
-    display: flex;
-    flex-direction: row;
-    /* side-by-side (was column) */
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-    margin-left: auto;
-    margin-right: 4px;
-    white-space: nowrap;
-  }
-
-  /* ── Exam types and count: same row, muted, right-aligned ───────────────── */
-  .exam-types-subtext {
-    display: block !important;
-    font-size: 0.65rem !important;
-    color: var(--color-text-tertiary, #888);
-    margin-bottom: 0 !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-weight: 400;
-    text-align: right;
-    order: 1 !important;
-    /* reset desktop order */
-  }
-
-  .exam-question-count:not(.exam-types-subtext) {
-    display: block !important;
-    font-size: 0.65rem !important;
-    color: var(--color-text-tertiary, #888);
-    margin-bottom: 0;
-    text-align: right;
-    order: 2 !important;
-    /* count after types in mobile row */
-    direction: rtl;
-  }
-
-  /* exam-more-btn stays visible on mobile too — it's now the single shared
-     trigger for the actions overlay on both desktop and mobile. */
-
-  /* ── Exam card: reset min-height for compact rows ────────────────────────── */
-  .exam-card {
-    min-height: 52px !important;
-  }
-
-  /* ── Start button: compact play icon pill ────────────────────────────────── */
-  .exam-card .start-btn {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    padding: 0;
-    font-size: 0;
-    /* hide text */
-    flex: 0 0 32px;
-    min-width: 0 !important;
-  }
-
-  /* Show a ▶ play icon via ::before instead of the Arabic text */
-  .exam-card .start-btn::after {
-    content: "▶";
-    font-size: 0.75rem;
-    color: white;
-  }
-
-  /* Download button — also compact */
-  .exam-card .start-btn:last-of-type {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
-    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3) !important;
-  }
-
-  .exam-card .start-btn:last-of-type::after {
-    content: "↓";
-    font-size: 0.85rem;
-  }
 }
 
 .user-quizzes-drop-zone {
@@ -1976,618 +1398,12 @@ Container
   font-size: 0.82rem;
 }
 
-/*
- * The create-quiz card now lives inside .user-quizzes-container (same grid
- * as user quiz cards) so the old margin-bottom spacer is no longer needed.
- */
-
-/*
- * Dedicated wrapper for the quiz-card list. Gets the bordered, rounded
- * treatment that the outer grid-container used to apply to everything
- * (including the sign-in button and create card). Now only quiz cards sit
- * inside this border, keeping the controls above visually separate.
- *
- * Desktop: spans all grid columns and repeats the same column template so
- *   cards flow into a multi-column grid exactly like normal exam cards do.
- * Mobile (≤640px): solid border + border-radius, same list-row style as
- *   normal exam card containers, overriding the outer grid-container border
- *   which is reset to none below so only this inner container shows it.
- */
+/* «محتواي» shelf: spans the whole parent grid. */
 .user-quizzes-container {
-  /* Span all columns of the parent grid */
   grid-column: 1 / -1;
-  /* Repeat the same 4-column grid so cards inside flow normally */
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-}
-
-@media (max-width: 1280px) {
-  .user-quizzes-container {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-  }
-}
-
-@media (max-width: 960px) {
-  .user-quizzes-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-  }
-}
-
-@media (max-width: 640px) {
-
-  /* Inner quiz-card list gets the border */
-  .user-quizzes-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    border: 1px solid var(--color-border);
-    border-radius: 14px;
-    overflow: hidden;
-  }
-
-  /* First card: no top border (container border serves as top) */
-  .user-quizzes-container>.exam-card:first-child,
-  .user-quizzes-container>.category-card:first-child {
-    border: none !important;
-    border-top: none !important;
-  }
-
-  /* Outer drop-zone container: strip the border the global .grid-container
-     mobile rule adds — we don't want a double border or the controls wrapped */
-  .grid-container.user-quizzes-drop-zone {
-    border: none !important;
-    border-radius: 0 !important;
-    overflow: visible !important;
-  }
-}
-
-/* Premium Card Design */
-.card,
-.category-card,
-.exam-card {
-  border-radius: 20px;
-  padding: 20px 22px;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--color-border-light);
-  cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-  text-align: center;
-  /* Slight inset highlight at top edge */
-  background: var(--color-surface);
-}
-
-/* Accent strip — starts hidden, animates in on hover */
-.card::before,
-.category-card::before,
-.exam-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--gradient-accent);
-  border-radius: 20px 20px 0 0;
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Hover: NO movement and NO scale — the card's hit-box never changes, so the
-   cursor can sit on (or slide along) its border without the hover state
-   flickering on/off. Feedback = top accent strip (::before) + glow/border tint
-   + a cursor-following spotlight (::after, positioned by hover-spotlight.js). */
-.card:hover,
-.category-card:hover,
-.exam-card:hover {
-  box-shadow:
-    var(--shadow-xl),
-    0 0 0 1px rgba(99, 102, 241, 0.08),
-    var(--shadow-glow, 0 8px 32px rgba(99, 102, 241, 0.12));
-  border-color: rgba(99, 102, 241, 0.2);
-}
-
-.card:hover::before,
-.category-card:hover::before,
-.exam-card:hover::before {
-  transform: scaleX(1);
-}
-
-/* Spotlight: soft radial highlight that follows the pointer inside the card. */
-.card::after,
-.category-card::after,
-.exam-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none; /* never part of the hover/click target */
-  background: radial-gradient(260px circle at var(--spot-x, 50%) var(--spot-y, 0%),
-      color-mix(in srgb, var(--type-accent, #6366f1) 16%, transparent),
-      transparent 70%);
-  opacity: 0;
-  transition: opacity 0.35s ease;
-}
-
-.card:hover::after,
-.category-card:hover::after,
-.exam-card:hover::after {
-  opacity: 1;
-}
-
-.card:active,
-.category-card:active,
-.exam-card:active {
-  box-shadow: var(--shadow-lg);
-  transition-duration: 0.1s;
-}
-
-.category-card {
-  text-align: center;
-  padding-bottom: 10px;
-}
-
-.category-card .icon {
-  font-size: 3.5rem;
-  margin-bottom: 20px;
-  display: inline-block;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
-}
-
-.category-card:hover .icon {
-  transform: scale(1.1) rotate(5deg);
-}
-
-.card h3,
-.category-card h3,
-.exam-card h3 {
-  font-size: 1.375rem;
-  font-weight: 700;
-  margin-bottom: 12px;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-  direction: ltr;
-}
-
-.card p,
-.category-card p,
-.exam-card p {
-  font-size: 1rem;
-  line-height: 1.6;
-  margin-bottom: 20px;
-}
-
-.exam-question-count {
-  font-size: 0.9rem;
-  color: var(--color-text-secondary);
-  direction: rtl;
-  margin-bottom: 10px !important;
-}
-
-/*
- * Desktop exam card meta bar: absolutely positioned above the action buttons.
- * direction:ltr + space-between → count anchored left, types anchored right.
- * CSS order properties ensure correct sides regardless of DOM insertion order.
- */
-.exam-card-meta {
-  position: absolute;
-  bottom: 68px;
-  left: 16px;
-  right: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  direction: ltr;
-  gap: 8px;
-  margin: 0;
-  /* Prevent text from bleeding into the share button area at top-left */
-  padding: 0;
-}
-
-/* Count always on the LEFT side */
-.exam-card-meta .exam-question-count:not(.exam-types-subtext) {
-  order: 1;
-  text-align: left;
-  flex-shrink: 0;
-}
-
-/* Types always on the RIGHT side */
-.exam-card-meta .exam-types-subtext {
-  order: 2;
-  text-align: right;
-  flex: 1;
-  font-size: 0.8rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/*
- * Desktop exam card: min-height ensures room for the absolute-positioned
- * meta bar and button row below the heading.
- */
-.exam-card {
-  min-height: 200px;
-}
-
-/*
- * Desktop btnWrap: flex row of action buttons with top margin, full-width.
- * Absolutely anchored to the bottom of the card on desktop.
- * EXCLUDE .user-quiz-card — those use normal flow layout.
- */
-.exam-card:not(.user-quiz-card) .exam-card-actions-wrap {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  position: static;
-  margin-top: auto;
-  width: 100%;
-  /* bottom: 16px; */
-  /* left: 16px; */
-  /* right: 16px; */
-  width: calc(100% - 32px);
-}
-
-/*
- * DESKTOP ONLY (≥769px): re-anchor .exam-more-btn to .exam-card instead of
- * .exam-card-actions-wrap.
- *
- * .exam-more-btn is a DOM child of .exam-card-actions-wrap (see
- * createExamCard in JS — moreBtn is appended into btnWrap alongside the
- * start/download buttons). Since that wrap is `position: absolute` above,
- * it — not .exam-card — becomes the nearest positioned ancestor for
- * .exam-more-btn, so the button's own `top`/`right` resolve against the
- * wrap's box (pinned to the bottom of the card) instead of the card's box.
- *
- * Fix: make .exam-card a flex column and pin the wrap to the bottom via
- * `margin-top: auto` (normal flow) instead of `position: absolute`. That
- * removes the wrap as a containing block, so .exam-more-btn's `top`/`right`
- * now correctly resolve against .exam-card.
- *
- * Scoped to min-width:769px ONLY — .exam-card already has its own separate
- * flex-row "list-row" layout at ≤640px (and whatever governs 641-768px),
- * driven by .card-text switching from `display:contents` to its own flex
- * column. Applying flex-column to the unscoped/base .exam-card rule broke
- * that mobile layout, so this change must never reach those widths.
- */
-@media (min-width: 769px) {
-  .exam-card:not(.user-quiz-card) {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .exam-card:not(.user-quiz-card) .exam-card-actions-wrap {
-    position: static;
-    bottom: auto;
-    left: auto;
-    right: auto;
-    width: 100%;
-    margin-top: auto;
-  }
-}
-
-/*
- * 641–768px: same fix as the ≥769px block above, for the same reason.
- * This range was previously ungoverned (see note above), so .exam-card
- * stayed a non-flex block and .exam-card-actions-wrap's `margin-top: auto`
- * had no effect — the wrap sat wherever its content pushed it instead of
- * pinned to the card bottom, and (lacking justify-content) wasn't
- * horizontally centered either. Mirrors the desktop fix: flex-column card
- * + wrap pinned to the bottom via margin-top: auto, with justify-content
- * added so the buttons center horizontally within the wrap.
- */
-@media (min-width: 641px) and (max-width: 768px) {
-  .exam-card:not(.user-quiz-card) {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .exam-card:not(.user-quiz-card) .exam-card-actions-wrap {
-    position: static;
-    bottom: auto;
-    left: auto;
-    right: auto;
-    width: 100%;
-    margin-top: auto;
-    justify-content: center;
-  }
-}
-
-/* Mobile: restore to normal flex flow so btnWrap sits on the RIGHT */
-@media (max-width: 640px) {
-
-  /*
- * Clip the shared .exam-card::before hover-accent strip so it never bleeds
- * outside the card's rounded corners.  The card itself keeps overflow:visible
- * (needed for the action-menu / admin-upload absolutely-positioned children),
- * so we clip the strip on its own pseudo-element instead.
- */
-  .exam-card.user-quiz-card::before {
-    overflow: hidden;
-    border-radius: 20px 20px 0 0;
-    /* match the card's top corners */
-  }
-
-  .exam-card:not(.user-quiz-card) .exam-card-actions-wrap {
-    position: static;
-    width: auto;
-    bottom: auto;
-    left: auto;
-    right: auto;
-    margin-top: 0;
-    margin-left: auto;
-    /* push to the right end of the flex row */
-    flex-shrink: 0;
-    flex-wrap: nowrap;
-    gap: 4px;
-  }
-}
-
-/* ── user-quiz-card btnWrap: desktop-only — full-width row at the card bottom.
-   Scoped to ≥641px so the mobile list-row layout never fights this rule.      */
-@media (min-width: 641px) {
-  .exam-card.user-quiz-card .exam-card-actions-wrap {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: auto;
-    width: 100%;
-  }
-}
-
-/* ── User-quiz cards: full flex-column layout ────────────────────────────── */
-/*
- * Ensure the grid does not stretch the card height to match its tallest
- * sibling (e.g. the tall "create new quiz" card).  align-self: start lets
- * the card shrink-wrap its own content while the action buttons still pin
- * to the bottom via margin-top: auto on the actions div.
- */
-.exam-card.user-quiz-card {
-  align-self: start;
-  overflow: hidden;
-  /* clip the ::before accent strip to the card's border-radius */
-  /* No text-align override here — inherits "center" from base .exam-card,
-     keeping the title centred on desktop to match normal quiz cards. */
-}
-
-/*
- * Re-enable the shared .exam-card::before hover-accent strip on user-quiz-card.
- * The card now uses overflow:hidden (above) so the strip is properly clipped.
- * Match the card's own border-radius (12px from the USER QUIZ CARD section)
- * so the strip's corners align exactly with the card's top corners.
- */
-.exam-card.user-quiz-card::before {
-  border-radius: 12px 12px 0 0;
-}
-
-/* Types-row (badge chips): right-justify within the meta bar so the chips
-   sit flush right — mirroring text-align:right on plain .exam-types-subtext.
-   display:flex overrides text-align, so justify-content is what actually
-   controls which side the chips stack toward. */
-.user-quiz-types-row.exam-types-subtext {
-  justify-content: flex-end;
-}
-
-.exam-types-subtext {
-  font-size: 0.85rem;
-  color: var(--color-text-tertiary, #888);
-  letter-spacing: 0.2px;
-}
-
-/*
- * ============================================================================
- * MOBILE CARD OVERRIDE — MUST come AFTER the base card styles above.
- *
- * CSS cascade ordering problem: The mobile @media (max-width: 640px) block
- * that sets up the compact list-row layout lives at an earlier position in
- * this file (~line 522). The base .card / .category-card / .exam-card rules
- * directly above (font-size: 3.5rem, padding: 20px 22px, text-align: center,
- * etc.) are in the normal flow and appear AFTER that mobile block. Since both
- * blocks have equal specificity, source order wins — the base styles override
- * the mobile styles on small screens, producing the "ginormous card" bug.
- *
- * Solution: re-declare only the conflicting overrides here, later in the
- * file, so cascade ordering now works in our favour. No !important needed.
- * ============================================================================
- */
-@media (max-width: 640px) {
-
-  /* ── Card shell: compact horizontal row ─────────────────────────────────── */
-  .card,
-  .category-card,
-  .exam-card {
-    padding: 0 10px;
-    border-radius: 0;
-    box-shadow: none;
-    border: none;
-    border-top: 1px solid var(--color-border);
-    text-align: left;
-    direction: ltr;
-    /* Suppress desktop hover lift */
-    transform: none !important;
-    /* The base rule sets overflow:hidden (to clip the ::before accent
-       strip to the card's rounded corners), but that also clips the
-       course-info-tooltip popover, which needs to escape the card's
-       bounds to be visible/reachable on phones. Clip the strip on its
-       own pseudo-element instead (mirrors .exam-card.user-quiz-card
-       below) and let the card itself overflow. */
-    overflow: visible;
-  }
-
-  .card::before,
-  .category-card::before,
-  .exam-card::before {
-    overflow: hidden;
-    border-radius: inherit;
-  }
-
-  .card:first-child,
-  .category-card:first-child,
-  .exam-card:first-child {
-    border-top: none;
-  }
-
-  /* Also kill the tablet override padding that fires at ≤960px */
-  .category-card {
-    padding: 0 10px;
-    padding-bottom: 0;
-    text-align: left;
-  }
-
-  /* ── Category icon: small pill on the left ───────────────────────────────── */
-  .category-card .icon,
-  .phone-only-emoji,
-  .user-quiz--phone-only-emoji,
-  .category-icon {
-    font-size: 1.25rem;
-    margin-bottom: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    flex-shrink: 0;
-    transform: none !important;
-    transition: none;
-    filter: none;
-    background: inherit;
-    border-radius: 8px;
-  }
-
-  /* Suppress desktop hover icon animation */
-  .category-card:hover .icon {
-    transform: none !important;
-  }
-
-  /* ── Heading: small, LTR, left-aligned ──────────────────────────────────── */
-  .card h3,
-  .category-card h3,
-  .exam-card h3 {
-    font-size: 0.83rem;
-    margin-bottom: 0;
-    text-align: left;
-    direction: ltr;
-  }
-
-  /* ── Paragraph / subtext: tiny muted label ───────────────────────────────── */
-  .card p,
-  .category-card p,
-  .exam-card p {
-    font-size: 0.7rem;
-    margin-bottom: 0;
-    line-height: 1.2;
-  }
-}
-
-/* Premium Button */
-.start-btn {
-  background: var(--gradient-success);
-  color: white;
-  border: none;
-  padding: 13px 24px;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow:
-    var(--shadow-md),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  width: 100%;
-  position: relative;
-  overflow: hidden;
-  letter-spacing: 0.01em;
-}
-
-.start-btn::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.2) 0%,
-      transparent 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.start-btn:hover {
-  
-  box-shadow: var(--shadow-lg);
-}
-
-.start-btn:hover::before {
-  opacity: 1;
-}
-
-.start-btn:active {
-  transform: translateY(0);
-}
-
-/* Mobile: shrink .start-btn into a compact 32px icon button.
- * The base rule (width: 100%) comes before this in the file, so we need
- * this block after it to win the cascade at ≤640px. */
-@media (max-width: 640px) {
-  .exam-card .start-btn {
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 0 !important;
-    flex: 0 0 32px !important;
-    padding: 0 !important;
-    border-radius: 8px !important;
-    font-size: 0 !important;
-    /* hide Arabic text */
-    line-height: 1 !important;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
-  }
-
-  /* ▶ play icon for the start button */
-  .exam-card .start-btn::after {
-    content: "▶";
-    font-size: 0.75rem;
-    color: white;
-  }
-
-  /* ↓ download icon for the (red) download button */
-  .exam-card .start-btn[style*="dc2626"]::after,
-  .exam-card .start-btn[style*="b91c1c"]::after {
-    content: "↓";
-    font-size: 0.85rem;
-  }
-
-  /* Suppress the hover lift on mobile buttons */
-  .exam-card .start-btn:hover {
-    transform: none !important;
-  }
-
-  /* The btnWrap div: reset absolute, keep it flex inline in the row */
-  .exam-card div[style*="margin-top"] {
-    position: static !important;
-    bottom: auto !important;
-    left: auto !important;
-    right: auto !important;
-    margin-top: 0 !important;
-    gap: 4px !important;
-    width: auto !important;
-    flex-shrink: 0;
-  }
-
-  /* Reset exam-card min-height and meta absolute positioning */
-  .exam-card {
-    min-height: 52px !important;
-  }
-
-  .exam-card-meta {
-    position: static !important;
-    bottom: auto !important;
-    left: auto !important;
-    right: auto !important;
-  }
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
 }
 
 /* Modal Styles */
@@ -2613,8 +1429,7 @@ Container
     padding-bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px));
     align-items: center;
     box-sizing: border-box;
-  }
-}
+  }}
 
 .modal-card {
   padding: 32px;
@@ -2884,8 +1699,7 @@ html[dir="ltr"] .move-to-dialog-node {
 @supports (background: color-mix(in srgb, red, transparent)) {
   .move-to-dialog-guide {
     background: color-mix(in srgb, var(--color-text-tertiary, var(--color-border)) 55%, transparent);
-  }
-}
+  }}
 
 html[dir="ltr"] .move-to-dialog-guide {
   right: auto;
@@ -3006,13 +1820,6 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   color: var(--color-text-primary);
 }
 
-/* ============================================================================
-   DOWNLOAD MODAL — extracted to its own component. Styles for
-   .dl-modal-card / .mode-grid / .export-card etc. now live in
-   public/src/components/download-quiz-modal/download-quiz-modal.css,
-   linked directly in index.html.
-   ============================================================================ */
-
 /* Close modal button */
 .close-modal {
   background: none;
@@ -3099,18 +1906,6 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   gap: 6px;
   align-items: center;
   justify-content: center;
-}
-
-/* =============================================================================
-   DB-sourced quiz card — accent border
-   ============================================================================= */
-
-/* ── Accent border on the whole card ──────────────────────────────────────── */
-.exam-card--db {
-  border-inline-start: 3px solid var(--color-primary);
-  /* RTL-aware left border */
-  position: relative;
-  /* already set in JS, but safe to repeat */
 }
 
 /* ============================================================================
@@ -3380,16 +2175,9 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 
   .header-badge {
     display: none;
-  }
-}
+  }}
 
-/*
- * 480px: only header/controls adjustments — all card rules removed.
- * Rationale: the @media (max-width: 640px) mobile list-row block handles every
- * card at ≤640px (including ≤480px). Any card overrides here (padding:15px,
- * font-size:2.5rem, margin-bottom:5px) would reverse the compact list layout
- * since this block appears later in the file and has higher cascade priority.
- */
+/* 480px: header/controls adjustments only. */
 @media (max-width: 480px) {
   .header {
     padding: 24px 20px;
@@ -3415,8 +2203,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
     font-size: 0.8rem;
     gap: 4px;
     border-radius: 8px;
-  }
-}
+  }}
 
 /* Accessibility */
 .sr-only {
@@ -3470,24 +2257,13 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   color: white;
 }
 
-/* Dark mode adjustments */
-[data-theme="dark"] .course-meta-badge,
-[data-theme="dark-slate"] .course-meta-badge {
+/* Dark mode adjustments */[data-theme="dark"] .course-meta-badge {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .course-meta-badge.faculty,
-[data-theme="dark-slate"] .course-meta-badge.faculty {
+}[data-theme="dark"] .course-meta-badge.faculty {
   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-}
-
-[data-theme="dark"] .course-meta-badge.year,
-[data-theme="dark-slate"] .course-meta-badge.year {
+}[data-theme="dark"] .course-meta-badge.year {
   background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-}
-
-[data-theme="dark"] .course-meta-badge.term,
-[data-theme="dark-slate"] .course-meta-badge.term {
+}[data-theme="dark"] .course-meta-badge.term {
   background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
 }
 
@@ -3526,35 +2302,20 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 @media (max-width: 1280px) {
   .skeleton-grid {
     grid-template-columns: repeat(3, 1fr);
-  }
-}
+  }}
 
 @media (max-width: 960px) {
   .skeleton-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
-  }
-}
+  }}
 
 @media (max-width: 640px) {
   .skeleton-grid {
     display: flex;
     flex-direction: column;
     gap: 0px;
-  }
-}
-
-.skeleton-card {
-  border-radius: 20px;
-  padding: 32px;
-  border: 1px solid var(--color-border-light, #e5e7eb);
-  background: var(--color-surface, #ffffff);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  min-height: 180px;
-}
+  }}
 
 .skeleton-block {
   border-radius: 10px;
@@ -3600,23 +2361,6 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
     overflow: hidden;
   }
 
-  .skeleton-card {
-    flex-direction: row;
-    align-items: center;
-    padding: 0 14px;
-    min-height: 52px;
-    border-radius: 0;
-    gap: 12px;
-    border-bottom: none;
-    border-top: 1px solid var(--color-border);
-    box-shadow: none;
-    direction: ltr;
-  }
-
-  .skeleton-card:first-child {
-    border-top: none;
-  }
-
   .skeleton-icon {
     width: 36px;
     height: 36px;
@@ -3637,132 +2381,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
     width: 30%;
     border-radius: 6px;
     flex-shrink: 0;
-  }
-}
-
-/* ============================================================================
-   USER QUIZ CARD
-   ============================================================================ */
-
-/* Card shell */
-.exam-card.user-quiz-card {
-  background: var(--color-surface);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: var(--shadow-md);
-  cursor: pointer;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-  border: 2px solid var(--color-border);
-  position: relative;
-  overflow: hidden;
-  margin-top: 24px;
-  display: flex;
-  flex-direction: column;
-}
-
-.exam-card.user-quiz-card:hover {
-  
-  box-shadow: var(--shadow-lg);
-}
-
-/* ── Folder & course category cards in user quizzes view ──
-   Size and layout behave identically to user quiz cards on desktop */
-.user-quizzes-container .category-card {
-  background: var(--color-surface);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: var(--shadow-md);
-  cursor: pointer;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-  border: 2px solid var(--color-border);
-  position: relative;
-  overflow: hidden;
-  margin-top: 24px;
-  display: flex;
-  flex-direction: column;
-  min-height: 200px;
-  align-self: start;
-  text-align: center;
-}
-
-.user-quizzes-container .category-card:hover {
-  
-  box-shadow: var(--shadow-lg);
-}
-
-.user-quizzes-container .category-card::before {
-  border-radius: 12px 12px 0 0;
-}
-
-/* Category icon on desktop within user quizzes */
-.user-quizzes-container .category-card .category-icon {
-  font-size: 2.75rem;
-  margin: 10px auto 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s ease;
-  line-height: 1;
-}
-
-.user-quizzes-container .category-card:hover .category-icon {
-  transform: scale(1.08);
-}
-
-.user-quizzes-container .category-card h3 {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  line-height: 1.3;
-  color: var(--color-text-primary);
-  text-align: center;
-  direction: ltr;
-}
-
-/* Subtext in user quizzes category card */
-.user-quizzes-container .category-card .category-card-subtext {
-  margin-top: auto;
-  padding-top: 12px;
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
-  direction: rtl;
-  text-align: center;
-}
-
-/* More options button (⋮) on folder card */
-.user-quizzes-container .category-card .category-card-actions-wrap {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 3;
-}
-
-.user-quizzes-container .category-card .category-card-actions-wrap .exam-more-btn.exam-more-btn--lg {
-  position: static;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-}
-
-.user-quizzes-container .category-card .category-card-actions-wrap .exam-more-btn.exam-more-btn--lg svg {
-  width: 16px;
-  height: 16px;
-}
-
-/* Gradient accent bar at the top of the card */
-.user-quiz-accent-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: var(--gradient-accent);
-  border-radius: 10px 10px 0 0;
-}
+  }}
 
 /* Quiz title */
 .user-quiz-title {
@@ -3771,37 +2390,12 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   font-size: 1.1rem;
 }
 
-/* Desktop: keep quiz-card titles on a single truncated line */
-.exam-card.user-quiz-card h3 {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-}
-
 /* Metadata row (question count + date) */
 .user-quiz-metadata {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding-top: 15px;
-}
-
-/* Question count span */
-.user-quiz-count {
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
-}
-
-/* Question type chips row */
-.user-quiz-types-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
 }
 
 .admin-log-in-btn {
@@ -3904,8 +2498,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 
     /* Leave area for the `course-info-btn` button */
     margin-right: 40px;
-  }
-}
+  }}
 
 /* ============================================================================
    USER QUIZ SEARCH / CREATE ACTIONS BAR
@@ -3925,20 +2518,17 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 @media (max-width: 768px) {
   .user-quiz-search-actions {
     display: flex;
-  }
-}
+  }}
 
 @media (max-width: 640px) {
   .user-quiz-search-actions {
     margin-bottom: 28px;
-  }
-}
+  }}
 
 @media (max-width: 480px) {
   .user-quiz-search-actions {
     gap: 5px;
-  }
-}
+  }}
 
 /* ============================================================================
    CREATE FOLDER BUTTON — premium pill-shaped style matching the theme
@@ -3982,58 +2572,6 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 }
 
 /* ============================================================================
-   QUESTION TYPE BADGES (exam cards)
-   ============================================================================ */
-.exam-question-types {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: center;
-  margin: 10px 0 4px;
-}
-
-.question-type-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  border: 1px solid transparent;
-  transition: transform 0.15s ease;
-}
-
-.question-type-badge:hover {
-  transform: scale(1.05);
-}
-
-.question-type-badge[data-type="MCQ"] {
-  background: rgba(59, 130, 246, 0.1);
-  color: #2563eb;
-  border-color: rgba(59, 130, 246, 0.25);
-}
-
-.question-type-badge[data-type="Essay"] {
-  background: rgba(16, 185, 129, 0.1);
-  color: #059669;
-  border-color: rgba(16, 185, 129, 0.25);
-}
-
-.question-type-badge[data-type="True/False"] {
-  background: rgba(245, 158, 11, 0.1);
-  color: #d97706;
-  border-color: rgba(245, 158, 11, 0.25);
-}
-
-/* Fallback for any other type */
-.question-type-badge:not([data-type="MCQ"]):not([data-type="Essay"]):not([data-type="True/False"]) {
-  background: rgba(99, 102, 241, 0.08);
-  color: var(--color-accent, #6366f1);
-  border-color: rgba(99, 102, 241, 0.2);
-}
-
-/* ============================================================================
    Responsive adjustments
    ============================================================================ */
 @media (max-width: 768px) {
@@ -4044,239 +2582,14 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 
   .watermark p {
     font-size: small;
-  }
-}
-
-/* ============================================================================
-   Custom utility classes for responsive visibility & Mobile Layout Fixes
-   ============================================================================ */
-.phone-only-emoji,
-.user-quiz--phone-only-emoji {
-  display: none;
-}
+  }}
 
 @media (max-width: 640px) {
-
-  .phone-only-emoji,
-  .user-quiz--phone-only-emoji,
-  .category-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .user-quizzes-container.selection-mode-active .user-quiz--phone-only-emoji,
-  .user-quizzes-container.selection-mode-active .category-icon {
-    visibility: hidden !important;
-  }
-
-  .start-btn.desktop-download-btn {
-    display: none !important;
-  }
 
   .course-meta,
   .new-badge {
     display: none;
-  }
-
-  /* ── User-quiz and folder cards: same compact list-row as normal exam cards ── */
-
-  /* Card shell */
-  .exam-card.user-quiz-card,
-  .user-quizzes-container .category-card {
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 10px !important;
-    padding: 0 10px !important;
-    min-height: 52px !important;
-    height: auto !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
-    border-top: 1px solid var(--color-border) !important;
-    margin-top: 0 !important;
-    text-align: left !important;
-    direction: ltr !important;
-    overflow: hidden !important;
-  }
-
-  /* No decorative gradient bar — no room in compact row */
-  .exam-card.user-quiz-card .user-quiz-accent-bar {
-    display: none !important;
-  }
-
-  /* No lift animation on mobile */
-  .exam-card.user-quiz-card:hover,
-  .user-quizzes-container .category-card:hover {
-    transform: none !important;
-    box-shadow: none !important;
-  }
-
-  /* card-text: override display:contents (desktop base) → flex column
-     so it participates in the horizontal flex row as the stretchy middle */
-  .exam-card.user-quiz-card .card-text,
-  .user-quizzes-container .category-card .card-text {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 2px !important;
-    flex: 1 !important;
-    min-width: 0 !important;
-    align-items: flex-start !important;
-  }
-
-  /* Title: compact, single line, truncated */
-  .exam-card.user-quiz-card h3,
-  .user-quizzes-container .category-card h3 {
-  unicode-bidi: plaintext; /* truncate by the text's own direction */
-    font-size: 0.83rem !important;
-    font-weight: 600 !important;
-    margin-bottom: 0 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    text-align: left !important;
-    direction: ltr !important;
-    width: 100% !important;
-  }
-
-  /* Folder subtext on mobile */
-  .user-quizzes-container .category-card .category-card-subtext {
-    font-size: 0.65rem !important;
-    color: var(--color-text-tertiary, #888) !important;
-    direction: rtl !important;
-    margin: 0 0 6px 0 !important;
-    text-align: right !important;
-    flex-shrink: 0 !important;
-  }
-
-  /* Actions wrap on mobile */
-  .user-quizzes-container .category-card .category-card-actions-wrap {
-    position: static !important;
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 6px !important;
-    flex-shrink: 0 !important;
-    margin-top: 0 !important;
-    margin-left: auto !important;
-    width: auto !important;
-  }
-
-  .user-quizzes-container .category-card .category-card-actions-wrap .exam-more-btn.exam-more-btn--lg {
-    position: static !important;
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 8px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  .user-quizzes-container .category-card .category-card-actions-wrap .exam-more-btn.exam-more-btn--lg svg {
-    width: 18px !important;
-    height: 18px !important;
-  }
-
-  /* Ensure .category-icon aligns identically to .user-quiz--phone-only-emoji */
-  .user-quizzes-container .category-card .category-icon {
-    font-size: 1.25rem !important;
-    margin: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 34px !important;
-    height: 34px !important;
-    flex-shrink: 0 !important;
-    transform: none !important;
-    transition: none !important;
-    filter: none !important;
-    background: inherit !important;
-    border-radius: 8px !important;
-  }
-
-  /* Meta bar: reset absolute desktop positioning → static sub-row under title */
-  .exam-card.user-quiz-card .exam-card-meta {
-    position: static !important;
-    bottom: auto !important;
-    left: auto !important;
-    right: auto !important;
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    flex-wrap: wrap !important;
-    gap: 4px !important;
-    margin: 0 !important;
-    width: 100% !important;
-    white-space: nowrap !important;
-  }
-
-  /* Question count: compact muted text, after the chips */
-  .exam-card.user-quiz-card .exam-question-count {
-    font-size: 0.65rem !important;
-    color: var(--color-text-tertiary, #888) !important;
-    order: 2 !important;
-    direction: rtl !important;
-    flex-shrink: 0 !important;
-    margin-bottom: 8px !important;
-  }
-
-  /* Type chips row: stays as badges, smaller, left-to-right reading order */
-  .exam-card.user-quiz-card .user-quiz-types-row {
-    order: 1 !important;
-    flex-wrap: wrap !important;
-    gap: 3px !important;
-    margin-top: 0 !important;
-    justify-content: flex-start !important;
-    margin-bottom: 7px !important;
-  }
-
-  /* Individual chips: smaller font + tighter padding for compact row */
-  .exam-card.user-quiz-card .user-quiz-types-row span {
-    font-size: 0.6rem !important;
-    padding: 1px 6px !important;
-    border-radius: 10px;
-    margin-left: 3px;
-  }
-
-  /* Actions wrap: static, pushed to far right, horizontal pill buttons */
-  .exam-card.user-quiz-card .exam-card-actions-wrap {
-    position: static !important;
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 6px !important;
-    flex-shrink: 0 !important;
-    margin-top: 0 !important;
-    margin-left: auto !important;
-    width: auto !important;
-    flex-wrap: nowrap !important;
-  }
-
-  /* Play button: compact icon-only pill */
-  .exam-card.user-quiz-card .start-btn {
-    width: 32px !important;
-    height: 32px !important;
-    padding: 0 !important;
-    font-size: 0 !important;
-    flex: 0 0 32px !important;
-    min-width: 0 !important;
-    border-radius: 8px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  .exam-card.user-quiz-card .start-btn::after {
-    content: "▶";
-    font-size: 0.75rem;
-    color: white;
-  }
-
-  /* Download button: hidden on mobile (same as normal exam cards) */
-  .exam-card.user-quiz-card .start-btn.desktop-download-btn {
-    display: none !important;
-  }
-}
+  }}
 
 /* ============================================================================
    NEW BADGE — recently added content indicator
@@ -4296,13 +2609,6 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   pointer-events: none;
   z-index: 3;
   box-shadow: var(--shadow-sm);
-}
-
-/* Ensure the card has relative positioning for the badge anchor */
-.card,
-.category-card,
-.exam-card {
-  position: relative;
 }
 
 /* ============================================================================
@@ -4466,8 +2772,7 @@ kbd {
   .create-quiz-inline-modal {
     padding: 20px;
     max-height: 92vh;
-  }
-}
+  }}
 
 @media (max-width: 480px) {
   .create-quiz-inline-modal {
@@ -4522,8 +2827,7 @@ kbd {
 
   .create-quiz-modal__main-actions {
     flex-direction: column;
-  }
-}
+  }}
 
 @media (max-height: 640px) and (max-width: 480px) {
 
@@ -4544,8 +2848,7 @@ kbd {
 
   .inline-quiz-textarea {
     min-height: 60px;
-  }
-}
+  }}
 
 /* ==========================================================================
    Prompt Selection Modal
@@ -4928,46 +3231,19 @@ kbd {
   }
 }
 
-/* Dark theme support, matching your data-theme attribute pattern */
-[data-theme="dark"] #errorBoundary,
-[data-theme="dark-slate"] #errorBoundary {
+/* Dark theme support, matching your data-theme attribute pattern */[data-theme="dark"] #errorBoundary {
   background: #2a1216;
   border-color: #7f1d1d;
   box-shadow:
     0 10px 25px -5px rgba(0, 0, 0, 0.5),
     0 8px 10px -6px rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="dark"] #errorBoundary p,
-[data-theme="dark-slate"] #errorBoundary p {
+}[data-theme="dark"] #errorBoundary p {
   color: #fca5a5;
 }
 
 [data-animations="disabled"] #errorBoundary {
   animation: none;
 }
-
-/* Elevate a card above its siblings on hover (pure visual affordance, e.g.
-   so a lifted/shadowed card isn't overlapped by the next row).
-   NOTE: this used to also fire on `:has(.course-info-tooltip.show)`, but
-   the tooltip itself is switched to `position: fixed` by
-   positionCourseInfoTooltip() (see tooltip-position.js), which positions
-   it relative to the viewport, not this card. Including the open tooltip
-   here promoted the CARD into its own stacking context via z-index, and
-   a `position: fixed` descendant is still subject to an ancestor's
-   stacking context — so that trapped the tooltip inside this low
-   z-above layer instead of letting --z-tooltip govern it against the
-   rest of the page, and it painted behind later cards. Dropped so an
-   open tooltip no longer touches the card's z-index at all. */
-.card:hover,
-.category-card:hover,
-.exam-card:hover {
-  z-index: var(--z-above);
-}
-
-/* ============================================================================
-   BULK ACTION & QUIZ SELECTION — custom checkbox, toggle button, action bar
-   ============================================================================ */
 
 /* ── Selection toggle button ──
    Styled as a distinct, pill-shaped control that clearly communicates a
@@ -5045,8 +3321,7 @@ kbd {
   .btn.selection-toggle-btn,
   .admin-log-in-btn {
     gap: 4px;
-  }
-}
+  }}
 
 /* ── Per-card selection checkbox ──
    Replaces the raw native checkbox with a custom control that sits
@@ -5253,8 +3528,7 @@ kbd {
 @media (max-width: 768px) {
   .bulk-action-bar {
     bottom: calc(24px + var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px));
-  }
-}
+  }}
 
 @media (max-width: 600px) {
   .bulk-action-bar {
@@ -5272,105 +3546,7 @@ kbd {
     width: 100%;
     justify-content: center;
     flex-wrap: wrap;
-  }
-}
-
-.exam-card.user-lesson-card {
-  border-color: color-mix(in srgb, var(--color-success) 38%, var(--color-border));
-}
-
-.exam-card.user-lesson-card .start-btn:not(.desktop-download-btn) {
-  background: var(--color-success);
-  color: #fff;
-}
-
-.exam-card.user-lesson-card .desktop-download-btn {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.lesson-card-description {
-  margin: .25rem 0 .45rem;
-  color: var(--color-text-secondary);
-  font-size: .84rem;
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-@media (max-width: 600px) {
-  .lesson-card-description {
-    font-size: .8rem;
-  }
-}
-
-/* Lesson cards contain user supplied titles and descriptions. Keep their
-   metadata in document flow so it cannot overlap content as cards grow. */
-@media (min-width: 641px) {
-  .exam-card.lesson-card,
-  .exam-card.user-lesson-card {
-    min-height: 210px;
-    align-self: stretch;
-  }
-
-  .exam-card.lesson-card .card-text,
-  .exam-card.user-lesson-card .card-text {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    align-items: stretch;
-    min-width: 0;
-    width: 100%;
-  }
-
-  .exam-card.lesson-card h3,
-  .exam-card.user-lesson-card h3 {
-  unicode-bidi: plaintext; /* truncate by the text's own direction */
-  text-align: start;
-    margin-bottom: .5rem;
-    overflow-wrap: anywhere;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .exam-card.lesson-card .lesson-card-description,
-  .exam-card.user-lesson-card .lesson-card-description {
-  unicode-bidi: plaintext; /* truncate by the text's own direction */
-  text-align: start;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
-    overflow: hidden;
-    overflow-wrap: anywhere;
-    text-overflow: ellipsis;
-  }
-
-  .exam-card.user-lesson-card .exam-card-meta,
-  .exam-card.lesson-card .exam-card-meta {
-    position: static;
-    inset: auto;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    width: 100%;
-    margin: .5rem 0 0;
-    white-space: normal;
-  }
-
-  .exam-card.user-lesson-card .exam-question-count,
-  .exam-card.lesson-card .exam-question-count {
-    margin: 0 !important;
-  }
-}
+  }}
 
 /* Phase 4a: local-only completion summary shown at a course's root. */
 .course-lesson-progress {
@@ -5383,16 +3559,6 @@ kbd {
   background: color-mix(in srgb, var(--color-success) 8%, transparent);
   font-weight: 700;
   text-align: center;
-}
-
-.lesson-card .start-btn {
-  background: var(--color-success);
-  color: #fff;
-}
-
-.exam-card.notebook-card .desktop-download-btn {
-  background: var(--color-primary);
-  color: #fff;
 }
 
 /* Folder/course info modal: the card already has its own padding, so drop the
@@ -5427,69 +3593,7 @@ kbd {
   .course-info-modal-card .quiz-creator-cta {
     flex-basis: 100%;
     justify-content: flex-end;
-  }
-}
-
-
-/* Phones: workspace lesson card — wrap description/meta so nothing clips or
-   runs under the play button. */
-@media (max-width: 640px) {
-  .exam-card.user-lesson-card .card-text {
-    min-width: 0 !important;
-    max-width: 100%;
-  }
-
-  .exam-card.user-lesson-card .lesson-card-description {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    margin: 0 0 4px;
-    direction: rtl;
-    text-align: start;
-    white-space: nowrap;
-    overflow-wrap: anywhere;
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
-  }
-
-  .exam-card.user-lesson-card .exam-card-meta,
-  .exam-card.lesson-card .exam-card-meta {
-    flex-wrap: wrap !important;
-    justify-content: space-between !important;
-    gap: 2px 10px !important;
-    width: 100% !important;
-    margin: 0 !important;
-    white-space: normal !important;
-    direction: rtl !important;
-  }
-
-  .exam-card.user-lesson-card .exam-question-count,
-  .exam-card.user-lesson-card .exam-types-subtext,
-  .exam-card.lesson-card .exam-question-count,
-  .exam-card.lesson-card .exam-types-subtext {
-    order: 0 !important;
-    flex: 0 1 auto !important;
-    margin: 0 !important;
-    white-space: normal !important;
-    overflow: visible !important;
-    text-align: start !important;
-    direction: rtl !important;
-  }
-}
-
-/* Quiz/lesson/notebook titles stay on one truncated line so mixed cards
-   share a stable height. Full title is on the element's title tooltip. */
-.exam-card .card-text > h3 {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  text-overflow: ellipsis;
-  unicode-bidi: plaintext;
-  text-align: start;
-}
+  }}
 
 /* ---- "دفتر جديد" modal (create-notebook-modal.js) --------------------------
    The card clips (rounded corners) and an inner wrapper scrolls, so the
@@ -5508,8 +3612,8 @@ kbd {
   scrollbar-width: thin;
   scrollbar-gutter: stable both-edges;
 }
-@media (max-width: 640px) { .create-notebook-modal__scroll { padding: 20px; } }
-@media (max-width: 480px) { .create-notebook-modal__scroll { padding: 14px 16px; } }
+@media (max-width: 640px) { .create-notebook-modal__scroll { padding: 20px; }}
+@media (max-width: 480px) { .create-notebook-modal__scroll { padding: 14px 16px; }}
 .create-notebook-modal .create-quiz-modal__subtitle code { direction: ltr; unicode-bidi: isolate; }
 .create-notebook-modal__file {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -5540,106 +3644,6 @@ kbd {
   margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; overflow-x: auto; text-align: left;
   font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace;
   background: var(--color-background); border: 1px solid var(--color-border); white-space: pre;
-}
-
-@media (min-width: 641px) {
-  .exam-card,
-  .exam-card.user-quiz-card {
-    display: flex;
-    flex-direction: column;
-    align-self: stretch;
-    min-height: 210px;
-    text-align: start;
-    margin-top: 0;
-  }
-
-  .exam-card.lesson-card,
-  .exam-card.user-lesson-card,
-  .exam-card.notebook-card,
-  .exam-card.user-notebook-card {
-    min-height: 210px;
-  }
-
-  .exam-card .card-text {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    width: 100%;
-    min-width: 0;
-    text-align: start;
-  }
-
-  .exam-card .card-text > h3 {
-    margin: 0;
-  }
-
-  .exam-card.lesson-card,
-  .exam-card.user-lesson-card {
-    border-color: color-mix(in srgb, var(--color-success) 38%, var(--color-border));
-  }
-
-  .exam-card.notebook-card,
-  .exam-card.user-notebook-card {
-    border-color: color-mix(in srgb, var(--color-primary) 38%, var(--color-border));
-  }
-
-  .exam-card .exam-card-meta {
-    position: static;
-    inset: auto;
-    width: 100%;
-    margin: auto 0 0;
-    white-space: nowrap;
-  }
-
-  .exam-card .exam-card-actions-wrap {
-    position: static;
-    inset: auto;
-    width: 100%;
-    margin-top: 12px;
-  }
-
-  .exam-card:not(.user-quiz-card) .exam-card-actions-wrap {
-    width: 100%;
-  }
-}
-
-.exam-card .lesson-card-description {
-  margin: 0;
-  min-width: 0;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  unicode-bidi: plaintext;
-  text-align: start;
-}
-
-.category-card[data-user-quizzes-card="true"] .card-text p {
-  margin-bottom: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 640px) {
-  .exam-card .lesson-card-description {
-    display: none;
-  }
-}
-
-/* ── New item from an MCP link: pulsing glow + «جديد» badge (mcp-draft-import.js) ──
-   The glow is a box-shadow (the card has overflow:hidden, which would clip an
-   outside badge/outline), so the badge lives INSIDE the card's top corner. */
-.exam-card.user-quiz-card.mcp-new-item {
-  --mcp-glow: var(--color-primary, #6366f1);
-  border-color: var(--mcp-glow);
-  background-image: linear-gradient(color-mix(in srgb, var(--mcp-glow) 14%, transparent), color-mix(in srgb, var(--mcp-glow) 5%, transparent));
-  box-shadow:
-    0 0 0 3px var(--mcp-glow),
-    0 0 22px 4px color-mix(in srgb, var(--mcp-glow) 70%, transparent),
-    0 0 60px 14px color-mix(in srgb, var(--mcp-glow) 35%, transparent);
-  animation: mcp-new-pulse 1.4s ease-in-out infinite;
-  z-index: 2;
 }
 .mcp-new-badge {
   position: absolute;
@@ -5677,7 +3681,4 @@ kbd {
       0 0 30px 8px color-mix(in srgb, var(--mcp-glow) 85%, transparent),
       0 0 80px 22px color-mix(in srgb, var(--mcp-glow) 45%, transparent);
   }
-}
-@media (prefers-reduced-motion: reduce) {
-  .exam-card.user-quiz-card.mcp-new-item { animation: none; }
 }

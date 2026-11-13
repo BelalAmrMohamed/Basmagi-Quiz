@@ -306,11 +306,8 @@ export async function renderRootCategories() {
     container.className = "hive-root";
     container.setAttribute("aria-busy", "false");
 
-    // Honeycomb scaffold: .cap (message slot, empty = plain spacing) + .cells.
-    // Shown whenever the user has zero course subscriptions, so every course
-    // on the platform is being shown as a fallback instead of a personalized
-    // list — whether they set an academic stage and never picked courses, or
-    // skipped onboarding. Both land on this same "all courses" screen.
+    // Honeycomb scaffold: .cap is always shown — the unsubscribed notice when
+    // there are no subscriptions, otherwise the academic stage + settings link.
     const { comb, cap, cells } = createComb();
     if (subscribedCourses.length === 0) {
       setCapMessage(cap, {
@@ -319,6 +316,20 @@ export async function renderRootCategories() {
         text: "لذا نعرض لك جميع المواد المتاحة. يمكنك اختيار موادك من صفحة الإعدادات.",
         linkHref: "/settings",
         linkLabel: "الذهاب للإعدادات",
+      });
+    } else {
+      const labels = [
+        profile.faculty && profile.faculty !== "All" ? profile.faculty : null,
+        profile.year && profile.year !== "All" ? `السنة ${profile.year}` : null,
+        profile.term && profile.term !== "All" ? `الترم ${profile.term}` : null,
+      ].filter(Boolean);
+      setCapMessage(cap, {
+        icon: "🎓",
+        title: labels.length ? labels.join(" · ") : "موادي",
+        text: `${subscribedCourses.length} مادة مشترك بها`,
+        linkHref: "/settings",
+        linkLabel: "تغيير موادي",
+        tone: "ok",
       });
     }
     container.appendChild(comb);
@@ -495,7 +506,7 @@ export async function renderRootCategories() {
         // DEDUPLICATION: this used to be ~85 lines of copy-pasted
         // tooltip-building code (identical to the "all courses" branch
         // below except for the unsubscribe button) — now a single shared,
-        // escaped builder. See course-info-tooltip.js.
+        // escaped builder.
         attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe: true });
 
         fragment.appendChild(card);

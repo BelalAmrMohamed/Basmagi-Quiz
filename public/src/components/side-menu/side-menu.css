@@ -84,7 +84,7 @@
   display: none;
 }
 
-[data-theme="dark-slate"] #breadcrumb,
+
 [data-theme="dark"] #breadcrumb {
   background: var(--color-surface);
   border-color: var(--color-border);
@@ -825,11 +825,6 @@
   color: var(--color-primary);
 }
 
-[data-theme="dark-slate"] .menu-item.active {
-  background: rgba(99, 102, 241, 0.2);
-  color: #818cf8;
-}
-
 [data-theme="dark"] .menu-item.active {
   background: rgba(59, 130, 246, 0.2);
   color: #60a5fa;
@@ -1133,7 +1128,7 @@
 /* ── Theme Selector Grid ─────────────────────────────────────────────────── */
 .theme-selector-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   margin-block: 4px 6px;
   margin-inline: 4px;
@@ -1279,39 +1274,13 @@
   background: #e5e7eb;
 }
 
-.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview {
-  background: #0f172a;
-}
-
-.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-header::before {
-  background: #1e293b;
-  border: 1px solid #334155;
-}
-
-.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-header::after {
-  background: #818cf8;
-}
-
-.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row {
-  background: #1e293b;
-  border: 1px solid #334155;
-}
-
-.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row::before {
-  background: #818cf8;
-}
-
-.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row::after {
-  background: #334155;
-}
-
 .theme-selector-btn[data-theme="dark"] .theme-btn-preview {
-  background: #121212;
+  background: #0a0a0a;
 }
 
 .theme-selector-btn[data-theme="dark"] .theme-btn-preview-header::before {
-  background: #1e1e1e;
-  border: 1px solid #333333;
+  background: #121212;
+  border: 1px solid #262626;
 }
 
 .theme-selector-btn[data-theme="dark"] .theme-btn-preview-header::after {
@@ -1319,8 +1288,8 @@
 }
 
 .theme-selector-btn[data-theme="dark"] .theme-btn-preview-row {
-  background: #1e1e1e;
-  border: 1px solid #333333;
+  background: #121212;
+  border: 1px solid #262626;
 }
 
 .theme-selector-btn[data-theme="dark"] .theme-btn-preview-row::before {
@@ -1328,7 +1297,7 @@
 }
 
 .theme-selector-btn[data-theme="dark"] .theme-btn-preview-row::after {
-  background: #333333;
+  background: #262626;
 }
 
 /* Selected-state check badge (mirrors the reference design's ✓ pill) */
@@ -1663,7 +1632,7 @@
     box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
   }
 
-  [data-theme="dark-slate"] .bottom-nav,
+  
   [data-theme="dark"] .bottom-nav {
     box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3);
   }
@@ -1727,7 +1696,7 @@
     transform: translateY(-1px);
   }
 
-  [data-theme="dark-slate"] .bottom-nav-item.active,
+  
   [data-theme="dark"] .bottom-nav-item.active {
     color: var(--color-accent);
   }
@@ -1749,8 +1718,7 @@
     background: var(--color-primary);
   }
 
-  [data-theme="dark"] .bottom-nav-item.active::before,
-  [data-theme="dark-slate"] .bottom-nav-item.active::before {
+  [data-theme="dark"] .bottom-nav-item.active::before {
     background: var(--color-accent);
   }
 
@@ -1799,8 +1767,7 @@
     color: var(--color-primary);
   }
 
-  [data-theme="dark"] .bottom-nav-item[aria-expanded="true"],
-  [data-theme="dark-slate"] .bottom-nav-item[aria-expanded="true"] {
+  [data-theme="dark"] .bottom-nav-item[aria-expanded="true"] {
     color: var(--color-accent);
   }
 }
@@ -2079,35 +2046,29 @@ html[data-motion="reduced"] body {
   font-size: large;
 }
 
-[data-theme="dark"] .cancel-contact-overlay-button,
-[data-theme="dark-slate"] .cancel-contact-overlay-button {
+[data-theme="dark"] .cancel-contact-overlay-button {
   color: #e8f0fe;
 }
 
-[data-theme="dark"] .contact-overlay-card,
-[data-theme="dark-slate"] .contact-overlay-card {
+[data-theme="dark"] .contact-overlay-card {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .contact-overlay-header,
-[data-theme="dark-slate"] .contact-overlay-header {
+[data-theme="dark"] .contact-overlay-header {
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .contact-option-btn,
-[data-theme="dark-slate"] .contact-option-btn {
+[data-theme="dark"] .contact-option-btn {
   background: var(--color-background);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .contact-whatsapp:hover,
-[data-theme="dark-slate"] .contact-whatsapp:hover {
+[data-theme="dark"] .contact-whatsapp:hover {
   background: rgba(37, 211, 102, 0.08);
 }
 
-[data-theme="dark"] .contact-telegram:hover,
-[data-theme="dark-slate"] .contact-telegram:hover {
+[data-theme="dark"] .contact-telegram:hover {
   background: rgba(44, 165, 224, 0.08);
 }
 

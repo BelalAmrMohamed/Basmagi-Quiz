@@ -707,7 +707,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const sharedMode = urlParams.get("mode");
   if (sharedId && sharedMode === "edit") {
     // Deep-linked shared-quiz edit (?id=<dbId>&mode=edit), reached from the
-    // admin "تعديل" dropdown action (exam-card.js). Distinct query param
+    // admin "تعديل" dropdown action (item-card.js). Distinct query param
     // from the pre-existing local ?edit=<id> so both keep working
     // unchanged — see sharedEditDbId's declaration above for why.
     sharedEditDbId = sharedId;

@@ -1,7 +1,7 @@
 /* =============================================================================
    hive-tokens.css — shared design tokens for the 2026 home redesign
    (honeycomb courses, header, cap message bar, item cards, course card).
-   Every value derives from themes.css tokens, so light / dark / dark-slate all
+   Every value derives from themes.css tokens, so light / dark both
    work. Loaded before hive.css, cards-v2.css and user-course-card.css.
    ============================================================================= */
 :root {
@@ -20,20 +20,21 @@
   --hv-sheen: linear-gradient(150deg, var(--color-primary), var(--color-primary-dark)); /* hover edge */
   --hv-hex: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
 
-  /* item-type accents (card-types.css owns quiz/lesson/notebook) */
+  /* item-type accents */
   --hv-folder: #d97706;
   --hv-quiz: var(--type-quiz, #3b82f6);
   --hv-lesson: var(--type-lesson, #10b981);
   --hv-notebook: var(--type-notebook, #8b5cf6);
 }
-html[data-theme="dark"],
-html[data-theme="dark-slate"] {
-  --hv-cell-hi: #292a35;
-  --hv-cell-lo: #15161b;
-  --hv-cell-sel: #1f2538;
-  --hv-edge: #34353f;
-  --hv-fill: #15161c;
-  --hv-sheen: linear-gradient(150deg, #eceefb, #8d8fa6);
+html[data-theme="dark"] {
+  --hv-cell: #161616;
+  --hv-base: #161616;
+  --hv-panel: #121212;
+  --hv-cell-hi: #1f1f1f;
+  --hv-cell-lo: #0e0e0e;
+  --hv-cell-sel: #1c1c1c;
+  --hv-edge: #2e2e2e;
+  --hv-fill: #0e0e0e;
+  --hv-sheen: linear-gradient(150deg, #ededed, #8a8a8a);
   --hv-folder: #f5b942;
 }
-html[data-theme="dark"] { --hv-cell: #1d1e25; --hv-base: #1b1c22; --hv-panel: #1a1b21; }

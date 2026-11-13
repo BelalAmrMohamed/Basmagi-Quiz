@@ -2,12 +2,6 @@
 // public/src/features/home/search-integration.js
 // SEARCH INTEGRATION — SearchManager wiring and the three search-result
 // renderers (courses, quizzes-in-a-course, and user quizzes).
-// ============================================================================
-// DEDUPLICATION: renderCourseSearchResults previously carried its own ~55-line
-// copy of the course-info-tooltip-building code (the third of three near-
-// identical copies in the original file) — replaced with the shared,
-// HTML-escaped attachCourseInfoTooltip(). See course-info-tooltip.js.
-// ============================================================================
 
 import { SearchManager } from "./search-manager.js";
 import { getFromStorage } from "../../shared/storage-helpers.js";
@@ -25,8 +19,7 @@ import { addSubscribeButton } from "./subscribe-button.js";
 import { createCategoryCard, renderCategory } from "./category-view.js";
 import { createCourseCell, createComb, courseHref, courseSubtext } from "./course-cell.js";
 import { attachCourseActionsMenu } from "./root-view.js";
-import { createExamCard } from "./exam-card.js";
-import { createUserQuizCard } from "./user-quiz-card.js";
+import { createExamCard, createUserQuizCard } from "./item-card.js";
 import { renderRootCategories } from "./root-view.js";
 import { renderUserQuizzesView } from "./user-quizzes-view.js";
 

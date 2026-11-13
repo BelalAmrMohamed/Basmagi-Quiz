@@ -23,18 +23,11 @@
   /* Above sidebar (4000) and bottom-nav (4001) */
 }
 
-/* Theme support: dark and dark-slate */
+/* Theme support: dark */
 html[data-theme="dark"] .mlweb-imtool-win {
   background: var(--color-surface, #161922);
   color: var(--color-text-primary, #edf0f7);
   border-color: var(--color-border, #2d3546);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-
-html[data-theme="dark-slate"] .mlweb-imtool-win {
-  background: var(--color-surface, #1a1d27);
-  color: var(--color-text-primary, #f0f3f8);
-  border-color: var(--color-border, #313749);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
@@ -110,8 +103,7 @@ html[data-theme="dark-slate"] .mlweb-imtool-win {
   min-height: 42px;
 }
 
-html[data-theme="dark"] .mlweb-imtool-titlebar,
-html[data-theme="dark-slate"] .mlweb-imtool-titlebar {
+html[data-theme="dark"] .mlweb-imtool-titlebar {
   background: var(--color-background-secondary, #1d2330);
   border-bottom-color: var(--color-border, #2d3546);
 }
@@ -142,8 +134,7 @@ html[data-theme="dark-slate"] .mlweb-imtool-titlebar {
   text-overflow: ellipsis;
 }
 
-html[data-theme="dark"] .mlweb-imtool-title,
-html[data-theme="dark-slate"] .mlweb-imtool-title {
+html[data-theme="dark"] .mlweb-imtool-title {
   color: var(--color-text-primary, #edf0f7);
 }
 
@@ -255,8 +246,7 @@ html[data-theme="dark-slate"] .mlweb-imtool-title {
   flex-shrink: 0;
 }
 
-html[data-theme="dark"] .mlweb-imtool-toolbar,
-html[data-theme="dark-slate"] .mlweb-imtool-toolbar {
+html[data-theme="dark"] .mlweb-imtool-toolbar {
   background: var(--color-surface, #161922);
   border-bottom-color: var(--color-border, #2d3546);
 }
@@ -291,8 +281,7 @@ html[data-theme="dark-slate"] .mlweb-imtool-toolbar {
   transition: all 0.15s ease;
 }
 
-html[data-theme="dark"] .mlweb-imtool-tb-btn,
-html[data-theme="dark-slate"] .mlweb-imtool-tb-btn {
+html[data-theme="dark"] .mlweb-imtool-tb-btn {
   background: var(--color-background-secondary, #1d2330);
   color: var(--color-text-primary, #edf0f7);
   border-color: var(--color-border, #2d3546);
@@ -306,7 +295,6 @@ html[data-theme="dark-slate"] .mlweb-imtool-tb-btn {
 /* Robust active state that works across ALL themes */
 .mlweb-imtool-tb-btn.is-active,
 html[data-theme="dark"] .mlweb-imtool-tb-btn.is-active,
-html[data-theme="dark-slate"] .mlweb-imtool-tb-btn.is-active,
 html[data-theme="light"] .mlweb-imtool-tb-btn.is-active {
   background: var(--color-primary, #b94a16) !important;
   border-color: var(--color-primary, #b94a16) !important;
@@ -393,8 +381,7 @@ html[data-theme="light"] .mlweb-imtool-tb-btn.is-active {
   flex-shrink: 0;
 }
 
-html[data-theme="dark"] .mlweb-imtool-statusbar,
-html[data-theme="dark-slate"] .mlweb-imtool-statusbar {
+html[data-theme="dark"] .mlweb-imtool-statusbar {
   background: var(--color-background-secondary, #1d2330);
   border-top-color: var(--color-border, #2d3546);
   color: var(--color-text-secondary, #8b949e);
@@ -405,8 +392,7 @@ html[data-theme="dark-slate"] .mlweb-imtool-statusbar {
   color: var(--color-text-primary, #1d2433);
 }
 
-html[data-theme="dark"] .mlweb-imtool-status-pixel,
-html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
+html[data-theme="dark"] .mlweb-imtool-status-pixel {
   color: var(--color-text-primary, #edf0f7);
 }
 

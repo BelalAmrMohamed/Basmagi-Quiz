@@ -3,8 +3,7 @@
 // COURSE INFO FIELDS — single source of truth for the education-type Arabic
 // translation and the "نوع التعليم / الكلية / العام / الترم" row set shared
 // by showCourseInfoModal() (course-actions.js), the course "معلومات المادة"
-// dropdown submenu (root-view.js), and the course-card (i) tooltip
-// (course-info-tooltip.js). Previously each of these three places kept its
+// dropdown submenu (root-view.js), and the course-cell menu. Previously each kept its
 // own copy of the education-type map and its own slightly different label
 // set/empty-row handling — this consolidates all three so the labels and
 // "hide empty Year/Term" behavior can never drift out of sync again.

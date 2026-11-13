@@ -29,7 +29,7 @@ function inFlightKey(type, parentId, title) {
 
 /**
  * Shared loading-state wrapper for every "نسخ إلى محتواي" button (root-view.js,
- * category-view.js, exam-card.js). Copying a whole course tree can take a
+ * category-view.js, item-card.js). Copying a whole course tree can take a
  * while (one loadFullQuizData() fetch per quiz, sequentially — see
  * copyCategoryTreeToUserQuizzes below), and the button previously only set
  * `.disabled = true` with no visible change, so a slow copy looked like a

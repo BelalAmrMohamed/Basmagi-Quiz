@@ -1,20 +1,9 @@
-// ============================================================================
-// public/src/features/home/user-quiz-card.js
-// USER QUIZ CARD — renders a single locally-stored (user-created) quiz card,
-// its ⋮ actions menu, play/delete handlers.
-// ============================================================================
-//
-// SECURITY FIX (stored XSS): createUserQuizCard() previously interpolated
-// the user-supplied quiz title into innerHTML with no escaping — a title
-// like `<img src=x onerror=...>` typed into the create-quiz modal would
-// execute on every render of that card. Fixed below by building the title
-// with textContent instead of innerHTML, so it's never parsed as markup.
-// ============================================================================
+// Workspace («محتواي») item helpers: play/delete handlers, ⋮ menus and the
+// per-card action bundles consumed by item-card.js.
 
 import { qz } from "./quiz-schema.js";
-import { formatArabicQuestionCount, refreshUserQuizzesCard } from "./course-count.js";
+import { refreshUserQuizzesCard } from "./course-count.js";
 import { moveToTrash } from "./user-quizzes-trash.js";
-import { getSelectedUserQuizzes } from "./app-state.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import {
   isAdminAuthenticated,
@@ -31,10 +20,7 @@ import {
   openItemDropdownMenu,
 } from "./item-dropdown-menu.js";
 import { renderRootCategories } from "./root-view.js";
-import {
-  renderUserQuizzesView,
-  updateBulkActionBar,
-} from "./user-quizzes-view.js";
+import { renderUserQuizzesView } from "./user-quizzes-view.js";
 import {
   openMoveToDialog,
   renameItem,
@@ -44,15 +30,7 @@ import {
   currentFolderId,
 } from "./user-quizzes-folders.js";
 import { userProfile } from "../../shared/userProfile.js";
-import {
-  LOCK_ICON_SVG,
-  DOWNLOAD_ICON_SVG,
-  EDIT_ICON_SVG,
-  RENAME_ICON_SVG,
-  TRASH_ICON_SVG,
-  MORE_DOTS_ICON_SVG,
-  MOVE_TO_ICON_SVG,
-} from "./icons.js";
+import { LOCK_ICON_SVG, DOWNLOAD_ICON_SVG, EDIT_ICON_SVG, RENAME_ICON_SVG, TRASH_ICON_SVG, MOVE_TO_ICON_SVG } from "./icons.js";
 import {
   showNotification,
   _confirm,
@@ -73,378 +51,28 @@ import { downloadLesson } from "./lesson-download.js";
 import { withDownloadLoading } from "../../components/download-quiz-modal/export-card.js";
 import { openDescriptionSourceModal } from "./description-source-modal.js";
 import { appendNotebookMenuEntries, showNotebookDownloadModal } from "./notebook-actions.js";
-import { createNotebookCardShell, createNotebookActionRow } from "./notebook-card-view.js";
-import { createTypeChip, tagCardType, addCardShape } from "./card-type.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { SPARKLE_ICON_SVG } from "./icons.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Create a card for a user-created quiz
- */
-export function createUserQuizCard(quiz, index) {
-  const card = document.createElement("div");
-  card.className = "exam-card user-quiz-card";
-  card.setAttribute("role", "article");
-  card.setAttribute("aria-label", `امتحان: ${qz(quiz, "title")}`);
-  card.style.position = "relative";
+export const createUserQuizActions = (quiz) => ({
+  open: () => playUserQuiz(quiz),
+  download: (btn) => showUserQuizDownloadPopup(quiz, btn),
+  more: (btn) => showUserQuizActionsOverlay(quiz, btn),
+});
 
-  const quizId = qz(quiz, "id") || quiz.id;
+export const createUserLessonActions = (lesson) => ({
+  open: () => playUserLesson(lesson),
+  download: (btn) => withDownloadLoading(btn, () => downloadLesson(lesson, btn)),
+  more: (btn) => showUserLessonActionsOverlay(lesson, btn),
+});
 
-  const checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  checkbox.className = "user-quiz-select-checkbox";
-  checkbox.setAttribute("data-quiz-id", quizId);
-  const selectedUserQuizzes = getSelectedUserQuizzes();
-  checkbox.checked = selectedUserQuizzes.has(quizId);
-  checkbox.onclick = (e) => {
-    e.stopPropagation();
-    if (checkbox.checked) {
-      selectedUserQuizzes.add(quizId);
-    } else {
-      selectedUserQuizzes.delete(quizId);
-    }
-    updateBulkActionBar();
-  };
-  card.appendChild(checkbox);
-
-  // Pressing the card itself selects it while in selection mode — mirrors
-  // the folder/course card's click handler in user-quizzes-folders.js
-  // (`if (container?.classList.contains("selection-mode-active")) { checkbox.click(); return; }`).
-  // Quiz/lesson cards previously had no whole-card click handler at all, so
-  // selection only worked by hitting the tiny checkbox directly.
-  card.addEventListener("click", (e) => {
-    if (e.target === checkbox) return; // checkbox's own onclick already handles this
-    const container = document.querySelector(".user-quizzes-container");
-    if (container?.classList.contains("selection-mode-active")) {
-      e.stopPropagation();
-      checkbox.click();
-    }
-  });
-
-  const h = document.createElement("h3");
-  // SECURITY FIX (stored XSS): quiz.title is free-text the user typed into
-  // the create-quiz modal's title input and is persisted to localStorage
-  // verbatim. textContent (rather than innerHTML) means it's never parsed
-  // as markup, so a title like `<img src=x onerror=...>` can't execute —
-  // closes the same stored-XSS gap the original innerHTML interpolation
-  // had, just without needing an escaping step at all.
-  h.textContent = qz(quiz, "title") || quizId;
-  h.setAttribute("data-tooltip-badge", "📝 امتحان");
-  h.setAttribute("data-tooltip-text", h.textContent);
-
-  // ── Phone-only leading emoji — sibling of .card-text, not nested inside
-  const iconEl = document.createElement("span");
-  iconEl.className = "user-quiz--phone-only-emoji";
-  iconEl.textContent = "📝";
-
-  iconEl.setAttribute("aria-hidden", "true");
-
-  const questionCountLine = document.createElement("p");
-  questionCountLine.className = "exam-question-count";
-  const count = qz(quiz, "count");
-  questionCountLine.textContent = formatArabicQuestionCount(count);
-
-  // ── Play button — mirrors createExamCard's .start-btn ───────────────────
-  const playBtn = document.createElement("button");
-  playBtn.className = "start-btn";
-  playBtn.type = "button";
-  playBtn.style.flex = "1";
-  playBtn.style.minWidth = "0";
-  playBtn.textContent = "إبدأ";
-  playBtn.setAttribute("aria-label", `بدء امتحان ${qz(quiz, "title")}`);
-  playBtn.onclick = (e) => {
-    e.stopPropagation();
-    playUserQuiz(quiz);
-  };
-
-  // ── Download button — mirrors createExamCard's desktop-download-btn ─────
-  const userQuizPassword = qz(quiz, "password");
-  const downloadBtn = document.createElement("button");
-  downloadBtn.className = userQuizPassword
-    ? "start-btn desktop-download-btn is-password-protected"
-    : "start-btn desktop-download-btn";
-  downloadBtn.type = "button";
-  downloadBtn.style.flex = "1";
-  downloadBtn.style.minWidth = "0";
-  downloadBtn.style.background =
-    "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)";
-  downloadBtn.style.color = "white";
-  downloadBtn.style.boxShadow = "0 4px 14px rgba(220, 38, 38, 0.4)";
-  downloadBtn.innerHTML = userQuizPassword
-    ? `${LOCK_ICON_SVG}<span>تحميل</span>`
-    : `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
-  downloadBtn.setAttribute(
-    "aria-label",
-    userQuizPassword
-      ? `تحميل امتحان ${qz(quiz, "title")} (محمي بكلمة مرور)`
-      : `تحميل امتحان ${qz(quiz, "title")}`,
-  );
-  if (userQuizPassword) downloadBtn.title = "هذا الامتحان محمي بكلمة مرور";
-  downloadBtn.onclick = (e) => {
-    e.stopPropagation();
-    showUserQuizDownloadPopup(quiz, downloadBtn);
-  };
-
-  // ── More (⋮) button — opens the Action Overlay ──────────────────────────
-  const moreBtn = document.createElement("button");
-  moreBtn.className = "exam-more-btn";
-  moreBtn.type = "button";
-  moreBtn.innerHTML = MORE_DOTS_ICON_SVG;
-  moreBtn.setAttribute(
-    "aria-label",
-    `خيارات إضافية لـ ${qz(quiz, "title") || qz(quiz, "id")}`,
-  );
-  moreBtn.onclick = (e) => {
-    e.stopPropagation();
-    showUserQuizActionsOverlay(quiz, moreBtn);
-  };
-
-  const btnWrap = document.createElement("div");
-  btnWrap.className = "exam-card-actions-wrap";
-  btnWrap.appendChild(moreBtn);
-  btnWrap.appendChild(playBtn);
-  btnWrap.appendChild(downloadBtn);
-
-  // ── Build text wrapper (display:contents on desktop, flex-col on mobile) ──
-  const textWrap = document.createElement("div");
-  textWrap.className = "card-text";
-  textWrap.appendChild(createTypeChip("quiz"));
-  tagCardType(card, "quiz");
-  textWrap.appendChild(h);
-  const description = String(qz(quiz, "description") || "").trim();
-  if (description) {
-    const descriptionEl = document.createElement("p");
-    descriptionEl.className = "lesson-card-description";
-    descriptionEl.textContent = description;
-    descriptionEl.setAttribute("data-tooltip-badge", "📄 وصف الامتحان");
-    descriptionEl.setAttribute("data-tooltip-text", description);
-    textWrap.appendChild(descriptionEl);
-  }
-
-  // Meta wrapper: holds types + count — same role as .exam-card-meta, but
-  // keeps the uniquely-designed typesRow chips as a 👤 user-quiz indicator.
-  const metaWrap = document.createElement("div");
-  metaWrap.className = "exam-card-meta user-quiz-card-meta";
-
-  // ── Question type badges (kept unique to user quizzes) ──────────────────
-  const typeStr = qz(quiz, "type");
-  if (typeStr) {
-    const typesRow = document.createElement("div");
-    typesRow.className = "user-quiz-types-row exam-types-subtext";
-    typeStr.split(" · ").forEach((t) => {
-      const chip = document.createElement("span");
-      chip.textContent = t;
-      const colorMap = {
-        MCQ: "var(--color-primary-light)",
-        Essay: "var(--color-success-light)",
-        "True/False": "var(--color-warning-light)",
-      };
-      chip.style.cssText = `
-        padding: 2px 10px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        background: ${colorMap[t] || "var(--color-border)"};
-        color: var(--color-text-primary);
-      `;
-      typesRow.appendChild(chip);
-    });
-    metaWrap.appendChild(typesRow);
-  }
-
-  metaWrap.appendChild(questionCountLine);
-  textWrap.appendChild(metaWrap);
-
-  // DOM order: [icon] [textWrap] [btnWrap] — icon as a sibling of textWrap
-  // (not nested in h3) matches createCategoryCard's pattern, same as
-  // createExamCard. On desktop: .user-quiz--phone-only-emoji is display:none.
-  card.appendChild(iconEl);
-  card.appendChild(textWrap);
-  card.appendChild(btnWrap);
-
-  // Admin upload button now lives exclusively inside the ⋮ dropdown menu
-  // (see showUserQuizActionsOverlay below), on all screen sizes — no
-  // top-left card placement anymore.
-
-  addCardShape(card, "quiz");
-  return card;
-}
-
-/** A local lesson is a workspace item with reading, not quiz, behavior. */
-export function createUserLessonCard(lesson) {
-  const lessonId = lesson.id || lesson.meta?.id;
-  const title = lesson.meta?.title || "درس بدون عنوان";
-  const description = lesson.meta?.description || lesson.description || "";
-  const sections = lesson.stats?.sectionCount ?? lesson.lesson?.sections?.length ?? 0;
-  // Reuses collectLessonInfo (same source the ⋮ menu's info rows and the
-  // info modal use) instead of re-deriving the question count here, so the
-  // card badge and the info modal can never disagree.
-  const questionCount = lesson.stats?.questionCount ?? collectLessonInfo(lesson).questionCount;
-  const card = document.createElement("div");
-  card.className = "exam-card user-quiz-card user-lesson-card";
-  card.setAttribute("role", "article");
-  card.setAttribute("aria-label", `درس: ${title}`);
-
-  const checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  checkbox.className = "user-quiz-select-checkbox";
-  checkbox.dataset.quizId = lessonId;
-  const selected = getSelectedUserQuizzes();
-  checkbox.checked = selected.has(lessonId);
-  checkbox.onclick = (event) => {
-    event.stopPropagation();
-    checkbox.checked ? selected.add(lessonId) : selected.delete(lessonId);
-    updateBulkActionBar();
-  };
-
-  // Pressing the card itself selects it while in selection mode — same
-  // pattern as createUserQuizCard above and the folder/course cards in
-  // user-quizzes-folders.js.
-  card.addEventListener("click", (e) => {
-    if (e.target === checkbox) return;
-    const container = document.querySelector(".user-quizzes-container");
-    if (container?.classList.contains("selection-mode-active")) {
-      e.stopPropagation();
-      checkbox.click();
-    }
-  });
-
-  const icon = document.createElement("span");
-  icon.className = "user-quiz--phone-only-emoji";
-  icon.textContent = "📘";
-
-  icon.setAttribute("aria-hidden", "true");
-  const text = document.createElement("div");
-  text.className = "card-text";
-  text.append(createTypeChip("lesson"));
-  tagCardType(card, "lesson");
-  const heading = document.createElement("h3");
-  heading.textContent = title;
-  heading.setAttribute("data-tooltip-badge", "📘 درس");
-  heading.setAttribute("data-tooltip-text", title);
-  const meta = document.createElement("div");
-  meta.className = "exam-card-meta user-quiz-card-meta";
-  const label = document.createElement("p");
-  label.className = "exam-question-count";
-  label.textContent = `${sections} ${sections === 1 ? "قسم" : "أقسام"}`;
-  meta.appendChild(label);
-  // Embedded-question count on the right — .exam-types-subtext is already
-  // styled by .exam-card-meta to sit on the right side (order:2) opposite
-  // .exam-question-count's left side (order:1); see index.css. Only shown
-  // when the lesson actually has embedded questions, same "only if present"
-  // rule the info modal's rows follow.
-  if (questionCount > 0) {
-    const questionsLabel = document.createElement("p");
-    questionsLabel.className = "exam-types-subtext";
-    questionsLabel.textContent = `الأسئلة المدمجة: ${questionCount}`;
-    meta.appendChild(questionsLabel);
-  }
-  text.append(heading);
-  if (description) {
-    const desc = document.createElement("p");
-    desc.className = "lesson-card-description";
-    desc.textContent = description;
-    desc.setAttribute("data-tooltip-badge", "📄 وصف الدرس");
-    desc.setAttribute("data-tooltip-text", description);
-    text.append(desc);
-  }
-  text.append(meta);
-
-  const actions = document.createElement("div");
-  actions.className = "exam-card-actions-wrap";
-  // ⋮ button — same class/placement as the quiz card's, opening the lesson
-  // equivalent of showUserQuizActionsOverlay (edit lives inside that menu now,
-  // exactly like quizzes: the menu is the single entry point for editing).
-  const more = document.createElement("button");
-  more.className = "exam-more-btn";
-  more.type = "button";
-  more.innerHTML = MORE_DOTS_ICON_SVG;
-  more.setAttribute("aria-label", `خيارات إضافية لـ ${title}`);
-  more.onclick = (event) => {
-    event.stopPropagation();
-    showUserLessonActionsOverlay(lesson, more);
-  };
-  const start = document.createElement("button");
-  start.className = "start-btn";
-  start.type = "button";
-  // .start-btn's base rule is `width: 100%` (built for a single full-width
-  // play button on normal exam cards). The quiz card overrides this inline
-  // to flex:1/min-width:0 so its play + download buttons share the row
-  // instead of both claiming 100% width and stacking on top of each other
-  // (see createUserQuizCard above) — the lesson card needs the same
-  // override for the same two-button row.
-  start.style.flex = "1";
-  start.style.minWidth = "0";
-  start.textContent = "ابدأ القراءة";
-  start.onclick = (event) => {
-    event.stopPropagation();
-    playUserLesson(lesson);
-  };
-  const download = document.createElement("button");
-  download.className = "start-btn desktop-download-btn";
-  download.type = "button";
-  download.style.flex = "1";
-  download.style.minWidth = "0";
-  download.innerHTML = `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
-  download.disabled = false;
-  download.setAttribute("aria-label", `تحميل درس ${title}`);
-  download.onclick = (event) => {
-    event.stopPropagation();
-    void withDownloadLoading(download, () => downloadLesson(lesson, download));
-  };
-  actions.append(more, start, download);
-  card.append(checkbox, icon, text, actions);
-  addCardShape(card, "lesson");
-  return card;
-}
-
-/** A local notebook: an executable MATLAB-style notebook stored in the workspace (browser only). */
-export function createUserNotebookCard(nb) {
-  const nbId = nb.id || nb.meta?.id;
-  const title = nb.meta?.title || "دفتر بدون عنوان";
-  // Same card body as the platform notebook card (notebook-card-view.js):
-  // title, description, cell count, runtime label and the type chip.
-  const { card, icon, text } = createNotebookCardShell({
-    title,
-    description: nb.meta?.description || "",
-    cellCount: nb.stats?.cellCount ?? nb.notebook?.content?.cells?.length ?? 0,
-    runtime: nb.notebook?.runtime || "matlab",
-    cardClass: "exam-card user-quiz-card user-lesson-card user-notebook-card",
-    iconClass: "user-quiz--phone-only-emoji",
-  });
-  card.setAttribute("aria-label", `دفتر: ${title}`);
-
-  const checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  checkbox.className = "user-quiz-select-checkbox";
-  checkbox.dataset.quizId = nbId;
-  const selected = getSelectedUserQuizzes();
-  checkbox.checked = selected.has(nbId);
-  checkbox.onclick = (event) => {
-    event.stopPropagation();
-    checkbox.checked ? selected.add(nbId) : selected.delete(nbId);
-    updateBulkActionBar();
-  };
-  card.addEventListener("click", (e) => {
-    if (e.target === checkbox) return;
-    const container = document.querySelector(".user-quizzes-container");
-    if (container?.classList.contains("selection-mode-active")) {
-      e.stopPropagation();
-      checkbox.click();
-    }
-  });
-
-  const actions = createNotebookActionRow({
-    title,
-    onMore: (trigger) => showUserNotebookActionsOverlay(nb, trigger),
-    onOpen: () => playUserNotebook(nb),
-    onDownload: (button) => showNotebookDownloadModal(nb, button),
-  });
-  card.append(checkbox, icon, text, actions);
-  return card;
-}
+export const createUserNotebookActions = (nb) => ({
+  open: () => playUserNotebook(nb),
+  download: (btn) => showNotebookDownloadModal(nb, btn),
+  more: (btn) => showUserNotebookActionsOverlay(nb, btn),
+});
 
 export function showUserNotebookActionsOverlay(nb, triggerBtn) {
   const nbId = nb.id || nb.meta?.id;

@@ -957,30 +957,20 @@ body.is-resizing-media .media-container.resizable-media {
   box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.1);
 }
 
-/* ── Dark-slate table overrides ────────────────────────────────────────────── */
-[data-theme="dark-slate"] .md-table thead tr {
-  background: rgba(99, 102, 241, 0.14);
-  border-bottom-color: rgba(99, 102, 241, 0.28);
-}
-
-[data-theme="dark"] .md-table th,
-[data-theme="dark-slate"] .md-table th {
+[data-theme="dark"] .md-table th {
   background: rgba(99, 102, 241, 0.14);
 }
 
-[data-theme="dark"] .md-table tbody tr:nth-child(even),
-[data-theme="dark-slate"] .md-table tbody tr:nth-child(even) {
+[data-theme="dark"] .md-table tbody tr:nth-child(even) {
   background: rgba(255, 255, 255, 0.04);
 }
 
-[data-theme="dark"] .md-table tbody tr:hover,
-[data-theme="dark-slate"] .md-table tbody tr:hover {
+[data-theme="dark"] .md-table tbody tr:hover {
   background: rgba(99, 102, 241, 0.09);
 }
 
 /* ── Dark-theme table overrides ────────────────────────────────────────────── */
-[data-theme="dark"] .md-table-wrapper,
-[data-theme="dark-slate"] .md-table-wrapper {
+[data-theme="dark"] .md-table-wrapper {
   background:
     linear-gradient(to left, var(--color-background) 20%, transparent) right,
     linear-gradient(to right, var(--color-background) 20%, transparent) left,
@@ -1200,67 +1190,6 @@ body.is-resizing-media .media-container.resizable-media {
 
 [data-theme="light"] .code-block .sh-interp-body {
   color: #d4d4d4; /* same neutral as operators */
-}
-
-/* ── Dark-slate theme ────────────────────────────────────────────────────────
-   Page bg ≈ deep navy, code block ≈ slightly lighter slate
-   Goal: warm, sophisticated — no neon, no pastels that clash with cool blues
-   ─────────────────────────────────────────────────────────────────────────── */
-
-[data-theme="dark-slate"] .code-block .sh-keyword {
-  color: #82aaff; /* periwinkle blue — softer than purple, fits navy context */
-  font-weight: 600;
-}
-
-[data-theme="dark-slate"] .code-block .sh-string {
-  color: #c3e88d; /* muted lime-green — warm but not neon */
-}
-
-[data-theme="dark-slate"] .code-block .sh-number {
-  color: #f78c6c; /* soft coral — replaces bubblegum pink, feels mature */
-}
-
-[data-theme="dark-slate"] .code-block .sh-comment {
-  color: #546e7a; /* blue-grey — recedes into the slate without disappearing */
-  font-style: italic;
-}
-
-[data-theme="dark-slate"] .code-block .sh-function {
-  color: #82aaff; /* same family as keywords — cohesive, not competing */
-}
-
-[data-theme="dark-slate"] .code-block .sh-type {
-  color: #ffcb6b; /* warm gold — structural types deserve warmth */
-}
-
-[data-theme="dark-slate"] .code-block .sh-builtin {
-  color: #89ddff; /* cool sky — distinct from types, fits the slate palette */
-}
-
-[data-theme="dark-slate"] .code-block .sh-operator {
-  color: #89ddff; /* same sky — operators stay light and neutral */
-}
-
-[data-theme="dark-slate"] .code-block .sh-attr,
-[data-theme="dark-slate"] .code-block .sh-property {
-  color: #b2ccd6; /* desaturated steel blue — calm and readable */
-}
-
-[data-theme="dark-slate"] .code-block .sh-tag {
-  color: #f07178; /* muted rose-red — replaces bubblegum, still distinct */
-}
-
-[data-theme="dark-slate"] .code-block .sh-variable {
-  color: #eeffff; /* near-white with a cool tint — variables are plain text */
-}
-
-[data-theme="dark-slate"] .code-block .sh-interp {
-  color: #f78c6c; /* coral — matches numbers, signals interpolation clearly */
-  font-weight: 700;
-}
-
-[data-theme="dark-slate"] .code-block .sh-interp-body {
-  color: #b2ccd6; /* matches properties — calm body text */
 }
 
 /* Dynamic Direction Utilities (native dir="auto"; start follows resolved direction) */

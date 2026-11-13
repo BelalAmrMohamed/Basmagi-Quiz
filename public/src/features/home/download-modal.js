@@ -2,7 +2,7 @@
 // public/src/features/home/download-modal.js
 // DOWNLOAD MODAL — the format-picker popup for
 // user-made quizzes. The manifest-exam equivalent lives as a closure
-// inside createExamCard() (exam-card.js) since it captures per-card state.
+// inside createExamCard() (item-card.js) since it captures per-card state.
 //
 // This renders the shared download-quiz-modal component (see
 // showDownloadModal() in components/download-quiz-modal/download-quiz-modal.js)

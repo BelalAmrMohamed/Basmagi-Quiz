@@ -67,8 +67,7 @@ body.sidebar-expanded {
     padding-right: calc(var(--sidebar-expanded-width) + 16px);
 }
 
-html[data-theme="dark"] body,
-html[data-theme="dark-slate"] body {
+html[data-theme="dark"] body {
     --ink: var(--color-text-primary);
     --ink-soft: var(--color-text-secondary);
     --ink-muted: var(--color-text-tertiary);

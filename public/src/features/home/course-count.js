@@ -222,7 +222,7 @@ export function exportUserQuizzesAsJson() {
  * of waiting for the next full renderRootCategories() call (root-view.js).
  *
  * Lives here (rather than in root-view.js, which creates the card) so both
- * category-view.js and exam-card.js can call it after their own copy
+ * category-view.js and item-card.js can call it after their own copy
  * handlers without creating a circular import with root-view.js.
  */
 export function refreshUserQuizzesCard() {

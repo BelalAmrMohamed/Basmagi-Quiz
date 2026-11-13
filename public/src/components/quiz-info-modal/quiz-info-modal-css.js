@@ -110,9 +110,6 @@ html[data-motion="reduced"] .quiz-info-dialog-header h2 {
 [data-theme="dark"] .quiz-info-dialog-header h2 {
   color: #5dcaa5;
 }
-[data-theme="dark-slate"] .quiz-info-dialog-header h2 {
-  color: #85b7eb;
-}
 
 .quiz-info-dialog-close {
   display: inline-flex;

@@ -6,10 +6,9 @@ import { isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { renderUserQuizzesView, updateBulkActionBar } from "./user-quizzes-view.js";
 import { getSelectedUserQuizzes } from "./app-state.js";
 import { toSlug } from "./slug-utils.js";
-import { addCardShape } from "./card-type.js";
+import { createFolderCard } from "./item-card.js";
 import { buildUserQuizEntry, qz } from "./quiz-schema.js";
 import { getSubjectIcon } from "./subject-icons.js";
-import { MORE_DOTS_ICON_SVG } from "./icons.js";
 import { openMoveToDialogWithSource } from "./move-to-dialog.js";
 import { getTrashItemCount } from "./user-quizzes-trash.js";
 import { closeAllItemDropdownMenus } from "./item-dropdown-menu.js";
@@ -1713,126 +1712,30 @@ export function createFolderOrCourseCard(item) {
       getSelectedUserQuizzes, updateBulkActionBar, readUserQuizzes, getChildren,
     });
   }
-  const card = document.createElement("div");
-  card.className = "category-card user-quiz-card";
-  card.style.cursor = "pointer";
-  card.style.position = "relative";
-  card.setAttribute("role", "button");
-  card.setAttribute("tabindex", "0");
-  const isCourse = item.meta?.type === "course";
-  // Courses are always top-level (see canPlaceItem) — there is no valid
-  // drop target for one, so it isn't made draggable at all rather than
-  // being draggable-but-rejected-on-drop everywhere.
-  card.draggable = !isCourse;
-
-  const icon = isCourse ? "📚" : "📁";
   const itemId = item.id || item.meta?.id;
+  const title = item.meta?.title || "";
+  const { subfolderCount, quizCount, lessonCount, notebookCount } = getFolderContentsCount(readUserQuizzes(), itemId);
+  const type = item.meta?.type || "folder";
 
-  const selectedUserQuizzes = getSelectedUserQuizzes();
-  const isChecked = selectedUserQuizzes.has(itemId);
-
-  // Checkbox: attached directly to card as an out-of-flow absolute element
-  // (no in-flow wrapper div, preserving exact phone emoji alignment)
-  const checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  checkbox.className = "user-quiz-select-checkbox";
-  checkbox.setAttribute("data-quiz-id", itemId);
-  checkbox.setAttribute("aria-label", "تحديد");
-  checkbox.checked = isChecked;
-  checkbox.onclick = (e) => {
-    e.stopPropagation();
-    if (checkbox.checked) {
-      selectedUserQuizzes.add(itemId);
-    } else {
-      selectedUserQuizzes.delete(itemId);
-    }
-    updateBulkActionBar();
-  };
-  card.appendChild(checkbox);
-
-  // Category Icon: First in-flow flex child, aligned identically to user-quiz--phone-only-emoji
-  const iconEl = document.createElement("div");
-  iconEl.className = "category-icon";
-  iconEl.setAttribute("aria-hidden", "true");
-  iconEl.textContent = icon;
-  card.appendChild(iconEl);
-
-  // Text wrapper: card-text (display:contents on desktop, flex-column on mobile)
-  const textWrap = document.createElement("div");
-  textWrap.className = "card-text";
-
-  const h = document.createElement("h3");
-  h.textContent = item.meta?.title || "";
-  h.setAttribute("data-tooltip-text", h.textContent);
-  h.setAttribute("data-tooltip-clamped-only", "true");
-  textWrap.appendChild(h);
-
-  // Subtext: total number of subfolders and quizzes (recursive)
-  const userQuizzes = readUserQuizzes();
-  const { subfolderCount, quizCount, lessonCount, notebookCount } = getFolderContentsCount(userQuizzes, itemId);
-  const subtextStr = formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount, notebookCount);
-
-  const subtextEl = document.createElement("p");
-  subtextEl.className = "category-card-subtext user-quiz-count";
-  subtextEl.textContent = subtextStr;
-  textWrap.appendChild(subtextEl);
-
-  card.appendChild(textWrap);
-
-
-  card.setAttribute("aria-label", `${item.meta?.title || ""}, ${subtextStr}`);
-
-  // Actions wrap with ⋮ more button for touch & quick access
-  const actionsWrap = document.createElement("div");
-  actionsWrap.className = "category-card-actions-wrap";
-  const moreBtn = document.createElement("button");
-  moreBtn.className = "exam-more-btn exam-more-btn--lg";
-  moreBtn.type = "button";
-  moreBtn.innerHTML = MORE_DOTS_ICON_SVG;
-  moreBtn.setAttribute("aria-label", `خيارات ${item.meta?.title || ""}`);
-  moreBtn.onclick = (e) => {
-    e.stopPropagation();
-    showContextMenu(e, item.meta?.type || "folder", itemId, item.meta?.title);
-  };
-  actionsWrap.appendChild(moreBtn);
-  card.appendChild(actionsWrap);
-
-  card.onclick = () => {
-    // If in selection mode, toggle checkbox instead
-    const container = document.querySelector(".user-quizzes-container");
-    if (container?.classList.contains("selection-mode-active")) {
-      checkbox.click();
-      return;
-    }
-    navigateToFolder(itemId, item.meta?.title);
-  };
-
-  card.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      card.click();
-    }
+  const card = createFolderCard({
+    title,
+    subtext: formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount, notebookCount),
+    selectId: itemId,
+    onOpen: () => navigateToFolder(itemId, title),
+    onMore: (_btn, e) => showContextMenu(e, type, itemId, title),
   });
-
-  if (!isCourse) {
-    card.ondragstart = (e) => handleDragStart(e, itemId);
-    card.ondragend = handleDragEnd;
-  }
-
-  if (item.meta?.type === "folder" || item.meta?.type === "course") {
-    card.ondragover = handleDragOver;
-    card.ondragleave = handleDragLeave;
-    card.ondrop = (e) => {
-      e.stopPropagation();
-      handleDrop(e, itemId);
-    };
-  }
-
+  card.draggable = true;
+  card.ondragstart = (e) => handleDragStart(e, itemId);
+  card.ondragend = handleDragEnd;
+  card.ondragover = handleDragOver;
+  card.ondragleave = handleDragLeave;
+  card.ondrop = (e) => {
+    e.stopPropagation();
+    handleDrop(e, itemId);
+  };
   card.oncontextmenu = (e) => {
     e.stopPropagation();
-    showContextMenu(e, item.meta?.type || "folder", itemId, item.meta?.title);
+    showContextMenu(e, type, itemId, title);
   };
-
-  if (!isCourse) addCardShape(card, "folder");
   return card;
 }

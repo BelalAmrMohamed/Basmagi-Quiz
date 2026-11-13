@@ -9,7 +9,7 @@
 //
 // Call sites:
 //   - features/home/download-modal.js       (home: user-made quiz cards)
-//   - features/home/exam-card.js             (home: manifest-exam cards)
+//   - features/home/item-card.js             (home: manifest-exam cards)
 //   - features/create-quiz/create-quiz.js         (create-quiz page)
 // ============================================================================
 

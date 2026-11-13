@@ -22,8 +22,7 @@
   transition: transform var(--transition-base, 0.25s ease), box-shadow var(--transition-base, 0.25s ease), border-color var(--transition-base, 0.25s ease);
 }
 
-[data-theme="dark"] .tg-bot-card,
-[data-theme="dark-slate"] .tg-bot-card {
+[data-theme="dark"] .tg-bot-card {
   background: rgba(18, 26, 38, 0.85);
   border-color: rgba(36, 161, 222, 0.35);
   box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.5), 0 0 30px rgba(36, 161, 222, 0.12);
@@ -110,8 +109,7 @@
   text-align: start;
 }
 
-[data-theme="dark"] .tg-bot-handle,
-[data-theme="dark-slate"] .tg-bot-handle {
+[data-theme="dark"] .tg-bot-handle {
   color: var(--tg-blue);
 }
 
@@ -350,8 +348,7 @@
   align-self: flex-start;
 }
 
-[data-theme="dark"] .tg-bot-btn-text,
-[data-theme="dark-slate"] .tg-bot-btn-text {
+[data-theme="dark"] .tg-bot-btn-text {
   color: var(--tg-blue);
 }
 

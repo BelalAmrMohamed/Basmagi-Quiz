@@ -7,13 +7,13 @@ const HIGH_PERFORMANCE_KEY = "quiz_high_performance_pref";
 export const themeManager = {
   themes: {
     light: { name: "Light", icon: "☀️", label: "Light Mode" },
-    "dark-slate": { name: "Dark Slate", icon: "🌙", label: "Dark Slate" },
     dark: { name: "Dark", icon: "🌑", label: "Dark Mode" },
   },
 
   init() {
     // Load saved preferences or use defaults
-    const savedTheme = localStorage.getItem(THEME_KEY) || "light";
+    let savedTheme = localStorage.getItem(THEME_KEY) || "light";
+    if (!this.themes[savedTheme]) savedTheme = "dark";
     const reducedMotionPref = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -21,8 +21,8 @@ export const themeManager = {
     const hasSavedHighPerformance =
       localStorage.getItem(HIGH_PERFORMANCE_KEY) !== null;
     const savedAnimations = hasSavedAnimations
-      ? localStorage.getItem(ANIMATIONS_KEY) !== "disabled"
-      : !reducedMotionPref;
+      ? localStorage.getItem(ANIMATIONS_KEY) === "enabled"
+      : false;
     const savedHighPerformance = hasSavedHighPerformance
       ? localStorage.getItem(HIGH_PERFORMANCE_KEY) === "enabled"
       : reducedMotionPref;
@@ -63,7 +63,6 @@ export const themeManager = {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem(THEME_KEY, theme);
 
-    // FIXED: Ensure body background is restored when animations are off
     this.restoreBodyBackground();
 
     // Update UI if elements exist
@@ -176,7 +175,6 @@ export const themeManager = {
       });
   },
 
-  // FIXED: New method to restore body background
   restoreBodyBackground() {
     const animationsEnabled = this.getAnimationsEnabled();
 
@@ -185,8 +183,7 @@ export const themeManager = {
       const currentTheme = this.getCurrentTheme();
       const themeBackgrounds = {
         light: "#fafbfc",
-        "dark-slate": "#0f172a",
-        dark: "#121212",
+        dark: "#0a0a0a",
       };
 
       document.body.style.backgroundColor =
@@ -203,7 +200,7 @@ export const themeManager = {
 
   getAnimationsEnabled() {
     return (
-      document.documentElement.getAttribute("data-animations") !== "disabled"
+      document.documentElement.getAttribute("data-animations") === "enabled"
     );
   },
 

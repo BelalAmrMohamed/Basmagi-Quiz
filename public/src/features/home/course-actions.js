@@ -6,16 +6,7 @@
 // This covers showCourseActionsOverlay() and showCourseInfoModal(), extracted
 // from original lines 5406-5497 (end of the original file).
 //
-// Relationship to course-info-tooltip.js: course-info-tooltip.js handles the
-// hover/tap tooltip that appears on any course card (subscribed or not) and
-// has its own inline unsubscribe path for the tooltip's "إلغاء الإشتراك"
-// button. This module handles the separate bottom-sheet overlay that appears
-// when the user taps the "⋮" (three-dot) button on a subscribed course card
-// — a distinct entry point. The info table rendered by showCourseInfoModal()
-// is structurally similar to what course-info-tooltip.js shows (same fields),
-// but is a full modal rather than a floating tooltip, so it has not been
-// deduplicated further — the duplication is intentional (different UX context,
-// different dismissal mechanic, different ARIA role/structure).
+
 // ============================================================================
 
 import { INFO_ICON_SVG, TRASH_ICON_SVG } from "./icons.js";

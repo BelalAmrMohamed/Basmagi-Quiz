@@ -43,7 +43,7 @@ const PDF_PRINT_CSS = (backgroundChoice = "light") => `
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
   html, body {
-    background: ${backgroundChoice === "dark" ? "#121212" : "#ffffff"} !important;
+    background: ${backgroundChoice === "dark" ? "#0a0a0a" : "#ffffff"} !important;
     ${backgroundChoice === "dark" ? "" : "color: #1a1a1a !important;"}
     width: auto;
     max-width: none;    

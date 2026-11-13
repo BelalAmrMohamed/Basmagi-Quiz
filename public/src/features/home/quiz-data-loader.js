@@ -5,7 +5,7 @@
 // quizManifest.js's buildCompatStructures — no `questions` field exists on
 // examEntry).
 // ============================================================================
-// Extracted from exam-card.js's onDownloadOption(), which had this exact
+// Extracted from the exam card's onDownloadOption(), which had this exact
 // fetch-by-dbId logic inline. showQuizInfoModal() (quiz-info-modal.js) and
 // the download popup's copy-to-text button each had their own smaller
 // re-implementation of the same "load the full quiz row" step. Centralizing

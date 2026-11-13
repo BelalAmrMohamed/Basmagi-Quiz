@@ -1,421 +1,223 @@
-/* =============================================================================
-   cards-v2.css — item cards (folder / quiz / lesson / notebook), 2026 redesign
-   Folder = manila tab · quiz = ticket with perforation · lesson = ruled page with
-   dog-ear · notebook = spiral-bound code cell. Same look on the platform
-   (/course/*) and in «محتواي».
+/* Item cards (folder / quiz / lesson / notebook) on the platform and in «محتواي».
+   Folder = manila tab · quiz = ticket · lesson = dog-eared page · notebook = spiral cell.
+   Markup: createItemCard / createFolderCard in item-card.js. Neutral faces: the
+   type colour only appears on the chip, primary button, and hover/selected stroke. */
 
-   Hooks (see addCardShape() in card-type.js):
-     [data-card-kind="folder|quiz|lesson|notebook"]  the card root
-     > .shape                                        silhouette layer (RTL-mirrored)
-     > .gut                                          notebook "In [ ]:" gutter
-
-   Everything is scoped under #contentArea so it beats the legacy card rules in
-   index.css by specificity. `all: revert` strips those legacy declarations from the
-   card and its pieces. `!important` is used ONLY where index.css itself uses
-   `!important` on the same property (its old ≤640px list-row design) or where
-   JS sets an inline style (download button colours, flex).
-
-   Colours come from hive-tokens.css (--hv-*, mapped to themes.css), so light,
-   dark and dark-slate all work.
-   ============================================================================= */
-
-/* ---------- accent per kind (light themes use deeper shades for AA) ---------- */
 :root {
-  --cv-folder: var(--hv-folder);
-  --cv-quiz: var(--hv-quiz);
-  --cv-lesson: var(--hv-lesson);
-  --cv-notebook: var(--hv-notebook);
-  --cv-on: #0b0c10;                                   /* text on a filled accent button */
-  --cv-tick: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%230b0c10' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M3.5 8.5L6.5 11.5L12.5 4.5'/></svg>");
-}
-html:not([data-theme="dark"]):not([data-theme="dark-slate"]) {
-  --cv-folder: #b45309;
-  --cv-quiz: #2563eb;
-  --cv-lesson: #047857;
-  --cv-notebook: #7c3aed;
+  --cv-folder: #b45309; --cv-quiz: #2563eb; --cv-lesson: #047857; --cv-notebook: #7c3aed;
   --cv-on: #fff;
   --cv-tick: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M3.5 8.5L6.5 11.5L12.5 4.5'/></svg>");
 }
-
-/* ---------- shelf: columns fill the width, 1 column on phones ---------- */
-#contentArea .grid-container:not(.hive-root),
-#contentArea .user-quizzes-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
-  gap: var(--cv-gap, 22px);
-  border: 0;
-  border-radius: 0;
-  overflow: visible;
-  max-width: none;
-  align-items: stretch;
+html[data-theme="dark"] {
+  --cv-folder: #f5b942; --cv-quiz: #60a5fa; --cv-lesson: #34d399; --cv-notebook: #a78bfa;
+  --cv-on: #0a0a0a;
+  --cv-tick: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%230a0a0a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M3.5 8.5L6.5 11.5L12.5 4.5'/></svg>");
 }
+
+/* full-width rows inside a shelf */
 #contentArea .grid-container:not(.hive-root) > :is(.all-courses-banner, .empty-state, .error-state, .user-quiz-search-actions, [role="status"], [role="alert"]),
 #contentArea .user-quizzes-container > :is(.empty-state, .error-state, [role="status"]) {
   grid-column: 1 / -1;
 }
-@media (min-width: 1000px) { :root { --cv-gap: 26px; } }
-@media (max-width: 600px) { :root { --cv-gap: 12px; } }
 
 /* ---------- card root ---------- */
-#contentArea [data-card-kind] {
-  --pad: 1.1rem; --btn-h: 2.5rem; --acts-h: calc(4.5rem + 2px); --gut: 0px; --tab: 28px; --ear: 30px; --min: 16.5rem;
-  --face: color-mix(in srgb, var(--c) 5%, var(--hv-base));
-  --stroke: color-mix(in srgb, var(--c) 38%, var(--hv-edge));
+.item-card {
+  --pad: .8rem; --btn-h: 2.1rem; --acts-h: calc(var(--btn-h) + 1.1rem);
+  --gut: 0px; --tab: 22px; --ear: 22px;
+  --face: var(--hv-base);
+  --stroke: var(--hv-edge);
   --blur: 0px; --glow: transparent;
-
-  all: revert;
   position: relative; isolation: isolate;
-  display: flex; flex-direction: column;
-  min-height: var(--min);
+  display: flex; flex-direction: column; gap: .5rem;
   padding: var(--pad);
   padding-inline-start: calc(var(--pad) + var(--gut));
-  cursor: pointer;
   color: var(--hv-ink);
   text-align: start;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  animation: cv2-fill .5s both;
-  /* index.css's old ≤640px list-row uses !important on these — mirror them */
-  min-height: var(--min) !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  gap: 0 !important;
-  padding: var(--pad) !important;
-  padding-inline-start: calc(var(--pad) + var(--gut)) !important;
-  height: auto !important;
-  margin-top: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  overflow: visible !important;
-  transform: none !important;
-  text-align: start !important;
-  direction: inherit !important;
 }
-#contentArea [data-card-kind="folder"]   { --c: var(--cv-folder);   --min: 12rem; }
-#contentArea [data-card-kind="quiz"]     { --c: var(--cv-quiz); }
-#contentArea [data-card-kind="lesson"]   { --c: var(--cv-lesson); }
-#contentArea [data-card-kind="notebook"] { --c: var(--cv-notebook); --gut: 3.6rem; }
-#contentArea [data-card-kind="folder"] { padding-top: calc(var(--tab) + var(--pad)) !important; }
+.item-card[data-card-kind="folder"]   { --c: var(--cv-folder); padding-top: calc(var(--tab) + .45rem); gap: .25rem; }
+.item-card[data-card-kind="quiz"]     { --c: var(--cv-quiz); padding-bottom: 0; }
+.item-card[data-card-kind="lesson"]   { --c: var(--cv-lesson); }
+.item-card[data-card-kind="notebook"] { --c: var(--cv-notebook); --gut: 2.7rem; }
 
-/* legacy pseudo layers: accent strip + pointer spotlight */
-#contentArea [data-card-kind]::before,
-#contentArea [data-card-kind]::after { content: none !important; display: none !important; }
-
-/* ---------- states: colour only, nothing moves or resizes ---------- */
 @media (hover: hover) {
-  #contentArea [data-card-kind]:hover {
-    --face: color-mix(in srgb, var(--c) 9%, var(--hv-cell-hi));
-    --stroke: color-mix(in srgb, var(--c) 80%, #fff 8%);
-  }
+  .item-card:hover { --face: var(--hv-cell-hi); --stroke: var(--c); }
 }
-#contentArea [data-card-kind]:has(:focus-visible) { --stroke: var(--hv-ink); outline: none; }
-#contentArea [data-card-kind][aria-current="true"],
-#contentArea [data-card-kind]:has(.user-quiz-select-checkbox:checked) {
-  --face: color-mix(in srgb, var(--c) 14%, var(--hv-base));
-  --stroke: var(--c); --blur: 12px; --glow: color-mix(in srgb, var(--c) 40%, transparent);
-}
-#contentArea [data-card-kind]:active:not(:has(.start-btn:active, .exam-more-btn:active)) {
-  --face: color-mix(in srgb, var(--c) 3%, var(--hv-cell-lo));
-  --stroke: color-mix(in srgb, var(--c) 55%, var(--hv-edge));
-}
-/* drop target while dragging (legacy .drag-over paints a rectangular dashed outline) */
-#contentArea [data-card-kind].drag-over {
-  outline: none !important; background: none !important;
-  --face: color-mix(in srgb, var(--c) 16%, var(--hv-base));
-  --stroke: var(--c); --blur: 14px; --glow: color-mix(in srgb, var(--c) 45%, transparent);
-}
-/* item just created from an MCP link */
-#contentArea [data-card-kind].mcp-new-item { --stroke: var(--c); --glow: color-mix(in srgb, var(--c) 70%, transparent); --blur: 14px; background-image: none; }
-#contentArea [data-card-kind].mcp-new-item > .shape { animation: cv2-pulse 1.4s ease-in-out infinite; }
+.item-card:has(:focus-visible) { --stroke: var(--hv-ink); }
+.item-card[aria-current="true"],
+.item-card:has(.user-quiz-select-checkbox:checked) { --face: var(--hv-cell-sel); --stroke: var(--c); --blur: 10px; --glow: color-mix(in srgb, var(--c) 40%, transparent); }
+.item-card.drag-over { --face: var(--hv-cell-sel); --stroke: var(--c); --blur: 12px; --glow: color-mix(in srgb, var(--c) 45%, transparent); }
+.item-card.mcp-new-item { --stroke: var(--c); --blur: 12px; --glow: color-mix(in srgb, var(--c) 65%, transparent); }
+.item-card.mcp-new-item > .shape { animation: ic-pulse 1.4s ease-in-out infinite; }
 
 /* ---------- silhouette ---------- */
-#contentArea [data-card-kind] > .shape {
-  position: absolute; inset: 0; z-index: -1; pointer-events: none; transition: filter .25s;
+.item-card > .shape {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
   filter: drop-shadow(1px 0 0 var(--stroke)) drop-shadow(-1px 0 0 var(--stroke))
           drop-shadow(0 1px 0 var(--stroke)) drop-shadow(0 -1px 0 var(--stroke))
           drop-shadow(0 0 var(--blur) var(--glow));
 }
-#contentArea [data-card-kind] > .shape::before { content: ""; position: absolute; inset: 0; background: var(--face); transition: background-color .25s; }
-#contentArea [data-card-kind]:dir(rtl) > .shape { transform: scaleX(-1); }
+.item-card > .shape::before { content: ""; position: absolute; inset: 0; background: var(--face); transition: background-color .2s; }
+.item-card:dir(rtl) > .shape { transform: scaleX(-1); }
 
-/* folder: manila tab */
-#contentArea [data-card-kind="folder"] > .shape::before {
-  border-radius: 14px;
-  clip-path: polygon(0 0, calc(46% - 12px) 0, 46% var(--tab), calc(100% - 12px) var(--tab), 100% calc(var(--tab) + 12px), 100% 100%, 0 100%);
-}
-/* quiz: ticket, notches sit on the dashed perforation above the buttons */
-#contentArea [data-card-kind="quiz"] > .shape::before {
-  border-radius: 16px;
-  -webkit-mask: radial-gradient(circle 11px at 0 calc(100% - var(--acts-h)), #0000 98%, #000) 0 0 / 51% 100% no-repeat,
-                radial-gradient(circle 11px at 100% calc(100% - var(--acts-h)), #0000 98%, #000) 100% 0 / 51% 100% no-repeat;
-          mask: radial-gradient(circle 11px at 0 calc(100% - var(--acts-h)), #0000 98%, #000) 0 0 / 51% 100% no-repeat,
-                radial-gradient(circle 11px at 100% calc(100% - var(--acts-h)), #0000 98%, #000) 100% 0 / 51% 100% no-repeat;
-}
-/* lesson: ruled page with a dog-ear */
-#contentArea [data-card-kind="lesson"] > .shape::before {
-  border-radius: 0 14px 14px 14px;
-  clip-path: polygon(var(--ear) 0, 100% 0, 100% 100%, 0 100%, 0 var(--ear));
-  background: repeating-linear-gradient(transparent 0 calc(1.7rem - 1px), color-mix(in srgb, var(--hv-ink) 4%, transparent) calc(1.7rem - 1px) 1.7rem), var(--face);
-}
-#contentArea [data-card-kind="lesson"] > .shape::after {
-  content: ""; position: absolute; top: 0; left: 0; width: var(--ear); height: var(--ear);
-  background: linear-gradient(135deg, transparent 50%, color-mix(in srgb, var(--c) 45%, var(--hv-edge)) 50%);
-  border-bottom-right-radius: 6px;
-}
-/* notebook: spiral binding punched into the gutter */
-#contentArea [data-card-kind="notebook"] > .shape::before {
+.item-card[data-card-kind="folder"] > .shape::before {
   border-radius: 12px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 8%, var(--hv-cell-lo)) var(--gut), transparent 0), var(--face);
-  -webkit-mask: radial-gradient(circle 5px at 0 13px, #0000 98%, #000) 0 0 / 100% 26px;
-          mask: radial-gradient(circle 5px at 0 13px, #0000 98%, #000) 0 0 / 100% 26px;
+  clip-path: polygon(0 0, calc(46% - 10px) 0, 46% var(--tab), calc(100% - 10px) var(--tab), 100% calc(var(--tab) + 10px), 100% 100%, 0 100%);
 }
-#contentArea [data-card-kind="notebook"] > .gut {
-  position: absolute; inset-block: 0; left: 0; width: var(--gut);   /* .gut is dir=ltr, so use physical sides */
-  display: flex; flex-direction: column; align-items: center; gap: .8rem; padding-top: 1.2rem;
-  font: 600 .72rem/1 ui-monospace, SFMono-Regular, Consolas, monospace; color: var(--hv-mute);
+.item-card[data-card-kind="quiz"] > .shape::before {
+  border-radius: 14px;
+  -webkit-mask: radial-gradient(circle 9px at 0 calc(100% - var(--acts-h)), #0000 98%, #000) 0 0 / 51% 100% no-repeat,
+                radial-gradient(circle 9px at 100% calc(100% - var(--acts-h)), #0000 98%, #000) 100% 0 / 51% 100% no-repeat;
+          mask: radial-gradient(circle 9px at 0 calc(100% - var(--acts-h)), #0000 98%, #000) 0 0 / 51% 100% no-repeat,
+                radial-gradient(circle 9px at 100% calc(100% - var(--acts-h)), #0000 98%, #000) 100% 0 / 51% 100% no-repeat;
+}
+.item-card[data-card-kind="lesson"] > .shape::before {
+  border-radius: 0 12px 12px 12px;
+  clip-path: polygon(var(--ear) 0, 100% 0, 100% 100%, 0 100%, 0 var(--ear));
+  background: repeating-linear-gradient(transparent 0 calc(1.5rem - 1px), color-mix(in srgb, var(--hv-ink) 4%, transparent) calc(1.5rem - 1px) 1.5rem), var(--face);
+}
+.item-card[data-card-kind="lesson"] > .shape::after {
+  content: ""; position: absolute; top: 0; left: 0; width: var(--ear); height: var(--ear);
+  background: linear-gradient(135deg, transparent 50%, var(--hv-edge) 50%);
+  border-bottom-right-radius: 5px;
+}
+.item-card[data-card-kind="notebook"] > .shape::before {
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--hv-cell-lo) var(--gut), transparent 0), var(--face);
+  -webkit-mask: radial-gradient(circle 4px at 0 11px, #0000 98%, #000) 0 0 / 100% 22px;
+          mask: radial-gradient(circle 4px at 0 11px, #0000 98%, #000) 0 0 / 100% 22px;
+}
+.item-card > .gut {
+  position: absolute; inset-block: 0; left: 0; width: var(--gut);
+  display: flex; flex-direction: column; align-items: center; gap: .6rem; padding-top: .9rem;
+  font: 600 .55rem/1 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: nowrap; color: var(--hv-mute);
   pointer-events: none;
 }
-#contentArea [data-card-kind="notebook"]:dir(rtl) > .gut { left: auto; right: 0; }
-#contentArea [data-card-kind="notebook"] > .gut .kdot { width: .55rem; height: .55rem; border-radius: 50%; background: #4fd6a2; box-shadow: 0 0 8px #4fd6a2; }
+.item-card:dir(rtl) > .gut { left: auto; right: 0; }
+.item-card > .gut .kdot { width: .45rem; height: .45rem; border-radius: 50%; background: #4fd6a2; }
 
 /* ---------- content ---------- */
-#contentArea [data-card-kind] > .card-text {
-  all: revert;
-  display: flex !important; flex-direction: column !important; gap: .55rem !important;
-  flex: 1 1 auto !important; min-width: 0 !important; align-items: flex-start !important;
-  text-align: start; direction: inherit;
-}
-#contentArea [data-card-kind="folder"] > .card-text { justify-content: center !important; }
+.ic-body { display: flex; flex-direction: column; align-items: flex-start; gap: .3rem; min-width: 0; }
+.item-card[data-card-kind="folder"] .ic-body { gap: .15rem; }
 
-#contentArea [data-card-kind] .item-type-chip {
-  all: revert;
-  display: inline-flex; align-items: center; gap: .35em; align-self: flex-start; margin: 0;
-  padding: .15em .7em; border-radius: 99px;
-  font-size: .78rem; font-weight: 600; line-height: 1.5; white-space: nowrap;
+.item-type-chip {
+  display: inline-flex; align-items: center; gap: .3em; margin: 0;
+  padding: .05em .6em; border-radius: 99px;
+  font-size: .72rem; font-weight: 600; line-height: 1.6; white-space: nowrap;
   color: var(--c);
-  background: color-mix(in srgb, var(--c) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
 }
-#contentArea [data-card-kind="lesson"] .item-type-chip { margin-inline-start: 1.7rem; }
+.item-card[data-card-kind="lesson"] .item-type-chip { margin-inline-start: 1.1rem; }
+.item-card[data-card-kind="folder"] .item-type-chip {
+  position: absolute; inset-block-start: 2px; inset-inline-start: .8rem;
+}
 
-#contentArea [data-card-kind] .card-text > h3 {
-  all: revert;
-  margin: 0 !important; color: var(--hv-ink);
-  font-size: 1.2rem !important; font-weight: 700 !important; line-height: 1.3;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  overflow: hidden !important; overflow-wrap: anywhere; white-space: normal !important; text-overflow: clip !important;
-  width: auto !important; text-align: start !important; direction: inherit !important; letter-spacing: 0;
+.item-card h3 {
+  margin: 0; max-width: 100%; color: var(--hv-ink);
+  font-size: 1rem; font-weight: 700; line-height: 1.35;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-#contentArea [data-card-kind="folder"] .card-text > h3 { font-size: 1.4rem !important; }
-#contentArea [data-card-kind="notebook"] .card-text > h3 { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 1.05rem !important; }
+.item-card[data-card-kind="folder"] h3 { font-size: 1.05rem; box-sizing: border-box; padding-inline-end: 1.9rem; }
+.item-card[data-card-kind="notebook"] h3 { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .95rem; }
 
-/* description (quiz/lesson/notebook) and folder subtext */
-#contentArea [data-card-kind] .card-text > :is(.lesson-card-description, p:not(.exam-question-count, .exam-types-subtext, .course-lesson-progress)) {
-  all: revert;
-  margin: 0 !important; color: var(--hv-mute);
-  font-size: .92rem !important; line-height: 1.5;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  text-align: start !important; direction: inherit !important; flex-shrink: 1 !important;
+.ic-desc {
+  margin: 0; max-width: 100%; color: var(--hv-mute);
+  font-size: .84rem; line-height: 1.4;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-#contentArea [data-card-kind="notebook"] .lesson-card-description::before { content: "# "; color: var(--c); }
-#contentArea [data-card-kind] .course-lesson-progress { all: revert; margin: 0; color: var(--hv-mute); font-size: .85rem; }
+.item-card[data-card-kind="notebook"] .ic-desc::before { content: "# "; color: var(--c); }
 
-/* meta row: count at the start, type chips at the end */
-#contentArea [data-card-kind] .exam-card-meta {
-  all: revert;
-  position: static !important; inset: auto !important;
-  display: flex !important; flex-direction: row !important; flex-wrap: wrap !important;
-  align-items: center !important; justify-content: flex-start !important; gap: .5rem !important;
-  width: 100% !important; margin: 0 !important; white-space: normal !important; direction: inherit !important;
-  color: var(--hv-mute); font-size: .88rem;
+.ic-meta {
+  display: flex; align-items: center; gap: .4rem; max-width: 100%; overflow: hidden;
+  color: var(--hv-mute); font-size: .8rem; line-height: 1.5; white-space: nowrap;
 }
-#contentArea [data-card-kind] .exam-card-meta .exam-question-count {
-  all: revert;
-  display: block !important; order: -1 !important; flex: 0 0 auto !important;
-  margin-block: 0 !important; margin-inline: 0 auto !important;
-  color: var(--hv-mute) !important; font-size: .88rem !important; white-space: normal !important;
-  overflow: visible !important; text-align: start !important; direction: inherit !important;
-}
-#contentArea [data-card-kind] .exam-card-meta p.exam-types-subtext {
-  all: revert;
-  display: block !important; order: 1 !important; margin: 0 !important;
-  color: var(--hv-mute) !important; font-size: .82rem !important; white-space: nowrap !important;
-  overflow: visible !important; flex: 0 0 auto !important; text-align: start !important; direction: inherit !important;
-}
-#contentArea [data-card-kind] .exam-card-meta div.user-quiz-types-row {
-  all: revert;
-  display: flex !important; order: 1 !important; flex-wrap: wrap !important; gap: .4rem !important;
-  justify-content: flex-end !important; margin: 0 !important; margin-top: 0 !important;
-}
-#contentArea [data-card-kind] .exam-card-meta .user-quiz-types-row > span {
-  padding: .15em .6em !important; border-radius: 6px !important; font-size: .78rem !important; font-weight: 700;
-  background: color-mix(in srgb, var(--hv-ink) 8%, transparent) !important; color: var(--hv-ink) !important;
+.ic-meta > span { flex: 0 0 auto; }
+.ic-meta > span:first-child { flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; }
+.ic-tag {
+  padding: 0 .5em; border-radius: 6px; font-size: .72rem; font-weight: 700;
+  background: color-mix(in srgb, var(--hv-ink) 8%, transparent); color: var(--hv-ink);
 }
 
 /* ---------- actions ---------- */
-#contentArea [data-card-kind] > .exam-card-actions-wrap {
-  all: revert;
-  position: static !important; inset: auto !important;
-  display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important;
-  align-items: stretch !important; gap: .6rem !important; flex-shrink: 0 !important;
-  margin: auto 0 0 !important; width: auto !important;
-  padding-top: .55rem; position: relative; z-index: 1;
-}
-/* ticket stub: dashed perforation above the buttons */
-#contentArea [data-card-kind="quiz"] > .exam-card-actions-wrap {
-  margin-block-start: auto !important;
-  margin-inline: calc(-1 * var(--pad)) !important;
-  margin-block-end: calc(-1 * var(--pad)) !important;
-  padding: .9rem var(--pad) var(--pad);
+.ic-actions { display: flex; gap: .5rem; margin-top: auto; padding-top: .1rem; }
+.item-card[data-card-kind="quiz"] .ic-actions {
+  margin-inline: calc(-1 * var(--pad));
+  padding: .55rem var(--pad) .55rem;
   height: var(--acts-h); box-sizing: border-box;
-  border-top: 2px dashed color-mix(in srgb, var(--c) 35%, var(--hv-edge));
+  border-top: 2px dashed var(--hv-edge);
 }
 
-#contentArea [data-card-kind] .start-btn {
-  all: revert;
-  flex: 1 1 0 !important; min-width: 0 !important; width: auto !important;
-  height: var(--btn-h) !important; padding: 0 .6rem !important;
-  display: inline-flex !important; align-items: center !important; justify-content: center !important;
-  gap: .45em; white-space: nowrap; position: relative;
-  border-radius: 10px !important; border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent);
-  font: inherit; font-size: .9rem !important; font-weight: 600; line-height: 1 !important;
-  color: var(--c); background: transparent; box-shadow: none !important; cursor: pointer;
-  transition: background-color .2s, border-color .2s;
+.ic-btn {
+  flex: 1 1 0; min-width: 0; height: var(--btn-h); padding: 0 .6rem;
+  display: inline-flex; align-items: center; justify-content: center; gap: .4em;
+  white-space: nowrap; border-radius: 9px;
+  border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent);
+  font: inherit; font-size: .85rem; font-weight: 600; line-height: 1;
+  color: var(--c); background: transparent; cursor: pointer;
+  transition: background-color .2s;
 }
-#contentArea [data-card-kind] .start-btn::before,
-#contentArea [data-card-kind] .start-btn::after { content: none !important; display: none !important; }
-#contentArea [data-card-kind] .start-btn svg { width: 1.1em; height: 1.1em; flex: none; display: block; }
-#contentArea [data-card-kind] .start-btn span { font-size: inherit !important; }
-/* primary = filled, listed second; download = outlined, listed first (inline styles force !important) */
-#contentArea [data-card-kind] .start-btn:not(.desktop-download-btn) {
-  flex: 1.6 1 0 !important; background: var(--c); border-color: var(--c); color: var(--cv-on);
-}
-#contentArea [data-card-kind] .start-btn.desktop-download-btn {
-  order: -1; display: inline-flex !important;
-  background: transparent !important; color: var(--c) !important; box-shadow: none !important;
-  border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent) !important;
-}
-#contentArea [data-card-kind] .start-btn.is-password-protected { border-style: dashed !important; }
+.ic-btn svg { width: 1.05em; height: 1.05em; flex: none; display: block; }
+.ic-btn--primary { flex: 1.6 1 0; background: var(--c); border-color: var(--c); color: var(--cv-on); }
+.ic-btn.is-password-protected { border-style: dashed; }
 @media (hover: hover) {
-  #contentArea [data-card-kind] .start-btn.desktop-download-btn:hover { background: color-mix(in srgb, var(--c) 16%, transparent) !important; }
-  #contentArea [data-card-kind] .start-btn:not(.desktop-download-btn):hover { background: color-mix(in srgb, var(--c) 82%, #fff); }
+  .ic-btn--ghost:hover { background: color-mix(in srgb, var(--c) 14%, transparent); }
+  .ic-btn--primary:hover { background: color-mix(in srgb, var(--c) 85%, var(--hv-ink)); }
 }
-#contentArea [data-card-kind] .start-btn.desktop-download-btn:active { background: color-mix(in srgb, var(--c) 28%, transparent) !important; }
-#contentArea [data-card-kind] .start-btn:not(.desktop-download-btn):active { background: color-mix(in srgb, var(--c) 80%, #000); transform: none !important; }
-#contentArea [data-card-kind] .start-btn:focus-visible,
-#contentArea [data-card-kind] .exam-more-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--c) !important; }
+.ic-btn:focus-visible,
+.item-card .exam-more-btn:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 
-/* ⋮ more button (inside the actions wrap or the folder's own wrap, anchored to the card) */
-#contentArea [data-card-kind] .exam-more-btn {
-  all: revert;
-  position: absolute !important; left: auto; right: auto;
-  inset-block-start: .7rem; inset-inline-end: .7rem; z-index: 2;
-  width: 2rem !important; height: 2rem !important; padding: 0;
-  display: grid !important; place-items: center; align-items: center !important; justify-content: center !important;
-  border: 0; border-radius: 50% !important; background: transparent; box-shadow: none; color: var(--hv-mute);
-  cursor: pointer; transition: background-color .2s, color .2s;
+/* ⋮ button */
+.item-card .exam-more-btn {
+  position: absolute; top: auto; right: auto; inset-block-start: .4rem; inset-inline-end: .4rem; z-index: 2;
+  width: 1.9rem; height: 1.9rem; padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center;
+  background: transparent; box-shadow: none; color: var(--hv-mute); cursor: pointer;
+  transition: background-color .2s, color .2s;
 }
-#contentArea [data-card-kind="folder"] .exam-more-btn { inset-block-start: calc(var(--tab) + .6rem); }
-#contentArea [data-card-kind] .exam-more-btn::before { content: ""; position: absolute; inset: -6px; }   /* 44px touch target */
-#contentArea [data-card-kind] .exam-more-btn svg { width: 18px !important; height: 18px !important; }
+.item-card[data-card-kind="folder"] .exam-more-btn { inset-block-start: calc(var(--tab) - .1rem); }
+.item-card .exam-more-btn::before { content: ""; position: absolute; inset: -6px; }
+.item-card .exam-more-btn svg { width: 17px; height: 17px; }
 @media (hover: hover) {
-  #contentArea [data-card-kind] .exam-more-btn:hover { background: color-mix(in srgb, var(--hv-ink) 9%, transparent); color: var(--hv-ink); }
+  .item-card .exam-more-btn:hover { background: color-mix(in srgb, var(--hv-ink) 10%, transparent); color: var(--hv-ink); }
 }
-#contentArea [data-card-kind] .exam-more-btn:active { background: color-mix(in srgb, var(--hv-ink) 16%, transparent); }
-#contentArea [data-card-kind] .category-card-actions-wrap { display: contents !important; }
-#contentArea .selection-mode-active [data-card-kind] .exam-more-btn { visibility: hidden; }
+.selection-mode-active .item-card .exam-more-btn { visibility: hidden; }
 
-/* ---------- folder: type pill rides the tab ---------- */
-#contentArea [data-card-kind="folder"] > :is(.icon, .category-icon) {
-  all: revert;
-  position: absolute !important; inset-block-start: 3px; inset-inline-start: .9rem; z-index: 1;
-  display: inline-flex !important; align-items: center !important; justify-content: flex-start !important; gap: .35em;
-  width: auto !important; height: auto !important; margin: 0 !important; flex-shrink: 0 !important;
-  padding: .15em .7em; border-radius: 99px !important;
-  font-size: .78rem !important; font-weight: 600; line-height: 1.5; white-space: nowrap;
-  color: var(--c);
-  background: color-mix(in srgb, var(--c) 14%, transparent) !important;
-  border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
-  transform: none !important; filter: none !important; transition: none !important; visibility: visible !important;
-}
-#contentArea [data-card-kind="folder"] > :is(.icon, .category-icon)::after { content: "مجلد"; display: inline; }
-#contentArea [data-card-kind="folder"].is-empty { --stroke: color-mix(in srgb, var(--c) 22%, var(--hv-edge)); }
-
-/* ---------- badges (new / MCP) sit beside the ⋮ button ---------- */
-#contentArea [data-card-kind] > .new-badge,
-#contentArea [data-card-kind] > .mcp-new-badge {
-  display: inline-flex !important; align-items: center; gap: .3em;
-  position: absolute; left: auto; right: auto; top: auto;
-  inset-block-start: .85rem; inset-inline-end: 3rem; z-index: 3;
-  padding: .1em .65em; border-radius: 99px; box-shadow: none;
+/* ---------- badges ---------- */
+.item-card > .new-badge,
+.item-card > .mcp-new-badge {
+  position: absolute; inset-block-start: .55rem; inset-inline-end: 2.5rem; z-index: 3;
+  padding: 0 .6em; border-radius: 99px;
   background: var(--c); color: var(--cv-on);
-  font-size: .72rem; font-weight: 800; line-height: 1.5; letter-spacing: 0; pointer-events: none;
+  font-size: .7rem; font-weight: 800; line-height: 1.6; pointer-events: none;
 }
-#contentArea [data-card-kind="folder"] > .new-badge,
-#contentArea [data-card-kind="folder"] > .mcp-new-badge { inset-block-start: calc(var(--tab) + .75rem); }
-#contentArea [data-card-kind] > .mcp-new-badge::before { content: "✦"; font-size: .7rem; }
-
-/* ---------- phone-only list-row leftovers ---------- */
-#contentArea [data-card-kind] > :is(.phone-only-emoji, .user-quiz--phone-only-emoji, .user-quiz-accent-bar) { display: none !important; }
+.item-card[data-card-kind="folder"] > .new-badge,
+.item-card[data-card-kind="folder"] > .mcp-new-badge { inset-block-start: calc(var(--tab) + .1rem); }
+.item-card > .mcp-new-badge::before { content: "✦ "; font-size: .65rem; }
 
 /* ---------- selection checkbox (replaces ⋮ while selecting) ---------- */
-#contentArea .user-quizzes-container [data-card-kind] .user-quiz-select-checkbox {
-  left: auto; right: auto; inset-block-start: .7rem; inset-inline-end: .7rem;
-  width: 1.4rem; height: 1.4rem; z-index: 5;
-  border: 2px solid color-mix(in srgb, var(--c) 60%, var(--hv-edge));
-  background-color: transparent; box-shadow: none; border-radius: 7px;
+.user-quizzes-container .item-card .user-quiz-select-checkbox {
+  left: auto; inset-inline-end: .5rem; top: .5rem;
+  width: 1.3rem; height: 1.3rem; z-index: 5;
+  border: 2px solid var(--hv-edge); border-radius: 6px;
+  background-color: transparent; box-shadow: none;
 }
-#contentArea .user-quizzes-container [data-card-kind="folder"] .user-quiz-select-checkbox { inset-block-start: calc(var(--tab) + .7rem); }
-#contentArea .user-quizzes-container [data-card-kind] .user-quiz-select-checkbox:hover { border-color: var(--c); transform: none; }
-#contentArea .user-quizzes-container [data-card-kind] .user-quiz-select-checkbox:checked {
+.user-quizzes-container .item-card[data-card-kind="folder"] .user-quiz-select-checkbox { top: calc(var(--tab) + .1rem); }
+.user-quizzes-container .item-card .user-quiz-select-checkbox:hover { border-color: var(--c); transform: none; }
+.user-quizzes-container .item-card .user-quiz-select-checkbox:checked {
   background-color: var(--c); border-color: var(--c); box-shadow: none; background-image: var(--cv-tick);
 }
-#contentArea .user-quizzes-container [data-card-kind] .user-quiz-select-checkbox:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 40%, transparent); }
 
-/* ---------- phones ≤ 600px: compact one-column cards ---------- */
+/* ---------- phones ---------- */
 @media (max-width: 600px) {
-  #contentArea [data-card-kind] {
-    --pad: .9rem; --btn-h: 2.75rem; --acts-h: 4.7rem; --tab: 22px; --ear: 24px; --min: 0px;
-  }
-  #contentArea [data-card-kind="notebook"] { --gut: 2.7rem; }
-  #contentArea [data-card-kind="folder"] { --min: 7.5rem; }
-  #contentArea [data-card-kind="folder"] { padding-bottom: .8rem !important; }
-  #contentArea [data-card-kind] > .card-text { gap: .4rem !important; }
-  #contentArea [data-card-kind] .card-text > h3 { font-size: 1.05rem !important; }
-  #contentArea [data-card-kind="folder"] .card-text > h3 { font-size: 1.2rem !important; }
-  #contentArea [data-card-kind="notebook"] .card-text > h3 { font-size: .98rem !important; }
-  #contentArea [data-card-kind] .card-text > :is(.lesson-card-description, p:not(.exam-question-count, .exam-types-subtext, .course-lesson-progress)) { font-size: .86rem !important; }
-  #contentArea [data-card-kind] .exam-card-meta { font-size: .82rem; }
-  #contentArea [data-card-kind="notebook"] > .gut { font-size: .54rem; padding-top: 1rem; gap: .65rem; }
-  #contentArea [data-card-kind="quiz"] > .exam-card-actions-wrap { padding-top: .75rem; }
-  #contentArea [data-card-kind] .start-btn { font-size: .92rem !important; border-radius: 12px !important; }
-  #contentArea [data-card-kind="quiz"] > .shape::before { border-radius: 14px; }
-  #contentArea [data-card-kind="folder"] .exam-more-btn { inset-block-start: calc(var(--tab) + .3rem); }
-  #contentArea [data-card-kind] > .new-badge,
-  #contentArea [data-card-kind] > .mcp-new-badge { inset-block-start: .6rem; }
-  #contentArea [data-card-kind="folder"] > .new-badge,
-  #contentArea [data-card-kind="folder"] > .mcp-new-badge { inset-block-start: calc(var(--tab) + .4rem); }
-}
-@media (max-width: 360px) {
-  #contentArea [data-card-kind] .start-btn svg { display: none; }
+  .item-card { --pad: .7rem; --btn-h: 2.3rem; --tab: 20px; --ear: 20px; }
+  .item-card[data-card-kind="notebook"] { --gut: 2.3rem; }
+  .item-card > .gut { font-size: .52rem; }
 }
 
-@keyframes cv2-fill { from { opacity: 0; transform: translateY(6px); } }
-@keyframes cv2-pulse {
-  0%, 100% { filter: drop-shadow(1px 0 0 var(--stroke)) drop-shadow(-1px 0 0 var(--stroke)) drop-shadow(0 1px 0 var(--stroke)) drop-shadow(0 -1px 0 var(--stroke)) drop-shadow(0 0 10px var(--glow)); }
-  50%      { filter: drop-shadow(1px 0 0 var(--stroke)) drop-shadow(-1px 0 0 var(--stroke)) drop-shadow(0 1px 0 var(--stroke)) drop-shadow(0 -1px 0 var(--stroke)) drop-shadow(0 0 26px var(--glow)); }
+@keyframes ic-pulse {
+  50% { filter: drop-shadow(1px 0 0 var(--stroke)) drop-shadow(-1px 0 0 var(--stroke)) drop-shadow(0 1px 0 var(--stroke)) drop-shadow(0 -1px 0 var(--stroke)) drop-shadow(0 0 24px var(--glow)); }
 }
 @media (prefers-reduced-motion: reduce) {
-  #contentArea [data-card-kind] { animation: none; }
-  #contentArea [data-card-kind].mcp-new-item > .shape { animation: none; }
-}
-
-/* phones: drop the legacy bordered/clipped list wrapper around the shelf */
-@media (max-width: 640px) {
-  #contentArea .grid-container:not(.hive-root),
-  #contentArea .user-quizzes-container {
-    display: grid; grid-template-columns: minmax(0, 1fr);
-    border: 0; border-radius: 0; overflow: visible; gap: var(--cv-gap, 12px);
-  }
-  #contentArea .grid-container.user-quizzes-drop-zone { border: 0 !important; border-radius: 0 !important; overflow: visible !important; }
+  .item-card.mcp-new-item > .shape { animation: none; }
 }

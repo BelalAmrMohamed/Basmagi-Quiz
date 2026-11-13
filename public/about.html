@@ -8,7 +8,7 @@
         (function () {
             try {
                 const theme = localStorage.getItem("quiz_theme_pref") || "light";
-                const animations = localStorage.getItem("quiz_animations_pref") !== "disabled";
+                const animations = localStorage.getItem("quiz_animations_pref") === "enabled";
                 const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
                 document.documentElement.setAttribute("data-theme", theme);
                 document.documentElement.setAttribute("data-animations", animations && !reduced ? "enabled" : "disabled");
