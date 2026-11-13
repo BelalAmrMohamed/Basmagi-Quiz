@@ -1,7 +1,7 @@
 // Platform lesson card and its shared actions menu.
 import { downloadLesson } from "./lesson-download.js";
 import { withDownloadLoading } from "../../components/download-quiz-modal/export-card.js";
-import { createTypeChip, tagCardType } from "./card-type.js";
+import { createTypeChip, tagCardType, addCardShape } from "./card-type.js";
 import { EMBED_ICON_SVG, copyEmbedCode } from "./embed-code.js";
 import { fetchLessonViewCount, fetchCreatorName } from "./info-details.js";
 import { openItemDropdownMenu, createActionGroupSubmenu, createExamInfoSubmenu } from "./item-dropdown-menu.js";
@@ -151,6 +151,7 @@ export function createLessonCard(lesson) {
 
   actions.append(more, start, download);
   card.append(icon, text, actions);
+  addCardShape(card, "lesson");
   return card;
 }
 

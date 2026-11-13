@@ -74,7 +74,7 @@ import { withDownloadLoading } from "../../components/download-quiz-modal/export
 import { openDescriptionSourceModal } from "./description-source-modal.js";
 import { appendNotebookMenuEntries, showNotebookDownloadModal } from "./notebook-actions.js";
 import { createNotebookCardShell, createNotebookActionRow } from "./notebook-card-view.js";
-import { createTypeChip, tagCardType } from "./card-type.js";
+import { createTypeChip, tagCardType, addCardShape } from "./card-type.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { SPARKLE_ICON_SVG } from "./icons.js";
 
@@ -268,6 +268,7 @@ export function createUserQuizCard(quiz, index) {
   // (see showUserQuizActionsOverlay below), on all screen sizes — no
   // top-left card placement anymore.
 
+  addCardShape(card, "quiz");
   return card;
 }
 
@@ -395,6 +396,7 @@ export function createUserLessonCard(lesson) {
   };
   actions.append(more, start, download);
   card.append(checkbox, icon, text, actions);
+  addCardShape(card, "lesson");
   return card;
 }
 

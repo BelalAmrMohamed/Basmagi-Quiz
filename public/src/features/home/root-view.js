@@ -14,6 +14,7 @@ import {
   isRestoring,
   getSearchManager,
   getCategoryTree,
+  setCategoryTree,
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
@@ -28,7 +29,8 @@ import {
   getUserQuizzesStorageWarning,
 } from "./course-count.js";
 
-import { createCategoryCard, renderCategory, getCategoriesLazy } from "./category-view.js";
+import { renderCategory, getCategoriesLazy } from "./category-view.js";
+import { createCourseCell, createComb, setCapMessage, courseHref, courseSubtext } from "./course-cell.js";
 import { openItemDropdownMenu } from "./item-dropdown-menu.js";
 import { createExamInfoSubmenu, createActionGroupSubmenu } from "./item-dropdown-menu.js";
 import { showCourseInfoModal } from "./course-actions.js";
@@ -63,10 +65,10 @@ import { showNotification } from "../../components/notifications/notifications.j
 import { _confirm } from "../../components/notifications/notifications.js";
 import { toSlug } from "./slug-utils.js";
 
-function attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe = true } = {}) {
+export function attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe = true } = {}) {
   const moreBtn = document.createElement("button");
   moreBtn.type = "button";
-  moreBtn.className = "exam-more-btn exam-more-btn--lg";
+  moreBtn.className = "exam-more-btn exam-more-btn--lg hx-more";
   moreBtn.innerHTML = MORE_DOTS_ICON_SVG;
   moreBtn.setAttribute("aria-label", `خيارات ${course.name}`);
   moreBtn.onclick = (event) => {
@@ -301,25 +303,25 @@ export async function renderRootCategories() {
     title.title = tooltipText;
 
     container.innerHTML = "";
-    container.className = "grid-container";
+    container.className = "hive-root";
     container.setAttribute("aria-busy", "false");
 
-    // Info banner: shown whenever the user has zero course subscriptions,
-    // so every course on the platform is being shown as a fallback instead
-    // of a personalized list — whether they set an academic stage and just
-    // never picked specific courses, or skipped onboarding entirely. Both
-    // land on this same "all courses" screen, so both get the explanation.
+    // Honeycomb scaffold: .cap (message slot, empty = plain spacing) + .cells.
+    // Shown whenever the user has zero course subscriptions, so every course
+    // on the platform is being shown as a fallback instead of a personalized
+    // list — whether they set an academic stage and never picked courses, or
+    // skipped onboarding. Both land on this same "all courses" screen.
+    const { comb, cap, cells } = createComb();
     if (subscribedCourses.length === 0) {
-      const banner = document.createElement("div");
-      banner.className = "all-courses-banner";
-      banner.setAttribute("role", "status");
-      banner.innerHTML = `
-        <span class="all-courses-banner-icon" aria-hidden="true">ℹ️</span>
-        <span class="all-courses-banner-text">أنت غير مشترك في أي مادة محددة حالياً، لذا نعرض لك جميع المواد المتاحة. يمكنك اختيار موادك من صفحة الإعدادات.</span>
-        <a href="/settings" class="all-courses-banner-link">الذهاب للإعدادات</a>
-      `;
-      container.appendChild(banner);
+      setCapMessage(cap, {
+        icon: "ℹ️",
+        title: "أنت غير مشترك في أي مادة محددة حالياً",
+        text: "لذا نعرض لك جميع المواد المتاحة. يمكنك اختيار موادك من صفحة الإعدادات.",
+        linkHref: "/settings",
+        linkLabel: "الذهاب للإعدادات",
+      });
     }
+    container.appendChild(comb);
 
     const fragment = document.createDocumentFragment();
 
@@ -327,22 +329,22 @@ export async function renderRootCategories() {
     try {
       const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
       const breakdown = getUserQuizzesBreakdown(userQuizzes);
-      const quizzesCard = createCategoryCard(
-        "محتواي",
-        breakdown.total,
-        true,
-        null,
-        false,
-        formatUserQuizzesBreakdown(breakdown),
-      );
+      const quizzesCard = createCourseCell({
+        name: "محتواي",
+        subtext: formatUserQuizzesBreakdown(breakdown),
+        icon: "✏️",
+        href: "/my-content",
+        onActivate: () => {
+          // Always reset to the root of user-quizzes, regardless of where the
+          // user last navigated inside the folder tree.
+          setFolderState([], null);
+          renderUserQuizzesView();
+        },
+      });
       // Tagged so refreshUserQuizzesCard() can find this specific card by
-      // attribute instead of assuming DOM order (it's always appended
-      // first, but relying on that felt fragile for a targeted lookup).
+      // attribute instead of assuming DOM order.
       quizzesCard.setAttribute("data-user-quizzes-card", "true");
-      // Custom icon
-      const iconDiv = quizzesCard.querySelector(".icon");
-      if (iconDiv) iconDiv.textContent = "✏️";
-      const cardSubtext = quizzesCard.querySelector(".card-text p");
+      const cardSubtext = quizzesCard.querySelector(".face s");
       if (cardSubtext) {
         cardSubtext.title = formatUserQuizzesBreakdown(breakdown, {
           includeCourses: true,
@@ -352,7 +354,7 @@ export async function renderRootCategories() {
 
       const rootMenuBtn = document.createElement("button");
       rootMenuBtn.type = "button";
-      rootMenuBtn.className = "exam-more-btn exam-more-btn--lg";
+      rootMenuBtn.className = "exam-more-btn exam-more-btn--lg hx-more";
       rootMenuBtn.innerHTML = MORE_DOTS_ICON_SVG;
       rootMenuBtn.setAttribute("aria-label", "خيارات محتواي");
       rootMenuBtn.onclick = (event) => {
@@ -473,12 +475,6 @@ export async function renderRootCategories() {
       };
       quizzesCard.appendChild(rootMenuBtn);
 
-      quizzesCard.onclick = () => {
-        // Always reset to the root of user-quizzes, regardless of where the
-        // user last navigated inside the folder tree.
-        setFolderState([], null);
-        renderUserQuizzesView();
-      };
       fragment.appendChild(quizzesCard);
     } catch (e) {
       console.error("Error creating User Quizzes card", e);
@@ -488,7 +484,13 @@ export async function renderRootCategories() {
     if (subscribedCourses.length > 0) {
       subscribedCourses.forEach((course) => {
         const itemCount = getCourseItemCount(course);
-        const card = createCategoryCard(course.name, itemCount, true, course);
+        const card = createCourseCell({
+          name: course.name,
+          subtext: courseSubtext(itemCount),
+          href: courseHref(course),
+          courseData: course,
+          onActivate: () => renderCategory(categoryTree[course.key]),
+        });
 
         // DEDUPLICATION: this used to be ~85 lines of copy-pasted
         // tooltip-building code (identical to the "all courses" branch
@@ -496,7 +498,6 @@ export async function renderRootCategories() {
         // escaped builder. See course-info-tooltip.js.
         attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe: true });
 
-        card.onclick = () => renderCategory(categoryTree[course.key]);
         fragment.appendChild(card);
       });
     } else {
@@ -504,12 +505,13 @@ export async function renderRootCategories() {
       const rootCategories = getCategoriesLazy();
       rootCategories.forEach((category) => {
         const itemCount = getCourseItemCount(category);
-        const card = createCategoryCard(
-          category.name,
-          itemCount,
-          true,
-          category,
-        );
+        const card = createCourseCell({
+          name: category.name,
+          subtext: courseSubtext(itemCount),
+          href: courseHref(category),
+          courseData: category,
+          onActivate: () => renderCategory(category),
+        });
 
         // DEDUPLICATION: same shared builder as the subscribed-courses
         // branch above. The unsubscribe action is hidden here — the user
@@ -517,22 +519,21 @@ export async function renderRootCategories() {
         // for it to remove (see the "all courses" banner above the grid).
         attachCourseActionsMenu(card, category, categoryTree, { showUnsubscribe: false });
 
-        card.onclick = () => renderCategory(category);
         fragment.appendChild(card);
       });
     }
 
-    container.appendChild(fragment);
+    cells.appendChild(fragment);
 
     // Show empty state if no courses at all
     if (subscribedCourses.length === 0 && getCategoriesLazy().length === 0) {
-      container.innerHTML += `
+      container.insertAdjacentHTML("beforeend", `
         <div class="empty-state" role="status">
           <div class="empty-state-icon" aria-hidden="true">📚</div>
           <h3>لا توجد مواد متاحة حالياً</h3>
           <p>تابعنا قريباً لمزيد من المحتوى!</p>
         </div>
-      `;
+      `);
     }
   } catch (error) {
     console.error("Error rendering root categories:", error);

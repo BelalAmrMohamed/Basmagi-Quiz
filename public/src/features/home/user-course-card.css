@@ -1,0 +1,173 @@
+/* =============================================================================
+   user-course-card.css — «محتواي» course card ("the course book")
+   A closed book: tinted spine (subject emoji · stitched line · item total),
+   bookmark ribbon, page-edge stack peeking out at the fore-edge and bottom,
+   and a table of contents with dotted leaders for the first three children.
+   Silhouette = .ucc-shape (painted <i> layers) outlined with the same
+   4× drop-shadow 1px stroke used by the other cards. Logical properties only,
+   so RTL/LTR mirror for free. Tokens: hive-tokens.css. Scope: #contentArea.
+   ============================================================================= */
+#contentArea .user-course-card {
+  --uc: #f472b6;                                   /* course accent: rose */
+  --spine: 3.1rem; --pg-x: 12px; --pg-y: 8px;
+  --face: color-mix(in srgb, var(--uc) 5%, var(--hv-base));
+  --spine-bg: color-mix(in srgb, var(--uc) 20%, var(--hv-base));
+  --stroke: color-mix(in srgb, var(--uc) 36%, var(--hv-edge));
+  --blur: 0px; --glow: transparent;
+  position: relative; isolation: isolate; display: grid;
+  grid-template-columns: var(--spine) minmax(0, 1fr);
+  min-height: 14.5rem; padding: 0 var(--pg-x) var(--pg-y) 0;
+  padding-inline: 0 var(--pg-x);
+  cursor: pointer; color: var(--hv-ink); text-align: start;
+  background: none; border: 0; border-radius: 0; box-shadow: none; outline: none;
+  -webkit-tap-highlight-color: transparent;
+  animation: ucc-in .5s both;
+}
+html[data-theme="light"] #contentArea .user-course-card { --uc: #db2777; }
+html:not([data-theme]) #contentArea .user-course-card { --uc: #db2777; }
+@media (hover: hover) {
+  #contentArea .user-course-card:hover {
+    --face: color-mix(in srgb, var(--uc) 9%, var(--hv-cell-hi));
+    --spine-bg: color-mix(in srgb, var(--uc) 28%, var(--hv-base));
+    --stroke: color-mix(in srgb, var(--uc) 80%, #fff 8%);
+  }
+}
+#contentArea .user-course-card:focus-visible { --stroke: var(--hv-ink); --blur: 6px; --glow: color-mix(in srgb, var(--hv-ink) 35%, transparent); }
+#contentArea .user-course-card:active:not(:has(.ucc-more:active)) {
+  --face: color-mix(in srgb, var(--uc) 3%, var(--hv-cell-lo));
+  --stroke: color-mix(in srgb, var(--uc) 55%, var(--hv-edge));
+}
+
+/* ── silhouette ───────────────────────────────────────────────────────────── */
+#contentArea .user-course-card .ucc-shape {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none; transition: filter .25s;
+  filter: drop-shadow(1px 0 0 var(--stroke)) drop-shadow(-1px 0 0 var(--stroke))
+          drop-shadow(0 1px 0 var(--stroke)) drop-shadow(0 -1px 0 var(--stroke))
+          drop-shadow(0 0 var(--blur) var(--glow));
+}
+#contentArea .user-course-card .ucc-shape > i { position: absolute; display: block; transition: background-color .25s; }
+.user-course-card .ucc-cover {
+  inset-block: 0 var(--pg-y); inset-inline: 0 var(--pg-x);
+  background: linear-gradient(color-mix(in srgb, #fff 5%, transparent), transparent 45%), var(--face);
+  border-start-start-radius: 8px; border-end-start-radius: 8px;
+  border-start-end-radius: 16px; border-end-end-radius: 16px;
+}
+/* page edges: pale sheets with hairline gaps, visible only past the cover */
+.user-course-card .ucc-pages {
+  inset-block: 5px 0; inset-inline: 18px 0;
+  background: repeating-linear-gradient(0deg, color-mix(in srgb, var(--hv-ink) 14%, var(--hv-base)) 0 2px, color-mix(in srgb, var(--hv-ink) 5%, var(--hv-base)) 2px 4px);
+  border-start-end-radius: 10px; border-end-end-radius: 10px; border-end-start-radius: 8px;
+}
+/* bookmark ribbon with a swallow-tail notch */
+.user-course-card .ucc-ribbon {
+  inset-block-start: 0; inset-inline-end: calc(var(--pg-x) + 3.1rem);
+  width: 1.1rem; height: 2.3rem;
+  background: linear-gradient(var(--uc), color-mix(in srgb, var(--uc) 72%, #000));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+}
+
+/* ── spine ────────────────────────────────────────────────────────────────── */
+#contentArea .user-course-card .ucc-spine {
+  grid-column: 1; margin-bottom: var(--pg-y);
+  display: flex; flex-direction: column; align-items: center; gap: .55rem; padding: 1rem 0 .85rem;
+  background: linear-gradient(var(--spine-bg), color-mix(in srgb, var(--uc) 10%, var(--hv-base)));
+  border-inline-end: 1.5px solid color-mix(in srgb, var(--uc) 45%, transparent);
+  border-start-start-radius: 8px; border-end-start-radius: 8px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--uc) 10%, transparent);
+  transition: background-color .25s;
+}
+.user-course-card .ucc-emoji { font-size: 1.7rem; line-height: 1; filter: drop-shadow(0 3px 6px #0006); }
+.user-course-card .ucc-spine::before { /* stitched binding */
+  content: ""; order: 1; flex: 1; width: 0; margin-block: .15rem;
+  border-inline-start: 2px dotted color-mix(in srgb, var(--uc) 55%, transparent);
+}
+.user-course-card .ucc-total {
+  order: 2; font: 700 .8rem/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: color-mix(in srgb, var(--uc) 70%, var(--hv-ink)); font-variant-numeric: tabular-nums;
+}
+
+/* ── body ─────────────────────────────────────────────────────────────────── */
+#contentArea .user-course-card .ucc-body {
+  grid-column: 2; min-width: 0; display: flex; flex-direction: column; gap: .5rem;
+  padding: .95rem 1rem .85rem; margin-bottom: var(--pg-y);
+}
+.user-course-card .ucc-tag {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: .35em; padding: .15em .7em; border-radius: 99px;
+  font-size: .78rem; font-weight: 600; color: var(--uc);
+  background: color-mix(in srgb, var(--uc) 14%, transparent); border: 1px solid color-mix(in srgb, var(--uc) 35%, transparent);
+}
+#contentArea .user-course-card .ucc-title {
+  margin: .15rem 0 0; font-size: 1.25rem; line-height: 1.3; font-weight: 700; color: var(--hv-ink);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+}
+.user-course-card .ucc-toc { list-style: none; margin: .1rem 0 0; padding: 0; display: grid; gap: .32rem; }
+.user-course-card .ucc-toc-row { display: flex; align-items: baseline; gap: .4rem; font-size: .86rem; min-width: 0; color: var(--hv-ink); }
+.user-course-card .ucc-toc-ic { flex: none; font-size: .85rem; }
+.user-course-card .ucc-toc-name { flex: 0 1 auto; min-width: 0; max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-course-card .ucc-toc-dots { flex: 1 1 .8rem; min-width: .8rem; border-bottom: 1.5px dotted color-mix(in srgb, var(--hv-mute) 60%, transparent); transform: translateY(-.28em); }
+.user-course-card .ucc-toc-tail { flex: none; color: var(--hv-mute); font-size: .78rem; font-variant-numeric: tabular-nums; }
+.user-course-card .ucc-toc-more { color: var(--uc); font-size: .78rem; font-weight: 700; padding-inline-start: 1.3rem; }
+.user-course-card .ucc-hint { margin: .2rem 0 0; color: var(--hv-mute); font-size: .86rem; line-height: 1.5; padding-block: .7rem; border-block: 1.5px dotted color-mix(in srgb, var(--hv-mute) 45%, transparent); }
+.user-course-card .ucc-summary { margin: auto 0 0; padding-top: .35rem; color: var(--hv-mute); font-size: .84rem; display: flex; align-items: center; gap: .45em; }
+.user-course-card .ucc-summary::before { content: ""; width: .9rem; height: 2px; border-radius: 2px; background: var(--uc); opacity: .7; }
+
+/* ── ⋮ button ─────────────────────────────────────────────────────────────── */
+#contentArea .user-course-card .ucc-more {
+  position: absolute; z-index: 2; inset-block-start: .5rem; inset-inline-end: calc(var(--pg-x) + .5rem);
+  width: 2rem; height: 2rem; padding: 0; display: grid; place-items: center;
+  border: 0; border-radius: 50%; background: transparent; color: var(--hv-mute); cursor: pointer;
+  transition: background-color .2s, color .2s;
+}
+.user-course-card .ucc-more::before { content: ""; position: absolute; inset: -6px; }
+.user-course-card .ucc-more svg { width: 1.1rem; height: 1.1rem; }
+@media (hover: hover) { #contentArea .user-course-card .ucc-more:hover { background: color-mix(in srgb, var(--hv-ink) 10%, transparent); color: var(--hv-ink); } }
+#contentArea .user-course-card .ucc-more:active { background: color-mix(in srgb, var(--hv-ink) 16%, transparent); }
+#contentArea .user-course-card .ucc-more:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--hv-base), 0 0 0 4px var(--uc); }
+
+/* ── selection checkbox: sits where the total is, so nothing shifts ───────── */
+#contentArea .user-course-card .user-quiz-select-checkbox {
+  inset: auto; top: auto; left: auto; inset-block-end: .8rem; inset-inline-start: calc(var(--spine) / 2 - 11px); z-index: 3;
+}
+.user-quizzes-container.selection-mode-active .user-course-card .ucc-total { visibility: hidden; }
+#contentArea .user-course-card:has(.user-quiz-select-checkbox:checked) {
+  --face: color-mix(in srgb, var(--uc) 14%, var(--hv-base)); --stroke: var(--uc);
+  --blur: 12px; --glow: color-mix(in srgb, var(--uc) 40%, transparent);
+}
+
+/* ── empty course: single thin book, no page stack ────────────────────────── */
+#contentArea .user-course-card.is-empty { min-height: 12rem; --stroke: color-mix(in srgb, var(--uc) 22%, var(--hv-edge)); }
+.user-course-card.is-empty .ucc-pages { opacity: .35; }
+.user-course-card.is-empty .ucc-emoji { opacity: .75; }
+
+/* ── drag-over (legacy .drag-over paints a boxy dashed outline: replace it) ─ */
+#contentArea .user-course-card.drag-over {
+  outline: none !important; background: none !important; border-radius: 0;
+  --face: color-mix(in srgb, var(--uc) 18%, var(--hv-base)); --stroke: var(--uc); --blur: 14px; --glow: color-mix(in srgb, var(--uc) 45%, transparent);
+}
+.user-course-card.drag-over .ucc-cover { outline: 2px dashed var(--uc); outline-offset: -7px; }
+
+/* ── new item highlight (mcp-draft-import) ────────────────────────────────── */
+#contentArea .user-course-card.mcp-new-item { --stroke: var(--hv-accent-2); z-index: 2; }
+#contentArea .user-course-card.mcp-new-item .ucc-shape { animation: ucc-pulse 1.4s ease-in-out infinite; }
+#contentArea .user-course-card .mcp-new-badge { inset-block-start: auto; inset-block-end: .7rem; inset-inline-end: calc(var(--pg-x) + .9rem); }
+
+@keyframes ucc-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes ucc-pulse {
+  0%, 100% { filter: drop-shadow(1px 0 0 var(--stroke)) drop-shadow(-1px 0 0 var(--stroke)) drop-shadow(0 1px 0 var(--stroke)) drop-shadow(0 -1px 0 var(--stroke)) drop-shadow(0 0 6px var(--hv-accent-2)); }
+  50%      { filter: drop-shadow(1px 0 0 var(--stroke)) drop-shadow(-1px 0 0 var(--stroke)) drop-shadow(0 1px 0 var(--stroke)) drop-shadow(0 -1px 0 var(--stroke)) drop-shadow(0 0 18px var(--hv-accent-2)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #contentArea .user-course-card { animation: none; }
+  #contentArea .user-course-card.mcp-new-item .ucc-shape { animation: none; }
+}
+
+/* ── phones ───────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  #contentArea .user-course-card { --spine: 2.7rem; --pg-x: 10px; --pg-y: 7px; min-height: 0; margin-bottom: .75rem; }
+  #contentArea .user-course-card.is-empty { min-height: 0; }
+  #contentArea .user-course-card .ucc-body { padding: .8rem .85rem .75rem; gap: .4rem; }
+  #contentArea .user-course-card .ucc-title { font-size: 1.1rem; }
+  .user-course-card .ucc-emoji { font-size: 1.45rem; }
+  #contentArea .user-course-card .ucc-more { width: 2.5rem; height: 2.5rem; inset-block-start: .3rem; }
+  .user-course-card .ucc-ribbon { width: .95rem; height: 2rem; inset-inline-end: calc(var(--pg-x) + 3.2rem); }
+}

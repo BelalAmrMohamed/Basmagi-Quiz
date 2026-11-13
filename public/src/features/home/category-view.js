@@ -5,6 +5,8 @@
 // ============================================================================
 
 import { toSlug } from "./slug-utils.js";
+import { addCardShape } from "./card-type.js";
+import { getItemText } from "./item-text.js";
 import { container, title } from "./dom-refs.js";
 import {
   getNavigationStack,
@@ -274,14 +276,6 @@ function createCourseSubscribeBanner(course) {
  * @param {number} count
  * @returns {string}
  */
-function getItemText(count) {
-  if (count === 0) return "لا يوجد امتحانات";
-  if (count === 1) return "امتحان واحد";
-  if (count === 2) return "امتحانان";
-  if (count <= 10) return "امتحانات";
-  return "امتحان";
-}
-
 export function createCategoryCard(
   name,
   itemCount,
@@ -477,6 +471,9 @@ export function createCategoryCard(
     }
   });
 
+  // Subfolders (inside a course) get the manila-folder look (cards-v2.css).
+  // Root course cells are styled by the honeycomb, so they are left untouched.
+  if (isSubfolder) addCardShape(card, "folder");
   return card;
 }
 

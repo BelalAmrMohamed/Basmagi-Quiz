@@ -5,7 +5,7 @@
 // title, description, cell count, runtime label and type chip.
 // Callers only differ in the buttons/menus they attach.
 // ============================================================================
-import { createTypeChip, tagCardType } from "./card-type.js";
+import { createTypeChip, tagCardType, addCardShape } from "./card-type.js";
 import { MORE_DOTS_ICON_SVG, DOWNLOAD_ICON_SVG } from "./icons.js";
 import { RUNTIME_CONFIG } from "../../shared/runtime-config.js";
 import { withDownloadLoading } from "../../components/download-quiz-modal/export-card.js";
@@ -28,6 +28,7 @@ export function createNotebookCardShell(data) {
   card.setAttribute("role", "article");
   card.setAttribute("aria-label", `دفتر تفاعلي: ${title}`);
   tagCardType(card, "notebook");
+  addCardShape(card, "notebook");
 
   const icon = document.createElement("span");
   icon.className = data.iconClass || "phone-only-emoji";

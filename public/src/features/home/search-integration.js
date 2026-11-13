@@ -21,9 +21,10 @@ import {
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
 import { getCourseItemCount } from "./course-count.js";
-import { attachCourseInfoTooltip } from "./course-info-tooltip.js";
 import { addSubscribeButton } from "./subscribe-button.js";
 import { createCategoryCard, renderCategory } from "./category-view.js";
+import { createCourseCell, createComb, courseHref, courseSubtext } from "./course-cell.js";
+import { attachCourseActionsMenu } from "./root-view.js";
 import { createExamCard } from "./exam-card.js";
 import { createUserQuizCard } from "./user-quiz-card.js";
 import { renderRootCategories } from "./root-view.js";
@@ -159,7 +160,7 @@ function renderCourseSearchResults(courses) {
     if (!container) return;
 
     container.innerHTML = "";
-    container.className = "grid-container";
+    container.className = "hive-root";
     container.setAttribute("aria-busy", "false");
 
     const fragment = document.createDocumentFragment();
@@ -172,19 +173,28 @@ function renderCourseSearchResults(courses) {
         title: "لا توجد نتائج",
         subtitle: "جرّب البحث بكلمات مختلفة أو تعديل الفلاتر",
       });
+      container.className = "grid-container";
       container.appendChild(emptyState);
       return;
     }
 
-    // Render course cards with subscribe button
+    const { comb, cells } = createComb();
+    container.appendChild(comb);
+
+    // Render course cells with subscribe button
     courses.forEach((course) => {
       const itemCount = getCourseItemCount(course);
-      const card = createCategoryCard(course.name, itemCount, true, course);
+      const categoryTree = getCategoryTree();
+      const card = createCourseCell({
+        name: course.name,
+        subtext: courseSubtext(itemCount),
+        href: courseHref(course),
+        courseData: course,
+        onActivate: () => renderCategory(categoryTree[course.key]),
+      });
 
-      // DEDUPLICATION: this was the third copy of the same ~55-line
-      // tooltip-building block (root-view.js had the other two) — now the
-      // shared, escaped builder. See course-info-tooltip.js.
-      attachCourseInfoTooltip(card, course);
+      // Same ⋮ actions menu as the home cells (includes course info).
+      attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe: false });
 
       // Add subscribe button if in search results
       const searchManager = getSearchManager();
@@ -192,12 +202,10 @@ function renderCourseSearchResults(courses) {
         addSubscribeButton(card, course);
       }
 
-      const categoryTree = getCategoryTree();
-      card.onclick = () => renderCategory(categoryTree[course.key]);
       fragment.appendChild(card);
     });
 
-    container.appendChild(fragment);
+    cells.appendChild(fragment);
   } catch (error) {
     console.error("Error rendering course search results:", error);
     if (container) {

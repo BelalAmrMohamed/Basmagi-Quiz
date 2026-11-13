@@ -227,10 +227,10 @@ export function exportUserQuizzesAsJson() {
  */
 export function refreshUserQuizzesCard() {
   const card = document.querySelector(
-    '.grid-container .category-card[data-user-quizzes-card="true"]',
+    '[data-user-quizzes-card="true"]',
   );
   if (!card) return;
-  const subtextEl = card.querySelector(".card-text p");
+  const subtextEl = card.querySelector(".face s");
   if (!subtextEl) return;
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const breakdown = getUserQuizzesBreakdown(userQuizzes);

@@ -1,0 +1,343 @@
+/* =============================================================================
+   hive.css — 2026 home redesign
+     1. Seamless header (all three views: home, /course/*, /my-content)
+     2. Honeycomb lattice for the root course cells  (#contentArea.hive-root)
+     3. Cap: the roof-shaped message slot sitting on top of the first row
+   Colours come from hive-tokens.css (→ themes.css), so every theme works.
+   Specificity: header rules hang off #mainContainer, comb rules off
+   .hive-root, so they beat the layered legacy rules in index.css without
+   !important.
+   ============================================================================= */
+
+/* ───────────────────────────── 1. HEADER ───────────────────────────────────
+   Open-sided: no box, no border. A soft aurora and a faint honeycomb texture
+   fade into the page; a hairline "horizon" with a hex gem closes it.
+   All legacy children stay (greeting pill, title, subtitle, #Subjects-text,
+   search trigger + bar) — only their frame changes. */
+#mainContainer .header {
+  --pb: clamp(34px, 5vw, 58px);
+  --hx-cell: clamp(120px, 20vw, 240px);
+  position: relative;
+  isolation: isolate;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 8px;
+  padding: clamp(28px, 5vw, 64px) 24px var(--pb);
+}
+#mainContainer .header::before,
+#mainContainer .header::after {
+  content: "";
+  position: absolute;
+  inset: 0 -12%;
+  z-index: -1;
+  pointer-events: none;
+}
+#mainContainer .header::before {                       /* aurora */
+  background:
+    radial-gradient(55% 85% at 50% 0%, color-mix(in srgb, var(--hv-accent-2) 20%, transparent), transparent 70%),
+    radial-gradient(35% 60% at 18% 0%, color-mix(in srgb, #a56bff 12%, transparent), transparent 70%),
+    radial-gradient(35% 60% at 84% 0%, color-mix(in srgb, #5ec2ff 10%, transparent), transparent 70%);
+  -webkit-mask-image: linear-gradient(#000 55%, transparent);
+  mask-image: linear-gradient(#000 55%, transparent);
+}
+#mainContainer .header::after {                        /* honeycomb texture */
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='96' viewBox='0 0 55.43 96' preserveAspectRatio='none'%3E%3Cpath d='M0 16L27.7 0 55.4 16M0 16V48M55.4 16V48M0 48L27.7 64 55.4 48M27.7 64V96' fill='none' stroke='%23808090' stroke-opacity='.16' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") 50% 0 / calc(var(--hx-cell) / 2) calc(var(--hx-cell) * .866);
+  -webkit-mask-image: radial-gradient(60% 100% at 50% 0%, #000, transparent 72%);
+  mask-image: radial-gradient(60% 100% at 50% 0%, #000, transparent 72%);
+}
+/* .header-clip: legacy decorative layer → horizon hairline + hex gem */
+#mainContainer .header-clip {
+  overflow: visible;
+  border-radius: 0;
+}
+#mainContainer .header-clip::before {
+  top: auto; bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--hv-accent-2) 60%, transparent) 28%, color-mix(in srgb, var(--hv-accent-2) 60%, transparent) 72%, transparent);
+  box-shadow: none;
+}
+#mainContainer .header-clip::after {
+  top: auto; bottom: 0; left: 50%;
+  width: 12px; height: 14px;
+  background: var(--hv-accent);
+  clip-path: var(--hv-hex);
+  transform: translate(-50%, 50%);
+}
+#mainContainer .header-content { gap: clamp(8px, 1.4vw, 14px); }
+#mainContainer .header h1 { margin-bottom: 0; font-size: clamp(2rem, 5.4vw, 3.6rem); }
+#mainContainer .header-subtitle,
+#mainContainer .header p {
+  color: var(--hv-mute);
+  font-size: clamp(.85rem, 2.2vw, 1.15rem);
+}
+#mainContainer .header-badge { margin-bottom: 4px; }
+
+/* #Subjects-text → accent-outlined pill (also hosts the breadcrumb nav) */
+#mainContainer .header #Subjects-text {
+  margin-top: clamp(8px, 1.4vw, 14px);
+  background: transparent;
+  border: 1.5px solid var(--hv-accent-2);
+  color: var(--hv-accent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--hv-accent-2) 33%, transparent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: background-color .2s;
+}
+#mainContainer .header #Subjects-text::before { display: none; }       /* legacy gradient ring */
+#mainContainer .header #Subjects-text:hover {
+  background: color-mix(in srgb, var(--hv-accent-2) 18%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--hv-accent-2) 33%, transparent);
+}
+
+/* Search trigger → hexagon, inline-start / bottom (bottom-right in RTL) */
+#mainContainer .header .header-search-btn {
+  --sz: clamp(46px, 4.4vw, 64px);
+  inset: auto auto var(--pb) auto;
+  inset-inline-start: 0;
+  width: var(--sz);
+  height: calc(var(--sz) * 1.1547);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  clip-path: var(--hv-hex);
+  background: var(--hv-edge);
+  color: var(--hv-accent);
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+}
+#mainContainer .header .header-search-btn[style*="display: none"] { display: none !important; }
+#mainContainer .header .header-search-btn:not([style*="display: none"]) { display: grid; place-items: center; }
+#mainContainer .header .header-search-btn::before,
+#mainContainer .header .header-search-btn::after {
+  content: ""; position: absolute; clip-path: var(--hv-hex);
+}
+#mainContainer .header .header-search-btn::before {
+  inset: 2px; z-index: -1; background: var(--hv-cell); transition: background-color .25s;
+}
+#mainContainer .header .header-search-btn::after {
+  inset: 0; z-index: -2; background: var(--hv-sheen); opacity: 0; transition: opacity .25s;
+}
+#mainContainer .header .header-search-btn:hover { background: var(--hv-edge); }
+#mainContainer .header .header-search-btn:hover::before,
+#mainContainer .header .header-search-btn:focus-visible::before { background: var(--hv-cell-hi); }
+#mainContainer .header .header-search-btn:hover::after,
+#mainContainer .header .header-search-btn:focus-visible::after { opacity: 1; }
+#mainContainer .header .header-search-btn:focus-visible { outline: none; }
+#mainContainer .header .header-search-btn:active::before { background: var(--hv-cell-lo); }
+#mainContainer .header .header-search-btn[aria-expanded="true"] { background: var(--hv-edge); }
+#mainContainer .header .header-search-icon { width: calc(var(--sz) * .4); height: calc(var(--sz) * .4); }
+@media (max-width: 768px) {
+  #mainContainer .header .header-search-btn { inset-block-end: var(--pb); width: var(--sz); height: calc(var(--sz) * 1.1547); }
+}
+@media (max-width: 480px) {
+  #mainContainer .header { padding-inline: 12px; }
+}
+
+/* ───────────────────────────── 2. HONEYCOMB ────────────────────────────────
+   .hive-root is the size container: cell size and 5/3 columns derive from its
+   width. Grid rows: 1 = cap (message slot), 2+ = honeycomb (auto-placed).
+   Columns are HALF a cell wide; a cell spans 2; every second row starts one
+   column in. */
+#contentArea.hive-root,
+.skeleton-grid.hive-root {
+  container: comb / inline-size;
+  display: block;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto 32px;
+  padding: 0;
+  gap: 0;
+  border: 0;
+  overflow: visible;
+}
+.hive-root .comb {
+  --g: 8px; --o: var(--g); --cols: 5;
+  --w: min(240px, calc(100cqw / var(--cols) - var(--g)));
+  --h: calc(var(--w) * 1.1547);
+  --pt: calc(var(--w) + var(--g));
+  --p: calc(var(--pt) * .866);
+  --a: calc(var(--w) / 2);
+  --yp: calc(100% - var(--h) * .25 - var(--g) * .2887);
+  --ye: calc(var(--yp) + var(--h) * .25);
+  --mt: calc(var(--o) * 1.155 - var(--h) * .25 - var(--g) * .2887);
+
+  display: grid;
+  width: max-content;
+  margin-inline: auto;
+  grid-template-columns: repeat(10, calc(var(--pt) / 2));
+  grid-template-rows: auto;
+  grid-auto-rows: var(--p);
+}
+.hive-root .cells { display: contents; list-style: none; padding: 0; margin: 0; }
+
+.hive-root .hx {
+  grid-column: var(--x) / span 2;
+  margin: var(--mt) calc(var(--g) / 2) 0;
+  align-self: start;
+  height: var(--h);
+  position: relative;
+  list-style: none;
+}
+.hive-root .face {
+  position: relative; isolation: isolate; height: 100%;
+  display: grid; place-content: center; justify-items: center; gap: .25em;
+  padding-inline: calc(var(--w) * .14);
+  text-align: center; text-decoration: none; color: var(--hv-ink); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  clip-path: var(--hv-hex); background: var(--hv-edge);
+  font-size: max(11px, calc(var(--w) * .092)); line-height: 1.2;
+  animation: hx-fill .5s both;
+}
+.hive-root .face::before { content: ""; position: absolute; inset: 2px; z-index: -1; clip-path: var(--hv-hex); background: var(--hv-cell); transition: background-color .25s; }
+.hive-root .face::after  { content: ""; position: absolute; inset: 0; z-index: -2; clip-path: var(--hv-hex); background: var(--hv-sheen); opacity: 0; transition: opacity .25s; }
+.hive-root .face i { font-style: normal; font-size: 2.6em; line-height: 1; filter: drop-shadow(0 4px 8px #0006); }
+.hive-root .face b {
+  font-weight: 700; max-width: 100%; overflow-wrap: anywhere; text-align: center;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.hive-root .face s { text-decoration: none; color: var(--hv-mute); font-size: .82em; transition: color .25s; }
+
+/* states: colour and opacity only, nothing moves or resizes */
+.hive-root .face:hover::before, .hive-root .face:focus-visible::before { background: var(--hv-cell-hi); }
+.hive-root .face:hover::after,  .hive-root .face:focus-visible::after  { opacity: 1; }
+.hive-root .face:hover s, .hive-root .face:focus-visible s { color: var(--hv-ink); }
+.hive-root .face:focus-visible { outline: none; }
+.hive-root .face[aria-current="true"]::before { background: var(--hv-cell-sel); }
+.hive-root .face[aria-current="true"]::after  { opacity: 1; background: linear-gradient(150deg, var(--hv-accent), var(--hv-accent-2)); }
+.hive-root .face:active::before { background: var(--hv-cell-lo); }
+.hive-root .face:active::after  { opacity: .55; }
+
+/* ⋮ menu button, «جديد» badge and search "subscribe" slot: siblings of .face
+   (the face clips to the hexagon, so they live on the <li>). */
+.hive-root .hx > .exam-more-btn {
+  position: absolute; z-index: 2; top: 13%; inset-inline-start: 50%;
+  translate: -50% 0;
+  width: 28px; height: 28px; min-width: 0; padding: 0;
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%; background: transparent; color: var(--hv-mute); cursor: pointer;
+  transition: background-color .2s, color .2s;
+}
+html[dir="rtl"] .hive-root .hx > .exam-more-btn { translate: 50% 0; }
+.hive-root .hx > .exam-more-btn::before { content: ""; position: absolute; inset: -8px; }
+.hive-root .hx > .exam-more-btn svg { width: 16px; height: 16px; }
+.hive-root .hx > .exam-more-btn:hover,
+.hive-root .hx > .exam-more-btn:focus-visible { background: color-mix(in srgb, var(--hv-ink) 12%, transparent); color: var(--hv-ink); outline: none; }
+.hive-root .hx-new {
+  position: absolute; z-index: 2; top: 19%; inset-inline-end: 17%;
+  padding: .12em .6em; border-radius: 99px; font-size: .72rem; font-weight: 700; line-height: 1.5;
+  color: #fff; background: var(--hv-accent-2);
+}
+.hive-root .hx > .subscribe-btn-container {
+  position: absolute; z-index: 2; inset-inline: 28%; bottom: 7%;
+  display: flex; justify-content: center; margin: 0; padding: 0; width: auto;
+}
+.hive-root .hx > .subscribe-btn-container .subscribe-btn { width: 100%; font-size: .78rem; padding: .3em .6em; border-radius: 99px; }
+
+/* half-cell gap fillers */
+.hive-root .hx::before, .hive-root .hx::after {
+  position: absolute; top: 0; height: 100%; width: calc((var(--w) - var(--g)) / 2); background: var(--hv-fill);
+}
+.hive-root .hx::before { inset-inline-end: calc(100% + var(--g)); clip-path: polygon(0 calc(var(--g) * .29), 100% 25%, 100% 75%, 0 calc(100% - var(--g) * .29)); }
+.hive-root .hx::after  { inset-inline-start: calc(100% + var(--g)); clip-path: polygon(0 25%, 100% calc(var(--g) * .29), 100% calc(100% - var(--g) * .29), 0 75%); }
+.hive-root .comb:dir(rtl) .hx::before, .hive-root .comb:dir(rtl) .hx::after { transform: scaleX(-1); }
+
+/* row pattern: 5, 4, 5, 4 … */
+@container comb (min-width: 560px) {
+  .hive-root .hx:nth-child(9n+1 of :not([hidden])) { --x: 1; }
+  .hive-root .hx:nth-child(9n+2 of :not([hidden])) { --x: 3; }
+  .hive-root .hx:nth-child(9n+3 of :not([hidden])) { --x: 5; }
+  .hive-root .hx:nth-child(9n+4 of :not([hidden])) { --x: 7; }
+  .hive-root .hx:nth-child(9n+5 of :not([hidden])) { --x: 9; }
+  .hive-root .hx:nth-child(9n+6 of :not([hidden])) { --x: 2; }
+  .hive-root .hx:nth-child(9n+7 of :not([hidden])) { --x: 4; }
+  .hive-root .hx:nth-child(9n+8 of :not([hidden])) { --x: 6; }
+  .hive-root .hx:nth-child(9n+9 of :not([hidden])) { --x: 8; }
+  .hive-root .hx:nth-child(9n+6 of :not([hidden]))::before,
+  .hive-root .hx:nth-child(9n+9 of :not([hidden]))::after { content: ""; }
+}
+/* 3 columns: 3, 2, 3, 2 … */
+@container comb (max-width: 559px) {
+  .hive-root .comb { --cols: 3; grid-template-columns: repeat(6, calc(var(--pt) / 2)); }
+  .hive-root .cap-in { clip-path: polygon(
+    0 0, 0 var(--ye),
+    var(--a) var(--yp), calc(var(--a) + var(--pt) * .5) 100%,
+    calc(var(--a) + var(--pt)) var(--yp), calc(var(--a) + var(--pt) * 1.5) 100%,
+    calc(var(--a) + var(--pt) * 2) var(--yp),
+    100% var(--ye), 100% 0); }
+  .hive-root .hx:nth-child(5n+1 of :not([hidden])) { --x: 1; }
+  .hive-root .hx:nth-child(5n+2 of :not([hidden])) { --x: 3; }
+  .hive-root .hx:nth-child(5n+3 of :not([hidden])) { --x: 5; }
+  .hive-root .hx:nth-child(5n+4 of :not([hidden])) { --x: 2; }
+  .hive-root .hx:nth-child(5n+5 of :not([hidden])) { --x: 4; }
+  .hive-root .hx:nth-child(5n+4 of :not([hidden]))::before,
+  .hive-root .hx:nth-child(5n+5 of :not([hidden]))::after { content: ""; }
+  .hive-root .hx > .exam-more-btn { top: 9%; width: 24px; height: 24px; }
+  .hive-root .hx-new { top: 15%; }
+}
+
+/* loading skeleton */
+.hive-root .is-loading .face { pointer-events: none; cursor: default; animation: none; }
+.hive-root .is-loading .face::before { background: linear-gradient(100deg, var(--hv-cell) 35%, var(--hv-cell-hi) 50%, var(--hv-cell) 65%) 0 0 / 300% 100%; }
+.hive-root .is-loading :is(i, b, s) { display: block; background: var(--hv-cell-hi); border-radius: 6px; filter: none; font-size: 1em; }
+.hive-root .is-loading i { width: 2.4em; height: 2.4em; border-radius: 50%; }
+.hive-root .is-loading b { width: 6em; height: 1em; }
+.hive-root .is-loading s { width: 4em; height: .8em; }
+
+/* ───────────────────────────── 3. CAP ──────────────────────────────────────
+   The message slot. Its bottom edge is cut to the tops of the first row.
+   Empty cap = plain spacing (no markup whitespace inside, so :empty matches). */
+.hive-root .cap {
+  grid-area: 1 / 1 / 2 / -1;
+  margin-inline: calc(var(--g) / 2);
+  display: grid;
+  --tone: var(--hv-accent-2);
+  --stroke: color-mix(in srgb, var(--tone) 45%, var(--hv-edge));
+  filter: drop-shadow(1px 0 0 var(--stroke)) drop-shadow(-1px 0 0 var(--stroke))
+          drop-shadow(0 1px 0 var(--stroke)) drop-shadow(0 -1px 0 var(--stroke));
+}
+.hive-root .cap:empty { height: calc(var(--h) * .25 + var(--g) * 2); filter: none; }
+.hive-root .cap[data-tone="warn"] { --tone: var(--color-warning); }
+.hive-root .cap[data-tone="ok"]   { --tone: var(--color-success); }
+.hive-root .cap-in {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: clamp(14px, 2cqw, 22px) clamp(18px, 3cqw, 32px) calc(var(--h) * .25 + var(--g) * 2.5);
+  border-radius: 22px 22px 0 0;
+  background: linear-gradient(270deg, color-mix(in srgb, var(--tone) 16%, transparent), transparent 65%), var(--hv-panel);
+  clip-path: polygon(
+    0 0, 0 var(--ye),
+    var(--a) var(--yp), calc(var(--a) + var(--pt) * .5) 100%,
+    calc(var(--a) + var(--pt)) var(--yp), calc(var(--a) + var(--pt) * 1.5) 100%,
+    calc(var(--a) + var(--pt) * 2) var(--yp), calc(var(--a) + var(--pt) * 2.5) 100%,
+    calc(var(--a) + var(--pt) * 3) var(--yp), calc(var(--a) + var(--pt) * 3.5) 100%,
+    calc(var(--a) + var(--pt) * 4) var(--yp),
+    100% var(--ye), 100% 0);
+}
+.hive-root .cap-ic {
+  flex: none; display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 50%; font-size: 1.25rem;
+  background: color-mix(in srgb, var(--tone) 22%, transparent);
+}
+.hive-root .cap-tx { flex: 1 1 14rem; display: grid; gap: .2em; min-width: 0; }
+.hive-root .cap-tx strong { font-size: clamp(.95rem, 2cqw, 1.15rem); color: var(--hv-ink); }
+.hive-root .cap-tx span { color: var(--hv-mute); font-size: clamp(.82rem, 1.7cqw, .98rem); }
+.hive-root .pill {
+  color: var(--hv-accent); text-decoration: none; font-weight: 600; font-size: clamp(.85rem, 1.7cqw, 1rem);
+  padding: .5em 1.3em; border-radius: 99px; border: 1.5px solid var(--hv-accent-2);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--hv-accent-2) 33%, transparent); transition: background-color .2s;
+}
+.hive-root .pill:hover, .hive-root .pill:focus-visible { background-color: color-mix(in srgb, var(--hv-accent-2) 18%, transparent); outline: none; }
+.hive-root .pill:active { background-color: color-mix(in srgb, var(--hv-accent-2) 30%, transparent); }
+
+@keyframes hx-fill { from { opacity: 0; } }
+@keyframes hx-sheen { to { background-position: -300% 0; } }
+@media (prefers-reduced-motion: no-preference) { .hive-root .is-loading .face::before { animation: hx-sheen 1.4s linear infinite; } }
+@media (prefers-reduced-motion: reduce) { .hive-root .face { animation: none; } }
+
+/* Banners that sit inside the card shelf (e.g. «لست مشتركاً في هذه المادة» on
+   /course/*) borrow the cap's look so messages read as one family. */
+#contentArea .all-courses-banner {
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--hv-accent-2) 45%, var(--hv-edge));
+  background: linear-gradient(270deg, color-mix(in srgb, var(--hv-accent-2) 16%, transparent), transparent 65%), var(--hv-panel);
+  padding: 16px 22px;
+}

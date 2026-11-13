@@ -6,7 +6,7 @@
 // per-card `exam`/`config` state, so it isn't a standalone module function).
 // ============================================================================
 
-import { createTypeChip, tagCardType } from "./card-type.js";
+import { createTypeChip, tagCardType, addCardShape } from "./card-type.js";
 import { startQuiz } from "./quiz-navigation.js";
 import { isRecentlyAdded } from "./date-utils.js";
 import { formatArabicQuestionCount, refreshUserQuizzesCard } from "./course-count.js";
@@ -293,6 +293,7 @@ export function createExamCard(exam) {
   card.appendChild(iconEl);
   card.appendChild(textWrap);
   card.appendChild(btnWrap);
+  addCardShape(card, "quiz");
 
   // Read question count from manifest (no individual file fetch needed)
   if (typeof exam.questionCount === "number" && exam.questionCount > 0) {

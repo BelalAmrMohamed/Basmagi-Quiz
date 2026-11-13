@@ -332,6 +332,12 @@
     <link rel="stylesheet" href="src/features/home/search.css">
     <link rel="stylesheet" href="src/components/offline-banner/offline-banner.css">
     <link rel="stylesheet" href="src/features/home/sign-in.css">
+    <!-- 2026 home redesign: tokens first, then honeycomb/header, item cards, محتواي course card.
+         All three scope under #contentArea / .header so they win over index.css without !important. -->
+    <link rel="stylesheet" href="src/features/home/hive-tokens.css">
+    <link rel="stylesheet" href="src/features/home/hive.css">
+    <link rel="stylesheet" href="src/features/home/cards-v2.css">
+    <link rel="stylesheet" href="src/features/home/user-course-card.css">
 
     <!-- Controller Scripts - with module preload -->
     <link rel="modulepreload" href="src/shared/theme-controller.js">
@@ -1150,47 +1156,24 @@
 
         <main id="contentArea" role="main" aria-live="polite" aria-busy="true" aria-label="محتوى الصفحة الرئيسية">
             <!-- Shimmer skeleton shown while async data loads. JS replaces this on ready. -->
-            <div class="skeleton-grid" id="skeletonLoader" aria-hidden="true">
-                <!-- Static امتحاناتك stub — always first, renders before JS fires -->
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title" style="width:55%"></div>
-                    <div class="skeleton-block skeleton-text" style="width:30%"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title"></div>
-                    <div class="skeleton-block skeleton-text"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title"></div>
-                    <div class="skeleton-block skeleton-text"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title"></div>
-                    <div class="skeleton-block skeleton-text"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title"></div>
-                    <div class="skeleton-block skeleton-text"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title"></div>
-                    <div class="skeleton-block skeleton-text"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title"></div>
-                    <div class="skeleton-block skeleton-text"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block .shimmer skeleton-icon"></div>
-                    <div class="skeleton-block .shimmer skeleton-title"></div>
-                    <div class="skeleton-block .shimmer skeleton-text"></div>
+            <div class="skeleton-grid hive-root" id="skeletonLoader" aria-hidden="true">
+                <!-- Honeycomb skeleton: same lattice as the real cells (hive.css) so nothing jumps on load. -->
+                <div class="comb"><div class="cap"></div>
+                    <ul class="cells">
+                        <li class="hx is-loading"><span class="face"><i></i><b></b><s></s></span></li>
+                        <li class="hx is-loading"><span class="face"><i></i><b></b><s></s></span></li>
+                        <li class="hx is-loading"><span class="face"><i></i><b></b><s></s></span></li>
+                        <li class="hx is-loading"><span class="face"><i></i><b></b><s></s></span></li>
+                        <li class="hx is-loading"><span class="face"><i></i><b></b><s></s></span></li>
+                        <li class="hx is-loading"><span class="face"><i></i><b></b><s></s></span></li>
+                        <li class="hx is-loading"><span class="face"><i></i><b></b><s></s></span></li>
+                        <li class="hx is-loading"><span class="face"><i></i><b></b><s></s></span></li>
+                        <li class="hx is-loading"><span class="face"><i></i><b></b><s></s></span></li>
+                        <li class="hx is-loading"><span class="face"><i></i><b></b><s></s></span></li>
+                        <li class="hx is-loading"><span class="face"><i></i><b></b><s></s></span></li>
+                        <li class="hx is-loading"><span class="face"><i></i><b></b><s></s></span></li>
+                        <li class="hx is-loading"><span class="face"><i></i><b></b><s></s></span></li>
+                    </ul>
                 </div>
             </div>
         </main>

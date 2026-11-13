@@ -30,3 +30,29 @@ export function createTypeChip(kind, detail = "") {
   chip.textContent = `${type?.emoji || ""} ${type?.label || ""}${detail ? ` · ${detail}` : ""}`.trim();
   return chip;
 }
+
+/**
+ * Cards v2 (cards-v2.css): every item card carries a `.shape` span — the
+ * silhouette layer (manila folder / ticket / dog-eared page / spiral notebook)
+ * that the CSS paints behind the content — and a `data-card-kind` the CSS keys
+ * on. Notebook cards also get the "In [ ]:" gutter. Call once, right before the
+ * builder returns the card. kind: "folder" | "quiz" | "lesson" | "notebook".
+ */
+export function addCardShape(card, kind) {
+  if (!card || !kind) return card;
+  card.dataset.cardKind = kind;
+  if (card.querySelector(":scope > .shape")) return card;
+  const shape = document.createElement("span");
+  shape.className = "shape";
+  shape.setAttribute("aria-hidden", "true");
+  card.prepend(shape);
+  if (kind === "notebook") {
+    const gut = document.createElement("div");
+    gut.className = "gut";
+    gut.setAttribute("dir", "ltr");
+    gut.setAttribute("aria-hidden", "true");
+    gut.innerHTML = '<span>In [ ]:</span><span class="kdot"></span>';
+    shape.after(gut);
+  }
+  return card;
+}

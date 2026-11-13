@@ -6,12 +6,14 @@ import { isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { renderUserQuizzesView, updateBulkActionBar } from "./user-quizzes-view.js";
 import { getSelectedUserQuizzes } from "./app-state.js";
 import { toSlug } from "./slug-utils.js";
+import { addCardShape } from "./card-type.js";
 import { buildUserQuizEntry, qz } from "./quiz-schema.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { MORE_DOTS_ICON_SVG } from "./icons.js";
 import { openMoveToDialogWithSource } from "./move-to-dialog.js";
 import { getTrashItemCount } from "./user-quizzes-trash.js";
 import { closeAllItemDropdownMenus } from "./item-dropdown-menu.js";
+import { createUserCourseCard } from "./user-course-card.js";
 
 // Current navigation state
 export let currentFolderId = null;
@@ -1705,6 +1707,12 @@ export function selectItem(itemId) {
 export { getFolderContentsCount, formatFolderAndQuizCount } from "./folder-counts.js";
 
 export function createFolderOrCourseCard(item) {
+  if (item.meta?.type === "course") {
+    return createUserCourseCard(item, {
+      showContextMenu, navigateToFolder, handleDragOver, handleDragLeave, handleDrop,
+      getSelectedUserQuizzes, updateBulkActionBar, readUserQuizzes, getChildren,
+    });
+  }
   const card = document.createElement("div");
   card.className = "category-card user-quiz-card";
   card.style.cursor = "pointer";
@@ -1825,5 +1833,6 @@ export function createFolderOrCourseCard(item) {
     showContextMenu(e, item.meta?.type || "folder", itemId, item.meta?.title);
   };
 
+  if (!isCourse) addCardShape(card, "folder");
   return card;
 }
