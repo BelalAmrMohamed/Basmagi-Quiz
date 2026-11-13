@@ -97,12 +97,12 @@ export function setCapMessage(cap, { icon = "ℹ️", title, text = "", linkHref
   const tx = document.createElement("div");
   tx.className = "cap-tx";
   const strong = document.createElement("strong");
-  strong.dir = "auto";
+  strong.dir = "rtl";
   strong.textContent = title;
   tx.appendChild(strong);
   if (text) {
     const span = document.createElement("span");
-    span.dir = "auto";
+    span.dir = "rtl";
     span.textContent = text;
     tx.appendChild(span);
   }

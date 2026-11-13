@@ -765,17 +765,16 @@ body.sidebar-expanded {
 /* Premium Header */
 .header {
   border-radius: 24px;
-  box-shadow:
-    var(--shadow-xl),
+  box-shadow: 
+    var(--shadow-xl), 
     0 0 0 1px rgba(99, 102, 241, 0.06);
-  padding: 40px 48px 36px;
+  padding: 40px 48px 16px;
   margin-bottom: 28px;
   border: 1px solid var(--color-border-light);
   text-align: center;
   position: relative;
   overflow: visible;
   background: var(--color-surface);
-  padding-bottom: 16px;
   transition: padding-bottom 0.2s ease;
 }
 

@@ -13,23 +13,6 @@
    nav jitter on phones; `clip` stops horizontal overflow without that. */
 html, body { overflow-x: clip; }
 
-/* ───────────────────────────── 1. HEADER NOTCH ─────────────────────────────
-   The classic boxed header; its bottom edge is a row of hex-bottom teeth
-   (<svg class="header-notch"> in index.html) so the cap and first row of
-   cells read as one piece with it. */
-#mainContainer .header {
-  border-radius: 24px 24px 0 0;
-  border-bottom-width: 0;
-  margin-bottom: 24px;
-}
-.header-notch {
-  position: absolute; inset-inline: -1px; bottom: -19px;
-  width: calc(100% + 2px); height: 20px; display: block; pointer-events: none;
-  fill: var(--color-surface); stroke: var(--color-border-light);
-}
-.header-notch polyline { fill: none; stroke-width: 1; vector-effect: non-scaling-stroke; }
-.header-notch polygon { stroke: none; }
-
 /* ───────────────────────────── 2. HONEYCOMB ────────────────────────────────
    .hive-root is the size container: cell size and 5/3 columns derive from its
    width. Grid rows: 1 = cap (message slot), 2+ = honeycomb (auto-placed).
@@ -128,6 +111,9 @@ html[dir="rtl"] .hive-root .hx > .exam-more-btn { translate: 50% 0; }
   position: absolute; z-index: 2; inset-inline: 17%; bottom: 20%;
   display: flex; justify-content: center; margin: 0; padding: 0; width: auto; border: 0;
 }
+/* search results: keep two-line titles clear of the button */
+.hive-root .hx:has(> .subscribe-btn-container) .face { padding-bottom: 26%; }
+.hive-root .hx:has(> .subscribe-btn-container) .face b { -webkit-line-clamp: 2; }
 .hive-root .hx > .subscribe-btn-container .subscribe-btn { width: 100%; font-size: .78rem; padding: .3em .6em; border-radius: 99px; }
 
 /* search results: the subscribe button owns the bottom, so ⋮ moves to the upper corner */
