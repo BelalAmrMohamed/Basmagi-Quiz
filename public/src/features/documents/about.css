@@ -15,7 +15,8 @@
   font-family: "IBM Plex Sans Arabic", sans-serif;
 }
 
-html[data-theme="dark"] .about-page {
+html[data-theme="dark"] .about-page,
+html[data-theme="dark-slate"] .about-page {
   --about-ink: var(--color-text-primary);
   --about-muted: var(--color-text-secondary);
   --about-paper: var(--color-background);

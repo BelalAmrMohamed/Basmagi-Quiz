@@ -83,7 +83,8 @@
    This closes a real first-paint flash: pages using flow-field.js (a
    deferred `type="module"` script that only paints its own themed
    background after the DOM is parsed) previously had NO background at all
-   until that script ran. In that gap, `color-scheme: dark` (set below, and already active by then since
+   until that script ran. In that gap, `color-scheme: dark` /
+   `color-scheme: dark-slate` (set below, and already active by then since
    the early inline theme script sets data-theme before this stylesheet is
    even requested) makes the browser fall back to its own default dark
    canvas color — a black flash — instead of the page's real background.
@@ -212,7 +213,7 @@ html[data-theme="light"] {
   --scrollbar-track: transparent;
 }
 
-/* ==================== DARK MODE ==================== */
+/* ==================== DARK MODE (TRUE BLACK) ==================== */
 html[data-theme="dark"] {
   color-scheme: dark;
 
@@ -321,6 +322,115 @@ html[data-theme="dark"] {
   --scrollbar-track: transparent;
 }
 
+/* ==================== DARK SLATE THEME ==================== */
+html[data-theme="dark-slate"] {
+  color-scheme: dark;
+
+  --quiz-card-bg: rgba(30, 41, 59, 0.3);
+  --quiz-card-border: #1e293b;
+  --quiz-input-bg: #203040;
+
+  --bottom-nav-color: #1e293b;
+  --sidebar-color: var(--color-surface);
+
+  /* Backgrounds */
+  --color-background: #0f172a;
+  --color-background-light: #1e293b;
+  --color-background-secondary: #253247;
+  --color-surface: #1e293b;
+
+  /* Borders */
+  --color-border: #334155;
+  --color-border-light: #475569;
+
+  /* Text */
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary: #8693a8;
+  /* was #64748b (3.1:1 on surface, fails AA); lightened in place to clear 4.5:1 with margin */
+
+  /* Primary Colors */
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-primary-light: rgba(99, 102, 241, 0.15);
+  --color-primary-dark: #312e81;
+  --color-accent: #818cf8;
+  --color-primary-text: #8083f4;
+  /* text/icon-safe variant; #6366f1 is only 3.3:1 on surface, fails AA for text use */
+
+  /* Semantic Colors */
+  --color-success: #10b981;
+  --color-success-hover: #059669;
+  --color-success-light: rgba(16, 185, 129, 0.2);
+
+  --color-warning: #f59e0b;
+  --color-warning-hover: #d97706;
+  --color-warning-light: rgba(245, 158, 11, 0.2);
+
+  --color-error: #ef4444;
+  --color-error-hover: #dc2626;
+  --color-error-light: rgba(239, 68, 68, 0.2);
+
+  /* Admin Colors (Golden Theme) */
+  --color-admin: #eab308;
+  --color-admin-hover: #ca8a04;
+  --color-admin-light: rgba(234, 179, 8, 0.2);
+
+  --color-user-name-animation: rgba(255, 105, 180, 1);
+
+  /* Gradients */
+  /* Same treatment: single-family indigo->soft violet sweep in oklch,
+     anchored on this theme's own primary (#6366f1), replacing the old
+     indigo->violet->pink 3-hue-family sweep. */
+  --gradient-accent: linear-gradient(118deg,
+      oklch(58.5% 0.204 277deg) 0%,
+      oklch(63% 0.185 286deg) 58%,
+      oklch(68% 0.155 295deg) 100%);
+  --gradient-success: linear-gradient(135deg,
+      var(--color-success) 0%,
+      var(--color-success-hover) 100%);
+  --gradient-secondary: linear-gradient(135deg, #475569 0%, #334155 100%);
+  --gradient-loading-skeleton: linear-gradient(90deg,
+      #293548 0%,
+      #293548 20%,
+      #35435c 40%,
+      #3f4f6b 50%,
+      #35435c 60%,
+      #293548 80%,
+      #293548 100%);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.4);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --glass-bg-light: rgba(30, 41, 59, 0.8);
+
+  /* Interactive state tokens */
+  --color-focus-ring: rgba(99, 102, 241, 0.55);
+  --color-hover-overlay: rgba(99, 102, 241, 0.09);
+  --color-selected-bg: rgba(99, 102, 241, 0.18);
+
+  /* Animation Colors */
+  --anim-particle-1: rgba(99, 102, 241, 0.4);
+  --anim-particle-2: rgba(139, 92, 246, 0.4);
+  --anim-particle-3: rgba(236, 72, 153, 0.4);
+  --anim-orb: rgba(99, 102, 241, 0.15);
+
+  --scrollbar-thumb: #c0e040;
+  --scrollbar-thumb-hover: #d5f754;
+  --scrollbar-track: #0f172a;
+}
+
 /* Make surfaces slightly transparent when the background animation is active
    so the Lightfall shader subtly shows through cards/panels.
    Both data-animations and data-theme live on the <html> element,
@@ -330,6 +440,9 @@ html[data-animations="enabled"]:not([data-theme]) {
   --color-surface: rgba(255, 255, 255, 0.7);
 }
 
+html[data-animations="enabled"][data-theme="dark-slate"] {
+  --color-surface: rgba(30, 41, 59, 0.7);
+}
 
 html[data-animations="enabled"][data-theme="dark"] {
   --color-surface: rgba(30, 30, 30, 0.7);

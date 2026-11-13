@@ -7,13 +7,13 @@ const HIGH_PERFORMANCE_KEY = "quiz_high_performance_pref";
 export const themeManager = {
   themes: {
     light: { name: "Light", icon: "☀️", label: "Light Mode" },
+    "dark-slate": { name: "Dark Slate", icon: "🌙", label: "Dark Slate" },
     dark: { name: "Dark", icon: "🌑", label: "Dark Mode" },
   },
 
   init() {
     // Load saved preferences or use defaults
-    let savedTheme = localStorage.getItem(THEME_KEY) || "light";
-    if (!this.themes[savedTheme]) savedTheme = "dark";
+    const savedTheme = localStorage.getItem(THEME_KEY) || "light";
     const reducedMotionPref = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -183,6 +183,7 @@ export const themeManager = {
       const currentTheme = this.getCurrentTheme();
       const themeBackgrounds = {
         light: "#fafbfc",
+        "dark-slate": "#0f172a",
         dark: "#0a0a0a",
       };
 

@@ -12,6 +12,7 @@
 
   const THEMES = {
     dark: { hueStart: 220, hueRange: 120, saturation: 90, lightness: 62, bg: "10, 10, 10", trailAlpha: 0.06 },
+    "dark-slate": { hueStart: 220, hueRange: 120, saturation: 90, lightness: 62, bg: "15, 23, 42", trailAlpha: 0.06 },
     light: { hueStart: 190, hueRange: 150, saturation: 82, lightness: 58, bg: "250, 251, 252", trailAlpha: 0.08 },
   };
 

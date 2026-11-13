@@ -734,33 +734,40 @@ html[data-motion="reduced"] .btn-reset-filters {
    DARK THEME ADJUSTMENTS
    =========================== */
 
-[data-theme="dark"] .search-bar {
+[data-theme="dark"] .search-bar,
+[data-theme="dark-slate"] .search-bar {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .search-filters {
+[data-theme="dark"] .search-filters,
+[data-theme="dark-slate"] .search-filters {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .filter-chip {
+[data-theme="dark"] .filter-chip,
+[data-theme="dark-slate"] .filter-chip {
   background: var(--color-background);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .filter-select {
+[data-theme="dark"] .filter-select,
+[data-theme="dark-slate"] .filter-select {
   background: var(--color-background);
 }
 
-[data-theme="dark"] .btn-reset-filters {
+[data-theme="dark"] .btn-reset-filters,
+[data-theme="dark-slate"] .btn-reset-filters {
   background: var(--color-surface);
 }
 
-[data-theme="dark"] .filter-tag {
+[data-theme="dark"] .filter-tag,
+[data-theme="dark-slate"] .filter-tag {
   background: var(--color-background);
 }
 
-[data-theme="dark"] .search-close {
+[data-theme="dark"] .search-close,
+[data-theme="dark-slate"] .search-close {
   border-color: var(--color-border);
 }

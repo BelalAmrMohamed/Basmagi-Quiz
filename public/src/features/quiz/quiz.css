@@ -577,6 +577,11 @@ body.sidebar-expanded {
   color: var(--color-primary);
 }
 
+[data-theme="dark-slate"] .menu-item.active {
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+}
+
 [data-theme="dark"] .menu-item.active {
   background: rgba(59, 130, 246, 0.2);
   color: #60a5fa;
@@ -1138,6 +1143,32 @@ body.sidebar-expanded {
   background: #e5e7eb;
 }
 
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview {
+  background: #0f172a;
+}
+
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-header::before {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-header::after {
+  background: #818cf8;
+}
+
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row::before {
+  background: #818cf8;
+}
+
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row::after {
+  background: #334155;
+}
+
 .theme-selector-btn[data-theme="dark"] .theme-btn-preview {
   background: #0a0a0a;
 }
@@ -1609,7 +1640,7 @@ html[data-motion="reduced"] {
   color: var(--color-success);
 }
 
-
+[data-theme="dark-slate"] .menu-nav-item.correct,
 [data-theme="dark"] .menu-nav-item.correct {
   color: #6ee7b7;
 }
@@ -1620,7 +1651,7 @@ html[data-motion="reduced"] {
   color: var(--color-error);
 }
 
-
+[data-theme="dark-slate"] .menu-nav-item.wrong,
 [data-theme="dark"] .menu-nav-item.wrong {
   color: #f87171;
 }
@@ -1813,6 +1844,10 @@ html[data-motion="reduced"] {
   text-shadow: 0 0 8px rgba(93, 202, 165, 0.35);
 }
 
+[data-theme="dark-slate"] .header h1 {
+  color: #85b7eb;
+}
+
 .breadcrumb {
   font-size: 0.85rem;
   color: var(--color-text-secondary, #6b7280);
@@ -1849,7 +1884,7 @@ html[data-motion="reduced"] {
     border-color 0.3s ease;
 }
 
-
+[data-theme="dark-slate"] .timer-badge,
 [data-theme="dark"] .timer-badge {
   background: var(--color-background-secondary);
   border: 1px solid var(--color-border);
@@ -2418,7 +2453,9 @@ dialog.quiz-password-dialog {
 
 /* Native Theme Controls Adaptation */
 [data-theme="dark"] .question-audio,
-[data-theme="dark"] .question-video {
+[data-theme="dark-slate"] .question-audio,
+[data-theme="dark"] .question-video,
+[data-theme="dark-slate"] .question-video {
   color-scheme: dark;
 }
 
@@ -2709,7 +2746,7 @@ body.is-resizing-media .media-container.resizable-media {
   overflow: hidden;
 }
 
-
+[data-theme="dark-slate"] .essay-textarea,
 [data-theme="dark"] .essay-textarea {
   background: var(--color-background-secondary);
 }
@@ -2721,7 +2758,7 @@ body.is-resizing-media .media-container.resizable-media {
   border-color: var(--color-primary);
 }
 
-
+[data-theme="dark-slate"] .essay-textarea:focus,
 [data-theme="dark"] .essay-textarea:focus {
   background: var(--color-surface);
 }
@@ -2750,14 +2787,15 @@ body.is-resizing-media .media-container.resizable-media {
   display: block;
 }
 
-
+[data-theme="dark-slate"] .formal-answer,
 [data-theme="dark"] .formal-answer {
   background: linear-gradient(135deg,
       rgba(14, 165, 233, 0.2) 0%,
       rgba(14, 165, 233, 0.1) 100%);
 }
 
-
+[data-theme="dark-slate"] .formal-answer strong,
+[data-theme="dark-slate"] .formal-answer-text,
 [data-theme="dark"] .formal-answer strong,
 [data-theme="dark"] .formal-answer-text {
   color: #7dd3fc;
@@ -2922,12 +2960,12 @@ body.is-resizing-media .media-container.resizable-media {
   border-left-color: var(--color-error);
 }
 
-
+[data-theme="dark-slate"] .feedback.correct,
 [data-theme="dark"] .feedback.correct {
   color: #6ee7b7;
 }
 
-
+[data-theme="dark-slate"] .feedback.wrong,
 [data-theme="dark"] .feedback.wrong {
   color: #f87171;
 }
@@ -3016,13 +3054,15 @@ body.is-resizing-media .media-container.resizable-media {
   background: var(--color-text-secondary);
 }
 
-
+[data-theme="dark-slate"] .nav-btn#prevBtn,
+[data-theme="dark-slate"] .nav-btn#nextBtn,
 [data-theme="dark"] .nav-btn#prevBtn,
 [data-theme="dark"] .nav-btn#nextBtn {
   background: var(--color-primary);
 }
 
-
+[data-theme="dark-slate"] .nav-btn#prevBtn:hover:not(:disabled),
+[data-theme="dark-slate"] .nav-btn#nextBtn:hover:not(:disabled),
 [data-theme="dark"] .nav-btn#prevBtn:hover:not(:disabled),
 [data-theme="dark"] .nav-btn#nextBtn:hover:not(:disabled) {
   background: var(--color-primary-hover);

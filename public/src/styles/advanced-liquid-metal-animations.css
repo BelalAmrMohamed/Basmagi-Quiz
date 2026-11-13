@@ -64,7 +64,8 @@
 /* ==========================================================
    LIGHT MODE OVERRIDES (HIGH LEGIBILITY)
    ========================================================== */
-html[data-theme="light"] .advanced-liquid-metal-animations {
+html[data-theme="light"] .advanced-liquid-metal-animations,
+:root:not([data-theme="dark"]):not([data-theme="dark-slate"]) .advanced-liquid-metal-animations {
     background:
         linear-gradient(
             115deg,
@@ -83,7 +84,8 @@ html[data-theme="light"] .advanced-liquid-metal-animations {
     background-clip: text;
 }
 
-html[data-theme="light"] .advanced-liquid-metal-animations:hover {
+html[data-theme="light"] .advanced-liquid-metal-animations:hover,
+:root:not([data-theme="dark"]):not([data-theme="dark-slate"]) .advanced-liquid-metal-animations:hover {
     filter:
         drop-shadow(0 0 10px rgba(99, 102, 241, 0.2))
         drop-shadow(0 0 25px rgba(99, 102, 241, 0.1));

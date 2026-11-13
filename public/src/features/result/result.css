@@ -343,7 +343,7 @@ body.sidebar-expanded {
   height: 16px;
 }
 
-
+[data-theme="dark-slate"] .new-badges-section,
 [data-theme="dark"] .new-badges-section {
   background: rgba(99, 102, 241, 0.1);
   border-color: var(--color-border);
@@ -402,7 +402,7 @@ body.sidebar-expanded {
   background: var(--color-surface);
 }
 
-
+[data-theme="dark-slate"] .badge-item,
 [data-theme="dark"] .badge-item {
   background: var(--color-background-secondary);
 }
@@ -532,7 +532,7 @@ body.sidebar-expanded {
   background: linear-gradient(to right, #dbeafe 0%, var(--color-surface) 30%);
 }
 
-
+[data-theme="dark-slate"] .review-card.essay-card,
 [data-theme="dark"] .review-card.essay-card {
   background: linear-gradient(to right,
       rgba(59, 130, 246, 0.15) 0%,
@@ -758,7 +758,7 @@ body.sidebar-expanded {
   background: var(--color-background-secondary);
 }
 
-
+[data-theme="dark-slate"] .essay-answer-box.user-essay,
 [data-theme="dark"] .essay-answer-box.user-essay {
   background: rgba(59, 130, 246, 0.15);
 }
@@ -790,7 +790,7 @@ body.sidebar-expanded {
       var(--color-background-secondary) 100%);
 }
 
-
+[data-theme="dark-slate"] .essay-answer-box.formal-essay,
 [data-theme="dark"] .essay-answer-box.formal-essay {
   background: rgba(16, 185, 129, 0.15);
 }
@@ -807,13 +807,13 @@ body.sidebar-expanded {
   color: #1e40af;
 }
 
-
+[data-theme="dark-slate"] .explanation,
 [data-theme="dark"] .explanation {
   background: rgba(59, 130, 246, 0.2);
   color: #93c5fd;
 }
 
-
+[data-theme="dark-slate"] .explanation strong,
 [data-theme="dark"] .explanation strong {
   color: #bfdbfe;
 }
@@ -1744,6 +1744,11 @@ html[data-motion="reduced"] {
 /* ---- Dark theme override ---- */
 [data-theme="dark"] .quiz-info-dialog-header h2 {
   color: #5dcaa5;
+}
+
+/* ---- Dark-slate theme override ---- */
+[data-theme="dark-slate"] .quiz-info-dialog-header h2 {
+  color: #85b7eb;
 }
 
 .quiz-info-dialog-close {

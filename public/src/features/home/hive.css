@@ -125,10 +125,16 @@ html[dir="rtl"] .hive-root .hx > .exam-more-btn { translate: 50% 0; }
   color: #fff; background: var(--hv-accent-2);
 }
 .hive-root .hx > .subscribe-btn-container {
-  position: absolute; z-index: 2; inset-inline: 28%; bottom: 7%;
-  display: flex; justify-content: center; margin: 0; padding: 0; width: auto;
+  position: absolute; z-index: 2; inset-inline: 17%; bottom: 20%;
+  display: flex; justify-content: center; margin: 0; padding: 0; width: auto; border: 0;
 }
 .hive-root .hx > .subscribe-btn-container .subscribe-btn { width: 100%; font-size: .78rem; padding: .3em .6em; border-radius: 99px; }
+
+/* search results: the subscribe button owns the bottom, so ⋮ moves to the upper corner */
+.hive-root .hx:has(> .subscribe-btn-container) > .exam-more-btn {
+  bottom: auto; top: 19%; inset-inline-start: 17%; translate: 0 0;
+}
+html[dir="rtl"] .hive-root .hx:has(> .subscribe-btn-container) > .exam-more-btn { translate: 0 0; }
 
 /* half-cell gap fillers */
 .hive-root .hx::before, .hive-root .hx::after {
@@ -170,6 +176,7 @@ html[dir="rtl"] .hive-root .hx > .exam-more-btn { translate: 50% 0; }
   .hive-root .hx:nth-child(5n+5 of :not([hidden]))::after { content: ""; }
   .hive-root .hx > .exam-more-btn { bottom: 7%; width: 24px; height: 24px; }
   .hive-root .hx-new { top: 15%; }
+  .hive-root .hx:has(> .subscribe-btn-container) > .exam-more-btn { top: 15%; }
 }
 
 /* loading skeleton */

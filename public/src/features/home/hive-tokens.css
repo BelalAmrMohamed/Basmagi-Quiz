@@ -38,3 +38,15 @@ html[data-theme="dark"] {
   --hv-sheen: linear-gradient(150deg, #ededed, #8a8a8a);
   --hv-folder: #f5b942;
 }
+html[data-theme="dark-slate"] {
+  --hv-cell: var(--color-surface);
+  --hv-base: var(--color-surface);
+  --hv-panel: var(--color-surface);
+  --hv-cell-hi: color-mix(in srgb, #fff 8%, var(--color-surface));
+  --hv-cell-lo: color-mix(in srgb, #000 25%, var(--color-surface));
+  --hv-cell-sel: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
+  --hv-edge: var(--color-border-light);
+  --hv-fill: color-mix(in srgb, #000 20%, var(--color-background));
+  --hv-sheen: linear-gradient(150deg, #eceefb, #8d8fa6);
+  --hv-folder: #f5b942;
+}

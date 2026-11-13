@@ -114,7 +114,7 @@ html[data-theme="dark"] {
 }
 
 .item-card h3 {
-  margin: 0; max-width: 100%; color: var(--hv-ink);
+  margin: 0; width: 100%; max-width: 100%; text-align: start; unicode-bidi: plaintext; color: var(--hv-ink);
   font-size: 1rem; font-weight: 700; line-height: 1.35;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -122,7 +122,7 @@ html[data-theme="dark"] {
 .item-card[data-card-kind="notebook"] h3 { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .95rem; }
 
 .ic-desc {
-  margin: 0; max-width: 100%; color: var(--hv-mute);
+  margin: 0; width: 100%; max-width: 100%; text-align: start; unicode-bidi: plaintext; color: var(--hv-mute);
   font-size: .84rem; line-height: 1.4;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -142,9 +142,13 @@ html[data-theme="dark"] {
 /* ---------- actions ---------- */
 .ic-actions { display: flex; gap: .5rem; margin-top: auto; padding-top: .1rem; }
 .item-card[data-card-kind="quiz"] .ic-actions {
-  margin-inline: calc(-1 * var(--pad));
-  padding: .55rem var(--pad) .55rem;
+  margin-inline: 0;
+  padding: .55rem 0;
   height: var(--acts-h); box-sizing: border-box;
+  position: relative;
+}
+.item-card[data-card-kind="quiz"] .ic-actions::before {
+  content: ""; position: absolute; inset-inline: 24px; top: 0;
   border-top: 2px dashed var(--hv-edge);
 }
 

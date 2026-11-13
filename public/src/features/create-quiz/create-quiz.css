@@ -2039,6 +2039,10 @@ body.reorder-mode-active .question-card {
   opacity: 0.4;
 }
 
+[data-theme="dark-slate"] .empty-icon {
+  opacity: 0.3;
+}
+
 [data-theme="dark"] .empty-icon {
   opacity: 0.25;
 }
@@ -3464,11 +3468,13 @@ body.reorder-mode-active .question-card {
          DARK MODE ADJUSTMENTS
          ============================================================================ */
 
-[data-theme="dark"] .question-card {
+[data-theme="dark"] .question-card,
+[data-theme="dark-slate"] .question-card {
   background: var(--color-surface);
 }
 
-[data-theme="dark"] .option-item {
+[data-theme="dark"] .option-item,
+[data-theme="dark-slate"] .option-item {
   background: var(--color-surface);
 }
 
@@ -3893,11 +3899,12 @@ body.reorder-mode-active .question-card {
 }
 
 /* ============================================================================
-         DARK THEME OVERRIDES
+         DARK / DARK-SLATE THEME OVERRIDES
          ============================================================================ */
 
 /* Backgrounds */
-[data-theme="dark"] body {
+[data-theme="dark"] body,
+[data-theme="dark-slate"] body {
   /* Keep body transparent so the fixed flow-field canvas can remain visible
      behind editor surfaces. The document canvas background is provided by
      themes.css on html. */
@@ -3905,19 +3912,25 @@ body.reorder-mode-active .question-card {
   color: var(--color-text-primary);
 }
 
-[data-theme="dark"] .question-card {
+[data-theme="dark"] .question-card,
+[data-theme="dark-slate"] .question-card {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .question-header {
+[data-theme="dark"] .question-header,
+[data-theme="dark-slate"] .question-header {
   border-color: var(--color-border);
 }
 
 [data-theme="dark"] .card,
+[data-theme="dark-slate"] .card,
 [data-theme="dark"] .action-bar,
+[data-theme="dark-slate"] .action-bar,
 [data-theme="dark"] .stats-card,
-[data-theme="dark"] .questions-section {
+[data-theme="dark-slate"] .stats-card,
+[data-theme="dark"] .questions-section,
+[data-theme="dark-slate"] .questions-section {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
@@ -3925,100 +3938,121 @@ body.reorder-mode-active .question-card {
 /* Inputs */
 [data-theme="dark"] .form-group input,
 [data-theme="dark"] .form-group textarea,
-[data-theme="dark"] .search-box input {
+[data-theme="dark"] .search-box input,
+[data-theme="dark-slate"] .form-group input,
+[data-theme="dark-slate"] .form-group textarea,
+[data-theme="dark-slate"] .search-box input {
   background: var(--color-background);
   color: var(--color-text-primary);
   border-color: var(--color-border);
 }
 
 /* Write/Preview field */
-[data-theme="dark"] .wp-field {
+[data-theme="dark"] .wp-field,
+[data-theme="dark-slate"] .wp-field {
   background: var(--color-background);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .wp-field:focus-within {
+[data-theme="dark"] .wp-field:focus-within,
+[data-theme="dark-slate"] .wp-field:focus-within {
   border-color: var(--color-primary);
 }
 
-[data-theme="dark"] .wp-bar {
+[data-theme="dark"] .wp-bar,
+[data-theme="dark-slate"] .wp-bar {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .wp-textarea {
+[data-theme="dark"] .wp-textarea,
+[data-theme="dark-slate"] .wp-textarea {
   background: var(--color-background);
   color: var(--color-text-primary);
 }
 
-[data-theme="dark"] .wp-preview-pane {
+[data-theme="dark"] .wp-preview-pane,
+[data-theme="dark-slate"] .wp-preview-pane {
   background: var(--color-background);
   color: var(--color-text-primary);
 }
 
 [data-theme="dark"] .wp-preview-pane .inline-code,
-[data-theme="dark"] .option-md-wrap .inline-code {
+[data-theme="dark-slate"] .wp-preview-pane .inline-code,
+[data-theme="dark"] .option-md-wrap .inline-code,
+[data-theme="dark-slate"] .option-md-wrap .inline-code {
   background: rgba(203, 166, 247, 0.15);
   color: #cba6f7;
 }
 
 /* Options */
-[data-theme="dark"] .option-item {
+[data-theme="dark"] .option-item,
+[data-theme="dark-slate"] .option-item {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .option-item.correct {
+[data-theme="dark"] .option-item.correct,
+[data-theme="dark-slate"] .option-item.correct {
   background: var(--color-success-light);
 }
 
 /* Templates */
-[data-theme="dark"] .templates-panel {
+[data-theme="dark"] .templates-panel,
+[data-theme="dark-slate"] .templates-panel {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .template-card {
+[data-theme="dark"] .template-card,
+[data-theme="dark-slate"] .template-card {
   background: var(--color-background);
   border-color: var(--color-border);
   color: var(--color-text-primary);
 }
 
-[data-theme="dark"] .template-card:hover {
+[data-theme="dark"] .template-card:hover,
+[data-theme="dark-slate"] .template-card:hover {
   border-color: var(--color-primary);
   background: var(--color-primary-light);
 }
 
 /* Buttons */
-[data-theme="dark"] .btn-secondary {
+[data-theme="dark"] .btn-secondary,
+[data-theme="dark-slate"] .btn-secondary {
   background: var(--color-surface);
   color: var(--color-text-primary);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .btn-action {
+[data-theme="dark"] .btn-action,
+[data-theme="dark-slate"] .btn-action {
   background: var(--color-surface);
   color: var(--color-text-primary);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .btn-bulk {
+[data-theme="dark"] .btn-bulk,
+[data-theme="dark-slate"] .btn-bulk {
   background: var(--color-surface);
 }
 
 /* Stat items */
-[data-theme="dark"] .stat-item {
+[data-theme="dark"] .stat-item,
+[data-theme="dark-slate"] .stat-item {
   background: var(--color-background);
   border-color: var(--color-border);
 }
 
 /* Shortcuts */
-[data-theme="dark"] .shortcut-item {
+[data-theme="dark"] .shortcut-item,
+[data-theme="dark-slate"] .shortcut-item {
   background: var(--color-background);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .shortcut-item kbd {
+[data-theme="dark"] .shortcut-item kbd,
+[data-theme="dark-slate"] .shortcut-item kbd {
   background: var(--color-surface);
   border-color: var(--color-border);
   color: var(--color-text-primary);
@@ -4026,104 +4060,122 @@ body.reorder-mode-active .question-card {
 }
 
 /* Modals */
-[data-theme="dark"] .modal-card {
+[data-theme="dark"] .modal-card,
+[data-theme="dark-slate"] .modal-card {
   background: var(--color-surface);
   border-color: var(--color-border);
   color: var(--color-text-primary);
 }
 
-[data-theme="dark"] .modal-header {
+[data-theme="dark"] .modal-header,
+[data-theme="dark-slate"] .modal-header {
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .modal-body p {
+[data-theme="dark"] .modal-body p,
+[data-theme="dark-slate"] .modal-body p {
   color: var(--color-text-primary);
 }
 
-[data-theme="dark"] #importTextarea {
+[data-theme="dark"] #importTextarea,
+[data-theme="dark-slate"] #importTextarea {
   background: var(--color-background);
   color: var(--color-text-primary);
   border-color: var(--color-border);
 }
 
 /* Download popup */
-[data-theme="dark"] .dl-option-btn {
+[data-theme="dark"] .dl-option-btn,
+[data-theme="dark-slate"] .dl-option-btn {
   background: var(--color-background);
   border-color: var(--color-border);
   color: var(--color-text-primary);
 }
 
-[data-theme="dark"] .dl-option-btn:hover {
+[data-theme="dark"] .dl-option-btn:hover,
+[data-theme="dark-slate"] .dl-option-btn:hover {
   background: var(--color-primary-light);
   border-color: var(--color-primary);
 }
 
-[data-theme="dark"] .dl-sublabel {
+[data-theme="dark"] .dl-sublabel,
+[data-theme="dark-slate"] .dl-sublabel {
   color: var(--color-text-tertiary);
 }
 
 /* Import dropzone */
-[data-theme="dark"] .import-dropzone {
+[data-theme="dark"] .import-dropzone,
+[data-theme="dark-slate"] .import-dropzone {
   background: var(--color-background);
   border-color: var(--color-border);
 }
 
 /* Preview */
-[data-theme="dark"] .preview-question {
+[data-theme="dark"] .preview-question,
+[data-theme="dark-slate"] .preview-question {
   background: var(--color-background);
   border-left-color: var(--color-primary);
 }
 
-[data-theme="dark"] .preview-options li {
+[data-theme="dark"] .preview-options li,
+[data-theme="dark-slate"] .preview-options li {
   background: var(--color-surface);
   border-color: var(--color-border);
   color: var(--color-text-primary);
 }
 
-[data-theme="dark"] .preview-options li.correct {
+[data-theme="dark"] .preview-options li.correct,
+[data-theme="dark-slate"] .preview-options li.correct {
   background: var(--color-success-light);
   border-color: var(--color-success);
 }
 
-[data-theme="dark"] .preview-explanation {
+[data-theme="dark"] .preview-explanation,
+[data-theme="dark-slate"] .preview-explanation {
   background: var(--color-primary-light);
   color: var(--color-text-primary);
 }
 
 /* Bulk actions */
-[data-theme="dark"] .bulk-actions-bar {
+[data-theme="dark"] .bulk-actions-bar,
+[data-theme="dark-slate"] .bulk-actions-bar {
   background: var(--color-primary-light);
   border-color: var(--color-primary);
 }
 
 /* Add option btn */
-[data-theme="dark"] .add-option-btn {
+[data-theme="dark"] .add-option-btn,
+[data-theme="dark-slate"] .add-option-btn {
   background: var(--color-primary-light);
   color: var(--color-primary);
   border-color: var(--color-primary);
 }
 
 /* Shortcuts panel */
-[data-theme="dark"] .shortcuts-panel {
+[data-theme="dark"] .shortcuts-panel,
+[data-theme="dark-slate"] .shortcuts-panel {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
 
 /* Image loading/error */
-[data-theme="dark"] .image-loading {
+[data-theme="dark"] .image-loading,
+[data-theme="dark-slate"] .image-loading {
   background: var(--color-background);
   border-color: var(--color-border);
   color: var(--color-text-secondary);
 }
 
 /* Header */
-[data-theme="dark"] .header {
+[data-theme="dark"] .header,
+[data-theme="dark-slate"] .header {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
 
 /* Empty state hint */
-[data-theme="dark"] .empty-hint kbd {
+[data-theme="dark"] .empty-hint kbd,
+[data-theme="dark-slate"] .empty-hint kbd {
   background: var(--color-surface);
   border-color: var(--color-border);
   color: var(--color-text-primary);
@@ -4443,7 +4495,8 @@ html[data-animations="enabled"] .search-bar-fixed {
 }
 
 /* ── Dark theme: sticky section header background ───────────────────────────── */
-[data-theme="dark"] .section-header {
+[data-theme="dark"] .section-header,
+[data-theme="dark-slate"] .section-header {
   background: var(--color-surface);
 }
 
@@ -4658,40 +4711,47 @@ html[data-animations="enabled"] .search-bar-fixed {
 }
 
 /* ============================================================================
-         DARK — option-cards, form-control, private section
+         DARK / DARK-SLATE — option-cards, form-control, private section
          ============================================================================ */
 
-[data-theme="dark"] .option-card {
+[data-theme="dark"] .option-card,
+[data-theme="dark-slate"] .option-card {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .option-card:hover {
+[data-theme="dark"] .option-card:hover,
+[data-theme="dark-slate"] .option-card:hover {
   background: var(--color-primary-light);
   border-color: var(--color-primary);
 }
 
-[data-theme="dark"] .option-card.selected {
+[data-theme="dark"] .option-card.selected,
+[data-theme="dark-slate"] .option-card.selected {
   background: var(--color-primary-light);
   border-color: var(--color-primary);
 }
 
-[data-theme="dark"] .option-card-title {
+[data-theme="dark"] .option-card-title,
+[data-theme="dark-slate"] .option-card-title {
   color: var(--color-text-primary);
 }
 
-[data-theme="dark"] .option-card.selected .option-card-title {
+[data-theme="dark"] .option-card.selected .option-card-title,
+[data-theme="dark-slate"] .option-card.selected .option-card-title {
   color: var(--color-primary);
 }
 
-[data-theme="dark"] .form-control {
+[data-theme="dark"] .form-control,
+[data-theme="dark-slate"] .form-control {
   background-color: var(--color-background);
   border-color: var(--color-border);
   color: var(--color-text-primary);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
 
-[data-theme="dark"] #privateSettingsSection {
+[data-theme="dark"] #privateSettingsSection,
+[data-theme="dark-slate"] #privateSettingsSection {
   background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
   border-color: color-mix(in srgb,
       var(--color-primary) 35%,

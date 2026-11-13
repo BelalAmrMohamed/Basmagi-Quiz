@@ -341,6 +341,36 @@ body.sidebar-expanded {
   text-align: left;
 }
 
+.course-info-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.course-info-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+}
+
+.course-info-stat strong {
+  color: var(--color-primary);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.course-info-stat span {
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+}
+
+
 /* ============================================================================
    quiz-info-table-wrap / quiz-info-table — clean structured data table used
    inside the "معلومات المادة" modal (course-actions.js) to present
@@ -1050,7 +1080,8 @@ ANIMATIONS
   opacity: 0.85;
   position: relative;
   z-index: var(--z-base);
-}[data-theme="dark"] #Subjects-text {
+}[data-theme="dark"] #Subjects-text,
+[data-theme="dark-slate"] #Subjects-text {
   background: rgba(99, 102, 241, 0.12);
   box-shadow:
     0 4px 20px rgba(99, 102, 241, 0.2),
@@ -1291,11 +1322,14 @@ ANIMATIONS
   color: var(--color-primary);
 }
 
-/* ── Dark theme overrides ────────────────────────────────────────────────── */[data-theme="dark"] .title-breadcrumb-sep {
+/* ── Dark theme overrides ────────────────────────────────────────────────── */[data-theme="dark"] .title-breadcrumb-sep,
+[data-theme="dark-slate"] .title-breadcrumb-sep {
   color: rgba(255, 255, 255, 0.3);
-}[data-theme="dark"] .title-breadcrumb-ellipsis {
+}[data-theme="dark"] .title-breadcrumb-ellipsis,
+[data-theme="dark-slate"] .title-breadcrumb-ellipsis {
   background: rgba(255, 255, 255, 0.07);
-}[data-theme="dark"] .title-breadcrumb-dropdown {
+}[data-theme="dark"] .title-breadcrumb-dropdown,
+[data-theme="dark-slate"] .title-breadcrumb-dropdown {
   box-shadow:
     0 8px 32px -4px rgba(0, 0, 0, 0.5),
     0 2px 8px -2px rgba(0, 0, 0, 0.3);
@@ -2257,13 +2291,17 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   color: white;
 }
 
-/* Dark mode adjustments */[data-theme="dark"] .course-meta-badge {
+/* Dark mode adjustments */[data-theme="dark"] .course-meta-badge,
+[data-theme="dark-slate"] .course-meta-badge {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}[data-theme="dark"] .course-meta-badge.faculty {
+}[data-theme="dark"] .course-meta-badge.faculty,
+[data-theme="dark-slate"] .course-meta-badge.faculty {
   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-}[data-theme="dark"] .course-meta-badge.year {
+}[data-theme="dark"] .course-meta-badge.year,
+[data-theme="dark-slate"] .course-meta-badge.year {
   background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-}[data-theme="dark"] .course-meta-badge.term {
+}[data-theme="dark"] .course-meta-badge.term,
+[data-theme="dark-slate"] .course-meta-badge.term {
   background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
 }
 
@@ -3231,13 +3269,15 @@ kbd {
   }
 }
 
-/* Dark theme support, matching your data-theme attribute pattern */[data-theme="dark"] #errorBoundary {
+/* Dark theme support, matching your data-theme attribute pattern */[data-theme="dark"] #errorBoundary,
+[data-theme="dark-slate"] #errorBoundary {
   background: #2a1216;
   border-color: #7f1d1d;
   box-shadow:
     0 10px 25px -5px rgba(0, 0, 0, 0.5),
     0 8px 10px -6px rgba(0, 0, 0, 0.4);
-}[data-theme="dark"] #errorBoundary p {
+}[data-theme="dark"] #errorBoundary p,
+[data-theme="dark-slate"] #errorBoundary p {
   color: #fca5a5;
 }
 
@@ -3681,4 +3721,21 @@ kbd {
       0 0 30px 8px color-mix(in srgb, var(--mcp-glow) 85%, transparent),
       0 0 80px 22px color-mix(in srgb, var(--mcp-glow) 45%, transparent);
   }
+}
+
+[data-theme="dark-slate"] .header-badge {
+  background: var(--glass-bg-light);
+  color: var(--color-text-primary);
+}
+[data-theme="dark-slate"] .header-badge .user-name {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+[data-theme="dark-slate"] .header-badge::after {
+  background: linear-gradient(90deg,
+      transparent 0%,
+
+      /* Pink animation */
+      rgba(255, 192, 203, 0.6) 50%,
+      transparent 100%);
 }
