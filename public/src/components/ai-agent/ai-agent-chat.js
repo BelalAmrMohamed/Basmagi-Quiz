@@ -6,6 +6,7 @@
 // "امتحاناتك" view or result.html with different contextual system prompts.
 // =============================================================================
 
+import { apiUrl } from "../../shared/api-base.js";
 import { renderMarkdown } from "../../shared/markdown.js";
 import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
 import { getSelectedProvider, getSelectedModel, getModelsForProvider, setSelectedModel, getOwnKey, getSystemPrompt, isAiHelperAvailable, EFFORT_LEVELS, getSelectedEffort, setSelectedEffort } from "./ai-agent-settings.js";
@@ -2409,7 +2410,7 @@ export function createChatPanel(options = {}) {
       const headers = { "Content-Type": "application/json" };
       if (authToken) headers.Authorization = `Bearer ${authToken}`;
 
-      const res = await fetch("/api/ai-agent/chat", {
+      const res = await fetch(apiUrl("/api/ai-agent/chat"), {
         method: "POST",
         headers,
         signal: currentAbortController?.signal,

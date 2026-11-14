@@ -26,7 +26,7 @@
 // panel.addPendingAttachment().
 // =============================================================================
 
-import { openAIAgentModal, getChatPanelForPageKey } from "./ai-agent.js";
+import { loadAIAgentModule } from "./ai-agent-lazy.js";
 import {
   resolveUserItemById,
   readUserQuizzes,
@@ -180,8 +180,10 @@ export function buildUserRootAttachmentForAskAi() {
  *   ai-agent-default-prompts.js) so this module doesn't need its own
  *   import of page-specific prompt text.
  */
-export function openAIAgentWithAttachment(attachment, pageOptions = {}) {
+export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
   if (!attachment) return;
+  // The agent UI is downloaded on first use (see ai-agent-lazy.js).
+  const { openAIAgentModal, getChatPanelForPageKey } = await loadAIAgentModule();
 
   const options = {
     pageKey: "home",

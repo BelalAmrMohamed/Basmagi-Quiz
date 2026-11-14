@@ -4,6 +4,7 @@
 // Supports both Platform Admins and Regular Anonymous Users.
 // =============================================================================
 
+import { apiUrl } from "../../shared/api-base.js";
 import {
   getToken,
   isAdminAuthenticated,
@@ -277,7 +278,7 @@ async function loadReports() {
 // ── Admin Reports Loading ─────────────────────────────────────────────────────
 async function loadAdminReports() {
   try {
-    const res = await fetch(`/api/reports?scope=${currentScope}&status=all`, {
+    const res = await fetch(apiUrl(`/api/reports?scope=${currentScope}&status=all`), {
       headers: getHeaders(),
     });
     const data = await res.json();
@@ -330,7 +331,7 @@ async function loadUserReports() {
 
     if (ids.length > 0) {
       try {
-        const res = await fetch(`/api/reports?ids=${ids.join(",")}`);
+        const res = await fetch(apiUrl(`/api/reports?ids=${ids.join(",")}`));
         if (res.ok) {
           const data = await res.json();
           const serverReports = data.reports || [];
@@ -544,7 +545,7 @@ function getQuestionText(report) {
 // ── Admin Actions ─────────────────────────────────────────────────────────────
 window.resolveReport = async (reportId, newStatus) => {
   try {
-    const res = await fetch("/api/reports", {
+    const res = await fetch(apiUrl("/api/reports"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({

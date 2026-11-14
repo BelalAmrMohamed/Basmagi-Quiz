@@ -4,6 +4,7 @@
 // usage shown in the model menu's "View Usage" submenu. Small in-memory cache
 // so hovering the submenu repeatedly doesn't hammer the endpoint.
 // =============================================================================
+import { apiUrl } from "../../shared/api-base.js";
 const CACHE_MS = 30_000;
 let cache = null; // { at, data }
 let inflight = null;
@@ -12,7 +13,7 @@ let inflight = null;
 export function fetchPlatformUsage({ force = false } = {}) {
   if (!force && cache && Date.now() - cache.at < CACHE_MS) return Promise.resolve(cache.data);
   if (inflight) return inflight;
-  inflight = fetch("/api/ai-agent/usage", { headers: { Accept: "application/json" } })
+  inflight = fetch(apiUrl("/api/ai-agent/usage"), { headers: { Accept: "application/json" } })
     .then((r) => {
       if (!r.ok) throw new Error(`usage ${r.status}`);
       return r.json();

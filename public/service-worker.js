@@ -1,9 +1,19 @@
 // Service Worker for Basmagi Quiz Platform
+//
+// Design (bandwidth-conscious, see PERFORMANCE_PLAN.md):
+//  * install precaches ONLY the offline page, favicon and "/" (no dependency
+//    crawl, no cache:"reload"), so a release no longer makes every returning
+//    user re-download ~200 files.
+//  * static files are served cache-first (/assets, images) or
+//    stale-while-revalidate (/src, /dist). Background refreshes go through the
+//    HTTP cache, so they obey the Cache-Control headers set in vercel.json.
+//  * navigations stay network-first with an offline fallback.
+//  * bump CACHE_VERSION only when the SW logic itself changes.
 
-const CACHE_VERSION = "basmagi-v8.3.7";
+const CACHE_VERSION = "basmagi-v9.0.0";
 const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
 const OFFLINE_URL = "/offline";
-const OFFLINE_ASSETS = [OFFLINE_URL, "/favicon.png"];
+const PRECACHE = [OFFLINE_URL, "/favicon.png", "/"];
 
 function isAppAsset(url) {
   return url.origin === self.location.origin &&
@@ -19,92 +29,28 @@ async function cacheResponse(cache, key, response) {
   }
 }
 
-async function cacheAppShell(cache) {
-  const visited = new Set();
-
-  async function cacheResource(resourceUrl) {
-    const url = new URL(resourceUrl, self.location.origin);
-    if (!isAppAsset(url) || visited.has(url.href)) return;
-    visited.add(url.href);
-
-    let response;
-    try {
-      response = await fetch(new Request(url.href, { cache: "reload" }));
-    } catch (error) {
-      console.warn("[SW] Could not precache app resource:", url.pathname, error);
-      return;
-    }
-    if (!response.ok || response.type === "opaque") return;
-    await cacheResponse(cache, url.href, response.clone());
-
-    const contentType = response.headers.get("content-type") || "";
-    let source;
-    try {
-      if (contentType.includes("text/html") || /\.(?:html?)$/i.test(url.pathname)) {
-        source = await response.text();
-      } else if (contentType.includes("javascript") || /\.m?js$/i.test(url.pathname)) {
-        source = await response.text();
-      } else if (contentType.includes("text/css") || /\.css$/i.test(url.pathname)) {
-        source = await response.text();
-      }
-    } catch (error) {
-      console.warn("[SW] Could not inspect cached app resource:", url.pathname, error);
-      return;
-    }
-    if (!source) return;
-
-    const dependencies = [];
-    if (contentType.includes("text/html") || /\.(?:html?)$/i.test(url.pathname)) {
-      const tags = source.matchAll(/<(?:link|script)\b[^>]*?\b(?:href|src)=["']([^"']+)["'][^>]*>/gi);
-      for (const [, path] of tags) {
-        if (/\.(?:css|m?js)(?:[?#]|$)/i.test(path)) dependencies.push(path);
-      }
-    } else if (contentType.includes("javascript") || /\.m?js$/i.test(url.pathname)) {
-      const imports = source.matchAll(/(?:\bimport\s+(?:[^'"]*?\s+from\s+)?|\bimport\s*\()\s*["']([^"']+)["']/g);
-      for (const [, path] of imports) dependencies.push(new URL(path, url).href);
-    } else {
-      const imports = source.matchAll(/@import\s+(?:url\()?["']?([^"')\s;]+)|url\(["']?([^"')]+)["']?\)/gi);
-      for (const match of imports) {
-        const path = match[1] || match[2];
-        if (path) dependencies.push(new URL(path, url).href);
-      }
-    }
-
-    await Promise.all(dependencies.map(cacheResource));
-  }
-
-  await Promise.all([
-    cacheResource("/"),
-    ...OFFLINE_ASSETS.map(cacheResource),
-  ]);
-}
-
 self.addEventListener("install", (event) => {
-  console.log("[SW] Installing app-shell and offline caches...");
   event.waitUntil(
     (async () => {
       const cache = await caches.open(OFFLINE_CACHE);
-      await cacheAppShell(cache);
-      await self.skipWaiting();
-    })().catch((error) => {
-      console.error("[SW] Install failed:", error);
-    }),
+      await Promise.all(PRECACHE.map(async (path) => {
+        try {
+          const response = await fetch(path);
+          if (response.ok) await cacheResponse(cache, path, response);
+        } catch (error) {
+          console.warn("[SW] Could not precache:", path, error);
+        }
+      }));
+      // No skipWaiting() here: pwa-manager.js sends SKIP_WAITING when it is safe.
+    })().catch((error) => console.error("[SW] Install failed:", error)),
   );
 });
 
 self.addEventListener("activate", (event) => {
-  console.log("[SW] Activating — clearing legacy caches...");
   event.waitUntil(
     (async () => {
       const names = await caches.keys();
-      await Promise.all(
-        names
-          .filter((name) => name !== OFFLINE_CACHE)
-          .map((name) => {
-            console.log("[SW] Deleting cache:", name);
-            return caches.delete(name);
-          }),
-      );
+      await Promise.all(names.filter((n) => n !== OFFLINE_CACHE).map((n) => caches.delete(n)));
       await self.clients.claim();
     })(),
   );
@@ -121,11 +67,7 @@ async function offlinePageResponse() {
   if (cached) return cached;
   return new Response(
     "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><title>غير متصل</title></head><body><h1>أنت غير متصل بالإنترنت</h1></body></html>",
-    {
-      status: 503,
-      statusText: "Service Unavailable",
-      headers: { "Content-Type": "text/html; charset=utf-8" },
-    },
+    { status: 503, statusText: "Service Unavailable", headers: { "Content-Type": "text/html; charset=utf-8" } },
   );
 }
 
@@ -138,18 +80,27 @@ async function offlineNavigationResponse(request) {
   return offlinePageResponse();
 }
 
+const CACHE_FIRST = /^\/(?:assets\/|dist\/chunks\/|.*\.(?:png|jpe?g|webp|avif|svg|ico|woff2?)$)/i;
+
+async function revalidate(request) {
+  const response = await fetch(request); // honours HTTP cache + Cache-Control
+  if (response.ok) {
+    const cache = await caches.open(OFFLINE_CACHE);
+    await cacheResponse(cache, request, response.clone());
+  }
+  return response;
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
   if (request.method !== "GET") return;
   if (request.url.startsWith("chrome-extension://")) return;
+  const url = new URL(request.url);
 
-  // Keep navigations fresh when online, but use the cached app shell for
-  // local-content routes when offline.
   if (isNavigationRequest(request)) {
     event.respondWith(
       fetch(request).then(async (response) => {
-        const url = new URL(request.url);
         if (response.ok && isAppAsset(url) && (url.pathname === "/" || url.pathname === "/index.html" || url.pathname.startsWith("/my-content"))) {
           const cache = await caches.open(OFFLINE_CACHE);
           await cacheResponse(cache, url.pathname, response.clone());
@@ -160,24 +111,29 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Cache same-origin app assets as they are requested; never cache API data.
-  event.respondWith(
-    fetch(request).then(async (response) => {
-      const url = new URL(request.url);
-      if (response.ok && isAppAsset(url)) {
-        const cache = await caches.open(OFFLINE_CACHE);
-        await cacheResponse(cache, request, response.clone());
-      }
-      return response;
-    }).catch(async () => {
-      const cached = await caches.match(request, { ignoreSearch: true });
-      if (cached) return cached;
-      return new Response("Offline", {
-        status: 503,
-        statusText: "Service Unavailable",
-      });
-    }),
-  );
+  // Never touch API or cross-origin traffic.
+  if (!isAppAsset(url)) return;
+
+  // Stable-named bundle entries must always revalidate (they reference hashed chunks).
+  if (/^\/dist\/home\.(?:js|css)$/.test(url.pathname)) {
+    event.respondWith(revalidate(request).catch(async () => (await caches.match(request)) || new Response("Offline", { status: 503 })));
+    return;
+  }
+
+  event.respondWith((async () => {
+    const cached = await caches.match(request);
+    if (cached) {
+      // cache-first for immutable-ish files; SWR (refresh in background) for code.
+      if (!CACHE_FIRST.test(url.pathname)) event.waitUntil(revalidate(request).catch(() => {}));
+      return cached;
+    }
+    try {
+      return await revalidate(request);
+    } catch (_) {
+      const fallback = await caches.match(request, { ignoreSearch: true });
+      return fallback || new Response("Offline", { status: 503, statusText: "Service Unavailable" });
+    }
+  })());
 });
 
 self.addEventListener("push", (event) => {

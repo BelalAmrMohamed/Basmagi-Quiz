@@ -3,7 +3,7 @@
 // Mounts the AI Agent ("الباشــمبصمج") on the notebook page. Context + tools live in
 // notebook-agent-tools.js; prompts and slash commands in components/ai-agent/.
 // =============================================================================
-import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
+import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
 import { NOTEBOOK_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { NOTEBOOK_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import "../../components/ai-agent/ai-agent-actions.js";

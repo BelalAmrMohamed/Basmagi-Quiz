@@ -1,6 +1,7 @@
 // =============================================================================
 // public/src/components/report-question/report-question.js
 // =============================================================================
+import { apiUrl } from "../../shared/api-base.js";
 import { showNotification } from "../notifications/notifications.js";
 
 // Keep track of reported questions in this session to prevent duplicate reports
@@ -154,7 +155,7 @@ export function openReportModal({ quizId, questionIndex, questionText, quizTitle
     newSubmitBtn.textContent = "جاري الإرسال...";
 
     try {
-      const res = await fetch("/api/reports", {
+      const res = await fetch(apiUrl("/api/reports"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

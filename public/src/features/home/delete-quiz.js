@@ -22,6 +22,7 @@
 // This module cannot itself guarantee authorization — the backend must.
 // ============================================================================
 
+import { apiUrl } from "../../shared/api-base.js";
 import { getToken } from "../../shared/adminAuth.js";
 import { canManageItem } from "./admin-item-actions.js";
 import { invalidateManifestCache } from "../../shared/quizManifest.js";
@@ -64,7 +65,7 @@ export async function deleteQuizFromDatabase(exam) {
 
   let res;
   try {
-    res = await fetch("/api/delete-quiz", {
+    res = await fetch(apiUrl("/api/delete-quiz"), {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",

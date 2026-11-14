@@ -3,6 +3,7 @@
 // Admin reports review panel
 // =============================================================================
 
+import { apiUrl } from "../../shared/api-base.js";
 import { renderMarkdown } from "../../shared/markdown.js";
 
 let currentStatus = "pending";
@@ -12,7 +13,7 @@ let _onUpdate = null;
 
 export async function fetchPendingReportsCount(getHeaders) {
   try {
-    const res = await fetch("/api/reports?status=pending&countOnly=true", {
+    const res = await fetch(apiUrl("/api/reports?status=pending&countOnly=true"), {
       headers: getHeaders(),
     });
     if (!res.ok) return 0;
@@ -75,7 +76,7 @@ async function loadReports() {
   listEl.innerHTML = '<div class="admin-empty">جاري التحميل...</div>';
 
   try {
-    const res = await fetch(`/api/reports?status=${currentStatus}`, {
+    const res = await fetch(apiUrl(`/api/reports?status=${currentStatus}`), {
       headers: _getHeaders(),
     });
     const data = await res.json();
@@ -169,7 +170,7 @@ function renderReports(reports) {
 
 window.resolveReport = async (reportId, newStatus) => {
   try {
-    const res = await fetch("/api/reports", {
+    const res = await fetch(apiUrl("/api/reports"), {
       method: "POST",
       headers: _getHeaders(),
       body: JSON.stringify({

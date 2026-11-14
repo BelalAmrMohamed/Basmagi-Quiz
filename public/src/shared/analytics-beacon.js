@@ -26,8 +26,13 @@
 
   if (isAdmin()) return;
 
-  var ENDPOINT = "/api/admin";
-  var HEARTBEAT_MS = 120000;
+  var ENDPOINT = "https://esdfdzhtavraczrhxnmp.supabase.co/functions/v1/track";
+  var HEARTBEAT_MS = 240000; // 4 min; server "online now" window is 7 min
+  var IDLE_STOP_MS = 30 * 60 * 1000;
+  var lastActive = Date.now();
+  ["pointerdown", "keydown", "scroll", "touchstart"].forEach(function (ev) {
+    window.addEventListener(ev, function () { lastActive = Date.now(); }, { passive: true });
+  });
   var MIN_GAP_MS = 5000;
   var lastPath = location.pathname;
   var lastSent = 0;
@@ -36,10 +41,13 @@
   function post(action) {
     if (isAdmin()) return;
     try {
+      var body = JSON.stringify({ action: action });
+      // text/plain Blob keeps this a "simple" request (no CORS preflight).
+      if (navigator.sendBeacon && navigator.sendBeacon(ENDPOINT, new Blob([body], { type: "text/plain" }))) return;
       fetch(ENDPOINT, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: action }),
+        headers: { "Content-Type": "text/plain" },
+        body: body,
         keepalive: true,
         credentials: "omit",
         cache: "no-store",
@@ -85,6 +93,7 @@
 
   setInterval(function () {
     if (document.visibilityState !== "visible") return;
+    if (Date.now() - lastActive > IDLE_STOP_MS) return;
     lastBeat = Date.now();
     post("ping");
   }, HEARTBEAT_MS);

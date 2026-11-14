@@ -54,7 +54,7 @@ import { FONT_CHOICES, normalizeFontId, applyReaderPrefs } from "../lesson/lesso
 import { sha256Hex, validateLessonPasswordInput } from "../lesson/lesson-access.js";
 import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar.js";
 import { applyMarkdownToolbarAction } from "../../shared/markdown-toolbar-actions.js";
-import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
+import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
 import { CREATE_LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { CREATE_LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { downloadLesson } from "../home/lesson-download.js";

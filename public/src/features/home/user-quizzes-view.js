@@ -55,7 +55,7 @@ import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
 import { createUserQuizCard, createUserLessonCard, createUserNotebookCard } from "./item-card.js";
 import { takePendingHighlight } from "./mcp-draft-import.js";
 import { openInlineCreateQuizModal } from "./create-quiz-modal.js";
-import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
+import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { HOME_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { handleReadOnlyLibraryToolCall, READONLY_LIBRARY_TOOL_NAMES } from "../../components/ai-agent/ai-agent-readonly-tools.js";

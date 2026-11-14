@@ -293,57 +293,11 @@
             rel="stylesheet">
     </noscript>
 
-    <!-- Preload critical resources -->
-    <link rel="preload" href="src/styles/themes.css" as="style">
-    <link rel="preload" href="src/features/home/index.css" as="style">
+    <!-- All local stylesheets (themes, index, hive, cards-v2, side-menu, ai-agent, lesson, ...)
+         are concatenated in their original order by scripts/build-web.mjs into one file. -->
+    <link rel="stylesheet" href="dist/home.css">
 
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="src/styles/themes.css">
-    <link rel="stylesheet" href="src/features/home/index.css">
-    <link rel="stylesheet" href="src/components/quiz-info-modal/quiz-info-modal.css">
-    <!-- Local ("امتحاناتك") trash panel — extends the .quiz-info-dialog shell
-         above, so it must load after quiz-info-modal.css. -->
-    <link rel="stylesheet" href="src/features/home/user-quizzes-trash-panel.css">
-    <link rel="stylesheet" href="src/components/download-quiz-modal/download-quiz-modal.css">
-    <link rel="stylesheet" href="src/styles/advanced-liquid-metal-animations.css">
-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
-    <!-- item-dropdown-menu.css: shared by home item cards and menus.
-         The AI agent no longer depends on this — it carries its own self-contained
-         dropdown styles in ai-agent.css (ai-agent-dropdown-menu / ai-agent-dropdown-item). -->
-    <link rel="stylesheet" href="src/features/home/item-dropdown-menu.css">
-    <link rel="stylesheet" href="src/components/tooltip/tooltip.css">
-    <!-- ai-agent.css loads after side-menu.css: the FAB's z-index is now
-         pinned to the shared --z-tooltip token so load order no longer
-         affects who wins a tie, but keeping it after nav-related
-         stylesheets avoids relying on that in the future. -->
-    <link rel="stylesheet" href="src/components/ai-agent/ai-agent.css">
-    <!-- markdown.css supplies .text-rtl/.text-ltr direction classes used by
-         renderMarkdown()'s direction-detection engine (see markdown.js) —
-         needed here since the AI Helper on this page renders markdown via
-         the same engine result.html uses. -->
-    <link rel="stylesheet" href="src/styles/markdown.css">
-    <!-- lesson.css styles the /lesson/:id viewer (sections, ToC, embedded
-         question/quiz-ref blocks, reader-prefs popover). Loaded here because
-         lesson pages render inside this same SPA shell. -->
-    <link rel="stylesheet" href="src/features/lesson/lesson.css">
-    <link rel="stylesheet" href="src/shared/doc-toc.css">
-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
-    <link rel="stylesheet" href="src/features/home/search.css">
-    <link rel="stylesheet" href="src/components/offline-banner/offline-banner.css">
-    <link rel="stylesheet" href="src/features/home/sign-in.css">
-    <!-- 2026 home redesign: tokens first, then honeycomb/header, item cards, محتواي course card.
-         All three scope under #contentArea / .header so they win over index.css without !important. -->
-    <link rel="stylesheet" href="src/features/home/hive-tokens.css">
-    <link rel="stylesheet" href="src/features/home/hive.css">
-    <link rel="stylesheet" href="src/features/home/cards-v2.css">
-    <link rel="stylesheet" href="src/features/home/user-course-card.css">
-
-    <!-- Controller Scripts - with module preload -->
-    <link rel="modulepreload" href="src/shared/theme-controller.js">
-    <link rel="modulepreload" href="src/features/home/index-entrypoint.js">
-    <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
-    <link rel="modulepreload" href="src/shared/avatarPicker.js">
-    <link rel="modulepreload" href="src/shared/avatarEngine.js">
+    <link rel="modulepreload" href="dist/home.js">
 
     <!-- ── Markdown + KaTeX integration (mirrored from create-quiz) ──
          KaTeX must load as a classic (non-deferred) script so that
@@ -1337,16 +1291,9 @@
          session against Supabase on load.
          Must load before index-entrypoint.js. -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="src/shared/theme-controller.js"></script>
-    <script type="module" src="src/shared/flow-field.js"></script>
-    <script type="module" src="src/features/home/index-entrypoint.js"></script>
-    <script type="module" src="src/components/side-menu/side-menu.js"></script>
-    <script type="module">
-        import { initPWAWithBanner } from "./src/shared/pwa-manager.js";
-        document.addEventListener("DOMContentLoaded", () =>
-            initPWAWithBanner(window.SUPABASE_URL ? `${window.SUPABASE_URL}/rest/v1/` : "")
-        );
-    </script>
+    <!-- One bundled entry (theme-controller, flow-field, index-entrypoint, side-menu, PWA init);
+         lazy features load on demand as hashed chunks. Built by scripts/build-web.mjs. -->
+    <script type="module" src="dist/home.js"></script>
 
     <!-- Remove loading class when page is ready -->
     <script>

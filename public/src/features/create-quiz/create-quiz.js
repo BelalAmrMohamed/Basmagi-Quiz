@@ -18,7 +18,7 @@ import { clearEditorDrafts, readEditorDrafts, upsertEditorDraft, removeEditorDra
 import { isAdminAuthenticated, getToken } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { loadFullQuizData, checkQuizHasPassword } from "../home/quiz-data-loader.js";
-import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
+import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
 import { CREATE_QUIZ_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { isMultiSelectQuestion } from "../../shared/rate-answers.js";

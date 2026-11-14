@@ -41,7 +41,7 @@ import {
 import { registerLessonPanel } from "./lesson-panel-manager.js";
 import { renderTtsControl, equipTts, readText } from "./lesson-tts.js";
 import { showLessonControlModal } from "./lesson-info-modal.js";
-import { createAIAgentFab, openAIAgentModal, getChatPanelForPageKey } from "../../components/ai-agent/ai-agent.js";
+import { createAIAgentFab, loadAIAgentModule } from "../../components/ai-agent/ai-agent-lazy.js";
 import { LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { renderLessonComments, equipLessonComments } from "./lesson-comments.js";
 import { LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
@@ -767,6 +767,7 @@ function mountLessonAgent(root, lesson, normalized) {
  */
 async function openLessonAgentWithPrompt(lesson, normalized, promptText) {
   const options = lessonAgentOptions(lesson, normalized);
+  const { openAIAgentModal, getChatPanelForPageKey } = await loadAIAgentModule();
   openAIAgentModal(options, null);
 
   return new Promise((resolve) => {
@@ -801,8 +802,9 @@ async function openLessonAgentWithPrompt(lesson, normalized, promptText) {
  * opens, so the conversation history is shared — and attaches an embedded
  * exam/lesson to the composer (never auto-sends).
  */
-function openLessonAgentWithAttachment(lesson, normalized, attachment) {
+async function openLessonAgentWithAttachment(lesson, normalized, attachment) {
   const options = lessonAgentOptions(lesson, normalized);
+  const { openAIAgentModal, getChatPanelForPageKey } = await loadAIAgentModule();
   openAIAgentModal(options, null);
   const panel = getChatPanelForPageKey(options.pageKey);
   if (panel && typeof panel.addPendingAttachment === "function") {

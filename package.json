@@ -25,7 +25,10 @@
     "build:cpp-runtime": "npm run build:runtimes",
     "test:runtimes": "npm test --prefix runtimes",
     "typecheck:runtimes": "npm run typecheck --prefix runtimes",
-    "typecheck:cpp": "npm run typecheck:runtimes"
+    "typecheck:cpp": "npm run typecheck:runtimes",
+    "build:web": "node scripts/build-web.mjs",
+    "dev:web": "node scripts/build-web.mjs --watch",
+    "build:edge": "node scripts/build-edge-functions.mjs"
   },
   "keywords": [
     "examination",
@@ -39,7 +42,8 @@
     "browser-sync": "^3.0.4",
     "concurrently": "^10.0.5",
     "http-server": "^14.1.1",
-    "wait-on": "^9.1.0"
+    "wait-on": "^9.1.0",
+    "esbuild": "^0.25.0"
   },
   "engines": {
     "node": ">=18.0.0"

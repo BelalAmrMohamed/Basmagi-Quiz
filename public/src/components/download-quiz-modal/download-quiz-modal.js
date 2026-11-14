@@ -13,18 +13,11 @@
 //   - features/create-quiz/create-quiz.js         (create-quiz page)
 // ============================================================================
 
-import { exportToQuiz } from "../../features/export-quiz/export-to-quiz.js";
-import { exportToPdf } from "../../features/export-quiz/export-to-pdf.js";
-import { exportToWord } from "../../features/export-quiz/export-to-word.js";
-import { exportToPptx } from "../../features/export-quiz/export-to-pptx.js";
-import { exportToMarkdown } from "../../features/export-quiz/export-to-markdown.js";
 import {
   JSON_FILE_ICON_SVG,
 } from "../../features/home/icons.js";
 import { showNotification } from "../notifications/notifications.js";
 import { buildSourceActions } from "./export-card.js";
-import { buildStandaloneQuizHtml } from "../../features/export-quiz/export-to-quiz.js";
-import { buildQuizMarkdown } from "../../features/export-quiz/export-to-markdown.js";
 import { buildJsonQuizExport } from "../../shared/quiz-json.js";
 
 /**
@@ -203,13 +196,13 @@ export async function executeExport(
 ) {
   switch (format) {
     case "quiz":
-      await exportToQuiz(config, questions, {
+      await (await import("../../features/export-quiz/export-to-quiz.js")).exportToQuiz(config, questions, {
         showAnswersButton: exportOptions.quizShowAnswersButton,
         layout: exportOptions.quizLayout,
       });
       break;
     case "pdf":
-      await exportToPdf(config, questions, userAnswers, resultMeta, onProgress, {
+      await (await import("../../features/export-quiz/export-to-pdf.js")).exportToPdf(config, questions, userAnswers, resultMeta, onProgress, {
         backgroundColor: exportOptions.pdfBackground,
         includeAnswers: exportOptions.includeAnswers,
         includeUserAnswers: exportOptions.includeUserAnswers,
@@ -218,7 +211,7 @@ export async function executeExport(
       });
       break;
     case "docx":
-      return await exportToWord(
+      return await (await import("../../features/export-quiz/export-to-word.js")).exportToWord(
         config,
         questions,
         userAnswers,
@@ -226,7 +219,7 @@ export async function executeExport(
         signal,
       );
     case "pptx":
-      return await exportToPptx(
+      return await (await import("../../features/export-quiz/export-to-pptx.js")).exportToPptx(
         config,
         questions,
         userAnswers,
@@ -240,7 +233,7 @@ export async function executeExport(
         },
       );
     case "md":
-      exportToMarkdown(config, questions, userAnswers, {
+      (await import("../../features/export-quiz/export-to-markdown.js")).exportToMarkdown(config, questions, userAnswers, {
         includeAnswers: exportOptions.includeAnswers,
         includeUserAnswers: exportOptions.includeUserAnswers,
         includeExplanations: exportOptions.includeExplanations,
@@ -904,7 +897,7 @@ export function showDownloadModal({
         if (opt.format === "quiz") {
           const exportOptions = await showSettingsStep(opt);
           if (!exportOptions) throw new Error("COPY_CANCELLED");
-          return await buildStandaloneQuizHtml(c, q, {
+          return await (await import("../../features/export-quiz/export-to-quiz.js")).buildStandaloneQuizHtml(c, q, {
             showAnswersButton: exportOptions.quizShowAnswersButton,
             layout: exportOptions.quizLayout,
           });
@@ -919,7 +912,7 @@ export function showDownloadModal({
           // rather than an error toast.
           const exportOptions = await showSettingsStep(opt);
           if (!exportOptions) throw new Error("COPY_CANCELLED");
-          return buildQuizMarkdown(c, q, userAnswers, exportOptions);
+          return (await import("../../features/export-quiz/export-to-markdown.js")).buildQuizMarkdown(c, q, userAnswers, exportOptions);
         }
         if (opt.format === "json") return await buildJsonString();
       },

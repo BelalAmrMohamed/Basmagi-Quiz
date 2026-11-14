@@ -47,7 +47,7 @@ import {
 } from "../../components/report-question/report-question.js";
 
 // AI Helper (result-page analysis mode — read-only, no quiz creation)
-import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
+import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
 import { buildResultSystemPrompt } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { buildResultSuggestedPrompts } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 

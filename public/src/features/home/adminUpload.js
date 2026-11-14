@@ -23,6 +23,7 @@
 //   Batch quizzes - opened via openAdminUploadModal(quizzes[]) from bulk action bar
 // =============================================================================
 
+import { apiUrl } from "../../shared/api-base.js";
 import { prepareNotebookAssets, rollbackAssets } from "../../shared/notebook-publish-assets.js";
 import { formatItemCounts } from "./upload-counts.js";
 import { getToken, isAdminAuthenticated, signOut } from "../../shared/adminAuth.js";
@@ -356,7 +357,7 @@ async function postUpload(payload) {
   }
   let res;
   try {
-    res = await fetch("/api/upload-quiz", {
+    res = await fetch(apiUrl("/api/upload-quiz"), {
       method: "POST", headers: authHeaders(), body: JSON.stringify(payload),
     });
   } catch (e) { await rollbackAssets(reserved); throw e; }
@@ -536,7 +537,7 @@ function getSubjectMap(type, college) {
 
 async function loadCollegeMetadata() {
   try {
-    const response = await fetch("/api/colleges?education_type=University");
+    const response = await fetch(apiUrl("/api/colleges?education_type=University"));
     if (!response.ok) throw new Error(`College metadata request failed: ${response.status}`);
     const data = await response.json();
     COLLEGE_METADATA = Object.fromEntries(
