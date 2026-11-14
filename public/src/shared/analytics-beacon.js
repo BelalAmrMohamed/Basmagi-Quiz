@@ -26,7 +26,7 @@
 
   if (isAdmin()) return;
 
-  var ENDPOINT = "https://esdfdzhtavraczrhxnmp.supabase.co/functions/v1/track";
+  var ENDPOINT = "https://esdfdzhtavraczrhxnmp.supabase.co/functions/v1/pulse";
   var HEARTBEAT_MS = 240000; // 4 min; server "online now" window is 7 min
   var IDLE_STOP_MS = 30 * 60 * 1000;
   var lastActive = Date.now();

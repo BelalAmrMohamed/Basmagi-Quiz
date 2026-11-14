@@ -1,0 +1,1257 @@
+var e=`
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   src/styles/markdown.css
+   Shared Markdown + KaTeX visual styles.
+   CSS variables at themes.css
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   DIRECTION + OVERFLOW UTILITIES
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+.ltr {
+  direction: ltr;
+}
+
+/* Every element that receives renderMarkdown() output should opt in to
+   overflow-wrap so long tokens, URLs, and KaTeX never escape their card. */
+.md-content,
+.question-text,
+.option-label,
+.feedback,
+.explanation-body,
+.formal-answer,
+.formal-answer-text {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   READER-CONTROLLED FONT + HIGHLIGHT HOOKS
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   Two CSS-variable hooks only \u2014 no picker UI lives here. The lesson viewer
+   sets --md-font-family / --md-highlight-color as inline styles on its own
+   container (see features/lessons/lesson-reader-prefs.js), so the choice is
+   scoped to that subtree and every other renderMarkdown() call site on the
+   platform keeps its existing appearance via the fallbacks below.
+
+   inherit  -> unset means "whatever the host page already used", which is
+   exactly the previous hardcoded behaviour for these containers.           */
+
+.md-content,
+.question-text,
+.option-label,
+.feedback,
+.explanation-body,
+.formal-answer,
+.formal-answer-text {
+  font-family: var(--md-font-family, inherit);
+}
+
+/* ==highlighted text== -> applyInline() in markdown.js. Deliberately a
+   <span>, not <mark>, so the color is fully ours (see that function's
+   comment). The default is a yellow-equivalent that stays legible on both
+   light and dark themes. A per-span \`== text == (color)\` suffix sets this
+   variable inline on that one span, so several highlighted runs in the
+   same document can each carry a different color independent of the
+   container-wide default set here. */
+.md-highlight {
+  background-color: var(--md-highlight-color, rgba(250, 204, 21, 0.38));
+  color: inherit;
+  border-radius: 3px;
+  padding: 0.05em 0.18em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   HEADINGS
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+.md-h1,
+.md-h2,
+.md-h3,
+.md-h4,
+.md-h5,
+.md-h6 {
+  margin: 0.6em 0 0.3em;
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+.md-h1 {
+  font-size: 1.6em;
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 4px;
+}
+.md-h2 {
+  font-size: 1.35em;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 3px;
+}
+.md-h3 {
+  font-size: 1.15em;
+}
+.md-h4 {
+  font-size: 1.05em;
+}
+.md-h5 {
+  font-size: 0.95em;
+}
+.md-h6 {
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   HORIZONTAL RULE
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+.md-hr {
+  border: none;
+  border-top: 2px solid var(--color-border);
+  margin: 0.8em 0;
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   BLOCKQUOTE
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+.md-blockquote {
+  border-right: 4px solid var(--color-primary);
+  margin: 0.5em 0;
+  padding: 8px 16px;
+  background: var(--color-primary-light);
+  border-radius: 0 6px 6px 0;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   PARAGRAPHS  (Fix 4 \u2014 replaces the old bare-line + <br> approach)
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+/* Every block of consecutive text lines is now wrapped in a <p class="md-p">.
+   Vertical rhythm comes from margin rather than injected <br> tags. */
+.md-p {
+  margin: 0.35em 0;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+}
+.md-p:first-child {
+  margin-top: 0;
+}
+.md-p:last-child {
+  margin-bottom: 0;
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   LISTS
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+.md-list {
+  /* Fix 1 (RTL): use logical properties so indentation tracks the
+     inline-start edge in both LTR and RTL contexts.
+     Physical margin-left was the culprit: in RTL layouts it pushed list
+     markers off the wrong (right) side of the container. */
+  margin-block: 0.4em;
+  margin-inline-start: 1.4em;
+  margin-inline-end: 0;
+  padding: 0;
+  color: var(--color-text-primary);
+}
+.md-list li {
+  margin-bottom: 4px;
+  line-height: 1.6;
+}
+
+/* \u2500\u2500 Nested list indentation & bullet-style progression (Fix 2) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+   Each level of nesting gets its own list-style-type so readers can
+   distinguish depth at a glance: disc \u2192 circle \u2192 square for <ul>.
+   Nested <ol> inherits decimal numbering by default.                        */
+
+/* Extra breathing room around any nested list */
+.md-list .md-list {
+  margin-block-start: 4px;
+  margin-block-end: 2px;
+}
+
+/* Level 2 unordered: open circle */
+ul.md-list > li > ul.md-list {
+  list-style-type: circle;
+}
+
+/* Level 3+ unordered: filled square */
+ul.md-list > li > ul.md-list > li > ul.md-list {
+  list-style-type: square;
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   INLINE LINK & IMAGE
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+.md-link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.md-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 4px 0;
+  display: block;
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   MEDIA EMBEDS (video / audio / YouTube) \u2014 GitHub-style inline media
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+.md-embed {
+  margin: 8px 0;
+  display: flex;
+  justify-content: center;
+}
+.md-video,
+.md-video-embed {
+  max-width: 100%;
+  border-radius: 8px;
+  display: block;
+}
+.md-video {
+  background: #000;
+}
+.md-audio {
+  max-width: 100%;
+  min-width: 240px;
+  display: block;
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   INLINE MEDIA CONTAINERS + USER-RESIZABLE MEDIA
+   Mirrored from src/styles/markdown.css (see that file for the full doc
+   comment). Static exports (export-to-html/pdf/pptx) never run the
+   companion resize JS from markdown.js \u2014 since those outputs bake
+   renderMarkdown()'s string result into non-interactive/print HTML \u2014 so
+   these rules are inert there and only take effect in export-to-quiz.js's
+   fully-interactive standalone quiz export, which DOES inline the resize
+   JS below alongside this stylesheet.
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+.media-container {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 52px;
+  width: 100%;
+  max-width: 100%;
+  margin: 8px auto;
+}
+
+.media-container.md-media-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  padding: 16px;
+  border: 2px dashed var(--color-border);
+  background: var(--color-background-secondary);
+}
+
+.question-image-container {
+  text-align: center;
+  min-height: 160px;
+}
+
+.question-image,
+.md-img.md-inline-media,
+.media-container img.md-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 12px;
+  border: 2px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.question-audio-container .question-audio {
+  display: block;
+  width: 100%;
+  height: 52px;
+  min-width: 300px;
+  border-radius: 12px;
+  border: 2px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 480px) {
+  .question-audio-container .question-audio {
+    min-width: 250px;
+  }
+}
+
+.question-video-container .question-video {
+  display: block;
+  width: 100%;
+  max-height: min(420px, 55vh);
+  border-radius: 12px;
+  border: 2px solid var(--color-border);
+  background: var(--color-background);
+  box-shadow: var(--shadow-sm);
+}
+
+.question-video-container .youtube-embed {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  min-height: 200px;
+  max-height: min(420px, 55vh);
+  border-radius: 12px;
+  border: 2px solid var(--color-border);
+  background: var(--color-background);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Media Shimmer Skeletons */
+.media-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 120px;
+  padding: 24px;
+  border-radius: 12px;
+  border: 2px dashed var(--color-border);
+  background: var(--color-background-secondary);
+}
+
+.media-skeleton--hidden {
+  display: none;
+}
+
+.media-skeleton--error {
+  border-style: solid;
+  border-color: var(--color-error);
+  background: var(--color-error-light);
+}
+
+.skeleton-media {
+  width: 100%;
+  max-width: 320px;
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(90deg,
+      var(--color-border) 0%,
+      var(--color-border-light) 40%,
+      var(--color-border) 80%);
+  background-size: 1200px 100%;
+  animation: media-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes media-shimmer {
+  0% {
+    background-position: -1200px 0;
+  }
+
+  100% {
+    background-position: 1200px 0;
+  }
+}
+
+.media-skeleton-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.media-error {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-error);
+  text-align: center;
+}
+
+/* \u2500\u2500 User-Resizable Media \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+.media-container.resizable-media {
+  max-width: 100%;
+  width: fit-content;
+  touch-action: none;
+  /* Corner handles sit half outside the box (-10px); overflow:hidden on the
+     base .media-container would clip them. Media elements round themselves. */
+  overflow: visible;
+}
+
+.media-container.resizable-media > img,
+.media-container.resizable-media > video,
+.media-container.resizable-media > iframe {
+  width: 100%;
+  height: 100%;
+}
+
+.media-container.resizable-media > audio {
+  width: 100%;
+  height: 52px;
+}
+
+.question-image-container.resizable-media .question-image,
+.media-container.resizable-media img.md-img {
+  height: 100%;
+  object-fit: contain;
+}
+
+.question-video-container.resizable-media .question-video,
+.question-video-container.resizable-media .youtube-embed {
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+}
+
+.question-audio-container.resizable-media {
+  min-height: 52px;
+  max-height: 200px;
+}
+
+.question-image-container.resizable-media,
+.question-video-container.resizable-media {
+  min-height: 120px;
+}
+
+.resize-handle {
+  position: absolute;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resize-handle::before {
+  content: "";
+  display: block;
+  background: var(--color-primary);
+  border: 2px solid var(--color-background);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.media-container.resizable-media:hover .resize-handle,
+.media-container.resizable-media:focus-within .resize-handle,
+.resize-handle.is-active {
+  opacity: 1;
+}
+
+.resize-handle--nw,
+.resize-handle--ne,
+.resize-handle--sw,
+.resize-handle--se {
+  width: 20px;
+  height: 20px;
+}
+
+.resize-handle--nw::before,
+.resize-handle--ne::before,
+.resize-handle--sw::before,
+.resize-handle--se::before {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.resize-handle--nw {
+  top: -10px;
+  left: -10px;
+  cursor: nwse-resize;
+}
+
+.resize-handle--ne {
+  top: -10px;
+  right: -10px;
+  cursor: nesw-resize;
+}
+
+.resize-handle--sw {
+  bottom: -10px;
+  left: -10px;
+  cursor: nesw-resize;
+}
+
+.resize-handle--se {
+  bottom: -10px;
+  right: -10px;
+  cursor: nwse-resize;
+}
+
+.resize-handle--w,
+.resize-handle--e {
+  width: 12px;
+  height: 44px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+
+.resize-handle--w {
+  left: -6px;
+}
+
+.resize-handle--e {
+  right: -6px;
+}
+
+.resize-handle--w::before,
+.resize-handle--e::before {
+  width: 4px;
+  height: 32px;
+  border-radius: 100px;
+}
+
+@media (pointer: coarse) {
+  .question-audio-container .resize-handle--w,
+  .question-audio-container .resize-handle--e {
+    width: 28px;
+    opacity: 1;
+  }
+
+  .question-audio-container .resize-handle--w::before,
+  .question-audio-container .resize-handle--e::before {
+    width: 6px;
+    height: 40px;
+  }
+
+  .resize-handle--nw,
+  .resize-handle--ne,
+  .resize-handle--sw,
+  .resize-handle--se {
+    opacity: 1;
+    width: 30px;
+    height: 30px;
+  }
+
+  .resize-handle--nw::before,
+  .resize-handle--ne::before,
+  .resize-handle--sw::before,
+  .resize-handle--se::before {
+    width: 14px;
+    height: 14px;
+  }
+
+  .resize-handle--nw {
+    top: -15px;
+    left: -15px;
+  }
+
+  .resize-handle--ne {
+    top: -15px;
+    right: -15px;
+  }
+
+  .resize-handle--sw {
+    bottom: -15px;
+    left: -15px;
+  }
+
+  .resize-handle--se {
+    bottom: -15px;
+    right: -15px;
+  }
+}
+
+body.is-resizing-media {
+  user-select: none;
+  cursor: nwse-resize;
+}
+
+body.is-resizing-media .media-container.resizable-media {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   KATEX / MATH
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+.math-block,
+.katex-display {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 0;
+  text-align: center;
+  font-size: 1.05em;
+  max-width: 100%;
+}
+.math-inline {
+  display: inline;
+}
+.math-raw {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.92em;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--color-text-primary);
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   INLINE CODE
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+.inline-code {
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+  font-size: 0.88em;
+
+  background: color(srgb 0.7634 0.7595 0.7166 / 0.05);
+  border: 0.727273px solid color(srgb 0.8856 0.88196 0.8544 / 0.25);
+  color: rgb(244, 169, 169);
+
+  border-radius: 5px;
+  padding: 1px 6px;
+
+  white-space: normal;
+  word-break: break-all;
+}
+
+[data-theme="light"] .inline-code {
+  background: black;
+  border-color: gray;
+  color: white;
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   MODERN TERMINAL CODE BLOCKS + INDESTRUCTIBLE 3-COLUMN HEADER
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+.code-block-wrapper {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto 1fr;
+  margin: 20px 0;
+  direction: ltr !important;
+  border-radius: 10px;
+  background: #121214;
+  border: 1px solid #2d2d34;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  position: relative;
+  max-height: 500px;
+  overflow: hidden;
+}
+
+/* Distinct Code-Editor Header Bar Background */
+.code-block-wrapper::before {
+  content: "";
+  grid-column: 1 / span 3;
+  grid-row: 1;
+  height: 38px;
+  background: #1c1c1f;
+  border-bottom: 1px solid #2d2d34;
+  z-index: 1;
+}
+
+/* Language Badge */
+.code-lang-label {
+  grid-column: 1; /* Locked to the left-most column box */
+  grid-row: 1;
+  z-index: 2;
+  align-self: center;
+  justify-self: start;
+  text-align: left !important;
+  direction: ltr !important;
+  padding-left: 16px;
+  padding-right: 8px;
+  font-family: "SF Mono", "Fira Code", "JetBrains Mono", Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #9b9ba6;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Copy Button \u2014 Refined Editor Utility */
+.copy-code-btn {
+  grid-column: 3; /* Locked to the right-most column box */
+  grid-row: 1;
+  z-index: 2;
+  align-self: center;
+  justify-self: end;
+  margin-right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #9b9ba6;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+}
+
+.copy-code-btn .copy-label {
+  font-family: "Inter", "Tajawal", sans-serif;
+}
+
+.code-block-wrapper:hover .copy-code-btn {
+  opacity: 1;
+}
+
+.copy-code-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.copy-code-btn:active {
+  transform: scale(0.96);
+}
+
+/* "Copied!" Success Confirmation State */
+.copy-code-btn.copied {
+  opacity: 1 !important;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+/* Scrollable Inner Code Body (<pre>) */
+.code-block {
+  grid-column: 1 / span 3;
+  grid-row: 2;
+  margin: 0;
+  padding: 16px;
+  background: transparent;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  font-family: "SF Mono", "Fira Code", "JetBrains Mono", Consolas, monospace;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  white-space: pre;
+  text-align: left;
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a44 transparent;
+}
+
+/* Custom Scrollbar Tuning for Dark Theme */
+.code-block::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.code-block::-webkit-scrollbar-track {
+  background: transparent;
+}
+.code-block::-webkit-scrollbar-thumb {
+  background: #2d2d34;
+  border-radius: 4px;
+}
+.code-block::-webkit-scrollbar-thumb:hover {
+  background: #3a3a44;
+}
+
+.code-block code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  color: #e3e3e6;
+}
+
+/* \u2500\u2500 Custom High-Performance Token Highlighting (Dark Theme) \u2500\u2500 */
+.sh-comment   { color: #636370; font-style: italic; }
+.sh-keyword   { color: #ff79c6; font-weight: 600; }
+.sh-string    { color: #50fa7b; }
+.sh-number    { color: #bd93f9; }
+.sh-type      { color: #8be9fd; }
+.sh-function  { color: #ffb86c; }
+.sh-property  { color: #f1fa8c; }
+.sh-builtin   { color: #8be9fd; font-style: italic; }
+.sh-operator  { color: #ff79c6; }
+.sh-variable  { color: #f8f8f2; }
+.sh-tag       { color: #ff79c6; }
+.sh-attr      { color: #50fa7b; }
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   GFM TABLES
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+/* Outer scroll container \u2014 owns the glass aesthetic */
+.md-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 16px 0;
+  border-radius: 14px;
+
+  /* Glassmorphism */
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.07));
+
+  /*
+   * Scroll-shadow technique: CSS-only affordance that appears at the edges
+   * only when there is content to scroll.
+   * background-attachment: local  \u2014 the gradient moves with scroll,
+   * disappearing when the edge is reached.
+   * background-attachment: scroll \u2014 fixed to the viewport, always visible.
+   */
+  background-image:
+    linear-gradient(to left, rgba(255, 255, 255, 0.06) 20%, transparent),
+    linear-gradient(to right, rgba(255, 255, 255, 0.06) 20%, transparent),
+    radial-gradient(
+      farthest-side at 100% 50%,
+      rgba(0, 0, 0, 0.12),
+      transparent
+    ),
+    radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.12), transparent);
+  background-size:
+    40px 100%,
+    40px 100%,
+    12px 100%,
+    12px 100%;
+  background-position: right, left, right, left;
+  background-repeat: no-repeat;
+  background-attachment: local, local, scroll, scroll;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.md-table {
+  min-width: max-content; /* lets the table grow naturally; wrapper scrolls */
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  direction: ltr;
+  text-align: left;
+}
+
+/* Header row \u2014 frosted accent layer */
+.md-table thead tr {
+  background: rgba(99, 102, 241, 0.1); /* primary tint */
+  border-bottom: 2px solid rgba(99, 102, 241, 0.22);
+}
+
+.md-table th {
+  padding: 11px 16px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  white-space: nowrap; /* keep headers on one line */
+  letter-spacing: 0.01em;
+  /* Subtle inset highlight on each header cell top edge */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Body cells */
+.md-table td {
+  padding: 10px 16px;
+  vertical-align: top;
+  white-space: normal;
+  min-width: 90px;
+  overflow-wrap: break-word;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Alternating rows \u2014 very subtle frosted stripe */
+.md-table tbody tr:nth-child(even) {
+  background: var(--color-background-secondary, rgba(0, 0, 0, 0.025));
+}
+
+/* Row hover \u2014 lift the glass slightly */
+.md-table tbody tr {
+  transition:
+    background 0.14s ease,
+    box-shadow 0.14s ease;
+}
+.md-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.12);
+}
+
+/* Last row \u2014 no bottom border so it doesn't double-up with wrapper border */
+.md-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* \u2500\u2500 Light-theme table overrides \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+[data-theme="light"] .md-table-wrapper {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.08);
+  background-image:
+    linear-gradient(to left, rgba(0, 0, 0, 0.02) 20%, transparent),
+    linear-gradient(to right, rgba(0, 0, 0, 0.02) 20%, transparent),
+    radial-gradient(
+      farthest-side at 100% 50%,
+      rgba(0, 0, 0, 0.08),
+      transparent
+    ),
+    radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.08), transparent);
+  background-size:
+    40px 100%,
+    40px 100%,
+    12px 100%,
+    12px 100%;
+  background-position: right, left, right, left;
+  background-repeat: no-repeat;
+  background-attachment: local, local, scroll, scroll;
+  background-color: rgba(0, 0, 0, 0.02);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
+}
+
+[data-theme="light"] .md-table thead tr {
+  background: rgba(99, 102, 241, 0.07);
+  border-bottom-color: rgba(99, 102, 241, 0.18);
+}
+
+[data-theme="light"] .md-table td {
+  border-bottom-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .md-table tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.025);
+}
+
+[data-theme="light"] .md-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.1);
+}
+
+/* \u2500\u2500 Dark-slate table overrides \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+[data-theme="dark-slate"] .md-table thead tr {
+  background: rgba(99, 102, 241, 0.14);
+  border-bottom-color: rgba(99, 102, 241, 0.28);
+}
+
+[data-theme="dark"] .md-table th,
+[data-theme="dark-slate"] .md-table th {
+  background: rgba(99, 102, 241, 0.14);
+}
+
+[data-theme="dark"] .md-table tbody tr:nth-child(even),
+[data-theme="dark-slate"] .md-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="dark"] .md-table tbody tr:hover,
+[data-theme="dark-slate"] .md-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.09);
+}
+
+/* \u2500\u2500 Dark-theme table overrides \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+[data-theme="dark"] .md-table-wrapper,
+[data-theme="dark-slate"] .md-table-wrapper {
+  background:
+    linear-gradient(to left, var(--color-background) 20%, transparent) right,
+    linear-gradient(to right, var(--color-background) 20%, transparent) left,
+    radial-gradient(
+        farthest-side at 100% 50%,
+        rgba(255, 255, 255, 0.07),
+        transparent
+      )
+      right,
+    radial-gradient(
+        farthest-side at 0% 50%,
+        rgba(255, 255, 255, 0.07),
+        transparent
+      )
+      left;
+  background-color: var(--color-background);
+  background-repeat: no-repeat;
+  background-size:
+    40px 100%,
+    40px 100%,
+    10px 100%,
+    10px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   MOBILE OVERRIDES
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+@media (max-width: 480px) {
+  .copy-code-btn {
+    /* Always visible on touch devices \u2014 no hover event */
+    opacity: 1;
+  }
+
+  .code-block {
+    font-size: 0.8rem;
+    padding: 34px 12px 12px;
+  }
+
+  .md-table th,
+  .md-table td {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+}
+
+/* \u2500\u2500\u2500 Reading Passage \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+.reading-passage {
+  max-height: min(420px, 55vh);
+  overflow-y: auto;
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-background-secondary);
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.75;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+  margin-bottom: 20px;
+}
+
+.passage-content {
+  color: var(--color-text-primary);
+  font-size: 15px;
+}
+
+@media (max-width: 768px) {
+  .reading-passage {
+    max-height: min(360px, 50vh);
+    padding: 16px 18px;
+    font-size: 1rem;
+  }
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   SYNTAX HIGHLIGHTING TOKENS  (used by highlightCode() in markdown.js)
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   Token classes:
+     .sh-keyword    \u2014 language keywords (if, return, class, \u2026)
+     .sh-string     \u2014 string/template literals
+     .sh-number     \u2014 numeric literals
+     .sh-comment    \u2014 line and block comments
+     .sh-function   \u2014 function / method call identifiers
+     .sh-type       \u2014 PascalCase type / class names
+     .sh-builtin    \u2014 well-known built-ins (console, Math, \u2026)
+     .sh-operator   \u2014 operators (+ - * / = < > \u2026 )
+     .sh-attr       \u2014 HTML attrs / object properties
+     .sh-property   \u2014 object properties (alias of sh-attr)
+     .sh-tag        \u2014 HTML / XML tag names
+     .sh-variable   \u2014 CSS custom properties (--foo)
+     .sh-interp     \u2014 template-literal interpolation delimiters \${ }
+     .sh-interp-body\u2014 expression inside \${ }
+
+   Colours are tuned for a dark background (the default .code-block uses
+   a near-black bg).  A separate [data-theme="light"] block overrides them
+   for light mode.  The palette is intentionally cohesive with the primary
+   colour (#6366f1 indigo / Catppuccin-inspired) used elsewhere in the UI.
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+/* \u2500\u2500 Default / Dark palette \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+   Page bg \u2248 #1a1a2e (near-black, slight purple tint)
+   Code block \u2248 slightly lighter dark surface
+   Goal: rich but not neon \u2014 purples feel at home, accents are warm not garish
+   \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+
+.code-block .sh-keyword {
+  color: #c792ea; /* soft violet \u2014 kept, it harmonizes with the purple-tinted bg */
+  font-weight: 600;
+}
+
+.code-block .sh-string {
+  color: #a8d8a8; /* sage green \u2014 replaces neon lime, warm and readable */
+}
+
+.code-block .sh-number {
+  color: #f78c6c; /* soft coral \u2014 replaces bubblegum pink, mature accent */
+}
+
+.code-block .sh-comment {
+  color: #4e5a6a; /* deeper blue-grey \u2014 recedes cleanly on this near-black bg */
+  font-style: italic;
+}
+
+.code-block .sh-function {
+  color: #82aaff; /* periwinkle blue \u2014 softer than sky, less clinical */
+}
+
+.code-block .sh-type {
+  color: #ffcb6b; /* warm gold \u2014 amber was close, this is richer and less harsh */
+}
+
+.code-block .sh-builtin {
+  color: #f78c6c; /* same coral as numbers \u2014 related category, consistent family */
+}
+
+.code-block .sh-operator {
+  color: #7986a8; /* muted blue-slate \u2014 visible but not competing */
+}
+
+.code-block .sh-attr,
+.code-block .sh-property {
+  color: #89ddff; /* cool sky \u2014 distinct from functions, feels like metadata */
+}
+
+.code-block .sh-tag {
+  color: #f07178; /* muted rose-red \u2014 replaces hot pink, same role but calmer */
+}
+
+.code-block .sh-variable {
+  color: #c792ea; /* same violet as keywords \u2014 CSS vars share the keyword family */
+}
+
+.code-block .sh-interp {
+  color: #f78c6c; /* coral \u2014 consistent with numbers/builtins, signals injection */
+  font-weight: 700;
+}
+
+.code-block .sh-interp-body {
+  color: #cdd5e0; /* soft blue-white \u2014 cooler than near-white, fits the tinted bg */
+}
+
+/* \u2500\u2500 Light-theme overrides \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+
+[data-theme="light"] .code-block .sh-keyword {
+  color: #569cd6; /* cool blue \u2014 classic keyword blue */
+  font-weight: 600;
+}
+
+[data-theme="light"] .code-block .sh-string {
+  color: #ce9178; /* warm terracotta \u2014 easy on dark bg */
+}
+
+[data-theme="light"] .code-block .sh-number {
+  color: #b5cea8; /* soft sage green */
+}
+
+[data-theme="light"] .code-block .sh-comment {
+  color: #6a9955; /* muted green \u2014 readable but recedes */
+  font-style: italic;
+}
+
+[data-theme="light"] .code-block .sh-function {
+  color: #dcdcaa; /* warm yellow \u2014 functions stand out */
+}
+
+[data-theme="light"] .code-block .sh-type {
+  color: #4ec9b0; /* teal \u2014 types feel structural */
+}
+
+[data-theme="light"] .code-block .sh-builtin {
+  color: #4ec9b0; /* same teal family as types */
+}
+
+[data-theme="light"] .code-block .sh-operator {
+  color: #d4d4d4; /* near-white \u2014 punctuation stays neutral */
+}
+
+[data-theme="light"] .code-block .sh-attr,
+[data-theme="light"] .code-block .sh-property {
+  color: #9cdcfe; /* light sky blue \u2014 properties feel accessible */
+}
+
+[data-theme="light"] .code-block .sh-tag {
+  color: #569cd6; /* same blue as keywords \u2014 HTML tags fit */
+}
+
+[data-theme="light"] .code-block .sh-variable {
+  color: #9cdcfe; /* sky blue \u2014 consistent with properties */
+}
+
+[data-theme="light"] .code-block .sh-interp {
+  color: #c586c0; /* soft violet \u2014 interpolation markers pop */
+  font-weight: 700;
+}
+
+[data-theme="light"] .code-block .sh-interp-body {
+  color: #d4d4d4; /* same neutral as operators */
+}
+
+/* \u2500\u2500 Dark-slate theme \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+   Page bg \u2248 deep navy, code block \u2248 slightly lighter slate
+   Goal: warm, sophisticated \u2014 no neon, no pastels that clash with cool blues
+   \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+
+[data-theme="dark-slate"] .code-block .sh-keyword {
+  color: #82aaff; /* periwinkle blue \u2014 softer than purple, fits navy context */
+  font-weight: 600;
+}
+
+[data-theme="dark-slate"] .code-block .sh-string {
+  color: #c3e88d; /* muted lime-green \u2014 warm but not neon */
+}
+
+[data-theme="dark-slate"] .code-block .sh-number {
+  color: #f78c6c; /* soft coral \u2014 replaces bubblegum pink, feels mature */
+}
+
+[data-theme="dark-slate"] .code-block .sh-comment {
+  color: #546e7a; /* blue-grey \u2014 recedes into the slate without disappearing */
+  font-style: italic;
+}
+
+[data-theme="dark-slate"] .code-block .sh-function {
+  color: #82aaff; /* same family as keywords \u2014 cohesive, not competing */
+}
+
+[data-theme="dark-slate"] .code-block .sh-type {
+  color: #ffcb6b; /* warm gold \u2014 structural types deserve warmth */
+}
+
+[data-theme="dark-slate"] .code-block .sh-builtin {
+  color: #89ddff; /* cool sky \u2014 distinct from types, fits the slate palette */
+}
+
+[data-theme="dark-slate"] .code-block .sh-operator {
+  color: #89ddff; /* same sky \u2014 operators stay light and neutral */
+}
+
+[data-theme="dark-slate"] .code-block .sh-attr,
+[data-theme="dark-slate"] .code-block .sh-property {
+  color: #b2ccd6; /* desaturated steel blue \u2014 calm and readable */
+}
+
+[data-theme="dark-slate"] .code-block .sh-tag {
+  color: #f07178; /* muted rose-red \u2014 replaces bubblegum, still distinct */
+}
+
+[data-theme="dark-slate"] .code-block .sh-variable {
+  color: #eeffff; /* near-white with a cool tint \u2014 variables are plain text */
+}
+
+[data-theme="dark-slate"] .code-block .sh-interp {
+  color: #f78c6c; /* coral \u2014 matches numbers, signals interpolation clearly */
+  font-weight: 700;
+}
+
+[data-theme="dark-slate"] .code-block .sh-interp-body {
+  color: #b2ccd6; /* matches properties \u2014 calm body text */
+}
+
+/* Dynamic Direction Utilities (native dir="auto"; start follows resolved direction) */
+/* :where() keeps specificity at 0 so component rules still win */
+:where([dir="auto"]) {
+  text-align: start;
+}
+
+.text-ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+.text-rtl {
+  direction: rtl;
+  text-align: right;
+}`;export{e as a};
