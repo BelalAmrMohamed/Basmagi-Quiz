@@ -11,6 +11,9 @@
 // again on every format click within the same visit.
 // ============================================================================
 
+import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+import { checkQuizHasPassword } from "./quiz-data-loader.js";
+
 const DOWNLOAD_PASSWORD_SESSION_PREFIX = "dl_pw_ok:";
 
 export function isStoredPasswordHash(value) {
@@ -48,20 +51,66 @@ export function isDownloadPasswordVerified(quizId) {
   }
 }
 
-export function markDownloadPasswordVerified(quizId) {
+/**
+ * @param {string} quizId
+ * @param {string} [storedValue] - for shared quizzes, the value the server
+ *   returned after a correct password (needed so exported files stay
+ *   protected). Local quizzes just pass nothing.
+ */
+export function markDownloadPasswordVerified(quizId, storedValue) {
   try {
-    sessionStorage.setItem(DOWNLOAD_PASSWORD_SESSION_PREFIX + quizId, "1");
+    sessionStorage.setItem(
+      DOWNLOAD_PASSWORD_SESSION_PREFIX + quizId,
+      typeof storedValue === "string" && storedValue ? storedValue : "1",
+    );
   } catch (_) {
     /* non-fatal — user will just be re-prompted next time */
   }
 }
 
+/** The server-returned password value saved by markDownloadPasswordVerified, if any. */
+export function getVerifiedQuizPassword(quizId) {
+  try {
+    const v = sessionStorage.getItem(DOWNLOAD_PASSWORD_SESSION_PREFIX + quizId);
+    return v && v !== "1" ? v : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Checks a typed password for a shared (database) quiz ON THE SERVER. The
+ * stored hash never reaches the browser. Resolves to the stored value (a
+ * truthy string) when correct, or `false`.
+ */
+export async function verifyQuizPasswordRemote(dbId, input) {
+  if (!dbId) return false;
+  try {
+    const supabase = await ensureSharedSupabaseClient();
+    if (!supabase) return false;
+    const { data, error } = await supabase.rpc("verify_quiz_password", {
+      p_quiz_id: dbId,
+      p_password: String(input ?? ""),
+    });
+    if (error) {
+      console.warn("[quiz-password] verification failed:", error.message);
+      return false;
+    }
+    return typeof data === "string" && data ? data : false;
+  } catch (err) {
+    console.warn("[quiz-password] verification failed:", err);
+    return false;
+  }
+}
+
 /**
  * Prompts the user for a quiz's download password in a modal.
- * Resolves `true` if the correct password was entered, `false` if the user
- * cancelled or the password was wrong after the user gave up.
+ * `verify(input)` returns a truthy value (`true`, or the stored password
+ * string for shared quizzes) when the input is correct.
+ * Resolves that value if the correct password was entered, `false` if the
+ * user cancelled.
  */
-function promptDownloadPassword(title, correctPassword) {
+function promptDownloadPassword(title, verify) {
   return new Promise((resolve) => {
     const modal = document.createElement("div");
     modal.className = "modal-overlay";
@@ -124,12 +173,9 @@ function promptDownloadPassword(title, correctPassword) {
     cancelBtn.onclick = () => finish(false);
 
     const attemptSubmit = async () => {
-      const ok = await quizPasswordMatches(
-        input.value,
-        correctPassword,
-      );
+      const ok = await verify(input.value);
       if (ok) {
-        finish(true);
+        finish(ok);
       } else {
         errorMsg.style.display = "block";
         input.value = "";
@@ -177,7 +223,41 @@ export async function ensureDownloadAllowed(quizId, password, title) {
   if (!password) return true;
   if (isDownloadPasswordVerified(quizId)) return true;
 
-  const ok = await promptDownloadPassword(title, password);
+  const ok = await promptDownloadPassword(title, (input) =>
+    quizPasswordMatches(input, password),
+  );
   if (ok) markDownloadPasswordVerified(quizId);
-  return ok;
+  return Boolean(ok);
+}
+
+/**
+ * Same gate for shared (database) quizzes, whose password never leaves the
+ * server. `exam.passwordProtected` comes from the catalog; when it's missing
+ * (e.g. an exam built from a lesson reference) it's looked up by `dbId`.
+ *
+ * @returns {Promise<{allowed: boolean, password: string|null}>} `password` is
+ *   the value to embed in exported files (null when unprotected).
+ */
+export async function ensureQuizDownloadAllowed(exam) {
+  let protectedQuiz = exam?.passwordProtected;
+  if (protectedQuiz === undefined && exam?.dbId) {
+    try {
+      protectedQuiz = await checkQuizHasPassword(exam.dbId);
+    } catch (_) {
+      protectedQuiz = false; // the modal's own data load will surface the real error
+    }
+  }
+  if (!protectedQuiz) return { allowed: true, password: null };
+
+  const key = exam.id || exam.dbId;
+  const cached = getVerifiedQuizPassword(key);
+  if (cached) return { allowed: true, password: cached };
+
+  const result = await promptDownloadPassword(
+    exam.title || exam.id,
+    (input) => verifyQuizPasswordRemote(exam.dbId, input),
+  );
+  if (!result) return { allowed: false, password: null };
+  markDownloadPasswordVerified(key, result);
+  return { allowed: true, password: typeof result === "string" ? result : null };
 }

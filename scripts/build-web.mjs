@@ -18,7 +18,6 @@
 // =============================================================================
 import { build, context } from "esbuild";
 import { readFile, rm, mkdir, writeFile, mkdtemp } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -76,13 +75,19 @@ const HOME_CSS = [
   "src/features/home/user-course-card.css",
 ];
 const shared = { bundle: true, minify: !watch, sourcemap: watch ? "inline" : false, logLevel: "info", legalComments: "none" };
+let buildTempDir = null;
 
 async function run() {
-  await rm(out, { recursive: true, force: true });
+  // Windows may briefly deny removal while antivirus/indexing releases a
+  // handle on a generated file. Retry transient EPERM/EBUSY failures.
+  await rm(out, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   await mkdir(out, { recursive: true });
 
   // Generated entry (kept out of public/ so it is never deployed).
-  const tmp = await mkdtemp(path.join(tmpdir(), "basmagi-web-"));
+  // Keep generated entry files inside the project so esbuild can read them
+  // in restricted environments where the system temp directory is inaccessible.
+  const tmp = await mkdtemp(path.join(root, ".basmagi-web-"));
+  buildTempDir = tmp;
   const entryFile = path.join(tmp, "home-entry.js");
   await writeFile(entryFile, [
     ...ENTRY_ORDER.map((f) => `import ${JSON.stringify(path.join(pub, f))};`),
@@ -145,6 +150,14 @@ async function run() {
   const res = await build(jsOpts);
   await build(cssOpts);
   await writeFile(path.join(out, "meta.json"), JSON.stringify(Object.keys(res.metafile.outputs), null, 1));
+  await rm(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  buildTempDir = null;
 }
 
-run().catch((e) => { console.error(e); process.exit(1); });
+run().catch(async (e) => {
+  if (buildTempDir) {
+    await rm(buildTempDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }).catch(() => {});
+  }
+  console.error(e);
+  process.exit(1);
+});

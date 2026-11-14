@@ -58,9 +58,32 @@ export function isAnswerCorrect(userAnswer, correctValue) {
   return userAnswer === correctValue;
 }
 
+// NOTE: gradeEssay is embedded into generated standalone files through
+// `gradeEssay.toString()` (export-to-quiz.js, lesson-download.js,
+// api/ai-agent/_botGenerators.js), so it must stay fully self-contained: no
+// helpers or constants defined outside the function body.
 export function gradeEssay(userInput, modelAnswer) {
+  // Makes two spellings of the same answer comparable:
+  //  - LaTeX: delimiters ($..$, $$..$$, \(..\), \[..\]), \text{..}-style
+  //    wrappers, \left/\right, spacing commands and \frac{a}{b} are reduced to
+  //    the plain text a student would type.
+  //  - Arabic: diacritics (tashkeel), tatweel, alef variants (أ إ آ ٱ -> ا),
+  //    Arabic punctuation and Arabic-Indic digits/decimal separator.
   const normalize = (s) =>
     String(s || "")
+      .replace(/\\(?:text|textbf|textit|mathrm|mathbf|mathit|operatorname)\s*\{([^{}]*)\}/g, "$1")
+      .replace(/\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, "$1/$2")
+      .replace(/\\(?:left|right|bigg?|Bigg?)(?![a-zA-Z])/g, "")
+      .replace(/\\[,;:! ]/g, " ")
+      .replace(/\$\$|\$|\\\(|\\\)|\\\[|\\\]/g, " ")
+      .replace(/\\([a-zA-Z]+)/g, "$1")
+      .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+      .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+      .replace(/\u066B/g, ".")
+      .replace(/\u066C/g, "")
+      .replace(/[\u064B-\u0652\u0670\u0640]/g, "")
+      .replace(/[\u0622\u0623\u0625\u0671]/g, "\u0627")
+      .replace(/[\u060C\u061B\u061F\u00AB\u00BB\u2026]/g, " ")
       .toLowerCase()
       .replace(/[.,;:!?()\[\]{}\"'\/\\`]/g, " ")
       .replace(/\s+/g, " ")

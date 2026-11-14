@@ -2074,6 +2074,42 @@
   transform: translateY(0) scale(0.97);
 }
 
+/* Loading state: set by ai-agent-lazy.js while the agent code + CSS download
+   on first click. A spinner ring around the logo; no layout shift. */
+.ai-agent-fab[aria-busy="true"] {
+  cursor: progress;
+}
+
+.ai-agent-fab[aria-busy="true"] .ai-agent-fab-logo {
+  opacity: 0.6;
+}
+
+.ai-agent-fab[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--color-primary, #4f46e5);
+  border-right-color: var(--color-primary, #4f46e5);
+  pointer-events: none;
+  animation: ai-agent-fab-spin 0.7s linear infinite;
+}
+
+@keyframes ai-agent-fab-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-agent-fab[aria-busy="true"]::after {
+    animation: ai-agent-fab-pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes ai-agent-fab-pulse {
+    50% { opacity: 0.35; }
+  }
+}
+
 .ai-agent-fab-logo {
   width: 60%;
   height: 60%;

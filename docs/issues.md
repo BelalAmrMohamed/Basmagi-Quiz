@@ -32,7 +32,11 @@ Improve:
   * But update the top bar icons to match those that exist in the AI Agent's rich markdown input field, because they are way better.
 
 ### Home Page: Passwords are exposed
-The home page downloads every password (Of lessons and quizzes) to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be patched.
+The home page downloads every password (Of lessons and quizzes) to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be patched. (This issue is partially solved)
+
+Solved, but these are the remaining gaps:
+* The questions of protected quizzes are still publicly readable through the API. Copy-to-my-quizzes, “ask the assistant” and embedded lesson quizzes also bypass the lock. The hash can no longer be stolen, but the lock is still only a screen. Closing this would mean hiding the questions until the server verifies the password, as lessons already do. It touches the quiz page, export, copy, AI attach and lesson embeds, so I’d do it as its own task.
+* Anyone can still guess passwords through the verify function. Previously they could crack the hash offline, so this is better but not rate-limited.
 
 ### AI Agent (الباشــمبصمج): Dictation
 Fix Dictation: The dictation doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser when using the browser api for dictation.

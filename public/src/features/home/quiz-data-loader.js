@@ -62,8 +62,10 @@ export async function loadFullQuizData(exam) {
 }
 
 /**
- * Checks whether a DB-hosted quiz currently has a password set, without
- * exposing the hash itself. loadFullQuizData()/loadDbQuizData() only ever
+ * Checks whether a DB-hosted quiz currently has a password set. The password
+ * column itself is not readable by browsers (see migration
+ * 20261114120000_quiz_password_private.sql); this reads the boolean from the
+ * quiz_public view. loadFullQuizData()/loadDbQuizData() only ever
  * select `id, data` — the password hash lives in its own column and is
  * stripped out of `data` at upload/update time (see api/admin.js's
  * handleUpdateQuiz header comment) — so callers that need to know *whether*
@@ -79,11 +81,11 @@ export async function checkQuizHasPassword(dbId) {
   if (!supabase) throw new Error("تعذّر الاتصال بقاعدة البيانات");
 
   const { data, error } = await supabase
-    .from("quizzes")
-    .select("password")
+    .from("quiz_public")
+    .select("password_protected")
     .eq("id", dbId)
     .maybeSingle();
 
   if (error) throw error;
-  return Boolean(data?.password);
+  return Boolean(data?.password_protected);
 }

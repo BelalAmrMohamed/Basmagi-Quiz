@@ -41,8 +41,8 @@ async function fetchAllQuizzes() {
         const from = page * QUIZ_PAGE_SIZE;
         const to = from + QUIZ_PAGE_SIZE - 1;
         const { data, error } = await supabase
-            .from("quizzes")
-            .select("data, password, created_at, synced_at, course_id, folder_id")
+            .from("quiz_public") // view: has password_protected, never the password itself
+            .select("data, password_protected, created_at, synced_at, course_id, folder_id")
             .range(from, to);
 
         if (error) return { error };
@@ -181,7 +181,7 @@ export async function loadPublicCatalog() {
         const metaId = meta.id;
         if (!metaId) continue; // guard: no meta.id
         if (!meta.title) continue; // guard: empty title
-        if (q.password) continue; // guard: password-protected — never listed publicly
+        if (q.password_protected) continue; // guard: password-protected — never listed publicly
 
         quizzes.push({
             metaId,

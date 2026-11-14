@@ -81,7 +81,8 @@ function saveManifestCache({ quizzes, lessons, notebooks, courses, folders }) {
       course_id: q.course_id,
       folder_id: q.folder_id,
       title: q.title,
-      password: q.password,
+      // Only the boolean is cached: the password itself is never sent to browsers.
+      passwordProtected: Boolean(q.password_protected ?? q.passwordProtected),
       // The live manifest now selects just these JSON subfields instead of
       // downloading each quiz's full question body. Keep accepting the older
       // nested shape as well so this cache helper remains migration-safe.
@@ -92,7 +93,7 @@ function saveManifestCache({ quizzes, lessons, notebooks, courses, folders }) {
       // Lessons were added to the catalog in v2. An older snapshot cannot
       // provide an honest course-level lesson-progress total, so let it miss
       // the cache and fetch a current catalog instead.
-      v: 3,
+      v: 4, // v3 snapshots contained quiz password hashes — never restore them
       project: SUPABASE_URL,
       savedAt: new Date().toISOString(),
       quizzes: slimQuizzes,
@@ -123,7 +124,12 @@ function tryRestoreManifestCache() {
     const raw = localStorage.getItem(MANIFEST_CACHE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (!data || data.v !== 3 || data.project !== SUPABASE_URL) return null;
+    if (data && data.v !== 4) {
+      // Older snapshots (v3) hold quiz password hashes: wipe them from disk.
+      try { localStorage.removeItem(MANIFEST_CACHE_KEY); } catch (_) { }
+      return null;
+    }
+    if (!data || data.project !== SUPABASE_URL) return null;
     if (
       !Array.isArray(data.courses) ||
       !Array.isArray(data.folders) ||
@@ -227,13 +233,22 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
 
   const [{ data: quizzes, error: quizzesError }, { data: lessons, error: lessonsError }, { data: courses, error: coursesError }, { data: folders, error: foldersError }, { data: notebooks, error: notebooksError }] = await withTimeout(
     Promise.all([
-      supabase
-        .from("quizzes")
-        // Catalog rendering only needs metadata/stats. Selecting `data`
-        // downloads every question body for every quiz, making first loads
-        // several MB and causing the snapshot-aware timeout on mobile links.
-        .select("id, course_id, folder_id, title, meta:data->meta, stats:data->stats, password")
-        .order("created_at", { ascending: true }),
+      // Catalog rendering only needs metadata/stats. Selecting `data`
+      // downloads every question body for every quiz, making first loads
+      // several MB and causing the snapshot-aware timeout on mobile links.
+      // Reads the quiz_public view: it carries `password_protected` (boolean)
+      // and never the password itself (migration 20261114120000).
+      (async () => {
+        const columns = "id, course_id, folder_id, title, meta:data->meta, stats:data->stats";
+        const res = await supabase.from("quiz_public").select(`${columns}, password_protected`).order("created_at", { ascending: true });
+        if (!res.error) return res;
+        // Migration not applied yet: the old column is still readable. Reduce
+        // it to a boolean immediately so the value never leaves this function.
+        console.warn("[quizManifest] quiz_public unavailable, using legacy query:", res.error.message);
+        const legacy = await supabase.from("quizzes").select(`${columns}, password`).order("created_at", { ascending: true });
+        if (legacy.data) legacy.data = legacy.data.map(({ password, ...rest }) => ({ ...rest, password_protected: Boolean(password) }));
+        return legacy;
+      })(),
       // question_count needs the 20261101140000 migration; until it is applied
       // the first query errors, so retry without it rather than losing every lesson.
       (async () => {
@@ -367,7 +382,7 @@ async function buildSubjects(quizzes, lessons, courses, folders, notebooks = [])
     // (see delete-quiz.js / admin-item-actions.js) — lets the quiz's own
     // author see manage actions even when the platform owner is elsewhere.
     if (quizMeta.author_email) quizEntry.author_email = quizMeta.author_email;
-    if (row.password) quizEntry.password = row.password;
+    if (row.password_protected ?? row.passwordProtected) quizEntry.passwordProtected = true;
     if (quizMeta.source) quizEntry.source = quizMeta.source;
     if (quizMeta.createdAt) quizEntry.createdAt = quizMeta.createdAt;
 
@@ -621,7 +636,7 @@ function buildCompatStructures(subjects, folders) {
         ...(quiz.author_email && { author_email: quiz.author_email }),
         ...(quiz.author_id && { author_id: quiz.author_id }),
         ...(quiz.source && { source: quiz.source }),
-        ...(quiz.password && { password: quiz.password }),
+        ...(quiz.passwordProtected && { passwordProtected: true }),
       };
 
       categoryTree[examCategoryKey].exams.push(examEntry);

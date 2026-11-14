@@ -667,15 +667,29 @@ function openSettingsModal(options, onClose) {
 // while the window is minimized — the pill shows a "working" animation.
 let activeWindow = null;
 
-function ensureAgentStyles() {
-  for (const file of ["./ai-agent-window.css", "./rich-input/rich-input.css"]) {
-    const href = new URL(file, import.meta.url).href;
-    if ([...document.querySelectorAll('link[rel="stylesheet"]')].some((l) => l.href === href)) continue;
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = href;
-    document.head.appendChild(link);
-  }
+// Injects the window's stylesheets and returns a promise that resolves once
+// they have loaded (or failed / timed out: never blocks opening). The lazy
+// loader (ai-agent-lazy.js) awaits this BEFORE the window is built, so the
+// window's HTML never appears unstyled while its CSS is still downloading.
+let agentStylesReady = null;
+export function ensureAIAgentStyles() {
+  agentStylesReady ??= Promise.all(
+    ["./ai-agent-window.css", "./rich-input/rich-input.css"].map((file) => new Promise((resolve) => {
+      const href = new URL(file, import.meta.url).href;
+      let link = [...document.querySelectorAll('link[rel="stylesheet"]')].find((l) => l.href === href);
+      if (link?.sheet) return resolve();
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = href;
+        document.head.appendChild(link);
+      }
+      link.addEventListener("load", resolve, { once: true });
+      link.addEventListener("error", resolve, { once: true });
+      setTimeout(resolve, 4000);
+    })),
+  );
+  return agentStylesReady;
 }
 
 export function isAIAgentWindowOpen() {
@@ -687,7 +701,7 @@ export function openAIAgentModal(options, fab) {
     activeWindow.reveal();
     return activeWindow;
   }
-  ensureAgentStyles();
+  ensureAIAgentStyles();
 
   const cachedChat = getChatPanelForPageKey(options.pageKey);
   if (cachedChat && !cachedChat.isGenerating?.()) {
