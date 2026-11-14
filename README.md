@@ -99,3 +99,35 @@ tells GitHub to just serve the files exactly as they are, which helps bots reach
 ## Notebook runtimes
 
 Notebooks support MATLAB-style browser execution and C++17. C++ cells are sent to an online compiler, require an internet connection, and replay earlier cells when a later cell runs. Cell output is separated by cell; optional `stdin` input is available for each C++ cell. Compiler output is not stored.
+
+---
+
+## Pushing Updates
+
+To commit, bundle, and push updates after making code changes:
+
+1. **Build assets (recommended before committing UI/CSS changes):**
+   ```bash
+   npm run build:web
+   ```
+
+2. **Commit changes:**
+   ```bash
+   # Automatically stages files and generates a descriptive commit message
+   npm run commit
+
+   # Or specify a custom message:
+   npm run commit -- "Your message here"
+   ```
+
+3. **Push to production:**
+   ```bash
+   # Full workflow: commits, creates a basmagi.zip backup, pushes `main`, merges into `production`, and pushes `production`
+   npm run push:all
+
+   # Fast push: merges current `main` into `production` branch and pushes to remote
+   npm run push
+   ```
+
+> **Tip (Releases):** For versioned releases, run `npm run release` (or `npm run release -- --minor` / `--major`) before pushing to bump the version, update `CHANGELOG.md`, and generate a Git tag.
+

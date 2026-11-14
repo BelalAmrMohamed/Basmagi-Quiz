@@ -1,4 +1,4 @@
-﻿/* ============================================================================ */
+/* ============================================================================ */
 
 * {
   margin: 0;
@@ -3232,6 +3232,13 @@ kbd {
   line-height: 1.5;
 }
 
+#errorBoundary .error-boundary-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 #errorBoundary button {
   flex-shrink: 0;
   background: #dc2626;
@@ -3245,6 +3252,8 @@ kbd {
   font-family: inherit;
   transition:
     background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
     transform 0.1s ease;
 }
 
@@ -3254,6 +3263,18 @@ kbd {
 
 #errorBoundary button:active {
   transform: scale(0.97);
+}
+
+#errorBoundary .error-boundary-cancel-btn {
+  background: transparent;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+#errorBoundary .error-boundary-cancel-btn:hover {
+  background: #fee2e2;
+  color: #7f1d1d;
+  border-color: #f87171;
 }
 
 @keyframes errorBoundarySlideIn {
@@ -3278,6 +3299,20 @@ kbd {
 }[data-theme="dark"] #errorBoundary p,
 [data-theme="dark-slate"] #errorBoundary p {
   color: #fca5a5;
+}
+
+[data-theme="dark"] #errorBoundary .error-boundary-cancel-btn,
+[data-theme="dark-slate"] #errorBoundary .error-boundary-cancel-btn {
+  background: transparent;
+  color: #fca5a5;
+  border-color: #7f1d1d;
+}
+
+[data-theme="dark"] #errorBoundary .error-boundary-cancel-btn:hover,
+[data-theme="dark-slate"] #errorBoundary .error-boundary-cancel-btn:hover {
+  background: #3f171d;
+  color: #fecaca;
+  border-color: #991b1b;
 }
 
 [data-animations="disabled"] #errorBoundary {
