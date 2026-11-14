@@ -13,7 +13,7 @@
 // ============================================================================
 
 import { qz } from "./quiz-schema.js";
-import { ensureDownloadAllowed } from "./download-password.js";
+import { ensureDownloadAllowed, ensureQuizDownloadAllowed } from "./download-password.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
 import { formatQuestionTypesForDownload } from "./quiz-schema.js";
 import {
@@ -79,16 +79,7 @@ export async function showUserQuizDownloadPopup(quiz, triggerBtn) {
  * loading identical across surfaces. */
 export async function showQuizDownloadPopup(exam, triggerBtn) {
   const run = async () => {
-    let password = exam?.password || null;
-    if (!password && exam?.dbId) {
-      try {
-        const loaded = await loadFullQuizData(exam);
-        password = loaded?.meta?.password || null;
-      } catch (_) {
-        // The modal's lazy loader will surface the actual data error later.
-      }
-    }
-    const allowed = await ensureDownloadAllowed(exam?.id || exam?.dbId, password, exam?.title || exam?.id);
+    const { allowed, password } = await ensureQuizDownloadAllowed(exam);
     if (!allowed) return;
     const initialConfig = {
       id: exam?.id || exam?.dbId,

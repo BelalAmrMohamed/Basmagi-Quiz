@@ -47,6 +47,7 @@ import { openReportModal, isQuestionReported } from "../../components/report-que
 import {
   isDownloadPasswordVerified,
   markDownloadPasswordVerified,
+  verifyQuizPasswordRemote,
 } from "../home/download-password.js";
 
 observeRichInputHighlighters({ selector: "textarea.essay-textarea" });
@@ -164,8 +165,11 @@ const els = {
 })();
 
 // === Quiz Password Lock: teacher-enforced access gate ===
-// Used by init() when metaData.password is present. Resolves `true` once the
-// student enters the correct password, `false` if they cancel out. While
+// Used by init() when the quiz is password-protected. `verify(input)` returns a
+// truthy value when the input is correct (local quizzes compare against their
+// own stored password; shared quizzes ask the server, which never sends the
+// hash to the browser). Resolves that value once the student enters the
+// correct password, `false` if they cancel out. While
 // shown, no quiz content (questions, info dialog data already populated
 // elsewhere) is rendered — init() awaits this before doing anything else.
 function isStoredPasswordHash(value) {
@@ -190,7 +194,7 @@ async function quizPasswordMatches(input, stored) {
   return String(input) === String(stored);
 }
 
-function promptForQuizPassword(correctPassword) {
+function promptForQuizPassword(verify) {
   return new Promise((resolve) => {
     let dialog = document.getElementById("quizPasswordDialog");
     if (!dialog) {
@@ -237,11 +241,11 @@ function promptForQuizPassword(correctPassword) {
 
     const onSubmit = async (e) => {
       e.preventDefault();
-      const ok = await quizPasswordMatches(input.value, correctPassword);
+      const ok = await verify(input.value);
       if (ok) {
         cleanup();
         dialog.close();
-        resolve(true);
+        resolve(ok);
       } else {
         errorEl.hidden = false;
         input.value = "";
@@ -1187,7 +1191,8 @@ async function init() {
         author_id: module.meta?.author_id || null,
         view: module.meta?.view || null,
         mode: module.meta?.mode || null,
-        password: module.meta?.password || config.password || null,
+        password: module.meta?.password || null,
+        passwordProtected: Boolean(config.passwordProtected),
         questionTypes: formatQuestionTypes(module.stats),
       };
     }
@@ -1263,14 +1268,21 @@ async function init() {
     // skip the prompt entirely. Conversely, a password entered here is
     // remembered the same way, so returning to the home page to download
     // the same quiz won't ask again either.
-    if (metaData.password) {
+    if (metaData.password || metaData.passwordProtected) {
       if (!isDownloadPasswordVerified(examId)) {
-        const unlocked = await promptForQuizPassword(metaData.password);
+        // Shared quizzes: the password lives only on the server.
+        const verify = metaData.passwordProtected
+          ? (value) => verifyQuizPasswordRemote(quizDbId, value)
+          : (value) => quizPasswordMatches(value, metaData.password);
+        const unlocked = await promptForQuizPassword(verify);
         if (!unlocked) {
           window.location.href = "/";
           return;
         }
-        markDownloadPasswordVerified(examId);
+        markDownloadPasswordVerified(
+          examId,
+          typeof unlocked === "string" ? unlocked : undefined,
+        );
       }
     }
 

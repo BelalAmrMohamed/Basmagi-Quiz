@@ -58,102 +58,226 @@ export function isAnswerCorrect(userAnswer, correctValue) {
   return userAnswer === correctValue;
 }
 
+// NOTE: gradeEssay is embedded into generated standalone files through
+// `gradeEssay.toString()` (export-to-quiz.js, lesson-download.js,
+// api/ai-agent/_botGenerators.js), so it must stay fully self-contained: no
+// helpers or constants defined outside the function body.
 export function gradeEssay(userInput, modelAnswer) {
-  const normalize = (s) =>
-    String(s || "")
+  const toAsciiDigits = (s) =>
+    String(s ?? "")
+      .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+      .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+      .replace(/\u066B/g, ".")
+      .replace(/\u066C/g, "");
+
+  // Convert common LaTeX and Unicode spellings into a compact expression.
+  // This is deliberately a small offline normalizer, not a symbolic algebra
+  // system. It handles notation variants without claiming semantic proof.
+  const mathForm = (raw) => {
+    let s = toAsciiDigits(raw)
+      .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, (d) => `^${"⁰¹²³⁴⁵⁶⁷⁸⁹".indexOf(d)}`)
+      .normalize("NFKC");
+    for (let i = 0; i < 8; i++) {
+      const before = s;
+      s = s
+        .replace(/\\(?:text|textbf|textit|mathrm|mathbf|mathit|operatorname)\s*\{([^{}]*)\}/g, "$1")
+        .replace(/\\(?:dfrac|tfrac|frac)\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, "($1)/($2)")
+        .replace(/\\sqrt\s*\{([^{}]*)\}/g, "sqrt($1)");
+      if (s === before) break;
+    }
+    s = s
+      .replace(/\^\s*\{([^{}]*)\}/g, "^$1")
+      .replace(/\\(?:left|right|displaystyle|textstyle|scriptstyle|limits)(?![a-z])/g, "")
+      .replace(/\\(?:times|cdot|ast)/g, "*")
+      .replace(/\\(?:div)/g, "/")
+      .replace(/\\(?:pm)/g, "+-")
+      .replace(/\\(?:leq?|le)/g, "<=")
+      .replace(/\\(?:geq?|ge)/g, ">=")
+      .replace(/\\(?:neq|ne)/g, "!=")
+      .replace(/\\pi/g, "pi")
+      .replace(/\\([a-zA-Z]+)/g, "$1")
+      .replace(/\\[,;:! ]/g, " ")
+      .replace(/\$\$|\$|\\\(|\\\)|\\\[|\\\]/g, " ")
+      .replace(/[×·⋅]/g, "*")
+      .replace(/[÷]/g, "/")
+      .replace(/[−–]/g, "-")
+      .replace(/[≤]/g, "<=")
+      .replace(/[≥]/g, ">=")
+      .replace(/[≠]/g, "!=")
+      .replace(/[π]/g, "pi")
+      .replace(/[√]\s*([a-zA-Z0-9]+)/g, "sqrt($1)")
+      .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, (d) => `^${"⁰¹²³⁴⁵⁶⁷⁸⁹".indexOf(d)}`)
+      .toLowerCase();
+    s = s.replace(/\b(sin|cos|tan|log|ln|sqrt)\s+([a-z0-9]+)/g, "$1($2)");
+    s = s
+      .replace(/\s*([=<>+*/^(),])\s*/g, (m, op) => op)
+      .replace(/(?<=[0-9])(?=[a-z(])/g, "*")
+      .replace(/(?<=[a-z)])(?=[0-9(])/g, "*")
+      .replace(/(?<=\))(?=[a-z])/g, "*")
+      .replace(/\s+/g, "*")
+      .replace(/\((\d+(?:\.\d+)?)\)/g, "$1");
+
+    const splitTopLevel = (value, separators) => {
+      const parts = [];
+      let depth = 0;
+      let start = 0;
+      for (let i = 0; i < value.length; i++) {
+        const ch = value[i];
+        if (ch === "(") depth++;
+        else if (ch === ")") depth--;
+        else if (depth === 0 && separators.includes(ch) && i > start) {
+          if ((ch === "+" || ch === "-") && /[+\-*/^=<>]$/.test(value.slice(start, i))) continue;
+          parts.push(value.slice(start, i));
+          start = i;
+        }
+      }
+      if (start < value.length) parts.push(value.slice(start));
+      return parts;
+    };
+    const canonicalSide = (value) => {
+      const terms = splitTopLevel(value, "+-").map((term) => {
+        const sign = term.startsWith("-") ? "-" : "";
+        const body = /^[+-]/.test(term) ? term.slice(1) : term;
+        const factors = splitTopLevel(body, "*");
+        return sign + (factors.length > 1 ? factors.sort().join("*") : body);
+      });
+      return terms.sort().join("|");
+    };
+    const sides = splitTopLevel(s, "=");
+    return sides.length > 1
+      ? sides.map(canonicalSide).sort().join("=")
+      : canonicalSide(s);
+  };
+
+  const normalizeText = (raw) =>
+    toAsciiDigits(raw)
+      .normalize("NFKC")
+      .replace(/\\(?:text|textbf|textit|mathrm|mathbf|mathit|operatorname)\s*\{([^{}]*)\}/g, "$1")
+      .replace(/\\(?:dfrac|tfrac|frac)\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, "$1 $2")
+      .replace(/\\(?:left|right|bigg?|Bigg?)(?![a-zA-Z])/g, "")
+      .replace(/\\[,;:! ]/g, " ")
+      .replace(/\$\$|\$|\\\(|\\\)|\\\[|\\\]/g, " ")
+      .replace(/\\([a-zA-Z]+)/g, "$1")
+      .replace(/[\u064B-\u0652\u0670\u0640]/g, "")
+      .replace(/[\u0622\u0623\u0625\u0671]/g, "\u0627")
+      .replace(/\u0649/g, "\u064a")
+      .replace(/[\u060C\u061B\u061F\u00AB\u00BB\u2026]/g, " ")
       .toLowerCase()
-      .replace(/[.,;:!?()\[\]{}\"'\/\\`]/g, " ")
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
       .replace(/\s+/g, " ")
       .trim();
 
-  const userNorm = normalize(userInput);
-  const modelNorm = normalize(modelAnswer);
-
+  const userRaw = String(userInput ?? "");
+  const modelRaw = String(modelAnswer ?? "");
+  const userNorm = normalizeText(userRaw);
+  const modelNorm = normalizeText(modelRaw);
   if (!userNorm) return 0;
 
-  const extractNums = (s) => (s.match(/\d+(\.\d+)?/g) || []).map(Number);
-  const modelNums = extractNums(modelNorm);
-  const userNums = extractNums(userNorm);
-  const modelNoNums = modelNorm.replace(/\d+(\.\d+)?/g, "").trim();
-  if (modelNums.length > 0 && modelNoNums.length < 8) {
-    const allMatch = modelNums.every((mn) =>
-      userNums.some((un) => Math.abs(un - mn) / (Math.abs(mn) || 1) < 0.02),
-    );
-    return allMatch ? 5 : userNums.length > 0 ? 1 : 0;
+  const parseScalar = (raw) => {
+    const compact = toAsciiDigits(raw)
+      .normalize("NFKC")
+      .replace(/\\\(|\\\)|\\\[|\\\]|\$/g, "")
+      .replace(/\s+/g, "")
+      .toLowerCase();
+    const match = compact.match(/^([-+]?\d+(?:\.\d+)?(?:e[-+]?\d+)?)(%|°?[a-z][a-z0-9/^*-]*)?$/i);
+    return match ? { value: Number(match[1]), unit: match[2] || "" } : null;
+  };
+  const userScalar = parseScalar(userRaw);
+  const modelScalar = parseScalar(modelRaw);
+  if (userScalar && modelScalar) {
+    if (userScalar.unit !== modelScalar.unit) return 0;
+    const tolerance = Math.max(Math.abs(modelScalar.value) * 0.005, 1e-9);
+    return Math.abs(userScalar.value - modelScalar.value) <= tolerance ? 5 : 0;
+  }
+
+  const mathSignal = (s) =>
+    /\\(?:frac|sqrt|times|cdot|sin|cos|tan|pi)|[$=<>^+*/×·÷√π≤≥≠]|[-−]\s*\d|(?:^|[^a-z])(?:[a-z]\s*\^\s*\d+|[a-z]\d+|\d+\s*[a-z])(?:$|[^a-z])/i.test(s);
+  const isMath = mathSignal(userRaw) || mathSignal(modelRaw);
+  if (isMath) {
+    const userMath = mathForm(userRaw);
+    const modelMath = mathForm(modelRaw);
+    if (userMath && userMath === modelMath) return 5;
+
+    const tokenizeMath = (s) => s.match(/[a-z]+|\d+(?:\.\d+)?|[=<>+\-*/^()]/g) || [];
+    const userTokens = tokenizeMath(userMath);
+    const modelTokens = tokenizeMath(modelMath);
+    if (modelTokens.length === 0) return 0;
+    const remaining = [...userTokens];
+    let matched = 0;
+    for (const token of modelTokens) {
+      const at = remaining.indexOf(token);
+      if (at >= 0) {
+        matched++;
+        remaining.splice(at, 1);
+      }
+    }
+    const precision = matched / Math.max(userTokens.length, 1);
+    const recall = matched / modelTokens.length;
+    const f1 = precision + recall ? (2 * precision * recall) / (precision + recall) : 0;
+    const wrongNumber = modelTokens.some((t) => /^\d/.test(t) && !userTokens.includes(t));
+    const score = f1 >= 0.9 ? 5 : f1 >= 0.72 ? 4 : f1 >= 0.52 ? 3 : f1 >= 0.3 ? 2 : matched ? 1 : 0;
+    return wrongNumber ? Math.min(score, 1) : score;
   }
 
   const stopWords = new Set([
-    "a",
-    "an",
-    "the",
-    "is",
-    "are",
-    "was",
-    "were",
-    "be",
-    "been",
-    "being",
-    "have",
-    "has",
-    "had",
-    "do",
-    "does",
-    "did",
-    "will",
-    "would",
-    "could",
-    "should",
-    "may",
-    "might",
-    "shall",
-    "can",
-    "to",
-    "of",
-    "in",
-    "on",
-    "at",
-    "by",
-    "for",
-    "with",
-    "from",
-    "and",
-    "or",
-    "but",
-    "if",
-    "as",
-    "it",
-    "its",
-    "this",
-    "that",
-    "these",
-    "those",
-    "i",
-    "you",
-    "he",
-    "she",
-    "we",
-    "they",
-    "not",
-    "no",
-    "so",
-    "also",
+    "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
+    "have", "has", "had", "do", "does", "did", "will", "would", "could",
+    "should", "may", "might", "shall", "can", "to", "of", "in", "on", "at",
+    "by", "for", "with", "from", "and", "or", "but", "if", "as", "it", "its",
+    "this", "that", "these", "those", "i", "you", "he", "she", "we", "they",
+    "not", "no", "so", "also", "في", "من", "إلى", "الى", "على", "عن", "مع",
+    "هو", "هي", "هم", "هن", "هذا", "هذه", "ذلك", "تلك", "الذي", "التي",
+    "و", "أو", "ثم", "أن", "إن", "كان", "كانت", "يكون", "تكون", "ما", "لا",
   ]);
-  const keywords = modelNorm
-    .split(/\s+/)
-    .filter((w) => w.length > 2 && !stopWords.has(w));
+  const normalizeWord = (word) => {
+    let value = word.replace(/\u0629$/g, "\u0647");
+    if (/[\u0600-\u06FF]/.test(value)) {
+      value = value.replace(/^(?:وال|بال|كال|فال|لل|ال)/, (prefix) =>
+        value.length - prefix.length >= 3 ? "" : prefix,
+      );
+      value = value.replace(/^[وفبكل]/, (prefix) =>
+        value.length - prefix.length >= 4 ? "" : prefix,
+      );
+    }
+    return value;
+  };
+  const tokens = (s) => s.split(/\s+/).flatMap((original) => {
+    const word = normalizeWord(original);
+    return word.length > 1 && !stopWords.has(word) && !stopWords.has(original) ? [word] : [];
+  });
+  const userTokens = tokens(userNorm);
+  const modelTokens = tokens(modelNorm);
+  if (modelTokens.length === 0) return userNorm === modelNorm ? 5 : 0;
 
-  if (keywords.length === 0)
-    return userNorm.includes(modelNorm) || modelNorm.includes(userNorm) ? 5 : 0;
+  const remaining = [...userTokens];
+  let matched = 0;
+  for (const token of modelTokens) {
+    const at = remaining.indexOf(token);
+    if (at >= 0) {
+      matched++;
+      remaining.splice(at, 1);
+    }
+  }
+  const precision = matched / Math.max(userTokens.length, 1);
+  const recall = matched / modelTokens.length;
+  const f1 = precision + recall ? (2 * precision * recall) / (precision + recall) : 0;
+  let score = f1 >= 0.9 ? 5 : f1 >= 0.72 ? 4 : f1 >= 0.52 ? 3 : f1 >= 0.3 ? 2 : matched ? 1 : 0;
 
-  const matched = keywords.filter((kw) => userNorm.includes(kw)).length;
-  const ratio = matched / keywords.length;
-
-  if (ratio >= 0.8) return 5;
-  if (ratio >= 0.6) return 4;
-  if (ratio >= 0.4) return 3;
-  if (ratio >= 0.2) return 2;
-  if (matched > 0) return 1;
-  return 0;
+  // Numbers and negation change the meaning of an answer. Do not award high
+  // credit merely because the surrounding words happen to overlap.
+  const extractNumbers = (s) => (s.match(/[-+]?\d+(?:\.\d+)?/g) || []).map(Number);
+  const modelNumbers = extractNumbers(modelNorm);
+  const userNumbers = extractNumbers(userNorm);
+  const hasWrongNumber = modelNumbers.some((expected) =>
+    !userNumbers.some((actual) => Math.abs(actual - expected) <= Math.max(Math.abs(expected) * 0.005, 1e-9)),
+  );
+  const isNegated = (s) =>
+    /\b(?:not|no|never)\b/.test(s) ||
+    s.split(/\s+/).some((word) => ["لا", "ليس", "لم", "لن"].includes(word));
+  const modelNegated = isNegated(modelNorm);
+  const userNegated = isNegated(userNorm);
+  if (hasWrongNumber || modelNegated !== userNegated) score = Math.min(score, 2);
+  return score;
 }
 
 // === Centralised Quiz Metrics Calculator ===

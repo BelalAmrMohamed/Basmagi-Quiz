@@ -896,8 +896,8 @@ async function fetchImmediateChildren(parentId, isFolder) {
         ? getSupabase().from("folders").select("id, name").eq("parent_folder_id", parentId)
         : getSupabase().from("folders").select("id, name").eq("course_id", parentId).is("parent_folder_id", null);
     const quizQuery = isFolder
-        ? getSupabase().from("quizzes").select("data, password").eq("folder_id", parentId)
-        : getSupabase().from("quizzes").select("data, password").eq("course_id", parentId).is("folder_id", null);
+        ? getSupabase().from("quiz_public").select("data, password_protected").eq("folder_id", parentId)
+        : getSupabase().from("quiz_public").select("data, password_protected").eq("course_id", parentId).is("folder_id", null);
     const lessonQuery = isFolder
         ? getSupabase().from("lesson_public").select("id, slug, title, password_protected").eq("folder_id", parentId)
         : getSupabase().from("lesson_public").select("id, slug, title, password_protected").eq("course_id", parentId).is("folder_id", null);
@@ -926,7 +926,7 @@ async function fetchImmediateChildren(parentId, isFolder) {
 
     const quizzes = [];
     for (const q of quizRows || []) {
-        if (q.password) continue; // exclude password-gated quizzes
+        if (q.password_protected) continue; // exclude password-gated quizzes
         const metaId = q.data?.meta?.id;
         const title = q.data?.meta?.title;
         if (!metaId || !title) continue;

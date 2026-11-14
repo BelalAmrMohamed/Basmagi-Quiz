@@ -488,7 +488,7 @@ async function handleDebugCatalog(req, res) {
     const [coursesRes, foldersRes, quizzesRes, profilesRes] = await Promise.all([
         supabaseCatalogTableProbe("courses", "id, name, education_type, college, year, term, created_at, updated_at"),
         supabaseCatalogTableProbe("folders", "id, course_id, parent_folder_id, name, created_at, updated_at"),
-        supabaseCatalogTableProbe("quizzes", "data, password, created_at, synced_at, course_id, folder_id"),
+        supabaseCatalogTableProbe("quiz_public", "data, password_protected, created_at, synced_at, course_id, folder_id"),
         supabaseCatalogTableProbe("admin_users", "handle, display_name, created_at"),
     ]);
 

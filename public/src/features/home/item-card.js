@@ -4,7 +4,7 @@ import { startQuiz } from "./quiz-navigation.js";
 import { isRecentlyAdded } from "./date-utils.js";
 import { formatArabicQuestionCount, refreshUserQuizzesCard } from "./course-count.js";
 import { qz, formatQuestionTypesForDownload } from "./quiz-schema.js";
-import { ensureDownloadAllowed } from "./download-password.js";
+import { ensureDownloadAllowed, ensureQuizDownloadAllowed } from "./download-password.js";
 import { showDownloadModal, withDownloadLoading } from "../../components/download-quiz-modal/download-quiz-modal.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
 import { copyQuizToUserQuizzes, copyLessonToUserQuizzes, copyNotebookToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
@@ -251,7 +251,7 @@ export function createExamCard(exam) {
     ],
     primary: { label: "ابدأ", onClick: () => startQuiz(exam.id) },
     download: {
-      locked: !!exam.password,
+      locked: !!exam.passwordProtected,
       onClick: (btn) => withDownloadLoading(btn, () => showExamDownloadPopup(exam)),
     },
     onMore: (btn) => showExamActionsOverlay(exam, () => showExamDownloadPopup(exam), btn),
@@ -359,22 +359,7 @@ function buildExamShareUrl(examId) {
 }
 
   const showExamDownloadPopup = async (exam) => {
-    let password = exam.password;
-    if (!password) {
-      try {
-        const loaded = await loadFullQuizData(exam);
-        if (loaded?.meta?.password) {
-          password = loaded.meta.password;
-          exam.password = password;
-        }
-      } catch (_) { }
-    }
-
-    const allowed = await ensureDownloadAllowed(
-      exam.id,
-      password,
-      exam.title || exam.id,
-    );
+    const { allowed, password } = await ensureQuizDownloadAllowed(exam);
     if (!allowed) return;
 
     // Built from the manifest summary; the full quiz file loads lazily on format pick.
@@ -387,7 +372,7 @@ function buildExamShareUrl(examId) {
       createdAt: exam.createdAt || null,
       author: exam.author || null,
       author_email: exam.author_email || null,
-      password: exam.password || null,
+      password: password || null,
       view: null,
       mode: null,
       questionTypes: exam.questionTypes || null,
@@ -435,13 +420,13 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
   openItemDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
     const downloadOpt = document.createElement("button");
     downloadOpt.type = "button";
-    downloadOpt.className = exam.password
+    downloadOpt.className = exam.passwordProtected
       ? "exam-action-btn mobile-only exam-action-btn--primary is-password-protected"
       : "exam-action-btn mobile-only exam-action-btn--primary";
-    downloadOpt.innerHTML = exam.password
+    downloadOpt.innerHTML = exam.passwordProtected
       ? `${LOCK_ICON_SVG}<span>تحميل</span>`
       : `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
-    if (exam.password) downloadOpt.title = "هذا الامتحان محمي بكلمة مرور";
+    if (exam.passwordProtected) downloadOpt.title = "هذا الامتحان محمي بكلمة مرور";
     downloadOpt.onclick = (e) => {
       e.stopPropagation();
       closeMenu();

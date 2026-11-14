@@ -72,7 +72,7 @@ export async function showQuizInfoModal(exam) {
     view: null,
     questionTypes: formatQuestionTypesForDownload(exam.questionTypes),
     // Password is never shown — only whether the quiz has one.
-    passwordProtected: Boolean(exam.password),
+    passwordProtected: Boolean(exam.passwordProtected),
     eduTypeLabel: exam.education_type ? getEduTypeLabel(exam) : null,
   };
   let questionCount = typeof exam.questionCount === "number" ? exam.questionCount : null;

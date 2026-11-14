@@ -5,10 +5,14 @@
 // (fab.classList.add(...), appendChild) behave the same.
 let agentModule = null;
 function loadAgent() {
-  agentModule ??= import("./ai-agent.js").catch((err) => {
-    agentModule = null; // allow retry after a network failure
-    throw err;
-  });
+  // Resolve only once the window's CSS is ready too, so every caller
+  // (FAB, attach launcher, lesson view) opens a fully styled window.
+  agentModule ??= import("./ai-agent.js")
+    .then(async (m) => { await m.ensureAIAgentStyles(); return m; })
+    .catch((err) => {
+      agentModule = null; // allow retry after a network failure
+      throw err;
+    });
   return agentModule;
 }
 
@@ -23,7 +27,8 @@ export function createAIAgentFab(options = {}) {
   fab.addEventListener("pointerenter", warm, { once: true });
   fab.addEventListener("focus", warm, { once: true });
   fab.addEventListener("click", async () => {
-    fab.setAttribute("aria-busy", "true");
+    if (fab.getAttribute("aria-busy") === "true") return;
+    fab.setAttribute("aria-busy", "true"); // CSS shows a spinner ring
     try {
       const m = await loadAgent();
       m.openAIAgentModal(options, fab);
