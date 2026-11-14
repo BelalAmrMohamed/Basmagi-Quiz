@@ -1,0 +1,1 @@
+import{a,b,c,d,e,f,g,h,i}from"./chunk-EAL4DV4Y.js";import"./chunk-NICZD2J2.js";export{a as FONT_CHOICES,d as TEXT_SIZE_CHOICES,c as WIDTH_CHOICES,i as applyReaderPrefs,e as buildDefaultReaderPrefs,h as equipReaderPrefs,f as getReaderPrefs,b as normalizeFontId,g as setReaderPrefs};

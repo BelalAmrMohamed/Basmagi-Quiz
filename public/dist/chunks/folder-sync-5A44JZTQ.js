@@ -1,0 +1,1 @@
+import{a,b,c,d,e,f,g,h}from"./chunk-IEIMHPRU.js";import"./chunk-ITLITX43.js";import"./chunk-Y3KV3XY7.js";export{d as clearRoot,a as folderSyncSupported,f as getRoot,g as hasSavedRoot,c as notebookFolderName,e as pickRoot,b as planSync,h as syncNotebook};

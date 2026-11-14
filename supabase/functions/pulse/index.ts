@@ -1,9 +1,10 @@
-// supabase/functions/track/index.ts
+// supabase/functions/pulse/index.ts
+// NOTE: deliberately NOT named "track"/"analytics": ad blockers (Brave, uBlock) block those URLs.
 // Page-view / heartbeat beacon, moved off Vercel (api/_analytics.js handleAnalyticsTrack).
 // Anonymous: only a daily-rotating HMAC of (UTC day | IP | UA) is stored, via the
 // analytics_track_view / analytics_heartbeat RPCs (service_role only).
 //
-// Deploy:  supabase functions deploy track --no-verify-jwt
+// Deploy:  supabase functions deploy pulse --no-verify-jwt
 // Secrets: supabase secrets set ANALYTICS_SALT=<same value as Vercel ANALYTICS_SALT>
 //          (keeping the same salt keeps today's visitor hashes continuous).
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -89,9 +90,9 @@ Deno.serve(async (req) => {
     const visitor = await visitorHash(ip, ua, secret);
     const fn = action === "track" ? "analytics_track_view" : "analytics_heartbeat";
     const { error } = await admin.rpc(fn, { p_visitor: visitor });
-    if (error) console.error(`[track] ${fn} failed:`, error.message);
+    if (error) console.error(`[pulse] ${fn} failed:`, error.message);
   } catch (err) {
-    console.error("[track] threw:", err);
+    console.error("[pulse] threw:", err);
   }
   return new Response(null, { status: 204, headers: base });
 });

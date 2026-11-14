@@ -28,7 +28,8 @@
     "typecheck:cpp": "npm run typecheck:runtimes",
     "build:web": "node scripts/build-web.mjs",
     "dev:web": "node scripts/build-web.mjs --watch",
-    "build:edge": "node scripts/build-edge-functions.mjs"
+    "build:edge": "node scripts/build-edge-functions.mjs",
+    "dist:check": "node scripts/build-web.mjs && git diff --exit-code --stat -- public/dist || (echo \"public/dist is stale: commit the rebuilt files\" && exit 1)"
   },
   "keywords": [
     "examination",
