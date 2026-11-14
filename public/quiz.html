@@ -85,13 +85,7 @@
     </noscript>
 
     <!-- CSS Files - CRITICAL ORDER -->
-    <link rel="stylesheet" href="src/styles/themes.css">
-    <link rel="stylesheet" href="src/features/quiz/quiz.css">
-    <link rel="stylesheet" href="src/components/report-question/report-question.css">
-    <link rel="stylesheet" href="src/components/quiz-info-modal/quiz-info-modal.css">
-    <link rel="stylesheet" href="src/styles/markdown.css">
-    <link rel="stylesheet" href="src/components/ai-agent/ai-agent.css">
-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
+    <link rel="stylesheet" href="/dist/pages/quiz.css">
 
     <!-- ── Markdown + KaTeX integration (mirrored from create-quiz) ──
          KaTeX must load as a classic (non-deferred) script so that
@@ -111,12 +105,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Theme Controller - Load once as module -->
-    <script type="module" src="src/shared/theme-controller.js"></script>
+    <link rel="modulepreload" href="/dist/pages/quiz.js">
+    <script type="module" src="/dist/pages/quiz.js"></script>
 
     <!-- Canvas Animation Script - Only loads if user enabled animations -->
-    <script type="module" src="src/shared/flow-field.js"></script>
 <script src="/src/shared/embed-mode.js"></script>
-  <link rel="stylesheet" href="/src/styles/embed-mode.css">
 </head>
 
 <body>
@@ -641,16 +634,6 @@
     <!-- Quiz Information Dialog (Shell populated by JS) -->
     <dialog class="quiz-info-dialog" id="quizInfoDialog" aria-labelledby="quizInfoDialogTitle"></dialog>
 
-    <script type="module" src="./src/features/quiz/quiz.js"></script>
-    <script type="module">
-        import { getShortcutModalHTML, toggleShortcutModal } from './src/features/quiz/keyboard-nav.js';
-        document.body.insertAdjacentHTML('beforeend', getShortcutModalHTML());
-        window.toggleShortcutModal = toggleShortcutModal;
-    </script>
-    <script type="module">
-        import { initPWA } from "./src/shared/pwa-manager.js";
-        document.addEventListener("DOMContentLoaded", () => initPWA());
-    </script>
     <script defer src="/_vercel/insights/script.js"></script>
 <script src="/src/shared/analytics-beacon.js" defer></script>
 </body>

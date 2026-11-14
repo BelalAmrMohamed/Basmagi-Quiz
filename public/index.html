@@ -295,9 +295,9 @@
 
     <!-- All local stylesheets (themes, index, hive, cards-v2, side-menu, ai-agent, lesson, ...)
          are concatenated in their original order by scripts/build-web.mjs into one file. -->
-    <link rel="stylesheet" href="dist/home.css">
+    <link rel="stylesheet" href="/dist/home.css">
 
-    <link rel="modulepreload" href="dist/home.js">
+    <link rel="modulepreload" href="/dist/home.js">
 
     <!-- ── Markdown + KaTeX integration (mirrored from create-quiz) ──
          KaTeX must load as a classic (non-deferred) script so that
@@ -1293,7 +1293,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- One bundled entry (theme-controller, flow-field, index-entrypoint, side-menu, PWA init);
          lazy features load on demand as hashed chunks. Built by scripts/build-web.mjs. -->
-    <script type="module" src="dist/home.js"></script>
+    <script type="module" src="/dist/home.js"></script>
 
     <!-- Remove loading class when page is ready -->
     <script>

@@ -160,9 +160,7 @@
             rel="stylesheet">
     </noscript>
 
-    <link rel="stylesheet" href="src/styles/themes.css">
-    <link rel="stylesheet" href="src/features/onboarding/onboarding.css">
-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
+    <link rel="stylesheet" href="/dist/pages/onboarding.css">
 
     <script>
         // Redirect if already onboarded (optional check, main logic in index.js)
@@ -319,7 +317,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="src/features/onboarding/onboarding.js"></script>
+    <link rel="modulepreload" href="/dist/pages/onboarding.js">
+    <script type="module" src="/dist/pages/onboarding.js"></script>
     <script>
         if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname)) {
             const insights = document.createElement("script");

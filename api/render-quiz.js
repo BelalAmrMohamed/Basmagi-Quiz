@@ -110,7 +110,7 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     // Never cache — this response has no real OG metadata and the same URL
     // could later belong to a different visitor's different local quiz.
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=60"); // short cache: a flood of unknown ids must not hit Supabase/functions every time
     return res.status(200).send(userHtml);
   }
 
@@ -220,7 +220,7 @@ export default async function handler(req, res) {
     // OG tags. Never cache it, so the next request (including the next
     // scraper hit) gets a fresh attempt instead of the fallback being
     // baked into the CDN for up to a day.
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=60"); // short cache: a flood of unknown ids must not hit Supabase/functions every time
   }
   return res.status(200).send(html);
 }

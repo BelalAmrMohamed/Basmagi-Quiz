@@ -47,11 +47,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
         rel="stylesheet" />
-    <link rel="stylesheet" href="src/styles/themes.css" />
-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css" />
-    <link rel="stylesheet" href="src/features/documents/documents.css" />
-    <link rel="stylesheet" href="src/components/notifications/notifications.css" />
-    <link rel="stylesheet" href="src/components/telegram-bot-card/telegram-bot-card.css" />
+    <link rel="stylesheet" href="/dist/pages/how-to-use-ai-agent.css">
 
 </head>
 
@@ -282,12 +278,8 @@
         </div>
     </main>
 
-    <script type="module" src="src/features/documents/documents-shell.js"></script>
-    <script type="module" src="src/features/documents/doc-toc.js"></script>
-    <script type="module">
-import { mountTelegramBotCard } from "./src/components/telegram-bot-card/telegram-bot-card.js";
-  mountTelegramBotCard(document.getElementById("howToTelegramMount"), { variant: "showcase" });
-    </script>
+    <link rel="modulepreload" href="/dist/pages/how-to-use-ai-agent.js">
+    <script type="module" src="/dist/pages/how-to-use-ai-agent.js"></script>
     <script src="/src/shared/analytics-beacon.js" defer></script>
 </body>
 

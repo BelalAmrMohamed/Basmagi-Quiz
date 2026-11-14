@@ -149,14 +149,10 @@
     </noscript>
 
     <!-- CSS Files -->
-    <link rel="stylesheet" href="src/styles/themes.css">
-    <link rel="stylesheet" href="src/shared/levelGauge.css">
-    <link rel="stylesheet" href="src/features/profile/profile.css">
-    <link rel="stylesheet" href="src/styles/advanced-liquid-metal-animations.css">
-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
+    <link rel="stylesheet" href="/dist/pages/profile.css">
 
-    <script type="module" src="src/shared/theme-controller.js"></script>
+    <link rel="modulepreload" href="/dist/pages/profile.js">
+    <script type="module" src="/dist/pages/profile.js"></script>
 
     <!-- ============================================================
          RESOURCE HINTS
@@ -179,19 +175,6 @@
          request waterfall on the critical path. Listing the first level
          explicitly collapses it into one parallel burst.
          ============================================================ -->
-    <link rel="modulepreload" href="src/features/profile/profile.js">
-    <link rel="modulepreload" href="src/shared/gameEngine.js">
-    <link rel="modulepreload" href="src/shared/avatarEngine.js">
-    <link rel="modulepreload" href="src/shared/quizManifest.js">
-    <link rel="modulepreload" href="src/shared/supabaseClientRegistry.js">
-    <link rel="modulepreload" href="src/shared/public-config.js">
-    <link rel="modulepreload" href="src/shared/adminAuth.js">
-    <link rel="modulepreload" href="src/shared/userProfile.js">
-    <link rel="modulepreload" href="src/features/profile/profileWidgets.js">
-    <link rel="modulepreload" href="src/features/profile/infiniteScroll.js">
-    <link rel="modulepreload" href="src/shared/levelGauge.js">
-    <link rel="modulepreload" href="src/features/profile/leaderboardIdentity.js">
-    <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
     <!-- avatarPicker is no longer on the critical path (profile.js now
          initialises it in an idle callback), so it's prefetched at low
          priority rather than preloaded at high priority. -->
@@ -1813,31 +1796,10 @@
          download now overlaps the module graph above instead of serializing
          with it. -->
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="src/features/profile/profile.js"></script>
-    <script type="module">
-        import { initHeatmapOverflowSync } from "./src/features/profile/heatmapOverflow.js";
-        document.addEventListener("DOMContentLoaded", () => initHeatmapOverflowSync());
-    </script>
-    <script type="module" src="src/components/side-menu/side-menu.js"></script>
     <!-- Admin session sync: reconciles local admin JWT with any live
          Supabase session on load, refreshing the nav badge / profile
          dropdown in place (no reload) — see fix.pdf Phase 0. -->
-    <script type="module">
-        import { syncAdminSession } from "./src/shared/adminBadgeSync.js";
-        import { refreshAdminUI } from "./src/components/side-menu/side-menu.js";
-        document.addEventListener("DOMContentLoaded", () => {
-            syncAdminSession({
-                onRecovered: refreshAdminUI,
-                onSignedOut: refreshAdminUI,
-            });
-        });
-    </script>
-    <script type="module" src="src/shared/flow-field.js"></script>
 
-    <script type="module">
-        import { initPWA } from "./src/shared/pwa-manager.js";
-        document.addEventListener("DOMContentLoaded", () => initPWA());
-    </script>
     <script defer src="/_vercel/insights/script.js"></script>
     <script src="/src/shared/analytics-beacon.js" defer></script>
 </body>

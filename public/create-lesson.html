@@ -156,18 +156,8 @@
     </noscript>
 
     <!-- CSS Files -->
-    <link rel="stylesheet" href="src/styles/themes.css">
-    <link rel="stylesheet" href="src/features/create-lesson/create-lesson.css">
-    <link rel="stylesheet" href="src/styles/markdown.css">
-    <link rel="stylesheet" href="src/features/lesson/lesson.css">
-    <link rel="stylesheet" href="src/components/download-quiz-modal/download-quiz-modal.css">
-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
-    <link rel="stylesheet" href="src/components/ai-agent/ai-agent.css">
-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
+    <link rel="stylesheet" href="/dist/pages/create-lesson.css">
 
-    <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
-    <link rel="modulepreload" href="src/shared/avatarPicker.js">
-    <link rel="modulepreload" href="src/shared/avatarEngine.js">
 
     <!-- KaTeX — LaTeX math rendering
          Classic (non-deferred) script so window.katex is synchronously
@@ -177,10 +167,10 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
     <!-- Theme Controller Script -->
-    <script type="module" src="src/shared/theme-controller.js"></script>
+    <link rel="modulepreload" href="/dist/pages/create-lesson.js">
+    <script type="module" src="/dist/pages/create-lesson.js"></script>
 
     <!-- Canvas Animation Script -->
-    <script type="module" src="src/shared/flow-field.js"></script>
 </head>
 
 <body>
@@ -1492,22 +1482,6 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="src/features/create-lesson/create-lesson.js"></script>
-    <script type="module" src="src/components/side-menu/side-menu.js"></script>
-    <script type="module">
-        import { syncAdminSession } from "./src/shared/adminBadgeSync.js";
-        import { refreshAdminUI } from "./src/components/side-menu/side-menu.js";
-        document.addEventListener("DOMContentLoaded", () => {
-            syncAdminSession({
-                onRecovered: refreshAdminUI,
-                onSignedOut: refreshAdminUI,
-            });
-        });
-    </script>
-    <script type="module">
-        import { initPWA } from "./src/shared/pwa-manager.js";
-        document.addEventListener("DOMContentLoaded", () => initPWA());
-    </script>
     <script defer src="/_vercel/insights/script.js"></script>
 </body>
 

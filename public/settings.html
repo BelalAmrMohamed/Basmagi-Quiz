@@ -141,10 +141,7 @@
         })();
     </script>
 
-    <!-- <link rel="modulepreload" href="src/shared/theme-controller.js"> -->
-    <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
-    <link rel="modulepreload" href="src/shared/avatarPicker.js">
-    <link rel="modulepreload" href="src/shared/avatarEngine.js">
+    <!-- -->
 
     <!-- Fonts: Inter (Latin) + Tajawal (Arabic) — optimized loading -->
     <link
@@ -160,11 +157,7 @@
     <link rel="preload" href="src/features/settings/settings.css" as="style">
     <link rel="preload" href="src/styles/themes.css" as="style">
 
-    <link rel="stylesheet" href="src/styles/themes.css">
-    <link rel="stylesheet" href="src/features/settings/settings.css">
-    <link rel="stylesheet" href="src/styles/advanced-liquid-metal-animations.css">
-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
+    <link rel="stylesheet" href="/dist/pages/settings.css">
     <!-- The styling of the side menu has issues in this page, inconsistent sizing copared to the others -->
 </head>
 
@@ -1218,24 +1211,12 @@
     </footer>
 
     <!-- Scripts -->
-    <script type="module" src="src/shared/theme-controller.js"></script>
-    <script type="module" src="src/shared/flow-field.js"></script>
+    <link rel="modulepreload" href="/dist/pages/settings.js">
+    <script type="module" src="/dist/pages/settings.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="src/features/settings/settings.js"></script>
-    <script type="module" src="src/components/side-menu/side-menu.js"></script>
     <!-- Admin session sync: reconciles local admin JWT with any live
          Supabase session on load, refreshing the nav badge / profile
          dropdown in place (no reload) — see fix.pdf Phase 0. -->
-    <script type="module">
-        import { syncAdminSession } from "./src/shared/adminBadgeSync.js";
-        import { refreshAdminUI } from "./src/components/side-menu/side-menu.js";
-        document.addEventListener("DOMContentLoaded", () => {
-            syncAdminSession({
-                onRecovered: refreshAdminUI,
-                onSignedOut: refreshAdminUI,
-            });
-        });
-    </script>
     <script defer src="/_vercel/insights/script.js"></script>
     <script src="/src/shared/analytics-beacon.js" defer></script>
 </body>

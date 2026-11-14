@@ -147,7 +147,7 @@ async function handleNotebookRequest(req, res) {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     if (!nb) {
         // Unknown/failed lookup: serve the generic shell, never cache a miss.
-        res.setHeader("Cache-Control", "no-store");
+        res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=60"); // short cache: a flood of unknown ids must not hit Supabase/functions every time
         return res.status(200).send(html);
     }
 
@@ -318,7 +318,7 @@ async function handleLessonRequest(req, res) {
             `  <meta name="lesson:id" content="${escapeHtml(lessonId)}">\n</head>`,
         );
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.setHeader("Cache-Control", "no-store");
+        res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=60"); // short cache: a flood of unknown ids must not hit Supabase/functions every time
         return res.status(200).send(html);
     }
 
@@ -545,7 +545,7 @@ async function handleCourseRequest(req, res) {
             `  <meta name="course:name" content="${escapeHtml(courseSlug)}">\n</head>`,
         );
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.setHeader("Cache-Control", "no-store");
+        res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=60"); // short cache: a flood of unknown ids must not hit Supabase/functions every time
         return res.status(200).send(html);
     }
 

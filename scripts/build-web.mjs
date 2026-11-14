@@ -6,6 +6,7 @@
 //   node scripts/build-web.mjs          production build (minified)
 //   node scripts/build-web.mjs --watch  rebuild on change (dev)
 //
+// Per page: dist/pages/<page>.js + .css (same stable-name/no-cache rule as home.*).
 // Output (public/dist, git-ignored, produced by Vercel's buildCommand):
 //   home.js           single stable-named entry (theme-controller, flow-field,
 //                     index-entrypoint, side-menu, PWA init). Served with no-cache
@@ -74,10 +75,6 @@ const HOME_CSS = [
   "src/features/home/cards-v2.css",
   "src/features/home/user-course-card.css",
 ];
-async function homeCssImports() {
-  return HOME_CSS.map((h) => `@import "./${h}";`).join("\n");
-}
-
 const shared = { bundle: true, minify: !watch, sourcemap: watch ? "inline" : false, logLevel: "info", legalComments: "none" };
 
 async function run() {
@@ -94,23 +91,49 @@ async function run() {
     `  initPWAWithBanner(window.SUPABASE_URL ? \`${"$"}{window.SUPABASE_URL}/rest/v1/\` : ""));`,
   ].join("\n"));
 
+  // One entry (+ one CSS file) per HTML page, from scripts/page-bundles.json
+  // (generated once from each page's old <script>/<link> tags, in document order).
+  const pages = JSON.parse(await readFile(path.join(import.meta.dirname, "page-bundles.json"), "utf8"));
+  const jsEntries = { home: entryFile };
+  const cssEntries = {};
+  const homeCss = path.join(tmp, "home-css.css");
+  await writeFile(homeCss, HOME_CSS.map((h) => `@import ${JSON.stringify(path.join(pub, h))};`).join("\n"));
+  cssEntries.home = homeCss;
+  for (const [name, { js, css }] of Object.entries(pages)) {
+    if (js.length) {
+      const f = path.join(tmp, `page-${name}.js`);
+      await writeFile(f, js.map((m) => `import ${JSON.stringify(path.join(pub, m))};`).join("\n"));
+      jsEntries[`pages/${name}`] = f;
+    }
+    if (css.length) {
+      const f = path.join(tmp, `page-${name}.css`);
+      await writeFile(f, css.map((m) => `@import ${JSON.stringify(path.join(pub, m))};`).join("\n"));
+      cssEntries[`pages/${name}`] = f;
+    }
+  }
+
   const jsOpts = {
     ...shared,
-    entryPoints: { home: entryFile },
+    entryPoints: jsEntries,
     outdir: out,
-    entryNames: "[name]",
+    entryNames: "[dir]/[name]",
     chunkNames: "chunks/[name]-[hash]",
     format: "esm",
     splitting: true,
-    target: "es2020",
+    target: "es2022",
     plugins: [pinImportMeta],
     external: ["/assets/*", "/src/*", "http://*", "https://*"],
     metafile: true,
   };
   const cssOpts = {
     ...shared,
-    stdin: { contents: await homeCssImports(), resolveDir: pub, loader: "css" },
-    outfile: path.join(out, "home.css"),
+    entryPoints: cssEntries,
+    outdir: out,
+    entryNames: "[dir]/[name]",
+    // Relative url(...) in bundled CSS (e.g. KaTeX fonts) are copied to dist/assets/ with hashed names.
+    loader: { ".woff2": "file", ".woff": "file", ".ttf": "file", ".png": "file", ".jpg": "file", ".jpeg": "file", ".svg": "file", ".gif": "file", ".webp": "file" },
+    assetNames: "assets/[name]-[hash]",
+    publicPath: "/dist",
     external: ["/assets/*", "/src/*", "http://*", "https://*", "data:*"],
   };
 

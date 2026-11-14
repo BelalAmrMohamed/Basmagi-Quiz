@@ -14,7 +14,7 @@
       ]
     },
     {
-      "source": "/dist/(home\\.js|home\\.css)",
+      "source": "/dist/(home|pages/[^/]+)\\.(js|css)",
       "headers": [
         {
           "key": "Cache-Control",

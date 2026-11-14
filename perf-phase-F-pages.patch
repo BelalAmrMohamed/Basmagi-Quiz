@@ -1,0 +1,1305 @@
+diff -ruN base-AE/api/render-course.js proj/api/render-course.js
+--- base-AE/api/render-course.js	2026-11-14 01:41:08.000000000 +0200
++++ proj/api/render-course.js	2026-11-14 17:47:59.345348189 +0200
+@@ -147,7 +147,7 @@
+     res.setHeader("Content-Type", "text/html; charset=utf-8");
+     if (!nb) {
+         // Unknown/failed lookup: serve the generic shell, never cache a miss.
+-        res.setHeader("Cache-Control", "no-store");
++        res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=60"); // short cache: a flood of unknown ids must not hit Supabase/functions every time
+         return res.status(200).send(html);
+     }
+ 
+@@ -318,7 +318,7 @@
+             `  <meta name="lesson:id" content="${escapeHtml(lessonId)}">\n</head>`,
+         );
+         res.setHeader("Content-Type", "text/html; charset=utf-8");
+-        res.setHeader("Cache-Control", "no-store");
++        res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=60"); // short cache: a flood of unknown ids must not hit Supabase/functions every time
+         return res.status(200).send(html);
+     }
+ 
+@@ -545,7 +545,7 @@
+             `  <meta name="course:name" content="${escapeHtml(courseSlug)}">\n</head>`,
+         );
+         res.setHeader("Content-Type", "text/html; charset=utf-8");
+-        res.setHeader("Cache-Control", "no-store");
++        res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=60"); // short cache: a flood of unknown ids must not hit Supabase/functions every time
+         return res.status(200).send(html);
+     }
+ 
+diff -ruN base-AE/api/render-quiz.js proj/api/render-quiz.js
+--- base-AE/api/render-quiz.js	2026-11-14 01:41:08.000000000 +0200
++++ proj/api/render-quiz.js	2026-11-14 17:47:59.345554497 +0200
+@@ -110,7 +110,7 @@
+     res.setHeader("Content-Type", "text/html; charset=utf-8");
+     // Never cache — this response has no real OG metadata and the same URL
+     // could later belong to a different visitor's different local quiz.
+-    res.setHeader("Cache-Control", "no-store");
++    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=60"); // short cache: a flood of unknown ids must not hit Supabase/functions every time
+     return res.status(200).send(userHtml);
+   }
+ 
+@@ -220,7 +220,7 @@
+     // OG tags. Never cache it, so the next request (including the next
+     // scraper hit) gets a fresh attempt instead of the fallback being
+     // baked into the CDN for up to a day.
+-    res.setHeader("Cache-Control", "no-store");
++    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=60"); // short cache: a flood of unknown ids must not hit Supabase/functions every time
+   }
+   return res.status(200).send(html);
+ }
+diff -ruN base-AE/docs/WEB_BUNDLING.md proj/docs/WEB_BUNDLING.md
+--- base-AE/docs/WEB_BUNDLING.md	1970-01-01 02:00:00.000000000 +0200
++++ proj/docs/WEB_BUNDLING.md	2026-11-14 17:48:09.534871645 +0200
+@@ -0,0 +1,20 @@
++# Web bundling (public/dist)
++
++`node scripts/build-web.mjs` (Vercel `buildCommand`) bundles every page's JS and CSS into `public/dist/`:
++
++| Output | Used by | Caching |
++|---|---|---|
++| `dist/home.js`, `dist/home.css` | `index.html` | `no-cache` (cheap 304), they reference hashed chunks |
++| `dist/pages/<page>.js`, `.css` | every other bundled page | same |
++| `dist/chunks/*-<hash>.js`, `dist/assets/*` | shared / lazy code, fonts | 1 year, immutable |
++
++`scripts/page-bundles.json` lists, per page, the modules (and CSS) that used to be linked from the
++HTML, in the original order. The inline `<script type="module">` blocks of those pages now live in
++`public/src/pages/*.js` (they must be inside the bundle so module state such as `side-menu` is shared).
++
++Left as plain files on purpose: `embed-mode.js` (must run synchronously before render),
++`analytics-beacon.js` (classic deferred script), `oauth-callback.html`, `offline.html`.
++
++**Adding or changing a page:** edit its entry in `page-bundles.json`, make the HTML reference
++`/dist/pages/<page>.js` and `/dist/pages/<page>.css` (absolute paths: SSR renders pages at other URLs).
++Local dev: `npm run build:web` (or `npm run dev:web` to watch) before opening a page.
+diff -ruN base-AE/public/about.html proj/public/about.html
+--- base-AE/public/about.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/about.html	2026-11-14 17:45:05.792392748 +0200
+@@ -31,12 +31,7 @@
+     <link
+         href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
+         rel="stylesheet" />
+-    <link rel="stylesheet" href="src/styles/themes.css" />
+-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css" />
+-    <link rel="stylesheet" href="src/components/notifications/notifications.css" />
+-    <link rel="stylesheet" href="src/features/documents/documents.css" />
+-    <link rel="stylesheet" href="src/features/documents/about.css" />
+-    <link rel="stylesheet" href="src/components/telegram-bot-card/telegram-bot-card.css" />
++    <link rel="stylesheet" href="/dist/pages/about.css">
+ </head>
+ 
+ <body class="about-page">
+@@ -573,13 +568,8 @@
+         </div>
+     </main>
+ 
+-    <script type="module" src="src/features/documents/documents-shell.js"></script>
+-    <script type="module" src="src/features/documents/doc-toc.js"></script>
+-    <script type="module" src="src/features/documents/about-stats.js"></script>
+-    <script type="module">
+-        import { mountTelegramBotCard } from "./src/components/telegram-bot-card/telegram-bot-card.js";
+-        mountTelegramBotCard(document.getElementById("aboutTelegramCardMount"), { variant: "showcase" });
+-    </script>
++    <link rel="modulepreload" href="/dist/pages/about.js">
++    <script type="module" src="/dist/pages/about.js"></script>
+     <script src="/src/shared/analytics-beacon.js" defer></script>
+ </body>
+ 
+diff -ruN base-AE/public/control.html proj/public/control.html
+--- base-AE/public/control.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/control.html	2026-11-14 17:45:05.793560727 +0200
+@@ -57,8 +57,7 @@
+     <link rel="shortcut icon" href="/favicon.ico" />
+     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+ 
+-    <link rel="stylesheet" href="src/features/control/control.css">
+-    <link rel="stylesheet" href="src/features/control/control-stats.css">
++    <link rel="stylesheet" href="/dist/pages/control.css">
+ </head>
+ 
+ <body>
+@@ -313,8 +312,8 @@
+         </div>
+     </div>
+ 
+-    <script type="module" src="src/features/control/control.js"></script>
+-    <script type="module" src="src/features/control/storage-panel.js"></script>
++    <link rel="modulepreload" href="/dist/pages/control.js">
++    <script type="module" src="/dist/pages/control.js"></script>
+ 
+     <script defer src="/_vercel/insights/script.js"></script>
+ </body>
+diff -ruN base-AE/public/create-lesson.html proj/public/create-lesson.html
+--- base-AE/public/create-lesson.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/create-lesson.html	2026-11-14 17:45:05.798652549 +0200
+@@ -156,18 +156,8 @@
+     </noscript>
+ 
+     <!-- CSS Files -->
+-    <link rel="stylesheet" href="src/styles/themes.css">
+-    <link rel="stylesheet" href="src/features/create-lesson/create-lesson.css">
+-    <link rel="stylesheet" href="src/styles/markdown.css">
+-    <link rel="stylesheet" href="src/features/lesson/lesson.css">
+-    <link rel="stylesheet" href="src/components/download-quiz-modal/download-quiz-modal.css">
+-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
+-    <link rel="stylesheet" href="src/components/ai-agent/ai-agent.css">
+-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
+-
+-    <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
+-    <link rel="modulepreload" href="src/shared/avatarPicker.js">
+-    <link rel="modulepreload" href="src/shared/avatarEngine.js">
++    <link rel="stylesheet" href="/dist/pages/create-lesson.css">
++
+ 
+     <!-- KaTeX — LaTeX math rendering
+          Classic (non-deferred) script so window.katex is synchronously
+@@ -177,10 +167,10 @@
+     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+ 
+     <!-- Theme Controller Script -->
+-    <script type="module" src="src/shared/theme-controller.js"></script>
++    <link rel="modulepreload" href="/dist/pages/create-lesson.js">
++    <script type="module" src="/dist/pages/create-lesson.js"></script>
+ 
+     <!-- Canvas Animation Script -->
+-    <script type="module" src="src/shared/flow-field.js"></script>
+ </head>
+ 
+ <body>
+@@ -1492,22 +1482,6 @@
+     </script>
+ 
+     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+-    <script type="module" src="src/features/create-lesson/create-lesson.js"></script>
+-    <script type="module" src="src/components/side-menu/side-menu.js"></script>
+-    <script type="module">
+-        import { syncAdminSession } from "./src/shared/adminBadgeSync.js";
+-        import { refreshAdminUI } from "./src/components/side-menu/side-menu.js";
+-        document.addEventListener("DOMContentLoaded", () => {
+-            syncAdminSession({
+-                onRecovered: refreshAdminUI,
+-                onSignedOut: refreshAdminUI,
+-            });
+-        });
+-    </script>
+-    <script type="module">
+-        import { initPWA } from "./src/shared/pwa-manager.js";
+-        document.addEventListener("DOMContentLoaded", () => initPWA());
+-    </script>
+     <script defer src="/_vercel/insights/script.js"></script>
+ </body>
+ 
+diff -ruN base-AE/public/create-quiz.html proj/public/create-quiz.html
+--- base-AE/public/create-quiz.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/create-quiz.html	2026-11-14 17:45:05.806762703 +0200
+@@ -156,21 +156,11 @@
+     </noscript>
+ 
+     <!-- CSS Files -->
+-    <link rel="stylesheet" href="src/styles/themes.css">
+-    <link rel="stylesheet" href="src/features/create-quiz/create-quiz.css">
+-    <link rel="stylesheet" href="src/components/download-quiz-modal/download-quiz-modal.css">
+-    <link rel="stylesheet" href="src/styles/markdown.css">
++    <link rel="stylesheet" href="/dist/pages/create-quiz.css">
+     <!-- item-dropdown-menu.css: shared by create-quiz dropdowns.
+          The AI agent no longer depends on this — it carries its own self-contained
+          dropdown styles in ai-agent.css (ai-agent-dropdown-menu / ai-agent-dropdown-item). -->
+-    <link rel="stylesheet" href="src/features/home/item-dropdown-menu.css">
+-    <link rel="stylesheet" href="src/components/ai-agent/ai-agent.css">
+-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
+-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
+-
+-    <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
+-    <link rel="modulepreload" href="src/shared/avatarPicker.js">
+-    <link rel="modulepreload" href="src/shared/avatarEngine.js">
++
+ 
+     <!-- KaTeX — LaTeX math rendering
+          Classic (non-deferred) script so window.katex is synchronously
+@@ -180,10 +170,10 @@
+     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+ 
+     <!-- Theme Controller Script -->
+-    <script type="module" src="src/shared/theme-controller.js"></script>
++    <link rel="modulepreload" href="/dist/pages/create-quiz.js">
++    <script type="module" src="/dist/pages/create-quiz.js"></script>
+ 
+     <!-- Canvas Animation Script -->
+-    <script type="module" src="src/shared/flow-field.js"></script>
+ </head>
+ 
+ <body>
+@@ -2087,25 +2077,9 @@
+     </script>
+ 
+     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+-    <script type="module" src="src/features/create-quiz/create-quiz.js"></script>
+-    <script type="module" src="src/components/side-menu/side-menu.js"></script>
+     <!-- Admin session sync: reconciles local admin JWT with any live
+          Supabase session on load, refreshing the nav badge / profile
+          dropdown in place (no reload) — see fix.pdf Phase 0. -->
+-    <script type="module">
+-        import { syncAdminSession } from "./src/shared/adminBadgeSync.js";
+-        import { refreshAdminUI } from "./src/components/side-menu/side-menu.js";
+-        document.addEventListener("DOMContentLoaded", () => {
+-            syncAdminSession({
+-                onRecovered: refreshAdminUI,
+-                onSignedOut: refreshAdminUI,
+-            });
+-        });
+-    </script>
+-    <script type="module">
+-        import { initPWA } from "./src/shared/pwa-manager.js";
+-        document.addEventListener("DOMContentLoaded", () => initPWA());
+-    </script>
+     <script defer src="/_vercel/insights/script.js"></script>
+ </body>
+ 
+diff -ruN base-AE/public/how-to-connect-mcp.html proj/public/how-to-connect-mcp.html
+--- base-AE/public/how-to-connect-mcp.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/how-to-connect-mcp.html	2026-11-14 17:45:05.808388738 +0200
+@@ -47,12 +47,7 @@
+     <link
+         href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
+         rel="stylesheet" />
+-    <link rel="stylesheet" href="src/styles/themes.css" />
+-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css" />
+-    <link rel="stylesheet" href="src/features/documents/documents.css" />
+-    <link rel="stylesheet" href="src/components/notifications/notifications.css" />
+-    <link rel="stylesheet" href="src/components/telegram-bot-card/telegram-bot-card.css" />
+-    <link rel="stylesheet" href="src/features/documents/doc-steps.css" />
++    <link rel="stylesheet" href="/dist/pages/how-to-connect-mcp.css">
+     <script type="application/ld+json">
+ {
+   "@context": "https://schema.org",
+@@ -439,9 +434,8 @@
+         </div>
+     </main>
+ 
+-    <script type="module" src="src/features/documents/documents-shell.js"></script>
+-    <script type="module" src="src/features/documents/doc-toc.js"></script>
+-    <script type="module" src="src/features/documents/doc-steps.js"></script>
++    <link rel="modulepreload" href="/dist/pages/how-to-connect-mcp.js">
++    <script type="module" src="/dist/pages/how-to-connect-mcp.js"></script>
+     <script src="/src/shared/analytics-beacon.js" defer></script>
+ </body>
+ 
+diff -ruN base-AE/public/how-to-create-content.html proj/public/how-to-create-content.html
+--- base-AE/public/how-to-create-content.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/how-to-create-content.html	2026-11-14 17:45:05.810127060 +0200
+@@ -47,9 +47,7 @@
+     <link
+         href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
+         rel="stylesheet" />
+-    <link rel="stylesheet" href="src/styles/themes.css" />
+-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css" />
+-    <link rel="stylesheet" href="src/features/documents/documents.css" />
++    <link rel="stylesheet" href="/dist/pages/how-to-create-content.css">
+ 
+ </head>
+ 
+@@ -199,8 +197,8 @@
+         </div>
+     </main>
+ 
+-    <script type="module" src="src/features/documents/documents-shell.js"></script>
+-    <script type="module" src="src/features/documents/doc-toc.js"></script>
++    <link rel="modulepreload" href="/dist/pages/how-to-create-content.js">
++    <script type="module" src="/dist/pages/how-to-create-content.js"></script>
+     <script src="/src/shared/analytics-beacon.js" defer></script>
+ </body>
+ 
+diff -ruN base-AE/public/how-to-upload-content.html proj/public/how-to-upload-content.html
+--- base-AE/public/how-to-upload-content.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/how-to-upload-content.html	2026-11-14 17:45:05.810774909 +0200
+@@ -47,9 +47,7 @@
+     <link
+         href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
+         rel="stylesheet" />
+-    <link rel="stylesheet" href="src/styles/themes.css" />
+-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css" />
+-    <link rel="stylesheet" href="src/features/documents/documents.css" />
++    <link rel="stylesheet" href="/dist/pages/how-to-upload-content.css">
+ 
+ </head>
+ 
+@@ -192,8 +190,8 @@
+         </div>
+     </main>
+ 
+-    <script type="module" src="src/features/documents/documents-shell.js"></script>
+-    <script type="module" src="src/features/documents/doc-toc.js"></script>
++    <link rel="modulepreload" href="/dist/pages/how-to-upload-content.js">
++    <script type="module" src="/dist/pages/how-to-upload-content.js"></script>
+     <script src="/src/shared/analytics-beacon.js" defer></script>
+ </body>
+ 
+diff -ruN base-AE/public/how-to-use-ai-agent.html proj/public/how-to-use-ai-agent.html
+--- base-AE/public/how-to-use-ai-agent.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/how-to-use-ai-agent.html	2026-11-14 17:45:05.811720012 +0200
+@@ -47,11 +47,7 @@
+     <link
+         href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
+         rel="stylesheet" />
+-    <link rel="stylesheet" href="src/styles/themes.css" />
+-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css" />
+-    <link rel="stylesheet" href="src/features/documents/documents.css" />
+-    <link rel="stylesheet" href="src/components/notifications/notifications.css" />
+-    <link rel="stylesheet" href="src/components/telegram-bot-card/telegram-bot-card.css" />
++    <link rel="stylesheet" href="/dist/pages/how-to-use-ai-agent.css">
+ 
+ </head>
+ 
+@@ -282,12 +278,8 @@
+         </div>
+     </main>
+ 
+-    <script type="module" src="src/features/documents/documents-shell.js"></script>
+-    <script type="module" src="src/features/documents/doc-toc.js"></script>
+-    <script type="module">
+-import { mountTelegramBotCard } from "./src/components/telegram-bot-card/telegram-bot-card.js";
+-  mountTelegramBotCard(document.getElementById("howToTelegramMount"), { variant: "showcase" });
+-    </script>
++    <link rel="modulepreload" href="/dist/pages/how-to-use-ai-agent.js">
++    <script type="module" src="/dist/pages/how-to-use-ai-agent.js"></script>
+     <script src="/src/shared/analytics-beacon.js" defer></script>
+ </body>
+ 
+diff -ruN base-AE/public/index.html proj/public/index.html
+--- base-AE/public/index.html	2026-11-14 02:36:15.000000000 +0200
++++ proj/public/index.html	2026-11-14 17:45:23.008940248 +0200
+@@ -295,9 +295,9 @@
+ 
+     <!-- All local stylesheets (themes, index, hive, cards-v2, side-menu, ai-agent, lesson, ...)
+          are concatenated in their original order by scripts/build-web.mjs into one file. -->
+-    <link rel="stylesheet" href="dist/home.css">
++    <link rel="stylesheet" href="/dist/home.css">
+ 
+-    <link rel="modulepreload" href="dist/home.js">
++    <link rel="modulepreload" href="/dist/home.js">
+ 
+     <!-- ── Markdown + KaTeX integration (mirrored from create-quiz) ──
+          KaTeX must load as a classic (non-deferred) script so that
+@@ -1293,7 +1293,7 @@
+     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+     <!-- One bundled entry (theme-controller, flow-field, index-entrypoint, side-menu, PWA init);
+          lazy features load on demand as hashed chunks. Built by scripts/build-web.mjs. -->
+-    <script type="module" src="dist/home.js"></script>
++    <script type="module" src="/dist/home.js"></script>
+ 
+     <!-- Remove loading class when page is ready -->
+     <script>
+diff -ruN base-AE/public/lesson.html proj/public/lesson.html
+--- base-AE/public/lesson.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/lesson.html	2026-11-14 17:45:05.812388738 +0200
+@@ -98,18 +98,8 @@
+       rel="stylesheet">
+   </noscript>
+ 
+-  <link rel="stylesheet" href="/src/styles/themes.css">
+-  <link rel="stylesheet" href="/src/features/home/index.css">
+-  <link rel="stylesheet" href="/src/styles/markdown.css">
+-  <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
+-  <link rel="stylesheet" href="/src/features/lesson/lesson.css">
+-  <link rel="stylesheet" href="/src/shared/doc-toc.css">
+-  <link rel="stylesheet" href="/src/components/quiz-info-modal/quiz-info-modal.css">
+-  <link rel="stylesheet" href="/src/components/download-quiz-modal/download-quiz-modal.css">
+-  <link rel="stylesheet" href="/src/components/ai-agent/ai-agent.css">
+-  <link rel="stylesheet" href="src/components/notifications/notifications.css">
++    <link rel="stylesheet" href="/dist/pages/lesson.css">
+ 
+-  <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
+ 
+   <!-- KaTeX must be a classic (non-deferred) script so window.katex exists
+        synchronously when the ES modules below execute; markdown.js falls back to
+@@ -127,12 +117,11 @@
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ 
+   <!-- Theme Controller - Load once as module -->
+-  <script type="module" src="src/shared/theme-controller.js"></script>
++    <link rel="modulepreload" href="/dist/pages/lesson.js">
++    <script type="module" src="/dist/pages/lesson.js"></script>
+ 
+   <!-- Canvas Animation Script - Only loads if user enabled animations -->
+-  <script type="module" src="src/shared/flow-field.js"></script>
+   <script src="/src/shared/embed-mode.js"></script>
+-  <link rel="stylesheet" href="/src/styles/embed-mode.css">
+ </head>
+ 
+ <body>
+@@ -679,22 +668,10 @@
+       </div>
+     </div>
+   </main>
+-  <script type="module" src="/src/features/lesson/lesson-page.js"></script>
+-  <script type="module" src="src/components/side-menu/side-menu.js"></script>
+ 
+   <!-- Admin session sync: reconciles local admin JWT with any live
+          Supabase session on load, refreshing the nav badge / profile
+          dropdown in place (no reload) — see fix.pdf Phase 0. -->
+-  <script type="module">
+-    import { syncAdminSession } from "./src/shared/adminBadgeSync.js";
+-    import { refreshAdminUI } from "./src/components/side-menu/side-menu.js";
+-    document.addEventListener("DOMContentLoaded", () => {
+-      syncAdminSession({
+-        onRecovered: refreshAdminUI,
+-        onSignedOut: refreshAdminUI,
+-      });
+-    });
+-  </script>
+ 
+   <script src="/src/shared/analytics-beacon.js" defer></script>
+ </body>
+diff -ruN base-AE/public/notebook.html proj/public/notebook.html
+--- base-AE/public/notebook.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/notebook.html	2026-11-14 17:45:05.815005650 +0200
+@@ -142,19 +142,8 @@
+       rel="stylesheet">
+   </noscript>
+ 
+-  <link rel="stylesheet" href="/src/styles/themes.css">
+-  <link rel="stylesheet" href="/src/features/home/index.css">
+-  <link rel="stylesheet" href="/src/components/quiz-info-modal/quiz-info-modal.css">
+-  <link rel="stylesheet" href="/src/styles/markdown.css">
+-  <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
+-  <link rel="stylesheet" href="src/components/notifications/notifications.css">
+-  <link rel="stylesheet" href="/assets/notebook-runtime/runtime.css">
+-  <link rel="stylesheet" href="/src/components/ai-agent/ai-agent.css">
+-  <link rel="stylesheet" href="/src/features/notebook/notebook.css">
+-  <link rel="stylesheet" id="cnbEditorCss" href="/src/features/notebook/notebook-editor.css">
+-  <link rel="stylesheet" href="/src/features/notebook/image-tool-window.css">
++    <link rel="stylesheet" href="/dist/pages/notebook.css">
+ 
+-  <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
+ 
+   <!-- KaTeX must be a classic (non-deferred) script so window.katex exists
+        synchronously when the ES modules below execute; markdown.js falls back to
+@@ -172,12 +161,11 @@
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ 
+   <!-- Theme Controller - Load once as module -->
+-  <script type="module" src="src/shared/theme-controller.js"></script>
++    <link rel="modulepreload" href="/dist/pages/notebook.js">
++    <script type="module" src="/dist/pages/notebook.js"></script>
+ 
+   <!-- Canvas Animation Script - Only loads if user enabled animations -->
+-  <script type="module" src="src/shared/flow-field.js"></script>
+   <script src="/src/shared/embed-mode.js"></script>
+-  <link rel="stylesheet" href="/src/styles/embed-mode.css">
+ </head>
+ 
+ <body>
+@@ -988,15 +976,6 @@
+     </section>
+   </main>
+ 
+-  <script type="module" src="/src/features/notebook/notebook-page.js"></script>
+-  <script type="module" src="src/components/side-menu/side-menu.js"></script>
+-  <script type="module">
+-    import { syncAdminSession } from "./src/shared/adminBadgeSync.js";
+-    import { refreshAdminUI } from "./src/components/side-menu/side-menu.js";
+-    document.addEventListener("DOMContentLoaded", () => {
+-      syncAdminSession({ onRecovered: refreshAdminUI, onSignedOut: refreshAdminUI });
+-    });
+-  </script>
+   <script src="/src/shared/analytics-beacon.js" defer></script>
+ </body>
+ 
+diff -ruN base-AE/public/onboarding.html proj/public/onboarding.html
+--- base-AE/public/onboarding.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/onboarding.html	2026-11-14 17:45:05.815904148 +0200
+@@ -160,9 +160,7 @@
+             rel="stylesheet">
+     </noscript>
+ 
+-    <link rel="stylesheet" href="src/styles/themes.css">
+-    <link rel="stylesheet" href="src/features/onboarding/onboarding.css">
+-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
++    <link rel="stylesheet" href="/dist/pages/onboarding.css">
+ 
+     <script>
+         // Redirect if already onboarded (optional check, main logic in index.js)
+@@ -319,7 +317,8 @@
+     </div>
+ 
+     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+-    <script type="module" src="src/features/onboarding/onboarding.js"></script>
++    <link rel="modulepreload" href="/dist/pages/onboarding.js">
++    <script type="module" src="/dist/pages/onboarding.js"></script>
+     <script>
+         if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname)) {
+             const insights = document.createElement("script");
+diff -ruN base-AE/public/privacy-policy.html proj/public/privacy-policy.html
+--- base-AE/public/privacy-policy.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/privacy-policy.html	2026-11-14 17:45:05.816935733 +0200
+@@ -47,9 +47,7 @@
+     <link
+         href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
+         rel="stylesheet" />
+-    <link rel="stylesheet" href="src/styles/themes.css" />
+-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css" />
+-    <link rel="stylesheet" href="src/features/documents/documents.css" />
++    <link rel="stylesheet" href="/dist/pages/privacy-policy.css">
+ 
+ </head>
+ 
+@@ -394,8 +392,8 @@
+         }
+     </script>
+ 
+-    <script type="module" src="src/features/documents/documents-shell.js"></script>
+-    <script type="module" src="src/features/documents/doc-toc.js"></script>
++    <link rel="modulepreload" href="/dist/pages/privacy-policy.js">
++    <script type="module" src="/dist/pages/privacy-policy.js"></script>
+     <script defer src="/_vercel/insights/script.js"></script>
+     <script src="/src/shared/analytics-beacon.js" defer></script>
+ </body>
+diff -ruN base-AE/public/profile.html proj/public/profile.html
+--- base-AE/public/profile.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/profile.html	2026-11-14 17:45:05.822460420 +0200
+@@ -149,14 +149,10 @@
+     </noscript>
+ 
+     <!-- CSS Files -->
+-    <link rel="stylesheet" href="src/styles/themes.css">
+-    <link rel="stylesheet" href="src/shared/levelGauge.css">
+-    <link rel="stylesheet" href="src/features/profile/profile.css">
+-    <link rel="stylesheet" href="src/styles/advanced-liquid-metal-animations.css">
+-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
+-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
++    <link rel="stylesheet" href="/dist/pages/profile.css">
+ 
+-    <script type="module" src="src/shared/theme-controller.js"></script>
++    <link rel="modulepreload" href="/dist/pages/profile.js">
++    <script type="module" src="/dist/pages/profile.js"></script>
+ 
+     <!-- ============================================================
+          RESOURCE HINTS
+@@ -179,19 +175,6 @@
+          request waterfall on the critical path. Listing the first level
+          explicitly collapses it into one parallel burst.
+          ============================================================ -->
+-    <link rel="modulepreload" href="src/features/profile/profile.js">
+-    <link rel="modulepreload" href="src/shared/gameEngine.js">
+-    <link rel="modulepreload" href="src/shared/avatarEngine.js">
+-    <link rel="modulepreload" href="src/shared/quizManifest.js">
+-    <link rel="modulepreload" href="src/shared/supabaseClientRegistry.js">
+-    <link rel="modulepreload" href="src/shared/public-config.js">
+-    <link rel="modulepreload" href="src/shared/adminAuth.js">
+-    <link rel="modulepreload" href="src/shared/userProfile.js">
+-    <link rel="modulepreload" href="src/features/profile/profileWidgets.js">
+-    <link rel="modulepreload" href="src/features/profile/infiniteScroll.js">
+-    <link rel="modulepreload" href="src/shared/levelGauge.js">
+-    <link rel="modulepreload" href="src/features/profile/leaderboardIdentity.js">
+-    <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
+     <!-- avatarPicker is no longer on the critical path (profile.js now
+          initialises it in an idle callback), so it's prefetched at low
+          priority rather than preloaded at high priority. -->
+@@ -1813,31 +1796,10 @@
+          download now overlaps the module graph above instead of serializing
+          with it. -->
+     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+-    <script type="module" src="src/features/profile/profile.js"></script>
+-    <script type="module">
+-        import { initHeatmapOverflowSync } from "./src/features/profile/heatmapOverflow.js";
+-        document.addEventListener("DOMContentLoaded", () => initHeatmapOverflowSync());
+-    </script>
+-    <script type="module" src="src/components/side-menu/side-menu.js"></script>
+     <!-- Admin session sync: reconciles local admin JWT with any live
+          Supabase session on load, refreshing the nav badge / profile
+          dropdown in place (no reload) — see fix.pdf Phase 0. -->
+-    <script type="module">
+-        import { syncAdminSession } from "./src/shared/adminBadgeSync.js";
+-        import { refreshAdminUI } from "./src/components/side-menu/side-menu.js";
+-        document.addEventListener("DOMContentLoaded", () => {
+-            syncAdminSession({
+-                onRecovered: refreshAdminUI,
+-                onSignedOut: refreshAdminUI,
+-            });
+-        });
+-    </script>
+-    <script type="module" src="src/shared/flow-field.js"></script>
+ 
+-    <script type="module">
+-        import { initPWA } from "./src/shared/pwa-manager.js";
+-        document.addEventListener("DOMContentLoaded", () => initPWA());
+-    </script>
+     <script defer src="/_vercel/insights/script.js"></script>
+     <script src="/src/shared/analytics-beacon.js" defer></script>
+ </body>
+diff -ruN base-AE/public/quiz.html proj/public/quiz.html
+--- base-AE/public/quiz.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/quiz.html	2026-11-14 17:45:05.824476919 +0200
+@@ -85,13 +85,7 @@
+     </noscript>
+ 
+     <!-- CSS Files - CRITICAL ORDER -->
+-    <link rel="stylesheet" href="src/styles/themes.css">
+-    <link rel="stylesheet" href="src/features/quiz/quiz.css">
+-    <link rel="stylesheet" href="src/components/report-question/report-question.css">
+-    <link rel="stylesheet" href="src/components/quiz-info-modal/quiz-info-modal.css">
+-    <link rel="stylesheet" href="src/styles/markdown.css">
+-    <link rel="stylesheet" href="src/components/ai-agent/ai-agent.css">
+-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
++    <link rel="stylesheet" href="/dist/pages/quiz.css">
+ 
+     <!-- ── Markdown + KaTeX integration (mirrored from create-quiz) ──
+          KaTeX must load as a classic (non-deferred) script so that
+@@ -111,12 +105,11 @@
+     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ 
+     <!-- Theme Controller - Load once as module -->
+-    <script type="module" src="src/shared/theme-controller.js"></script>
++    <link rel="modulepreload" href="/dist/pages/quiz.js">
++    <script type="module" src="/dist/pages/quiz.js"></script>
+ 
+     <!-- Canvas Animation Script - Only loads if user enabled animations -->
+-    <script type="module" src="src/shared/flow-field.js"></script>
+ <script src="/src/shared/embed-mode.js"></script>
+-  <link rel="stylesheet" href="/src/styles/embed-mode.css">
+ </head>
+ 
+ <body>
+@@ -641,16 +634,6 @@
+     <!-- Quiz Information Dialog (Shell populated by JS) -->
+     <dialog class="quiz-info-dialog" id="quizInfoDialog" aria-labelledby="quizInfoDialogTitle"></dialog>
+ 
+-    <script type="module" src="./src/features/quiz/quiz.js"></script>
+-    <script type="module">
+-        import { getShortcutModalHTML, toggleShortcutModal } from './src/features/quiz/keyboard-nav.js';
+-        document.body.insertAdjacentHTML('beforeend', getShortcutModalHTML());
+-        window.toggleShortcutModal = toggleShortcutModal;
+-    </script>
+-    <script type="module">
+-        import { initPWA } from "./src/shared/pwa-manager.js";
+-        document.addEventListener("DOMContentLoaded", () => initPWA());
+-    </script>
+     <script defer src="/_vercel/insights/script.js"></script>
+ <script src="/src/shared/analytics-beacon.js" defer></script>
+ </body>
+diff -ruN base-AE/public/reports.html proj/public/reports.html
+--- base-AE/public/reports.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/reports.html	2026-11-14 17:45:05.826359082 +0200
+@@ -112,13 +112,10 @@
+         rel="stylesheet">
+ 
+     <!-- CSS Files -->
+-    <link rel="stylesheet" href="src/styles/themes.css">
+-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
+-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
+-    <link rel="stylesheet" href="src/features/reports/reports.css">
++    <link rel="stylesheet" href="/dist/pages/reports.css">
+ 
+-    <script type="module" src="src/shared/theme-controller.js"></script>
+-    <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
++    <link rel="modulepreload" href="/dist/pages/reports.js">
++    <script type="module" src="/dist/pages/reports.js"></script>
+ </head>
+ 
+ <body>
+@@ -629,11 +626,8 @@
+     </script>
+ 
+     <!-- Side Menu Logic -->
+-    <script type="module" src="src/components/side-menu/side-menu.js"></script>
+ 
+     <!-- Reports Feature Logic -->
+-    <script type="module" src="src/shared/flow-field.js"></script>
+-    <script type="module" src="src/features/reports/reports.js"></script>
+ 
+     <script defer src="/_vercel/insights/script.js"></script>
+     <script src="/src/shared/analytics-beacon.js" defer></script>
+diff -ruN base-AE/public/result.html proj/public/result.html
+--- base-AE/public/result.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/result.html	2026-11-14 17:45:05.829730968 +0200
+@@ -146,20 +146,8 @@
+     </noscript>
+ 
+     <!-- CSS Files in correct order -->
+-    <link rel="stylesheet" href="src/styles/themes.css">
+-    <link rel="stylesheet" href="src/shared/levelGauge.css">
+-    <link rel="stylesheet" href="src/features/result/result.css">
+-    <link rel="stylesheet" href="src/components/quiz-info-modal/quiz-info-modal.css">
+-    <link rel="stylesheet" href="src/components/download-quiz-modal/download-quiz-modal.css">
+-    <link rel="stylesheet" href="src/styles/markdown.css">
+-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
+-    <link rel="stylesheet" href="src/components/ai-agent/ai-agent.css">
+-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
+-    <link rel="stylesheet" href="src/components/report-question/report-question.css">
+-
+-    <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
+-    <link rel="modulepreload" href="src/shared/avatarPicker.js">
+-    <link rel="modulepreload" href="src/shared/avatarEngine.js">
++    <link rel="stylesheet" href="/dist/pages/result.css">
++
+ 
+     <!-- ── Markdown + KaTeX integration (mirrored from create-quiz) ──
+          KaTeX must load as a classic (non-deferred) script so that
+@@ -170,12 +158,11 @@
+     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+ 
+     <!-- Theme Controller -->
+-    <script type="module" src="src/shared/theme-controller.js"></script>
++    <link rel="modulepreload" href="/dist/pages/result.js">
++    <script type="module" src="/dist/pages/result.js"></script>
+ 
+     <!-- Canvas Animation Script -->
+-    <script type="module" src="src/shared/flow-field.js"></script>
+     <script src="/src/shared/embed-mode.js"></script>
+-    <link rel="stylesheet" href="/src/styles/embed-mode.css">
+ </head>
+ 
+ <body>
+@@ -929,21 +916,9 @@
+     <div id="notification-container"></div>
+ 
+     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+-    <script type="module" src="src/features/result/result.js"></script>
+-    <script type="module" src="src/components/side-menu/side-menu.js"></script>
+     <!-- Admin session sync: reconciles local admin JWT with any live
+          Supabase session on load, refreshing the nav badge / profile
+          dropdown in place (no reload) — see fix.pdf Phase 0. -->
+-    <script type="module">
+-        import { syncAdminSession } from "./src/shared/adminBadgeSync.js";
+-        import { refreshAdminUI } from "./src/components/side-menu/side-menu.js";
+-        document.addEventListener("DOMContentLoaded", () => {
+-            syncAdminSession({
+-                onRecovered: refreshAdminUI,
+-                onSignedOut: refreshAdminUI,
+-            });
+-        });
+-    </script>
+     <script defer src="/_vercel/insights/script.js"></script>
+     <script src="/src/shared/analytics-beacon.js" defer></script>
+ </body>
+diff -ruN base-AE/public/service-worker.js proj/public/service-worker.js
+--- base-AE/public/service-worker.js	2026-11-14 02:36:27.000000000 +0200
++++ proj/public/service-worker.js	2026-11-14 17:46:00.810579253 +0200
+@@ -115,7 +115,7 @@
+   if (!isAppAsset(url)) return;
+ 
+   // Stable-named bundle entries must always revalidate (they reference hashed chunks).
+-  if (/^\/dist\/home\.(?:js|css)$/.test(url.pathname)) {
++  if (/^\/dist\/(?:home|pages\/[^/]+)\.(?:js|css)$/.test(url.pathname)) {
+     event.respondWith(revalidate(request).catch(async () => (await caches.match(request)) || new Response("Offline", { status: 503 })));
+     return;
+   }
+diff -ruN base-AE/public/settings.html proj/public/settings.html
+--- base-AE/public/settings.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/settings.html	2026-11-14 17:45:05.834524991 +0200
+@@ -141,10 +141,7 @@
+         })();
+     </script>
+ 
+-    <!-- <link rel="modulepreload" href="src/shared/theme-controller.js"> -->
+-    <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
+-    <link rel="modulepreload" href="src/shared/avatarPicker.js">
+-    <link rel="modulepreload" href="src/shared/avatarEngine.js">
++    <!-- -->
+ 
+     <!-- Fonts: Inter (Latin) + Tajawal (Arabic) — optimized loading -->
+     <link
+@@ -160,11 +157,7 @@
+     <link rel="preload" href="src/features/settings/settings.css" as="style">
+     <link rel="preload" href="src/styles/themes.css" as="style">
+ 
+-    <link rel="stylesheet" href="src/styles/themes.css">
+-    <link rel="stylesheet" href="src/features/settings/settings.css">
+-    <link rel="stylesheet" href="src/styles/advanced-liquid-metal-animations.css">
+-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
+-    <link rel="stylesheet" href="src/components/notifications/notifications.css">
++    <link rel="stylesheet" href="/dist/pages/settings.css">
+     <!-- The styling of the side menu has issues in this page, inconsistent sizing copared to the others -->
+ </head>
+ 
+@@ -1218,24 +1211,12 @@
+     </footer>
+ 
+     <!-- Scripts -->
+-    <script type="module" src="src/shared/theme-controller.js"></script>
+-    <script type="module" src="src/shared/flow-field.js"></script>
++    <link rel="modulepreload" href="/dist/pages/settings.js">
++    <script type="module" src="/dist/pages/settings.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+-    <script type="module" src="src/features/settings/settings.js"></script>
+-    <script type="module" src="src/components/side-menu/side-menu.js"></script>
+     <!-- Admin session sync: reconciles local admin JWT with any live
+          Supabase session on load, refreshing the nav badge / profile
+          dropdown in place (no reload) — see fix.pdf Phase 0. -->
+-    <script type="module">
+-        import { syncAdminSession } from "./src/shared/adminBadgeSync.js";
+-        import { refreshAdminUI } from "./src/components/side-menu/side-menu.js";
+-        document.addEventListener("DOMContentLoaded", () => {
+-            syncAdminSession({
+-                onRecovered: refreshAdminUI,
+-                onSignedOut: refreshAdminUI,
+-            });
+-        });
+-    </script>
+     <script defer src="/_vercel/insights/script.js"></script>
+     <script src="/src/shared/analytics-beacon.js" defer></script>
+ </body>
+diff -ruN base-AE/public/src/pages/about-inline.js proj/public/src/pages/about-inline.js
+--- base-AE/public/src/pages/about-inline.js	1970-01-01 02:00:00.000000000 +0200
++++ proj/public/src/pages/about-inline.js	2026-11-14 17:45:05.835611737 +0200
+@@ -0,0 +1,3 @@
++// Moved out of an inline <script type="module"> so it is part of the page bundle (see scripts/build-web.mjs).
++import { mountTelegramBotCard } from "../components/telegram-bot-card/telegram-bot-card.js";
++mountTelegramBotCard(document.getElementById("aboutTelegramCardMount"), { variant: "showcase" });
+diff -ruN base-AE/public/src/pages/admin-session-sync.js proj/public/src/pages/admin-session-sync.js
+--- base-AE/public/src/pages/admin-session-sync.js	1970-01-01 02:00:00.000000000 +0200
++++ proj/public/src/pages/admin-session-sync.js	2026-11-14 17:45:05.835629018 +0200
+@@ -0,0 +1,9 @@
++// Moved out of an inline <script type="module"> so it is part of the page bundle (see scripts/build-web.mjs).
++import { syncAdminSession } from "../shared/adminBadgeSync.js";
++import { refreshAdminUI } from "../components/side-menu/side-menu.js";
++document.addEventListener("DOMContentLoaded", () => {
++syncAdminSession({
++onRecovered: refreshAdminUI,
++onSignedOut: refreshAdminUI,
++});
++});
+diff -ruN base-AE/public/src/pages/how-to-use-ai-agent-inline.js proj/public/src/pages/how-to-use-ai-agent-inline.js
+--- base-AE/public/src/pages/how-to-use-ai-agent-inline.js	1970-01-01 02:00:00.000000000 +0200
++++ proj/public/src/pages/how-to-use-ai-agent-inline.js	2026-11-14 17:45:05.835649076 +0200
+@@ -0,0 +1,3 @@
++// Moved out of an inline <script type="module"> so it is part of the page bundle (see scripts/build-web.mjs).
++import { mountTelegramBotCard } from "../components/telegram-bot-card/telegram-bot-card.js";
++mountTelegramBotCard(document.getElementById("howToTelegramMount"), { variant: "showcase" });
+diff -ruN base-AE/public/src/pages/notebook-admin-session-sync.js proj/public/src/pages/notebook-admin-session-sync.js
+--- base-AE/public/src/pages/notebook-admin-session-sync.js	1970-01-01 02:00:00.000000000 +0200
++++ proj/public/src/pages/notebook-admin-session-sync.js	2026-11-14 17:45:05.835658852 +0200
+@@ -0,0 +1,6 @@
++// Moved out of an inline <script type="module"> so it is part of the page bundle (see scripts/build-web.mjs).
++import { syncAdminSession } from "../shared/adminBadgeSync.js";
++import { refreshAdminUI } from "../components/side-menu/side-menu.js";
++document.addEventListener("DOMContentLoaded", () => {
++syncAdminSession({ onRecovered: refreshAdminUI, onSignedOut: refreshAdminUI });
++});
+diff -ruN base-AE/public/src/pages/profile-inline.js proj/public/src/pages/profile-inline.js
+--- base-AE/public/src/pages/profile-inline.js	1970-01-01 02:00:00.000000000 +0200
++++ proj/public/src/pages/profile-inline.js	2026-11-14 17:45:05.835667472 +0200
+@@ -0,0 +1,3 @@
++// Moved out of an inline <script type="module"> so it is part of the page bundle (see scripts/build-web.mjs).
++import { initHeatmapOverflowSync } from "../features/profile/heatmapOverflow.js";
++document.addEventListener("DOMContentLoaded", () => initHeatmapOverflowSync());
+diff -ruN base-AE/public/src/pages/pwa-init.js proj/public/src/pages/pwa-init.js
+--- base-AE/public/src/pages/pwa-init.js	1970-01-01 02:00:00.000000000 +0200
++++ proj/public/src/pages/pwa-init.js	2026-11-14 17:45:05.835639232 +0200
+@@ -0,0 +1,3 @@
++// Moved out of an inline <script type="module"> so it is part of the page bundle (see scripts/build-web.mjs).
++import { initPWA } from "../shared/pwa-manager.js";
++document.addEventListener("DOMContentLoaded", () => initPWA());
+diff -ruN base-AE/public/src/pages/quiz-inline.js proj/public/src/pages/quiz-inline.js
+--- base-AE/public/src/pages/quiz-inline.js	1970-01-01 02:00:00.000000000 +0200
++++ proj/public/src/pages/quiz-inline.js	2026-11-14 17:45:05.835676341 +0200
+@@ -0,0 +1,4 @@
++// Moved out of an inline <script type="module"> so it is part of the page bundle (see scripts/build-web.mjs).
++import { getShortcutModalHTML, toggleShortcutModal } from '../features/quiz/keyboard-nav.js';
++document.body.insertAdjacentHTML('beforeend', getShortcutModalHTML());
++window.toggleShortcutModal = toggleShortcutModal;
+diff -ruN base-AE/public/terms-of-service.html proj/public/terms-of-service.html
+--- base-AE/public/terms-of-service.html	2026-11-14 01:41:08.000000000 +0200
++++ proj/public/terms-of-service.html	2026-11-14 17:45:05.835513419 +0200
+@@ -47,9 +47,7 @@
+     <link
+         href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
+         rel="stylesheet" />
+-    <link rel="stylesheet" href="src/styles/themes.css" />
+-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css" />
+-    <link rel="stylesheet" href="src/features/documents/documents.css" />
++    <link rel="stylesheet" href="/dist/pages/terms-of-service.css">
+ 
+ </head>
+ 
+@@ -382,8 +380,8 @@
+         }
+     </script>
+ 
+-    <script type="module" src="src/features/documents/documents-shell.js"></script>
+-    <script type="module" src="src/features/documents/doc-toc.js"></script>
++    <link rel="modulepreload" href="/dist/pages/terms-of-service.js">
++    <script type="module" src="/dist/pages/terms-of-service.js"></script>
+     <script defer src="/_vercel/insights/script.js"></script>
+     <script src="/src/shared/analytics-beacon.js" defer></script>
+ </body>
+diff -ruN base-AE/scripts/build-web.mjs proj/scripts/build-web.mjs
+--- base-AE/scripts/build-web.mjs	2026-11-14 02:37:20.000000000 +0200
++++ proj/scripts/build-web.mjs	2026-11-14 17:45:47.642887339 +0200
+@@ -6,6 +6,7 @@
+ //   node scripts/build-web.mjs          production build (minified)
+ //   node scripts/build-web.mjs --watch  rebuild on change (dev)
+ //
++// Per page: dist/pages/<page>.js + .css (same stable-name/no-cache rule as home.*).
+ // Output (public/dist, git-ignored, produced by Vercel's buildCommand):
+ //   home.js           single stable-named entry (theme-controller, flow-field,
+ //                     index-entrypoint, side-menu, PWA init). Served with no-cache
+@@ -74,10 +75,6 @@
+   "src/features/home/cards-v2.css",
+   "src/features/home/user-course-card.css",
+ ];
+-async function homeCssImports() {
+-  return HOME_CSS.map((h) => `@import "./${h}";`).join("\n");
+-}
+-
+ const shared = { bundle: true, minify: !watch, sourcemap: watch ? "inline" : false, logLevel: "info", legalComments: "none" };
+ 
+ async function run() {
+@@ -94,23 +91,49 @@
+     `  initPWAWithBanner(window.SUPABASE_URL ? \`${"$"}{window.SUPABASE_URL}/rest/v1/\` : ""));`,
+   ].join("\n"));
+ 
++  // One entry (+ one CSS file) per HTML page, from scripts/page-bundles.json
++  // (generated once from each page's old <script>/<link> tags, in document order).
++  const pages = JSON.parse(await readFile(path.join(import.meta.dirname, "page-bundles.json"), "utf8"));
++  const jsEntries = { home: entryFile };
++  const cssEntries = {};
++  const homeCss = path.join(tmp, "home-css.css");
++  await writeFile(homeCss, HOME_CSS.map((h) => `@import ${JSON.stringify(path.join(pub, h))};`).join("\n"));
++  cssEntries.home = homeCss;
++  for (const [name, { js, css }] of Object.entries(pages)) {
++    if (js.length) {
++      const f = path.join(tmp, `page-${name}.js`);
++      await writeFile(f, js.map((m) => `import ${JSON.stringify(path.join(pub, m))};`).join("\n"));
++      jsEntries[`pages/${name}`] = f;
++    }
++    if (css.length) {
++      const f = path.join(tmp, `page-${name}.css`);
++      await writeFile(f, css.map((m) => `@import ${JSON.stringify(path.join(pub, m))};`).join("\n"));
++      cssEntries[`pages/${name}`] = f;
++    }
++  }
++
+   const jsOpts = {
+     ...shared,
+-    entryPoints: { home: entryFile },
++    entryPoints: jsEntries,
+     outdir: out,
+-    entryNames: "[name]",
++    entryNames: "[dir]/[name]",
+     chunkNames: "chunks/[name]-[hash]",
+     format: "esm",
+     splitting: true,
+-    target: "es2020",
++    target: "es2022",
+     plugins: [pinImportMeta],
+     external: ["/assets/*", "/src/*", "http://*", "https://*"],
+     metafile: true,
+   };
+   const cssOpts = {
+     ...shared,
+-    stdin: { contents: await homeCssImports(), resolveDir: pub, loader: "css" },
+-    outfile: path.join(out, "home.css"),
++    entryPoints: cssEntries,
++    outdir: out,
++    entryNames: "[dir]/[name]",
++    // Relative url(...) in bundled CSS (e.g. KaTeX fonts) are copied to dist/assets/ with hashed names.
++    loader: { ".woff2": "file", ".woff": "file", ".ttf": "file", ".png": "file", ".jpg": "file", ".jpeg": "file", ".svg": "file", ".gif": "file", ".webp": "file" },
++    assetNames: "assets/[name]-[hash]",
++    publicPath: "/dist",
+     external: ["/assets/*", "/src/*", "http://*", "https://*", "data:*"],
+   };
+ 
+diff -ruN base-AE/scripts/page-bundles.json proj/scripts/page-bundles.json
+--- base-AE/scripts/page-bundles.json	1970-01-01 02:00:00.000000000 +0200
++++ proj/scripts/page-bundles.json	2026-11-14 17:45:05.835855682 +0200
+@@ -0,0 +1,286 @@
++{
++  "about": {
++    "js": [
++      "src/features/documents/documents-shell.js",
++      "src/features/documents/doc-toc.js",
++      "src/features/documents/about-stats.js",
++      "src/pages/about-inline.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/components/side-menu/side-menu.css",
++      "src/components/notifications/notifications.css",
++      "src/features/documents/documents.css",
++      "src/features/documents/about.css",
++      "src/components/telegram-bot-card/telegram-bot-card.css"
++    ]
++  },
++  "control": {
++    "js": [
++      "src/features/control/control.js",
++      "src/features/control/storage-panel.js"
++    ],
++    "css": [
++      "src/features/control/control.css",
++      "src/features/control/control-stats.css"
++    ]
++  },
++  "create-lesson": {
++    "js": [
++      "src/shared/theme-controller.js",
++      "src/shared/flow-field.js",
++      "src/features/create-lesson/create-lesson.js",
++      "src/components/side-menu/side-menu.js",
++      "src/pages/admin-session-sync.js",
++      "src/pages/pwa-init.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/features/create-lesson/create-lesson.css",
++      "src/styles/markdown.css",
++      "src/features/lesson/lesson.css",
++      "src/components/download-quiz-modal/download-quiz-modal.css",
++      "src/components/side-menu/side-menu.css",
++      "src/components/ai-agent/ai-agent.css",
++      "src/components/notifications/notifications.css"
++    ]
++  },
++  "create-quiz": {
++    "js": [
++      "src/shared/theme-controller.js",
++      "src/shared/flow-field.js",
++      "src/features/create-quiz/create-quiz.js",
++      "src/components/side-menu/side-menu.js",
++      "src/pages/admin-session-sync.js",
++      "src/pages/pwa-init.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/features/create-quiz/create-quiz.css",
++      "src/components/download-quiz-modal/download-quiz-modal.css",
++      "src/styles/markdown.css",
++      "src/features/home/item-dropdown-menu.css",
++      "src/components/ai-agent/ai-agent.css",
++      "src/components/side-menu/side-menu.css",
++      "src/components/notifications/notifications.css"
++    ]
++  },
++  "how-to-connect-mcp": {
++    "js": [
++      "src/features/documents/documents-shell.js",
++      "src/features/documents/doc-toc.js",
++      "src/features/documents/doc-steps.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/components/side-menu/side-menu.css",
++      "src/features/documents/documents.css",
++      "src/components/notifications/notifications.css",
++      "src/components/telegram-bot-card/telegram-bot-card.css",
++      "src/features/documents/doc-steps.css"
++    ]
++  },
++  "how-to-create-content": {
++    "js": [
++      "src/features/documents/documents-shell.js",
++      "src/features/documents/doc-toc.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/components/side-menu/side-menu.css",
++      "src/features/documents/documents.css"
++    ]
++  },
++  "how-to-upload-content": {
++    "js": [
++      "src/features/documents/documents-shell.js",
++      "src/features/documents/doc-toc.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/components/side-menu/side-menu.css",
++      "src/features/documents/documents.css"
++    ]
++  },
++  "how-to-use-ai-agent": {
++    "js": [
++      "src/features/documents/documents-shell.js",
++      "src/features/documents/doc-toc.js",
++      "src/pages/how-to-use-ai-agent-inline.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/components/side-menu/side-menu.css",
++      "src/features/documents/documents.css",
++      "src/components/notifications/notifications.css",
++      "src/components/telegram-bot-card/telegram-bot-card.css"
++    ]
++  },
++  "lesson": {
++    "js": [
++      "src/shared/theme-controller.js",
++      "src/shared/flow-field.js",
++      "src/features/lesson/lesson-page.js",
++      "src/components/side-menu/side-menu.js",
++      "src/pages/admin-session-sync.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/features/home/index.css",
++      "src/styles/markdown.css",
++      "src/components/side-menu/side-menu.css",
++      "src/features/lesson/lesson.css",
++      "src/shared/doc-toc.css",
++      "src/components/quiz-info-modal/quiz-info-modal.css",
++      "src/components/download-quiz-modal/download-quiz-modal.css",
++      "src/components/ai-agent/ai-agent.css",
++      "src/components/notifications/notifications.css",
++      "src/styles/embed-mode.css"
++    ]
++  },
++  "notebook": {
++    "js": [
++      "src/shared/theme-controller.js",
++      "src/shared/flow-field.js",
++      "src/features/notebook/notebook-page.js",
++      "src/components/side-menu/side-menu.js",
++      "src/pages/notebook-admin-session-sync.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/features/home/index.css",
++      "src/components/quiz-info-modal/quiz-info-modal.css",
++      "src/styles/markdown.css",
++      "src/components/side-menu/side-menu.css",
++      "src/components/notifications/notifications.css",
++      "assets/notebook-runtime/runtime.css",
++      "src/components/ai-agent/ai-agent.css",
++      "src/features/notebook/notebook.css",
++      "src/features/notebook/notebook-editor.css",
++      "src/features/notebook/image-tool-window.css",
++      "src/styles/embed-mode.css"
++    ]
++  },
++  "onboarding": {
++    "js": [
++      "src/features/onboarding/onboarding.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/features/onboarding/onboarding.css",
++      "src/components/notifications/notifications.css"
++    ]
++  },
++  "privacy-policy": {
++    "js": [
++      "src/features/documents/documents-shell.js",
++      "src/features/documents/doc-toc.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/components/side-menu/side-menu.css",
++      "src/features/documents/documents.css"
++    ]
++  },
++  "profile": {
++    "js": [
++      "src/shared/theme-controller.js",
++      "src/features/profile/profile.js",
++      "src/pages/profile-inline.js",
++      "src/components/side-menu/side-menu.js",
++      "src/pages/admin-session-sync.js",
++      "src/shared/flow-field.js",
++      "src/pages/pwa-init.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/shared/levelGauge.css",
++      "src/features/profile/profile.css",
++      "src/styles/advanced-liquid-metal-animations.css",
++      "src/components/side-menu/side-menu.css",
++      "src/components/notifications/notifications.css"
++    ]
++  },
++  "quiz": {
++    "js": [
++      "src/shared/theme-controller.js",
++      "src/shared/flow-field.js",
++      "src/features/quiz/quiz.js",
++      "src/pages/quiz-inline.js",
++      "src/pages/pwa-init.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/features/quiz/quiz.css",
++      "src/components/report-question/report-question.css",
++      "src/components/quiz-info-modal/quiz-info-modal.css",
++      "src/styles/markdown.css",
++      "src/components/ai-agent/ai-agent.css",
++      "src/components/notifications/notifications.css",
++      "src/styles/embed-mode.css"
++    ]
++  },
++  "reports": {
++    "js": [
++      "src/shared/theme-controller.js",
++      "src/components/side-menu/side-menu.js",
++      "src/shared/flow-field.js",
++      "src/features/reports/reports.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/components/side-menu/side-menu.css",
++      "src/components/notifications/notifications.css",
++      "src/features/reports/reports.css"
++    ]
++  },
++  "result": {
++    "js": [
++      "src/shared/theme-controller.js",
++      "src/shared/flow-field.js",
++      "src/features/result/result.js",
++      "src/components/side-menu/side-menu.js",
++      "src/pages/admin-session-sync.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/shared/levelGauge.css",
++      "src/features/result/result.css",
++      "src/components/quiz-info-modal/quiz-info-modal.css",
++      "src/components/download-quiz-modal/download-quiz-modal.css",
++      "src/styles/markdown.css",
++      "src/components/side-menu/side-menu.css",
++      "src/components/ai-agent/ai-agent.css",
++      "src/components/notifications/notifications.css",
++      "src/components/report-question/report-question.css",
++      "src/styles/embed-mode.css"
++    ]
++  },
++  "settings": {
++    "js": [
++      "src/shared/theme-controller.js",
++      "src/shared/flow-field.js",
++      "src/features/settings/settings.js",
++      "src/components/side-menu/side-menu.js",
++      "src/pages/admin-session-sync.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/features/settings/settings.css",
++      "src/styles/advanced-liquid-metal-animations.css",
++      "src/components/side-menu/side-menu.css",
++      "src/components/notifications/notifications.css"
++    ]
++  },
++  "terms-of-service": {
++    "js": [
++      "src/features/documents/documents-shell.js",
++      "src/features/documents/doc-toc.js"
++    ],
++    "css": [
++      "src/styles/themes.css",
++      "src/components/side-menu/side-menu.css",
++      "src/features/documents/documents.css"
++    ]
++  }
++}
+diff -ruN base-AE/vercel.json proj/vercel.json
+--- base-AE/vercel.json	2026-11-14 02:36:27.000000000 +0200
++++ proj/vercel.json	2026-11-14 17:46:00.810388367 +0200
+@@ -14,7 +14,7 @@
+       ]
+     },
+     {
+-      "source": "/dist/(home\\.js|home\\.css)",
++      "source": "/dist/(home|pages/[^/]+)\\.(js|css)",
+       "headers": [
+         {
+           "key": "Cache-Control",

@@ -115,7 +115,7 @@ self.addEventListener("fetch", (event) => {
   if (!isAppAsset(url)) return;
 
   // Stable-named bundle entries must always revalidate (they reference hashed chunks).
-  if (/^\/dist\/home\.(?:js|css)$/.test(url.pathname)) {
+  if (/^\/dist\/(?:home|pages\/[^/]+)\.(?:js|css)$/.test(url.pathname)) {
     event.respondWith(revalidate(request).catch(async () => (await caches.match(request)) || new Response("Offline", { status: 503 })));
     return;
   }

@@ -1,0 +1,286 @@
+{
+  "about": {
+    "js": [
+      "src/features/documents/documents-shell.js",
+      "src/features/documents/doc-toc.js",
+      "src/features/documents/about-stats.js",
+      "src/pages/about-inline.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/components/side-menu/side-menu.css",
+      "src/components/notifications/notifications.css",
+      "src/features/documents/documents.css",
+      "src/features/documents/about.css",
+      "src/components/telegram-bot-card/telegram-bot-card.css"
+    ]
+  },
+  "control": {
+    "js": [
+      "src/features/control/control.js",
+      "src/features/control/storage-panel.js"
+    ],
+    "css": [
+      "src/features/control/control.css",
+      "src/features/control/control-stats.css"
+    ]
+  },
+  "create-lesson": {
+    "js": [
+      "src/shared/theme-controller.js",
+      "src/shared/flow-field.js",
+      "src/features/create-lesson/create-lesson.js",
+      "src/components/side-menu/side-menu.js",
+      "src/pages/admin-session-sync.js",
+      "src/pages/pwa-init.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/features/create-lesson/create-lesson.css",
+      "src/styles/markdown.css",
+      "src/features/lesson/lesson.css",
+      "src/components/download-quiz-modal/download-quiz-modal.css",
+      "src/components/side-menu/side-menu.css",
+      "src/components/ai-agent/ai-agent.css",
+      "src/components/notifications/notifications.css"
+    ]
+  },
+  "create-quiz": {
+    "js": [
+      "src/shared/theme-controller.js",
+      "src/shared/flow-field.js",
+      "src/features/create-quiz/create-quiz.js",
+      "src/components/side-menu/side-menu.js",
+      "src/pages/admin-session-sync.js",
+      "src/pages/pwa-init.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/features/create-quiz/create-quiz.css",
+      "src/components/download-quiz-modal/download-quiz-modal.css",
+      "src/styles/markdown.css",
+      "src/features/home/item-dropdown-menu.css",
+      "src/components/ai-agent/ai-agent.css",
+      "src/components/side-menu/side-menu.css",
+      "src/components/notifications/notifications.css"
+    ]
+  },
+  "how-to-connect-mcp": {
+    "js": [
+      "src/features/documents/documents-shell.js",
+      "src/features/documents/doc-toc.js",
+      "src/features/documents/doc-steps.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/components/side-menu/side-menu.css",
+      "src/features/documents/documents.css",
+      "src/components/notifications/notifications.css",
+      "src/components/telegram-bot-card/telegram-bot-card.css",
+      "src/features/documents/doc-steps.css"
+    ]
+  },
+  "how-to-create-content": {
+    "js": [
+      "src/features/documents/documents-shell.js",
+      "src/features/documents/doc-toc.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/components/side-menu/side-menu.css",
+      "src/features/documents/documents.css"
+    ]
+  },
+  "how-to-upload-content": {
+    "js": [
+      "src/features/documents/documents-shell.js",
+      "src/features/documents/doc-toc.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/components/side-menu/side-menu.css",
+      "src/features/documents/documents.css"
+    ]
+  },
+  "how-to-use-ai-agent": {
+    "js": [
+      "src/features/documents/documents-shell.js",
+      "src/features/documents/doc-toc.js",
+      "src/pages/how-to-use-ai-agent-inline.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/components/side-menu/side-menu.css",
+      "src/features/documents/documents.css",
+      "src/components/notifications/notifications.css",
+      "src/components/telegram-bot-card/telegram-bot-card.css"
+    ]
+  },
+  "lesson": {
+    "js": [
+      "src/shared/theme-controller.js",
+      "src/shared/flow-field.js",
+      "src/features/lesson/lesson-page.js",
+      "src/components/side-menu/side-menu.js",
+      "src/pages/admin-session-sync.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/features/home/index.css",
+      "src/styles/markdown.css",
+      "src/components/side-menu/side-menu.css",
+      "src/features/lesson/lesson.css",
+      "src/shared/doc-toc.css",
+      "src/components/quiz-info-modal/quiz-info-modal.css",
+      "src/components/download-quiz-modal/download-quiz-modal.css",
+      "src/components/ai-agent/ai-agent.css",
+      "src/components/notifications/notifications.css",
+      "src/styles/embed-mode.css"
+    ]
+  },
+  "notebook": {
+    "js": [
+      "src/shared/theme-controller.js",
+      "src/shared/flow-field.js",
+      "src/features/notebook/notebook-page.js",
+      "src/components/side-menu/side-menu.js",
+      "src/pages/notebook-admin-session-sync.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/features/home/index.css",
+      "src/components/quiz-info-modal/quiz-info-modal.css",
+      "src/styles/markdown.css",
+      "src/components/side-menu/side-menu.css",
+      "src/components/notifications/notifications.css",
+      "assets/notebook-runtime/runtime.css",
+      "src/components/ai-agent/ai-agent.css",
+      "src/features/notebook/notebook.css",
+      "src/features/notebook/notebook-editor.css",
+      "src/features/notebook/image-tool-window.css",
+      "src/styles/embed-mode.css"
+    ]
+  },
+  "onboarding": {
+    "js": [
+      "src/features/onboarding/onboarding.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/features/onboarding/onboarding.css",
+      "src/components/notifications/notifications.css"
+    ]
+  },
+  "privacy-policy": {
+    "js": [
+      "src/features/documents/documents-shell.js",
+      "src/features/documents/doc-toc.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/components/side-menu/side-menu.css",
+      "src/features/documents/documents.css"
+    ]
+  },
+  "profile": {
+    "js": [
+      "src/shared/theme-controller.js",
+      "src/features/profile/profile.js",
+      "src/pages/profile-inline.js",
+      "src/components/side-menu/side-menu.js",
+      "src/pages/admin-session-sync.js",
+      "src/shared/flow-field.js",
+      "src/pages/pwa-init.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/shared/levelGauge.css",
+      "src/features/profile/profile.css",
+      "src/styles/advanced-liquid-metal-animations.css",
+      "src/components/side-menu/side-menu.css",
+      "src/components/notifications/notifications.css"
+    ]
+  },
+  "quiz": {
+    "js": [
+      "src/shared/theme-controller.js",
+      "src/shared/flow-field.js",
+      "src/features/quiz/quiz.js",
+      "src/pages/quiz-inline.js",
+      "src/pages/pwa-init.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/features/quiz/quiz.css",
+      "src/components/report-question/report-question.css",
+      "src/components/quiz-info-modal/quiz-info-modal.css",
+      "src/styles/markdown.css",
+      "src/components/ai-agent/ai-agent.css",
+      "src/components/notifications/notifications.css",
+      "src/styles/embed-mode.css"
+    ]
+  },
+  "reports": {
+    "js": [
+      "src/shared/theme-controller.js",
+      "src/components/side-menu/side-menu.js",
+      "src/shared/flow-field.js",
+      "src/features/reports/reports.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/components/side-menu/side-menu.css",
+      "src/components/notifications/notifications.css",
+      "src/features/reports/reports.css"
+    ]
+  },
+  "result": {
+    "js": [
+      "src/shared/theme-controller.js",
+      "src/shared/flow-field.js",
+      "src/features/result/result.js",
+      "src/components/side-menu/side-menu.js",
+      "src/pages/admin-session-sync.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/shared/levelGauge.css",
+      "src/features/result/result.css",
+      "src/components/quiz-info-modal/quiz-info-modal.css",
+      "src/components/download-quiz-modal/download-quiz-modal.css",
+      "src/styles/markdown.css",
+      "src/components/side-menu/side-menu.css",
+      "src/components/ai-agent/ai-agent.css",
+      "src/components/notifications/notifications.css",
+      "src/components/report-question/report-question.css",
+      "src/styles/embed-mode.css"
+    ]
+  },
+  "settings": {
+    "js": [
+      "src/shared/theme-controller.js",
+      "src/shared/flow-field.js",
+      "src/features/settings/settings.js",
+      "src/components/side-menu/side-menu.js",
+      "src/pages/admin-session-sync.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/features/settings/settings.css",
+      "src/styles/advanced-liquid-metal-animations.css",
+      "src/components/side-menu/side-menu.css",
+      "src/components/notifications/notifications.css"
+    ]
+  },
+  "terms-of-service": {
+    "js": [
+      "src/features/documents/documents-shell.js",
+      "src/features/documents/doc-toc.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/components/side-menu/side-menu.css",
+      "src/features/documents/documents.css"
+    ]
+  }
+}
