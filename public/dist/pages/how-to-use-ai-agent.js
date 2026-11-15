@@ -1,1 +1,0 @@
-import{c as o}from"../chunks/chunk-JXXO4ZLQ.js";import"../chunks/chunk-JOVBCH5E.js";import"../chunks/chunk-UOMVXR3T.js";import"../chunks/chunk-MDV3IOTU.js";import"../chunks/chunk-HE6VJRPR.js";o(document.getElementById("howToTelegramMount"),{variant:"showcase"});
