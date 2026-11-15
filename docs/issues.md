@@ -49,22 +49,16 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 
 ## New Features
 
-### Code Blocks in The Markdown Rendering Engine and the Rich Input Component
-
-Upgrade the code blocks in the markdown rendering engine:
-* Make it collapsible/extendable.
-* Add a download button that downloads the code with its actual correct extension.
-
-Add a download button to code blocks in the Rich Input Component, too.
-
 ### Implement the Rich Input Component into the Notebook page's Makrdown cells.
 
 ### New Question Type: Complete
 * Implement a new question type in the quiz page and the lesson page: Complete.
 * A standard complete type of question.
 
-### Dictation for Essay Questions (Lesson & Quiz Pages)
-Add dictation feature for essays in quizzes and lessons
+Related Files:
+* `public\src\features\lesson\`: Lesson page files.
+* `public\src\features\quiz\`: Quiz page files.
+* `public\src\shared\rate-answers.js`: Essay questions grading engine.
 
 ### Update the `createEmptyState`
 * Update the `createEmptyState` to include a link to the `/how-to-create-content`
