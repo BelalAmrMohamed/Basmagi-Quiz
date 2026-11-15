@@ -12,6 +12,7 @@ import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
 import { getSelectedProvider, getSelectedModel, getModelsForProvider, setSelectedModel, getOwnKey, getSystemPrompt, isAiHelperAvailable, EFFORT_LEVELS, getSelectedEffort, setSelectedEffort } from "./ai-agent-settings.js";
 import { getUserToken } from "../../shared/userLevel.js";
 import { createRichInput } from "../../shared/rich-input/rich-input.js";
+import { createDictation } from "../../shared/rich-input/dictation.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
 
 function isJwtExpired(token, skewSeconds = 30) {
@@ -1091,395 +1092,34 @@ export function createChatPanel(options = {}) {
   // The rich input grows/scrolls on its own; kept as a no-op for existing call sites.
   function resizeChatInput() {}
 
-  // Live mic-volume metering for the wave bars (separate from
-  // SpeechRecognition, which exposes no amplitude data of its own) — a
-  // short-lived AudioContext/AnalyserNode pair opened alongside each
-  // dictation session so the bars reflect actual voice level instead of
-  // looping a fixed CSS animation regardless of whether the user is
-  // speaking. Torn down in stopMicMetering() so no mic stream/AudioContext
-  // is left open once dictation ends.
-  // IMPORTANT: Declared here (before dictationWaveEl) so waveBarEls.push()
-  // called during dictationWaveEl construction does not trigger a TDZ error.
-  let audioCtx = null;
-  let analyserNode = null;
-  let micStream = null;
-  let meterRafId = null;
-  const waveBarEls = [];
-
-  // REDESIGN: no longer replaces the textarea. Sits in the mic button's own
-  // slot (same fixed 36×36 footprint — see .ai-agent-dictation-wave in the
-  // CSS) as a small live "listening" indicator, swapped in for micBtn while
-  // dictating so the row's height/width never changes and the textarea
-  // stays visible with its live-transcribed text the whole time (see
-  // recognition.onresult below, which writes straight into textarea.value
-  // regardless of this element's state). Clicking it behaves exactly like
-  // the mic/cancel button used to (see onMicBtnClick below) — stops
-  // dictation and leaves the transcribed text in place for review.
-  const dictationWaveEl = document.createElement("button");
-  dictationWaveEl.type = "button";
-  dictationWaveEl.className = "ai-agent-dictation-wave";
-  // Hidden until dictation actually starts (toggled alongside micBtn in
-  // setDictationUiState below) — otherwise this would sit visible in the
-  // input row on every page load.
-  dictationWaveEl.hidden = true;
-  dictationWaveEl.setAttribute("aria-label", "جارِ الاستماع — اضغط للإلغاء");
-  dictationWaveEl.title = "جارِ الاستماع — اضغط للإلغاء";
-  dictationWaveEl.innerHTML = `
-    <span class="ai-agent-dictation-wave-bars" aria-hidden="true">
-      <span></span><span></span><span></span><span></span><span></span>
-    </span>
-  `;
-  dictationWaveEl.addEventListener("click", () => {
-    stopRecognition();
-    textarea.focus();
-  });
-  waveBarEls.push(
-    ...dictationWaveEl.querySelectorAll(".ai-agent-dictation-wave-bars span"),
-  );
-
-  /**
-   * Opens a mic stream purely for volume metering (independent of, and
-   * in parallel with, the SpeechRecognition session — the two APIs don't
-   * share access to each other's audio data). Best-effort: if getUserMedia
-   * is denied/unavailable, the bars just keep their CSS fallback animation
-   * (see @keyframes ai-agent-wave-bounce) instead of breaking dictation.
-   */
-  async function startMicMetering() {
-    if (!navigator.mediaDevices?.getUserMedia) return;
-    await braveDetection;
-    if (isBraveBrowser || !isDictating) return;
-    try {
-      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-      audioCtx = new AudioContextCtor();
-      const source = audioCtx.createMediaStreamSource(micStream);
-      analyserNode = audioCtx.createAnalyser();
-      analyserNode.fftSize = 64;
-      analyserNode.smoothingTimeConstant = 0.6;
-      source.connect(analyserNode);
-
-      const data = new Uint8Array(analyserNode.frequencyBinCount);
-      // Once real volume data is flowing, hand the bars off to it —
-      // removing the CSS keyframe loop so the two animation sources
-      // never fight over `transform`.
-      dictationWaveEl.classList.add("ai-agent-dictation-wave--live");
-
-      const tick = () => {
-        if (!analyserNode) return;
-        analyserNode.getByteTimeDomainData(data);
-        // Per-bar RMS over a distinct slice of the buffer (rather than one
-        // global level applied to all five) so the bars move somewhat
-        // independently, still reading as one reactive waveform.
-        const sliceSize = Math.floor(data.length / waveBarEls.length);
-        waveBarEls.forEach((bar, i) => {
-          let sum = 0;
-          const start = i * sliceSize;
-          const end = start + sliceSize;
-          for (let j = start; j < end; j++) {
-            const centered = (data[j] - 128) / 128;
-            sum += centered * centered;
-          }
-          const rms = Math.sqrt(sum / sliceSize);
-          // 0.15 floor keeps a faint idle bar visible in silence; 3.2 gain
-          // and the 1 cap tune how "loud" a normal speaking voice reads.
-          const level = Math.min(1, 0.15 + rms * 3.2);
-          bar.style.transform = `scaleY(${level.toFixed(3)})`;
-        });
-        meterRafId = requestAnimationFrame(tick);
-      };
-      tick();
-    } catch (err) {
-      console.error("[ai-agent-chat] Mic metering unavailable:", err);
-      audioCtx = null;
-      analyserNode = null;
-      micStream = null;
-    }
-  }
-
-  function stopMicMetering() {
-    if (meterRafId) cancelAnimationFrame(meterRafId);
-    meterRafId = null;
-    analyserNode = null;
-    if (micStream) {
-      micStream.getTracks().forEach((track) => track.stop());
-      micStream = null;
-    }
-    if (audioCtx) {
-      audioCtx.close().catch(() => { });
-      audioCtx = null;
-    }
-    dictationWaveEl.classList.remove("ai-agent-dictation-wave--live");
-    waveBarEls.forEach((bar) => {
-      bar.style.transform = "";
-    });
-  }
-
-  // ── Voice dictation (Task 5, Web Speech API) ──
-  // Framework-free, native SpeechRecognition — no external library. Built
-  // unconditionally (not gated behind enableFileUpload or any other
-  // option) since it's a general chat-input affordance every page using
-  // this panel should get, same as the textarea itself.
-  const SpeechRecognitionCtor =
-    window.SpeechRecognition || window.webkitSpeechRecognition || null;
-
-  // Firefox has no SpeechRecognition support in its stable channel at
-  // all, but on the off chance a future/flagged build exposes the
-  // constructor, this still surfaces the accuracy warning — the request
-  // is "if Firefox, warn", not "if the API is missing, warn silently".
-  const isFirefox = /firefox/i.test(navigator.userAgent || "");
-
-  // navigator.brave.isBrave() is asynchronous. Wait for it before opening
-  // the separate metering stream; otherwise an early mic click can race
-  // detection and request the microphone twice in Brave while its native
-  // SpeechRecognition session is starting.
-  let isBraveBrowser = /brave/i.test(navigator.userAgent || "");
-  const braveDetection = navigator.brave && typeof navigator.brave.isBrave === "function"
-    ? navigator.brave
-      .isBrave()
-      .then((result) => {
-        isBraveBrowser = !!result;
-        return isBraveBrowser;
-      })
-      .catch((error) => {
-        console.warn("[ai-agent-chat] Brave browser detection failed:", error);
-        return isBraveBrowser;
-      })
-    : Promise.resolve(isBraveBrowser);
-
-  let micBtn = null;
-  let firefoxWarningEl = null;
-  let recognition = null;
-  let isDictating = false;
-  // (audioCtx, analyserNode, micStream, meterRafId, waveBarEls are declared
-  //  above, before dictationWaveEl, to avoid a TDZ ReferenceError on
-  //  waveBarEls.push() during element construction.)
-  // Accumulates finalized speech segments across multiple onresult events
-  // within one dictation session — SpeechRecognition delivers results
-  // incrementally, some marked `isFinal` and some not (interim/in-flight
-  // guesses that may still change), so the textarea needs to show
-  // finalizedText + the current interim guess, not just the latest event.
-  let finalizedText = "";
-  // The textarea's own content at the moment dictation started — dictated
-  // text is appended after it (not overwriting anything the user already
-  // typed), same as how a real dictation feature behaves.
-  let baseTextBeforeDictation = "";
-  // Guards the one-shot silent retry in recognition.onerror below — reset
-  // per dictation session in startDictation() so a later, unrelated
-  // session still gets its own single retry rather than being permanently
-  // used up by an earlier session's transient failure.
-  let hasRetriedAfterNetworkError = false;
-
-  const MIC_ICON_SVG =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>';
-  // "Cancel" glyph the mic button swaps to while dictating — a plain X,
-  // distinct from the mic icon at a glance, communicating "stop/cancel
-  // this" rather than reusing a stop-square or another mic variant that
-  // could read as "still recording".
-  const CANCEL_ICON_SVG =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
-
-  function composeDictationValue(interim) {
-    const finalPart = finalizedText.trim();
-    const interimPart = (interim || "").trim();
-    const dictated = [finalPart, interimPart].filter(Boolean).join(" ");
-    const base = baseTextBeforeDictation.trim();
-    return [base, dictated].filter(Boolean).join(base ? " " : "");
-  }
-
-  /**
-   * Single state machine for the whole input row's dictation mode — NOT
-   * two separate labeled buttons swapped in for the mic (a previous
-   * version's "إيقاف الإملاء" / "إرسال" pair, since removed per the
-   * request to cut labeled-button clutter). Instead, the SAME mic button
-   * element transforms in place: its icon/label/handler swap between
-   * "start" (mic) and "cancel" (X) depending on `dictating`, and
-   * everything else in the row (attach button, suggestions row) hides —
-   * except the existing send icon button, which stays visible/active on
-   * the far right the whole time, since Send is still how a dictated
-   * message actually gets sent (see submitBtn wiring below).
-   */
-  function setDictationUiState(dictating) {
-    isDictating = dictating;
-    if (micBtn) {
-      micBtn.innerHTML = dictating ? CANCEL_ICON_SVG : MIC_ICON_SVG;
-      micBtn.setAttribute("aria-label", dictating ? "إلغاء الإملاء الصوتي" : "بدء الإملاء الصوتي");
-      micBtn.title = dictating ? "إلغاء الإملاء" : "إملاء صوتي";
-      micBtn.classList.toggle("ai-agent-mic-btn--active", dictating);
-    }
-    if (moreBtn) moreBtn.hidden = dictating;
-    if (suggestionsEl) suggestionsEl.hidden = dictating;
-    // REDESIGN: the textarea now stays visible and in-place the entire
-    // time — it keeps receiving the live-transcribed value directly (see
-    // recognition.onresult below) and the user can watch it fill in as
-    // they speak, rather than being swapped out for a separate animation.
-    // Only the mic button's own slot swaps to the wave indicator, so
-    // nothing about the textarea's box changes size or visibility.
-    if (micBtn) micBtn.hidden = dictating;
-    dictationWaveEl.hidden = !dictating;
-    textarea.classList.toggle("ai-agent-chat-input--dictating", dictating);
-    inputRow.classList.toggle("ai-agent-chat-input-row--dictating", dictating);
-    // Send stays visible unconditionally WHILE dictating (see this
-    // function's own doc comment above), but the moment dictation ends
-    // the normal empty-input rule should apply again — re-check here
-    // rather than relying on some later `input` event that may never
-    // fire if dictation produced no text at all.
-    if (typeof updateSendBtnVisibility === "function") updateSendBtnVisibility();
-  }
-
-  /**
-   * Halts the microphone. Does NOT touch the textarea's current value —
-   * callers decide separately whether to leave it for review (mic/cancel
-   * button) or immediately submit it (send button), matching the two
-   * distinct actions in the spec.
-   */
-  function stopRecognition() {
-    if (recognition) {
-      try {
-        recognition.stop();
-      } catch (err) {
-        console.error("[ai-agent-chat] SpeechRecognition stop failed:", err);
-      }
-    }
-    stopMicMetering();
-    setDictationUiState(false);
-  }
-
-  function startDictation(isRetry = false) {
-    if (!SpeechRecognitionCtor || isDictating) return;
-
-    finalizedText = "";
-    baseTextBeforeDictation = textarea.value;
-    // Fresh retry budget for every genuinely new dictation session (mic
-    // press) — only a call made FROM the retry path itself (onerror
-    // below) keeps the flag it already set just before calling.
-    if (!isRetry) hasRetriedAfterNetworkError = false;
-
-    const recognitionSession = new SpeechRecognitionCtor();
-    recognition = recognitionSession;
-    recognitionSession.lang = document.documentElement?.lang === "en" ? "en-US" : "ar-EG";
-    recognitionSession.continuous = true;
-    recognitionSession.interimResults = true;
-
-    recognitionSession.onresult = (event) => {
-      let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          finalizedText = `${finalizedText} ${result[0].transcript}`.trim();
-        } else {
-          interim += result[0].transcript;
-        }
-      }
-      // Live transcription directly into the chat input field, per the
-      // spec — not a separate preview area.
-      textarea.value = composeDictationValue(interim);
+  // Voice dictation (mic button, live volume wave, Firefox note, network retry)
+  // is the shared implementation in shared/rich-input/dictation.js — the quiz and
+  // lesson essay fields use the very same one. Here we only react to its state:
+  // while dictating, the rest of the input row steps aside (see below).
+  const dictation = createDictation({
+    getText: () => textarea.value,
+    // Live transcription goes straight into the chat input, no separate preview.
+    setText: (value) => {
+      textarea.value = value;
       inputHighlighter.refresh();
       resizeChatInput();
-    };
-
-    recognitionSession.onerror = (event) => {
-      if (recognition !== recognitionSession) return;
-      console.error("[ai-agent-chat] SpeechRecognition error:", event.error);
-      // "no-speech"/"aborted" are routine (silence timeout, or the user's
-      // own Cancel click racing the browser's own stop event) — only
-      // surface a visible error for something the user couldn't have
-      // caused by simply pausing or stopping normally.
-      if (event.error === "no-speech" || event.error === "aborted") {
-        stopMicMetering();
-        setDictationUiState(false);
-        return;
-      }
-      // Recognition network errors can be transient on Chromium-based
-      // browsers too, so give every browser one clean retry before
-      // reporting the failure.
-      if (event.error === "network" && !hasRetriedAfterNetworkError) {
-        hasRetriedAfterNetworkError = true;
-        stopMicMetering();
-        setDictationUiState(false);
-        try {
-          startDictation(true);
-        } catch (err) {
-          console.error("[ai-agent-chat] SpeechRecognition retry failed:", err);
-        }
-        return;
-      }
-      let message = "تعذر استخدام الإملاء الصوتي. حاول مرة أخرى.";
-      if (event.error === "network") {
-        message = isBraveBrowser
-          ? "تعذّر الاتصال بخدمة التعرف الصوتي بعد إعادة المحاولة. تحقق من اتصالك وإعدادات Shields في Brave، ثم حاول مجدداً."
-          : "تعذر الوصول إلى خدمة التعرف الصوتي (قد يكون بسبب مانع إعلانات أو مشكلة في الاتصال). حاول مرة أخرى أو اكتب رسالتك.";
-      }
-      appendError(message);
-      stopMicMetering();
-      setDictationUiState(false);
-    };
-
-    recognitionSession.onend = () => {
-      if (recognition !== recognitionSession) return;
-      // The browser can end the session on its own (silence timeout)
-      // without the user clicking anything — make sure the UI still
-      // falls back to the idle mic-icon state either way, so the mic
-      // button is never stuck showing "cancel" for a session that's
-      // already over.
-      if (isDictating) {
-        stopMicMetering();
-        setDictationUiState(false);
-      }
-    };
-
-    try {
-      recognition.start();
-      setDictationUiState(true);
-      startMicMetering();
-    } catch (err) {
-      console.error("[ai-agent-chat] SpeechRecognition start failed:", err);
-      appendError("تعذر بدء الإملاء الصوتي.");
-    }
-  }
-
-  /**
-   * Click handler for the mic/cancel button — a single element, dispatches
-   * by current state rather than being two different buttons (see
-   * setDictationUiState's own comment on why). Cancel simply halts the
-   * mic and leaves the transcribed text for manual review/edit/send; it
-   * does not submit anything itself (Send, on the far right, is the only
-   * button that ever submits — see sendBtn's own wiring below).
-   */
-  function onMicBtnClick() {
-    if (isDictating) {
-      stopRecognition();
-      textarea.focus();
-    } else {
-      startDictation();
-    }
-  }
-
-  if (SpeechRecognitionCtor) {
-    micBtn = document.createElement("button");
-    micBtn.type = "button";
-    micBtn.className = "ai-agent-mic-btn";
-    micBtn.setAttribute("aria-label", "بدء الإملاء الصوتي");
-    micBtn.title = "إملاء صوتي";
-    micBtn.innerHTML = MIC_ICON_SVG;
-    micBtn.addEventListener("click", onMicBtnClick);
-  }
-
-  // Firefox accuracy warning (Task 5.6) — user-agent sniffing is
-  // otherwise something to avoid, but there's no capability-based way to
-  // detect "dictation exists but is inaccurate on this engine specifically"
-  // — that's a qualitative claim about Firefox's speech-recognition
-  // backend, not a missing API surface. Shown once, inline, near the
-  // input — not a toast/alert, since it's informational rather than
-  // blocking. Rendered on load; not tied to SpeechRecognitionCtor being
-  // present, in case a Firefox build exposes the constructor while still
-  // having the accuracy issue this warns about (see SpeechRecognitionCtor's
-  // own comment above).
-  if (isFirefox) {
-    firefoxWarningEl = document.createElement("div");
-    firefoxWarningEl.className = "ai-agent-firefox-warning";
-    firefoxWarningEl.textContent =
-      "⚠️ الإملاء الصوتي قد يكون غير دقيق على متصفح Firefox — يُفضّل استخدام متصفح آخر (مثل Chrome) لنتائج أفضل.";
-  }
+    },
+    focus: () => textarea.focus(),
+    onError: (message) => appendError(message),
+    onActiveChange: (dictating) => {
+      if (moreBtn) moreBtn.hidden = dictating;
+      if (suggestionsEl) suggestionsEl.hidden = dictating;
+      textarea.classList.toggle("ai-agent-chat-input--dictating", dictating);
+      inputRow.classList.toggle("ai-agent-chat-input-row--dictating", dictating);
+      // Send stays visible while dictating; the normal empty-input rule applies
+      // again the moment dictation ends (no later `input` event may ever fire).
+      if (typeof updateSendBtnVisibility === "function") updateSendBtnVisibility();
+    },
+  });
+  const micBtn = dictation.micBtn;
+  const dictationWaveEl = dictation.waveEl;
+  // Informational Firefox accuracy note, shown once above the input row.
+  const firefoxWarningEl = dictation.firefoxWarningEl;
 
   const sendBtn = document.createElement("button");
   sendBtn.type = "button";
@@ -2606,7 +2246,7 @@ export function createChatPanel(options = {}) {
     // value), then falls through to the normal send flow below. This is
     // what makes the send button double as the dictation flow's "Submit"
     // action per the spec, without a second dedicated button for it.
-    if (isDictating) stopRecognition();
+    if (dictation.isActive()) dictation.stop();
 
     const text = rich.getMarkdown().trim();
     const attachments = pendingAttachments;
@@ -2699,7 +2339,7 @@ export function createChatPanel(options = {}) {
   function updateSendBtnVisibility() {
     // Always visible (like the rich input design); dimmed while there's nothing to send.
     sendBtn.hidden = false;
-    const idle = !isDictating && textarea.value.trim().length === 0 && !pendingAttachments.length;
+    const idle = !dictation.isActive() && textarea.value.trim().length === 0 && !pendingAttachments.length;
     sendBtn.classList.toggle("is-idle", idle);
   }
 

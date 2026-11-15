@@ -49,8 +49,13 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 
 ## New Features
 
-### Essay Questions Input Field 
-In essay questions on the quiz page and on the lesson page: Reuse the exact same rich markdown input field from the AI Agent for the answer field.
+### Code Blocks in The Markdown Rendering Engine and the Rich Input Component
+
+Upgrade the code blocks in the markdown rendering engine:
+* Make it collapsible/extendable.
+* Add a download button that downloads the code with its actual correct extension.
+
+Add a download button to code blocks in the Rich Input Component, too.
 
 ### New Question Type: Complete
 * Implement a new question type in the quiz page and the lesson page: Complete.

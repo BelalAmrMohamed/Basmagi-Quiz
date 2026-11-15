@@ -444,10 +444,13 @@ export function createRichInput(options = {}) {
     headingBtn.setAttribute("aria-expanded", "false");
     headingBtn.addEventListener("mousedown", (e) => e.preventDefault());
     const currentLevel = () => [1, 2, 3].find((l) => editor.isActive("heading", { level: l })) || 0;
+    let closeHeadingMenu = null;
     headingBtn.addEventListener("click", () => {
-      if (headingBtn.classList.contains("is-open")) return;
+      // The menu's outside-click handler ignores its own trigger, so a second
+      // press must close it here (toggle).
+      if (headingBtn.classList.contains("is-open")) { closeHeadingMenu?.(); return; }
       const cur = currentLevel();
-      openMenu(headingBtn, (menu, close) => {
+      closeHeadingMenu = openMenu(headingBtn, (menu, close) => {
         HEADINGS.forEach((h) => {
           menu.appendChild(menuItem({
             iconHtml: icon(h.icon, 16), label: h.label, hint: h.hint, selected: cur === h.level,
@@ -546,9 +549,10 @@ export function createRichInput(options = {}) {
     btn.querySelector(".rmci-model-label").textContent = btnText;
 
     btn.addEventListener("mousedown", (e) => e.preventDefault());
+    let closeModelMenu = null;
     btn.addEventListener("click", () => {
-      if (btn.classList.contains("is-open")) return;
-      openMenu(btn, (menu, close) => {
+      if (btn.classList.contains("is-open")) { closeModelMenu?.(); return; } // toggle
+      closeModelMenu = openMenu(btn, (menu, close) => {
         let submenuEl = null;
         let closeSubmenuTimer = null;
         let activeTrigger = null; // which menu row currently owns the flyout
