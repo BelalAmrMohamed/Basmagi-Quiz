@@ -7,12 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Offline Page
-Improve:
-* It's theme Should match the theme of the platform (see themes.css and theme-controller.js), but it shouldn't import these files, it should be independent. It should also default to the default theme of the platform.
-* Its design feels too complicated, I want a simpler version.
-* Some Features should work offline (for people who installed the website), like the notebook and its local compiler, or the home page and its `/my-content` sub-page, so make sure the offline page doesn't block them if they are cached.
-
 ### Profile Page
 * Notebooks (دفتر): Aren't counted anywhere in the page. It wasn't updated since then.
 * `أفضل المشرفين`: 
@@ -27,6 +21,7 @@ Improve:
 
 ### Create Quiz & Create Lesson Pages
 * Pressing (`ctrl` + `S`) to save doesn't always work.
+* Input Fields throughout the whole 2 pages: When a user opens 
 * Implement the rich markdown input field from the AI Agent in place of all input fields, which currently just use (textarea).
   * The Makrdown options stay at the top bar. 
   * But update the top bar icons to match those that exist in the AI Agent's rich markdown input field, because they are way better.
