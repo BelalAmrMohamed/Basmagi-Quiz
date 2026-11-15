@@ -8,6 +8,10 @@
 - Image Tool (`imtool`): the window now opens sized to the image (100%; tiny images at the largest whole zoom up to 320 px so pixel values are readable; huge images shrunk to the screen) instead of a fixed 680x520, and is titled like MATLAB, `Image Tool 1 - I` (variable or file name; nothing for expressions). Saved/exported file names use that name too.
 - Image Tool on phones: tapping or dragging a pixel keeps its info in the status bar after the finger lifts, with a yellow marker that follows pan and zoom.
 - Image Tool: the per-figure remembered window size was removed (it fought with fit-to-image sizing). Needs `npm run build:runtimes` for the title to include the variable name.
+- Image Tool toolbar: Zoom, Fit, 100%, Values and Info stay as flat buttons; View overlays, Export and Help moved into one `...` More menu. The menu floats above the page, so it is never clipped by a small window.
+- Image Tool: click (or tap) a pixel to pin it. Its value stays in the status bar ("Pinned: ...") with a marker that follows pan and zoom; click it again to unpin.
+- Image Tool: windows now snap to the edges of neighbouring windows (moving and resizing), not only the screen edges, so before/after images tile cleanly.
+- Image Tool: minimized tabs show a thumbnail, the window number and the image name.
 
 # Changelog
 
