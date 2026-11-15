@@ -38,6 +38,6 @@ docs/secret/
 docs/other-files/
 tests/og-output/
 
-# Generated locally by scripts/build-web.mjs. Keep tracked deployment artifacts
-# intact while ignoring newly generated files after a branch changes chunk hashes.
+# Generated locally or during the Vercel build; deploy it from the build output,
+# not from Git.
 /public/dist/
