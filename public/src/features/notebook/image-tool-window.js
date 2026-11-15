@@ -17,8 +17,11 @@
 // - Opens sized to the image (100%, or the largest whole zoom for tiny images, or shrunk to the screen);
 //   titled like MATLAB: "Image Tool 1 - <variable or file name>"
 // - Snap to screen edges, double-click title to maximize
-// - Touch: pinch, two-finger pan, double-tap fit/100%, tap-to-probe (the pixel info stays after lifting the finger);
-//   keyboard shortcuts + ? popover
+// - Click (or tap) a pixel to pin it: its value stays in the status bar and a marker follows pan / zoom; click again to unpin
+// - Toolbar: zoom / fit / values / info stay as flat buttons; overlays, export and help live in one "..." More menu
+// - Windows snap to screen edges AND to the edges of neighbouring windows (move and resize)
+// - Minimized tab: thumbnail + window number + name, readable in a stack of minimized windows
+// - Touch: pinch, two-finger pan, double-tap fit/100%; keyboard shortcuts + ? popover
 // - Full English & Arabic localization
 // =============================================================================
 
@@ -51,9 +54,12 @@ const I18N = {
     infoTitle: 'Image properties & statistics',
     download: 'PNG',
     downloadTitle: 'Download full-resolution PNG',
-    hint: 'Scroll to zoom · Drag to pan',
+    hint: 'Scroll to zoom · Drag to pan · Click to pin',
     pixelPrompt: 'Pixel info: Move over image',
     pixelFmt: (x, y, val) => `Pixel: (X: ${x}, Y: ${y})  ${val}`,
+    pinnedFmt: (x, y, val) => `Pinned: (X: ${x}, Y: ${y})  ${val}`,
+    more: 'More',
+    moreTitle: 'More: overlays, export, help',
     grayscale: 'Grayscale (1-channel)',
     rgb: 'RGB Truecolor (3-channel)',
     class: 'Class',
@@ -89,6 +95,7 @@ const I18N = {
       ['G', 'Pixel grid'],
       ['R', 'Rulers'],
       ['C', 'Crosshair'],
+      ['Click pixel', 'Pin / unpin its value'],
       ['Ctrl+C', 'Copy image'],
       ['?', 'This help'],
       ['Esc', 'Close menu / restore / close'],
@@ -114,9 +121,12 @@ const I18N = {
     infoTitle: 'خصائص وإحصاءات الصورة',
     download: 'PNG',
     downloadTitle: 'تنزيل الصورة بصيغة PNG',
-    hint: 'مرر للتكبير · اسحب للتحريك',
+    hint: 'مرر للتكبير · اسحب للتحريك · انقر للتثبيت',
     pixelPrompt: 'معلومات البكسل: حرّك المؤشر فوق الصورة',
     pixelFmt: (x, y, val) => `البكسل: (س: ${x}، ص: ${y})  ${val}`,
+    pinnedFmt: (x, y, val) => `مثبّت: (س: ${x}، ص: ${y})  ${val}`,
+    more: 'المزيد',
+    moreTitle: 'المزيد: الطبقات، التصدير، المساعدة',
     grayscale: 'تدرج رمادي (قناة واحدة)',
     rgb: 'ألوان حقيقية RGB (3 قنوات)',
     class: 'الفئة',
@@ -152,6 +162,7 @@ const I18N = {
       ['G', 'شبكة البكسل'],
       ['R', 'المساطر'],
       ['C', 'خطا التقاطع'],
+      ['نقر على بكسل', 'تثبيت / إلغاء تثبيت قيمته'],
       ['Ctrl+C', 'نسخ الصورة'],
       ['?', 'هذه المساعدة'],
       ['Esc', 'إغلاق القائمة / استعادة / إغلاق'],
@@ -191,6 +202,16 @@ function nextWindowNumber() {
   let n = 1;
   while (used.has(n)) n += 1;
   return n;
+}
+
+/** The candidate within SNAP px of `cur` (closest wins), else `cur`. */
+function nearest(cur, candidates) {
+  let best = cur, bestD = SNAP;
+  for (const c of candidates) {
+    const d = Math.abs(c - cur);
+    if (d < bestD) { bestD = d; best = c; }
+  }
+  return best;
 }
 
 function layoutMinimizedWindows() {
@@ -261,7 +282,9 @@ class ImageToolWindow {
     this._lastTap = null;
     this._lastMinToggle = 0;
     this._toastTimer = 0;
-    this.probe = null;      // touch: pixel (0-based image coords) picked by the last tap / drag, kept after the finger lifts
+    this.pin = null;        // pinned pixel {x, y} (0-based image coords): click / tap sets it, status bar keeps showing it
+    this.hover = null;      // pixel under the mouse, or null
+    this._click = null;
     this.initZoom = 1;
     this.winNo = nextWindowNumber();
     this.name = typeof image.name === 'string' ? image.name : '';
@@ -336,6 +359,11 @@ class ImageToolWindow {
             <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
           </svg>
         </div>
+        <div class="mlweb-imtool-min-chip" title="${titleText}">
+          <canvas class="mlweb-imtool-min-thumb" width="56" height="56" aria-hidden="true"></canvas>
+          <span class="mlweb-imtool-min-num">${this.winNo}</span>
+          <span class="mlweb-imtool-min-name">${esc(this.name || t.title)}</span>
+        </div>
         <span class="mlweb-imtool-titlebar-spacer" aria-hidden="true"></span>
       </div>
       <div class="mlweb-imtool-toolbar">
@@ -363,16 +391,8 @@ class ImageToolWindow {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
             <span class="mlweb-imtool-tb-label">${t.info}</span>
           </button>
-          <button type="button" class="mlweb-imtool-tb-btn btn-view" title="${t.viewTitle}" aria-label="${t.view}" aria-haspopup="menu">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>
-            <span class="mlweb-imtool-tb-label">${t.view}</span>
-          </button>
-          <button type="button" class="mlweb-imtool-tb-btn btn-export" title="${t.exportTitle}" aria-label="${t.exportLabel}" aria-haspopup="menu">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            <span class="mlweb-imtool-tb-label">${t.exportLabel}</span>
-          </button>
-          <button type="button" class="mlweb-imtool-tb-btn btn-help" title="${t.help}" aria-label="${t.help}" aria-haspopup="dialog">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5h.01"/></svg>
+          <button type="button" class="mlweb-imtool-tb-btn btn-more" title="${t.moreTitle}" aria-label="${t.more}" aria-haspopup="menu">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
           </button>
         </div>
         <span class="mlweb-imtool-tb-hint">${t.hint}</span>
@@ -381,16 +401,19 @@ class ImageToolWindow {
         <div class="mlweb-imtool-stage" tabindex="0">
           <canvas class="mlweb-imtool-canvas"></canvas>
           <canvas class="mlweb-imtool-overlay"></canvas>
-          <div class="mlweb-imtool-pop pop-view" hidden role="menu">
+          <div class="mlweb-imtool-pop pop-more" hidden role="menu">
+            <div class="mlweb-imtool-pop-head">${t.view}</div>
             <button type="button" class="mlweb-imtool-pop-item" role="menuitemcheckbox" data-toggle="grid"><span class="chk"></span><span class="lbl">${t.grid}</span><kbd>G</kbd></button>
             <button type="button" class="mlweb-imtool-pop-item" role="menuitemcheckbox" data-toggle="rulers"><span class="chk"></span><span class="lbl">${t.rulers}</span><kbd>R</kbd></button>
             <button type="button" class="mlweb-imtool-pop-item" role="menuitemcheckbox" data-toggle="crosshair"><span class="chk"></span><span class="lbl">${t.crosshair}</span><kbd>C</kbd></button>
-          </div>
-          <div class="mlweb-imtool-pop pop-export" hidden role="menu">
+            <div class="mlweb-imtool-pop-sep" role="separator"></div>
+            <div class="mlweb-imtool-pop-head">${t.exportLabel}</div>
             <button type="button" class="mlweb-imtool-pop-item" role="menuitem" data-act="copy-image"><span class="lbl">${t.copyImage}</span><kbd>Ctrl+C</kbd></button>
             <button type="button" class="mlweb-imtool-pop-item" role="menuitem" data-act="png"><span class="lbl">${t.savePng}</span></button>
             <button type="button" class="mlweb-imtool-pop-item" role="menuitem" data-act="jpg"><span class="lbl">${t.saveJpg}</span></button>
             <button type="button" class="mlweb-imtool-pop-item" role="menuitem" data-act="matrix"><span class="lbl">${t.copyMatrix}</span></button>
+            <div class="mlweb-imtool-pop-sep" role="separator"></div>
+            <button type="button" class="mlweb-imtool-pop-item" role="menuitem" data-act="help"><span class="lbl">${t.shortcuts}</span><kbd>?</kbd></button>
           </div>
           <div class="mlweb-imtool-pop pop-help" hidden role="dialog" aria-label="${t.shortcuts}">
             <div class="mlweb-imtool-pop-title">${t.shortcuts}</div>
@@ -452,20 +475,30 @@ class ImageToolWindow {
     this.octx = this.overlay.getContext('2d');
     this.toast = win.querySelector('.mlweb-imtool-toast');
     this.pops = {
-      view: win.querySelector('.pop-view'),
-      export: win.querySelector('.pop-export'),
+      more: win.querySelector('.pop-more'),
       help: win.querySelector('.pop-help'),
     };
-    this.menuBtns = {
-      view: win.querySelector('.btn-view'),
-      export: win.querySelector('.btn-export'),
-      help: win.querySelector('.btn-help'),
-    };
+    this.moreBtn = win.querySelector('.btn-more');
+    // the shortcuts popover opens from the same button as the menu
+    this.menuBtns = { more: this.moreBtn, help: this.moreBtn };
 
+    this.drawThumb(win.querySelector('.mlweb-imtool-min-thumb'));
     this.hookEvents();
     this.container.appendChild(win);
     openWindows.set(win, this);
     win.focus({ preventScroll: true });
+  }
+
+  /** Small preview of the image for the minimized tab (contain-fit, crisp pixels for tiny images). */
+  drawThumb(cv) {
+    const g = cv && cv.getContext('2d');
+    if (!g) return;
+    const { w, h } = this.image;
+    const k = Math.min(cv.width / w, cv.height / h);
+    g.imageSmoothingEnabled = k < 1;
+    g.clearRect(0, 0, cv.width, cv.height);
+    const dw = Math.max(1, Math.round(w * k)), dh = Math.max(1, Math.round(h * k));
+    g.drawImage(this.offscreen, Math.round((cv.width - dw) / 2), Math.round((cv.height - dh) / 2), dw, dh);
   }
 
   /**
@@ -588,11 +621,30 @@ class ImageToolWindow {
     this.render();
   }
 
+  /** Rectangles of the other visible (not minimized / maximized) image windows. */
+  otherRects() {
+    const out = [];
+    for (const [el, inst] of openWindows) {
+      if (inst === this || inst.isMinimized || inst.isMaximized) continue;
+      const l = el.offsetLeft, t = el.offsetTop;
+      out.push({ l, t, r: l + el.offsetWidth, b: t + el.offsetHeight });
+    }
+    return out;
+  }
+
+  /**
+   * Magnetic edges while moving: the window sticks to the screen edges and to the edges of neighbouring windows
+   * (butt against them, or line up with them) when within SNAP px. A neighbour only attracts when the two windows
+   * overlap along the other axis, so a far-away window never pulls.
+   */
   snapRect(l, t, w, h) {
     const iw = window.innerWidth, ih = window.innerHeight;
-    if (Math.abs(l) < SNAP) l = 0; else if (Math.abs(l + w - iw) < SNAP) l = iw - w;
-    if (Math.abs(t) < SNAP) t = 0; else if (Math.abs(t + h - ih) < SNAP) t = ih - h;
-    return { left: l, top: t };
+    const xs = [0, iw - w], ys = [0, ih - h];
+    for (const o of this.otherRects()) {
+      if (t < o.b + SNAP && t + h > o.t - SNAP) xs.push(o.r, o.l - w, o.l, o.r - w);
+      if (l < o.r + SNAP && l + w > o.l - SNAP) ys.push(o.b, o.t - h, o.t, o.b - h);
+    }
+    return { left: nearest(l, xs), top: nearest(t, ys) };
   }
 
   bringToFront() {
@@ -708,32 +760,30 @@ class ImageToolWindow {
       infoBtn.classList.remove('is-active');
     });
 
-    // Popover menus (View / Export / Help)
-    for (const name of Object.keys(this.menuBtns)) {
-      this.menuBtns[name].addEventListener('click', (e) => { e.stopPropagation(); this.toggleMenu(name); });
-    }
+    // "..." More menu (overlays, export, help) + the shortcuts popover
+    this.moreBtn.addEventListener('click', (e) => { e.stopPropagation(); this.toggleMenu('more'); });
     for (const pop of Object.values(this.pops)) {
       pop.addEventListener('wheel', (e) => e.stopPropagation());
       pop.addEventListener('pointerdown', (e) => e.stopPropagation());
     }
-    this.pops.view.addEventListener('click', (e) => {
-      const item = e.target.closest('[data-toggle]');
-      if (item) this.toggleSetting(item.dataset.toggle);
-    });
-    this.pops.export.addEventListener('click', (e) => {
+    this.pops.more.addEventListener('click', (e) => {
+      const tog = e.target.closest('[data-toggle]');
+      if (tog) { this.toggleSetting(tog.dataset.toggle); return; } // stays open so several overlays can be switched in a row
       const item = e.target.closest('[data-act]');
       if (!item) return;
       this.closeMenus();
+      this.win.focus({ preventScroll: true }); // the clicked item is now hidden; keep keyboard shortcuts working
       const act = item.dataset.act;
       if (act === 'copy-image') this.copyImage();
       else if (act === 'png') this.saveImage('png');
       else if (act === 'jpg') this.saveImage('jpg');
       else if (act === 'matrix') this.copyMatrix();
+      else if (act === 'help') this.toggleMenu('help');
     });
     this.syncViewMenu();
     // click anywhere else in the window (toolbar gaps, titlebar) closes menus
     win.addEventListener('pointerdown', (e) => {
-      if (!e.target.closest('.mlweb-imtool-pop, .btn-view, .btn-export, .btn-help')) this.closeMenus();
+      if (!e.target.closest('.mlweb-imtool-pop, .btn-more')) this.closeMenus();
     });
 
     // Resize handles (disabled when maximized)
@@ -742,6 +792,7 @@ class ImageToolWindow {
         if (this.isMaximized) return;
         e.preventDefault();
         e.stopPropagation();
+        this.closeMenus();
         this.bringToFront();
         const dir = handle.dataset.dir;
         this.snapRestore = null;
@@ -773,11 +824,15 @@ class ImageToolWindow {
             newH = hClamped;
           }
 
+          // magnetic edges: screen edges + neighbouring windows (only those overlapping along the other axis)
           const iw = window.innerWidth, ih = window.innerHeight;
-          if (dir.includes('e') && Math.abs(newL + newW - iw) < SNAP && iw - newL >= minW) newW = iw - newL;
-          if (dir.includes('s') && Math.abs(newT + newH - ih) < SNAP && ih - newT >= minH) newH = ih - newT;
-          if (dir.includes('w') && Math.abs(newL) < SNAP && newW + newL >= minW) { newW += newL; newL = 0; }
-          if (dir.includes('n') && Math.abs(newT) < SNAP && newH + newT >= minH) { newH += newT; newT = 0; }
+          const others = this.otherRects();
+          const vOver = others.filter((o) => newT < o.b + SNAP && newT + newH > o.t - SNAP).flatMap((o) => [o.l, o.r]);
+          const hOver = others.filter((o) => newL < o.r + SNAP && newL + newW > o.l - SNAP).flatMap((o) => [o.t, o.b]);
+          if (dir.includes('e')) { const right = nearest(newL + newW, [iw, ...vOver]); if (right - newL >= minW) newW = right - newL; }
+          if (dir.includes('s')) { const bottom = nearest(newT + newH, [ih, ...hOver]); if (bottom - newT >= minH) newH = bottom - newT; }
+          if (dir.includes('w')) { const left = nearest(newL, [0, ...vOver]); const right = newL + newW; if (right - left >= minW) { newW = right - left; newL = left; } }
+          if (dir.includes('n')) { const top = nearest(newT, [0, ...hOver]); const bottom = newT + newH; if (bottom - top >= minH) { newH = bottom - top; newT = top; } }
 
           win.style.width = `${newW}px`;
           win.style.height = `${newH}px`;
@@ -830,6 +885,8 @@ class ImageToolWindow {
       // tap candidate (touch / pen only): a single finger that barely moves
       this._tap = this.pointers.size === 1 && e.pointerType !== 'mouse'
         ? { t: Date.now(), x: e.clientX, y: e.clientY, moved: false } : null;
+      this._click = this.pointers.size === 1 && e.pointerType === 'mouse' && e.button === 0
+        ? { x: e.clientX, y: e.clientY, moved: false } : null; // a mouse click that does not turn into a drag pins the pixel
       try { this.stage.setPointerCapture(e.pointerId); } catch { /* ignore */ }
       if (e.pointerType === 'touch' && this.pointers.size === 1) this.trackCursorPixel(e); // a plain tap reads the pixel too
       this.isPanning = true;
@@ -842,6 +899,7 @@ class ImageToolWindow {
       if (!prev) { this.trackCursorPixel(e); return; }
       const cur = stagePt(e);
       if (this._tap && Math.hypot(e.clientX - this._tap.x, e.clientY - this._tap.y) > 10) this._tap.moved = true;
+      if (this._click && Math.hypot(e.clientX - this._click.x, e.clientY - this._click.y) > 4) this._click.moved = true;
       this.pointers.set(e.pointerId, cur);
       if (this.pointers.size === 2 && pinch) {
         const now = pair();
@@ -863,6 +921,9 @@ class ImageToolWindow {
       const wasSingle = this.pointers.size === 1;
       if (!this.pointers.delete(e.pointerId)) return;
       try { this.stage.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+      const click = this._click;
+      this._click = null;
+      if (e.type === 'pointerup' && click && !click.moved) this.togglePin(e);
       if (e.type === 'pointerup' && wasSingle && this._tap && !this._tap.moved && Date.now() - this._tap.t < 300) {
         const last = this._lastTap;
         const now = { t: Date.now(), x: e.clientX, y: e.clientY };
@@ -883,13 +944,13 @@ class ImageToolWindow {
     this.stage.addEventListener('lostpointercapture', endPointer);
 
     this.stage.addEventListener('pointerleave', (e) => {
-      // Lifting a finger fires pointerleave: the probed pixel must stay on screen (only a mouse/pen leaving clears it).
+      // Lifting a finger fires pointerleave: the touched pixel must stay on screen (only a mouse/pen leaving clears the hover).
       if (e.pointerType === 'touch') return;
       this.cursor = null;
+      this.hover = null;
       this.drawOverlay();
-      if (!this.isPanning) {
-        this.pixelStatus.textContent = this.t.pixelPrompt;
-      }
+      if (!this.isPanning) this.updateStatus(); // shows the pinned pixel, if any
+
     });
 
     // Keyboard shortcuts while window is focused
@@ -930,29 +991,41 @@ class ImageToolWindow {
   anyMenuOpen() { return Object.values(this.pops).some(p => !p.hidden); }
 
   closeMenus() {
+    if (this._outside) { document.removeEventListener('pointerdown', this._outside, true); this._outside = null; }
     for (const [name, pop] of Object.entries(this.pops)) {
       pop.hidden = true;
       this.menuBtns[name].classList.remove('is-active');
     }
   }
 
+  /**
+   * Opens a popover. It floats above the page (appended to <body>, position: fixed) so a long menu is never
+   * clipped by a small image window; it closes on any outside click, on minimize / maximize and when the window moves.
+   */
   toggleMenu(name) {
     const wasOpen = !this.pops[name].hidden;
     this.closeMenus();
     if (wasOpen || this.isMinimized) return;
     const pop = this.pops[name];
+    if (pop.parentElement !== document.body) document.body.appendChild(pop);
+    pop.style.zIndex = String((parseInt(this.win.style.zIndex, 10) || topZIndex) + 1);
     pop.hidden = false;
     this.menuBtns[name].classList.add('is-active');
-    const sr = this.stage.getBoundingClientRect();
     const br = this.menuBtns[name].getBoundingClientRect();
-    const left = Math.max(8, Math.min(br.left - sr.left, sr.width - pop.offsetWidth - 8));
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const h = pop.offsetHeight, w = pop.offsetWidth;
+    const left = Math.max(8, Math.min(br.left, vw - w - 8));
+    let top = br.bottom + 6;
+    if (top + h > vh - 8) top = br.top - h - 6 >= 8 ? br.top - h - 6 : Math.max(8, vh - h - 8);
     pop.style.left = `${left}px`;
-    pop.style.top = '8px';
+    pop.style.top = `${top}px`;
+    this._outside = (ev) => { if (!ev.target.closest('.mlweb-imtool-pop, .btn-more')) this.closeMenus(); };
+    document.addEventListener('pointerdown', this._outside, true);
   }
 
   syncViewMenu() {
     const map = { grid: this.showGrid, rulers: this.showRulers, crosshair: this.showCrosshair };
-    this.pops.view.querySelectorAll('[data-toggle]').forEach((el) => {
+    this.pops.more.querySelectorAll('[data-toggle]').forEach((el) => {
       const on = !!map[el.dataset.toggle];
       el.classList.toggle('is-on', on);
       el.setAttribute('aria-checked', String(on));
@@ -976,26 +1049,49 @@ class ImageToolWindow {
     this._toastTimer = setTimeout(() => this.toast.classList.remove('is-show'), 2200);
   }
 
-  trackCursorPixel(e) {
+  /** Pixel (0-based image coords) under a pointer event, or null outside the image. */
+  pixelAt(e) {
     const rect = this.stage.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    const px = Math.floor((mx - this.panX) / this.zoom);
-    const py = Math.floor((my - this.panY) / this.zoom);
-    const { w, h, rgb } = this.image;
-    const touch = e.pointerType === 'touch';
-    if (!touch) { this.cursor = { x: mx, y: my }; this.probe = null; this.drawOverlay(); }
+    const px = Math.floor((e.clientX - rect.left - this.panX) / this.zoom);
+    const py = Math.floor((e.clientY - rect.top - this.panY) / this.zoom);
+    const { w, h } = this.image;
+    return px >= 0 && px < w && py >= 0 && py < h ? { x: px, y: py } : null;
+  }
 
-    if (px >= 0 && px < w && py >= 0 && py < h) {
-      if (touch) { this.probe = { x: px, y: py }; this.drawOverlay(); }
-      const idx = (py * w + px) * 3;
-      const r = rgb[idx], g = rgb[idx + 1], b = rgb[idx + 2];
-      const valStr = this.isGrayscale ? `Val: ${r}` : `RGB: [${r}, ${g}, ${b}]`;
-      // 1-based indexing for MATLAB
-      this.pixelStatus.textContent = this.t.pixelFmt(px + 1, py + 1, valStr);
-    } else if (!touch) {
-      this.pixelStatus.textContent = this.t.pixelPrompt;
-    } // touch outside the image: keep showing the last probed pixel
+  pixelValue(x, y) {
+    const { w, rgb } = this.image;
+    const i = (y * w + x) * 3;
+    return this.isGrayscale ? `Val: ${rgb[i]}` : `RGB: [${rgb[i]}, ${rgb[i + 1]}, ${rgb[i + 2]}]`;
+  }
+
+  /** Status bar: the hovered pixel, else the pinned one, else the prompt. Coordinates are 1-based like MATLAB. */
+  updateStatus() {
+    const show = (p, fmt) => fmt(p.x + 1, p.y + 1, this.pixelValue(p.x, p.y));
+    const t = this.t;
+    this.pixelStatus.textContent = this.hover ? show(this.hover, t.pixelFmt) : this.pin ? show(this.pin, t.pinnedFmt) : t.pixelPrompt;
+    this.pixelStatus.classList.toggle('is-pinned', !this.hover && !!this.pin);
+  }
+
+  /** Click on a pixel pins it; clicking the pinned pixel again unpins. */
+  togglePin(e) {
+    const p = this.pixelAt(e);
+    if (!p) return;
+    this.pin = this.pin && this.pin.x === p.x && this.pin.y === p.y ? null : p;
+    this.updateStatus();
+    this.drawOverlay();
+  }
+
+  trackCursorPixel(e) {
+    const p = this.pixelAt(e);
+    if (e.pointerType === 'touch') {
+      if (p) this.pin = p; // a finger pins what it touches; stays after it lifts
+    } else {
+      const rect = this.stage.getBoundingClientRect();
+      this.cursor = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      this.hover = p;
+    }
+    this.updateStatus();
+    this.drawOverlay();
   }
 
   zoomAt(stageX, stageY, factor) {
@@ -1044,6 +1140,7 @@ class ImageToolWindow {
   }
 
   toggleMaximize() {
+    this.closeMenus();
     const maxBtn = this.win.querySelector('.btn-max');
     if (this.isMaximized) {
       // Restore
@@ -1303,12 +1400,12 @@ class ImageToolWindow {
     ctx.restore();
   }
 
-  /** Marker around the pixel picked by touch; follows pan / zoom because it is stored in image coordinates. */
-  drawProbe(g) {
+  /** Marker around the pinned pixel; follows pan / zoom because it is stored in image coordinates. */
+  drawPin(g) {
     const z = this.zoom;
     const s = Math.max(z, 12);
-    const cx = this.panX + (this.probe.x + 0.5) * z;
-    const cy = this.panY + (this.probe.y + 0.5) * z;
+    const cx = this.panX + (this.pin.x + 0.5) * z;
+    const cy = this.panY + (this.pin.y + 0.5) * z;
     g.setLineDash([]);
     for (const [lw, col] of [[3.5, 'rgba(0,0,0,0.55)'], [1.5, '#ffd24a']]) {
       g.lineWidth = lw;
@@ -1328,7 +1425,7 @@ class ImageToolWindow {
     const g = this.octx;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
-    if (this.probe) this.drawProbe(g);
+    if (this.pin) this.drawPin(g);
     const cur = this.cursor;
     if (!cur || (!this.showCrosshair && !this.showRulers)) return;
 
@@ -1472,6 +1569,8 @@ class ImageToolWindow {
     openWindows.delete(this.win);
     clearTimeout(this._toastTimer);
     if (this.snapPreview) this.snapPreview.remove();
+    this.closeMenus();
+    for (const pop of Object.values(this.pops)) pop.remove(); // popovers live on <body> while open
     this.win.remove();
     layoutMinimizedWindows();
   }

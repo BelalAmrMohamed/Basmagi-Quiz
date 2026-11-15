@@ -1209,7 +1209,7 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
   display: none;
 }
 
-.mlweb-imtool-win button.mlweb-imtool-pop-item {
+.mlweb-imtool-pop button.mlweb-imtool-pop-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1227,7 +1227,7 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
   cursor: pointer;
 }
 
-.mlweb-imtool-win button.mlweb-imtool-pop-item:hover {
+.mlweb-imtool-pop button.mlweb-imtool-pop-item:hover {
   background: rgba(128, 128, 128, 0.2);
 }
 
@@ -1363,4 +1363,120 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
 /* Exact sizing: the window's border is included in its width/height (snaps fit the screen to the pixel) */
 .mlweb-imtool-win {
   box-sizing: border-box;
+}
+/* =============================================================================
+   "..." More menu, pinned pixel, minimized tab chip
+   ============================================================================= */
+.mlweb-imtool-pop-head {
+  padding: 5px 9px 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, #8b949e);
+}
+
+.mlweb-imtool-pop-sep {
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--color-border, rgba(128, 128, 128, 0.25));
+}
+
+.mlweb-imtool-win button.mlweb-imtool-tb-btn.btn-more {
+  padding: 0 8px;
+}
+
+.mlweb-imtool-win button.mlweb-imtool-tb-btn.btn-more svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mlweb-imtool-status-pixel.is-pinned {
+  color: #b87500;
+}
+
+html[data-theme="dark"] .mlweb-imtool-status-pixel.is-pinned,
+html[data-theme="dark-slate"] .mlweb-imtool-status-pixel.is-pinned {
+  color: #ffd24a;
+}
+
+.mlweb-imtool-min-chip {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  order: 1;
+  pointer-events: none;
+}
+
+.mlweb-imtool-win.is-minimized .mlweb-imtool-min-chip {
+  display: flex;
+}
+
+.mlweb-imtool-win.is-minimized .mlweb-imtool-title-wrap {
+  display: none !important;
+}
+
+.mlweb-imtool-min-thumb {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.35));
+  background: repeating-conic-gradient(rgba(128, 128, 128, 0.28) 0% 25%, transparent 0% 50%) 0 0 / 8px 8px;
+}
+
+.mlweb-imtool-min-num {
+  flex: none;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: var(--color-primary, #b94a16);
+  color: #fff;
+  font: 700 11.5px/20px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-align: center;
+}
+
+.mlweb-imtool-min-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary, #1d2433);
+}
+
+html[data-theme="dark"] .mlweb-imtool-min-name,
+html[data-theme="dark-slate"] .mlweb-imtool-min-name {
+  color: var(--color-text-primary, #edf0f7);
+}
+
+/* Popovers float above the page (appended to <body> while open), so they no longer sit inside the window's
+   container-query scope: size them against the viewport instead. */
+.mlweb-imtool-pop {
+  position: fixed;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.mlweb-imtool-pop.pop-help {
+  width: min(340px, calc(100vw - 16px));
+}
+
+@media (max-width: 400px) {
+  .mlweb-imtool-keys {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .mlweb-imtool-keys span {
+    margin-bottom: 5px;
+  }
 }
