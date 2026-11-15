@@ -1226,18 +1226,6 @@
   line-height: 1.6;
 }
 
-/* Essay mirrors must stay inside the native textarea viewport; otherwise
-   highlighted overflow can escape the field and overlap feedback/actions. */
-.lesson-question__essay-wrap>.rich-input-highlighter--field {
-  min-width: 0;
-  overflow: hidden;
-  border-radius: 10px;
-}
-
-.lesson-question__essay-wrap .rich-input-highlighter__mirror {
-  overflow: hidden;
-}
-
 .lesson-info-modal__prefs-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4664,51 +4652,14 @@ html[data-motion="reduced"] .lesson-recap__bar>span {
   gap: 10px;
 }
 
-.lesson-question__essay-input {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 180px;
-  margin: 0;
-  padding: 16px;
-  border: 2px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-surface);
-  color: inherit;
-  font: inherit;
-  font-size: 1rem;
-  line-height: 1.6;
-  resize: vertical;
-  transition: all .3s ease;
-  unicode-bidi: plaintext;
-}
-
-[data-theme="dark-slate"] .lesson-question__essay-input,
-[data-theme="dark"] .lesson-question__essay-input {
-  background: var(--color-background-secondary);
-}
-
-.lesson-question__essay-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  background: var(--color-primary-light);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, .12);
-}
-
-[data-theme="dark-slate"] .lesson-question__essay-input:focus,
-[data-theme="dark"] .lesson-question__essay-input:focus {
-  background: var(--color-surface);
-}
-
-.lesson-question__essay-input:disabled {
-  opacity: .8;
-  cursor: not-allowed;
-}
-
-.lesson-question__essay-wrap>.rich-input-highlighter--field {
-  min-height: 180px;
+/* The essay answer field is the shared rich markdown input
+   (shared/rich-input/); .lesson-question__essay-input is its host element. */
+.lesson-question__essay-wrap > .rmci-root {
   min-width: 0;
-  overflow: hidden;
-  border-radius: 12px;
+}
+
+.lesson-question__essay-input {
+  min-width: 0;
 }
 
 /* Model answer ("formal answer") */

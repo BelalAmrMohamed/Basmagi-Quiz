@@ -58,9 +58,6 @@ import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-defa
 import { createFlashcardDeckResult } from "../../components/ai-agent/ai-agent-result-cards.js";
 import { resolveUserItemById, readUserQuizzes } from "../../components/ai-agent/ai-agent-item-lookup.js";
 import { loadFullQuizData } from "../home/quiz-data-loader.js";
-import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
-
-observeRichInputHighlighters({ selector: ".lesson-question__essay-input" });
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LESSON_LOAD_TIMEOUT_MS = 10000;

@@ -37,7 +37,8 @@ export const SHORTCUT_MAP = Object.freeze({
 
 /**
  * Returns `true` when keyboard shortcuts should be suppressed:
- *   • The focused element is a TEXTAREA, or an INPUT the user can type
+ *   • The focused element is a TEXTAREA, a contenteditable (the rich
+ *     essay editor), or an INPUT the user can type
  *     into (text, search, etc.) — radio/checkbox inputs are deliberately
  *     excluded here since ArrowUp/ArrowDown roving focus needs to land on
  *     exactly those elements to navigate between quiz options; treating
@@ -51,7 +52,7 @@ export const SHORTCUT_MAP = Object.freeze({
 function isSuppressed() {
   const el = document.activeElement;
   const tag = el?.tagName;
-  if (tag === "TEXTAREA") return true;
+  if (tag === "TEXTAREA" || el?.isContentEditable) return true;
   if (tag === "INPUT") {
     const type = (el.type || "text").toLowerCase();
     if (type !== "radio" && type !== "checkbox") return true;

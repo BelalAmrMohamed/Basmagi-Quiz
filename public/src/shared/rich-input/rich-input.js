@@ -10,6 +10,10 @@
 // them when the AI window is actually opened. Everything in this folder is
 // plain, editable source.
 //
+// Shared component: used by the AI Agent chat and by the essay answer fields of
+// the quiz and lesson pages (see essay-field.js). It must not import from any
+// one feature — feature-specific data is injected through options.
+//
 // INTEGRATION CONTRACT
 //   const rich = createRichInput({ placeholder, getCommands, getMentions, onSubmit });
 //   rich.el          -> mount this
@@ -31,7 +35,7 @@
 import { icon } from "./icons.js";
 import { toMarkdown } from "./markdown-serializer.js";
 import { buildExtensions } from "./extensions.js";
-import { formatReset } from "../ai-agent-usage.js";
+import { parseMarkdown } from "./markdown-parser.js";
 
 const VENDOR_URL = globalThis.__RMCI_VENDOR_URL__ || "/assets/vendor/tiptap/tiptap.js"; // override hook: tests
 const RTL_CHARS = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
@@ -154,7 +158,7 @@ function openMenu(trigger, build, { align = "start", rtl = false, width } = {}) 
 }
 
 /** One provider row of the usage flyout: name + "% left" + reset line + ring. */
-function usageRow(g) {
+function usageRow(g, formatReset) {
   const pct = Math.max(0, Math.min(100, Number(g.percentLeft) || 0));
   const row = document.createElement("div");
   row.className = `rmci-usage-row${pct <= 10 ? " is-low" : pct <= 30 ? " is-warn" : ""}`;
@@ -165,7 +169,7 @@ function usageRow(g) {
     `<svg class="rmci-usage-ring" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="${R}" class="rmci-usage-ring-bg"/><circle cx="11" cy="11" r="${R}" class="rmci-usage-ring-fg" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C * (1 - pct / 100)).toFixed(2)}" transform="rotate(-90 11 11)"/></svg>`;
   row.querySelector(".rmci-usage-name").textContent = g.label;
   row.querySelector(".rmci-usage-pct").textContent = `المتبقي ${pct}%`;
-  row.querySelector(".rmci-usage-sub").textContent = g.resetsAt ? formatReset(g.resetsAt) : "الحد الأسبوعي";
+  row.querySelector(".rmci-usage-sub").textContent = g.resetsAt && formatReset ? formatReset(g.resetsAt) : "الحد الأسبوعي";
   return row;
 }
 
@@ -216,6 +220,9 @@ function menuItem({ iconHtml = "", label, hint = "", selected = false, locked = 
  * @param {() => Array} [options.getMentions] @mention tokens to highlight
  * @param {() => boolean} [options.onSubmit] Ctrl/Cmd+Enter
  * @param {(markdown: string) => void} [options.onChange]
+ * @param {string} [options.initialMarkdown] saved markdown to load (formatting restored)
+ * @param {boolean} [options.hideControlsWhenDisabled] hide toolbar + bottom bar while
+ *   disabled, leaving a read-only rendering of the content (locked essay answers)
  */
 export function createRichInput(options = {}) {
   const opts = {
@@ -223,13 +230,15 @@ export function createRichInput(options = {}) {
     direction: "auto",
     maxHeight: 320,
     hint: "",
+    initialMarkdown: "",
+    hideControlsWhenDisabled: false,
     ...options,
   };
   const rtlPlaceholder = opts.direction === "rtl" || (opts.direction === "auto" && RTL_CHARS.test(opts.placeholder));
 
   // ── DOM shell ────────────────────────────────────────────────────────────
   const root = document.createElement("div");
-  root.className = `rmci-root${rtlPlaceholder ? " rmci-ph-rtl" : ""}`;
+  root.className = `rmci-root${rtlPlaceholder ? " rmci-ph-rtl" : ""}${opts.hideControlsWhenDisabled ? " rmci-root--lockable" : ""}`;
 
   const shell = document.createElement("div");
   shell.className = "rmci-editor";
@@ -290,6 +299,7 @@ export function createRichInput(options = {}) {
   let editor = null;
   let silent = 0;
   let pendingValue = "";
+  let pendingMarkdown = null; // markdown waiting for the editor to boot
   let disabled = false;
   let wantFocus = null;
   let destroyed = false;
@@ -303,7 +313,15 @@ export function createRichInput(options = {}) {
 
   const getText = () => (editor ? plainTextOf(editor.state.doc) : pendingValue);
   const isEmpty = () => (editor ? editor.isEmpty : pendingValue.trim() === "");
-  const getMarkdown = () => (editor ? toMarkdown(editor.getJSON()) : pendingValue.trim());
+  const getMarkdown = () => (editor ? toMarkdown(editor.getJSON()) : (pendingMarkdown ?? pendingValue).trim());
+
+  /** Replaces the whole document with `md`, formatting included. Never fires "input". */
+  function setMarkdown(md) {
+    md = String(md ?? "");
+    if (!editor) { pendingMarkdown = md; pendingValue = md; return; }
+    withSilent(() => editor.commands.setContent(parseMarkdown(md), { emitUpdate: false }));
+  }
+  if (opts.initialMarkdown) setMarkdown(opts.initialMarkdown);
 
   function focus(where) {
     if (!editor) { wantFocus = where || true; return; }
@@ -327,7 +345,7 @@ export function createRichInput(options = {}) {
       get: getText,
       set(v) {
         v = String(v ?? "");
-        if (!editor) { pendingValue = v; return; }
+        if (!editor) { pendingValue = v; pendingMarkdown = null; return; }
         const cur = getText();
         if (cur === v) return;
         withSilent(() => {
@@ -354,6 +372,8 @@ export function createRichInput(options = {}) {
         });
       },
     },
+    // The draft as markdown (formatting kept). `value` stays the plain text.
+    markdown: { get: getMarkdown, set: setMarkdown },
     selectionStart: {
       get: () => (editor ? posToOffset(editor.state.doc, editor.state.selection.from) : pendingValue.length),
     },
@@ -652,7 +672,7 @@ export function createRichInput(options = {}) {
               body.innerHTML = '<div class="rmci-usage-note">لا توجد بيانات استخدام متاحة.</div>';
             }
             groups.forEach((g) => {
-              const row = usageRow(g);
+              const row = usageRow(g, cfg.usage.formatReset);
               if (!own && g.id === cfg.usage.provider) row.classList.add("is-current");
               body.appendChild(row);
             });
@@ -782,7 +802,7 @@ export function createRichInput(options = {}) {
     editor = new T.Editor({
       element: host,
       extensions,
-      content: pendingValue ? textToHtml(pendingValue) : "",
+      content: pendingMarkdown !== null ? parseMarkdown(pendingMarkdown) : pendingValue ? textToHtml(pendingValue) : "",
       autofocus: false,
       editable: !disabled,
       editorProps: {
@@ -801,6 +821,7 @@ export function createRichInput(options = {}) {
       onTransaction: () => toolbarEl?.update(),
     });
     pendingValue = "";
+    pendingMarkdown = null;
     root.classList.add("is-ready");
     if (toolbarOpen) setToolbar(true);
     if (wantFocus && !disabled) editor.commands.focus(wantFocus === true ? undefined : wantFocus);
@@ -832,6 +853,7 @@ export function createRichInput(options = {}) {
     endSlot,
     ready,
     getMarkdown,
+    setMarkdown,
     getText,
     isEmpty,
     clear,

@@ -2717,55 +2717,14 @@ body.is-resizing-media .media-container.resizable-media {
   margin-bottom: 18px;
 }
 
+/* The essay answer field is the shared rich markdown input
+   (shared/rich-input/); .essay-textarea / #essayInput-N is its host element. */
+.essay-container > .rmci-root {
+  min-width: 0;
+}
+
 .essay-textarea {
-  width: 100%;
-  min-height: 180px;
-  padding: 16px;
-  border: 2px solid var(--color-border);
-  border-radius: 12px;
-  font-family: inherit;
-  font-size: 1rem;
-  line-height: 1.6;
-  resize: vertical;
-  transition: all 0.3s ease;
-  direction: ltr;
-  unicode-bidi: plaintext;
-  /* text-align: start; */
-  direction: rtl;
-}
-
-/* The rich-text mirror is clipped to the essay field's viewport. Without this
-   field-level clip, the mirror's long highlighted value paints outside the
-   scrollable textarea and overlaps the answer controls below it. */
-.essay-container > .rich-input-highlighter--field {
-  min-height: 180px;
-  overflow: hidden;
-  border-radius: 12px;
-}
-.essay-container > .rich-input-highlighter--field .rich-input-highlighter__mirror {
-  overflow: hidden;
-}
-
-[data-theme="dark-slate"] .essay-textarea,
-[data-theme="dark"] .essay-textarea {
-  background: var(--color-background-secondary);
-}
-
-.essay-textarea:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
-  background: var(--color-primary-light);
-  border-color: var(--color-primary);
-}
-
-[data-theme="dark-slate"] .essay-textarea:focus,
-[data-theme="dark"] .essay-textarea:focus {
-  background: var(--color-surface);
-}
-
-.essay-textarea.locked {
-  cursor: not-allowed;
-  opacity: 0.8;
+  min-width: 0;
 }
 
 .formal-answer {
@@ -3249,10 +3208,6 @@ body.is-resizing-media .media-container.resizable-media {
 
   .question-video-container .question-video {
     max-height: min(280px, 45vh);
-  }
-
-  .essay-textarea {
-    min-height: 150px;
   }
 
   .nav-btn {

@@ -316,3 +316,24 @@ html[data-theme="dark-slate"] .rmci-root {
 @media (prefers-reduced-motion: reduce) {
   .rmci-menu, .rmci-toolbar-slot, .rmci-codeblock-pre { animation: none; transition: none; }
 }
+
+/* ── Locked (read-only) variant: essay answers after "check" ──
+   Content stays rendered; toolbar toggle, mic and bottom bar disappear. */
+.rmci-root--lockable.is-disabled .rmci-toolbar-slot,
+.rmci-root--lockable.is-disabled .rmci-bar { display: none; }
+.rmci-root--lockable.is-disabled .rmci-editor { opacity: 1; box-shadow: none; }
+.rmci-root--lockable.is-disabled .rmci-scroll { padding-bottom: 14px; cursor: default; }
+
+/* ── Essay answer field (quiz + lesson): lighter than the chat input ── */
+.rmci-root--essay .rmci-editor { border-radius: 14px; box-shadow: none; }
+.rmci-root--essay .rmci-scroll { min-height: 120px; }
+.rmci-root--essay .ProseMirror { min-height: 96px; }
+
+/* ── Dictation (mic) button ── */
+.rmci-mic-btn.is-listening { color: #fff; background: #dc2626; animation: rmci-mic-pulse 1.4s ease-in-out infinite; }
+.rmci-mic-btn.is-listening:hover { background: #b91c1c; color: #fff; }
+@keyframes rmci-mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, .45); }
+  50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .rmci-mic-btn.is-listening { animation: none; } }

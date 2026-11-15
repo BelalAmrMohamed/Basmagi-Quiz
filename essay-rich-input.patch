@@ -1,0 +1,4301 @@
+diff -ruN a/public/src/components/ai-agent/ai-agent-chat.js b/public/src/components/ai-agent/ai-agent-chat.js
+--- a/public/src/components/ai-agent/ai-agent-chat.js	2026-11-15 18:16:44.178071373 +0000
++++ b/public/src/components/ai-agent/ai-agent-chat.js	2026-11-15 18:18:37.870003164 +0000
+@@ -11,7 +11,7 @@
+ import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
+ import { getSelectedProvider, getSelectedModel, getModelsForProvider, setSelectedModel, getOwnKey, getSystemPrompt, isAiHelperAvailable, EFFORT_LEVELS, getSelectedEffort, setSelectedEffort } from "./ai-agent-settings.js";
+ import { getUserToken } from "../../shared/userLevel.js";
+-import { createRichInput } from "./rich-input/rich-input.js";
++import { createRichInput } from "../../shared/rich-input/rich-input.js";
+ import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
+ 
+ function isJwtExpired(token, skewSeconds = 30) {
+@@ -30,7 +30,7 @@
+ // export menu (ai-agent.js) — one dropdown-menu visual style for the
+ // whole widget rather than a bespoke one per popover.
+ import { openAgentDropdown, closeAllAgentDropdowns, positionAgentDropdown } from "./ai-agent-dropdown.js";
+-import { fetchPlatformUsage } from "./ai-agent-usage.js";
++import { fetchPlatformUsage, formatReset } from "./ai-agent-usage.js";
+ import { createMentionMenu, getQuickAccessMentionDefinitions } from "./ai-agent-mention-menu.js";
+ import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js";
+ import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
+@@ -238,7 +238,7 @@
+   const panel = document.createElement("div");
+   panel.className = "ai-agent-panel ai-agent-chat-panel";
+ 
+-  // Rich Markdown input (Tiptap, see ./rich-input/). `textarea` below is its
++  // Rich Markdown input (Tiptap, see ../../shared/rich-input/). `textarea` below is its
+   // <textarea>-compatible adapter, so the dictation / @mention / slash-menu
+   // code keeps working unchanged. Send/mic/more buttons are moved into its
+   // bottom bar when the input row is assembled.
+@@ -284,7 +284,7 @@
+       disabled: false,
+       effortLevels,
+       selectedEffort,
+-      usage: { load: () => fetchPlatformUsage(), source: hasKey ? "own" : "platform", provider },
++      usage: { load: () => fetchPlatformUsage(), source: hasKey ? "own" : "platform", provider, formatReset },
+       onChange: (id) => {
+         setSelectedModel(getSelectedProvider(), id);
+         refreshModelBarOptions();
+diff -ruN a/public/src/components/ai-agent/ai-agent.js b/public/src/components/ai-agent/ai-agent.js
+--- a/public/src/components/ai-agent/ai-agent.js	2026-11-15 18:16:44.178292091 +0000
++++ b/public/src/components/ai-agent/ai-agent.js	2026-11-15 18:18:35.349396205 +0000
+@@ -674,7 +674,7 @@
+ let agentStylesReady = null;
+ export function ensureAIAgentStyles() {
+   agentStylesReady ??= Promise.all(
+-    ["./ai-agent-window.css", "./rich-input/rich-input.css"].map((file) => new Promise((resolve) => {
++    ["./ai-agent-window.css", "../../shared/rich-input/rich-input.css"].map((file) => new Promise((resolve) => {
+       const href = new URL(file, import.meta.url).href;
+       let link = [...document.querySelectorAll('link[rel="stylesheet"]')].find((l) => l.href === href);
+       if (link?.sheet) return resolve();
+diff -ruN a/public/src/components/ai-agent/rich-input/code-block-view.js b/public/src/components/ai-agent/rich-input/code-block-view.js
+--- a/public/src/components/ai-agent/rich-input/code-block-view.js	2026-11-15 18:16:44.178325561 +0000
++++ b/public/src/components/ai-agent/rich-input/code-block-view.js	1970-01-01 00:00:00.000000000 +0000
+@@ -1,198 +0,0 @@
+-// =============================================================================
+-// rich-input/code-block-view.js
+-// Vanilla-DOM node view for code blocks: collapse/expand, a language menu and
+-// a copy button above the (syntax-highlighted, editable) code. Port of the
+-// 21st.dev component's React CodeBlockView.
+-// =============================================================================
+-import { icon } from "./icons.js";
+-
+-export const CODE_LANGUAGES = [
+-  { label: "Plain text", value: "plaintext" },
+-  { label: "JavaScript", value: "javascript" },
+-  { label: "TypeScript", value: "typescript" },
+-  { label: "Python", value: "python" },
+-  { label: "HTML", value: "xml" },
+-  { label: "CSS", value: "css" },
+-  { label: "JSON", value: "json" },
+-  { label: "Bash", value: "bash" },
+-  { label: "C++", value: "cpp" },
+-  { label: "Java", value: "java" },
+-  { label: "C#", value: "csharp" },
+-  { label: "SQL", value: "sql" },
+-];
+-
+-const LANGUAGE_ALIASES = {
+-  js: "javascript", jsx: "javascript", ts: "typescript", tsx: "typescript", py: "python",
+-  html: "xml", sh: "bash", shell: "bash", zsh: "bash", text: "plaintext", txt: "plaintext",
+-  "c++": "cpp", cc: "cpp", cxx: "cpp", "c#": "csharp", cs: "csharp",
+-};
+-
+-const normalizeLanguage = (raw) => LANGUAGE_ALIASES[raw || "plaintext"] ?? (raw || "plaintext");
+-
+-/** Closes any open language menu (there is at most one at a time). */
+-let closeOpenMenu = null;
+-
+-function openLanguageMenu(trigger, current, onPick) {
+-  closeOpenMenu?.();
+-  const host = document.body;
+-  const r = trigger.getBoundingClientRect();
+-  const menu = document.createElement("div");
+-  menu.className = "rmci-menu rmci-lang-menu";
+-  menu.setAttribute("role", "menu");
+-  menu.dir = "ltr";
+-  menu.style.position = "fixed";
+-  menu.style.right = `${Math.max(8, window.innerWidth - r.right)}px`;
+-  const below = window.innerHeight - r.bottom;
+-  if (below < 290 && r.top > below) menu.style.bottom = `${window.innerHeight - r.top + 4}px`;
+-  else menu.style.top = `${r.bottom + 4}px`;
+-
+-  CODE_LANGUAGES.forEach((l) => {
+-    const item = document.createElement("button");
+-    item.type = "button";
+-    item.className = "rmci-menu-item rmci-menu-item--compact";
+-    item.setAttribute("role", "menuitem");
+-    item.innerHTML = `<span class="rmci-menu-label">${l.label}</span>${l.value === current ? icon("check", 14) : ""}`;
+-    item.addEventListener("mousedown", (e) => e.preventDefault());
+-    item.addEventListener("click", () => { onPick(l.value); close(); });
+-    menu.appendChild(item);
+-  });
+-
+-  const onDown = (e) => { if (!menu.contains(e.target) && !trigger.contains(e.target)) close(); };
+-  const onKey = (e) => { if (e.key === "Escape") close(); };
+-  // Scroll events are captured from everything, including the menu's own list;
+-  // only close when something OUTSIDE the menu scrolls (page/chat behind it).
+-  const onScroll = (e) => { if (menu.contains(e.target)) return; close(); };
+-  function close() {
+-    menu.remove();
+-    trigger.setAttribute("aria-expanded", "false");
+-    trigger.classList.remove("is-open");
+-    document.removeEventListener("mousedown", onDown);
+-    document.removeEventListener("keydown", onKey);
+-    window.removeEventListener("resize", close);
+-    window.removeEventListener("scroll", onScroll, true);
+-    if (closeOpenMenu === close) closeOpenMenu = null;
+-  }
+-  document.addEventListener("mousedown", onDown);
+-  document.addEventListener("keydown", onKey);
+-  window.addEventListener("resize", close);
+-  window.addEventListener("scroll", onScroll, true);
+-  trigger.setAttribute("aria-expanded", "true");
+-  trigger.classList.add("is-open");
+-  host.appendChild(menu);
+-  closeOpenMenu = close;
+-}
+-
+-/**
+- * Tiptap `addNodeView` factory. Returns a ProseMirror NodeView.
+- * @param {{ node: any, editor: any, getPos: () => number }} props
+- */
+-export function createCodeBlockView({ node: initialNode, editor, getPos }) {
+-  let node = initialNode;
+-  let copyTimer = 0;
+-
+-  const dom = document.createElement("div");
+-  dom.className = "rmci-codeblock";
+-  dom.dir = "ltr";
+-
+-  const header = document.createElement("div");
+-  header.className = "rmci-codeblock-header";
+-  header.contentEditable = "false";
+-
+-  const collapseBtn = document.createElement("button");
+-  collapseBtn.type = "button";
+-  collapseBtn.className = "rmci-codeblock-btn";
+-  collapseBtn.addEventListener("mousedown", (e) => e.preventDefault());
+-
+-  const right = document.createElement("div");
+-  right.className = "rmci-codeblock-actions";
+-
+-  const langBtn = document.createElement("button");
+-  langBtn.type = "button";
+-  langBtn.className = "rmci-lang-btn";
+-  langBtn.setAttribute("aria-haspopup", "menu");
+-  langBtn.setAttribute("aria-expanded", "false");
+-  langBtn.setAttribute("aria-label", "Code language");
+-  langBtn.addEventListener("mousedown", (e) => e.preventDefault());
+-
+-  const copyBtn = document.createElement("button");
+-  copyBtn.type = "button";
+-  copyBtn.className = "rmci-codeblock-btn";
+-  copyBtn.setAttribute("aria-label", "Copy code");
+-  copyBtn.addEventListener("mousedown", (e) => e.preventDefault());
+-
+-  right.append(langBtn, copyBtn);
+-  header.append(collapseBtn, right);
+-
+-  const pre = document.createElement("pre");
+-  pre.className = "rmci-codeblock-pre";
+-  const code = document.createElement("code");
+-  pre.appendChild(code);
+-
+-  const fade = document.createElement("div");
+-  fade.className = "rmci-codeblock-fade";
+-  fade.contentEditable = "false";
+-
+-  dom.append(header, pre, fade);
+-
+-  function updateAttributes(attrs) {
+-    const pos = getPos();
+-    if (typeof pos !== "number") return;
+-    editor.view.dispatch(editor.view.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, ...attrs }));
+-  }
+-
+-  function render() {
+-    const language = normalizeLanguage(node.attrs.language);
+-    const collapsed = !!node.attrs.collapsed;
+-    const label = CODE_LANGUAGES.find((l) => l.value === language)?.label ?? language;
+-    code.className = `hljs language-${language}`;
+-    pre.dataset.collapsed = String(collapsed);
+-    pre.classList.toggle("is-collapsed", collapsed);
+-    fade.hidden = !collapsed;
+-    collapseBtn.setAttribute("aria-label", collapsed ? "Expand code block" : "Collapse code block");
+-    collapseBtn.setAttribute("aria-expanded", String(!collapsed));
+-    collapseBtn.innerHTML = `${icon(collapsed ? "expand" : "collapse", 14)}${collapsed ? "Expand" : "Collapse"}`;
+-    langBtn.innerHTML = `${label}${icon("chevronDown", 12)}`;
+-    if (!copyTimer) copyBtn.innerHTML = `${icon("copy", 14)}Copy`;
+-  }
+-
+-  collapseBtn.addEventListener("click", () => updateAttributes({ collapsed: !node.attrs.collapsed }));
+-  langBtn.addEventListener("click", () => {
+-    if (langBtn.classList.contains("is-open")) return closeOpenMenu?.();
+-    openLanguageMenu(langBtn, normalizeLanguage(node.attrs.language), (v) => updateAttributes({ language: v }));
+-  });
+-  copyBtn.addEventListener("click", async () => {
+-    try {
+-      await navigator.clipboard.writeText(node.textContent);
+-      copyBtn.innerHTML = `${icon("check", 14)}Copied`;
+-      copyBtn.classList.add("is-done");
+-      clearTimeout(copyTimer);
+-      copyTimer = setTimeout(() => {
+-        copyTimer = 0;
+-        copyBtn.classList.remove("is-done");
+-        copyBtn.innerHTML = `${icon("copy", 14)}Copy`;
+-      }, 2000);
+-    } catch {
+-      /* clipboard unavailable */
+-    }
+-  });
+-
+-  render();
+-
+-  return {
+-    dom,
+-    contentDOM: code,
+-    update(updated) {
+-      if (updated.type !== node.type) return false;
+-      node = updated;
+-      render();
+-      return true;
+-    },
+-    // Header/fade are chrome: ProseMirror must not treat their changes as edits
+-    // or let their clicks move the selection.
+-    ignoreMutation: (m) => m.type !== "selection" && !code.contains(m.target) && m.target !== code,
+-    stopEvent: (e) => header.contains(e.target),
+-    destroy() {
+-      clearTimeout(copyTimer);
+-    },
+-  };
+-}
+diff -ruN a/public/src/components/ai-agent/rich-input/extensions.js b/public/src/components/ai-agent/rich-input/extensions.js
+--- a/public/src/components/ai-agent/rich-input/extensions.js	2026-11-15 18:16:44.178335470 +0000
++++ b/public/src/components/ai-agent/rich-input/extensions.js	1970-01-01 00:00:00.000000000 +0000
+@@ -1,223 +0,0 @@
+-// =============================================================================
+-// rich-input/extensions.js
+-// Builds the Tiptap extension list. Takes the lazily-loaded vendor module `T`
+-// (public/assets/vendor/tiptap/tiptap.js) so nothing here imports Tiptap at
+-// module-evaluation time.
+-//
+-// Same behaviour as the 21st.dev component:
+-//   Enter            new line / block (send is handled by the chat panel)
+-//   Shift+Enter      soft break (plain newline inside code blocks)
+-//   Ctrl/Cmd+Enter   send
+-//   ```lang + Enter  turns the line into a code block; a lone ``` + Enter on
+-//                    the last line of a code block closes it
+-// plus per-block bidi (Arabic/English blocks align on their own) and command /
+-// @mention highlighting (replaces the old textarea mirror).
+-// =============================================================================
+-import { createCodeBlockView } from "./code-block-view.js";
+-
+-const commandName = (c) => String(c?.command ?? "").trim().replace(/^\//, "");
+-const mentionName = (m) => String(m?.name ?? m?.token ?? "").trim().replace(/^@/, "");
+-
+-export function buildExtensions(T, options) {
+-  const { placeholder, direction, onSubmit, getCommands, getMentions } = options;
+-  const lowlight = T.createLowlight(T.common);
+-
+-  // `<u>text</u>` -> underline
+-  const UnderlineMd = T.Underline.extend({
+-    addInputRules() {
+-      return [T.markInputRule({ find: /(?:<u>)([^<]+)(?:<\/u>)$/, type: this.type })];
+-    },
+-  });
+-
+-  const CodeBlock = T.CodeBlockLowlight.extend({
+-    addAttributes() {
+-      return {
+-        ...this.parent?.(),
+-        collapsed: { default: false, rendered: false, keepOnSplit: false },
+-      };
+-    },
+-    addNodeView() {
+-      return (props) => createCodeBlockView(props);
+-    },
+-  }).configure({ lowlight, defaultLanguage: "plaintext" });
+-
+-  // Per-block bidi: paragraphs and headings get dir="auto".
+-  const BidiBlocks = T.Extension.create({
+-    name: "bidiBlocks",
+-    addGlobalAttributes() {
+-      const auto = direction === "auto";
+-      return [
+-        {
+-          types: ["paragraph", "heading"],
+-          attributes: {
+-            dir: {
+-              default: auto ? "auto" : null,
+-              parseHTML: (el) => el.getAttribute("dir") || (auto ? "auto" : null),
+-              renderHTML: (attrs) => (attrs.dir ? { dir: attrs.dir } : {}),
+-            },
+-          },
+-        },
+-      ];
+-    },
+-  });
+-
+-  const ChatShortcuts = T.Extension.create({
+-    name: "chatShortcuts",
+-    priority: 1000,
+-    addKeyboardShortcuts() {
+-      return {
+-        "Mod-Enter": () => onSubmit(),
+-        "Shift-Enter": ({ editor }) => (editor.isActive("codeBlock") ? editor.commands.newlineInCode() : false),
+-        Enter: ({ editor }) => {
+-          const { $from, empty } = editor.state.selection;
+-          const parent = $from.parent;
+-          const atEnd = empty && $from.parentOffset === parent.content.size;
+-
+-          if (atEnd && parent.type.name === "codeBlock") {
+-            const m = /(^|\n)```$/.exec(parent.textContent);
+-            if (m) {
+-              return editor.chain().focus()
+-                .deleteRange({ from: $from.pos - m[0].length, to: $from.pos })
+-                .exitCode()
+-                .run();
+-            }
+-          }
+-
+-          if (atEnd && parent.type.name === "paragraph") {
+-            const f = /^```([\w+#.-]*)$/.exec(parent.textContent);
+-            if (f) {
+-              return editor.chain().focus()
+-                .deleteRange({ from: $from.start(), to: $from.end() })
+-                .setCodeBlock(f[1] ? { language: f[1] } : undefined)
+-                .run();
+-            }
+-          }
+-          return false;
+-        },
+-      };
+-    },
+-  });
+-
+-  // Highlights `/command` (only as the first word) and known `@mention` tokens.
+-  //
+-  // Robustness notes (the chips used to end up half-painted, e.g. "/expla" + "i"
+-  // + "n" while typing): (1) decorations are computed in one pure function that
+-  // can never throw into ProseMirror's update cycle — a throw there aborts the
+-  // view update and leaves stale chip <span>s with natively-typed text next to
+-  // them; (2) invisible bidi/zero-width marks that RTL keyboards insert next to
+-  // a word are ignored when matching, so "/ex\u200Fplain" still counts as
+-  // /explain; (3) a self-heal pass compares the painted chips with the expected
+-  // ones after every update and, on any drift, rebuilds the DOM once.
+-  const INVISIBLE = /[\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/g;
+-  const WORD_START = "(^|[\\s\\u00A0\\u200B-\\u200F\\u202A-\\u202E\\u2066-\\u2069])";
+-
+-  function computeTokens(doc) {
+-    const out = []; // { from, to, kind }
+-    let commands, mentions;
+-    try {
+-      commands = new Set((getCommands?.() || []).map((c) => commandName(c).toLowerCase()).filter(Boolean));
+-      mentions = new Set((getMentions?.() || []).map((m) => mentionName(m).toLowerCase()).filter(Boolean));
+-    } catch {
+-      return out;
+-    }
+-    if (!commands.size && !mentions.size) return out;
+-    doc.descendants((node, pos) => {
+-      if (node.type.name === "codeBlock") return false;
+-      if (!node.isTextblock) return true;
+-      // textBetween with a 1-char leaf placeholder keeps string offsets identical
+-      // to document positions. `node.textContent` drops soft line breaks
+-      // (Shift+Enter), which shifted every chip after the first break.
+-      const text = node.textBetween(0, node.content.size, "", "\n");
+-      const start = pos + 1;
+-      const scan = (re, set, kind) => {
+-        re.lastIndex = 0;
+-        let m;
+-        while ((m = re.exec(text))) {
+-          const word = m[2].replace(INVISIBLE, "").toLowerCase();
+-          if (set.has(word)) {
+-            const from = start + m.index + m[1].length;
+-            out.push({ from, to: from + m[2].length + 1, kind });
+-          }
+-        }
+-      };
+-      if (commands.size) scan(new RegExp(`${WORD_START}/([^\\s/]+)`, "g"), commands, "command");
+-      if (mentions.size) scan(new RegExp(`${WORD_START}@([^\\s@]+)`, "g"), mentions, "mention");
+-      return false;
+-    });
+-    return out;
+-  }
+-
+-  const TokenHighlight = T.Extension.create({
+-    name: "tokenHighlight",
+-    addProseMirrorPlugins() {
+-      const key = new T.PluginKey("rmciTokens");
+-      return [
+-        new T.Plugin({
+-          key,
+-          // `bust` is flipped on for exactly one transaction by the self-heal
+-          // below: painting nothing for a beat forces ProseMirror to rebuild
+-          // the paragraph DOM, then the next transaction paints correctly.
+-          state: {
+-            init: () => ({ bust: false }),
+-            apply: (tr, prev) => {
+-              const meta = tr.getMeta(key);
+-              return meta ? { bust: !!meta.bust } : prev;
+-            },
+-          },
+-          props: {
+-            decorations(state) {
+-              if (key.getState(state)?.bust) return T.DecorationSet.empty;
+-              try {
+-                const decos = computeTokens(state.doc).map((t) =>
+-                  T.Decoration.inline(t.from, t.to, { class: `rmci-token rmci-token--${t.kind}` }, { inclusiveStart: false, inclusiveEnd: false }),
+-                );
+-                return decos.length ? T.DecorationSet.create(state.doc, decos) : T.DecorationSet.empty;
+-              } catch {
+-                return T.DecorationSet.empty;
+-              }
+-            },
+-          },
+-          view() {
+-            let raf = 0;
+-            let bustedDoc = null;
+-            return {
+-              update(view) {
+-                if (key.getState(view.state)?.bust) {
+-                  // Paint again on the next frame (outside this update cycle).
+-                  cancelAnimationFrame(raf);
+-                  raf = requestAnimationFrame(() => view.dispatch(view.state.tr.setMeta(key, { bust: false })));
+-                  return;
+-                }
+-                cancelAnimationFrame(raf);
+-                raf = requestAnimationFrame(() => {
+-                  if (view.isDestroyed || view.composing) return;
+-                  const doc = view.state.doc;
+-                  if (doc === bustedDoc) return; // already rebuilt for this doc — never loop
+-                  const want = computeTokens(doc).map((t) => doc.textBetween(t.from, t.to)).join("|");
+-                  const got = [...view.dom.querySelectorAll(".rmci-token")].map((el) => el.textContent).join("|");
+-                  if (want !== got) {
+-                    bustedDoc = doc;
+-                    view.dispatch(view.state.tr.setMeta(key, { bust: true }));
+-                  }
+-                });
+-              },
+-              destroy() { cancelAnimationFrame(raf); },
+-            };
+-          },
+-        }),
+-      ];
+-    },
+-  });
+-
+-  return [
+-    // TipTap v3's StarterKit already bundles Underline; ours (with the <u> input rule) replaces it.
+-    T.StarterKit.configure({ codeBlock: false, underline: false, heading: { levels: [1, 2, 3] } }),
+-    UnderlineMd,
+-    T.Typography,
+-    T.Placeholder.configure({ placeholder }),
+-    CodeBlock,
+-    BidiBlocks,
+-    ChatShortcuts,
+-    TokenHighlight,
+-  ];
+-}
+diff -ruN a/public/src/components/ai-agent/rich-input/icons.js b/public/src/components/ai-agent/rich-input/icons.js
+--- a/public/src/components/ai-agent/rich-input/icons.js	2026-11-15 18:16:44.178345875 +0000
++++ b/public/src/components/ai-agent/rich-input/icons.js	1970-01-01 00:00:00.000000000 +0000
+@@ -1,36 +0,0 @@
+-// =============================================================================
+-// rich-input/icons.js
+-// The Lucide icons the rich input uses (same set as the 21st.dev component),
+-// as inline SVG so there's no icon-font / React dependency.
+-// =============================================================================
+-const PATHS = {
+-  bold: '<path d="M6 12h9a4 4 0 010 8H7a1 1 0 01-1-1V5a1 1 0 011-1h7a4 4 0 010 8"/>',
+-  italic: '<line x1="19" x2="10" y1="4" y2="4"/><line x1="14" x2="5" y1="20" y2="20"/><line x1="15" x2="9" y1="4" y2="20"/>',
+-  underline: '<path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" x2="20" y1="20" y2="20"/>',
+-  strike: '<path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" x2="20" y1="12" y2="12"/>',
+-  code: '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
+-  list: '<path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/>',
+-  listOrdered: '<path d="M11 5h10"/><path d="M11 12h10"/><path d="M11 19h10"/><path d="M4 4h1v5"/><path d="M4 9h2"/><path d="M6.5 20H3.4c0-1 2.6-1.925 2.6-3.5a1.5 1.5 0 0 0-2.6-1.02"/>',
+-  quote: '<path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/>',
+-  codeBlock: '<path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/>',
+-  h1: '<path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="m17 12 3-2v8"/>',
+-  h2: '<path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1"/>',
+-  h3: '<path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2"/><path d="M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2"/>',
+-  type: '<path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/>',
+-  chevronDown: '<path d="m6 9 6 6 6-6"/>',
+-  chevronLeft: '<path d="m15 18-6-6 6-6"/>',
+-  chevronRight: '<path d="m9 18 6-6-6-6"/>',
+-  gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+-  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+-  check: '<path d="M20 6 9 17l-5-5"/>',
+-  copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+-  collapse: '<path d="m7 20 5-5 5 5"/><path d="m7 4 5 5 5-5"/>',
+-  expand: '<path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/>',
+-  send: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
+-  stop: '<rect width="18" height="18" x="3" y="3" rx="2" fill="currentColor"/>',
+-};
+-
+-/** @param {keyof typeof PATHS} name @param {number} [size] */
+-export function icon(name, size = 16, strokeWidth = 2) {
+-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="rmci-icon">${PATHS[name]}</svg>`;
+-}
+diff -ruN a/public/src/components/ai-agent/rich-input/markdown-serializer.js b/public/src/components/ai-agent/rich-input/markdown-serializer.js
+--- a/public/src/components/ai-agent/rich-input/markdown-serializer.js	2026-11-15 18:16:44.178352572 +0000
++++ b/public/src/components/ai-agent/rich-input/markdown-serializer.js	1970-01-01 00:00:00.000000000 +0000
+@@ -1,77 +0,0 @@
+-// =============================================================================
+-// rich-input/markdown-serializer.js
+-// ProseMirror JSON -> Markdown. Direct port of the 21st.dev component's
+-// serializer (same output), kept framework-free.
+-// =============================================================================
+-
+-function wrap(text, open, close = open) {
+-  const m = text.match(/^(\s*)([\s\S]*?)(\s*)$/);
+-  if (!m || !m[2]) return text;
+-  return `${m[1]}${open}${m[2]}${close}${m[3]}`;
+-}
+-
+-function serializeInline(nodes = []) {
+-  return nodes
+-    .map((n) => {
+-      if (n.type === "hardBreak") return "  \n";
+-      let t = n.text ?? "";
+-      const marks = (n.marks ?? []).map((m) => m.type);
+-      if (marks.includes("code")) t = wrap(t, "`");
+-      if (marks.includes("bold")) t = wrap(t, "**");
+-      if (marks.includes("italic")) t = wrap(t, "*");
+-      if (marks.includes("strike")) t = wrap(t, "~~");
+-      if (marks.includes("underline")) t = wrap(t, "<u>", "</u>");
+-      return t;
+-    })
+-    .join("");
+-}
+-
+-function indentLines(text, prefix, firstPrefix = prefix) {
+-  return text
+-    .split("\n")
+-    .map((l, i) => (i === 0 ? firstPrefix : l ? prefix : "") + l)
+-    .join("\n");
+-}
+-
+-function serializeBlock(node) {
+-  const children = node.content ?? [];
+-  switch (node.type) {
+-    case "paragraph":
+-      return serializeInline(children);
+-    case "heading":
+-      return `${"#".repeat(node.attrs?.level ?? 1)} ${serializeInline(children)}`;
+-    case "bulletList":
+-      return children
+-        .map((li) => indentLines(serializeBlocks(li.content ?? [], "\n"), "  ", "- "))
+-        .join("\n");
+-    case "orderedList": {
+-      const start = node.attrs?.start ?? 1;
+-      return children
+-        .map((li, i) => {
+-          const marker = `${start + i}. `;
+-          return indentLines(serializeBlocks(li.content ?? [], "\n"), " ".repeat(marker.length), marker);
+-        })
+-        .join("\n");
+-    }
+-    case "blockquote":
+-      return indentLines(serializeBlocks(children), "> ");
+-    case "codeBlock": {
+-      const code = children.map((c) => c.text ?? "").join("");
+-      const lang = node.attrs?.language && node.attrs.language !== "plaintext" ? node.attrs.language : "";
+-      return "```" + lang + "\n" + code + "\n```";
+-    }
+-    case "horizontalRule":
+-      return "---";
+-    default:
+-      return serializeInline(children);
+-  }
+-}
+-
+-function serializeBlocks(nodes, sep = "\n\n") {
+-  return nodes.map(serializeBlock).join(sep);
+-}
+-
+-/** @param {object} doc ProseMirror JSON document (editor.getJSON()) */
+-export function toMarkdown(doc) {
+-  return serializeBlocks(doc.content ?? []).trim();
+-}
+diff -ruN a/public/src/components/ai-agent/rich-input/rich-input.css b/public/src/components/ai-agent/rich-input/rich-input.css
+--- a/public/src/components/ai-agent/rich-input/rich-input.css	2026-11-15 18:16:44.178359566 +0000
++++ b/public/src/components/ai-agent/rich-input/rich-input.css	1970-01-01 00:00:00.000000000 +0000
+@@ -1,318 +0,0 @@
+-/* =============================================================================
+-   rich-input.css — styles for the AI Agent rich input (rich-input.js).
+-   Plain-CSS conversion of the 21st.dev component's Tailwind classes, mapped
+-   onto this site's theme tokens (--color-*), so it follows light / dark /
+-   dark-slate automatically.
+-   ============================================================================= */
+-
+-.rmci-root,
+-.rmci-menu {
+-  --rmci-fg: var(--color-text-primary, #1d2433);
+-  --rmci-muted: var(--color-text-secondary, #667085);
+-  --rmci-border: var(--color-border, #dce2ed);
+-  --rmci-card: var(--color-surface, #ffffff);
+-  --rmci-ring: var(--color-primary, #b94a16);
+-  --rmci-hover: color-mix(in srgb, var(--rmci-fg) 10%, transparent);
+-  --rmci-active: color-mix(in srgb, var(--rmci-fg) 15%, transparent);
+-
+-  --rmci-comment: #6e7781; --rmci-kw: #cf222e; --rmci-str: #0a3069; --rmci-num: #0550ae;
+-  --rmci-fn: #8250df; --rmci-type: #953800; --rmci-attr: #116329; --rmci-del: #82071e;
+-}
+-
+-html[data-theme="dark"] .rmci-root,
+-html[data-theme="dark-slate"] .rmci-root {
+-  --rmci-comment: #7d8590; --rmci-kw: #ff7b72; --rmci-str: #a5d6ff; --rmci-num: #79c0ff;
+-  --rmci-fn: #d2a8ff; --rmci-type: #ffa657; --rmci-attr: #7ee787; --rmci-del: #ffa198;
+-}
+-
+-.rmci-root { width: 100%; max-width: 100%; box-sizing: border-box; color: var(--rmci-fg); }
+-.rmci-root *, .rmci-menu * { box-sizing: border-box; }
+-.rmci-root.is-disabled .rmci-editor { opacity: .6; }
+-
+-/* ── Shell ── */
+-.rmci-editor {
+-  position: relative;
+-  width: 100%;
+-  border: 1px solid var(--rmci-border);
+-  border-radius: 24px;
+-  background: var(--rmci-card);
+-  color: var(--rmci-fg);
+-  box-shadow: 0 10px 28px rgba(0, 0, 0, .12);
+-  transition: border-color .2s ease, box-shadow .2s ease, opacity .2s ease;
+-}
+-.rmci-editor:focus-within {
+-  border-color: color-mix(in srgb, var(--rmci-ring) 50%, transparent);
+-  box-shadow: 0 10px 28px rgba(0, 0, 0, .12), 0 0 0 2px color-mix(in srgb, var(--rmci-ring) 30%, transparent);
+-}
+-
+-.rmci-scroll { overflow-y: auto; padding: 14px 18px 2px; cursor: text; overscroll-behavior: contain; }
+-.rmci-host { min-width: 0; }
+-
+-/* ── Toolbar ── */
+-.rmci-toolbar-slot { animation: rmci-fade-down .2s ease; }
+-.rmci-toolbar-slot[hidden] { display: none; }
+-.rmci-toolbar {
+-  display: flex; flex-wrap: wrap; align-items: center; gap: 2px;
+-  padding: 6px 8px; border-bottom: 1px solid var(--rmci-border);
+-}
+-.rmci-divider { width: 1px; height: 16px; margin: 0 4px; background: var(--rmci-border); flex-shrink: 0; }
+-
+-.rmci-icon-btn,
+-.rmci-heading-btn {
+-  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+-  border: 0; background: transparent; color: var(--rmci-muted); cursor: pointer;
+-  border-radius: 10px; transition: background .15s ease, color .15s ease;
+-}
+-.rmci-icon-btn { width: 32px; height: 32px; padding: 0; }
+-.rmci-heading-btn { height: 32px; gap: 2px; padding: 0 4px 0 8px; }
+-.rmci-icon-btn:hover, .rmci-heading-btn:hover { background: var(--rmci-hover); color: var(--rmci-fg); }
+-.rmci-icon-btn.is-active, .rmci-heading-btn.is-active, .rmci-icon-btn.is-open, .rmci-heading-btn.is-open {
+-  background: var(--rmci-active); color: var(--rmci-fg);
+-}
+-.rmci-icon-btn:disabled { opacity: .4; pointer-events: none; }
+-.rmci-icon-btn:focus-visible, .rmci-heading-btn:focus-visible, .rmci-model-btn:focus-visible,
+-.rmci-codeblock-btn:focus-visible, .rmci-lang-btn:focus-visible, .rmci-menu-item:focus-visible {
+-  outline: 2px solid var(--rmci-ring); outline-offset: 1px;
+-}
+-.rmci-icon { display: block; flex-shrink: 0; }
+-
+-/* ── Bottom bar ── */
+-.rmci-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px 10px; }
+-.rmci-bar-start, .rmci-bar-end { display: flex; align-items: center; gap: 4px; min-width: 0; }
+-.rmci-bar-end { gap: 6px; }
+-.rmci-model-slot { display: contents; }
+-
+-.rmci-model-wrap { display: inline-flex; min-width: 0; }
+-.rmci-model-btn {
+-  display: inline-flex; align-items: center; gap: 6px; height: 32px; max-width: 170px; padding: 0 12px;
+-  border: 1px solid var(--rmci-border); border-radius: 999px;
+-  background: color-mix(in srgb, var(--rmci-fg) 3%, transparent);
+-  color: var(--rmci-muted); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer;
+-  transition: background .15s ease, color .15s ease;
+-}
+-.rmci-model-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+-.rmci-model-btn:hover:not(:disabled) { background: var(--rmci-hover); color: var(--rmci-fg); }
+-.rmci-model-btn:disabled { opacity: .55; cursor: not-allowed; }
+-.rmci-model-btn .rmci-icon { transition: transform .2s ease; }
+-.rmci-model-btn.is-open .rmci-icon { transform: rotate(180deg); }
+-
+-.rmci-hint { margin: 6px 0 0; text-align: center; font-size: 11px; color: color-mix(in srgb, var(--rmci-muted) 80%, transparent); }
+-
+-/* ── Menus (portaled to <body>) ── */
+-.rmci-menu {
+-  z-index: var(--z-toast, 7000);
+-  min-width: 160px; max-width: calc(100vw - 16px); max-height: min(340px, calc(100vh - 16px)); overflow-y: auto;
+-  padding: 4px; border: 1px solid var(--rmci-border); border-radius: 14px;
+-  background: var(--rmci-card); color: var(--rmci-fg);
+-  box-shadow: 0 16px 40px rgba(0, 0, 0, .35);
+-  animation: rmci-pop .15s ease;
+-}
+-.rmci-lang-menu { width: 160px; }
+-.rmci-menu-item {
+-  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px;
+-  border: 0; border-radius: 10px; background: transparent; color: inherit;
+-  font: inherit; font-size: 13.5px; text-align: start; cursor: pointer;
+-}
+-.rmci-menu-item--compact { justify-content: space-between; padding: 6px 10px; font-size: 12px; text-align: left; }
+-.rmci-menu-item:hover, .rmci-menu-item:focus-visible { background: var(--rmci-hover); }
+-.rmci-menu-icon { color: var(--rmci-muted); display: inline-flex; }
+-.rmci-menu-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+-.rmci-menu-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+-.rmci-menu-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--rmci-muted); }
+-.rmci-menu-check { color: var(--rmci-ring, #b94a16); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+-.rmci-menu-spacer { display: inline-block; width: 16px; height: 16px; flex-shrink: 0; }
+-
+-.rmci-menu-section-header {
+-  padding: 6px 10px 2px;
+-  font-size: 11px;
+-  font-weight: 700;
+-  color: var(--rmci-muted);
+-  letter-spacing: 0.03em;
+-}
+-
+-.rmci-menu-divider {
+-  height: 1px;
+-  margin: 6px 4px;
+-  background: var(--rmci-border);
+-}
+-
+-.rmci-menu-item--submenu {
+-  display: flex;
+-  align-items: center;
+-  justify-content: space-between;
+-  width: calc(100% - 8px);
+-  margin: 6px 4px 2px;
+-  padding: 8px 10px;
+-  border: 1px solid var(--rmci-border);
+-  border-radius: 10px;
+-  background: color-mix(in srgb, var(--rmci-card) 92%, var(--rmci-fg) 4%);
+-  cursor: pointer;
+-  transition: background 0.15s ease, border-color 0.15s ease;
+-}
+-
+-.rmci-menu-item--submenu:hover,
+-.rmci-menu-item--submenu.is-active,
+-.rmci-menu-item--submenu:focus-visible {
+-  background: var(--rmci-hover);
+-  border-color: color-mix(in srgb, var(--rmci-ring) 50%, var(--rmci-border));
+-}
+-
+-.rmci-menu-arrow {
+-  display: inline-flex;
+-  align-items: center;
+-  justify-content: center;
+-  color: var(--rmci-muted);
+-  flex-shrink: 0;
+-  margin-inline-start: 8px;
+-  transition: transform 0.15s ease;
+-}
+-
+-.rmci-menu-item--submenu.is-active .rmci-menu-arrow {
+-  transform: translateX(-3px);
+-  color: var(--rmci-fg);
+-}
+-
+-.rmci-menu-item.is-locked {
+-  opacity: 0.78;
+-}
+-
+-.rmci-menu-item.is-locked:hover {
+-  background: color-mix(in srgb, var(--rmci-hover) 75%, transparent);
+-}
+-
+-.rmci-menu-lock {
+-  display: inline-flex;
+-  align-items: center;
+-  justify-content: center;
+-  color: var(--rmci-muted);
+-  flex-shrink: 0;
+-}
+-
+-.rmci-submenu {
+-  min-width: 210px;
+-  max-width: 280px;
+-  z-index: calc(var(--z-toast, 7000) + 1);
+-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+-}
+-
+-/* ── "View Usage" row + flyout ── */
+-.rmci-menu-usage-lead { display: inline-flex; align-items: center; gap: 8px; }
+-.rmci-submenu:has(.rmci-usage-body) { min-width: 250px; max-width: 300px; padding: 6px; }
+-.rmci-usage-head { padding: 6px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .02em; color: var(--rmci-muted); }
+-.rmci-usage-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 10px; }
+-.rmci-usage-row:hover { background: var(--rmci-hover); }
+-.rmci-usage-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+-.rmci-usage-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+-.rmci-usage-name { font-size: 13px; font-weight: 600; color: var(--rmci-fg); }
+-.rmci-usage-pct { font-size: 12px; color: var(--rmci-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+-.rmci-usage-sub { font-size: 11px; color: var(--rmci-muted); }
+-.rmci-usage-ring { flex-shrink: 0; }
+-.rmci-usage-ring-bg { fill: none; stroke: color-mix(in srgb, var(--rmci-fg) 18%, transparent); stroke-width: 2.5; }
+-.rmci-usage-ring-fg { fill: none; stroke: #4caf6a; stroke-width: 2.5; stroke-linecap: round; transition: stroke-dashoffset .4s ease; }
+-.rmci-usage-row.is-warn .rmci-usage-ring-fg { stroke: #e0a030; }
+-.rmci-usage-row.is-low .rmci-usage-ring-fg { stroke: #e05050; }
+-.rmci-usage-source { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 4px 4px; padding: 6px 10px; border-radius: 10px; font-size: 12px; border: 1px solid var(--rmci-border); }
+-.rmci-usage-source-label { color: var(--rmci-muted); }
+-.rmci-usage-source-value { font-weight: 600; color: var(--rmci-fg); }
+-.rmci-usage-source.is-own { border-color: color-mix(in srgb, var(--rmci-ring) 55%, var(--rmci-border)); }
+-.rmci-usage-row.is-current { background: color-mix(in srgb, var(--rmci-ring) 10%, transparent); }
+-.rmci-usage-note { padding: 10px; font-size: 12px; color: var(--rmci-muted); }
+-
+-/* ── ProseMirror content ── */
+-.rmci-editor .ProseMirror { outline: none; min-height: 1.75rem; word-break: break-word; font-size: .9375rem; line-height: 1.6; white-space: pre-wrap; }
+-.rmci-editor .ProseMirror > *:first-child { margin-top: 0; }
+-.rmci-editor .ProseMirror > *:last-child { margin-bottom: 0; }
+-.rmci-editor .ProseMirror p { margin: .25rem 0; }
+-.rmci-editor .ProseMirror p.is-editor-empty:first-child::before {
+-  content: attr(data-placeholder); float: inline-start; height: 0; pointer-events: none;
+-  color: color-mix(in srgb, currentColor 45%, transparent);
+-}
+-.rmci-ph-rtl .ProseMirror p.is-editor-empty:first-child::before { float: right; direction: rtl; }
+-.rmci-editor .ProseMirror h1 { font-size: 1.5rem; line-height: 1.25; font-weight: 700; margin: .75rem 0 .25rem; letter-spacing: -.01em; }
+-.rmci-editor .ProseMirror h2 { font-size: 1.25rem; line-height: 1.3; font-weight: 650; margin: .65rem 0 .25rem; letter-spacing: -.01em; }
+-.rmci-editor .ProseMirror h3 { font-size: 1.075rem; line-height: 1.35; font-weight: 600; margin: .55rem 0 .2rem; }
+-.rmci-editor .ProseMirror ul { list-style: disc; padding-inline-start: 1.4rem; padding-inline-end: 0; margin: .3rem 0; }
+-.rmci-editor .ProseMirror ol { list-style: decimal; padding-inline-start: 1.4rem; padding-inline-end: 0; margin: .3rem 0; }
+-.rmci-editor .ProseMirror li { margin: .1rem 0; }
+-.rmci-editor .ProseMirror li > p { margin: 0; }
+-.rmci-editor .ProseMirror li::marker { color: color-mix(in srgb, currentColor 55%, transparent); }
+-.rmci-editor .ProseMirror blockquote {
+-  margin: .5rem 0; padding: .35rem .9rem;
+-  border-inline-start: 3px solid color-mix(in srgb, currentColor 30%, transparent);
+-  background: color-mix(in srgb, currentColor 5%, transparent);
+-  border-start-end-radius: .6rem; border-end-end-radius: .6rem;
+-}
+-/* Lists / quotes can't use dir="auto" themselves; flip them from their first block. */
+-.rmci-editor .ProseMirror :is(ul, ol):has(> li:first-child > :is(p, h1, h2, h3):dir(rtl)),
+-.rmci-editor .ProseMirror blockquote:has(> :is(p, h1, h2, h3):first-child:dir(rtl)) { direction: rtl; }
+-.rmci-editor .ProseMirror code:not(pre code) {
+-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em; padding: .12rem .38rem; border-radius: .4rem;
+-  background: color-mix(in srgb, currentColor 10%, transparent); border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+-  unicode-bidi: isolate;
+-}
+-.rmci-editor .ProseMirror pre code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+-.rmci-editor .ProseMirror hr { border: 0; border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent); margin: .75rem 0; }
+-.rmci-editor .ProseMirror u { text-underline-offset: 3px; }
+-.rmci-editor .ProseMirror ::selection { background: color-mix(in srgb, currentColor 22%, transparent); }
+-
+-/* command / mention tokens (replaces the old textarea mirror highlighter) */
+-.rmci-token { border-radius: 6px; padding: 0 3px; font-weight: 600; }
+-.rmci-token--command { color: var(--rmci-ring); background: color-mix(in srgb, var(--rmci-ring) 14%, transparent); }
+-.rmci-token--mention { color: #2f7de1; background: color-mix(in srgb, #2f7de1 14%, transparent); }
+-
+-/* ── Code block ── */
+-.rmci-codeblock {
+-  margin: .5rem 0; overflow: hidden; text-align: left;
+-  border: 1px solid var(--rmci-border); border-radius: 14px;
+-  background: color-mix(in srgb, var(--color-background-secondary, #f4f6fb) 70%, transparent);
+-}
+-.rmci-codeblock-header {
+-  display: flex; align-items: center; justify-content: space-between; padding: 4px 10px;
+-  border-bottom: 1px solid var(--rmci-border); background: color-mix(in srgb, var(--rmci-fg) 3%, transparent);
+-  user-select: none;
+-}
+-.rmci-codeblock-actions { display: flex; align-items: center; gap: 4px; }
+-.rmci-codeblock-btn {
+-  display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px; border: 0; border-radius: 8px;
+-  background: transparent; color: var(--rmci-muted); font: inherit; font-size: 11px; font-weight: 500; cursor: pointer;
+-  transition: background .15s ease, color .15s ease;
+-}
+-.rmci-codeblock-btn:hover { background: var(--rmci-hover); color: var(--rmci-fg); }
+-.rmci-codeblock-btn.is-done .rmci-icon { color: #34d399; }
+-.rmci-lang-btn {
+-  display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px 0 8px;
+-  border: 1px solid var(--rmci-border); border-radius: 8px; background: color-mix(in srgb, var(--rmci-card) 80%, transparent);
+-  color: color-mix(in srgb, var(--rmci-fg) 80%, transparent); font: inherit; font-size: 11px; font-weight: 500; cursor: pointer;
+-}
+-.rmci-lang-btn:hover { background: var(--rmci-hover); }
+-.rmci-lang-btn .rmci-icon { color: var(--rmci-muted); transition: transform .2s ease; }
+-.rmci-lang-btn.is-open .rmci-icon { transform: rotate(180deg); }
+-.rmci-codeblock-pre {
+-  margin: 0; padding: 12px 14px; overflow-x: auto; overflow-y: auto; max-height: 32rem;
+-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.6;
+-  transition: max-height .3s ease-out; tab-size: 2;
+-}
+-.rmci-codeblock-pre.is-collapsed { max-height: 3.25rem; overflow-y: hidden; }
+-.rmci-codeblock-fade { height: 24px; margin-top: -24px; pointer-events: none; background: linear-gradient(to top, var(--rmci-card), transparent); position: relative; }
+-.rmci-codeblock-fade[hidden] { display: none; }
+-
+-.rmci-editor .hljs-comment, .rmci-editor .hljs-quote { color: var(--rmci-comment); font-style: italic; }
+-.rmci-editor .hljs-keyword, .rmci-editor .hljs-selector-tag, .rmci-editor .hljs-literal, .rmci-editor .hljs-doctag { color: var(--rmci-kw); }
+-.rmci-editor .hljs-string, .rmci-editor .hljs-regexp, .rmci-editor .hljs-addition { color: var(--rmci-str); }
+-.rmci-editor .hljs-number, .rmci-editor .hljs-symbol, .rmci-editor .hljs-bullet, .rmci-editor .hljs-meta { color: var(--rmci-num); }
+-.rmci-editor .hljs-title, .rmci-editor .hljs-section, .rmci-editor .hljs-title.function_ { color: var(--rmci-fn); }
+-.rmci-editor .hljs-built_in, .rmci-editor .hljs-type, .rmci-editor .hljs-class .hljs-title { color: var(--rmci-type); }
+-.rmci-editor .hljs-attr, .rmci-editor .hljs-attribute, .rmci-editor .hljs-variable, .rmci-editor .hljs-template-variable,
+-.rmci-editor .hljs-property, .rmci-editor .hljs-name, .rmci-editor .hljs-tag { color: var(--rmci-attr); }
+-.rmci-editor .hljs-deletion { color: var(--rmci-del); }
+-.rmci-editor .hljs-emphasis { font-style: italic; }
+-.rmci-editor .hljs-strong { font-weight: 700; }
+-
+-/* while the editor module is still loading, keep the box the right height */
+-.rmci-root:not(.is-ready) .rmci-host { min-height: 1.75rem; }
+-
+-@keyframes rmci-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+-@keyframes rmci-fade-down { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+-@media (prefers-reduced-motion: reduce) {
+-  .rmci-menu, .rmci-toolbar-slot, .rmci-codeblock-pre { animation: none; transition: none; }
+-}
+diff -ruN a/public/src/components/ai-agent/rich-input/rich-input.js b/public/src/components/ai-agent/rich-input/rich-input.js
+--- a/public/src/components/ai-agent/rich-input/rich-input.js	2026-11-15 18:16:44.178371629 +0000
++++ b/public/src/components/ai-agent/rich-input/rich-input.js	1970-01-01 00:00:00.000000000 +0000
+@@ -1,845 +0,0 @@
+-// =============================================================================
+-// rich-input/rich-input.js
+-// Vanilla-JS port of the 21st.dev "Rich Markdown AI Input Field" (Tiptap):
+-// formatting toolbar (headings, bold/italic/underline/strike, inline code,
+-// lists, quote), fenced code blocks with language menu / copy / collapse,
+-// per-block RTL/LTR, model menu, send / stop.
+-//
+-// Tiptap + lowlight are loaded lazily from /assets/vendor/tiptap/tiptap.js
+-// (built by runtimes/build.mjs, target "tiptap-vendor"), so pages only pay for
+-// them when the AI window is actually opened. Everything in this folder is
+-// plain, editable source.
+-//
+-// INTEGRATION CONTRACT
+-//   const rich = createRichInput({ placeholder, getCommands, getMentions, onSubmit });
+-//   rich.el          -> mount this
+-//   rich.startSlot   -> .rmci-bar-start  (append the "+" button etc.)
+-//   rich.endSlot     -> .rmci-bar-end    (append mic / send etc.)
+-//   rich.textarea    -> a <textarea>-compatible adapter (see below)
+-//   rich.getMarkdown(), rich.clear(), rich.focus(), rich.setModels({...})
+-//
+-// The adapter is the `.rmci-host` element itself, extended with the textarea
+-// members the chat panel / @-mention / slash menus use: value, selectionStart,
+-// selectionEnd, setSelectionRange(), focus(), disabled. `value` is the plain
+-// text (blocks joined by "\n"); assigning to it performs a minimal text diff
+-// so formatting elsewhere in the draft survives (e.g. picking an @mention).
+-// Programmatic changes never fire "input" (like a real textarea); user edits
+-// fire one synthetic "input" event per document change. "keydown" listeners
+-// are registered in the capture phase so menus can intercept arrows/Enter/Esc
+-// before ProseMirror sees them.
+-// =============================================================================
+-import { icon } from "./icons.js";
+-import { toMarkdown } from "./markdown-serializer.js";
+-import { buildExtensions } from "./extensions.js";
+-import { formatReset } from "../ai-agent-usage.js";
+-
+-const VENDOR_URL = globalThis.__RMCI_VENDOR_URL__ || "/assets/vendor/tiptap/tiptap.js"; // override hook: tests
+-const RTL_CHARS = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+-let vendorPromise = null;
+-
+-function loadVendor() {
+-  if (!vendorPromise) {
+-    vendorPromise = import(/* @vite-ignore */ VENDOR_URL).catch((err) => {
+-      vendorPromise = null;
+-      throw err;
+-    });
+-  }
+-  return vendorPromise;
+-}
+-
+-const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+-const textToHtml = (text) => text.split("\n").map((l) => `<p>${escapeHtml(l)}</p>`).join("");
+-
+-/** All text blocks of a doc with their start position and length. */
+-function textBlocks(doc) {
+-  const out = [];
+-  doc.descendants((node, pos) => {
+-    if (node.isTextblock) {
+-      out.push({ start: pos + 1, len: node.content.size, node });
+-      return false;
+-    }
+-    return true;
+-  });
+-  return out;
+-}
+-
+-function plainTextOf(doc) {
+-  return textBlocks(doc).map((b) => b.node.textBetween(0, b.node.content.size, "", "\n")).join("\n");
+-}
+-
+-function offsetToPos(doc, off) {
+-  const blocks = textBlocks(doc);
+-  if (!blocks.length) return 1;
+-  let base = 0;
+-  for (const b of blocks) {
+-    if (off <= base + b.len) return b.start + Math.max(0, off - base);
+-    base += b.len + 1;
+-  }
+-  const last = blocks[blocks.length - 1];
+-  return last.start + last.len;
+-}
+-
+-function posToOffset(doc, pos) {
+-  let base = 0;
+-  for (const b of textBlocks(doc)) {
+-    if (pos <= b.start + b.len) return base + Math.min(b.len, Math.max(0, pos - b.start));
+-    base += b.len + 1;
+-  }
+-  return base > 0 ? base - 1 : 0;
+-}
+-
+-/** Opens a fixed-position popup menu next to `trigger`; returns a close fn. */
+-function openMenu(trigger, build, { align = "start", rtl = false, width } = {}) {
+-  const menu = document.createElement("div");
+-  menu.className = "rmci-menu";
+-  menu.setAttribute("role", "menu");
+-  menu.dir = rtl ? "rtl" : "ltr";
+-  if (width) menu.style.width = `${width}px`;
+-  const close = () => {
+-    menu.remove();
+-    trigger.setAttribute("aria-expanded", "false");
+-    trigger.classList.remove("is-open");
+-    document.removeEventListener("pointerdown", onDown, true);
+-    document.removeEventListener("mousedown", onDown, true);
+-    document.removeEventListener("keydown", onKey, true);
+-    window.removeEventListener("resize", close);
+-    window.removeEventListener("scroll", onScroll, true);
+-    window.removeEventListener("aiw:close-popups", close);
+-    window.removeEventListener("blur", close);
+-  };
+-  const onDown = (e) => {
+-    const isSub = e.target.closest && e.target.closest(".rmci-submenu");
+-    if (!menu.contains(e.target) && !trigger.contains(e.target) && !isSub) close();
+-  };
+-  const onScroll = (e) => {
+-    if (menu.contains(e.target) || e.target.closest?.(".rmci-submenu")) return;
+-    close();
+-  };
+-  const onKey = (e) => {
+-    if (e.key === "Escape") {
+-      e.stopPropagation();
+-      const sub = document.querySelector(".rmci-submenu");
+-      if (sub) {
+-        sub.remove();
+-        document.querySelector(".rmci-menu-item--submenu.is-active")?.classList.remove("is-active");
+-      } else {
+-        close();
+-      }
+-    }
+-  };
+-  build(menu, close);
+-  document.body.appendChild(menu);
+-
+-  const r = trigger.getBoundingClientRect();
+-  const mw = menu.offsetWidth;
+-  menu.style.position = "fixed";
+-  let left = align === "end" ? r.right - mw : r.left;
+-  left = Math.max(8, Math.min(left, window.innerWidth - mw - 8));
+-  menu.style.left = `${left}px`;
+-  const mh = menu.offsetHeight;
+-  const above = r.top;
+-  if (r.bottom + mh + 8 > window.innerHeight && above > mh + 8) menu.style.top = `${r.top - mh - 6}px`;
+-  else menu.style.top = `${r.bottom + 6}px`;
+-
+-  document.addEventListener("pointerdown", onDown, true);
+-  document.addEventListener("mousedown", onDown, true);
+-  document.addEventListener("keydown", onKey, true);
+-  window.addEventListener("resize", close);
+-  window.addEventListener("scroll", onScroll, true);
+-  window.addEventListener("aiw:close-popups", close);
+-  window.addEventListener("blur", close);
+-  trigger.setAttribute("aria-expanded", "true");
+-  trigger.classList.add("is-open");
+-  return close;
+-}
+-
+-/** One provider row of the usage flyout: name + "% left" + reset line + ring. */
+-function usageRow(g) {
+-  const pct = Math.max(0, Math.min(100, Number(g.percentLeft) || 0));
+-  const row = document.createElement("div");
+-  row.className = `rmci-usage-row${pct <= 10 ? " is-low" : pct <= 30 ? " is-warn" : ""}`;
+-  row.setAttribute("role", "group");
+-  const R = 8, C = 2 * Math.PI * R;
+-  row.innerHTML =
+-    '<span class="rmci-usage-text"><span class="rmci-usage-top"><span class="rmci-usage-name"></span><span class="rmci-usage-pct"></span></span><span class="rmci-usage-sub"></span></span>' +
+-    `<svg class="rmci-usage-ring" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="${R}" class="rmci-usage-ring-bg"/><circle cx="11" cy="11" r="${R}" class="rmci-usage-ring-fg" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C * (1 - pct / 100)).toFixed(2)}" transform="rotate(-90 11 11)"/></svg>`;
+-  row.querySelector(".rmci-usage-name").textContent = g.label;
+-  row.querySelector(".rmci-usage-pct").textContent = `المتبقي ${pct}%`;
+-  row.querySelector(".rmci-usage-sub").textContent = g.resetsAt ? formatReset(g.resetsAt) : "الحد الأسبوعي";
+-  return row;
+-}
+-
+-function menuItem({ iconHtml = "", label, hint = "", selected = false, locked = false, leadingCheck = false, onClick }) {
+-  const item = document.createElement("button");
+-  item.type = "button";
+-  item.className = `rmci-menu-item${locked ? " is-locked" : ""}`;
+-  item.setAttribute("role", "menuitem");
+-
+-  let leading = "";
+-  let trailing = "";
+-
+-  if (locked) {
+-    leading = `<span class="rmci-menu-lock">${icon("lock", 15)}</span>`;
+-  } else if (leadingCheck) {
+-    if (selected) {
+-      leading = `<span class="rmci-menu-check">${icon("check", 16)}</span>`;
+-    } else {
+-      leading = `<span class="rmci-menu-spacer" aria-hidden="true"></span>`;
+-    }
+-  } else if (iconHtml) {
+-    leading = `<span class="rmci-menu-icon">${iconHtml}</span>`;
+-    if (selected) {
+-      trailing = `<span class="rmci-menu-check">${icon("check", 16)}</span>`;
+-    }
+-  } else if (selected) {
+-    trailing = `<span class="rmci-menu-check">${icon("check", 16)}</span>`;
+-  }
+-
+-  item.innerHTML =
+-    leading +
+-    `<span class="rmci-menu-text"><span class="rmci-menu-label"></span>${hint ? '<span class="rmci-menu-hint"></span>' : ""}</span>` +
+-    trailing;
+-  item.querySelector(".rmci-menu-label").textContent = label;
+-  if (hint) item.querySelector(".rmci-menu-hint").textContent = hint;
+-  item.addEventListener("mousedown", (e) => e.preventDefault());
+-  item.addEventListener("click", onClick);
+-  return item;
+-}
+-
+-/**
+- * @param {object} [options]
+- * @param {string} [options.placeholder]
+- * @param {"auto"|"ltr"|"rtl"} [options.direction]
+- * @param {number} [options.maxHeight] px before the editor scrolls
+- * @param {string} [options.hint] small line under the field ("" hides it)
+- * @param {() => Array} [options.getCommands] slash commands to highlight
+- * @param {() => Array} [options.getMentions] @mention tokens to highlight
+- * @param {() => boolean} [options.onSubmit] Ctrl/Cmd+Enter
+- * @param {(markdown: string) => void} [options.onChange]
+- */
+-export function createRichInput(options = {}) {
+-  const opts = {
+-    placeholder: "",
+-    direction: "auto",
+-    maxHeight: 320,
+-    hint: "",
+-    ...options,
+-  };
+-  const rtlPlaceholder = opts.direction === "rtl" || (opts.direction === "auto" && RTL_CHARS.test(opts.placeholder));
+-
+-  // ── DOM shell ────────────────────────────────────────────────────────────
+-  const root = document.createElement("div");
+-  root.className = `rmci-root${rtlPlaceholder ? " rmci-ph-rtl" : ""}`;
+-
+-  const shell = document.createElement("div");
+-  shell.className = "rmci-editor";
+-
+-  const toolbarSlot = document.createElement("div");
+-  toolbarSlot.className = "rmci-toolbar-slot";
+-  toolbarSlot.hidden = true;
+-
+-  const scroller = document.createElement("div");
+-  scroller.className = "rmci-scroll";
+-  scroller.style.maxHeight = `${opts.maxHeight}px`;
+-
+-  const host = document.createElement("div");
+-  host.className = "rmci-host";
+-  scroller.appendChild(host);
+-
+-  const bar = document.createElement("div");
+-  bar.className = "rmci-bar";
+-  const startSlot = document.createElement("div");
+-  startSlot.className = "rmci-bar-start";
+-  const endSlot = document.createElement("div");
+-  endSlot.className = "rmci-bar-end";
+-
+-  const formatBtn = document.createElement("button");
+-  formatBtn.type = "button";
+-  formatBtn.className = "rmci-icon-btn";
+-  formatBtn.title = "إظهار التنسيق";
+-  formatBtn.setAttribute("aria-label", "إظهار التنسيق");
+-  formatBtn.setAttribute("aria-pressed", "false");
+-  formatBtn.innerHTML = icon("type", 16);
+-  formatBtn.addEventListener("mousedown", (e) => e.preventDefault());
+-  startSlot.appendChild(formatBtn);
+-
+-  const modelSlot = document.createElement("div");
+-  modelSlot.className = "rmci-model-slot";
+-  endSlot.appendChild(modelSlot);
+-
+-  bar.append(startSlot, endSlot);
+-  shell.append(toolbarSlot, scroller, bar);
+-  root.appendChild(shell);
+-
+-  if (opts.hint) {
+-    const hint = document.createElement("p");
+-    hint.className = "rmci-hint";
+-    hint.textContent = opts.hint;
+-    root.appendChild(hint);
+-  }
+-
+-  // Only the padding area focuses the editor; never steal focus from controls.
+-  scroller.addEventListener("mousedown", (e) => {
+-    if (e.target === scroller) {
+-      e.preventDefault();
+-      focus("end");
+-    }
+-  });
+-
+-  // ── State ────────────────────────────────────────────────────────────────
+-  let editor = null;
+-  let silent = 0;
+-  let pendingValue = "";
+-  let disabled = false;
+-  let wantFocus = null;
+-  let destroyed = false;
+-  let toolbarEl = null;
+-  let toolbarOpen = false;
+-
+-  const withSilent = (fn) => {
+-    silent++;
+-    try { return fn(); } finally { silent--; }
+-  };
+-
+-  const getText = () => (editor ? plainTextOf(editor.state.doc) : pendingValue);
+-  const isEmpty = () => (editor ? editor.isEmpty : pendingValue.trim() === "");
+-  const getMarkdown = () => (editor ? toMarkdown(editor.getJSON()) : pendingValue.trim());
+-
+-  function focus(where) {
+-    if (!editor) { wantFocus = where || true; return; }
+-    if (disabled) return;
+-    editor.commands.focus(where);
+-  }
+-
+-  // ── <textarea> adapter (on the host element itself) ──────────────────────
+-  const nativeAdd = host.addEventListener.bind(host);
+-  const nativeRemove = host.removeEventListener.bind(host);
+-  const capOpt = (type, o) => (type === "keydown" ? (typeof o === "object" && o ? { ...o, capture: true } : true) : o);
+-
+-  // Real (trusted) `input` events come from the contenteditable and don't cover
+-  // ProseMirror-handled edits; we emit one synthetic event per doc change instead.
+-  nativeAdd("input", (e) => { if (e.isTrusted) e.stopImmediatePropagation(); });
+-  host.addEventListener = (type, fn, o) => nativeAdd(type, fn, capOpt(type, o));
+-  host.removeEventListener = (type, fn, o) => nativeRemove(type, fn, capOpt(type, o));
+-
+-  Object.defineProperties(host, {
+-    value: {
+-      get: getText,
+-      set(v) {
+-        v = String(v ?? "");
+-        if (!editor) { pendingValue = v; return; }
+-        const cur = getText();
+-        if (cur === v) return;
+-        withSilent(() => {
+-          if (v === "") {
+-            editor.commands.clearContent(false);
+-            return;
+-          }
+-          let p = 0;
+-          while (p < cur.length && p < v.length && cur[p] === v[p]) p++;
+-          let s = 0;
+-          while (s < cur.length - p && s < v.length - p && cur[cur.length - 1 - s] === v[v.length - 1 - s]) s++;
+-          const ins = v.slice(p, v.length - s);
+-          if (ins.includes("\n")) {
+-            editor.commands.setContent(textToHtml(v), { emitUpdate: false });
+-            return;
+-          }
+-          const doc = editor.state.doc;
+-          const from = offsetToPos(doc, p);
+-          const to = offsetToPos(doc, cur.length - s);
+-          const tr = editor.state.tr;
+-          if (ins) tr.insertText(ins, from, to);
+-          else tr.delete(from, to);
+-          editor.view.dispatch(tr);
+-        });
+-      },
+-    },
+-    selectionStart: {
+-      get: () => (editor ? posToOffset(editor.state.doc, editor.state.selection.from) : pendingValue.length),
+-    },
+-    selectionEnd: {
+-      get: () => (editor ? posToOffset(editor.state.doc, editor.state.selection.to) : pendingValue.length),
+-    },
+-    disabled: {
+-      get: () => disabled,
+-      set(v) {
+-        disabled = !!v;
+-        root.classList.toggle("is-disabled", disabled);
+-        editor?.setEditable(!disabled);
+-        formatBtn.disabled = disabled;
+-      },
+-    },
+-    setSelectionRange: {
+-      value(a, b = a) {
+-        if (!editor) return;
+-        const doc = editor.state.doc;
+-        editor.commands.setTextSelection({ from: offsetToPos(doc, a), to: offsetToPos(doc, b) });
+-      },
+-    },
+-    focus: { value: (o) => focus(o && typeof o === "string" ? o : undefined) },
+-  });
+-
+-  /** Enter must keep its editor meaning (list item, code fence, code block…) instead of sending. */
+-  function enterIsStructural() {
+-    if (!editor) return false;
+-    const { $from, empty } = editor.state.selection;
+-    const parent = $from.parent;
+-    if (editor.isActive("codeBlock") || editor.isActive("bulletList") || editor.isActive("orderedList") || editor.isActive("blockquote")) return true;
+-    return empty && parent.type.name === "paragraph" && /^```[\w+#.-]*$/.test(parent.textContent);
+-  }
+-
+-  // ── Formatting toolbar ───────────────────────────────────────────────────
+-  const TOOLBAR_BUTTONS = [
+-    { id: "bold", icon: "bold", label: "عريض (Ctrl+B)", active: (e) => e.isActive("bold"), run: (c) => c.toggleBold() },
+-    { id: "italic", icon: "italic", label: "مائل (Ctrl+I)", active: (e) => e.isActive("italic"), run: (c) => c.toggleItalic() },
+-    { id: "underline", icon: "underline", label: "تحته خط (Ctrl+U)", active: (e) => e.isActive("underline"), run: (c) => c.toggleUnderline() },
+-    { id: "strike", icon: "strike", label: "يتوسطه خط", active: (e) => e.isActive("strike"), run: (c) => c.toggleStrike() },
+-    { id: "code", icon: "code", label: "كود مضمّن", active: (e) => e.isActive("code"), run: (c) => c.toggleCode() },
+-    "|",
+-    { id: "bullet", icon: "list", label: "قائمة نقطية", active: (e) => e.isActive("bulletList"), run: (c) => c.toggleBulletList() },
+-    { id: "ordered", icon: "listOrdered", label: "قائمة مرقّمة", active: (e) => e.isActive("orderedList"), run: (c) => c.toggleOrderedList() },
+-    { id: "quote", icon: "quote", label: "اقتباس", active: (e) => e.isActive("blockquote"), run: (c) => c.toggleBlockquote() },
+-    { id: "codeBlock", icon: "codeBlock", label: "كتلة كود", active: (e) => e.isActive("codeBlock"), run: (c) => c.toggleCodeBlock() },
+-  ];
+-  const HEADINGS = [
+-    { level: 0, icon: "type", label: "فقرة", hint: "" },
+-    { level: 1, icon: "h1", label: "عنوان 1", hint: "# " },
+-    { level: 2, icon: "h2", label: "عنوان 2", hint: "## " },
+-    { level: 3, icon: "h3", label: "عنوان 3", hint: "### " },
+-  ];
+-
+-  function buildToolbar() {
+-    const tb = document.createElement("div");
+-    tb.className = "rmci-toolbar";
+-    tb.setAttribute("role", "toolbar");
+-    tb.setAttribute("aria-label", "التنسيق");
+-    tb.dir = "ltr";
+-
+-    const headingBtn = document.createElement("button");
+-    headingBtn.type = "button";
+-    headingBtn.className = "rmci-heading-btn";
+-    headingBtn.title = "نمط النص";
+-    headingBtn.setAttribute("aria-label", "نمط النص");
+-    headingBtn.setAttribute("aria-haspopup", "menu");
+-    headingBtn.setAttribute("aria-expanded", "false");
+-    headingBtn.addEventListener("mousedown", (e) => e.preventDefault());
+-    const currentLevel = () => [1, 2, 3].find((l) => editor.isActive("heading", { level: l })) || 0;
+-    headingBtn.addEventListener("click", () => {
+-      if (headingBtn.classList.contains("is-open")) return;
+-      const cur = currentLevel();
+-      openMenu(headingBtn, (menu, close) => {
+-        HEADINGS.forEach((h) => {
+-          menu.appendChild(menuItem({
+-            iconHtml: icon(h.icon, 16), label: h.label, hint: h.hint, selected: cur === h.level,
+-            onClick: () => {
+-              const chain = editor.chain().focus();
+-              (h.level === 0 ? chain.setParagraph() : chain.setHeading({ level: h.level })).run();
+-              close();
+-            },
+-          }));
+-        });
+-      }, { rtl: true, width: 190 });
+-    });
+-    tb.appendChild(headingBtn);
+-
+-    const buttons = [];
+-    const divider = () => { const d = document.createElement("span"); d.className = "rmci-divider"; d.setAttribute("aria-hidden", "true"); return d; };
+-    tb.appendChild(divider());
+-    for (const def of TOOLBAR_BUTTONS) {
+-      if (def === "|") { tb.appendChild(divider()); continue; }
+-      const b = document.createElement("button");
+-      b.type = "button";
+-      b.className = "rmci-icon-btn";
+-      b.title = def.label;
+-      b.setAttribute("aria-label", def.label);
+-      b.setAttribute("aria-pressed", "false");
+-      b.innerHTML = icon(def.icon, 16);
+-      b.addEventListener("mousedown", (e) => e.preventDefault());
+-      b.addEventListener("click", () => def.run(editor.chain().focus()).run());
+-      tb.appendChild(b);
+-      buttons.push([def, b]);
+-    }
+-
+-    tb.update = () => {
+-      if (!editor) return;
+-      const level = currentLevel();
+-      const h = HEADINGS.find((x) => x.level === level);
+-      headingBtn.innerHTML = `${icon(h.icon, 16)}${icon("chevronDown", 12)}`;
+-      headingBtn.classList.toggle("is-active", level > 0);
+-      for (const [def, b] of buttons) {
+-        const on = def.active(editor);
+-        b.classList.toggle("is-active", on);
+-        b.setAttribute("aria-pressed", String(on));
+-      }
+-    };
+-    return tb;
+-  }
+-
+-  function setToolbar(open) {
+-    toolbarOpen = open;
+-    formatBtn.classList.toggle("is-active", open);
+-    formatBtn.setAttribute("aria-pressed", String(open));
+-    const label = open ? "إخفاء التنسيق" : "إظهار التنسيق";
+-    formatBtn.title = label;
+-    formatBtn.setAttribute("aria-label", label);
+-    if (open && editor && !toolbarEl) {
+-      toolbarEl = buildToolbar();
+-      toolbarSlot.appendChild(toolbarEl);
+-    }
+-    toolbarSlot.hidden = !open || !editor;
+-    if (open) toolbarEl?.update();
+-  }
+-  formatBtn.addEventListener("click", () => setToolbar(!toolbarOpen));
+-
+-  // ── Model menu ───────────────────────────────────────────────────────────
+-  /**
+-   * @param {{ items: Array<{id:string,label:string,description?:string,locked?:boolean}>, value: string,
+-   *           effortLevels?: Array<{id:string,label:string,hint?:string}>, selectedEffort?: string,
+-   *           disabled?: boolean, disabledReason?: string, onChange?: (id:string)=>void,
+-   *           onLockedClick?: (item:object)=>void,
+-   *           onEffortChange?: (effortId:string)=>void }} cfg
+-   */
+-  function setModels(cfg) {
+-    modelSlot.innerHTML = "";
+-    const items = cfg?.items || [];
+-    if (!items.length) return;
+-    const active = items.find((m) => m.id === cfg.value) || items[0];
+-    const wrap = document.createElement("span");
+-    wrap.className = "rmci-model-wrap";
+-    if (cfg.disabled && cfg.disabledReason) wrap.title = cfg.disabledReason;
+-    const btn = document.createElement("button");
+-    btn.type = "button";
+-    btn.className = "rmci-model-btn";
+-    btn.disabled = !!cfg.disabled;
+-    btn.setAttribute("aria-haspopup", "menu");
+-    btn.setAttribute("aria-expanded", "false");
+-    btn.setAttribute("aria-label", cfg.disabled && cfg.disabledReason ? cfg.disabledReason : "اختر النموذج");
+-    btn.innerHTML = `<span class="rmci-model-label"></span>${icon("chevronDown", 12)}`;
+-
+-    let btnText = active.label;
+-    if (cfg.effortLevels && cfg.selectedEffort && cfg.selectedEffort !== "auto") {
+-      const activeEffort = cfg.effortLevels.find((e) => e.id === cfg.selectedEffort);
+-      if (activeEffort) {
+-        btnText += ` · ${activeEffort.id.toUpperCase()}`;
+-      }
+-    }
+-    btn.querySelector(".rmci-model-label").textContent = btnText;
+-
+-    btn.addEventListener("mousedown", (e) => e.preventDefault());
+-    btn.addEventListener("click", () => {
+-      if (btn.classList.contains("is-open")) return;
+-      openMenu(btn, (menu, close) => {
+-        let submenuEl = null;
+-        let closeSubmenuTimer = null;
+-        let activeTrigger = null; // which menu row currently owns the flyout
+-
+-        const cancelCloseSubmenu = () => {
+-          if (closeSubmenuTimer) {
+-            clearTimeout(closeSubmenuTimer);
+-            closeSubmenuTimer = null;
+-          }
+-        };
+-
+-        const closeSubmenu = () => {
+-          cancelCloseSubmenu();
+-          if (submenuEl) {
+-            submenuEl.remove();
+-            submenuEl = null;
+-          }
+-          if (activeTrigger) {
+-            activeTrigger.setAttribute("aria-expanded", "false");
+-            activeTrigger.classList.remove("is-active");
+-            activeTrigger = null;
+-          }
+-        };
+-
+-        // One flyout at a time, shared by every submenu row ("Thinking level",
+-        // "View Usage"). `fill(el, reposition)` populates it; it may call
+-        // reposition() again when its content changes size (async usage load).
+-        const openSubmenu = (trigger, fill) => {
+-          cancelCloseSubmenu();
+-          if (submenuEl && activeTrigger === trigger) return;
+-          if (submenuEl) closeSubmenu();
+-          activeTrigger = trigger;
+-          submenuEl = document.createElement("div");
+-          submenuEl.className = "rmci-menu rmci-submenu";
+-          submenuEl.setAttribute("role", "menu");
+-          submenuEl.dir = "rtl";
+-
+-          submenuEl.addEventListener("mouseenter", cancelCloseSubmenu);
+-          submenuEl.addEventListener("mouseleave", scheduleCloseSubmenu);
+-
+-          submenuEl.style.position = "fixed";
+-          document.body.appendChild(submenuEl);
+-
+-          const place = () => {
+-            if (!submenuEl) return;
+-            const tr = trigger.getBoundingClientRect();
+-            const mr = menu.getBoundingClientRect();
+-            const sw = submenuEl.offsetWidth || 220;
+-            const sh = submenuEl.offsetHeight || 160;
+-
+-            // In RTL layout, the flyout opens directly to the left of the main menu
+-            let left = mr.left - sw - 4;
+-            if (left < 8) left = mr.right + 4;
+-            left = Math.max(8, Math.min(left, window.innerWidth - sw - 8));
+-
+-            // Align the bottom of the submenu with the bottom of its trigger row
+-            let top = tr.bottom - sh;
+-            if (top < 8) top = Math.max(8, mr.top);
+-            if (top + sh > window.innerHeight - 8) top = Math.max(8, window.innerHeight - sh - 8);
+-
+-            submenuEl.style.left = `${left}px`;
+-            submenuEl.style.top = `${top}px`;
+-          };
+-
+-          fill(submenuEl, place);
+-          place();
+-
+-          trigger.setAttribute("aria-expanded", "true");
+-          trigger.classList.add("is-active");
+-        };
+-
+-        const fillEffort = (el) => {
+-          const curEffort = cfg.selectedEffort || "auto";
+-          cfg.effortLevels.forEach((eff) => {
+-            el.appendChild(menuItem({
+-              label: eff.label,
+-              hint: eff.hint || "",
+-              selected: eff.id === curEffort,
+-              leadingCheck: true,
+-              onClick: (e) => {
+-                e.stopPropagation();
+-                closeSubmenu();
+-                close();
+-                cfg.onEffortChange?.(eff.id);
+-              },
+-            }));
+-          });
+-        };
+-
+-        // "View Usage" flyout: header + one row per provider pool with a ring
+-        // gauge, "% left" and the reset countdown.
+-        const fillUsage = (el, place) => {
+-          const head = document.createElement("div");
+-          head.className = "rmci-usage-head";
+-          head.textContent = "الاستخدام";
+-          el.appendChild(head);
+-
+-          // Which key is actually serving THIS user's requests right now.
+-          const own = cfg.usage.source === "own";
+-          const src = document.createElement("div");
+-          src.className = `rmci-usage-source ${own ? "is-own" : "is-platform"}`;
+-          src.innerHTML = '<span class="rmci-usage-source-label">المفتاح المستخدم الآن</span><span class="rmci-usage-source-value"></span>';
+-          src.querySelector(".rmci-usage-source-value").textContent = own ? "مفتاح API الخاص بك" : "مفتاح المنصة (مشترك)";
+-          el.appendChild(src);
+-          if (own) {
+-            const note = document.createElement("div");
+-            note.className = "rmci-usage-note";
+-            note.textContent = "طلباتك تُرسل بمفتاحك الخاص ولا تُحتسب هنا، وحدّها يحدده مزوّدك. الأرقام التالية تخص مفتاح المنصة المشترك.";
+-            el.appendChild(note);
+-          }
+-          const body = document.createElement("div");
+-          body.className = "rmci-usage-body";
+-          body.innerHTML = '<div class="rmci-usage-note">جارٍ التحميل…</div>';
+-          el.appendChild(body);
+-
+-          Promise.resolve(cfg.usage.load()).then((data) => {
+-            if (!submenuEl || !el.isConnected) return;
+-            body.replaceChildren();
+-            const groups = data?.groups || [];
+-            if (!groups.length) {
+-              body.innerHTML = '<div class="rmci-usage-note">لا توجد بيانات استخدام متاحة.</div>';
+-            }
+-            groups.forEach((g) => {
+-              const row = usageRow(g);
+-              if (!own && g.id === cfg.usage.provider) row.classList.add("is-current");
+-              body.appendChild(row);
+-            });
+-            const foot = document.createElement("div");
+-            foot.className = "rmci-usage-note";
+-            foot.textContent = "مفتاح المنصة المشترك بين جميع المستخدمين";
+-            body.appendChild(foot);
+-            place();
+-          }).catch(() => {
+-            if (!el.isConnected) return;
+-            body.innerHTML = '<div class="rmci-usage-note">تعذّر تحميل الاستخدام الآن.</div>';
+-            place();
+-          });
+-        };
+-
+-        const scheduleCloseSubmenu = () => {
+-          cancelCloseSubmenu();
+-          closeSubmenuTimer = setTimeout(() => {
+-            closeSubmenu();
+-          }, 240);
+-        };
+-
+-        items.forEach((m) => {
+-          menu.appendChild(menuItem({
+-            label: m.label,
+-            hint: m.description || "",
+-            selected: m.id === active.id,
+-            locked: !!m.locked,
+-            leadingCheck: true,
+-            onClick: () => {
+-              if (m.locked) {
+-                closeSubmenu();
+-                close();
+-                cfg.onLockedClick?.(m);
+-              } else {
+-                closeSubmenu();
+-                close();
+-                cfg.onChange?.(m.id);
+-              }
+-            },
+-          }));
+-        });
+-
+-        let subTrigger = null;
+-        if (cfg.effortLevels && cfg.effortLevels.length) {
+-          const div = document.createElement("div");
+-          div.className = "rmci-menu-divider";
+-          menu.appendChild(div);
+-
+-          subTrigger = document.createElement("button");
+-          subTrigger.type = "button";
+-          subTrigger.className = "rmci-menu-item rmci-menu-item--submenu";
+-          subTrigger.setAttribute("aria-haspopup", "menu");
+-          subTrigger.setAttribute("aria-expanded", "false");
+-          subTrigger.innerHTML = `
+-            <span class="rmci-menu-label">مستوى التفكير (Thinking level)</span>
+-            <span class="rmci-menu-arrow">${icon("chevronLeft", 14)}</span>
+-          `;
+-
+-          subTrigger.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") openSubmenu(subTrigger, fillEffort); });
+-          subTrigger.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") scheduleCloseSubmenu(); });
+-          subTrigger.addEventListener("click", (e) => {
+-            e.stopPropagation();
+-            cancelCloseSubmenu();
+-            if (submenuEl && activeTrigger === subTrigger) closeSubmenu();
+-            else openSubmenu(subTrigger, fillEffort);
+-          });
+-
+-          menu.appendChild(subTrigger);
+-        }
+-
+-        if (cfg.usage && typeof cfg.usage.load === "function") {
+-          if (!(cfg.effortLevels && cfg.effortLevels.length)) {
+-            const div = document.createElement("div");
+-            div.className = "rmci-menu-divider";
+-            menu.appendChild(div);
+-          }
+-          const usageTrigger = document.createElement("button");
+-          usageTrigger.type = "button";
+-          usageTrigger.className = "rmci-menu-item rmci-menu-item--submenu rmci-menu-item--usage";
+-          usageTrigger.setAttribute("role", "menuitem");
+-          usageTrigger.setAttribute("aria-haspopup", "menu");
+-          usageTrigger.setAttribute("aria-expanded", "false");
+-          usageTrigger.innerHTML = `
+-            <span class="rmci-menu-usage-lead">${icon("gauge", 16)}<span class="rmci-menu-label">عرض الاستخدام</span></span>
+-            <span class="rmci-menu-arrow">${icon("chevronLeft", 14)}</span>
+-          `;
+-          usageTrigger.addEventListener("mousedown", (e) => e.preventDefault());
+-          usageTrigger.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") openSubmenu(usageTrigger, fillUsage); });
+-          usageTrigger.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") scheduleCloseSubmenu(); });
+-          usageTrigger.addEventListener("click", (e) => {
+-            e.stopPropagation();
+-            cancelCloseSubmenu();
+-            if (submenuEl && activeTrigger === usageTrigger) closeSubmenu();
+-            else openSubmenu(usageTrigger, fillUsage);
+-          });
+-          menu.appendChild(usageTrigger);
+-        }
+-
+-        const origRemove = menu.remove.bind(menu);
+-        menu.remove = () => {
+-          closeSubmenu();
+-          origRemove();
+-        };
+-      }, { rtl: true, align: "end", width: 260 });
+-    });
+-    wrap.appendChild(btn);
+-    modelSlot.appendChild(wrap);
+-  }
+-
+-  // ── Editor boot (lazy) ───────────────────────────────────────────────────
+-  const ready = (async () => {
+-    const T = await loadVendor();
+-    if (destroyed) return null;
+-    const extensions = buildExtensions(T, {
+-      placeholder: opts.placeholder,
+-      direction: opts.direction,
+-      getCommands: opts.getCommands,
+-      getMentions: opts.getMentions,
+-      onSubmit: () => {
+-        if (disabled) return true;
+-        host.dispatchEvent(new CustomEvent("rmci-submit"));
+-        opts.onSubmit?.();
+-        return true;
+-      },
+-    });
+-    editor = new T.Editor({
+-      element: host,
+-      extensions,
+-      content: pendingValue ? textToHtml(pendingValue) : "",
+-      autofocus: false,
+-      editable: !disabled,
+-      editorProps: {
+-        attributes: {
+-          role: "textbox",
+-          "aria-multiline": "true",
+-          dir: opts.direction,
+-          "aria-label": opts.placeholder,
+-        },
+-      },
+-      onUpdate: () => {
+-        if (silent) return;
+-        host.dispatchEvent(new Event("input", { bubbles: true }));
+-        opts.onChange?.(getMarkdown());
+-      },
+-      onTransaction: () => toolbarEl?.update(),
+-    });
+-    pendingValue = "";
+-    root.classList.add("is-ready");
+-    if (toolbarOpen) setToolbar(true);
+-    if (wantFocus && !disabled) editor.commands.focus(wantFocus === true ? undefined : wantFocus);
+-    wantFocus = null;
+-    host.dispatchEvent(new CustomEvent("rmci-ready"));
+-    return editor;
+-  })().catch((err) => {
+-    console.error("[rich-input] failed to load the editor:", err);
+-    root.classList.add("is-error");
+-    return null;
+-  });
+-
+-  function clear() {
+-    host.value = "";
+-  }
+-
+-  function destroy() {
+-    destroyed = true;
+-    editor?.destroy();
+-    editor = null;
+-    root.remove();
+-  }
+-
+-  return {
+-    el: root,
+-    host,
+-    textarea: host,
+-    startSlot,
+-    endSlot,
+-    ready,
+-    getMarkdown,
+-    getText,
+-    isEmpty,
+-    clear,
+-    focus,
+-    destroy,
+-    setModels,
+-    enterIsStructural,
+-    setToolbar,
+-    get editor() { return editor; },
+-  };
+-}
+diff -ruN a/public/src/features/lesson/lesson-blocks.js b/public/src/features/lesson/lesson-blocks.js
+--- a/public/src/features/lesson/lesson-blocks.js	2026-11-15 18:16:44.180993868 +0000
++++ b/public/src/features/lesson/lesson-blocks.js	2026-11-15 18:19:41.182137754 +0000
+@@ -18,6 +18,7 @@
+ import { openReportModal, isQuestionReported } from "../../components/report-question/report-question.js";
+ import { getQuestionMarks, toggleQuestionMark } from "./lesson-question-marks.js";
+ import { gradeEssay, isAnswerCorrect } from "../../shared/rate-answers.js";
++import { mountEssayFields } from "../../shared/rich-input/essay-field.js";
+ import { lessonIcon } from "./lesson-icons.js";
+ import { ogThumbUrl } from "../../shared/og-thumb.js";
+ 
+@@ -389,7 +390,7 @@
+     `>` +
+     header +
+     `<div class="lesson-question__prompt md-content">${renderMarkdown(block.prompt || "")}</div>` +
+-    `<div class="lesson-question__essay-wrap"><textarea dir="auto" class="lesson-question__essay-input" aria-label="إجابتك" placeholder="اكتب إجابتك هنا..." ${prior?.answered ? "disabled" : ""}>${escapeHtml(priorAnswer)}</textarea></div>` +
++    `<div class="lesson-question__essay-wrap"><textarea data-essay-field dir="auto" class="lesson-question__essay-input" aria-label="إجابتك" placeholder="اكتب إجابتك هنا..." ${prior?.answered ? "disabled" : ""}>${escapeHtml(priorAnswer)}</textarea></div>` +
+     `<button type="button" class="lesson-question__essay-check-btn lesson-question__check-btn" title="إظهار الإجابة الصحيحة" ${prior?.answered || !priorAnswer.trim() ? "disabled" : ""}>تحقق من الإجابة</button>` +
+     `<div class="lesson-question__formal-answer" role="status" aria-live="polite" hidden>` +
+     `<strong class="lesson-question__formal-score"></strong>` +
+@@ -483,7 +484,7 @@
+       });
+     } else {
+       const modelAnswer = questionEl.dataset.modelAnswer || "";
+-      const myAnswer = questionEl.querySelector(".lesson-question__essay-input")?.value || "";
++      const myAnswer = questionEl.querySelector(".lesson-question__essay-input")?.markdown || "";
+       onExplainWrong({ kind: "essay", question: questionText, modelAnswer, myAnswer });
+     }
+   };
+@@ -523,6 +524,10 @@
+     });
+   });
+ 
++  // Essay answers use the shared rich markdown input (shared/rich-input/); its
++  // host element replaces the <textarea> and keeps the same class, so the code
++  // below is unchanged except that answers are read/written as `.markdown`.
++  mountEssayFields(root);
+   root.querySelectorAll('.lesson-question[data-question-kind="essay"]').forEach((questionEl) => {
+     const questionId = questionEl.dataset.questionId;
+     const modelAnswer = questionEl.dataset.modelAnswer || "";
+@@ -541,7 +546,7 @@
+     });
+     checkBtn?.addEventListener("click", () => {
+       if (questionEl.dataset.answered === "true") return; // reveal-once
+-      const answerText = textarea?.value || "";
++      const answerText = textarea?.markdown || "";
+       // The 0–5 score is approximate self-check feedback, computed locally;
+       // it is not submitted or included in an overall lesson score.
+       const score = gradeEssay(answerText, modelAnswer);
+@@ -612,7 +617,7 @@
+ 
+   const textarea = qEl.querySelector(".lesson-question__essay-input");
+   if (textarea) {
+-    textarea.value = "";
++    textarea.markdown = "";
+     textarea.disabled = false;
+   }
+   const essayCheck = qEl.querySelector(".lesson-question__essay-check-btn");
+@@ -740,7 +745,7 @@
+   questionEl.dataset.answered = "true";
+   const textarea = questionEl.querySelector(".lesson-question__essay-input");
+   if (textarea) {
+-    textarea.value = answerText;
++    textarea.markdown = answerText;
+     textarea.disabled = true;
+   }
+   const checkBtn = questionEl.querySelector(".lesson-question__essay-check-btn");
+diff -ruN a/public/src/features/lesson/lesson-view.js b/public/src/features/lesson/lesson-view.js
+--- a/public/src/features/lesson/lesson-view.js	2026-11-15 18:16:44.181166307 +0000
++++ b/public/src/features/lesson/lesson-view.js	2026-11-15 18:19:41.182442608 +0000
+@@ -58,9 +58,6 @@
+ import { createFlashcardDeckResult } from "../../components/ai-agent/ai-agent-result-cards.js";
+ import { resolveUserItemById, readUserQuizzes } from "../../components/ai-agent/ai-agent-item-lookup.js";
+ import { loadFullQuizData } from "../home/quiz-data-loader.js";
+-import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
+-
+-observeRichInputHighlighters({ selector: ".lesson-question__essay-input" });
+ 
+ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+ const LESSON_LOAD_TIMEOUT_MS = 10000;
+diff -ruN a/public/src/features/lesson/lesson.css b/public/src/features/lesson/lesson.css
+--- a/public/src/features/lesson/lesson.css	2026-11-15 18:16:44.181186171 +0000
++++ b/public/src/features/lesson/lesson.css	2026-11-15 18:18:46.717843615 +0000
+@@ -1226,18 +1226,6 @@
+   line-height: 1.6;
+ }
+ 
+-/* Essay mirrors must stay inside the native textarea viewport; otherwise
+-   highlighted overflow can escape the field and overlap feedback/actions. */
+-.lesson-question__essay-wrap>.rich-input-highlighter--field {
+-  min-width: 0;
+-  overflow: hidden;
+-  border-radius: 10px;
+-}
+-
+-.lesson-question__essay-wrap .rich-input-highlighter__mirror {
+-  overflow: hidden;
+-}
+-
+ .lesson-info-modal__prefs-grid {
+   display: grid;
+   grid-template-columns: repeat(2, minmax(0, 1fr));
+@@ -4664,51 +4652,14 @@
+   gap: 10px;
+ }
+ 
+-.lesson-question__essay-input {
+-  box-sizing: border-box;
+-  width: 100%;
+-  min-height: 180px;
+-  margin: 0;
+-  padding: 16px;
+-  border: 2px solid var(--color-border);
+-  border-radius: 12px;
+-  background: var(--color-surface);
+-  color: inherit;
+-  font: inherit;
+-  font-size: 1rem;
+-  line-height: 1.6;
+-  resize: vertical;
+-  transition: all .3s ease;
+-  unicode-bidi: plaintext;
+-}
+-
+-[data-theme="dark-slate"] .lesson-question__essay-input,
+-[data-theme="dark"] .lesson-question__essay-input {
+-  background: var(--color-background-secondary);
+-}
+-
+-.lesson-question__essay-input:focus {
+-  outline: none;
+-  border-color: var(--color-primary);
+-  background: var(--color-primary-light);
+-  box-shadow: 0 0 0 4px rgba(99, 102, 241, .12);
+-}
+-
+-[data-theme="dark-slate"] .lesson-question__essay-input:focus,
+-[data-theme="dark"] .lesson-question__essay-input:focus {
+-  background: var(--color-surface);
+-}
+-
+-.lesson-question__essay-input:disabled {
+-  opacity: .8;
+-  cursor: not-allowed;
++/* The essay answer field is the shared rich markdown input
++   (shared/rich-input/); .lesson-question__essay-input is its host element. */
++.lesson-question__essay-wrap > .rmci-root {
++  min-width: 0;
+ }
+ 
+-.lesson-question__essay-wrap>.rich-input-highlighter--field {
+-  min-height: 180px;
++.lesson-question__essay-input {
+   min-width: 0;
+-  overflow: hidden;
+-  border-radius: 12px;
+ }
+ 
+ /* Model answer ("formal answer") */
+diff -ruN a/public/src/features/quiz/keyboard-nav.js b/public/src/features/quiz/keyboard-nav.js
+--- a/public/src/features/quiz/keyboard-nav.js	2026-11-15 18:16:44.181922202 +0000
++++ b/public/src/features/quiz/keyboard-nav.js	2026-11-15 18:19:14.320988078 +0000
+@@ -37,7 +37,8 @@
+ 
+ /**
+  * Returns `true` when keyboard shortcuts should be suppressed:
+- *   • The focused element is a TEXTAREA, or an INPUT the user can type
++ *   • The focused element is a TEXTAREA, a contenteditable (the rich
++ *     essay editor), or an INPUT the user can type
+  *     into (text, search, etc.) — radio/checkbox inputs are deliberately
+  *     excluded here since ArrowUp/ArrowDown roving focus needs to land on
+  *     exactly those elements to navigate between quiz options; treating
+@@ -51,7 +52,7 @@
+ function isSuppressed() {
+   const el = document.activeElement;
+   const tag = el?.tagName;
+-  if (tag === "TEXTAREA") return true;
++  if (tag === "TEXTAREA" || el?.isContentEditable) return true;
+   if (tag === "INPUT") {
+     const type = (el.type || "text").toLowerCase();
+     if (type !== "radio" && type !== "checkbox") return true;
+diff -ruN a/public/src/features/quiz/quiz.css b/public/src/features/quiz/quiz.css
+--- a/public/src/features/quiz/quiz.css	2026-11-15 18:16:44.181936400 +0000
++++ b/public/src/features/quiz/quiz.css	2026-11-15 18:18:46.715293299 +0000
+@@ -2717,55 +2717,14 @@
+   margin-bottom: 18px;
+ }
+ 
+-.essay-textarea {
+-  width: 100%;
+-  min-height: 180px;
+-  padding: 16px;
+-  border: 2px solid var(--color-border);
+-  border-radius: 12px;
+-  font-family: inherit;
+-  font-size: 1rem;
+-  line-height: 1.6;
+-  resize: vertical;
+-  transition: all 0.3s ease;
+-  direction: ltr;
+-  unicode-bidi: plaintext;
+-  /* text-align: start; */
+-  direction: rtl;
+-}
+-
+-/* The rich-text mirror is clipped to the essay field's viewport. Without this
+-   field-level clip, the mirror's long highlighted value paints outside the
+-   scrollable textarea and overlaps the answer controls below it. */
+-.essay-container > .rich-input-highlighter--field {
+-  min-height: 180px;
+-  overflow: hidden;
+-  border-radius: 12px;
+-}
+-.essay-container > .rich-input-highlighter--field .rich-input-highlighter__mirror {
+-  overflow: hidden;
+-}
+-
+-[data-theme="dark-slate"] .essay-textarea,
+-[data-theme="dark"] .essay-textarea {
+-  background: var(--color-background-secondary);
+-}
+-
+-.essay-textarea:focus {
+-  outline: none;
+-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+-  background: var(--color-primary-light);
+-  border-color: var(--color-primary);
+-}
+-
+-[data-theme="dark-slate"] .essay-textarea:focus,
+-[data-theme="dark"] .essay-textarea:focus {
+-  background: var(--color-surface);
++/* The essay answer field is the shared rich markdown input
++   (shared/rich-input/); .essay-textarea / #essayInput-N is its host element. */
++.essay-container > .rmci-root {
++  min-width: 0;
+ }
+ 
+-.essay-textarea.locked {
+-  cursor: not-allowed;
+-  opacity: 0.8;
++.essay-textarea {
++  min-width: 0;
+ }
+ 
+ .formal-answer {
+@@ -3251,10 +3210,6 @@
+     max-height: min(280px, 45vh);
+   }
+ 
+-  .essay-textarea {
+-    min-height: 150px;
+-  }
+-
+   .nav-btn {
+     max-width: none;
+     padding: 12px 20px;
+diff -ruN a/public/src/features/quiz/quiz.js b/public/src/features/quiz/quiz.js
+--- a/public/src/features/quiz/quiz.js	2026-11-15 18:16:44.181966579 +0000
++++ b/public/src/features/quiz/quiz.js	2026-11-15 18:19:19.277736507 +0000
+@@ -30,7 +30,7 @@
+   singleCorrectIndex,
+ } from "../../shared/rate-answers.js";
+ import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
+-import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
++import { mountEssayFields } from "../../shared/rich-input/essay-field.js";
+ import {
+   getMediaUrlCandidates as _getMediaUrlCandidates,
+   resolveMediaUrl as _resolveMediaUrl,
+@@ -50,8 +50,6 @@
+   verifyQuizPasswordRemote,
+ } from "../home/download-password.js";
+ 
+-observeRichInputHighlighters({ selector: "textarea.essay-textarea" });
+-
+ // Bug 1 Fix — "start of exam" notification moved out of the top-level
+ // import block and wrapped in try/catch. It previously ran as a bare
+ // statement sandwiched between two `import`s: any throw inside
+@@ -352,7 +350,7 @@
+   if (lockedQuestions[qIdx]) return;
+   const textarea = document.getElementById(`essayInput-${qIdx}`);
+   if (textarea) {
+-    userAnswers[qIdx] = textarea.value;
++    userAnswers[qIdx] = textarea.markdown; // markdown: formatting survives reloads; gradeEssay() strips it
+     saveStateDebounced();
+     const checkBtn = textarea
+       .closest(".question-card")
+@@ -1971,7 +1969,7 @@
+       html: `
+         ${header}
+         <div class="essay-container">
+-          <textarea id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="اكتب إجابتك هنا..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
++          <textarea data-essay-field id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="اكتب إجابتك هنا..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
+         </div>
+         <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" title="إظهار الإجابة الصحيحة" onclick="window.checkAnswerForQuestion(${idx})" ${!userSelected || String(userSelected).trim() === "" ? "disabled" : ""}>تحقق من الإجابة</button>
+         ${formalAnswerHtml}
+@@ -2209,6 +2207,7 @@
+ 
+   // Apply text direction classes synchronously before MutationObserver fires.
+   scanDirections(els.questionContainer);
++  mountEssayFields(els.questionContainer);
+ 
+   // Restore playback position for this question if we navigated back to it.
+   // paginationMediaCache is populated by snapshotPaginationMedia() just before
+@@ -2282,6 +2281,7 @@
+ 
+       initMediaSkeletons(newCard);
+       scanDirections(newCard);
++      mountEssayFields(newCard);
+     }
+     return;
+   }
+@@ -2298,6 +2298,7 @@
+   // Scan all cards in one pass after the full render so direction classes
+   // are set before the browser paints — no per-card flicker.
+   scanDirections(els.questionContainer);
++  mountEssayFields(els.questionContainer);
+ 
+   // After a page reload with restored progress, scroll the user back to
+   // the question they were on without forcing them to scroll manually.
+@@ -2397,7 +2398,7 @@
+       html: `
+         ${reloadableHeaderHTML}
+         <div class="essay-container">
+-          <textarea 
++          <textarea data-essay-field
+             id="essayInput" 
+             class="essay-textarea ${isLocked ? "locked" : ""}" 
+             placeholder="اكتب إجابتك هنا..."
+@@ -2606,7 +2607,7 @@
+   if (lockedQuestions[currentIdx]) return;
+   const textarea = document.getElementById("essayInput");
+   if (textarea) {
+-    userAnswers[currentIdx] = textarea.value;
++    userAnswers[currentIdx] = textarea.markdown; // markdown: formatting survives reloads; gradeEssay() strips it
+     saveStateDebounced();
+     const checkBtn = document.getElementById("checkBtn");
+     if (checkBtn) {
+diff -ruN a/public/src/shared/markdown.js b/public/src/shared/markdown.js
+--- a/public/src/shared/markdown.js	2026-11-15 18:16:44.182474578 +0000
++++ b/public/src/shared/markdown.js	2026-11-15 18:19:14.319967482 +0000
+@@ -2326,6 +2326,8 @@
+     acceptNode(node) {
+       if (node.matches(_LTR_ONLY_SELECTOR)) return NodeFilter.FILTER_REJECT;
+       if (_SKIP_TAGS.has(node.tagName)) return NodeFilter.FILTER_REJECT;
++      // The rich input (shared/rich-input) manages its own per-block direction.
++      if (node.classList.contains("rmci-root")) return NodeFilter.FILTER_REJECT;
+       return NodeFilter.FILTER_ACCEPT;
+     },
+   });
+diff -ruN a/public/src/shared/rate-answers.js b/public/src/shared/rate-answers.js
+--- a/public/src/shared/rate-answers.js	2026-11-15 18:16:44.182683908 +0000
++++ b/public/src/shared/rate-answers.js	2026-11-15 18:19:27.932314857 +0000
+@@ -63,6 +63,22 @@
+ // api/ai-agent/_botGenerators.js), so it must stay fully self-contained: no
+ // helpers or constants defined outside the function body.
+ export function gradeEssay(userInput, modelAnswer) {
++  // Answers typed in the rich essay field are stored as markdown, and model
++  // answers are markdown too: compare the words, not the syntax around them.
++  const stripMd = (raw) =>
++    String(raw ?? "")
++      .replace(/^[ \t]*```[\w+#.-]*[ \t]*$/gm, "") // code fence lines (content kept)
++      .replace(/^[ \t]{0,3}#{1,6}[ \t]+/gm, "") // headings
++      .replace(/^[ \t]*>[ \t]?/gm, "") // blockquote markers
++      .replace(/^[ \t]*(?:[-*+]|\d+\.)[ \t]+/gm, "") // list markers
++      .replace(/<\/?u>/g, "")
++      .replace(/\*\*([^\n]+?)\*\*/g, "$1")
++      .replace(/~~([^\n]+?)~~/g, "$1")
++      .replace(/(^|[\s(])\*(?=\S)([^*\n]*?\S)\*(?=$|[\s).,;:!?])/g, "$1$2")
++      .replace(/(`+)([^`\n]+?)\1/g, "$2");
++  userInput = stripMd(userInput);
++  modelAnswer = stripMd(modelAnswer);
++
+   const toAsciiDigits = (s) =>
+     String(s ?? "")
+       .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+diff -ruN a/public/src/shared/rich-input/code-block-view.js b/public/src/shared/rich-input/code-block-view.js
+--- a/public/src/shared/rich-input/code-block-view.js	1970-01-01 00:00:00.000000000 +0000
++++ b/public/src/shared/rich-input/code-block-view.js	2026-11-15 18:16:44.201339641 +0000
+@@ -0,0 +1,198 @@
++// =============================================================================
++// rich-input/code-block-view.js
++// Vanilla-DOM node view for code blocks: collapse/expand, a language menu and
++// a copy button above the (syntax-highlighted, editable) code. Port of the
++// 21st.dev component's React CodeBlockView.
++// =============================================================================
++import { icon } from "./icons.js";
++
++export const CODE_LANGUAGES = [
++  { label: "Plain text", value: "plaintext" },
++  { label: "JavaScript", value: "javascript" },
++  { label: "TypeScript", value: "typescript" },
++  { label: "Python", value: "python" },
++  { label: "HTML", value: "xml" },
++  { label: "CSS", value: "css" },
++  { label: "JSON", value: "json" },
++  { label: "Bash", value: "bash" },
++  { label: "C++", value: "cpp" },
++  { label: "Java", value: "java" },
++  { label: "C#", value: "csharp" },
++  { label: "SQL", value: "sql" },
++];
++
++const LANGUAGE_ALIASES = {
++  js: "javascript", jsx: "javascript", ts: "typescript", tsx: "typescript", py: "python",
++  html: "xml", sh: "bash", shell: "bash", zsh: "bash", text: "plaintext", txt: "plaintext",
++  "c++": "cpp", cc: "cpp", cxx: "cpp", "c#": "csharp", cs: "csharp",
++};
++
++const normalizeLanguage = (raw) => LANGUAGE_ALIASES[raw || "plaintext"] ?? (raw || "plaintext");
++
++/** Closes any open language menu (there is at most one at a time). */
++let closeOpenMenu = null;
++
++function openLanguageMenu(trigger, current, onPick) {
++  closeOpenMenu?.();
++  const host = document.body;
++  const r = trigger.getBoundingClientRect();
++  const menu = document.createElement("div");
++  menu.className = "rmci-menu rmci-lang-menu";
++  menu.setAttribute("role", "menu");
++  menu.dir = "ltr";
++  menu.style.position = "fixed";
++  menu.style.right = `${Math.max(8, window.innerWidth - r.right)}px`;
++  const below = window.innerHeight - r.bottom;
++  if (below < 290 && r.top > below) menu.style.bottom = `${window.innerHeight - r.top + 4}px`;
++  else menu.style.top = `${r.bottom + 4}px`;
++
++  CODE_LANGUAGES.forEach((l) => {
++    const item = document.createElement("button");
++    item.type = "button";
++    item.className = "rmci-menu-item rmci-menu-item--compact";
++    item.setAttribute("role", "menuitem");
++    item.innerHTML = `<span class="rmci-menu-label">${l.label}</span>${l.value === current ? icon("check", 14) : ""}`;
++    item.addEventListener("mousedown", (e) => e.preventDefault());
++    item.addEventListener("click", () => { onPick(l.value); close(); });
++    menu.appendChild(item);
++  });
++
++  const onDown = (e) => { if (!menu.contains(e.target) && !trigger.contains(e.target)) close(); };
++  const onKey = (e) => { if (e.key === "Escape") close(); };
++  // Scroll events are captured from everything, including the menu's own list;
++  // only close when something OUTSIDE the menu scrolls (page/chat behind it).
++  const onScroll = (e) => { if (menu.contains(e.target)) return; close(); };
++  function close() {
++    menu.remove();
++    trigger.setAttribute("aria-expanded", "false");
++    trigger.classList.remove("is-open");
++    document.removeEventListener("mousedown", onDown);
++    document.removeEventListener("keydown", onKey);
++    window.removeEventListener("resize", close);
++    window.removeEventListener("scroll", onScroll, true);
++    if (closeOpenMenu === close) closeOpenMenu = null;
++  }
++  document.addEventListener("mousedown", onDown);
++  document.addEventListener("keydown", onKey);
++  window.addEventListener("resize", close);
++  window.addEventListener("scroll", onScroll, true);
++  trigger.setAttribute("aria-expanded", "true");
++  trigger.classList.add("is-open");
++  host.appendChild(menu);
++  closeOpenMenu = close;
++}
++
++/**
++ * Tiptap `addNodeView` factory. Returns a ProseMirror NodeView.
++ * @param {{ node: any, editor: any, getPos: () => number }} props
++ */
++export function createCodeBlockView({ node: initialNode, editor, getPos }) {
++  let node = initialNode;
++  let copyTimer = 0;
++
++  const dom = document.createElement("div");
++  dom.className = "rmci-codeblock";
++  dom.dir = "ltr";
++
++  const header = document.createElement("div");
++  header.className = "rmci-codeblock-header";
++  header.contentEditable = "false";
++
++  const collapseBtn = document.createElement("button");
++  collapseBtn.type = "button";
++  collapseBtn.className = "rmci-codeblock-btn";
++  collapseBtn.addEventListener("mousedown", (e) => e.preventDefault());
++
++  const right = document.createElement("div");
++  right.className = "rmci-codeblock-actions";
++
++  const langBtn = document.createElement("button");
++  langBtn.type = "button";
++  langBtn.className = "rmci-lang-btn";
++  langBtn.setAttribute("aria-haspopup", "menu");
++  langBtn.setAttribute("aria-expanded", "false");
++  langBtn.setAttribute("aria-label", "Code language");
++  langBtn.addEventListener("mousedown", (e) => e.preventDefault());
++
++  const copyBtn = document.createElement("button");
++  copyBtn.type = "button";
++  copyBtn.className = "rmci-codeblock-btn";
++  copyBtn.setAttribute("aria-label", "Copy code");
++  copyBtn.addEventListener("mousedown", (e) => e.preventDefault());
++
++  right.append(langBtn, copyBtn);
++  header.append(collapseBtn, right);
++
++  const pre = document.createElement("pre");
++  pre.className = "rmci-codeblock-pre";
++  const code = document.createElement("code");
++  pre.appendChild(code);
++
++  const fade = document.createElement("div");
++  fade.className = "rmci-codeblock-fade";
++  fade.contentEditable = "false";
++
++  dom.append(header, pre, fade);
++
++  function updateAttributes(attrs) {
++    const pos = getPos();
++    if (typeof pos !== "number") return;
++    editor.view.dispatch(editor.view.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, ...attrs }));
++  }
++
++  function render() {
++    const language = normalizeLanguage(node.attrs.language);
++    const collapsed = !!node.attrs.collapsed;
++    const label = CODE_LANGUAGES.find((l) => l.value === language)?.label ?? language;
++    code.className = `hljs language-${language}`;
++    pre.dataset.collapsed = String(collapsed);
++    pre.classList.toggle("is-collapsed", collapsed);
++    fade.hidden = !collapsed;
++    collapseBtn.setAttribute("aria-label", collapsed ? "Expand code block" : "Collapse code block");
++    collapseBtn.setAttribute("aria-expanded", String(!collapsed));
++    collapseBtn.innerHTML = `${icon(collapsed ? "expand" : "collapse", 14)}${collapsed ? "Expand" : "Collapse"}`;
++    langBtn.innerHTML = `${label}${icon("chevronDown", 12)}`;
++    if (!copyTimer) copyBtn.innerHTML = `${icon("copy", 14)}Copy`;
++  }
++
++  collapseBtn.addEventListener("click", () => updateAttributes({ collapsed: !node.attrs.collapsed }));
++  langBtn.addEventListener("click", () => {
++    if (langBtn.classList.contains("is-open")) return closeOpenMenu?.();
++    openLanguageMenu(langBtn, normalizeLanguage(node.attrs.language), (v) => updateAttributes({ language: v }));
++  });
++  copyBtn.addEventListener("click", async () => {
++    try {
++      await navigator.clipboard.writeText(node.textContent);
++      copyBtn.innerHTML = `${icon("check", 14)}Copied`;
++      copyBtn.classList.add("is-done");
++      clearTimeout(copyTimer);
++      copyTimer = setTimeout(() => {
++        copyTimer = 0;
++        copyBtn.classList.remove("is-done");
++        copyBtn.innerHTML = `${icon("copy", 14)}Copy`;
++      }, 2000);
++    } catch {
++      /* clipboard unavailable */
++    }
++  });
++
++  render();
++
++  return {
++    dom,
++    contentDOM: code,
++    update(updated) {
++      if (updated.type !== node.type) return false;
++      node = updated;
++      render();
++      return true;
++    },
++    // Header/fade are chrome: ProseMirror must not treat their changes as edits
++    // or let their clicks move the selection.
++    ignoreMutation: (m) => m.type !== "selection" && !code.contains(m.target) && m.target !== code,
++    stopEvent: (e) => header.contains(e.target),
++    destroy() {
++      clearTimeout(copyTimer);
++    },
++  };
++}
+diff -ruN a/public/src/shared/rich-input/dictation.js b/public/src/shared/rich-input/dictation.js
+--- a/public/src/shared/rich-input/dictation.js	1970-01-01 00:00:00.000000000 +0000
++++ b/public/src/shared/rich-input/dictation.js	2026-11-15 18:18:27.270720047 +0000
+@@ -0,0 +1,102 @@
++// =============================================================================
++// rich-input/dictation.js
++// Voice dictation (Web Speech API) for a rich input: adds a mic button to its
++// bottom bar and live-transcribes into it, appended after what is already
++// typed. Framework-free; the button is only added when the browser supports
++// SpeechRecognition. (The AI Agent chat keeps its own richer mic UI with the
++// volume wave; this is the lightweight shared version.)
++// =============================================================================
++const MIC = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>';
++const STOP = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
++
++/**
++ * @param {{ endSlot: HTMLElement, host: HTMLElement & { value: string }, focus: Function }} rich createRichInput() result
++ * @param {{ onError?: (message: string) => void }} [options]
++ * @returns {{ stop: () => void, supported: boolean } }
++ */
++export function attachDictation(rich, { onError } = {}) {
++  const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
++  if (!Ctor) return { stop() {}, supported: false };
++
++  const btn = document.createElement("button");
++  btn.type = "button";
++  btn.className = "rmci-icon-btn rmci-mic-btn";
++  rich.endSlot.appendChild(btn);
++
++  let recognition = null;
++  let listening = false;
++  let finalized = "";
++  let base = "";
++  let retried = false;
++
++  const paint = () => {
++    btn.innerHTML = listening ? STOP : MIC;
++    btn.classList.toggle("is-listening", listening);
++    btn.setAttribute("aria-pressed", String(listening));
++    const label = listening ? "إيقاف الإملاء الصوتي" : "إملاء صوتي";
++    btn.title = label;
++    btn.setAttribute("aria-label", label);
++  };
++  const compose = (interim) => {
++    const spoken = [finalized.trim(), (interim || "").trim()].filter(Boolean).join(" ");
++    return [base.trim(), spoken].filter(Boolean).join(base.trim() ? " " : "");
++  };
++  const finish = () => { listening = false; paint(); };
++  const stop = () => {
++    const r = recognition;
++    recognition = null;
++    try { r?.stop(); } catch { /* already stopped */ }
++    finish();
++  };
++
++  function start(isRetry = false) {
++    if (listening || rich.host.disabled) return;
++    finalized = "";
++    base = rich.host.value;
++    if (!isRetry) retried = false;
++    const session = new Ctor();
++    recognition = session;
++    session.lang = document.documentElement?.lang === "en" ? "en-US" : "ar-EG";
++    session.continuous = true;
++    session.interimResults = true;
++    session.onresult = (e) => {
++      let interim = "";
++      for (let i = e.resultIndex; i < e.results.length; i++) {
++        if (e.results[i].isFinal) finalized = `${finalized} ${e.results[i][0].transcript}`.trim();
++        else interim += e.results[i][0].transcript;
++      }
++      const next = compose(interim);
++      rich.host.value = next;
++      // Programmatic value changes are silent (like a textarea), so tell listeners.
++      rich.host.dispatchEvent(new Event("input", { bubbles: true }));
++    };
++    session.onerror = (e) => {
++      if (recognition !== session) return;
++      if (e.error === "no-speech" || e.error === "aborted") return finish();
++      if (e.error === "network" && !retried) {
++        retried = true;
++        finish();
++        try { start(true); } catch { /* reported below on next attempt */ }
++        return;
++      }
++      finish();
++      onError?.(e.error === "network"
++        ? "تعذر الوصول إلى خدمة التعرف الصوتي. تحقق من الاتصال أو اكتب إجابتك."
++        : "تعذر استخدام الإملاء الصوتي. حاول مرة أخرى.");
++    };
++    session.onend = () => { if (recognition === session) finish(); };
++    try {
++      session.start();
++      listening = true;
++      paint();
++    } catch (err) {
++      console.error("[rich-input] dictation start failed:", err);
++      onError?.("تعذر بدء الإملاء الصوتي.");
++    }
++  }
++
++  btn.addEventListener("mousedown", (e) => e.preventDefault());
++  btn.addEventListener("click", () => { if (listening) { stop(); rich.focus("end"); } else start(); });
++  paint();
++  return { stop, supported: true };
++}
+diff -ruN a/public/src/shared/rich-input/essay-field.js b/public/src/shared/rich-input/essay-field.js
+--- a/public/src/shared/rich-input/essay-field.js	1970-01-01 00:00:00.000000000 +0000
++++ b/public/src/shared/rich-input/essay-field.js	2026-11-15 18:19:19.278022445 +0000
+@@ -0,0 +1,47 @@
++// =============================================================================
++// rich-input/essay-field.js
++// Turns essay answer <textarea data-essay-field> elements (quiz + lesson pages)
++// into the shared rich markdown input, with voice dictation.
++//
++//   markup:  <textarea data-essay-field id=".." class=".." placeholder="..">saved markdown</textarea>
++//   after inserting the markup:  mountEssayFields(containerElement)
++//
++// The textarea is replaced by the rich input's host element, which keeps the
++// textarea's id and classes and the same members the pages already use:
++//   host.value      plain text (use for "is it empty?")
++//   host.markdown   the answer as markdown  <- store / grade this
++//   host.disabled   lock it: stays rendered, read-only, toolbar + mic hidden
++//   "input" event   fired on every user edit
++// Calling mountEssayFields again is safe (already-mounted fields are skipped,
++// and editors whose DOM was thrown away by a re-render are destroyed).
++// =============================================================================
++import { createRichInput } from "./rich-input.js";
++import { attachDictation } from "./dictation.js";
++
++const live = new Set();
++
++export function mountEssayFields(root = document, { onError } = {}) {
++  for (const inst of live) {
++    if (!inst.el.isConnected) { inst.destroy(); live.delete(inst); }
++  }
++  root.querySelectorAll("textarea[data-essay-field]").forEach((ta) => {
++    const rich = createRichInput({
++      placeholder: ta.getAttribute("placeholder") || "",
++      direction: "auto",
++      maxHeight: 360,
++      initialMarkdown: ta.value,
++      hideControlsWhenDisabled: true,
++    });
++    const host = rich.host;
++    host.id = ta.id;
++    host.className += ` ${ta.className}`;
++    const inline = ta.getAttribute("oninput");
++    if (inline) host.setAttribute("oninput", inline); // legacy inline handler keeps working
++    rich.el.classList.add("rmci-root--essay");
++    attachDictation(rich, { onError });
++    const disabled = ta.disabled;
++    ta.replaceWith(rich.el);
++    host.disabled = disabled;
++    live.add(rich);
++  });
++}
+diff -ruN a/public/src/shared/rich-input/extensions.js b/public/src/shared/rich-input/extensions.js
+--- a/public/src/shared/rich-input/extensions.js	1970-01-01 00:00:00.000000000 +0000
++++ b/public/src/shared/rich-input/extensions.js	2026-11-15 18:16:44.201358737 +0000
+@@ -0,0 +1,223 @@
++// =============================================================================
++// rich-input/extensions.js
++// Builds the Tiptap extension list. Takes the lazily-loaded vendor module `T`
++// (public/assets/vendor/tiptap/tiptap.js) so nothing here imports Tiptap at
++// module-evaluation time.
++//
++// Same behaviour as the 21st.dev component:
++//   Enter            new line / block (send is handled by the chat panel)
++//   Shift+Enter      soft break (plain newline inside code blocks)
++//   Ctrl/Cmd+Enter   send
++//   ```lang + Enter  turns the line into a code block; a lone ``` + Enter on
++//                    the last line of a code block closes it
++// plus per-block bidi (Arabic/English blocks align on their own) and command /
++// @mention highlighting (replaces the old textarea mirror).
++// =============================================================================
++import { createCodeBlockView } from "./code-block-view.js";
++
++const commandName = (c) => String(c?.command ?? "").trim().replace(/^\//, "");
++const mentionName = (m) => String(m?.name ?? m?.token ?? "").trim().replace(/^@/, "");
++
++export function buildExtensions(T, options) {
++  const { placeholder, direction, onSubmit, getCommands, getMentions } = options;
++  const lowlight = T.createLowlight(T.common);
++
++  // `<u>text</u>` -> underline
++  const UnderlineMd = T.Underline.extend({
++    addInputRules() {
++      return [T.markInputRule({ find: /(?:<u>)([^<]+)(?:<\/u>)$/, type: this.type })];
++    },
++  });
++
++  const CodeBlock = T.CodeBlockLowlight.extend({
++    addAttributes() {
++      return {
++        ...this.parent?.(),
++        collapsed: { default: false, rendered: false, keepOnSplit: false },
++      };
++    },
++    addNodeView() {
++      return (props) => createCodeBlockView(props);
++    },
++  }).configure({ lowlight, defaultLanguage: "plaintext" });
++
++  // Per-block bidi: paragraphs and headings get dir="auto".
++  const BidiBlocks = T.Extension.create({
++    name: "bidiBlocks",
++    addGlobalAttributes() {
++      const auto = direction === "auto";
++      return [
++        {
++          types: ["paragraph", "heading"],
++          attributes: {
++            dir: {
++              default: auto ? "auto" : null,
++              parseHTML: (el) => el.getAttribute("dir") || (auto ? "auto" : null),
++              renderHTML: (attrs) => (attrs.dir ? { dir: attrs.dir } : {}),
++            },
++          },
++        },
++      ];
++    },
++  });
++
++  const ChatShortcuts = T.Extension.create({
++    name: "chatShortcuts",
++    priority: 1000,
++    addKeyboardShortcuts() {
++      return {
++        "Mod-Enter": () => onSubmit(),
++        "Shift-Enter": ({ editor }) => (editor.isActive("codeBlock") ? editor.commands.newlineInCode() : false),
++        Enter: ({ editor }) => {
++          const { $from, empty } = editor.state.selection;
++          const parent = $from.parent;
++          const atEnd = empty && $from.parentOffset === parent.content.size;
++
++          if (atEnd && parent.type.name === "codeBlock") {
++            const m = /(^|\n)```$/.exec(parent.textContent);
++            if (m) {
++              return editor.chain().focus()
++                .deleteRange({ from: $from.pos - m[0].length, to: $from.pos })
++                .exitCode()
++                .run();
++            }
++          }
++
++          if (atEnd && parent.type.name === "paragraph") {
++            const f = /^```([\w+#.-]*)$/.exec(parent.textContent);
++            if (f) {
++              return editor.chain().focus()
++                .deleteRange({ from: $from.start(), to: $from.end() })
++                .setCodeBlock(f[1] ? { language: f[1] } : undefined)
++                .run();
++            }
++          }
++          return false;
++        },
++      };
++    },
++  });
++
++  // Highlights `/command` (only as the first word) and known `@mention` tokens.
++  //
++  // Robustness notes (the chips used to end up half-painted, e.g. "/expla" + "i"
++  // + "n" while typing): (1) decorations are computed in one pure function that
++  // can never throw into ProseMirror's update cycle — a throw there aborts the
++  // view update and leaves stale chip <span>s with natively-typed text next to
++  // them; (2) invisible bidi/zero-width marks that RTL keyboards insert next to
++  // a word are ignored when matching, so "/ex\u200Fplain" still counts as
++  // /explain; (3) a self-heal pass compares the painted chips with the expected
++  // ones after every update and, on any drift, rebuilds the DOM once.
++  const INVISIBLE = /[\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/g;
++  const WORD_START = "(^|[\\s\\u00A0\\u200B-\\u200F\\u202A-\\u202E\\u2066-\\u2069])";
++
++  function computeTokens(doc) {
++    const out = []; // { from, to, kind }
++    let commands, mentions;
++    try {
++      commands = new Set((getCommands?.() || []).map((c) => commandName(c).toLowerCase()).filter(Boolean));
++      mentions = new Set((getMentions?.() || []).map((m) => mentionName(m).toLowerCase()).filter(Boolean));
++    } catch {
++      return out;
++    }
++    if (!commands.size && !mentions.size) return out;
++    doc.descendants((node, pos) => {
++      if (node.type.name === "codeBlock") return false;
++      if (!node.isTextblock) return true;
++      // textBetween with a 1-char leaf placeholder keeps string offsets identical
++      // to document positions. `node.textContent` drops soft line breaks
++      // (Shift+Enter), which shifted every chip after the first break.
++      const text = node.textBetween(0, node.content.size, "", "\n");
++      const start = pos + 1;
++      const scan = (re, set, kind) => {
++        re.lastIndex = 0;
++        let m;
++        while ((m = re.exec(text))) {
++          const word = m[2].replace(INVISIBLE, "").toLowerCase();
++          if (set.has(word)) {
++            const from = start + m.index + m[1].length;
++            out.push({ from, to: from + m[2].length + 1, kind });
++          }
++        }
++      };
++      if (commands.size) scan(new RegExp(`${WORD_START}/([^\\s/]+)`, "g"), commands, "command");
++      if (mentions.size) scan(new RegExp(`${WORD_START}@([^\\s@]+)`, "g"), mentions, "mention");
++      return false;
++    });
++    return out;
++  }
++
++  const TokenHighlight = T.Extension.create({
++    name: "tokenHighlight",
++    addProseMirrorPlugins() {
++      const key = new T.PluginKey("rmciTokens");
++      return [
++        new T.Plugin({
++          key,
++          // `bust` is flipped on for exactly one transaction by the self-heal
++          // below: painting nothing for a beat forces ProseMirror to rebuild
++          // the paragraph DOM, then the next transaction paints correctly.
++          state: {
++            init: () => ({ bust: false }),
++            apply: (tr, prev) => {
++              const meta = tr.getMeta(key);
++              return meta ? { bust: !!meta.bust } : prev;
++            },
++          },
++          props: {
++            decorations(state) {
++              if (key.getState(state)?.bust) return T.DecorationSet.empty;
++              try {
++                const decos = computeTokens(state.doc).map((t) =>
++                  T.Decoration.inline(t.from, t.to, { class: `rmci-token rmci-token--${t.kind}` }, { inclusiveStart: false, inclusiveEnd: false }),
++                );
++                return decos.length ? T.DecorationSet.create(state.doc, decos) : T.DecorationSet.empty;
++              } catch {
++                return T.DecorationSet.empty;
++              }
++            },
++          },
++          view() {
++            let raf = 0;
++            let bustedDoc = null;
++            return {
++              update(view) {
++                if (key.getState(view.state)?.bust) {
++                  // Paint again on the next frame (outside this update cycle).
++                  cancelAnimationFrame(raf);
++                  raf = requestAnimationFrame(() => view.dispatch(view.state.tr.setMeta(key, { bust: false })));
++                  return;
++                }
++                cancelAnimationFrame(raf);
++                raf = requestAnimationFrame(() => {
++                  if (view.isDestroyed || view.composing) return;
++                  const doc = view.state.doc;
++                  if (doc === bustedDoc) return; // already rebuilt for this doc — never loop
++                  const want = computeTokens(doc).map((t) => doc.textBetween(t.from, t.to)).join("|");
++                  const got = [...view.dom.querySelectorAll(".rmci-token")].map((el) => el.textContent).join("|");
++                  if (want !== got) {
++                    bustedDoc = doc;
++                    view.dispatch(view.state.tr.setMeta(key, { bust: true }));
++                  }
++                });
++              },
++              destroy() { cancelAnimationFrame(raf); },
++            };
++          },
++        }),
++      ];
++    },
++  });
++
++  return [
++    // TipTap v3's StarterKit already bundles Underline; ours (with the <u> input rule) replaces it.
++    T.StarterKit.configure({ codeBlock: false, underline: false, heading: { levels: [1, 2, 3] } }),
++    UnderlineMd,
++    T.Typography,
++    T.Placeholder.configure({ placeholder }),
++    CodeBlock,
++    BidiBlocks,
++    ChatShortcuts,
++    TokenHighlight,
++  ];
++}
+diff -ruN a/public/src/shared/rich-input/icons.js b/public/src/shared/rich-input/icons.js
+--- a/public/src/shared/rich-input/icons.js	1970-01-01 00:00:00.000000000 +0000
++++ b/public/src/shared/rich-input/icons.js	2026-11-15 18:16:44.201371133 +0000
+@@ -0,0 +1,36 @@
++// =============================================================================
++// rich-input/icons.js
++// The Lucide icons the rich input uses (same set as the 21st.dev component),
++// as inline SVG so there's no icon-font / React dependency.
++// =============================================================================
++const PATHS = {
++  bold: '<path d="M6 12h9a4 4 0 010 8H7a1 1 0 01-1-1V5a1 1 0 011-1h7a4 4 0 010 8"/>',
++  italic: '<line x1="19" x2="10" y1="4" y2="4"/><line x1="14" x2="5" y1="20" y2="20"/><line x1="15" x2="9" y1="4" y2="20"/>',
++  underline: '<path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" x2="20" y1="20" y2="20"/>',
++  strike: '<path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" x2="20" y1="12" y2="12"/>',
++  code: '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
++  list: '<path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/>',
++  listOrdered: '<path d="M11 5h10"/><path d="M11 12h10"/><path d="M11 19h10"/><path d="M4 4h1v5"/><path d="M4 9h2"/><path d="M6.5 20H3.4c0-1 2.6-1.925 2.6-3.5a1.5 1.5 0 0 0-2.6-1.02"/>',
++  quote: '<path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/>',
++  codeBlock: '<path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/>',
++  h1: '<path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="m17 12 3-2v8"/>',
++  h2: '<path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1"/>',
++  h3: '<path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2"/><path d="M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2"/>',
++  type: '<path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/>',
++  chevronDown: '<path d="m6 9 6 6 6-6"/>',
++  chevronLeft: '<path d="m15 18-6-6 6-6"/>',
++  chevronRight: '<path d="m9 18 6-6-6-6"/>',
++  gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
++  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
++  check: '<path d="M20 6 9 17l-5-5"/>',
++  copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
++  collapse: '<path d="m7 20 5-5 5 5"/><path d="m7 4 5 5 5-5"/>',
++  expand: '<path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/>',
++  send: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
++  stop: '<rect width="18" height="18" x="3" y="3" rx="2" fill="currentColor"/>',
++};
++
++/** @param {keyof typeof PATHS} name @param {number} [size] */
++export function icon(name, size = 16, strokeWidth = 2) {
++  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="rmci-icon">${PATHS[name]}</svg>`;
++}
+diff -ruN a/public/src/shared/rich-input/markdown-parser.js b/public/src/shared/rich-input/markdown-parser.js
+--- a/public/src/shared/rich-input/markdown-parser.js	1970-01-01 00:00:00.000000000 +0000
++++ b/public/src/shared/rich-input/markdown-parser.js	2026-11-15 18:17:58.824468906 +0000
+@@ -0,0 +1,103 @@
++// =============================================================================
++// rich-input/markdown-parser.js
++// Markdown -> ProseMirror JSON: the inverse of markdown-serializer.js. Used to
++// restore a saved answer into the rich input with its formatting. Understands
++// exactly what the serializer emits (paragraphs, # headings, bullet / ordered
++// lists, > quotes, ``` code blocks, ---, **bold** *italic* ~~strike~~ <u> `code`);
++// anything else degrades to plain text, so legacy plain-text answers load fine.
++// Every newline inside a paragraph becomes a hard break (a textarea answer
++// typed with single line breaks keeps them).
++// =============================================================================
++
++const INLINE = /(`+)([\s\S]*?[^`])\1(?!`)|\*\*\*([\s\S]+?)\*\*\*|\*\*([\s\S]+?)\*\*|~~([\s\S]+?)~~|<u>([\s\S]+?)<\/u>|\*([^\s*](?:[\s\S]*?[^\s*])?)\*(?!\*)/;
++
++function inline(text, marks = []) {
++  const out = [];
++  const push = (t, m) => { if (t) out.push({ type: "text", text: t, ...(m.length ? { marks: m.map((type) => ({ type })) } : {}) }); };
++  let rest = text;
++  while (rest) {
++    const m = INLINE.exec(rest);
++    if (!m) { push(rest, marks); break; }
++    push(rest.slice(0, m.index), marks);
++    if (m[2] !== undefined) push(m[2], [...marks, "code"]);
++    else if (m[3] !== undefined) out.push(...inline(m[3], [...marks, "bold", "italic"]));
++    else if (m[4] !== undefined) out.push(...inline(m[4], [...marks, "bold"]));
++    else if (m[5] !== undefined) out.push(...inline(m[5], [...marks, "strike"]));
++    else if (m[6] !== undefined) out.push(...inline(m[6], [...marks, "underline"]));
++    else out.push(...inline(m[7], [...marks, "italic"]));
++    rest = rest.slice(m.index + m[0].length);
++  }
++  return out;
++}
++
++function paragraph(lines) {
++  const content = [];
++  lines.forEach((line, i) => {
++    if (i) content.push({ type: "hardBreak" });
++    content.push(...inline(line.replace(/ {2,}$/, "")));
++  });
++  return content.length ? { type: "paragraph", content } : { type: "paragraph" };
++}
++
++const FENCE = /^\s*```([\w+#.-]*)\s*$/;
++const HEADING = /^(#{1,6})\s+(.*)$/;
++const ITEM = /^(\s*)([-*+]|\d+\.)\s+(.*)$/;
++const startsBlock = (l) => FENCE.test(l) || HEADING.test(l) || ITEM.test(l) || /^\s*>/.test(l) || /^\s*---+\s*$/.test(l);
++
++function blocks(lines) {
++  const out = [];
++  let i = 0;
++  while (i < lines.length) {
++    const line = lines[i];
++    if (!line.trim()) { i++; continue; }
++    let m;
++    if ((m = FENCE.exec(line))) {
++      const body = [];
++      i++;
++      while (i < lines.length && !/^\s*```\s*$/.test(lines[i])) body.push(lines[i++]);
++      i++;
++      const text = body.join("\n");
++      out.push({ type: "codeBlock", attrs: { language: m[1] || null }, ...(text ? { content: [{ type: "text", text }] } : {}) });
++    } else if ((m = HEADING.exec(line))) {
++      out.push({ type: "heading", attrs: { level: m[1].length }, content: inline(m[2]) });
++      i++;
++    } else if (/^\s*---+\s*$/.test(line)) {
++      out.push({ type: "horizontalRule" });
++      i++;
++    } else if (/^\s*>/.test(line)) {
++      const q = [];
++      while (i < lines.length && /^\s*>/.test(lines[i])) q.push(lines[i++].replace(/^\s*> ?/, ""));
++      out.push({ type: "blockquote", content: blocks(q) });
++    } else if ((m = ITEM.exec(line))) {
++      const ordered = /\d/.test(m[2]);
++      const baseIndent = m[1].length;
++      const items = [];
++      while (i < lines.length) {
++        const im = ITEM.exec(lines[i]);
++        if (!im || im[1].length !== baseIndent || /\d/.test(im[2]) !== ordered) break;
++        const width = im[1].length + im[2].length + 1;
++        const body = [im[3]];
++        i++;
++        while (i < lines.length && lines[i].trim() && !(ITEM.exec(lines[i]) && ITEM.exec(lines[i])[1].length <= baseIndent)) {
++          body.push(lines[i].slice(Math.min(width, lines[i].length - lines[i].trimStart().length)));
++          i++;
++        }
++        items.push({ type: "listItem", content: blocks(body) });
++      }
++      out.push(ordered
++        ? { type: "orderedList", attrs: { start: parseInt(m[2], 10) || 1 }, content: items }
++        : { type: "bulletList", content: items });
++    } else {
++      const p = [];
++      while (i < lines.length && lines[i].trim() && (p.length === 0 || !startsBlock(lines[i]))) p.push(lines[i++]);
++      out.push(paragraph(p));
++    }
++  }
++  return out;
++}
++
++/** @param {string} markdown @returns {object} ProseMirror JSON doc */
++export function parseMarkdown(markdown) {
++  const content = blocks(String(markdown ?? "").replace(/\r\n?/g, "\n").split("\n"));
++  return { type: "doc", content: content.length ? content : [{ type: "paragraph" }] };
++}
+diff -ruN a/public/src/shared/rich-input/markdown-serializer.js b/public/src/shared/rich-input/markdown-serializer.js
+--- a/public/src/shared/rich-input/markdown-serializer.js	1970-01-01 00:00:00.000000000 +0000
++++ b/public/src/shared/rich-input/markdown-serializer.js	2026-11-15 18:16:44.201379620 +0000
+@@ -0,0 +1,77 @@
++// =============================================================================
++// rich-input/markdown-serializer.js
++// ProseMirror JSON -> Markdown. Direct port of the 21st.dev component's
++// serializer (same output), kept framework-free.
++// =============================================================================
++
++function wrap(text, open, close = open) {
++  const m = text.match(/^(\s*)([\s\S]*?)(\s*)$/);
++  if (!m || !m[2]) return text;
++  return `${m[1]}${open}${m[2]}${close}${m[3]}`;
++}
++
++function serializeInline(nodes = []) {
++  return nodes
++    .map((n) => {
++      if (n.type === "hardBreak") return "  \n";
++      let t = n.text ?? "";
++      const marks = (n.marks ?? []).map((m) => m.type);
++      if (marks.includes("code")) t = wrap(t, "`");
++      if (marks.includes("bold")) t = wrap(t, "**");
++      if (marks.includes("italic")) t = wrap(t, "*");
++      if (marks.includes("strike")) t = wrap(t, "~~");
++      if (marks.includes("underline")) t = wrap(t, "<u>", "</u>");
++      return t;
++    })
++    .join("");
++}
++
++function indentLines(text, prefix, firstPrefix = prefix) {
++  return text
++    .split("\n")
++    .map((l, i) => (i === 0 ? firstPrefix : l ? prefix : "") + l)
++    .join("\n");
++}
++
++function serializeBlock(node) {
++  const children = node.content ?? [];
++  switch (node.type) {
++    case "paragraph":
++      return serializeInline(children);
++    case "heading":
++      return `${"#".repeat(node.attrs?.level ?? 1)} ${serializeInline(children)}`;
++    case "bulletList":
++      return children
++        .map((li) => indentLines(serializeBlocks(li.content ?? [], "\n"), "  ", "- "))
++        .join("\n");
++    case "orderedList": {
++      const start = node.attrs?.start ?? 1;
++      return children
++        .map((li, i) => {
++          const marker = `${start + i}. `;
++          return indentLines(serializeBlocks(li.content ?? [], "\n"), " ".repeat(marker.length), marker);
++        })
++        .join("\n");
++    }
++    case "blockquote":
++      return indentLines(serializeBlocks(children), "> ");
++    case "codeBlock": {
++      const code = children.map((c) => c.text ?? "").join("");
++      const lang = node.attrs?.language && node.attrs.language !== "plaintext" ? node.attrs.language : "";
++      return "```" + lang + "\n" + code + "\n```";
++    }
++    case "horizontalRule":
++      return "---";
++    default:
++      return serializeInline(children);
++  }
++}
++
++function serializeBlocks(nodes, sep = "\n\n") {
++  return nodes.map(serializeBlock).join(sep);
++}
++
++/** @param {object} doc ProseMirror JSON document (editor.getJSON()) */
++export function toMarkdown(doc) {
++  return serializeBlocks(doc.content ?? []).trim();
++}
+diff -ruN a/public/src/shared/rich-input/rich-input.css b/public/src/shared/rich-input/rich-input.css
+--- a/public/src/shared/rich-input/rich-input.css	1970-01-01 00:00:00.000000000 +0000
++++ b/public/src/shared/rich-input/rich-input.css	2026-11-15 18:18:35.335207549 +0000
+@@ -0,0 +1,339 @@
++/* =============================================================================
++   rich-input.css — styles for the AI Agent rich input (rich-input.js).
++   Plain-CSS conversion of the 21st.dev component's Tailwind classes, mapped
++   onto this site's theme tokens (--color-*), so it follows light / dark /
++   dark-slate automatically.
++   ============================================================================= */
++
++.rmci-root,
++.rmci-menu {
++  --rmci-fg: var(--color-text-primary, #1d2433);
++  --rmci-muted: var(--color-text-secondary, #667085);
++  --rmci-border: var(--color-border, #dce2ed);
++  --rmci-card: var(--color-surface, #ffffff);
++  --rmci-ring: var(--color-primary, #b94a16);
++  --rmci-hover: color-mix(in srgb, var(--rmci-fg) 10%, transparent);
++  --rmci-active: color-mix(in srgb, var(--rmci-fg) 15%, transparent);
++
++  --rmci-comment: #6e7781; --rmci-kw: #cf222e; --rmci-str: #0a3069; --rmci-num: #0550ae;
++  --rmci-fn: #8250df; --rmci-type: #953800; --rmci-attr: #116329; --rmci-del: #82071e;
++}
++
++html[data-theme="dark"] .rmci-root,
++html[data-theme="dark-slate"] .rmci-root {
++  --rmci-comment: #7d8590; --rmci-kw: #ff7b72; --rmci-str: #a5d6ff; --rmci-num: #79c0ff;
++  --rmci-fn: #d2a8ff; --rmci-type: #ffa657; --rmci-attr: #7ee787; --rmci-del: #ffa198;
++}
++
++.rmci-root { width: 100%; max-width: 100%; box-sizing: border-box; color: var(--rmci-fg); }
++.rmci-root *, .rmci-menu * { box-sizing: border-box; }
++.rmci-root.is-disabled .rmci-editor { opacity: .6; }
++
++/* ── Shell ── */
++.rmci-editor {
++  position: relative;
++  width: 100%;
++  border: 1px solid var(--rmci-border);
++  border-radius: 24px;
++  background: var(--rmci-card);
++  color: var(--rmci-fg);
++  box-shadow: 0 10px 28px rgba(0, 0, 0, .12);
++  transition: border-color .2s ease, box-shadow .2s ease, opacity .2s ease;
++}
++.rmci-editor:focus-within {
++  border-color: color-mix(in srgb, var(--rmci-ring) 50%, transparent);
++  box-shadow: 0 10px 28px rgba(0, 0, 0, .12), 0 0 0 2px color-mix(in srgb, var(--rmci-ring) 30%, transparent);
++}
++
++.rmci-scroll { overflow-y: auto; padding: 14px 18px 2px; cursor: text; overscroll-behavior: contain; }
++.rmci-host { min-width: 0; }
++
++/* ── Toolbar ── */
++.rmci-toolbar-slot { animation: rmci-fade-down .2s ease; }
++.rmci-toolbar-slot[hidden] { display: none; }
++.rmci-toolbar {
++  display: flex; flex-wrap: wrap; align-items: center; gap: 2px;
++  padding: 6px 8px; border-bottom: 1px solid var(--rmci-border);
++}
++.rmci-divider { width: 1px; height: 16px; margin: 0 4px; background: var(--rmci-border); flex-shrink: 0; }
++
++.rmci-icon-btn,
++.rmci-heading-btn {
++  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
++  border: 0; background: transparent; color: var(--rmci-muted); cursor: pointer;
++  border-radius: 10px; transition: background .15s ease, color .15s ease;
++}
++.rmci-icon-btn { width: 32px; height: 32px; padding: 0; }
++.rmci-heading-btn { height: 32px; gap: 2px; padding: 0 4px 0 8px; }
++.rmci-icon-btn:hover, .rmci-heading-btn:hover { background: var(--rmci-hover); color: var(--rmci-fg); }
++.rmci-icon-btn.is-active, .rmci-heading-btn.is-active, .rmci-icon-btn.is-open, .rmci-heading-btn.is-open {
++  background: var(--rmci-active); color: var(--rmci-fg);
++}
++.rmci-icon-btn:disabled { opacity: .4; pointer-events: none; }
++.rmci-icon-btn:focus-visible, .rmci-heading-btn:focus-visible, .rmci-model-btn:focus-visible,
++.rmci-codeblock-btn:focus-visible, .rmci-lang-btn:focus-visible, .rmci-menu-item:focus-visible {
++  outline: 2px solid var(--rmci-ring); outline-offset: 1px;
++}
++.rmci-icon { display: block; flex-shrink: 0; }
++
++/* ── Bottom bar ── */
++.rmci-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px 10px; }
++.rmci-bar-start, .rmci-bar-end { display: flex; align-items: center; gap: 4px; min-width: 0; }
++.rmci-bar-end { gap: 6px; }
++.rmci-model-slot { display: contents; }
++
++.rmci-model-wrap { display: inline-flex; min-width: 0; }
++.rmci-model-btn {
++  display: inline-flex; align-items: center; gap: 6px; height: 32px; max-width: 170px; padding: 0 12px;
++  border: 1px solid var(--rmci-border); border-radius: 999px;
++  background: color-mix(in srgb, var(--rmci-fg) 3%, transparent);
++  color: var(--rmci-muted); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer;
++  transition: background .15s ease, color .15s ease;
++}
++.rmci-model-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
++.rmci-model-btn:hover:not(:disabled) { background: var(--rmci-hover); color: var(--rmci-fg); }
++.rmci-model-btn:disabled { opacity: .55; cursor: not-allowed; }
++.rmci-model-btn .rmci-icon { transition: transform .2s ease; }
++.rmci-model-btn.is-open .rmci-icon { transform: rotate(180deg); }
++
++.rmci-hint { margin: 6px 0 0; text-align: center; font-size: 11px; color: color-mix(in srgb, var(--rmci-muted) 80%, transparent); }
++
++/* ── Menus (portaled to <body>) ── */
++.rmci-menu {
++  z-index: var(--z-toast, 7000);
++  min-width: 160px; max-width: calc(100vw - 16px); max-height: min(340px, calc(100vh - 16px)); overflow-y: auto;
++  padding: 4px; border: 1px solid var(--rmci-border); border-radius: 14px;
++  background: var(--rmci-card); color: var(--rmci-fg);
++  box-shadow: 0 16px 40px rgba(0, 0, 0, .35);
++  animation: rmci-pop .15s ease;
++}
++.rmci-lang-menu { width: 160px; }
++.rmci-menu-item {
++  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px;
++  border: 0; border-radius: 10px; background: transparent; color: inherit;
++  font: inherit; font-size: 13.5px; text-align: start; cursor: pointer;
++}
++.rmci-menu-item--compact { justify-content: space-between; padding: 6px 10px; font-size: 12px; text-align: left; }
++.rmci-menu-item:hover, .rmci-menu-item:focus-visible { background: var(--rmci-hover); }
++.rmci-menu-icon { color: var(--rmci-muted); display: inline-flex; }
++.rmci-menu-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
++.rmci-menu-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
++.rmci-menu-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--rmci-muted); }
++.rmci-menu-check { color: var(--rmci-ring, #b94a16); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
++.rmci-menu-spacer { display: inline-block; width: 16px; height: 16px; flex-shrink: 0; }
++
++.rmci-menu-section-header {
++  padding: 6px 10px 2px;
++  font-size: 11px;
++  font-weight: 700;
++  color: var(--rmci-muted);
++  letter-spacing: 0.03em;
++}
++
++.rmci-menu-divider {
++  height: 1px;
++  margin: 6px 4px;
++  background: var(--rmci-border);
++}
++
++.rmci-menu-item--submenu {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  width: calc(100% - 8px);
++  margin: 6px 4px 2px;
++  padding: 8px 10px;
++  border: 1px solid var(--rmci-border);
++  border-radius: 10px;
++  background: color-mix(in srgb, var(--rmci-card) 92%, var(--rmci-fg) 4%);
++  cursor: pointer;
++  transition: background 0.15s ease, border-color 0.15s ease;
++}
++
++.rmci-menu-item--submenu:hover,
++.rmci-menu-item--submenu.is-active,
++.rmci-menu-item--submenu:focus-visible {
++  background: var(--rmci-hover);
++  border-color: color-mix(in srgb, var(--rmci-ring) 50%, var(--rmci-border));
++}
++
++.rmci-menu-arrow {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  color: var(--rmci-muted);
++  flex-shrink: 0;
++  margin-inline-start: 8px;
++  transition: transform 0.15s ease;
++}
++
++.rmci-menu-item--submenu.is-active .rmci-menu-arrow {
++  transform: translateX(-3px);
++  color: var(--rmci-fg);
++}
++
++.rmci-menu-item.is-locked {
++  opacity: 0.78;
++}
++
++.rmci-menu-item.is-locked:hover {
++  background: color-mix(in srgb, var(--rmci-hover) 75%, transparent);
++}
++
++.rmci-menu-lock {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  color: var(--rmci-muted);
++  flex-shrink: 0;
++}
++
++.rmci-submenu {
++  min-width: 210px;
++  max-width: 280px;
++  z-index: calc(var(--z-toast, 7000) + 1);
++  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
++}
++
++/* ── "View Usage" row + flyout ── */
++.rmci-menu-usage-lead { display: inline-flex; align-items: center; gap: 8px; }
++.rmci-submenu:has(.rmci-usage-body) { min-width: 250px; max-width: 300px; padding: 6px; }
++.rmci-usage-head { padding: 6px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .02em; color: var(--rmci-muted); }
++.rmci-usage-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 10px; }
++.rmci-usage-row:hover { background: var(--rmci-hover); }
++.rmci-usage-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
++.rmci-usage-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
++.rmci-usage-name { font-size: 13px; font-weight: 600; color: var(--rmci-fg); }
++.rmci-usage-pct { font-size: 12px; color: var(--rmci-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
++.rmci-usage-sub { font-size: 11px; color: var(--rmci-muted); }
++.rmci-usage-ring { flex-shrink: 0; }
++.rmci-usage-ring-bg { fill: none; stroke: color-mix(in srgb, var(--rmci-fg) 18%, transparent); stroke-width: 2.5; }
++.rmci-usage-ring-fg { fill: none; stroke: #4caf6a; stroke-width: 2.5; stroke-linecap: round; transition: stroke-dashoffset .4s ease; }
++.rmci-usage-row.is-warn .rmci-usage-ring-fg { stroke: #e0a030; }
++.rmci-usage-row.is-low .rmci-usage-ring-fg { stroke: #e05050; }
++.rmci-usage-source { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 4px 4px; padding: 6px 10px; border-radius: 10px; font-size: 12px; border: 1px solid var(--rmci-border); }
++.rmci-usage-source-label { color: var(--rmci-muted); }
++.rmci-usage-source-value { font-weight: 600; color: var(--rmci-fg); }
++.rmci-usage-source.is-own { border-color: color-mix(in srgb, var(--rmci-ring) 55%, var(--rmci-border)); }
++.rmci-usage-row.is-current { background: color-mix(in srgb, var(--rmci-ring) 10%, transparent); }
++.rmci-usage-note { padding: 10px; font-size: 12px; color: var(--rmci-muted); }
++
++/* ── ProseMirror content ── */
++.rmci-editor .ProseMirror { outline: none; min-height: 1.75rem; word-break: break-word; font-size: .9375rem; line-height: 1.6; white-space: pre-wrap; }
++.rmci-editor .ProseMirror > *:first-child { margin-top: 0; }
++.rmci-editor .ProseMirror > *:last-child { margin-bottom: 0; }
++.rmci-editor .ProseMirror p { margin: .25rem 0; }
++.rmci-editor .ProseMirror p.is-editor-empty:first-child::before {
++  content: attr(data-placeholder); float: inline-start; height: 0; pointer-events: none;
++  color: color-mix(in srgb, currentColor 45%, transparent);
++}
++.rmci-ph-rtl .ProseMirror p.is-editor-empty:first-child::before { float: right; direction: rtl; }
++.rmci-editor .ProseMirror h1 { font-size: 1.5rem; line-height: 1.25; font-weight: 700; margin: .75rem 0 .25rem; letter-spacing: -.01em; }
++.rmci-editor .ProseMirror h2 { font-size: 1.25rem; line-height: 1.3; font-weight: 650; margin: .65rem 0 .25rem; letter-spacing: -.01em; }
++.rmci-editor .ProseMirror h3 { font-size: 1.075rem; line-height: 1.35; font-weight: 600; margin: .55rem 0 .2rem; }
++.rmci-editor .ProseMirror ul { list-style: disc; padding-inline-start: 1.4rem; padding-inline-end: 0; margin: .3rem 0; }
++.rmci-editor .ProseMirror ol { list-style: decimal; padding-inline-start: 1.4rem; padding-inline-end: 0; margin: .3rem 0; }
++.rmci-editor .ProseMirror li { margin: .1rem 0; }
++.rmci-editor .ProseMirror li > p { margin: 0; }
++.rmci-editor .ProseMirror li::marker { color: color-mix(in srgb, currentColor 55%, transparent); }
++.rmci-editor .ProseMirror blockquote {
++  margin: .5rem 0; padding: .35rem .9rem;
++  border-inline-start: 3px solid color-mix(in srgb, currentColor 30%, transparent);
++  background: color-mix(in srgb, currentColor 5%, transparent);
++  border-start-end-radius: .6rem; border-end-end-radius: .6rem;
++}
++/* Lists / quotes can't use dir="auto" themselves; flip them from their first block. */
++.rmci-editor .ProseMirror :is(ul, ol):has(> li:first-child > :is(p, h1, h2, h3):dir(rtl)),
++.rmci-editor .ProseMirror blockquote:has(> :is(p, h1, h2, h3):first-child:dir(rtl)) { direction: rtl; }
++.rmci-editor .ProseMirror code:not(pre code) {
++  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em; padding: .12rem .38rem; border-radius: .4rem;
++  background: color-mix(in srgb, currentColor 10%, transparent); border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
++  unicode-bidi: isolate;
++}
++.rmci-editor .ProseMirror pre code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
++.rmci-editor .ProseMirror hr { border: 0; border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent); margin: .75rem 0; }
++.rmci-editor .ProseMirror u { text-underline-offset: 3px; }
++.rmci-editor .ProseMirror ::selection { background: color-mix(in srgb, currentColor 22%, transparent); }
++
++/* command / mention tokens (replaces the old textarea mirror highlighter) */
++.rmci-token { border-radius: 6px; padding: 0 3px; font-weight: 600; }
++.rmci-token--command { color: var(--rmci-ring); background: color-mix(in srgb, var(--rmci-ring) 14%, transparent); }
++.rmci-token--mention { color: #2f7de1; background: color-mix(in srgb, #2f7de1 14%, transparent); }
++
++/* ── Code block ── */
++.rmci-codeblock {
++  margin: .5rem 0; overflow: hidden; text-align: left;
++  border: 1px solid var(--rmci-border); border-radius: 14px;
++  background: color-mix(in srgb, var(--color-background-secondary, #f4f6fb) 70%, transparent);
++}
++.rmci-codeblock-header {
++  display: flex; align-items: center; justify-content: space-between; padding: 4px 10px;
++  border-bottom: 1px solid var(--rmci-border); background: color-mix(in srgb, var(--rmci-fg) 3%, transparent);
++  user-select: none;
++}
++.rmci-codeblock-actions { display: flex; align-items: center; gap: 4px; }
++.rmci-codeblock-btn {
++  display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px; border: 0; border-radius: 8px;
++  background: transparent; color: var(--rmci-muted); font: inherit; font-size: 11px; font-weight: 500; cursor: pointer;
++  transition: background .15s ease, color .15s ease;
++}
++.rmci-codeblock-btn:hover { background: var(--rmci-hover); color: var(--rmci-fg); }
++.rmci-codeblock-btn.is-done .rmci-icon { color: #34d399; }
++.rmci-lang-btn {
++  display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px 0 8px;
++  border: 1px solid var(--rmci-border); border-radius: 8px; background: color-mix(in srgb, var(--rmci-card) 80%, transparent);
++  color: color-mix(in srgb, var(--rmci-fg) 80%, transparent); font: inherit; font-size: 11px; font-weight: 500; cursor: pointer;
++}
++.rmci-lang-btn:hover { background: var(--rmci-hover); }
++.rmci-lang-btn .rmci-icon { color: var(--rmci-muted); transition: transform .2s ease; }
++.rmci-lang-btn.is-open .rmci-icon { transform: rotate(180deg); }
++.rmci-codeblock-pre {
++  margin: 0; padding: 12px 14px; overflow-x: auto; overflow-y: auto; max-height: 32rem;
++  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.6;
++  transition: max-height .3s ease-out; tab-size: 2;
++}
++.rmci-codeblock-pre.is-collapsed { max-height: 3.25rem; overflow-y: hidden; }
++.rmci-codeblock-fade { height: 24px; margin-top: -24px; pointer-events: none; background: linear-gradient(to top, var(--rmci-card), transparent); position: relative; }
++.rmci-codeblock-fade[hidden] { display: none; }
++
++.rmci-editor .hljs-comment, .rmci-editor .hljs-quote { color: var(--rmci-comment); font-style: italic; }
++.rmci-editor .hljs-keyword, .rmci-editor .hljs-selector-tag, .rmci-editor .hljs-literal, .rmci-editor .hljs-doctag { color: var(--rmci-kw); }
++.rmci-editor .hljs-string, .rmci-editor .hljs-regexp, .rmci-editor .hljs-addition { color: var(--rmci-str); }
++.rmci-editor .hljs-number, .rmci-editor .hljs-symbol, .rmci-editor .hljs-bullet, .rmci-editor .hljs-meta { color: var(--rmci-num); }
++.rmci-editor .hljs-title, .rmci-editor .hljs-section, .rmci-editor .hljs-title.function_ { color: var(--rmci-fn); }
++.rmci-editor .hljs-built_in, .rmci-editor .hljs-type, .rmci-editor .hljs-class .hljs-title { color: var(--rmci-type); }
++.rmci-editor .hljs-attr, .rmci-editor .hljs-attribute, .rmci-editor .hljs-variable, .rmci-editor .hljs-template-variable,
++.rmci-editor .hljs-property, .rmci-editor .hljs-name, .rmci-editor .hljs-tag { color: var(--rmci-attr); }
++.rmci-editor .hljs-deletion { color: var(--rmci-del); }
++.rmci-editor .hljs-emphasis { font-style: italic; }
++.rmci-editor .hljs-strong { font-weight: 700; }
++
++/* while the editor module is still loading, keep the box the right height */
++.rmci-root:not(.is-ready) .rmci-host { min-height: 1.75rem; }
++
++@keyframes rmci-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
++@keyframes rmci-fade-down { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
++@media (prefers-reduced-motion: reduce) {
++  .rmci-menu, .rmci-toolbar-slot, .rmci-codeblock-pre { animation: none; transition: none; }
++}
++
++/* ── Locked (read-only) variant: essay answers after "check" ──
++   Content stays rendered; toolbar toggle, mic and bottom bar disappear. */
++.rmci-root--lockable.is-disabled .rmci-toolbar-slot,
++.rmci-root--lockable.is-disabled .rmci-bar { display: none; }
++.rmci-root--lockable.is-disabled .rmci-editor { opacity: 1; box-shadow: none; }
++.rmci-root--lockable.is-disabled .rmci-scroll { padding-bottom: 14px; cursor: default; }
++
++/* ── Essay answer field (quiz + lesson): lighter than the chat input ── */
++.rmci-root--essay .rmci-editor { border-radius: 14px; box-shadow: none; }
++.rmci-root--essay .rmci-scroll { min-height: 120px; }
++.rmci-root--essay .ProseMirror { min-height: 96px; }
++
++/* ── Dictation (mic) button ── */
++.rmci-mic-btn.is-listening { color: #fff; background: #dc2626; animation: rmci-mic-pulse 1.4s ease-in-out infinite; }
++.rmci-mic-btn.is-listening:hover { background: #b91c1c; color: #fff; }
++@keyframes rmci-mic-pulse {
++  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, .45); }
++  50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
++}
++@media (prefers-reduced-motion: reduce) { .rmci-mic-btn.is-listening { animation: none; } }
+diff -ruN a/public/src/shared/rich-input/rich-input.js b/public/src/shared/rich-input/rich-input.js
+--- a/public/src/shared/rich-input/rich-input.js	1970-01-01 00:00:00.000000000 +0000
++++ b/public/src/shared/rich-input/rich-input.js	2026-11-15 18:18:09.170575549 +0000
+@@ -0,0 +1,867 @@
++// =============================================================================
++// rich-input/rich-input.js
++// Vanilla-JS port of the 21st.dev "Rich Markdown AI Input Field" (Tiptap):
++// formatting toolbar (headings, bold/italic/underline/strike, inline code,
++// lists, quote), fenced code blocks with language menu / copy / collapse,
++// per-block RTL/LTR, model menu, send / stop.
++//
++// Tiptap + lowlight are loaded lazily from /assets/vendor/tiptap/tiptap.js
++// (built by runtimes/build.mjs, target "tiptap-vendor"), so pages only pay for
++// them when the AI window is actually opened. Everything in this folder is
++// plain, editable source.
++//
++// Shared component: used by the AI Agent chat and by the essay answer fields of
++// the quiz and lesson pages (see essay-field.js). It must not import from any
++// one feature — feature-specific data is injected through options.
++//
++// INTEGRATION CONTRACT
++//   const rich = createRichInput({ placeholder, getCommands, getMentions, onSubmit });
++//   rich.el          -> mount this
++//   rich.startSlot   -> .rmci-bar-start  (append the "+" button etc.)
++//   rich.endSlot     -> .rmci-bar-end    (append mic / send etc.)
++//   rich.textarea    -> a <textarea>-compatible adapter (see below)
++//   rich.getMarkdown(), rich.clear(), rich.focus(), rich.setModels({...})
++//
++// The adapter is the `.rmci-host` element itself, extended with the textarea
++// members the chat panel / @-mention / slash menus use: value, selectionStart,
++// selectionEnd, setSelectionRange(), focus(), disabled. `value` is the plain
++// text (blocks joined by "\n"); assigning to it performs a minimal text diff
++// so formatting elsewhere in the draft survives (e.g. picking an @mention).
++// Programmatic changes never fire "input" (like a real textarea); user edits
++// fire one synthetic "input" event per document change. "keydown" listeners
++// are registered in the capture phase so menus can intercept arrows/Enter/Esc
++// before ProseMirror sees them.
++// =============================================================================
++import { icon } from "./icons.js";
++import { toMarkdown } from "./markdown-serializer.js";
++import { buildExtensions } from "./extensions.js";
++import { parseMarkdown } from "./markdown-parser.js";
++
++const VENDOR_URL = globalThis.__RMCI_VENDOR_URL__ || "/assets/vendor/tiptap/tiptap.js"; // override hook: tests
++const RTL_CHARS = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
++let vendorPromise = null;
++
++function loadVendor() {
++  if (!vendorPromise) {
++    vendorPromise = import(/* @vite-ignore */ VENDOR_URL).catch((err) => {
++      vendorPromise = null;
++      throw err;
++    });
++  }
++  return vendorPromise;
++}
++
++const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
++const textToHtml = (text) => text.split("\n").map((l) => `<p>${escapeHtml(l)}</p>`).join("");
++
++/** All text blocks of a doc with their start position and length. */
++function textBlocks(doc) {
++  const out = [];
++  doc.descendants((node, pos) => {
++    if (node.isTextblock) {
++      out.push({ start: pos + 1, len: node.content.size, node });
++      return false;
++    }
++    return true;
++  });
++  return out;
++}
++
++function plainTextOf(doc) {
++  return textBlocks(doc).map((b) => b.node.textBetween(0, b.node.content.size, "", "\n")).join("\n");
++}
++
++function offsetToPos(doc, off) {
++  const blocks = textBlocks(doc);
++  if (!blocks.length) return 1;
++  let base = 0;
++  for (const b of blocks) {
++    if (off <= base + b.len) return b.start + Math.max(0, off - base);
++    base += b.len + 1;
++  }
++  const last = blocks[blocks.length - 1];
++  return last.start + last.len;
++}
++
++function posToOffset(doc, pos) {
++  let base = 0;
++  for (const b of textBlocks(doc)) {
++    if (pos <= b.start + b.len) return base + Math.min(b.len, Math.max(0, pos - b.start));
++    base += b.len + 1;
++  }
++  return base > 0 ? base - 1 : 0;
++}
++
++/** Opens a fixed-position popup menu next to `trigger`; returns a close fn. */
++function openMenu(trigger, build, { align = "start", rtl = false, width } = {}) {
++  const menu = document.createElement("div");
++  menu.className = "rmci-menu";
++  menu.setAttribute("role", "menu");
++  menu.dir = rtl ? "rtl" : "ltr";
++  if (width) menu.style.width = `${width}px`;
++  const close = () => {
++    menu.remove();
++    trigger.setAttribute("aria-expanded", "false");
++    trigger.classList.remove("is-open");
++    document.removeEventListener("pointerdown", onDown, true);
++    document.removeEventListener("mousedown", onDown, true);
++    document.removeEventListener("keydown", onKey, true);
++    window.removeEventListener("resize", close);
++    window.removeEventListener("scroll", onScroll, true);
++    window.removeEventListener("aiw:close-popups", close);
++    window.removeEventListener("blur", close);
++  };
++  const onDown = (e) => {
++    const isSub = e.target.closest && e.target.closest(".rmci-submenu");
++    if (!menu.contains(e.target) && !trigger.contains(e.target) && !isSub) close();
++  };
++  const onScroll = (e) => {
++    if (menu.contains(e.target) || e.target.closest?.(".rmci-submenu")) return;
++    close();
++  };
++  const onKey = (e) => {
++    if (e.key === "Escape") {
++      e.stopPropagation();
++      const sub = document.querySelector(".rmci-submenu");
++      if (sub) {
++        sub.remove();
++        document.querySelector(".rmci-menu-item--submenu.is-active")?.classList.remove("is-active");
++      } else {
++        close();
++      }
++    }
++  };
++  build(menu, close);
++  document.body.appendChild(menu);
++
++  const r = trigger.getBoundingClientRect();
++  const mw = menu.offsetWidth;
++  menu.style.position = "fixed";
++  let left = align === "end" ? r.right - mw : r.left;
++  left = Math.max(8, Math.min(left, window.innerWidth - mw - 8));
++  menu.style.left = `${left}px`;
++  const mh = menu.offsetHeight;
++  const above = r.top;
++  if (r.bottom + mh + 8 > window.innerHeight && above > mh + 8) menu.style.top = `${r.top - mh - 6}px`;
++  else menu.style.top = `${r.bottom + 6}px`;
++
++  document.addEventListener("pointerdown", onDown, true);
++  document.addEventListener("mousedown", onDown, true);
++  document.addEventListener("keydown", onKey, true);
++  window.addEventListener("resize", close);
++  window.addEventListener("scroll", onScroll, true);
++  window.addEventListener("aiw:close-popups", close);
++  window.addEventListener("blur", close);
++  trigger.setAttribute("aria-expanded", "true");
++  trigger.classList.add("is-open");
++  return close;
++}
++
++/** One provider row of the usage flyout: name + "% left" + reset line + ring. */
++function usageRow(g, formatReset) {
++  const pct = Math.max(0, Math.min(100, Number(g.percentLeft) || 0));
++  const row = document.createElement("div");
++  row.className = `rmci-usage-row${pct <= 10 ? " is-low" : pct <= 30 ? " is-warn" : ""}`;
++  row.setAttribute("role", "group");
++  const R = 8, C = 2 * Math.PI * R;
++  row.innerHTML =
++    '<span class="rmci-usage-text"><span class="rmci-usage-top"><span class="rmci-usage-name"></span><span class="rmci-usage-pct"></span></span><span class="rmci-usage-sub"></span></span>' +
++    `<svg class="rmci-usage-ring" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="${R}" class="rmci-usage-ring-bg"/><circle cx="11" cy="11" r="${R}" class="rmci-usage-ring-fg" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C * (1 - pct / 100)).toFixed(2)}" transform="rotate(-90 11 11)"/></svg>`;
++  row.querySelector(".rmci-usage-name").textContent = g.label;
++  row.querySelector(".rmci-usage-pct").textContent = `المتبقي ${pct}%`;
++  row.querySelector(".rmci-usage-sub").textContent = g.resetsAt && formatReset ? formatReset(g.resetsAt) : "الحد الأسبوعي";
++  return row;
++}
++
++function menuItem({ iconHtml = "", label, hint = "", selected = false, locked = false, leadingCheck = false, onClick }) {
++  const item = document.createElement("button");
++  item.type = "button";
++  item.className = `rmci-menu-item${locked ? " is-locked" : ""}`;
++  item.setAttribute("role", "menuitem");
++
++  let leading = "";
++  let trailing = "";
++
++  if (locked) {
++    leading = `<span class="rmci-menu-lock">${icon("lock", 15)}</span>`;
++  } else if (leadingCheck) {
++    if (selected) {
++      leading = `<span class="rmci-menu-check">${icon("check", 16)}</span>`;
++    } else {
++      leading = `<span class="rmci-menu-spacer" aria-hidden="true"></span>`;
++    }
++  } else if (iconHtml) {
++    leading = `<span class="rmci-menu-icon">${iconHtml}</span>`;
++    if (selected) {
++      trailing = `<span class="rmci-menu-check">${icon("check", 16)}</span>`;
++    }
++  } else if (selected) {
++    trailing = `<span class="rmci-menu-check">${icon("check", 16)}</span>`;
++  }
++
++  item.innerHTML =
++    leading +
++    `<span class="rmci-menu-text"><span class="rmci-menu-label"></span>${hint ? '<span class="rmci-menu-hint"></span>' : ""}</span>` +
++    trailing;
++  item.querySelector(".rmci-menu-label").textContent = label;
++  if (hint) item.querySelector(".rmci-menu-hint").textContent = hint;
++  item.addEventListener("mousedown", (e) => e.preventDefault());
++  item.addEventListener("click", onClick);
++  return item;
++}
++
++/**
++ * @param {object} [options]
++ * @param {string} [options.placeholder]
++ * @param {"auto"|"ltr"|"rtl"} [options.direction]
++ * @param {number} [options.maxHeight] px before the editor scrolls
++ * @param {string} [options.hint] small line under the field ("" hides it)
++ * @param {() => Array} [options.getCommands] slash commands to highlight
++ * @param {() => Array} [options.getMentions] @mention tokens to highlight
++ * @param {() => boolean} [options.onSubmit] Ctrl/Cmd+Enter
++ * @param {(markdown: string) => void} [options.onChange]
++ * @param {string} [options.initialMarkdown] saved markdown to load (formatting restored)
++ * @param {boolean} [options.hideControlsWhenDisabled] hide toolbar + bottom bar while
++ *   disabled, leaving a read-only rendering of the content (locked essay answers)
++ */
++export function createRichInput(options = {}) {
++  const opts = {
++    placeholder: "",
++    direction: "auto",
++    maxHeight: 320,
++    hint: "",
++    initialMarkdown: "",
++    hideControlsWhenDisabled: false,
++    ...options,
++  };
++  const rtlPlaceholder = opts.direction === "rtl" || (opts.direction === "auto" && RTL_CHARS.test(opts.placeholder));
++
++  // ── DOM shell ────────────────────────────────────────────────────────────
++  const root = document.createElement("div");
++  root.className = `rmci-root${rtlPlaceholder ? " rmci-ph-rtl" : ""}${opts.hideControlsWhenDisabled ? " rmci-root--lockable" : ""}`;
++
++  const shell = document.createElement("div");
++  shell.className = "rmci-editor";
++
++  const toolbarSlot = document.createElement("div");
++  toolbarSlot.className = "rmci-toolbar-slot";
++  toolbarSlot.hidden = true;
++
++  const scroller = document.createElement("div");
++  scroller.className = "rmci-scroll";
++  scroller.style.maxHeight = `${opts.maxHeight}px`;
++
++  const host = document.createElement("div");
++  host.className = "rmci-host";
++  scroller.appendChild(host);
++
++  const bar = document.createElement("div");
++  bar.className = "rmci-bar";
++  const startSlot = document.createElement("div");
++  startSlot.className = "rmci-bar-start";
++  const endSlot = document.createElement("div");
++  endSlot.className = "rmci-bar-end";
++
++  const formatBtn = document.createElement("button");
++  formatBtn.type = "button";
++  formatBtn.className = "rmci-icon-btn";
++  formatBtn.title = "إظهار التنسيق";
++  formatBtn.setAttribute("aria-label", "إظهار التنسيق");
++  formatBtn.setAttribute("aria-pressed", "false");
++  formatBtn.innerHTML = icon("type", 16);
++  formatBtn.addEventListener("mousedown", (e) => e.preventDefault());
++  startSlot.appendChild(formatBtn);
++
++  const modelSlot = document.createElement("div");
++  modelSlot.className = "rmci-model-slot";
++  endSlot.appendChild(modelSlot);
++
++  bar.append(startSlot, endSlot);
++  shell.append(toolbarSlot, scroller, bar);
++  root.appendChild(shell);
++
++  if (opts.hint) {
++    const hint = document.createElement("p");
++    hint.className = "rmci-hint";
++    hint.textContent = opts.hint;
++    root.appendChild(hint);
++  }
++
++  // Only the padding area focuses the editor; never steal focus from controls.
++  scroller.addEventListener("mousedown", (e) => {
++    if (e.target === scroller) {
++      e.preventDefault();
++      focus("end");
++    }
++  });
++
++  // ── State ────────────────────────────────────────────────────────────────
++  let editor = null;
++  let silent = 0;
++  let pendingValue = "";
++  let pendingMarkdown = null; // markdown waiting for the editor to boot
++  let disabled = false;
++  let wantFocus = null;
++  let destroyed = false;
++  let toolbarEl = null;
++  let toolbarOpen = false;
++
++  const withSilent = (fn) => {
++    silent++;
++    try { return fn(); } finally { silent--; }
++  };
++
++  const getText = () => (editor ? plainTextOf(editor.state.doc) : pendingValue);
++  const isEmpty = () => (editor ? editor.isEmpty : pendingValue.trim() === "");
++  const getMarkdown = () => (editor ? toMarkdown(editor.getJSON()) : (pendingMarkdown ?? pendingValue).trim());
++
++  /** Replaces the whole document with `md`, formatting included. Never fires "input". */
++  function setMarkdown(md) {
++    md = String(md ?? "");
++    if (!editor) { pendingMarkdown = md; pendingValue = md; return; }
++    withSilent(() => editor.commands.setContent(parseMarkdown(md), { emitUpdate: false }));
++  }
++  if (opts.initialMarkdown) setMarkdown(opts.initialMarkdown);
++
++  function focus(where) {
++    if (!editor) { wantFocus = where || true; return; }
++    if (disabled) return;
++    editor.commands.focus(where);
++  }
++
++  // ── <textarea> adapter (on the host element itself) ──────────────────────
++  const nativeAdd = host.addEventListener.bind(host);
++  const nativeRemove = host.removeEventListener.bind(host);
++  const capOpt = (type, o) => (type === "keydown" ? (typeof o === "object" && o ? { ...o, capture: true } : true) : o);
++
++  // Real (trusted) `input` events come from the contenteditable and don't cover
++  // ProseMirror-handled edits; we emit one synthetic event per doc change instead.
++  nativeAdd("input", (e) => { if (e.isTrusted) e.stopImmediatePropagation(); });
++  host.addEventListener = (type, fn, o) => nativeAdd(type, fn, capOpt(type, o));
++  host.removeEventListener = (type, fn, o) => nativeRemove(type, fn, capOpt(type, o));
++
++  Object.defineProperties(host, {
++    value: {
++      get: getText,
++      set(v) {
++        v = String(v ?? "");
++        if (!editor) { pendingValue = v; pendingMarkdown = null; return; }
++        const cur = getText();
++        if (cur === v) return;
++        withSilent(() => {
++          if (v === "") {
++            editor.commands.clearContent(false);
++            return;
++          }
++          let p = 0;
++          while (p < cur.length && p < v.length && cur[p] === v[p]) p++;
++          let s = 0;
++          while (s < cur.length - p && s < v.length - p && cur[cur.length - 1 - s] === v[v.length - 1 - s]) s++;
++          const ins = v.slice(p, v.length - s);
++          if (ins.includes("\n")) {
++            editor.commands.setContent(textToHtml(v), { emitUpdate: false });
++            return;
++          }
++          const doc = editor.state.doc;
++          const from = offsetToPos(doc, p);
++          const to = offsetToPos(doc, cur.length - s);
++          const tr = editor.state.tr;
++          if (ins) tr.insertText(ins, from, to);
++          else tr.delete(from, to);
++          editor.view.dispatch(tr);
++        });
++      },
++    },
++    // The draft as markdown (formatting kept). `value` stays the plain text.
++    markdown: { get: getMarkdown, set: setMarkdown },
++    selectionStart: {
++      get: () => (editor ? posToOffset(editor.state.doc, editor.state.selection.from) : pendingValue.length),
++    },
++    selectionEnd: {
++      get: () => (editor ? posToOffset(editor.state.doc, editor.state.selection.to) : pendingValue.length),
++    },
++    disabled: {
++      get: () => disabled,
++      set(v) {
++        disabled = !!v;
++        root.classList.toggle("is-disabled", disabled);
++        editor?.setEditable(!disabled);
++        formatBtn.disabled = disabled;
++      },
++    },
++    setSelectionRange: {
++      value(a, b = a) {
++        if (!editor) return;
++        const doc = editor.state.doc;
++        editor.commands.setTextSelection({ from: offsetToPos(doc, a), to: offsetToPos(doc, b) });
++      },
++    },
++    focus: { value: (o) => focus(o && typeof o === "string" ? o : undefined) },
++  });
++
++  /** Enter must keep its editor meaning (list item, code fence, code block…) instead of sending. */
++  function enterIsStructural() {
++    if (!editor) return false;
++    const { $from, empty } = editor.state.selection;
++    const parent = $from.parent;
++    if (editor.isActive("codeBlock") || editor.isActive("bulletList") || editor.isActive("orderedList") || editor.isActive("blockquote")) return true;
++    return empty && parent.type.name === "paragraph" && /^```[\w+#.-]*$/.test(parent.textContent);
++  }
++
++  // ── Formatting toolbar ───────────────────────────────────────────────────
++  const TOOLBAR_BUTTONS = [
++    { id: "bold", icon: "bold", label: "عريض (Ctrl+B)", active: (e) => e.isActive("bold"), run: (c) => c.toggleBold() },
++    { id: "italic", icon: "italic", label: "مائل (Ctrl+I)", active: (e) => e.isActive("italic"), run: (c) => c.toggleItalic() },
++    { id: "underline", icon: "underline", label: "تحته خط (Ctrl+U)", active: (e) => e.isActive("underline"), run: (c) => c.toggleUnderline() },
++    { id: "strike", icon: "strike", label: "يتوسطه خط", active: (e) => e.isActive("strike"), run: (c) => c.toggleStrike() },
++    { id: "code", icon: "code", label: "كود مضمّن", active: (e) => e.isActive("code"), run: (c) => c.toggleCode() },
++    "|",
++    { id: "bullet", icon: "list", label: "قائمة نقطية", active: (e) => e.isActive("bulletList"), run: (c) => c.toggleBulletList() },
++    { id: "ordered", icon: "listOrdered", label: "قائمة مرقّمة", active: (e) => e.isActive("orderedList"), run: (c) => c.toggleOrderedList() },
++    { id: "quote", icon: "quote", label: "اقتباس", active: (e) => e.isActive("blockquote"), run: (c) => c.toggleBlockquote() },
++    { id: "codeBlock", icon: "codeBlock", label: "كتلة كود", active: (e) => e.isActive("codeBlock"), run: (c) => c.toggleCodeBlock() },
++  ];
++  const HEADINGS = [
++    { level: 0, icon: "type", label: "فقرة", hint: "" },
++    { level: 1, icon: "h1", label: "عنوان 1", hint: "# " },
++    { level: 2, icon: "h2", label: "عنوان 2", hint: "## " },
++    { level: 3, icon: "h3", label: "عنوان 3", hint: "### " },
++  ];
++
++  function buildToolbar() {
++    const tb = document.createElement("div");
++    tb.className = "rmci-toolbar";
++    tb.setAttribute("role", "toolbar");
++    tb.setAttribute("aria-label", "التنسيق");
++    tb.dir = "ltr";
++
++    const headingBtn = document.createElement("button");
++    headingBtn.type = "button";
++    headingBtn.className = "rmci-heading-btn";
++    headingBtn.title = "نمط النص";
++    headingBtn.setAttribute("aria-label", "نمط النص");
++    headingBtn.setAttribute("aria-haspopup", "menu");
++    headingBtn.setAttribute("aria-expanded", "false");
++    headingBtn.addEventListener("mousedown", (e) => e.preventDefault());
++    const currentLevel = () => [1, 2, 3].find((l) => editor.isActive("heading", { level: l })) || 0;
++    headingBtn.addEventListener("click", () => {
++      if (headingBtn.classList.contains("is-open")) return;
++      const cur = currentLevel();
++      openMenu(headingBtn, (menu, close) => {
++        HEADINGS.forEach((h) => {
++          menu.appendChild(menuItem({
++            iconHtml: icon(h.icon, 16), label: h.label, hint: h.hint, selected: cur === h.level,
++            onClick: () => {
++              const chain = editor.chain().focus();
++              (h.level === 0 ? chain.setParagraph() : chain.setHeading({ level: h.level })).run();
++              close();
++            },
++          }));
++        });
++      }, { rtl: true, width: 190 });
++    });
++    tb.appendChild(headingBtn);
++
++    const buttons = [];
++    const divider = () => { const d = document.createElement("span"); d.className = "rmci-divider"; d.setAttribute("aria-hidden", "true"); return d; };
++    tb.appendChild(divider());
++    for (const def of TOOLBAR_BUTTONS) {
++      if (def === "|") { tb.appendChild(divider()); continue; }
++      const b = document.createElement("button");
++      b.type = "button";
++      b.className = "rmci-icon-btn";
++      b.title = def.label;
++      b.setAttribute("aria-label", def.label);
++      b.setAttribute("aria-pressed", "false");
++      b.innerHTML = icon(def.icon, 16);
++      b.addEventListener("mousedown", (e) => e.preventDefault());
++      b.addEventListener("click", () => def.run(editor.chain().focus()).run());
++      tb.appendChild(b);
++      buttons.push([def, b]);
++    }
++
++    tb.update = () => {
++      if (!editor) return;
++      const level = currentLevel();
++      const h = HEADINGS.find((x) => x.level === level);
++      headingBtn.innerHTML = `${icon(h.icon, 16)}${icon("chevronDown", 12)}`;
++      headingBtn.classList.toggle("is-active", level > 0);
++      for (const [def, b] of buttons) {
++        const on = def.active(editor);
++        b.classList.toggle("is-active", on);
++        b.setAttribute("aria-pressed", String(on));
++      }
++    };
++    return tb;
++  }
++
++  function setToolbar(open) {
++    toolbarOpen = open;
++    formatBtn.classList.toggle("is-active", open);
++    formatBtn.setAttribute("aria-pressed", String(open));
++    const label = open ? "إخفاء التنسيق" : "إظهار التنسيق";
++    formatBtn.title = label;
++    formatBtn.setAttribute("aria-label", label);
++    if (open && editor && !toolbarEl) {
++      toolbarEl = buildToolbar();
++      toolbarSlot.appendChild(toolbarEl);
++    }
++    toolbarSlot.hidden = !open || !editor;
++    if (open) toolbarEl?.update();
++  }
++  formatBtn.addEventListener("click", () => setToolbar(!toolbarOpen));
++
++  // ── Model menu ───────────────────────────────────────────────────────────
++  /**
++   * @param {{ items: Array<{id:string,label:string,description?:string,locked?:boolean}>, value: string,
++   *           effortLevels?: Array<{id:string,label:string,hint?:string}>, selectedEffort?: string,
++   *           disabled?: boolean, disabledReason?: string, onChange?: (id:string)=>void,
++   *           onLockedClick?: (item:object)=>void,
++   *           onEffortChange?: (effortId:string)=>void }} cfg
++   */
++  function setModels(cfg) {
++    modelSlot.innerHTML = "";
++    const items = cfg?.items || [];
++    if (!items.length) return;
++    const active = items.find((m) => m.id === cfg.value) || items[0];
++    const wrap = document.createElement("span");
++    wrap.className = "rmci-model-wrap";
++    if (cfg.disabled && cfg.disabledReason) wrap.title = cfg.disabledReason;
++    const btn = document.createElement("button");
++    btn.type = "button";
++    btn.className = "rmci-model-btn";
++    btn.disabled = !!cfg.disabled;
++    btn.setAttribute("aria-haspopup", "menu");
++    btn.setAttribute("aria-expanded", "false");
++    btn.setAttribute("aria-label", cfg.disabled && cfg.disabledReason ? cfg.disabledReason : "اختر النموذج");
++    btn.innerHTML = `<span class="rmci-model-label"></span>${icon("chevronDown", 12)}`;
++
++    let btnText = active.label;
++    if (cfg.effortLevels && cfg.selectedEffort && cfg.selectedEffort !== "auto") {
++      const activeEffort = cfg.effortLevels.find((e) => e.id === cfg.selectedEffort);
++      if (activeEffort) {
++        btnText += ` · ${activeEffort.id.toUpperCase()}`;
++      }
++    }
++    btn.querySelector(".rmci-model-label").textContent = btnText;
++
++    btn.addEventListener("mousedown", (e) => e.preventDefault());
++    btn.addEventListener("click", () => {
++      if (btn.classList.contains("is-open")) return;
++      openMenu(btn, (menu, close) => {
++        let submenuEl = null;
++        let closeSubmenuTimer = null;
++        let activeTrigger = null; // which menu row currently owns the flyout
++
++        const cancelCloseSubmenu = () => {
++          if (closeSubmenuTimer) {
++            clearTimeout(closeSubmenuTimer);
++            closeSubmenuTimer = null;
++          }
++        };
++
++        const closeSubmenu = () => {
++          cancelCloseSubmenu();
++          if (submenuEl) {
++            submenuEl.remove();
++            submenuEl = null;
++          }
++          if (activeTrigger) {
++            activeTrigger.setAttribute("aria-expanded", "false");
++            activeTrigger.classList.remove("is-active");
++            activeTrigger = null;
++          }
++        };
++
++        // One flyout at a time, shared by every submenu row ("Thinking level",
++        // "View Usage"). `fill(el, reposition)` populates it; it may call
++        // reposition() again when its content changes size (async usage load).
++        const openSubmenu = (trigger, fill) => {
++          cancelCloseSubmenu();
++          if (submenuEl && activeTrigger === trigger) return;
++          if (submenuEl) closeSubmenu();
++          activeTrigger = trigger;
++          submenuEl = document.createElement("div");
++          submenuEl.className = "rmci-menu rmci-submenu";
++          submenuEl.setAttribute("role", "menu");
++          submenuEl.dir = "rtl";
++
++          submenuEl.addEventListener("mouseenter", cancelCloseSubmenu);
++          submenuEl.addEventListener("mouseleave", scheduleCloseSubmenu);
++
++          submenuEl.style.position = "fixed";
++          document.body.appendChild(submenuEl);
++
++          const place = () => {
++            if (!submenuEl) return;
++            const tr = trigger.getBoundingClientRect();
++            const mr = menu.getBoundingClientRect();
++            const sw = submenuEl.offsetWidth || 220;
++            const sh = submenuEl.offsetHeight || 160;
++
++            // In RTL layout, the flyout opens directly to the left of the main menu
++            let left = mr.left - sw - 4;
++            if (left < 8) left = mr.right + 4;
++            left = Math.max(8, Math.min(left, window.innerWidth - sw - 8));
++
++            // Align the bottom of the submenu with the bottom of its trigger row
++            let top = tr.bottom - sh;
++            if (top < 8) top = Math.max(8, mr.top);
++            if (top + sh > window.innerHeight - 8) top = Math.max(8, window.innerHeight - sh - 8);
++
++            submenuEl.style.left = `${left}px`;
++            submenuEl.style.top = `${top}px`;
++          };
++
++          fill(submenuEl, place);
++          place();
++
++          trigger.setAttribute("aria-expanded", "true");
++          trigger.classList.add("is-active");
++        };
++
++        const fillEffort = (el) => {
++          const curEffort = cfg.selectedEffort || "auto";
++          cfg.effortLevels.forEach((eff) => {
++            el.appendChild(menuItem({
++              label: eff.label,
++              hint: eff.hint || "",
++              selected: eff.id === curEffort,
++              leadingCheck: true,
++              onClick: (e) => {
++                e.stopPropagation();
++                closeSubmenu();
++                close();
++                cfg.onEffortChange?.(eff.id);
++              },
++            }));
++          });
++        };
++
++        // "View Usage" flyout: header + one row per provider pool with a ring
++        // gauge, "% left" and the reset countdown.
++        const fillUsage = (el, place) => {
++          const head = document.createElement("div");
++          head.className = "rmci-usage-head";
++          head.textContent = "الاستخدام";
++          el.appendChild(head);
++
++          // Which key is actually serving THIS user's requests right now.
++          const own = cfg.usage.source === "own";
++          const src = document.createElement("div");
++          src.className = `rmci-usage-source ${own ? "is-own" : "is-platform"}`;
++          src.innerHTML = '<span class="rmci-usage-source-label">المفتاح المستخدم الآن</span><span class="rmci-usage-source-value"></span>';
++          src.querySelector(".rmci-usage-source-value").textContent = own ? "مفتاح API الخاص بك" : "مفتاح المنصة (مشترك)";
++          el.appendChild(src);
++          if (own) {
++            const note = document.createElement("div");
++            note.className = "rmci-usage-note";
++            note.textContent = "طلباتك تُرسل بمفتاحك الخاص ولا تُحتسب هنا، وحدّها يحدده مزوّدك. الأرقام التالية تخص مفتاح المنصة المشترك.";
++            el.appendChild(note);
++          }
++          const body = document.createElement("div");
++          body.className = "rmci-usage-body";
++          body.innerHTML = '<div class="rmci-usage-note">جارٍ التحميل…</div>';
++          el.appendChild(body);
++
++          Promise.resolve(cfg.usage.load()).then((data) => {
++            if (!submenuEl || !el.isConnected) return;
++            body.replaceChildren();
++            const groups = data?.groups || [];
++            if (!groups.length) {
++              body.innerHTML = '<div class="rmci-usage-note">لا توجد بيانات استخدام متاحة.</div>';
++            }
++            groups.forEach((g) => {
++              const row = usageRow(g, cfg.usage.formatReset);
++              if (!own && g.id === cfg.usage.provider) row.classList.add("is-current");
++              body.appendChild(row);
++            });
++            const foot = document.createElement("div");
++            foot.className = "rmci-usage-note";
++            foot.textContent = "مفتاح المنصة المشترك بين جميع المستخدمين";
++            body.appendChild(foot);
++            place();
++          }).catch(() => {
++            if (!el.isConnected) return;
++            body.innerHTML = '<div class="rmci-usage-note">تعذّر تحميل الاستخدام الآن.</div>';
++            place();
++          });
++        };
++
++        const scheduleCloseSubmenu = () => {
++          cancelCloseSubmenu();
++          closeSubmenuTimer = setTimeout(() => {
++            closeSubmenu();
++          }, 240);
++        };
++
++        items.forEach((m) => {
++          menu.appendChild(menuItem({
++            label: m.label,
++            hint: m.description || "",
++            selected: m.id === active.id,
++            locked: !!m.locked,
++            leadingCheck: true,
++            onClick: () => {
++              if (m.locked) {
++                closeSubmenu();
++                close();
++                cfg.onLockedClick?.(m);
++              } else {
++                closeSubmenu();
++                close();
++                cfg.onChange?.(m.id);
++              }
++            },
++          }));
++        });
++
++        let subTrigger = null;
++        if (cfg.effortLevels && cfg.effortLevels.length) {
++          const div = document.createElement("div");
++          div.className = "rmci-menu-divider";
++          menu.appendChild(div);
++
++          subTrigger = document.createElement("button");
++          subTrigger.type = "button";
++          subTrigger.className = "rmci-menu-item rmci-menu-item--submenu";
++          subTrigger.setAttribute("aria-haspopup", "menu");
++          subTrigger.setAttribute("aria-expanded", "false");
++          subTrigger.innerHTML = `
++            <span class="rmci-menu-label">مستوى التفكير (Thinking level)</span>
++            <span class="rmci-menu-arrow">${icon("chevronLeft", 14)}</span>
++          `;
++
++          subTrigger.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") openSubmenu(subTrigger, fillEffort); });
++          subTrigger.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") scheduleCloseSubmenu(); });
++          subTrigger.addEventListener("click", (e) => {
++            e.stopPropagation();
++            cancelCloseSubmenu();
++            if (submenuEl && activeTrigger === subTrigger) closeSubmenu();
++            else openSubmenu(subTrigger, fillEffort);
++          });
++
++          menu.appendChild(subTrigger);
++        }
++
++        if (cfg.usage && typeof cfg.usage.load === "function") {
++          if (!(cfg.effortLevels && cfg.effortLevels.length)) {
++            const div = document.createElement("div");
++            div.className = "rmci-menu-divider";
++            menu.appendChild(div);
++          }
++          const usageTrigger = document.createElement("button");
++          usageTrigger.type = "button";
++          usageTrigger.className = "rmci-menu-item rmci-menu-item--submenu rmci-menu-item--usage";
++          usageTrigger.setAttribute("role", "menuitem");
++          usageTrigger.setAttribute("aria-haspopup", "menu");
++          usageTrigger.setAttribute("aria-expanded", "false");
++          usageTrigger.innerHTML = `
++            <span class="rmci-menu-usage-lead">${icon("gauge", 16)}<span class="rmci-menu-label">عرض الاستخدام</span></span>
++            <span class="rmci-menu-arrow">${icon("chevronLeft", 14)}</span>
++          `;
++          usageTrigger.addEventListener("mousedown", (e) => e.preventDefault());
++          usageTrigger.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") openSubmenu(usageTrigger, fillUsage); });
++          usageTrigger.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") scheduleCloseSubmenu(); });
++          usageTrigger.addEventListener("click", (e) => {
++            e.stopPropagation();
++            cancelCloseSubmenu();
++            if (submenuEl && activeTrigger === usageTrigger) closeSubmenu();
++            else openSubmenu(usageTrigger, fillUsage);
++          });
++          menu.appendChild(usageTrigger);
++        }
++
++        const origRemove = menu.remove.bind(menu);
++        menu.remove = () => {
++          closeSubmenu();
++          origRemove();
++        };
++      }, { rtl: true, align: "end", width: 260 });
++    });
++    wrap.appendChild(btn);
++    modelSlot.appendChild(wrap);
++  }
++
++  // ── Editor boot (lazy) ───────────────────────────────────────────────────
++  const ready = (async () => {
++    const T = await loadVendor();
++    if (destroyed) return null;
++    const extensions = buildExtensions(T, {
++      placeholder: opts.placeholder,
++      direction: opts.direction,
++      getCommands: opts.getCommands,
++      getMentions: opts.getMentions,
++      onSubmit: () => {
++        if (disabled) return true;
++        host.dispatchEvent(new CustomEvent("rmci-submit"));
++        opts.onSubmit?.();
++        return true;
++      },
++    });
++    editor = new T.Editor({
++      element: host,
++      extensions,
++      content: pendingMarkdown !== null ? parseMarkdown(pendingMarkdown) : pendingValue ? textToHtml(pendingValue) : "",
++      autofocus: false,
++      editable: !disabled,
++      editorProps: {
++        attributes: {
++          role: "textbox",
++          "aria-multiline": "true",
++          dir: opts.direction,
++          "aria-label": opts.placeholder,
++        },
++      },
++      onUpdate: () => {
++        if (silent) return;
++        host.dispatchEvent(new Event("input", { bubbles: true }));
++        opts.onChange?.(getMarkdown());
++      },
++      onTransaction: () => toolbarEl?.update(),
++    });
++    pendingValue = "";
++    pendingMarkdown = null;
++    root.classList.add("is-ready");
++    if (toolbarOpen) setToolbar(true);
++    if (wantFocus && !disabled) editor.commands.focus(wantFocus === true ? undefined : wantFocus);
++    wantFocus = null;
++    host.dispatchEvent(new CustomEvent("rmci-ready"));
++    return editor;
++  })().catch((err) => {
++    console.error("[rich-input] failed to load the editor:", err);
++    root.classList.add("is-error");
++    return null;
++  });
++
++  function clear() {
++    host.value = "";
++  }
++
++  function destroy() {
++    destroyed = true;
++    editor?.destroy();
++    editor = null;
++    root.remove();
++  }
++
++  return {
++    el: root,
++    host,
++    textarea: host,
++    startSlot,
++    endSlot,
++    ready,
++    getMarkdown,
++    setMarkdown,
++    getText,
++    isEmpty,
++    clear,
++    focus,
++    destroy,
++    setModels,
++    enterIsStructural,
++    setToolbar,
++    get editor() { return editor; },
++  };
++}
+diff -ruN a/scripts/page-bundles.json b/scripts/page-bundles.json
+--- a/scripts/page-bundles.json	2026-11-15 18:16:44.189192098 +0000
++++ b/scripts/page-bundles.json	2026-11-15 18:19:51.500114134 +0000
+@@ -134,6 +134,7 @@
+       "src/components/quiz-info-modal/quiz-info-modal.css",
+       "src/components/download-quiz-modal/download-quiz-modal.css",
+       "src/components/ai-agent/ai-agent.css",
++      "src/shared/rich-input/rich-input.css",
+       "src/components/notifications/notifications.css",
+       "src/styles/embed-mode.css"
+     ]
+@@ -216,6 +217,7 @@
+       "src/components/quiz-info-modal/quiz-info-modal.css",
+       "src/styles/markdown.css",
+       "src/components/ai-agent/ai-agent.css",
++      "src/shared/rich-input/rich-input.css",
+       "src/components/notifications/notifications.css",
+       "src/styles/embed-mode.css"
+     ]
+diff -ruN a/tests/rich-input-markdown.test.js b/tests/rich-input-markdown.test.js
+--- a/tests/rich-input-markdown.test.js	1970-01-01 00:00:00.000000000 +0000
++++ b/tests/rich-input-markdown.test.js	2026-11-15 18:20:03.816458155 +0000
+@@ -0,0 +1,45 @@
++// Markdown <-> rich input: parser round-trip, markdown property, essay grading.
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { parseMarkdown } from "../public/src/shared/rich-input/markdown-parser.js";
++import { toMarkdown } from "../public/src/shared/rich-input/markdown-serializer.js";
++import { gradeEssay } from "../public/src/shared/rate-answers.js";
++
++const SAMPLE = [
++  "# Title",
++  "",
++  "Hello **bold** and *it* and ~~x~~ `c` <u>u</u>",
++  "",
++  "- a",
++  "- b",
++  "  - nested",
++  "",
++  "1. one",
++  "2. two",
++  "",
++  "> quote",
++  "",
++  "```js",
++  "let a = 1;",
++  "```",
++].join("\n");
++
++test("parseMarkdown is the inverse of toMarkdown", () => {
++  assert.equal(toMarkdown(parseMarkdown(SAMPLE)), SAMPLE);
++});
++
++test("plain multi-line text (legacy textarea answers) keeps its line breaks", () => {
++  const doc = parseMarkdown("first\nsecond");
++  assert.equal(doc.content.length, 1);
++  assert.deepEqual(doc.content[0].content.map((n) => n.type), ["text", "hardBreak", "text"]);
++});
++
++test("empty input gives an empty paragraph, never an invalid doc", () => {
++  assert.deepEqual(parseMarkdown(""), { type: "doc", content: [{ type: "paragraph" }] });
++});
++
++test("gradeEssay compares words, not markdown syntax", () => {
++  const model = "الإجابة هي **القيمة** المثلى\n\n- أول\n- ثاني";
++  assert.equal(gradeEssay("# الإجابة هي القيمة المثلى\n\n- أول\n- ثاني", model), gradeEssay(model, model));
++  assert.equal(gradeEssay(model, model), 5);
++});
+diff -ruN a/tests/rich-input.test.js b/tests/rich-input.test.js
+--- a/tests/rich-input.test.js	2026-11-15 18:16:44.198610411 +0000
++++ b/tests/rich-input.test.js	2026-11-15 18:21:15.821390879 +0000
+@@ -21,7 +21,7 @@
+   w.Element.prototype.getClientRects = () => [];
+   w.Element.prototype.scrollIntoView = () => {};
+   globalThis.__RMCI_VENDOR_URL__ = pathToFileURL(path.resolve("public/assets/vendor/tiptap/tiptap.js")).href;
+-  ({ createRichInput } = await import("../public/src/components/ai-agent/rich-input/rich-input.js"));
++  ({ createRichInput } = await import("../public/src/shared/rich-input/rich-input.js"));
+   rich = createRichInput({ placeholder: "اسأل", getCommands: () => [{ command: "quiz" }], getMentions: () => [{ name: "امتحاناتي" }] });
+   document.body.appendChild(rich.el);
+   await rich.ready;
+@@ -82,6 +82,44 @@
+   assert.equal(rich.editor.isEditable, true);
+ });
+ 
++test("markdown property restores formatting and round-trips", () => {
++  rich.textarea.markdown = "**bold** text\n\n- a\n- b";
++  assert.equal(rich.getMarkdown(), "**bold** text\n\n- a\n- b");
++  assert.equal(rich.textarea.value.trim(), "bold text\na\nb"); // StarterKit appends a trailing empty paragraph
++});
++
++test("initialMarkdown set before the editor boots is restored; lockable hides controls via class", async () => {
++  const r = createRichInput({ initialMarkdown: "# Hi\n\n`x`", hideControlsWhenDisabled: true });
++  document.body.appendChild(r.el);
++  assert.equal(r.getMarkdown(), "# Hi\n\n`x`", "readable before boot");
++  await r.ready;
++  assert.equal(r.getMarkdown(), "# Hi\n\n`x`");
++  assert.ok(r.el.classList.contains("rmci-root--lockable"));
++  r.textarea.disabled = true;
++  assert.ok(r.el.classList.contains("is-disabled"));
++  assert.equal(r.editor.isEditable, false);
++  r.destroy();
++});
++
++test("mountEssayFields swaps the textarea for the rich host and keeps its contract", async () => {
++  const { mountEssayFields } = await import("../public/src/shared/rich-input/essay-field.js");
++  document.body.insertAdjacentHTML("beforeend", '<div id="w"><textarea data-essay-field id="essayInput-0" class="essay-textarea" oninput="window.handleEssay(0)">**a** b</textarea></div>');
++  mountEssayFields(document.getElementById("w"));
++  assert.equal(document.querySelector("#w textarea"), null, "textarea replaced");
++  const host = document.getElementById("essayInput-0");
++  assert.ok(host.classList.contains("rmci-host") && host.classList.contains("essay-textarea"));
++  assert.equal(host.markdown, "**a** b", "readable before the editor boots");
++  for (let i = 0; i < 100 && !host.closest(".rmci-root").classList.contains("is-ready"); i++) await new Promise((r) => setTimeout(r, 10));
++  assert.equal(host.markdown, "**a** b");
++  host.disabled = true;
++  assert.equal(host.closest(".rmci-root").classList.contains("is-disabled"), true);
++  host.disabled = false;
++  // jsdom here doesn't execute inline handlers; what matters is that the attribute moved to the host.
++  assert.equal(host.getAttribute("oninput"), "window.handleEssay(0)", "inline oninput forwarded to the host");
++  mountEssayFields(document.getElementById("w")); // idempotent
++  assert.equal(document.querySelectorAll("#w .rmci-root").length, 1);
++});
++
+ test("clear() empties the editor", () => {
+   rich.textarea.value = "something";
+   rich.clear();

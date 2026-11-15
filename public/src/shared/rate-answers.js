@@ -63,6 +63,22 @@ export function isAnswerCorrect(userAnswer, correctValue) {
 // api/ai-agent/_botGenerators.js), so it must stay fully self-contained: no
 // helpers or constants defined outside the function body.
 export function gradeEssay(userInput, modelAnswer) {
+  // Answers typed in the rich essay field are stored as markdown, and model
+  // answers are markdown too: compare the words, not the syntax around them.
+  const stripMd = (raw) =>
+    String(raw ?? "")
+      .replace(/^[ \t]*```[\w+#.-]*[ \t]*$/gm, "") // code fence lines (content kept)
+      .replace(/^[ \t]{0,3}#{1,6}[ \t]+/gm, "") // headings
+      .replace(/^[ \t]*>[ \t]?/gm, "") // blockquote markers
+      .replace(/^[ \t]*(?:[-*+]|\d+\.)[ \t]+/gm, "") // list markers
+      .replace(/<\/?u>/g, "")
+      .replace(/\*\*([^\n]+?)\*\*/g, "$1")
+      .replace(/~~([^\n]+?)~~/g, "$1")
+      .replace(/(^|[\s(])\*(?=\S)([^*\n]*?\S)\*(?=$|[\s).,;:!?])/g, "$1$2")
+      .replace(/(`+)([^`\n]+?)\1/g, "$2");
+  userInput = stripMd(userInput);
+  modelAnswer = stripMd(modelAnswer);
+
   const toAsciiDigits = (s) =>
     String(s ?? "")
       .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))

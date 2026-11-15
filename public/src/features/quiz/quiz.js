@@ -30,7 +30,7 @@ import {
   singleCorrectIndex,
 } from "../../shared/rate-answers.js";
 import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
-import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
+import { mountEssayFields } from "../../shared/rich-input/essay-field.js";
 import {
   getMediaUrlCandidates as _getMediaUrlCandidates,
   resolveMediaUrl as _resolveMediaUrl,
@@ -49,8 +49,6 @@ import {
   markDownloadPasswordVerified,
   verifyQuizPasswordRemote,
 } from "../home/download-password.js";
-
-observeRichInputHighlighters({ selector: "textarea.essay-textarea" });
 
 // Bug 1 Fix — "start of exam" notification moved out of the top-level
 // import block and wrapped in try/catch. It previously ran as a bare
@@ -352,7 +350,7 @@ window.handleEssayInputForQuestion = (qIdx) => {
   if (lockedQuestions[qIdx]) return;
   const textarea = document.getElementById(`essayInput-${qIdx}`);
   if (textarea) {
-    userAnswers[qIdx] = textarea.value;
+    userAnswers[qIdx] = textarea.markdown; // markdown: formatting survives reloads; gradeEssay() strips it
     saveStateDebounced();
     const checkBtn = textarea
       .closest(".question-card")
@@ -1971,7 +1969,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
       html: `
         ${header}
         <div class="essay-container">
-          <textarea id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="اكتب إجابتك هنا..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
+          <textarea data-essay-field id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="اكتب إجابتك هنا..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
         </div>
         <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" title="إظهار الإجابة الصحيحة" onclick="window.checkAnswerForQuestion(${idx})" ${!userSelected || String(userSelected).trim() === "" ? "disabled" : ""}>تحقق من الإجابة</button>
         ${formalAnswerHtml}
@@ -2209,6 +2207,7 @@ function setQuestionHTML(html) {
 
   // Apply text direction classes synchronously before MutationObserver fires.
   scanDirections(els.questionContainer);
+  mountEssayFields(els.questionContainer);
 
   // Restore playback position for this question if we navigated back to it.
   // paginationMediaCache is populated by snapshotPaginationMedia() just before
@@ -2282,6 +2281,7 @@ function renderAllQuestionsVertical(opts) {
 
       initMediaSkeletons(newCard);
       scanDirections(newCard);
+      mountEssayFields(newCard);
     }
     return;
   }
@@ -2298,6 +2298,7 @@ function renderAllQuestionsVertical(opts) {
   // Scan all cards in one pass after the full render so direction classes
   // are set before the browser paints — no per-card flicker.
   scanDirections(els.questionContainer);
+  mountEssayFields(els.questionContainer);
 
   // After a page reload with restored progress, scroll the user back to
   // the question they were on without forcing them to scroll manually.
@@ -2397,7 +2398,7 @@ function buildQuestionBodyHTML(q, idx) {
       html: `
         ${reloadableHeaderHTML}
         <div class="essay-container">
-          <textarea 
+          <textarea data-essay-field
             id="essayInput" 
             class="essay-textarea ${isLocked ? "locked" : ""}" 
             placeholder="اكتب إجابتك هنا..."
@@ -2606,7 +2607,7 @@ function handleEssayInput() {
   if (lockedQuestions[currentIdx]) return;
   const textarea = document.getElementById("essayInput");
   if (textarea) {
-    userAnswers[currentIdx] = textarea.value;
+    userAnswers[currentIdx] = textarea.markdown; // markdown: formatting survives reloads; gradeEssay() strips it
     saveStateDebounced();
     const checkBtn = document.getElementById("checkBtn");
     if (checkBtn) {

@@ -18,6 +18,7 @@ import { _confirm, showNotification } from "../../components/notifications/notif
 import { openReportModal, isQuestionReported } from "../../components/report-question/report-question.js";
 import { getQuestionMarks, toggleQuestionMark } from "./lesson-question-marks.js";
 import { gradeEssay, isAnswerCorrect } from "../../shared/rate-answers.js";
+import { mountEssayFields } from "../../shared/rich-input/essay-field.js";
 import { lessonIcon } from "./lesson-icons.js";
 import { ogThumbUrl } from "../../shared/og-thumb.js";
 
@@ -389,7 +390,7 @@ function renderEssayQuestionBody(block, questionId, prior, header) {
     `>` +
     header +
     `<div class="lesson-question__prompt md-content">${renderMarkdown(block.prompt || "")}</div>` +
-    `<div class="lesson-question__essay-wrap"><textarea dir="auto" class="lesson-question__essay-input" aria-label="إجابتك" placeholder="اكتب إجابتك هنا..." ${prior?.answered ? "disabled" : ""}>${escapeHtml(priorAnswer)}</textarea></div>` +
+    `<div class="lesson-question__essay-wrap"><textarea data-essay-field dir="auto" class="lesson-question__essay-input" aria-label="إجابتك" placeholder="اكتب إجابتك هنا..." ${prior?.answered ? "disabled" : ""}>${escapeHtml(priorAnswer)}</textarea></div>` +
     `<button type="button" class="lesson-question__essay-check-btn lesson-question__check-btn" title="إظهار الإجابة الصحيحة" ${prior?.answered || !priorAnswer.trim() ? "disabled" : ""}>تحقق من الإجابة</button>` +
     `<div class="lesson-question__formal-answer" role="status" aria-live="polite" hidden>` +
     `<strong class="lesson-question__formal-score"></strong>` +
@@ -483,7 +484,7 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
       });
     } else {
       const modelAnswer = questionEl.dataset.modelAnswer || "";
-      const myAnswer = questionEl.querySelector(".lesson-question__essay-input")?.value || "";
+      const myAnswer = questionEl.querySelector(".lesson-question__essay-input")?.markdown || "";
       onExplainWrong({ kind: "essay", question: questionText, modelAnswer, myAnswer });
     }
   };
@@ -523,6 +524,10 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
     });
   });
 
+  // Essay answers use the shared rich markdown input (shared/rich-input/); its
+  // host element replaces the <textarea> and keeps the same class, so the code
+  // below is unchanged except that answers are read/written as `.markdown`.
+  mountEssayFields(root);
   root.querySelectorAll('.lesson-question[data-question-kind="essay"]').forEach((questionEl) => {
     const questionId = questionEl.dataset.questionId;
     const modelAnswer = questionEl.dataset.modelAnswer || "";
@@ -541,7 +546,7 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
     });
     checkBtn?.addEventListener("click", () => {
       if (questionEl.dataset.answered === "true") return; // reveal-once
-      const answerText = textarea?.value || "";
+      const answerText = textarea?.markdown || "";
       // The 0–5 score is approximate self-check feedback, computed locally;
       // it is not submitted or included in an overall lesson score.
       const score = gradeEssay(answerText, modelAnswer);
@@ -612,7 +617,7 @@ export function resetQuestionElement(qEl) {
 
   const textarea = qEl.querySelector(".lesson-question__essay-input");
   if (textarea) {
-    textarea.value = "";
+    textarea.markdown = "";
     textarea.disabled = false;
   }
   const essayCheck = qEl.querySelector(".lesson-question__essay-check-btn");
@@ -740,7 +745,7 @@ function revealEssayAnswer(questionEl, modelAnswer, answerText) {
   questionEl.dataset.answered = "true";
   const textarea = questionEl.querySelector(".lesson-question__essay-input");
   if (textarea) {
-    textarea.value = answerText;
+    textarea.markdown = answerText;
     textarea.disabled = true;
   }
   const checkBtn = questionEl.querySelector(".lesson-question__essay-check-btn");
