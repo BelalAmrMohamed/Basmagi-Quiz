@@ -8,9 +8,11 @@
 //    stale-while-revalidate (/src, /dist). Background refreshes go through the
 //    HTTP cache, so they obey the Cache-Control headers set in vercel.json.
 //  * navigations stay network-first with an offline fallback.
-//  * bump CACHE_VERSION only when the SW logic itself changes.
+//  * generated bundles with STABLE names (notebook runtimes + worker, tiptap) are never cache-first:
+//    they are revalidated on every load (cheap 304), otherwise a rebuilt runtime is not seen for weeks.
+//  * bump CACHE_VERSION only when the SW logic itself changes (it also drops older caches).
 
-const CACHE_VERSION = "basmagi-v9.0.0";
+const CACHE_VERSION = "basmagi-v9.0.1";
 const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
 const OFFLINE_URL = "/offline";
 const PRECACHE = [OFFLINE_URL, "/favicon.png", "/"];
@@ -82,8 +84,11 @@ async function offlineNavigationResponse(request) {
 
 const CACHE_FIRST = /^\/(?:assets\/|dist\/chunks\/|.*\.(?:png|jpe?g|webp|avif|svg|ico|woff2?)$)/i;
 
-async function revalidate(request) {
-  const response = await fetch(request); // honours HTTP cache + Cache-Control
+// Stable-named generated bundles: files change without their URL changing.
+const ALWAYS_REVALIDATE = /^\/assets\/(?:notebook-runtime[^/]*|vendor\/tiptap)\//;
+
+async function revalidate(request, init) {
+  const response = await fetch(request, init); // honours HTTP cache + Cache-Control unless init overrides
   if (response.ok) {
     const cache = await caches.open(OFFLINE_CACHE);
     await cacheResponse(cache, request, response.clone());
@@ -117,6 +122,13 @@ self.addEventListener("fetch", (event) => {
   // Stable-named bundle entries must always revalidate (they reference hashed chunks).
   if (/^\/dist\/(?:home|pages\/[^/]+)\.(?:js|css)$/.test(url.pathname)) {
     event.respondWith(revalidate(request).catch(async () => (await caches.match(request)) || new Response("Offline", { status: 503 })));
+    return;
+  }
+
+  // Notebook runtime / worker bundles: always ask the server (cache:"no-cache" also ignores a still-"fresh"
+  // copy in the HTTP cache, e.g. one stored earlier under a 30-day max-age). Offline: last good copy.
+  if (ALWAYS_REVALIDATE.test(url.pathname)) {
+    event.respondWith(revalidate(request, { cache: "no-cache" }).catch(async () => (await caches.match(request)) || new Response("Offline", { status: 503, statusText: "Service Unavailable" })));
     return;
   }
 

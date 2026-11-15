@@ -17,7 +17,7 @@
 // (quiz, lesson, create-*, ...) and runtime fetches of CSS files still use them.
 // =============================================================================
 import { build, context } from "esbuild";
-import { readFile, rm, mkdir, writeFile, mkdtemp } from "node:fs/promises";
+import { readFile, readdir, rmdir, unlink, mkdir, writeFile, mkdtemp } from "node:fs/promises";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -77,10 +77,43 @@ const HOME_CSS = [
 const shared = { bundle: true, minify: !watch, sourcemap: watch ? "inline" : false, logLevel: "info", legalComments: "none" };
 let buildTempDir = null;
 
+// ---- Windows-safe cleanup -----------------------------------------------------
+// Deleting public/dist BEFORE the build fails on Windows with EPERM/EBUSY whenever anything
+// holds a file or folder open (a terminal or Explorer/VS Code inside it, Live Server or
+// browser-sync, antivirus, the search indexer), and waiting for the lock to clear is slow.
+// So the build never waits on a lock: esbuild overwrites its outputs in place, and AFTER a
+// successful build we prune files that are no longer produced, one attempt each, skipping
+// anything Windows refuses to release (a leftover file is harmless; the next build retries).
+async function tryRemove(fn) { try { await fn(); return true; } catch { return false; } }
+
+/** Deletes every file under `dir` that is not in `keep` (absolute paths); then empty folders. Returns how many were left behind. */
+async function pruneDir(dir, keep) {
+  let entries;
+  try { entries = await readdir(dir, { withFileTypes: true }); } catch { return 0; }
+  let left = 0;
+  for (const ent of entries) {
+    const p = path.join(dir, ent.name);
+    if (ent.isDirectory()) {
+      left += await pruneDir(p, keep);
+      await tryRemove(() => rmdir(p)); // only succeeds when empty
+    } else if (!keep.has(p) && !(await tryRemove(() => unlink(p)))) left++;
+  }
+  return left;
+}
+/** Best-effort removal of a temp folder, no waiting. */
+async function removeDirQuietly(dir) {
+  await pruneDir(dir, new Set());
+  await tryRemove(() => rmdir(dir));
+}
+/** Temp folders left behind by an earlier crashed or interrupted build. */
+async function cleanStaleTempDirs() {
+  for (const ent of await readdir(root, { withFileTypes: true })) {
+    if (ent.isDirectory() && ent.name.startsWith(".basmagi-web-")) await removeDirQuietly(path.join(root, ent.name));
+  }
+}
+
 async function run() {
-  // Windows may briefly deny removal while antivirus/indexing releases a
-  // handle on a generated file. Retry transient EPERM/EBUSY failures.
-  await rm(out, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  await cleanStaleTempDirs();
   await mkdir(out, { recursive: true });
 
   // Generated entry (kept out of public/ so it is never deployed).
@@ -139,6 +172,7 @@ async function run() {
     loader: { ".woff2": "file", ".woff": "file", ".ttf": "file", ".png": "file", ".jpg": "file", ".jpeg": "file", ".svg": "file", ".gif": "file", ".webp": "file" },
     assetNames: "assets/[name]-[hash]",
     publicPath: "/dist",
+    metafile: true,
     external: ["/assets/*", "/src/*", "http://*", "https://*", "data:*"],
   };
 
@@ -148,15 +182,20 @@ async function run() {
     return;
   }
   const res = await build(jsOpts);
-  await build(cssOpts);
+  const cssRes = await build(cssOpts);
   await writeFile(path.join(out, "meta.json"), JSON.stringify(Object.keys(res.metafile.outputs), null, 1));
-  await rm(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  // Drop files from earlier builds (old hashed chunks etc.) that this build did not produce.
+  const keep = new Set([...Object.keys(res.metafile.outputs), ...Object.keys(cssRes.metafile.outputs)].map((f) => path.resolve(process.cwd(), f)));
+  keep.add(path.join(out, "meta.json"));
+  const left = await pruneDir(out, keep);
+  if (left) console.warn(`Note: ${left} old file(s) in public/dist are open in another program and were left in place; they are harmless and will be cleaned on a later build.`);
+  await removeDirQuietly(tmp);
   buildTempDir = null;
 }
 
 run().catch(async (e) => {
   if (buildTempDir) {
-    await rm(buildTempDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }).catch(() => {});
+    await removeDirQuietly(buildTempDir).catch(() => {});
   }
   console.error(e);
   process.exit(1);

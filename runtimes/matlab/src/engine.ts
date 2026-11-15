@@ -97,7 +97,7 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
       case 'img':
         if (run) {
           if (run.fig === 0) run.fig = 1;
-          run.sink.out({ k: 'img', fig: m.tool ? -run.fig : run.fig, w: m.w, h: m.h, rgb: m.rgb, tool: !!m.tool });
+          run.sink.out({ k: 'img', fig: m.tool ? -run.fig : run.fig, w: m.w, h: m.h, rgb: m.rgb, tool: !!m.tool, name: m.name });
         }
         break;
       case 'wrote': files.set(m.name, m.img); run?.sink.files?.(); break;

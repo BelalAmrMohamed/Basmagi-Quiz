@@ -18,7 +18,7 @@ const host: Host = {
     return { width: png.width, height: png.height, channels: ch as 1 | 3, data: d, bitDepth: 8 * ch, format: 'png', fileSize: statSync(fp).size, colorType: gray ? 'grayscale' : 'truecolor', filename: '/vfs/' + base, fileModDate: '02-Nov-2026 10:00:00' };
   },
   writeImage(p, img) { written[path.basename(p)] = img; },
-  showImage(img, o) { shown.push({ w: img.width, h: img.height, tool: o.tool, fig: figs }); },
+  showImage(img, o) { shown.push({ w: img.width, h: img.height, tool: o.tool, name: o.name, fig: figs }); },
   newFigure() { figs++; },
   maxPrintElements: 3000,
 };
@@ -106,6 +106,7 @@ run('any/all/find/sort/cumsum/prod/linspace', `a=[3 1 2]; [s,i]=sort(a); f=find(
 run('reshape/repmat/flip', `a=reshape(1:6,2,3); b=repmat([1 2],2,2); c=fliplr([1 2 3]); d=flipud([1;2]);`, (_o, I) => eq([val(I,'a'),val(I,'b'),val(I,'c'),val(I,'d')], [[1,2,3,4,5,6],[1,1,2,2,1,1,2,2],[3,2,1],[2,1]]));
 run('image arithmetic saturates', `a=uint8([250 10]); b=imadd(a,uint8(10)); c=imsubtract(a,uint8(20)); d=imabsdiff(a,uint8(20)); e=imcomplement(a); m=mat2gray([0 5 10]);`, (_o, I) => eq([val(I,'b'),val(I,'c'),val(I,'d'),val(I,'e'),val(I,'m')], [[255,20],[230,0],[230,10],[5,245],[0,0.5,1]]));
 run('command syntax with unquoted filename: imtool test.png / imshow testgray.png', `imtool test.png\nimshow testgray.png`, () => shown.length === 2 && shown[0].tool === true && shown[1].tool === false || JSON.stringify(shown));
+run('imtool window is named after the variable or file (MATLAB: "Image Tool 1 - A")', `A=zeros(4,4,'uint8'); imtool(A); imtool(A+1); imtool('test.png'); imtool test.png; imshow(A);`, () => eq(shown.map((x: any) => x.name), ['A', undefined, 'test.png', 'test.png', 'A']));
 run('error() raises', `error('boom %d', 5);`, () => true, 'boom 5');
 
 console.log(`\n${pass} passed, ${fail} failed`);
