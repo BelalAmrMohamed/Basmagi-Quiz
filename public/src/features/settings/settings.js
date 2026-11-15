@@ -1,9 +1,5 @@
 // public/src/features/settings/settings.js - Settings page: education type, faculty, year, term, quiz style, default mode
 
-// Temporary | For performance debugging
-console.log("settings.js loaded successfully")
-
-
 import { getManifest } from "../../shared/quizManifest.js";
 import { userProfile } from "../../shared/userProfile.js";
 import {
@@ -14,6 +10,8 @@ import {
   filterFeaturedCourses,
   isUniversityTrack,
 } from "../../shared/filterUtils.js";
+
+import { showNotification } from "../../components/notifications/notifications.js";
 
 const AUTOSAVE_DELAY = 800;
 
@@ -86,17 +84,13 @@ function setOptionCardsSelection(name, value) {
 
 function bindOptionCards(name) {
   document.querySelectorAll(`input[name="${name}"]`).forEach((radio) => {
-    const wrap = radio.closest(".option-card");
-    if (!wrap) return;
-    wrap.addEventListener("click", () => {
+    radio.addEventListener("change", () => {
       document
         .querySelectorAll(`.option-cards input[name="${name}"]`)
         .forEach((r) => {
           r.closest(".option-card")?.classList.remove("selected");
         });
-      wrap.classList.add("selected");
-      radio.checked = true;
-      radio.dispatchEvent(new Event("change"));
+      radio.closest(".option-card")?.classList.add("selected");
     });
   });
 }
@@ -240,50 +234,11 @@ function populateAcademic(education_type, faculty, year, term) {
   toggleFacultyVisibility();
 }
 
-function showFeedback(message, isError = false) {
-  const el = document.getElementById("saveFeedback");
-  if (!el) return;
-  el.textContent = message;
-  el.style.color = isError
-    ? "var(--color-error, red)"
-    : "var(--color-success, green)";
-  if (message) {
-    setTimeout(() => {
-      el.textContent = "";
-    }, 3000);
-  }
-}
-
 function scheduleAutoSave() {
   clearTimeout(autoSaveTimeout);
-  showSavingIndicator();
-
   autoSaveTimeout = setTimeout(async () => {
     await saveSettingsAuto();
   }, AUTOSAVE_DELAY);
-}
-
-function showSavingIndicator() {
-  const feedback = document.getElementById("saveFeedback");
-  if (feedback) {
-    feedback.textContent = "💾 يُحفظ";
-    feedback.style.color = "var(--color-primary, #6366f1)";
-    feedback.classList.add("saving");
-  }
-}
-
-function showSavedIndicator() {
-  const feedback = document.getElementById("saveFeedback");
-  if (feedback) {
-    feedback.textContent = "✓ تم الحفظ تلقائياً";
-    feedback.style.color = "var(--color-success, #10b981)";
-    feedback.classList.remove("saving");
-
-    setTimeout(() => {
-      feedback.textContent = "";
-      feedback.classList.remove("saving");
-    }, 2000);
-  }
 }
 
 function unsubscribeTrackCourses(profile) {
@@ -342,10 +297,10 @@ async function saveSettingsAuto() {
       renderFeaturedCourseManagerList();
     }
 
-    showSavedIndicator();
+    showNotification("تم الحفظ", "", "success");
   } catch (error) {
     console.error("Auto-save failed:", error);
-    showFeedback("فشل الحفظ التلقائي", true);
+    showNotification("فشل الحفظ التلقائي", "", "error");
   } finally {
     isSaving = false;
   }
@@ -371,14 +326,14 @@ function setupAutoSave() {
   document.querySelectorAll('input[name="quizStyle"]').forEach((radio) => {
     radio.addEventListener("change", () => {
       userProfile.setQuizStyle(radio.value);
-      showFeedback("✓ تم تحديث نمط العرض", false);
+      showNotification("تم تحديث نمط العرض", "", "success");
     });
   });
 
   document.querySelectorAll('input[name="defaultMode"]').forEach((radio) => {
     radio.addEventListener("change", () => {
       userProfile.setDefaultQuizMode(radio.value);
-      showFeedback("✓ تم تحديث الوضع الافتراضي", false);
+      showNotification("تم تحديث الوضع الافتراضي", "", "success");
     });
   });
 }

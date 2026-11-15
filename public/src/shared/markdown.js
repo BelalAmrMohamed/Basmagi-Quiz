@@ -2326,6 +2326,8 @@ export function scanDirections(container = document) {
     acceptNode(node) {
       if (node.matches(_LTR_ONLY_SELECTOR)) return NodeFilter.FILTER_REJECT;
       if (_SKIP_TAGS.has(node.tagName)) return NodeFilter.FILTER_REJECT;
+      // The rich input (shared/rich-input) manages its own per-block direction.
+      if (node.classList.contains("rmci-root")) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     },
   });

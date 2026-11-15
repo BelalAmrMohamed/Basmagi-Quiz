@@ -42,6 +42,11 @@ export function equipLessonBookmarks(root, lessonId, rerender) {
   const toggle = root.querySelector(".lesson-bookmarks__toggle");
   const panel = root.querySelector(".lesson-bookmarks__panel");
   let panelCleanup = () => {};
+  // Section toggle buttons persist across re-renders of the header panel, so
+  // their listeners must be removed on re-equip or each call stacks another
+  // one (an even number of listeners toggles the bookmark twice = no change).
+  const controller = new AbortController();
+  bookmarkPanelCleanup.set(root, () => controller.abort());
   if (toggle && panel) {
     panelCleanup = registerLessonPanel({
       toggle,
@@ -52,7 +57,7 @@ export function equipLessonBookmarks(root, lessonId, rerender) {
         toggle.setAttribute("aria-expanded", String(open));
       },
     });
-    bookmarkPanelCleanup.set(root, panelCleanup);
+    bookmarkPanelCleanup.set(root, () => { panelCleanup(); controller.abort(); });
   }
   root.querySelectorAll("[data-bookmark-jump]").forEach((button) => button.addEventListener("click", () => {
     const target = root.querySelector(`#lesson-section-${CSS.escape(button.dataset.bookmarkJump)}`); target?.scrollIntoView({ behavior: "smooth", block: "start" }); target?.setAttribute("tabindex", "-1"); target?.focus({ preventScroll: true });
@@ -61,6 +66,6 @@ export function equipLessonBookmarks(root, lessonId, rerender) {
   root.querySelectorAll("[data-bookmark-toggle]").forEach((button) => button.addEventListener("click", () => {
     const section = button.closest(".lesson-section"); const title = section?.querySelector(".lesson-section__title")?.textContent || "قسم من الدرس";
     toggleLessonBookmark(lessonId, button.dataset.bookmarkToggle, title); rerender?.();
-  }));
+  }, { signal: controller.signal }));
   return () => cleanupLessonBookmarks(root);
 }

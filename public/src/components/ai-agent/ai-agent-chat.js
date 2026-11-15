@@ -11,7 +11,7 @@ import { renderMarkdown } from "../../shared/markdown.js";
 import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
 import { getSelectedProvider, getSelectedModel, getModelsForProvider, setSelectedModel, getOwnKey, getSystemPrompt, isAiHelperAvailable, EFFORT_LEVELS, getSelectedEffort, setSelectedEffort } from "./ai-agent-settings.js";
 import { getUserToken } from "../../shared/userLevel.js";
-import { createRichInput } from "./rich-input/rich-input.js";
+import { createRichInput } from "../../shared/rich-input/rich-input.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
 
 function isJwtExpired(token, skewSeconds = 30) {
@@ -30,7 +30,7 @@ import { saveConversation, deriveConversationTitle } from "./ai-agent-history-id
 // export menu (ai-agent.js) — one dropdown-menu visual style for the
 // whole widget rather than a bespoke one per popover.
 import { openAgentDropdown, closeAllAgentDropdowns, positionAgentDropdown } from "./ai-agent-dropdown.js";
-import { fetchPlatformUsage } from "./ai-agent-usage.js";
+import { fetchPlatformUsage, formatReset } from "./ai-agent-usage.js";
 import { createMentionMenu, getQuickAccessMentionDefinitions } from "./ai-agent-mention-menu.js";
 import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js";
 import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
@@ -238,7 +238,7 @@ export function createChatPanel(options = {}) {
   const panel = document.createElement("div");
   panel.className = "ai-agent-panel ai-agent-chat-panel";
 
-  // Rich Markdown input (Tiptap, see ./rich-input/). `textarea` below is its
+  // Rich Markdown input (Tiptap, see ../../shared/rich-input/). `textarea` below is its
   // <textarea>-compatible adapter, so the dictation / @mention / slash-menu
   // code keeps working unchanged. Send/mic/more buttons are moved into its
   // bottom bar when the input row is assembled.
@@ -284,7 +284,7 @@ export function createChatPanel(options = {}) {
       disabled: false,
       effortLevels,
       selectedEffort,
-      usage: { load: () => fetchPlatformUsage(), source: hasKey ? "own" : "platform", provider },
+      usage: { load: () => fetchPlatformUsage(), source: hasKey ? "own" : "platform", provider, formatReset },
       onChange: (id) => {
         setSelectedModel(getSelectedProvider(), id);
         refreshModelBarOptions();

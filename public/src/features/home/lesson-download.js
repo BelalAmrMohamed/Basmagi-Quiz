@@ -31,45 +31,39 @@ const revealAdaptiveSection = (question, wasCorrect) => {
 };
 document.querySelectorAll(".lesson-question[data-question-kind='mcq']").forEach((question) => {
   const correct = JSON.parse(question.dataset.correctIndexes || "[0]");
-  const multi = question.dataset.multiSelect === "true";
+  const selectedIndexes = () => [...question.querySelectorAll(".lesson-question__option input:checked")].map((input) => Number(input.value));
   const reveal = (chosen) => {
     question.dataset.answered = "true";
-    question.querySelectorAll(".lesson-question__option").forEach((button) => {
-      const index = Number(button.dataset.optionIndex);
-      button.disabled = true;
-      button.classList.toggle("is-selected", chosen.includes(index));
-      button.setAttribute("aria-pressed", String(chosen.includes(index)));
-      if (correct.includes(index)) button.classList.add("is-correct");
-      if (chosen.includes(index) && !correct.includes(index)) button.classList.add("is-wrong");
+    question.querySelectorAll(".lesson-question__option").forEach((row) => {
+      const index = Number(row.dataset.optionIndex);
+      const input = row.querySelector("input");
+      if (input) input.disabled = true;
+      row.classList.toggle("is-selected", chosen.includes(index));
+      row.classList.add("is-locked");
+      if (correct.includes(index)) row.classList.add("is-correct");
+      if (chosen.includes(index) && !correct.includes(index)) row.classList.add("is-wrong");
     });
     const right = correct.length === chosen.length && correct.every((index) => chosen.includes(index));
     const feedback = question.querySelector(".lesson-question__feedback");
-    feedback.hidden = false;
-    const verdict = feedback.querySelector(".lesson-question__verdict");
-    verdict.textContent = right ? "إجابة صحيحة" : "إجابة غير صحيحة — راجع الإجابة الصحيحة والشرح";
-    verdict.classList.toggle("is-correct", right);
-    verdict.classList.toggle("is-wrong", !right);
-    question.querySelector("[data-question-check]").disabled = true;
+    if (feedback && feedback.querySelector(".feedback-body")) {
+      feedback.classList.add(right ? "correct" : "wrong");
+      feedback.hidden = false;
+    }
+    const check = question.querySelector("[data-question-check]");
+    check.disabled = true;
+    check.hidden = true;
     revealAdaptiveSection(question, right);
   };
-  question.querySelectorAll(".lesson-question__option").forEach((button) => button.addEventListener("click", () => {
+  question.querySelectorAll(".lesson-question__option input").forEach((input) => input.addEventListener("change", () => {
     if (question.dataset.answered === "true") return;
-    if (multi) {
-      button.classList.toggle("is-selected");
-    } else {
-      question.querySelectorAll(".lesson-question__option").forEach((option) => {
-        const selected = option === button;
-        option.classList.toggle("is-selected", selected);
-        option.setAttribute("aria-pressed", String(selected));
-      });
-    }
-    button.setAttribute("aria-pressed", String(button.classList.contains("is-selected")));
-    question.querySelector("[data-question-check]").disabled =
-      !question.querySelector(".lesson-question__option.is-selected");
+    question.querySelectorAll(".lesson-question__option").forEach((row) => {
+      row.classList.toggle("is-selected", Boolean(row.querySelector("input")?.checked));
+    });
+    question.querySelector("[data-question-check]").disabled = selectedIndexes().length === 0;
   }));
   question.querySelector("[data-question-check]")?.addEventListener("click", () => {
     if (question.dataset.answered === "true") return;
-    const selected = [...question.querySelectorAll(".lesson-question__option.is-selected")].map((button) => Number(button.dataset.optionIndex));
+    const selected = selectedIndexes();
     if (selected.length) reveal(selected);
   });
 });
@@ -85,20 +79,17 @@ document.querySelectorAll(".lesson-question[data-question-kind='essay']").forEac
     question.dataset.answered = "true";
     input.disabled = true;
     button.disabled = true;
-    const feedback = question.querySelector(".lesson-question__feedback");
-    feedback.hidden = false;
+    button.hidden = true;
     const modelAnswer = question.dataset.modelAnswer || "";
     const score = gradeEssay(answer, modelAnswer);
     const wasClose = score >= 3;
-    const verdict = feedback.querySelector(".lesson-question__verdict");
-    verdict.textContent = wasClose ? "إجابتك قريبة من الإجابة النموذجية" : "راجع الإجابة النموذجية";
-    verdict.classList.toggle("is-correct", wasClose);
-    verdict.classList.toggle("is-wrong", !wasClose);
-    const rating = feedback.querySelector(".lesson-question__essay-rating");
-    if (rating) {
-      rating.textContent = score + " من 5 · " + "★".repeat(score) + "☆".repeat(5 - score);
-      rating.setAttribute("aria-label", "التقييم التقريبي: " + score + " من 5");
+    const formal = question.querySelector(".lesson-question__formal-answer");
+    if (formal) {
+      formal.querySelector(".lesson-question__formal-score").textContent = "(" + score + "/5) " + "★".repeat(score) + "☆".repeat(5 - score);
+      formal.hidden = false;
     }
+    const feedback = question.querySelector(".lesson-question__feedback");
+    if (feedback && feedback.querySelector(".feedback-body")) feedback.hidden = false;
     revealAdaptiveSection(question, wasClose);
   });
 });
@@ -342,9 +333,10 @@ a.lesson-ref-card__action{text-decoration:none}
 .lesson-export-info__head button{border:0;background:none;font-size:1.1rem;cursor:pointer}
 .lesson-export-info dl{display:grid;grid-template-columns:auto 1fr;gap:.4rem 1rem;margin:1rem 0}.lesson-export-info dt{color:#52525b;font-weight:700}.lesson-export-info dd{margin:0}
 .lesson-export-info__link{color:#2563eb}.lesson-view__title{margin:0 0 1.5rem}.lesson-section[hidden]{display:none}
-.lesson-question__essay-check-btn,.lesson-question__check-btn{margin-top:.75rem;padding:.5rem 1rem;border:0;border-radius:8px;background:#2563eb;color:#fff;font:inherit;cursor:pointer}
+.lesson-question__actions{display:none}
+:root{--color-success:#10b981;--color-success-light:#d1fae5;--color-error:#ef4444;--color-error-light:#fee2e2;--color-surface:#fff;--color-border-light:#e5e7eb;--gradient-accent:linear-gradient(118deg,#2563eb,#7c3aed);--shadow-sm:0 1px 2px rgba(0,0,0,.08);--shadow-md:0 4px 10px rgba(0,0,0,.1);--shadow-lg:0 8px 20px rgba(0,0,0,.12);--shadow-xl:0 10px 30px rgba(0,0,0,.08)}
 @media(max-width:600px){body{padding:14px}}
-@media print{body{max-width:none;padding:0}.lesson-section[hidden]{display:block!important}.lesson-question__option{color:#111}.lesson-question__check-btn,.lesson-question__essay-check-btn{display:none}.lesson-question__feedback[hidden]{display:grid!important}.lesson-question__verdict:empty{display:none}}</style>
+@media print{body{max-width:none;padding:0}.lesson-section[hidden]{display:block!important}.lesson-question__option{color:#111}.lesson-question__check-btn,.lesson-question__essay-check-btn{display:none}.lesson-question__feedback[hidden]{display:block!important}.lesson-question__formal-answer[hidden]{display:flex!important}.lesson-question__formal-score:empty{display:none}}</style>
 </head><body><main class="lesson-view"><header class="lesson-view__header"><h1 class="lesson-view__title">${title}</h1>${descriptionHtml}<button type="button" class="lesson-export-info-btn" data-lesson-info-open>معلومات الدرس</button></header><div class="lesson-view__body">${sections}</div></main>
 ${infoDialogHtml}
 <script>${LESSON_INTERACTION_SCRIPT}</script></body></html>`;
@@ -495,7 +487,7 @@ function openLessonDownloadOptions(lesson, triggerBtn) {
 async function printLessonAsPdf(payload, { signal, onPrintReady, onProgress } = {}) {
   const html = await buildStandaloneLessonHtml(payload, { signal, onProgress });
   throwIfAborted(signal);
-  const printable = html.replace("</head>", `<style>@media print{ @page{size:A4;margin:16mm} body{max-width:none;padding:0} .lesson-section[hidden]{display:block!important} .lesson-question__check-btn,.lesson-question__essay-check-btn{display:none!important} .lesson-question__feedback[hidden]{display:grid!important} .lesson-question__verdict:empty{display:none} .lesson-section,.lesson-question{break-inside:avoid-page} }</style></head>`);
+  const printable = html.replace("</head>", `<style>@media print{ @page{size:A4;margin:16mm} body{max-width:none;padding:0} .lesson-section[hidden]{display:block!important} .lesson-question__check-btn,.lesson-question__essay-check-btn{display:none!important} .lesson-question__feedback[hidden]{display:block!important} .lesson-question__formal-answer[hidden]{display:flex!important} .lesson-question__formal-score:empty{display:none} .lesson-question__actions{display:none!important} .lesson-section,.lesson-question{break-inside:avoid-page} }</style></head>`);
   await new Promise((resolve, reject) => {
     const iframe = document.createElement("iframe");
     iframe.setAttribute("aria-hidden", "true");

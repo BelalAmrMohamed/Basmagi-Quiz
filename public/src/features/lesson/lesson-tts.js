@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { getReaderPrefs, setReaderPrefs } from "./lesson-reader-prefs.js";
+import { lessonIcon } from "./lesson-icons.js";
 
 const SPEED_STEPS = [0.75, 1, 1.25, 1.5, 1.75, 2];
 const ARABIC_RE = /^ar(?:[-_]|$)/i;
@@ -102,10 +103,9 @@ export function renderTtsControl(sectionId) {
   return (
     `<div class="lesson-tts" data-tts-section="${sectionId}">` +
     `<button type="button" class="lesson-tts__btn lesson-tts__btn--play" data-tts-action="toggle" aria-label="استماع لهذا القسم" title="استماع">` +
-    `<span class="lesson-tts__icon" aria-hidden="true"></span>` +
-    `<span class="lesson-tts__label">استماع</span>` +
+    lessonIcon("play") +
     `</button>` +
-    `<button type="button" class="lesson-tts__btn lesson-tts__btn--stop" data-tts-action="stop" aria-label="إيقاف القراءة" title="إيقاف" hidden>■</button>` +
+    `<button type="button" class="lesson-tts__btn lesson-tts__btn--stop" data-tts-action="stop" aria-label="إيقاف القراءة" title="إيقاف" hidden>` + lessonIcon("stop") + `</button>` +
     `<label class="lesson-tts__speed"><span class="lesson-tts__speed-label">السرعة</span>` +
     `<select class="lesson-tts__speed-select" data-tts-speed aria-label="سرعة القراءة">` +
     SPEED_STEPS.map((s) => `<option value="${s}">${s}×</option>`).join("") +
@@ -155,15 +155,26 @@ function clearHighlight(root) {
   root?.querySelectorAll(".lesson-tts-block--active").forEach((el) => el.classList.remove("lesson-tts-block--active"));
 }
 
+/** Play button state -> icon + accessible name (the button is icon-only). */
+function setPlayButtonState(playBtn, state) {
+  const states = {
+    idle: { icon: "play", label: "استماع لهذا القسم", title: "استماع" },
+    speaking: { icon: "pause", label: "إيقاف القراءة مؤقتاً", title: "إيقاف مؤقت" },
+    paused: { icon: "play", label: "متابعة القراءة", title: "متابعة" },
+  };
+  const next = states[state] || states.idle;
+  playBtn.innerHTML = lessonIcon(next.icon);
+  playBtn.setAttribute("aria-label", next.label);
+  playBtn.title = next.title;
+}
+
 function resetToolbar(toolbar) {
   if (!toolbar) return;
   const playBtn = toolbar.querySelector(".lesson-tts__btn--play");
   const stopBtn = toolbar.querySelector(".lesson-tts__btn--stop");
   if (playBtn) {
     playBtn.classList.remove("is-speaking", "is-paused");
-    const label = playBtn.querySelector(".lesson-tts__label");
-    if (label) label.textContent = "استماع";
-    playBtn.setAttribute("aria-label", "استماع لهذا القسم");
+    setPlayButtonState(playBtn, "idle");
   }
   if (stopBtn) stopBtn.hidden = true;
   setStatus(toolbar, "");
@@ -175,9 +186,7 @@ function setToolbarSpeaking(toolbar) {
   if (playBtn) {
     playBtn.classList.add("is-speaking");
     playBtn.classList.remove("is-paused");
-    const label = playBtn.querySelector(".lesson-tts__label");
-    if (label) label.textContent = "إيقاف مؤقت";
-    playBtn.setAttribute("aria-label", "إيقاف القراءة مؤقتاً");
+    setPlayButtonState(playBtn, "speaking");
   }
   if (stopBtn) stopBtn.hidden = false;
 }
@@ -188,9 +197,7 @@ function setToolbarPaused(toolbar) {
   if (playBtn) {
     playBtn.classList.add("is-paused");
     playBtn.classList.remove("is-speaking");
-    const label = playBtn.querySelector(".lesson-tts__label");
-    if (label) label.textContent = "متابعة";
-    playBtn.setAttribute("aria-label", "متابعة القراءة");
+    setPlayButtonState(playBtn, "paused");
   }
   if (stopBtn) stopBtn.hidden = false;
 }

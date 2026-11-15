@@ -58,9 +58,6 @@ import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-defa
 import { createFlashcardDeckResult } from "../../components/ai-agent/ai-agent-result-cards.js";
 import { resolveUserItemById, readUserQuizzes } from "../../components/ai-agent/ai-agent-item-lookup.js";
 import { loadFullQuizData } from "../home/quiz-data-loader.js";
-import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
-
-observeRichInputHighlighters({ selector: ".lesson-question__essay-input" });
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LESSON_LOAD_TIMEOUT_MS = 10000;
@@ -518,7 +515,7 @@ function renderSection(section, ctx, isHidden = false) {
       `<h2 class="lesson-section__title">${escapeHtml(section.title)}</h2>` +
       `<button type="button" class="lesson-anchor-btn" data-section-anchor="${escapeHtml(section.id)}" aria-label="نسخ رابط القسم" title="نسخ رابط القسم">${lessonIcon("link")}</button>` +
       renderTtsControl(escapeHtml(section.id)) +
-      `<button type="button" class="lesson-bookmark-btn${isLessonSectionBookmarked(ctx.lessonId, section.id) ? " is-active" : ""}" data-bookmark-toggle="${escapeHtml(section.id)}" aria-label="حفظ القسم كعلامة مرجعية" title="حفظ القسم">${lessonIcon("bookmark")}</button>` +
+      `<button type="button" class="lesson-bookmark-btn${isLessonSectionBookmarked(ctx.lessonId, section.id) ? " is-active" : ""}" data-bookmark-toggle="${escapeHtml(section.id)}" aria-pressed="${isLessonSectionBookmarked(ctx.lessonId, section.id)}" aria-label="${isLessonSectionBookmarked(ctx.lessonId, section.id) ? "إزالة العلامة المرجعية" : "حفظ القسم كعلامة مرجعية"}" title="${isLessonSectionBookmarked(ctx.lessonId, section.id) ? "إزالة العلامة المرجعية" : "حفظ القسم"}">${lessonIcon("bookmark")}</button>` +
       `</div>`
       : "") +
     `<div class="lesson-section__body">${blocksHtml}</div>` +
@@ -1073,9 +1070,7 @@ export async function renderLessonView() {
   const ctx = { lessonId: lesson.id, quizLookup, lessonLookup, ...embedLookups, questionLabels };
 
   const lessonHref = `/lesson/${encodeURIComponent(lesson.slug || lesson.id)}`;
-  // The side table of contents is intentionally not rendered (the reader layout is
-  // always the clean, focused one); sections stay reachable from the info modal.
-  const tocHtml = "" && renderLessonToc(normalized.sections, progress.visitedSections, {
+  const tocHtml = renderLessonToc(normalized.sections, progress.visitedSections, {
     includeComments: !isUserCreated,
     lessonHref,
     hiddenSectionIds,
@@ -1149,10 +1144,16 @@ export async function renderLessonView() {
   };
 
   const handleBookmarksChange = () => {
-    const bookmarks = new Set(getLessonProgress(lesson.id).bookmarks || []);
+    // Bookmarks live in lesson-bookmarks.js's own store — NOT in lesson progress
+    // (reading `.bookmarks` off progress was always undefined, so every toggle
+    // immediately cleared the active state and the button never gave feedback).
     container.querySelectorAll("[data-bookmark-toggle]").forEach((btn) => {
       const sectionId = btn.dataset.bookmarkToggle;
-      btn.classList.toggle("is-active", bookmarks.has(sectionId));
+      const active = isLessonSectionBookmarked(lesson.id, sectionId);
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-pressed", String(active));
+      btn.title = active ? "إزالة العلامة المرجعية" : "حفظ القسم";
+      btn.setAttribute("aria-label", active ? "إزالة العلامة المرجعية" : "حفظ القسم كعلامة مرجعية");
     });
     const headerBookmarksSlot = container.querySelector(".lesson-bookmarks");
     if (headerBookmarksSlot) {

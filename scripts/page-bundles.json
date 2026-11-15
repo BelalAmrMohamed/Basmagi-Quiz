@@ -134,6 +134,7 @@
       "src/components/quiz-info-modal/quiz-info-modal.css",
       "src/components/download-quiz-modal/download-quiz-modal.css",
       "src/components/ai-agent/ai-agent.css",
+      "src/shared/rich-input/rich-input.css",
       "src/components/notifications/notifications.css",
       "src/styles/embed-mode.css"
     ]
@@ -216,6 +217,7 @@
       "src/components/quiz-info-modal/quiz-info-modal.css",
       "src/styles/markdown.css",
       "src/components/ai-agent/ai-agent.css",
+      "src/shared/rich-input/rich-input.css",
       "src/components/notifications/notifications.css",
       "src/styles/embed-mode.css"
     ]

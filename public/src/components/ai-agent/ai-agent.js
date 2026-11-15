@@ -674,7 +674,7 @@ let activeWindow = null;
 let agentStylesReady = null;
 export function ensureAIAgentStyles() {
   agentStylesReady ??= Promise.all(
-    ["./ai-agent-window.css", "./rich-input/rich-input.css"].map((file) => new Promise((resolve) => {
+    ["./ai-agent-window.css", "../../shared/rich-input/rich-input.css"].map((file) => new Promise((resolve) => {
       const href = new URL(file, import.meta.url).href;
       let link = [...document.querySelectorAll('link[rel="stylesheet"]')].find((l) => l.href === href);
       if (link?.sheet) return resolve();
