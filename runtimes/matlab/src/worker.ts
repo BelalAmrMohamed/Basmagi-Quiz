@@ -25,7 +25,7 @@ const host: Host = {
     files.set(base, raw);
     post({ t: 'wrote', name: base, img: raw });
   },
-  showImage: (img, o) => post({ t: 'img', w: img.width, h: img.height, rgb: img.rgb, tool: o.tool }),
+  showImage: (img, o) => post({ t: 'img', w: img.width, h: img.height, rgb: img.rgb, tool: o.tool, name: o.name }),
   newFigure: () => post({ t: 'fig' }),
   clc: () => post({ t: 'clc' }),
   maxPrintElements: 3000,

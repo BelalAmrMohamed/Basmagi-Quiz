@@ -14,8 +14,11 @@
 // - Export menu: copy image, save PNG/JPG, copy pixels as a MATLAB matrix
 // - Overlays: pixel grid, rulers, crosshair (View menu)
 // - Aero Snap: drag to a side (halves) or corner (quarters) with a live preview; drag out to restore
-// - Snap to screen edges, remembered size/position, double-click title to maximize
-// - Touch: pinch, two-finger pan, double-tap fit/100%; keyboard shortcuts + ? popover
+// - Opens sized to the image (100%, or the largest whole zoom for tiny images, or shrunk to the screen);
+//   titled like MATLAB: "Image Tool 1 - <variable or file name>"
+// - Snap to screen edges, double-click title to maximize
+// - Touch: pinch, two-finger pan, double-tap fit/100%, tap-to-probe (the pixel info stays after lifting the finger);
+//   keyboard shortcuts + ? popover
 // - Full English & Arabic localization
 // =============================================================================
 
@@ -27,12 +30,13 @@
  * @property {number} h
  * @property {Uint8Array} rgb
  * @property {boolean} [tool]
+ * @property {string} [name] Variable or file name shown in the title (imtool(I) -> "Image Tool 1 - I")
  */
 
 const I18N = {
   en: {
     title: 'Image Tool',
-    figure: 'Figure',
+    untitled: 'image',
     minimize: 'Minimize',
     maximize: 'Maximize',
     restore: 'Restore',
@@ -95,7 +99,7 @@ const I18N = {
   },
   ar: {
     title: 'أداة الصورة',
-    figure: 'شكل',
+    untitled: 'image',
     minimize: 'تصغير',
     maximize: 'تكبير',
     restore: 'استعادة',
@@ -158,11 +162,12 @@ const I18N = {
   }
 };
 
-const GEO_KEY = 'mlweb-imtool-geom';
 const PREF_KEY = 'mlweb-imtool-prefs';
 const SNAP = 14;
 const AERO_EDGE = 14;   // pointer distance from a screen edge that arms Aero Snap
 const AERO_CORNER = 110; // pointer distance from top/bottom that turns a side zone into a corner
+const INIT_TARGET = 320; // tiny images open at the largest whole zoom whose longer side stays <= this (px)
+const INIT_MAX_ZOOM = 64;
 const RULER_W = 32;
 const RULER_H = 18;
 const NICE_STEPS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
@@ -177,6 +182,16 @@ function writeStore(key, obj) {
 let cascadeCounter = 0;
 let topZIndex = 10000; // Above sidebar (4000) and bottom-nav (4001)
 const openWindows = new Map();
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/** Lowest window number not used by an open window (MATLAB: Image Tool 1, 2, 3 ...). */
+function nextWindowNumber() {
+  const used = new Set([...openWindows.values()].map((w) => w.winNo));
+  let n = 1;
+  while (used.has(n)) n += 1;
+  return n;
+}
 
 function layoutMinimizedWindows() {
   let index = 0;
@@ -246,6 +261,10 @@ class ImageToolWindow {
     this._lastTap = null;
     this._lastMinToggle = 0;
     this._toastTimer = 0;
+    this.probe = null;      // touch: pixel (0-based image coords) picked by the last tap / drag, kept after the finger lifts
+    this.initZoom = 1;
+    this.winNo = nextWindowNumber();
+    this.name = typeof image.name === 'string' ? image.name : '';
     const prefs = readStore(PREF_KEY);
     this.showGrid = prefs.grid !== false;
     this.showRulers = !!prefs.rulers;
@@ -260,9 +279,10 @@ class ImageToolWindow {
     // Staggered positioning
     this.applyInitialCascade();
 
-    // Fit image initially
+    // Show the image at its initial zoom (the window was sized to it)
+    this.applyInitialView();
     requestAnimationFrame(() => {
-      this.fitToWindow();
+      this.applyInitialView();
       this.render();
     });
   }
@@ -289,7 +309,7 @@ class ImageToolWindow {
   }
 
   build() {
-    const { w, h, fig } = this.image;
+    const { w, h } = this.image;
     const t = this.t;
 
     const win = document.createElement('div');
@@ -297,8 +317,9 @@ class ImageToolWindow {
     win.tabIndex = -1;
     win.style.zIndex = String(++topZIndex);
 
-    const figNum = Math.abs(fig || 1);
-    const titleText = `${t.title} — ${t.figure} ${figNum}`;
+    // MATLAB style: "Image Tool 1 - I" (variable or file name when known)
+    this.titleText = `${t.title} ${this.winNo}${this.name ? ' - ' + this.name : ''}`;
+    const titleText = esc(this.titleText);
 
     win.innerHTML = `
       <div class="mlweb-imtool-titlebar">
@@ -308,7 +329,7 @@ class ImageToolWindow {
           <button type="button" class="mlweb-imtool-win-btn btn-max" title="${t.maximize}" aria-label="${t.maximize}"><svg class="ic-max" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 9.5v-7h7v7z"/></svg><svg class="ic-restore" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 4V2.5h5.5V8H8M2.5 4H8v5.5H2.5z"/></svg></button>
         </div>
         <div class="mlweb-imtool-title-wrap">
-          <span class="mlweb-imtool-title">${titleText}</span>
+          <span class="mlweb-imtool-title" title="${titleText}">${titleText}</span>
           <svg class="mlweb-imtool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
             <circle cx="9" cy="9" r="2"/>
@@ -378,7 +399,7 @@ class ImageToolWindow {
           <div class="mlweb-imtool-toast" role="status" aria-live="polite"></div>
           <div class="mlweb-imtool-info-card" hidden>
             <div class="mlweb-imtool-info-head">
-              <h4>${t.title} · ${t.figure} ${figNum}</h4>
+              <h4>${titleText}</h4>
               <button type="button" class="mlweb-imtool-win-btn btn-close-info">×</button>
             </div>
             <div class="mlweb-imtool-info-grid">
@@ -447,19 +468,46 @@ class ImageToolWindow {
     win.focus({ preventScroll: true });
   }
 
+  /**
+   * Window size that fits the image, like MATLAB's imtool: the image at 100% with no empty margin.
+   * Tiny images (a 8x8 matrix is the classic classroom case) open at a whole-number zoom so pixels are readable;
+   * images larger than the screen are shrunk to fit it. Also sets this.initZoom.
+   */
+  fitWindowSize() {
+    const { w, h } = this.image;
+    const win = this.win;
+    // Measure the chrome (title bar + toolbar + status bar + border) around the stage.
+    win.style.width = '400px';
+    win.style.height = '400px';
+    const chromeW = win.offsetWidth - this.stage.clientWidth;
+    const chromeH = win.offsetHeight - this.stage.clientHeight;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const maxStageW = Math.max(120, vw - 40 - chromeW);
+    const maxStageH = Math.max(120, vh - 60 - chromeH);
+    const zFit = Math.min(maxStageW / w, maxStageH / h);
+    let z;
+    if (zFit >= 1) z = Math.min(zFit, Math.max(1, Math.min(INIT_MAX_ZOOM, Math.floor(INIT_TARGET / Math.max(w, h)))));
+    else z = Math.max(0.05, Math.floor(zFit * 100) / 100);
+    this.initZoom = z;
+    const minW = 300, minH = 240; // same limits as the resize handles
+    return {
+      w: Math.min(Math.max(minW, Math.ceil(w * z) + chromeW), vw - 8),
+      h: Math.min(Math.max(minH, Math.ceil(h * z) + chromeH), vh - 8),
+    };
+  }
+
+  /** Initial magnification, image centred in the stage (the window was sized to it). */
+  applyInitialView() {
+    const { w, h } = this.image;
+    const stageW = this.stage.clientWidth, stageH = this.stage.clientHeight;
+    this.zoom = this.initZoom;
+    this.panX = (stageW - w * this.zoom) / 2;
+    this.panY = (stageH - h * this.zoom) / 2;
+  }
+
   applyInitialCascade() {
     const idx = cascadeCounter++;
-    const saved = readStore(GEO_KEY)[String(Math.abs(this.image.fig || 1))];
-    if (saved && saved.w > 0 && saved.h > 0) {
-      const w = Math.max(300, Math.min(saved.w, window.innerWidth - 8));
-      const h = Math.max(240, Math.min(saved.h, window.innerHeight - 8));
-      const l = Math.max(-w + 100, Math.min(window.innerWidth - 100, saved.l));
-      const t = Math.max(0, Math.min(window.innerHeight - 40, saved.t));
-      Object.assign(this.win.style, { width: `${w}px`, height: `${h}px`, left: `${l}px`, top: `${t}px` });
-      return;
-    }
-    const defaultW = Math.min(680, window.innerWidth - 40);
-    const defaultH = Math.min(520, window.innerHeight - 80);
+    const { w: defaultW, h: defaultH } = this.fitWindowSize();
 
     const step = 32;
     const maxOffset = 7;
@@ -479,15 +527,13 @@ class ImageToolWindow {
     this.win.style.height = `${defaultH}px`;
     this.win.style.left = `${left}px`;
     this.win.style.top = `${top}px`;
-  }
 
-  saveGeometry() {
-    if (this.isMaximized || this.isMinimized) return;
-    const all = readStore(GEO_KEY);
-    all[String(Math.abs(this.image.fig || 1))] = {
-      l: this.win.offsetLeft, t: this.win.offsetTop, w: this.win.offsetWidth, h: this.win.offsetHeight,
-    };
-    writeStore(GEO_KEY, all);
+    // The chrome can wrap differently at the final width: close any small gap so the image fits with no scrollbar-like margin.
+    const z = this.initZoom;
+    const gapW = Math.ceil(this.image.w * z) - this.stage.clientWidth;
+    const gapH = Math.ceil(this.image.h * z) - this.stage.clientHeight;
+    if (gapW > 0 && gapW < 16 && defaultW + gapW <= window.innerWidth - 8) this.win.style.width = `${defaultW + gapW}px`;
+    if (gapH > 0 && gapH < 16 && defaultH + gapH <= window.innerHeight - 8) this.win.style.height = `${defaultH + gapH}px`;
   }
 
   /** Which of the 6 Aero Snap zones the pointer is in (or null). */
@@ -616,7 +662,6 @@ class ImageToolWindow {
         this.titlebar.removeEventListener('pointermove', onMove);
         this.titlebar.removeEventListener('pointerup', onUp);
         this.titlebar.removeEventListener('pointercancel', onUp);
-        this.saveGeometry();
       };
 
       this.titlebar.addEventListener('pointermove', onMove);
@@ -747,7 +792,6 @@ class ImageToolWindow {
           handle.removeEventListener('pointerup', onResizeUp);
           handle.removeEventListener('pointercancel', onResizeUp);
           this.render();
-          this.saveGeometry();
         };
 
         handle.addEventListener('pointermove', onResizeMove);
@@ -787,6 +831,7 @@ class ImageToolWindow {
       this._tap = this.pointers.size === 1 && e.pointerType !== 'mouse'
         ? { t: Date.now(), x: e.clientX, y: e.clientY, moved: false } : null;
       try { this.stage.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+      if (e.pointerType === 'touch' && this.pointers.size === 1) this.trackCursorPixel(e); // a plain tap reads the pixel too
       this.isPanning = true;
       this.stage.classList.add('is-panning');
       if (this.pointers.size === 2) { pinch = pair(); this._tap = null; this._lastTap = null; }
@@ -837,7 +882,9 @@ class ImageToolWindow {
     this.stage.addEventListener('pointercancel', endPointer);
     this.stage.addEventListener('lostpointercapture', endPointer);
 
-    this.stage.addEventListener('pointerleave', () => {
+    this.stage.addEventListener('pointerleave', (e) => {
+      // Lifting a finger fires pointerleave: the probed pixel must stay on screen (only a mouse/pen leaving clears it).
+      if (e.pointerType === 'touch') return;
       this.cursor = null;
       this.drawOverlay();
       if (!this.isPanning) {
@@ -936,17 +983,19 @@ class ImageToolWindow {
     const px = Math.floor((mx - this.panX) / this.zoom);
     const py = Math.floor((my - this.panY) / this.zoom);
     const { w, h, rgb } = this.image;
-    if (e.pointerType !== 'touch') { this.cursor = { x: mx, y: my }; this.drawOverlay(); }
+    const touch = e.pointerType === 'touch';
+    if (!touch) { this.cursor = { x: mx, y: my }; this.probe = null; this.drawOverlay(); }
 
     if (px >= 0 && px < w && py >= 0 && py < h) {
+      if (touch) { this.probe = { x: px, y: py }; this.drawOverlay(); }
       const idx = (py * w + px) * 3;
       const r = rgb[idx], g = rgb[idx + 1], b = rgb[idx + 2];
       const valStr = this.isGrayscale ? `Val: ${r}` : `RGB: [${r}, ${g}, ${b}]`;
       // 1-based indexing for MATLAB
       this.pixelStatus.textContent = this.t.pixelFmt(px + 1, py + 1, valStr);
-    } else {
+    } else if (!touch) {
       this.pixelStatus.textContent = this.t.pixelPrompt;
-    }
+    } // touch outside the image: keep showing the last probed pixel
   }
 
   zoomAt(stageX, stageY, factor) {
@@ -1254,6 +1303,20 @@ class ImageToolWindow {
     ctx.restore();
   }
 
+  /** Marker around the pixel picked by touch; follows pan / zoom because it is stored in image coordinates. */
+  drawProbe(g) {
+    const z = this.zoom;
+    const s = Math.max(z, 12);
+    const cx = this.panX + (this.probe.x + 0.5) * z;
+    const cy = this.panY + (this.probe.y + 0.5) * z;
+    g.setLineDash([]);
+    for (const [lw, col] of [[3.5, 'rgba(0,0,0,0.55)'], [1.5, '#ffd24a']]) {
+      g.lineWidth = lw;
+      g.strokeStyle = col;
+      g.strokeRect(Math.round(cx - s / 2) + 0.5, Math.round(cy - s / 2) + 0.5, Math.round(s), Math.round(s));
+    }
+  }
+
   /** Cheap overlay layer: crosshair + ruler cursor marks. Redrawn on every mouse move without touching the image canvas. */
   drawOverlay() {
     const c = this.overlay;
@@ -1265,6 +1328,7 @@ class ImageToolWindow {
     const g = this.octx;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
+    if (this.probe) this.drawProbe(g);
     const cur = this.cursor;
     if (!cur || (!this.showCrosshair && !this.showRulers)) return;
 
@@ -1303,15 +1367,20 @@ class ImageToolWindow {
     return new Promise(res => this.offscreen.toBlob(res, 'image/png'));
   }
 
+  /** File name (no extension) for exports: the variable / file name, like MATLAB, else image-<window number>. */
+  fileBase() {
+    const base = (this.name || '').replace(/\.[A-Za-z0-9]{1,5}$/, '').replace(/[^\w.-]+/g, '_');
+    return `imtool-${base || `${this.t.untitled}${this.winNo}`}`;
+  }
+
   saveImage(kind) {
-    const { fig } = this.image;
     const isJpg = kind === 'jpg';
     this.offscreen.toBlob(blob => {
       if (!blob) return;
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `imtool-figure${Math.abs(fig || 1)}.${isJpg ? 'jpg' : 'png'}`;
+      a.download = `${this.fileBase()}.${isJpg ? 'jpg' : 'png'}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1385,13 +1454,12 @@ class ImageToolWindow {
   }
 
   downloadPng() {
-    const { w, h, fig } = this.image;
     this.offscreen.toBlob(blob => {
       if (!blob) return;
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `imtool-figure${Math.abs(fig || 1)}.png`;
+      a.download = `${this.fileBase()}.png`;
       document.body.appendChild(a);
       a.click();
       a.remove();

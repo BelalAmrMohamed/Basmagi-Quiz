@@ -9,7 +9,7 @@ export interface Host {
   warn?(s: string): void;
   readImage(path: string): RawImage | null;
   writeImage(path: string, img: { width: number; height: number; channels: 1 | 3; data: Uint8Array }): void;
-  showImage(img: { width: number; height: number; rgb: Uint8Array }, opts: { tool: boolean }): void;
+  showImage(img: { width: number; height: number; rgb: Uint8Array }, opts: { tool: boolean; name?: string }): void;
   newFigure(): void;
   clc?(): void;
   maxPrintElements?: number;
@@ -26,6 +26,8 @@ export class Interp {
   funcs = new Map<string, any>();
   private endStack: { t: { dims: number[]; data: { length: number } }; pos: number; n: number }[] = [];
   private depth = 0;
+  /** Argument expressions (AST) of the builtin call in progress, so builtins like imtool can read the variable name. */
+  curArgs: any[] | undefined;
   constructor(public host: Host) {}
   get opts(): PrintOpts { return { maxElements: this.host.maxPrintElements ?? 3000, width: 80 }; }
 
@@ -169,7 +171,7 @@ export class Interp {
   // ---------- expressions ----------
   evalMulti(e: any, sc: Scope, nargout: number): V[] {
     if (e.k === 'id' && !sc.has(e.n)) return this.callFn(e.n, [], nargout);
-    if (e.k === 'idx' && !sc.has(e.n)) return this.callFn(e.n, e.args.map((a: any) => (a.k === 'colon' ? str(':') : this.eval(a, sc))), nargout);
+    if (e.k === 'idx' && !sc.has(e.n)) return this.callFn(e.n, e.args.map((a: any) => (a.k === 'colon' ? str(':') : this.eval(a, sc))), nargout, e.args);
     return [this.eval(e, sc)];
   }
   eval(e: any, sc: Scope): V {
@@ -239,7 +241,7 @@ export class Interp {
           }
           const t = T_(v, 'indexing'); return index(t, this.evalArgs(e.args, t, sc));
         }
-        const r = this.callFn(e.n, e.args.map((a: any) => (a.k === 'colon' ? str(':') : this.eval(a, sc))), 1);
+        const r = this.callFn(e.n, e.args.map((a: any) => (a.k === 'colon' ? str(':') : this.eval(a, sc))), 1, e.args);
         return r[0] ?? err(`Error using ${e.n}: Too many output arguments.`);
       }
     }
@@ -305,7 +307,7 @@ export class Interp {
     });
   }
 
-  callFn(name: string, args: V[], nargout: number): V[] {
+  callFn(name: string, args: V[], nargout: number, argExprs?: any[]): V[] {
     const f = this.funcs.get(name);
     if (f) {
       if (args.length > f.params.length) err(`Error using ${name}: Too many input arguments.`);
@@ -322,7 +324,8 @@ export class Interp {
     }
     const b = BUILTINS[name];
     if (!b) err(`Unrecognized function or variable '${name}'.`);
-    return b(args, nargout, this);
+    this.curArgs = argExprs;
+    try { return b(args, nargout, this); } finally { this.curArgs = undefined; }
   }
 }
 
@@ -476,11 +479,14 @@ function toBytes(t: T, map?: T): { width: number; height: number; channels: 1 | 
 }
 function show(tool: boolean): Builtin {
   return (a, _n, I) => {
+    // Like MATLAB's imtool: the window is named after the variable (imtool(I)) or the file (imtool('a.png')); nothing for other expressions.
+    const a0 = I.curArgs?.[0];
+    const name: string | undefined = a0?.k === 'id' ? a0.n : a0?.k === 'str' ? String(a0.v).split(/[\\/]/).pop() || undefined : undefined;
     if (isStr(a[0])) { const im = readImg(I, toStr(a[0])); a = [toTensor(im), ...(im.colormap ? [mk('double', [im.colormap.length, 3], im.colormap.map(r => r[0]).concat(im.colormap.map(r => r[1]), im.colormap.map(r => r[2])))] : [])]; }
     const t = T_(a[0], 'imshow'), map = a[1] && isT(a[1]) && a[1].dims[1] === 3 ? a[1] : undefined;
     const b = toBytes(t, map), rgb = new Uint8Array(b.width * b.height * 3);
     for (let p = 0; p < b.width * b.height; p++) for (let k = 0; k < 3; k++) rgb[p * 3 + k] = b.data[p * b.channels + (b.channels === 3 ? k : 0)];
-    I.host.showImage({ width: b.width, height: b.height, rgb }, { tool }); return [];
+    I.host.showImage({ width: b.width, height: b.height, rgb }, { tool, name }); return [];
   };
 }
 def('imshow', show(false)); def('imtool', show(true));
