@@ -134,6 +134,53 @@ export async function buildQuizHtml(
               }
             });
         };
+
+        // Collapse / expand a fenced code block (3-line peek when collapsed).
+        window.toggleCodeBlock = (btn) => {
+          const wrapper = btn.closest(".code-block-wrapper");
+          if (!wrapper) return;
+          const collapsed = wrapper.classList.toggle("is-collapsed");
+          const label = collapsed ? "Expand code" : "Collapse code";
+          btn.setAttribute("aria-expanded", String(!collapsed));
+          btn.setAttribute("aria-label", label);
+          btn.setAttribute("title", label);
+          const pre = wrapper.querySelector("pre");
+          if (collapsed && pre) {
+            pre.scrollTop = 0;
+            pre.scrollLeft = 0;
+          }
+        };
+
+        // Save a fenced code block as a file. The file name (right extension
+        // for the language) was baked into data-filename at render time.
+        window.downloadCodeBlock = (btn) => {
+          const wrapper = btn.closest(".code-block-wrapper");
+          const codeEl = wrapper && wrapper.querySelector("code");
+          if (!codeEl) return;
+          const NL = String.fromCharCode(10);
+          let text = codeEl.textContent;
+          if (!text.endsWith(NL)) text += NL;
+          const url = URL.createObjectURL(
+            new Blob([text], { type: "text/plain;charset=utf-8" }),
+          );
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = btn.getAttribute("data-filename") || "code.txt";
+          a.rel = "noopener";
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          if (btn.classList.contains("copied")) return;
+          const original = btn.innerHTML;
+          btn.innerHTML = ICON_CHECK;
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.innerHTML = original;
+            btn.classList.remove("copied");
+          }, 1500);
+        };
       </script>
 
       <style>

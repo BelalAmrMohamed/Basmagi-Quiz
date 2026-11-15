@@ -41,6 +41,14 @@ const TARGETS = {
     outfile: 'tiptap.js',
     format: 'esm',
   },
+  // Extra highlight.js grammars for the rich input's language menu (ES module,
+  // lazy-loaded next to tiptap.js; see tiptap-vendor/hljs-extra.js).
+  'hljs-extra': {
+    entry: 'tiptap-vendor/hljs-extra.js',
+    outDir: 'vendor/tiptap',
+    outfile: 'hljs-extra.js',
+    format: 'esm',
+  },
 };
 
 // Everything that can change a bundle's content. Add new source roots here.

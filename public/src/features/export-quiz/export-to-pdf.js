@@ -156,7 +156,9 @@ const PDF_PRINT_CSS = (backgroundChoice = "light") => `
 
   /* Copy-code buttons and other purely-interactive chrome are
      meaningless on paper. */
-  .copy-code-btn { display: none !important; }
+  .copy-code-btn,
+  .code-download-btn,
+  .code-collapse-btn { display: none !important; }
 
   /* Avoid an empty trailing page/hairline caused by margin collapse
      on the last element. */

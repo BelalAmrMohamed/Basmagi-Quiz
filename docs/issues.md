@@ -49,15 +49,16 @@ So these are 3 examples of performance issues that I found and fixed, there are 
 
 ## New Features
 
-### Essay Questions Input Field 
-In essay questions on the quiz page and on the lesson page: Reuse the exact same rich markdown input field from the AI Agent for the answer field.
+### Implement the Rich Input Component into the Notebook page's Makrdown cells.
 
 ### New Question Type: Complete
 * Implement a new question type in the quiz page and the lesson page: Complete.
 * A standard complete type of question.
 
-### Dictation for Essay Questions (Lesson & Quiz Pages)
-Add dictation feature for essays in quizzes and lessons
+Related Files:
+* `public\src\features\lesson\`: Lesson page files.
+* `public\src\features\quiz\`: Quiz page files.
+* `public\src\shared\rate-answers.js`: Essay questions grading engine.
 
 ### Update the `createEmptyState`
 * Update the `createEmptyState` to include a link to the `/how-to-create-content`

@@ -1,7 +1,8 @@
 // =============================================================================
 // rich-input/essay-field.js
 // Turns essay answer <textarea data-essay-field> elements (quiz + lesson pages)
-// into the shared rich markdown input, with voice dictation.
+// into the shared rich markdown input, with the same voice dictation (mic +
+// live volume wave) as the AI Agent chat.
 //
 //   markup:  <textarea data-essay-field id=".." class=".." placeholder="..">saved markdown</textarea>
 //   after inserting the markup:  mountEssayFields(containerElement)
@@ -16,7 +17,7 @@
 // and editors whose DOM was thrown away by a re-render are destroyed).
 // =============================================================================
 import { createRichInput } from "./rich-input.js";
-import { attachDictation } from "./dictation.js";
+import { createDictation } from "./dictation.js";
 
 const live = new Set();
 
@@ -38,10 +39,37 @@ export function mountEssayFields(root = document, { onError } = {}) {
     const inline = ta.getAttribute("oninput");
     if (inline) host.setAttribute("oninput", inline); // legacy inline handler keeps working
     rich.el.classList.add("rmci-root--essay");
-    attachDictation(rich, { onError });
+
+    // Same mic + live volume wave as the AI Agent chat (shared dictation.js).
+    const dictation = createDictation({
+      getText: () => host.value,
+      setText: (value) => {
+        host.value = value;
+        host.dispatchEvent(new Event("input", { bubbles: true })); // programmatic writes are silent
+      },
+      focus: () => rich.focus("end"),
+      onError,
+    });
+    if (dictation.micBtn) rich.endSlot.appendChild(dictation.micBtn);
+    rich.endSlot.appendChild(dictation.waveEl);
+
     const disabled = ta.disabled;
     ta.replaceWith(rich.el);
+    if (dictation.firefoxWarningEl) rich.el.before(dictation.firefoxWarningEl);
     host.disabled = disabled;
+
+    // Locking the answer (after "check") must also end a running dictation.
+    const lockWatch = new MutationObserver(() => {
+      if (host.disabled && dictation.isActive()) dictation.stop();
+    });
+    lockWatch.observe(rich.el, { attributes: true, attributeFilter: ["class"] });
+    const destroy = rich.destroy;
+    rich.destroy = () => {
+      lockWatch.disconnect();
+      dictation.stop();
+      dictation.firefoxWarningEl?.remove();
+      destroy();
+    };
     live.add(rich);
   });
 }

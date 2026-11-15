@@ -14,8 +14,10 @@
  *   site-root/current-page resolution only (see media-resolve.js).
  *
  * Side-effects on first import:
- * • window.copyCodeBlock is registered so inline onclick="…"
- * attributes on copy buttons can reach it across any page.
+ * • window.copyCodeBlock / window.toggleCodeBlock / window.downloadCodeBlock
+ * are registered so the inline onclick="…" attributes on fenced code
+ * blocks' header buttons (copy, collapse, download) can reach them across
+ * any page.
  */
 
 // ─── 1. Shared media resolution (images / audio / video / YouTube) ────────────
@@ -29,6 +31,11 @@ import {
   isYouTubeUrl,
   getYouTubeVideoId,
 } from "./media-resolve.js";
+
+// ─── 1b. Code-block download (file name from the language tag) ────────────────
+// codeFileName is self-contained so export-to-quiz.js can inline it with
+// .toString(); downloadTextFile is only used by the live-page click handler.
+import { codeFileName, downloadTextFile } from "./code-file.js";
 
 // ─── 2. HTML escaping ─────────────────────────────────────────────────────────
 // Internal — escapes for safe insertion into markup.
@@ -350,6 +357,20 @@ export const ICON_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="14" he
   <path d="M20 6 9 17l-5-5"/>
 </svg>`;
 
+export const ICON_DOWNLOAD = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M12 15V3"/>
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+  <path d="m7 10 5 5 5-5"/>
+</svg>`;
+
+export const ICON_CHEVRON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="m6 9 6 6 6-6"/>
+</svg>`;
+
 // ─── 4b. Copy-button label (i18n) ──────────────────────────────────────────────
 // The "Copy" text shown on fenced code-block copy buttons. Was previously
 // hardcoded to Arabic ("نسخ") regardless of page language. Pages can set
@@ -358,6 +379,10 @@ export const ICON_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="14" he
 // existing visual behaviour for callers that relied on it.
 export const COPY_LABEL =
   (typeof window !== "undefined" && window.MD_COPY_LABEL) || "نسخ";
+
+// Same idea for the download button (`window.MD_DOWNLOAD_LABEL`).
+export const DOWNLOAD_LABEL =
+  (typeof window !== "undefined" && window.MD_DOWNLOAD_LABEL) || "تنزيل";
 
 // ─── 5. Copy-button handler (global registration) ─────────────────────────────
 // Buttons use inline onclick="window.copyCodeBlock(this)" so this must be
@@ -393,6 +418,46 @@ if (typeof window !== "undefined") {
           sel.addRange(range);
         }
       });
+  };
+
+  // Collapse / expand a fenced block. Collapsed = a 3-line peek with a fade
+  // (styled by .code-block-wrapper.is-collapsed in markdown.css); expanded
+  // = the normal height-capped, scrollable block.
+  window.toggleCodeBlock = (btn) => {
+    const wrapper = btn.closest(".code-block-wrapper");
+    if (!wrapper) return;
+    const collapsed = wrapper.classList.toggle("is-collapsed");
+    const label = collapsed ? "Expand code" : "Collapse code";
+    btn.setAttribute("aria-expanded", String(!collapsed));
+    btn.setAttribute("aria-label", label);
+    btn.setAttribute("title", label);
+    const pre = wrapper.querySelector("pre");
+    if (collapsed && pre) {
+      pre.scrollTop = 0;
+      pre.scrollLeft = 0;
+    }
+  };
+
+  // Save a fenced block as a file. The file name (with the right extension
+  // for the block's language) is computed at render time and carried on the
+  // button as data-filename — see _buildCodeBlockHtml().
+  window.downloadCodeBlock = (btn) => {
+    const wrapper = btn.closest(".code-block-wrapper");
+    const codeEl = wrapper && wrapper.querySelector("code");
+    if (!codeEl) return;
+    // textContent, not innerText: independent of collapsing/overflow/CSS.
+    downloadTextFile(
+      btn.getAttribute("data-filename") || "code.txt",
+      codeEl.textContent,
+    );
+    if (btn.classList.contains("copied")) return; // feedback already showing
+    const original = btn.innerHTML;
+    btn.innerHTML = ICON_CHECK;
+    btn.classList.add("copied");
+    setTimeout(() => {
+      btn.innerHTML = original;
+      btn.classList.remove("copied");
+    }, 1500);
   };
 }
 
@@ -1706,6 +1771,58 @@ export function detectLang(code) {
   return "text";
 }
 
+// ─── 6b. Fenced code-block markup ─────────────────────────────────────────────
+// Header (left → right): collapse chevron · language badge · download · copy.
+// The file name is resolved here, at render time, from the language tag and
+// the code, and stored on the download button (data-filename) — so the click
+// handler (live pages and the HTML/quiz exports alike) needs no language
+// tables of its own.
+//
+// Must stay a plain function declaration that only references escHtml,
+// codeFileName and the ICON_*/…_LABEL constants by bare name:
+// export-to-quiz.js serialises it with .toString() next to
+// _renderMarkdownCore, and bakes those same names into the exported page.
+export function _buildCodeBlockHtml(lang, effectiveLang, code, highlighted) {
+  const langClass = lang
+    ? ` language-${lang}`
+    : effectiveLang !== "text"
+      ? ` language-${effectiveLang}`
+      : "";
+
+  // Only show the label when the author explicitly wrote a language tag
+  const langLabel = lang
+    ? `<span class="code-lang-label">${escHtml(lang)}</span>`
+    : "";
+
+  const fileName = escHtml(codeFileName(lang || effectiveLang, code));
+
+  return (
+    `<div class="code-block-wrapper">` +
+    `<button type="button" class="code-collapse-btn"
+             onclick="window.toggleCodeBlock(this)"
+             aria-expanded="true" aria-label="Collapse code"
+             title="Collapse code">` +
+    ICON_CHEVRON +
+    `</button>` +
+    langLabel +
+    `<button type="button" class="code-download-btn"
+             onclick="window.downloadCodeBlock(this)"
+             data-filename="${fileName}"
+             aria-label="Download ${fileName}" title="${fileName}">` +
+    ICON_DOWNLOAD +
+    `<span class="download-label">${escHtml(DOWNLOAD_LABEL)}</span>` +
+    `</button>` +
+    `<button class="copy-code-btn"
+             onclick="window.copyCodeBlock(this)"
+             aria-label="Copy code">` +
+    ICON_COPY +
+    `<span class="copy-label">${escHtml(COPY_LABEL)}</span>` +
+    `</button>` +
+    `<pre class="code-block ltr${langClass}"><code>${highlighted}</code></pre>` +
+    `</div>`
+  );
+}
+
 // ─── 7. Core renderer ─────────────────────────────────────────────────────────
 // @param {string} str
 // @param {{mediaBaseUrl?: string|null}} [options] — see renderMarkdown()
@@ -1783,32 +1900,18 @@ export function _renderMarkdownCore(str, options = {}) {
   );
 
   // ── Step 0b: Fenced code blocks ```lang\n…\n``` ────────────────────────
-  // Wraps each block in .code-block-wrapper so the Copy button has a parent.
+  // Wraps each block in .code-block-wrapper so the header buttons (collapse,
+  // download, copy) have a parent — see _buildCodeBlockHtml().
   // "passage" is already consumed above so it never reaches this branch.
   str = str.replace(
     /```([a-zA-Z0-9_+#.-]*)\n?([\s\S]*?)```/g,
     (_, lang, code) => {
+      const source = code.trim();
       // If no explicit language tag, try to auto-detect from content
-      const effectiveLang = lang || detectLang(code.trim());
-      const highlighted = highlightCode(code.trim(), effectiveLang);
-      const langClass = lang ? ` language-${lang}` : (effectiveLang !== "text" ? ` language-${effectiveLang}` : "");
-
-      // Only show the label when the author explicitly wrote a language tag
-      const langLabel = lang
-        ? `<span class="code-lang-label">${escHtml(lang)}</span>`
-        : "";
-
+      const effectiveLang = lang || detectLang(source);
+      const highlighted = highlightCode(source, effectiveLang);
       return stashPush(
-        `<div class="code-block-wrapper">` +
-        langLabel +
-        `<button class="copy-code-btn"
-                 onclick="window.copyCodeBlock(this)"
-                 aria-label="Copy code">` +
-        ICON_COPY +
-        `<span class="copy-label">${escHtml(COPY_LABEL)}</span>` +
-        `</button>` +
-        `<pre class="code-block ltr${langClass}"><code>${highlighted}</code></pre>` +
-        `</div>`,
+        _buildCodeBlockHtml(lang, effectiveLang, source, highlighted),
       );
     },
   );

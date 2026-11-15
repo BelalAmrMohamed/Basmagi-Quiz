@@ -656,7 +656,7 @@ body.is-resizing-media .media-container.resizable-media {
 
 .code-block-wrapper {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   grid-template-rows: auto 1fr;
   margin: 20px 0;
   direction: ltr !important;
@@ -672,7 +672,7 @@ body.is-resizing-media .media-container.resizable-media {
 /* Distinct Code-Editor Header Bar Background */
 .code-block-wrapper::before {
   content: "";
-  grid-column: 1 / span 3;
+  grid-column: 1 / -1;
   grid-row: 1;
   height: 38px;
   background: #1c1c1f;
@@ -682,14 +682,14 @@ body.is-resizing-media .media-container.resizable-media {
 
 /* Language Badge */
 .code-lang-label {
-  grid-column: 1; /* Locked to the left-most column box */
+  grid-column: 2; /* Between the collapse chevron and the buttons */
   grid-row: 1;
   z-index: 2;
   align-self: center;
   justify-self: start;
   text-align: left !important;
   direction: ltr !important;
-  padding-left: 16px;
+  padding-left: 4px;
   padding-right: 8px;
   font-family: "SF Mono", "Fira Code", "JetBrains Mono", Consolas, monospace;
   font-size: 0.72rem;
@@ -702,8 +702,9 @@ body.is-resizing-media .media-container.resizable-media {
 }
 
 /* Copy Button — Refined Editor Utility */
-.copy-code-btn {
-  grid-column: 3; /* Locked to the right-most column box */
+.copy-code-btn,
+.code-download-btn {
+  grid-column: 4; /* Locked to the right-most column box */
   grid-row: 1;
   z-index: 2;
   align-self: center;
@@ -725,35 +726,122 @@ body.is-resizing-media .media-container.resizable-media {
   opacity: 0;
 }
 
-.copy-code-btn .copy-label {
+.copy-code-btn .copy-label,
+.code-download-btn .download-label {
   font-family: "Inter", "Tajawal", sans-serif;
 }
 
-.code-block-wrapper:hover .copy-code-btn {
+.code-block-wrapper:hover .copy-code-btn,
+.code-block-wrapper:hover .code-download-btn {
   opacity: 1;
 }
 
-.copy-code-btn:hover {
+.copy-code-btn:hover,
+.code-download-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
   color: #ffffff;
 }
 
-.copy-code-btn:active {
+.copy-code-btn:active,
+.code-download-btn:active {
   transform: scale(0.96);
 }
 
 /* "Copied!" Success Confirmation State */
-.copy-code-btn.copied {
+.copy-code-btn.copied,
+.code-download-btn.copied {
   opacity: 1 !important;
   background: rgba(16, 185, 129, 0.12);
   border-color: rgba(16, 185, 129, 0.4);
   color: #34d399;
 }
 
+/* Download Button — shares the Copy button's look, sits just left of it */
+.code-download-btn {
+  grid-column: 3;
+  margin-right: 6px;
+}
+
+.copy-code-btn:focus-visible,
+.code-download-btn:focus-visible {
+  opacity: 1;
+  outline: 2px solid rgba(255, 255, 255, 0.35);
+  outline-offset: 1px;
+}
+
+/* Collapse Toggle — chevron at the left end of the header (always visible) */
+.code-collapse-btn {
+  grid-column: 1;
+  grid-row: 1;
+  z-index: 2;
+  align-self: center;
+  justify-self: start;
+  margin-left: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #9b9ba6;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.code-collapse-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.code-collapse-btn:active {
+  transform: scale(0.94);
+}
+
+.code-collapse-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.35);
+  outline-offset: 1px;
+}
+
+.code-collapse-btn svg {
+  transition: transform 0.2s ease;
+}
+
+.code-block-wrapper.is-collapsed .code-collapse-btn svg {
+  transform: rotate(-90deg);
+}
+
+/* Collapsed state — header + a 3-line peek that fades out at the bottom.
+   Expanded blocks keep the wrapper's max-height cap and scroll inside the
+   <pre>, exactly as before. */
+.code-block-wrapper.is-collapsed {
+  max-height: none;
+}
+
+.code-block-wrapper.is-collapsed .code-block {
+  box-sizing: border-box;
+  max-height: calc(3 * 1.6 * 0.88rem + 32px);
+  overflow: hidden;
+}
+
+.code-block-wrapper.is-collapsed::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36px;
+  background: linear-gradient(to top, #121214, rgba(18, 18, 20, 0));
+  pointer-events: none;
+  z-index: 2;
+}
+
 /* Scrollable Inner Code Body (<pre>) */
 .code-block {
-  grid-column: 1 / span 3;
+  grid-column: 1 / -1;
   grid-row: 2;
   margin: 0;
   padding: 16px;
@@ -1011,7 +1099,8 @@ body.is-resizing-media .media-container.resizable-media {
    ══════════════════════════════════════════════════════════════════════════════ */
 
 @media (max-width: 480px) {
-  .copy-code-btn {
+  .copy-code-btn,
+  .code-download-btn {
     /* Always visible on touch devices — no hover event */
     opacity: 1;
   }
@@ -1019,6 +1108,10 @@ body.is-resizing-media .media-container.resizable-media {
   .code-block {
     font-size: 0.8rem;
     padding: 34px 12px 12px;
+  }
+
+  .code-block-wrapper.is-collapsed .code-block {
+    max-height: calc(3 * 1.6 * 0.8rem + 46px);
   }
 
   .md-table th,

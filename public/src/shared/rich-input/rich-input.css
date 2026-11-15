@@ -279,6 +279,7 @@ html[data-theme="dark-slate"] .rmci-root {
 }
 .rmci-codeblock-btn:hover { background: var(--rmci-hover); color: var(--rmci-fg); }
 .rmci-codeblock-btn.is-done .rmci-icon { color: #34d399; }
+.rmci-codeblock-btn--icon { width: 24px; padding: 0; justify-content: center; }
 .rmci-lang-btn {
   display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px 0 8px;
   border: 1px solid var(--rmci-border); border-radius: 8px; background: color-mix(in srgb, var(--rmci-card) 80%, transparent);
@@ -329,11 +330,8 @@ html[data-theme="dark-slate"] .rmci-root {
 .rmci-root--essay .rmci-scroll { min-height: 120px; }
 .rmci-root--essay .ProseMirror { min-height: 96px; }
 
-/* ── Dictation (mic) button ── */
-.rmci-mic-btn.is-listening { color: #fff; background: #dc2626; animation: rmci-mic-pulse 1.4s ease-in-out infinite; }
-.rmci-mic-btn.is-listening:hover { background: #b91c1c; color: #fff; }
-@keyframes rmci-mic-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, .45); }
-  50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
-}
-@media (prefers-reduced-motion: reduce) { .rmci-mic-btn.is-listening { animation: none; } }
+/* ── Dictation (mic + live wave) ──
+   Buttons and wave are the AI Agent's own (.ai-agent-mic-btn /
+   .ai-agent-dictation-wave in ai-agent.css, created by dictation.js). Inside the
+   rich input's bottom bar the mic is 32px, exactly as in the AI Agent window. */
+.rmci-bar .ai-agent-mic-btn { width: 32px; height: 32px; }
