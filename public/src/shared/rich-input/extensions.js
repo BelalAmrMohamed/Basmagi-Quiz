@@ -19,8 +19,15 @@ const commandName = (c) => String(c?.command ?? "").trim().replace(/^\//, "");
 const mentionName = (m) => String(m?.name ?? m?.token ?? "").trim().replace(/^@/, "");
 
 export function buildExtensions(T, options) {
-  const { placeholder, direction, onSubmit, getCommands, getMentions } = options;
+  const { placeholder, direction, onSubmit, getCommands, getMentions, extraLanguages } = options;
   const lowlight = T.createLowlight(T.common);
+  // Grammars beyond lowlight's `common` set (hljs-extra.js). Never let a bad
+  // pack take the editor down — those languages just stay unhighlighted.
+  try {
+    if (extraLanguages && Object.keys(extraLanguages).length) lowlight.register({ ...extraLanguages });
+  } catch {
+    /* ignore */
+  }
 
   // `<u>text</u>` -> underline
   const UnderlineMd = T.Underline.extend({

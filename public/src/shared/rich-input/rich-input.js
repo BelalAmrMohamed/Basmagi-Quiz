@@ -6,8 +6,10 @@
 // per-block RTL/LTR, model menu, send / stop.
 //
 // Tiptap + lowlight are loaded lazily from /assets/vendor/tiptap/tiptap.js
-// (built by runtimes/build.mjs, target "tiptap-vendor"), so pages only pay for
-// them when the AI window is actually opened. Everything in this folder is
+// (built by runtimes/build.mjs, target "tiptap-vendor"), together with the
+// optional extra highlight.js grammars in hljs-extra.js (target "hljs-extra":
+// MATLAB, PowerShell, Dockerfile, Scala, Dart, Elixir, Haskell, Assembly), so
+// pages only pay for them when the AI window is actually opened. Everything in this folder is
 // plain, editable source.
 //
 // Shared component: used by the AI Agent chat and by the essay answer fields of
@@ -38,6 +40,8 @@ import { buildExtensions } from "./extensions.js";
 import { parseMarkdown } from "./markdown-parser.js";
 
 const VENDOR_URL = globalThis.__RMCI_VENDOR_URL__ || "/assets/vendor/tiptap/tiptap.js"; // override hook: tests
+// Sits next to tiptap.js (same folder, so it follows the test override too).
+const EXTRA_LANGS_URL = globalThis.__RMCI_EXTRA_LANGS_URL__ || VENDOR_URL.replace(/[^/]*$/, "hljs-extra.js");
 const RTL_CHARS = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
 let vendorPromise = null;
 
@@ -49,6 +53,16 @@ function loadVendor() {
     });
   }
   return vendorPromise;
+}
+
+let extraLanguagesPromise = null;
+
+/** Extra highlight.js grammars (name -> grammar). Optional: a failed load only costs highlighting for those languages. */
+function loadExtraLanguages() {
+  if (!extraLanguagesPromise) {
+    extraLanguagesPromise = import(/* @vite-ignore */ EXTRA_LANGS_URL).catch(() => ({}));
+  }
+  return extraLanguagesPromise;
 }
 
 const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -789,9 +803,10 @@ export function createRichInput(options = {}) {
 
   // ── Editor boot (lazy) ───────────────────────────────────────────────────
   const ready = (async () => {
-    const T = await loadVendor();
+    const [T, extraLanguages] = await Promise.all([loadVendor(), loadExtraLanguages()]);
     if (destroyed) return null;
     const extensions = buildExtensions(T, {
+      extraLanguages,
       placeholder: opts.placeholder,
       direction: opts.direction,
       getCommands: opts.getCommands,

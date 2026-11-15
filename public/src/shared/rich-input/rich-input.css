@@ -279,6 +279,7 @@ html[data-theme="dark-slate"] .rmci-root {
 }
 .rmci-codeblock-btn:hover { background: var(--rmci-hover); color: var(--rmci-fg); }
 .rmci-codeblock-btn.is-done .rmci-icon { color: #34d399; }
+.rmci-codeblock-btn--icon { width: 24px; padding: 0; justify-content: center; }
 .rmci-lang-btn {
   display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px 0 8px;
   border: 1px solid var(--rmci-border); border-radius: 8px; background: color-mix(in srgb, var(--rmci-card) 80%, transparent);
