@@ -104,3 +104,35 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 
 ### AI Agent
 Is making an independent page something usefull?
+
+
+## Suggestions
+
+### Notebook Page (I.E., `public/notebook.html`)
+
+#### Image Tool (`imtool`): remaining recommendations
+
+Done so far: fit-to-image window size, MATLAB-style title, touch pixel info, "..." More menu, click-to-pin, snap to neighbouring windows, readable minimized tabs.
+
+#### 1. Tile / Arrange windows (high value)
+- Buttons for Tile side-by-side, Tile stacked and Cascade, shown when two or more image windows are open.
+- Today students drag and resize windows by hand for every before/after comparison.
+
+#### 2. Link views (high value)
+- A toggle that syncs zoom and pan across image windows.
+- Shared pixel marker: hovering or pinning a pixel in one window highlights the same pixel in the others, and every status bar updates together.
+
+#### 3. Compare tool
+- Pick two windows and view them as a slider wipe, a blend or an absolute difference.
+- Useful for filtering and histogram-equalization demos.
+
+#### 4. Pixel neighbourhood
+- Show a small 5x5 grid of values around the pinned pixel (helps with convolution / filter lessons).
+- Show the value as a MATLAB expression, e.g. `I(9,9) = 184`, so students connect the window to the code.
+
+#### 5. Analysis panels
+- Histogram panel and an intensity profile along a drawn line.
+- Contrast adjustment (like MATLAB's Adjust Contrast) and a colormap selector for grayscale images.
+
+#### Notes
+- MATLAB behaviour check: two `imshow` calls in a row show only the last image (same figure and axes are reused), so the current output is correct. `imtool` opens a separate window each time.
