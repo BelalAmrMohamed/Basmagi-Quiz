@@ -1,418 +1,260 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-theme="light">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0088cc" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#fafbfc">
   <title>غير متصل — منصة امتحانات بصمجي</title>
   <link rel="icon" href="/favicon.png" type="image/png">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="canonical" href="https://basmagi.vercel.app/offline" />
-
-  <!-- Modern Arabic Font -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-
+  <link rel="canonical" href="https://basmagi.vercel.app/offline">
   <style>
     :root {
-      --bg: #f0f4f8;
+      color-scheme: light;
+      --page: #fafbfc;
       --surface: #ffffff;
-      --text: #1a2332;
-      --muted: #5a6a7a;
-      --accent: #0088cc;
-      --accent-hover: #0077b3;
-      --border: #d8e0e8;
-      --shadow: rgba(26, 35, 50, 0.08);
-      --error: #ef4444;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --error-bg: #fef2f2;
+      --error: #b91c1c;
+      --focus: rgba(99, 102, 241, .35);
     }
 
-    /* Dark Mode Auto-Switch */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0f172a;
-        --surface: #1e293b;
-        --text: #f8fafc;
-        --muted: #94a3b8;
-        --border: #334155;
-        --shadow: rgba(0, 0, 0, 0.25);
-      }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --page: #0a0a0a;
+      --surface: #121212;
+      --text: #ededed;
+      --muted: #a3a3a3;
+      --border: #262626;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --error-bg: rgba(239, 68, 68, .14);
+      --error: #fca5a5;
+      --focus: rgba(59, 130, 246, .45);
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    html[data-theme="dark-slate"] {
+      color-scheme: dark;
+      --page: #0f172a;
+      --surface: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --error-bg: rgba(239, 68, 68, .16);
+      --error: #fca5a5;
+      --focus: rgba(99, 102, 241, .45);
     }
+
+    * { box-sizing: border-box; }
 
     body {
+      min-height: 100vh;
       min-height: 100dvh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      margin: 0;
       padding: 24px;
-      font-family: 'Cairo', "Segoe UI", Tahoma, Arial, sans-serif;
-      background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 136, 204, 0.15), transparent), var(--bg);
+      display: grid;
+      place-items: center;
+      background: var(--page);
       color: var(--text);
-      transition: background-color 0.3s, color 0.3s;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      transition: background-color .2s ease, color .2s ease;
     }
 
     main {
-      width: min(420px, 100%);
+      width: min(100%, 420px);
+      padding: 36px 32px 32px;
+      text-align: center;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 40px 32px;
-      text-align: center;
-      box-shadow: 0 20px 40px var(--shadow);
-      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 20px;
+      box-shadow: 0 12px 36px rgba(15, 23, 42, .07);
     }
 
-    /* Top small logo */
     .brand {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 24px;
-      font-weight: 700;
+      gap: 9px;
+      margin-bottom: 30px;
       color: var(--muted);
-      font-size: 0.9rem;
+      font-size: .9rem;
+      font-weight: 600;
     }
 
-    .brand img {
-      width: 24px;
-      height: 24px;
-      border-radius: 6px;
+    .brand img { width: 24px; height: 24px; border-radius: 6px; }
+
+    .icon {
+      display: grid;
+      place-items: center;
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 20px;
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+      color: var(--primary);
     }
 
-    /* =================================== */
-    /* -- Hero SVG Styling & Base State -- */
-    /* =================================== */
-    .offline-icon {
-      width: 120px;
-      height: 120px;
-      margin: 0 auto 24px;
-      display: block;
-      color: var(--muted, #94a3b8);
-      cursor: pointer;
-      transition: color 0.3s ease;
+    .icon svg { width: 32px; height: 32px; }
+    h1 { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.45; }
+    .description { margin: 0; color: var(--muted); line-height: 1.8; font-size: .98rem; }
+
+    .status {
+      margin: 18px 0 0;
+      padding: 11px 13px;
+      border-radius: 10px;
+      color: var(--error);
+      background: var(--error-bg);
+      line-height: 1.65;
+      font-size: .9rem;
+      text-align: right;
     }
 
-    /* Set up dash pattern on all vector paths */
-    .offline-icon path,
-    .offline-icon line {
-      stroke-dasharray: 100;
-      stroke-dashoffset: 0;
-    }
-
-    /* Color change on hover */
-    .offline-icon:hover {
-      color: var(--offline-warning, #ef4444);
-    }
-
-    /* LINE-DRAWING ANIMATION ON HOVER */
-    .offline-icon:hover path,
-    .offline-icon:hover line {
-      animation: line-draw 1.4s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
-    }
-
-    /* Stagger the drawing effect sequentially across the waves */
-    .offline-icon:hover .wave-inner {
-      animation-delay: 0s;
-    }
-
-    .offline-icon:hover .wave-mid {
-      animation-delay: 0.15s;
-    }
-
-    .offline-icon:hover .wave-outer {
-      animation-delay: 0.3s;
-    }
-
-    .offline-icon:hover .slash {
-      animation-delay: 0.45s;
-    }
-
-    /* Keyframe: Line draws out completely, then erases back */
-    @keyframes line-draw {
-      0% {
-        stroke-dashoffset: 0;
-        /* Line is completely drawn */
-      }
-
-      100% {
-        stroke-dashoffset: 100;
-        /* Line completely erases/retracts along path */
-      }
-    }
-
-    /* ========================== */
-    /* -- Hero SVG Styling End -- */
-    /* ========================== */
-
-    h1 {
-      margin: 0 0 12px;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    p {
-      margin: 0 0 32px;
-      color: var(--muted);
-      line-height: 1.6;
-      font-size: 1rem;
-    }
+    .status:empty { display: none; }
 
     button {
-      appearance: none;
-      border: none;
-      border-radius: 14px;
-      padding: 14px 28px;
-      font-size: 1.05rem;
-      font-family: inherit;
+      width: 100%;
+      min-height: 48px;
+      margin-top: 24px;
+      padding: 12px 18px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #fff;
+      font: inherit;
       font-weight: 700;
       cursor: pointer;
-      background: var(--accent);
-      color: #fff;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
+      transition: background-color .15s ease, transform .15s ease;
     }
 
-    button:hover:not(:disabled) {
-      background: var(--accent-hover);
-      
-      box-shadow: 0 6px 16px rgba(0, 136, 204, 0.4);
+    button:hover:not(:disabled) { background: var(--primary-hover); }
+    button:active:not(:disabled) { transform: scale(.985); }
+    button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+    button:disabled { opacity: .75; cursor: wait; }
+
+    @media (max-width: 480px) {
+      body { padding: 16px; }
+      main { padding: 30px 22px 24px; }
     }
 
-    button:active:not(:disabled) {
-      transform: scale(0.97);
-    }
-
-    button:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-      animation: pulse 1.5s infinite;
-    }
-
-    /* Spinner for button */
-    .spinner {
-      display: none;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: #fff;
-      animation: spin 1s ease-in-out infinite;
-    }
-
-    button.loading .spinner {
-      display: block;
-    }
-
-    button.loading .btn-text {
-      opacity: 0.85;
-    }
-
-    /* Animations */
-    @keyframes fadeUp {
-      0% {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-
-      100% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes float {
-
-      0%,
-      100% {
-        transform: translateY(0);
-      }
-
-      50% {
-        transform: translateY(-10px);
-      }
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    @keyframes dash {
-      to {
-        stroke-dashoffset: 100;
-      }
-    }
-
-    @keyframes pulse {
-      0% {
-        box-shadow: 0 0 0 0 rgba(0, 136, 204, 0.4);
-      }
-
-      70% {
-        box-shadow: 0 0 0 10px rgba(0, 136, 204, 0);
-      }
-
-      100% {
-        box-shadow: 0 0 0 0 rgba(0, 136, 204, 0);
-      }
-    }
-
-    @keyframes shake {
-
-      0%,
-      100% {
-        transform: translateX(0);
-      }
-
-      25% {
-        transform: translateX(-5px);
-      }
-
-      50% {
-        transform: translateX(5px);
-      }
-
-      75% {
-        transform: translateX(-5px);
-      }
-    }
-
-    .shake {
-      animation: shake 0.4s ease-in-out;
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: .01ms !important; }
     }
   </style>
 </head>
 
 <body>
-  <main id="card">
+  <main>
     <div class="brand">
-      <img src="/favicon.png" alt="بصمجي" width="24" height="24" onerror="this.style.display='none'">
+      <img src="/favicon.png" alt="" width="24" height="24" onerror="this.style.display='none'">
       <span>منصة امتحانات بصمجي</span>
     </div>
 
-    <!-- Optimized SVG with targeted element classes -->
-    <svg class="offline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-      stroke-linecap="round" stroke-linejoin="round">
-      <path class="wave wave-outer" d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88M10.71 5.05A16 16 0 0 1 22.58 9"></path>
-      <path class="wave wave-mid" d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39M16.72 11.06A10.94 10.94 0 0 1 19 12.55">
-      </path>
-      <path class="wave wave-inner" d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
-      <circle class="dot" cx="12" cy="20" r="1" fill="currentColor"></circle>
-      <line class="slash" x1="2" y1="2" x2="22" y2="22"></line>
-    </svg>
+    <div class="icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 8.8a16 16 0 0 1 20 0M5 12.5a10.8 10.8 0 0 1 14 0M8.7 16.2a5.3 5.3 0 0 1 6.6 0"></path>
+        <path d="m3 3 18 18"></path>
+        <circle cx="12" cy="20" r=".8" fill="currentColor" stroke="none"></circle>
+      </svg>
+    </div>
 
-    <h1 aria-live="assertive">أنت غير متصل بالإنترنت</h1>
-    <p>يبدو أنك فقدت الاتصال بالشبكة. تحتاج المنصة إلى إنترنت نشط لفتح الامتحانات وحفظ إجاباتك.</p>
-
-    <button type="button" id="retry-btn" onclick="manualRetry()">
-      <span class="btn-text">إعادة المحاولة الآن</span>
-      <span class="spinner"></span>
-    </button>
+    <h1>لا يوجد اتصال بالإنترنت</h1>
+    <p class="description">تحقق من اتصالك بالشبكة، ثم أعد المحاولة للعودة إلى المنصة.</p>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <button type="button" id="retry-btn">إعادة المحاولة</button>
   </main>
 
   <script>
-    const btn = document.getElementById('retry-btn');
-    const card = document.getElementById('card');
+    (() => {
+      const THEME_KEY = "quiz_theme_pref";
+      const themes = ["light", "dark", "dark-slate"];
+      const root = document.documentElement;
+      const button = document.getElementById("retry-btn");
+      const status = document.getElementById("status");
 
-    // Function to safely redirect back
-    function redirectBack() {
-      const ref = document.referrer;
-      if (ref && ref.indexOf(location.origin) === 0) {
-        location.replace(ref);
-      } else {
-        location.replace("/");
-      }
-    }
-
-    // Ping server to check ACTUAL internet (not just router connection)
-    async function checkActualConnection() {
+      // Match the platform's saved theme; standalone/offline visits default to light.
       try {
-        // Build an abort controller manually — AbortSignal.timeout() isn't
-        // available in every environment (some sandboxed/older WebViews),
-        // and a synchronous throw there would otherwise skip straight to
-        // the catch without ever settling predictably.
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        root.dataset.theme = themes.includes(savedTheme) ? savedTheme : "light";
+      } catch (_) {
+        root.dataset.theme = "light";
+      }
 
+      function redirectBack() {
+        const referrer = document.referrer;
+        if (referrer && referrer.indexOf(location.origin) === 0) {
+          location.replace(referrer);
+        } else {
+          location.replace("/");
+        }
+      }
+
+      async function checkServer() {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
         try {
-          const response = await fetch('/favicon.png?_=' + Date.now(), {
-            method: 'HEAD',
-            cache: 'no-store',
+          const response = await fetch("/favicon.png?_=" + Date.now(), {
+            method: "HEAD",
+            cache: "no-store",
             signal: controller.signal
           });
-          return response.ok;
+          return response.ok ? "connected" : "server-error";
+        } catch (error) {
+          return error.name === "AbortError" ? "timeout" : "unreachable";
         } finally {
-          clearTimeout(timeoutId);
+          clearTimeout(timeout);
         }
-      } catch (error) {
-        return false;
-      }
-    }
-
-    // Manual button click logic
-    async function manualRetry() {
-      if (!navigator.onLine) {
-        triggerError();
-        return;
       }
 
-      // UI Loading state
-      btn.classList.add('loading');
-      btn.disabled = true;
+      async function retry() {
+        if (button.disabled) return;
+        status.textContent = "جارٍ التحقق من الاتصال…";
+        status.style.color = "var(--muted)";
+        status.style.background = "transparent";
+        button.disabled = true;
+        button.textContent = "جارٍ التحقق…";
 
-      const isReallyOnline = await checkActualConnection();
+        let result;
+        if (!navigator.onLine) {
+          result = "offline";
+        } else {
+          result = await checkServer();
+        }
 
-      if (isReallyOnline) {
-        redirectBack();
-      } else {
-        triggerError();
+        if (result === "connected") {
+          redirectBack();
+          return;
+        }
+
+        const messages = {
+          offline: "ما زال جهازك غير متصل بالشبكة. تحقق من الواي فاي أو بيانات الهاتف ثم حاول مجددًا.",
+          timeout: "استغرق الاتصال بخادم المنصة وقتًا أطول من المعتاد. تحقق من الشبكة وحاول مجددًا.",
+          unreachable: "تعذر الوصول إلى خادم المنصة. قد يكون اتصالك غير مستقر؛ تحقق منه ثم حاول مجددًا.",
+          "server-error": "وصلنا إلى الخادم، لكنه لم يتمكن من إكمال الطلب الآن. حاول مرة أخرى بعد قليل."
+        };
+        status.textContent = messages[result];
+        status.style.color = "";
+        status.style.background = "";
+        button.disabled = false;
+        button.textContent = "إعادة المحاولة";
       }
-    }
 
-    function triggerError() {
-      // Revert UI
-      btn.classList.remove('loading');
-      btn.disabled = false;
+      button.addEventListener("click", retry);
+      window.addEventListener("online", async () => {
+        if (await checkServer() === "connected") redirectBack();
+      });
 
-      // Shake animation to indicate failure
-      card.classList.remove('shake');
-      void card.offsetWidth; // Trigger reflow
-      card.classList.add('shake');
-    }
-
-    // Automatic check when browser detects network changes
-    window.addEventListener("online", async () => {
-      const isReallyOnline = await checkActualConnection();
-      if (isReallyOnline) {
-        redirectBack();
-      }
-    });
-
-    // Check immediately on load (in case they load this page from cache while actually online)
-    window.addEventListener('load', () => {
       if (navigator.onLine) {
-        checkActualConnection().then(isOnline => {
-          if (isOnline) redirectBack();
+        checkServer().then((result) => {
+          if (result === "connected") redirectBack();
         });
       }
-    });
+    })();
   </script>
 </body>
-
 </html>

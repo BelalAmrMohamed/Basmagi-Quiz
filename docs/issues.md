@@ -7,12 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Offline Page
-Improve:
-* It's theme Should match the theme of the platform (see themes.css and theme-controller.js), but it shouldn't import these files, it should be independent. It should also default to the default theme of the platform.
-* Its design feels too complicated, I want a simpler version.
-* Some Features should work offline (for people who installed the website), like the notebook and its local compiler, or the home page and its `/my-content` sub-page, so make sure the offline page doesn't block them if they are cached.
-
 ### Profile Page
 * Notebooks (دفتر): Aren't counted anywhere in the page. It wasn't updated since then.
 * `أفضل المشرفين`: 
