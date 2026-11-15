@@ -14,7 +14,9 @@
 import { detectDirection, renderMarkdown, renderInlineMediaTag } from "../../shared/markdown.js";
 import { escapeHtml } from "../home/escape-html.js";
 import { recordQuestionAnswer, appendEssayAnswerText, resetLessonQuestionAnswers, resetQuestionAnswersByIds, getLessonProgress } from "./lesson-schema.js";
-import { _confirm } from "../../components/notifications/notifications.js";
+import { _confirm, showNotification } from "../../components/notifications/notifications.js";
+import { openReportModal, isQuestionReported } from "../../components/report-question/report-question.js";
+import { getQuestionMarks, toggleQuestionMark } from "./lesson-question-marks.js";
 import { gradeEssay, isAnswerCorrect } from "../../shared/rate-answers.js";
 import { lessonIcon } from "./lesson-icons.js";
 import { ogThumbUrl } from "../../shared/og-thumb.js";
@@ -262,16 +264,16 @@ function renderFolderReferenceBlock(block, ctx) {
 }
 
 /**
- * Embedded question — its own small, self-contained UI, NOT a reuse of
- * quiz.js's question renderer (that component is built around a
- * multi-question submit-the-whole-quiz flow; this is a standalone question
- * with the same select/check/review rhythm).
+ * Embedded question — a standalone lesson-page question whose look mirrors the
+ * quiz page's question card (number badge + star/flag/report actions, radio /
+ * checkbox option rows with check / cross icons once graded, a coloured
+ * "الشرح" feedback card, and the essay + model-answer layout). The quiz's
+ * modes (practice / timed / exam) are intentionally NOT part of it.
  *
- * Shows correct/incorrect feedback and explanations, writes only to the
- * local progress state, and never makes a network call. Dispatches on
- * `block.questionKind` ("mcq", the default for pre-existing rows without
- * the field, or "essay") to one of two structurally different bodies —
- * see renderMcqQuestionBody/renderEssayQuestionBody below.
+ * Writes only to the local progress state and never makes a network call.
+ * Dispatches on `block.questionKind` ("mcq", the default for pre-existing rows
+ * without the field, or "essay") — see renderMcqQuestionBody /
+ * renderEssayQuestionBody below.
  */
 function renderQuestionBlock(block, ctx) {
   const questionId = block.id || "";
@@ -280,10 +282,7 @@ function renderQuestionBlock(block, ctx) {
   const prior = getLessonProgress(ctx.lessonId)?.questions?.[questionId] || null;
   const isEssay = block.questionKind === "essay";
   const questionNumber = ctx.questionLabels?.get(questionId);
-  const questionHeader = renderQuestionHeader(
-    questionNumber,
-    isEssay ? "سؤال مقالي" : block.multiSelect ? "اختيار متعدد" : "اختيار من متعدد",
-  );
+  const questionHeader = renderQuestionHeader(questionNumber, ctx.lessonId, questionId);
 
   if (isEssay) {
     if (!block.modelAnswer) return "";
@@ -295,15 +294,46 @@ function renderQuestionBlock(block, ctx) {
   return renderMcqQuestionBody(block, questionId, options, prior, questionHeader);
 }
 
-function renderQuestionHeader(questionNumber, typeLabel) {
+const REPORT_TITLE = "الإبلاغ عن خطأ في هذا السؤال";
+const REPORTED_TITLE = "تم الإبلاغ عن هذا السؤال";
+
+function renderQuestionActionButton(kind, active, title, extraClass = "") {
+  return (
+    `<button type="button" class="lesson-question__action lesson-question__action--${kind}${active ? " active" : ""}${extraClass}" ` +
+    `data-question-action="${kind}" ${kind === "report" ? "" : `aria-pressed="${active}" `}` +
+    `title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${lessonIcon(kind === "report" ? "alert" : kind)}</button>`
+  );
+}
+
+function questionActionTitle(kind, active) {
+  if (kind === "star") return active ? "إزالة السؤال من الأسئلة المحفوظة" : "حفظ السؤال";
+  if (kind === "flag") return active ? "إزالة العلامة" : "إضافة علامة للمراجعة";
+  return active ? REPORTED_TITLE : REPORT_TITLE;
+}
+
+function renderQuestionHeader(questionNumber, lessonId, questionId) {
+  const marks = lessonId ? getQuestionMarks(lessonId, questionId) : {};
+  const reported = lessonId && questionNumber ? isQuestionReported(lessonId, questionNumber.index - 1) : false;
   return (
     `<div class="lesson-question__header">` +
     (questionNumber
-      ? `<span class="lesson-question__number">سؤال ${questionNumber.index} من ${questionNumber.total}</span>`
-      : `<span class="lesson-question__number">سؤال</span>`) +
-    `<span class="lesson-question__type">${escapeHtml(typeLabel)}</span>` +
+      ? `<div class="lesson-question__number">سؤال ${questionNumber.index} من ${questionNumber.total}</div>`
+      : `<div class="lesson-question__number">سؤال</div>`) +
+    `<div class="lesson-question__actions">` +
+    renderQuestionActionButton("star", Boolean(marks.star), questionActionTitle("star", Boolean(marks.star))) +
+    renderQuestionActionButton("flag", Boolean(marks.flag), questionActionTitle("flag", Boolean(marks.flag))) +
+    renderQuestionActionButton("report", reported, questionActionTitle("report", reported)) +
+    `</div>` +
     `</div>`
   );
+}
+
+/** Coloured "الشرح" card — hidden until graded; omitted entirely when there is no explanation. */
+function renderQuestionFeedback(explanation, extraClass = "") {
+  const body = explanation
+    ? `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text md-content">${renderMarkdown(explanation)}</div></div>`
+    : "";
+  return `<div class="lesson-question__feedback${extraClass}" role="status" aria-live="polite" hidden>${body}</div>`;
 }
 
 function renderMcqQuestionBody(block, questionId, options, prior, header) {
@@ -311,22 +341,17 @@ function renderMcqQuestionBody(block, questionId, options, prior, header) {
     ? (Array.isArray(block.correctIndexes) ? block.correctIndexes : [block.correctIndex])
     : [Number(block.correctIndex) || 0];
   const multiSelect = Boolean(block.multiSelect);
-  // Restore a previously-recorded answer so a reload shows the same
-  // revealed state the reader left behind (the reveal itself is recomputed
-  // from progress by resolveRevealedSections, so these must agree).
+  const inputType = multiSelect ? "checkbox" : "radio";
   const optionsHtml = options
-    .map(
-      (opt, i) => {
-        const optionText = String(opt);
-        const direction = detectDirection(optionText);
-        return `<button type="button" class="lesson-question__option" dir="${direction}" data-option-index="${i}" aria-pressed="false">` +
-          `<span class="lesson-question__option-marker" dir="ltr" aria-hidden="true">${String.fromCharCode(65 + i)}</span>` +
-          `<span class="lesson-question__option-text md-content">${renderMarkdown(optionText)}</span>` +
-          `</button>`;
-      },
-    )
+    .map((opt, i) => {
+      const optionText = String(opt);
+      const direction = detectDirection(optionText);
+      return `<label class="lesson-question__option" dir="${direction}" data-option-index="${i}">` +
+        `<input type="${inputType}" name="lq-${escapeHtml(questionId)}${multiSelect ? `-${i}` : ""}" value="${i}" aria-label="الخيار ${i + 1}">` +
+        `<span class="lesson-question__option-text md-content">${renderMarkdown(optionText)}</span>` +
+        `</label>`;
+    })
     .join("");
-  const correctAnswers = correctIndexes.map((index) => options[index]).filter(Boolean);
 
   return (
     `<article class="lesson-block lesson-block--question lesson-question" ` +
@@ -340,25 +365,17 @@ function renderMcqQuestionBody(block, questionId, options, prior, header) {
     header +
     `<div class="lesson-question__prompt md-content">${renderMarkdown(block.prompt || "")}</div>` +
     `<div class="lesson-question__options" role="group" aria-label="خيارات الإجابة">${optionsHtml}</div>` +
-    `<button type="button" class="lesson-question__check-btn" data-question-check disabled>${multiSelect ? "تحقق من الإجابات" : "تحقق من الإجابة"}</button>` +
-    `<div class="lesson-question__feedback" role="status" aria-live="polite" hidden>` +
-    `<div class="lesson-question__verdict"><span class="lesson-question__verdict-icon" aria-hidden="true"></span><span class="lesson-question__verdict-text"></span></div>` +
-    `<div class="lesson-question__correct-answer"><span class="lesson-question__answer-label">${correctAnswers.length > 1 ? "الإجابات الصحيحة" : "الإجابة الصحيحة"}</span><div class="lesson-question__answer-body md-content">${correctAnswers.map((answer) => renderMarkdown(String(answer))).join("")}</div></div>` +
-    (block.explanation
-      ? `<div class="lesson-question__explanation"><div class="lesson-question__explanation-label">الشرح</div><div class="md-content">${renderMarkdown(block.explanation)}</div></div>`
-      : "") +
-    `</div>` +
+    `<button type="button" class="lesson-question__check-btn" title="إظهار الإجابة الصحيحة" data-question-check disabled>تحقق من الإجابة</button>` +
+    renderQuestionFeedback(block.explanation) +
     `</article>`
   );
 }
 
 /**
- * Essay body: a free-text <textarea> plus a "تحقق" (check) button, rather
- * than the MCQ's click-an-option interaction. Grading is client-side text
- * similarity only (gradeEssay(), the same function quiz.js uses for essay
- * questions) — never a network call or an overall lesson grade. The
- * approximate 0–5 rating is shown beside the model answer as self-check
- * feedback.
+ * Essay body: a free-text <textarea> plus a "تحقق" (check) button. Grading is
+ * client-side text similarity only (gradeEssay(), the same function quiz.js
+ * uses) — never a network call. The approximate 0–5 rating sits above the
+ * model answer, exactly like the quiz's "formal answer" block.
  */
 function renderEssayQuestionBody(block, questionId, prior, header) {
   const priorAnswer = typeof prior?.answerText === "string" ? prior.answerText : "";
@@ -372,18 +389,14 @@ function renderEssayQuestionBody(block, questionId, prior, header) {
     `>` +
     header +
     `<div class="lesson-question__prompt md-content">${renderMarkdown(block.prompt || "")}</div>` +
-    `<label class="lesson-question__essay-wrap"><span class="lesson-question__essay-label">إجابتك</span><textarea dir="auto" class="lesson-question__essay-input" rows="4" placeholder="اكتب إجابتك هنا…" ${prior?.answered ? "disabled" : ""}>${escapeHtml(priorAnswer)}</textarea></label>` +
-    `<div class="lesson-question__essay-actions">` +
-    `<button type="button" class="lesson-question__essay-check-btn" ${prior?.answered || !priorAnswer.trim() ? "disabled" : ""}>تحقق من الإجابة</button>` +
+    `<div class="lesson-question__essay-wrap"><textarea dir="auto" class="lesson-question__essay-input" aria-label="إجابتك" placeholder="اكتب إجابتك هنا..." ${prior?.answered ? "disabled" : ""}>${escapeHtml(priorAnswer)}</textarea></div>` +
+    `<button type="button" class="lesson-question__essay-check-btn lesson-question__check-btn" title="إظهار الإجابة الصحيحة" ${prior?.answered || !priorAnswer.trim() ? "disabled" : ""}>تحقق من الإجابة</button>` +
+    `<div class="lesson-question__formal-answer" role="status" aria-live="polite" hidden>` +
+    `<strong class="lesson-question__formal-score"></strong>` +
+    `<strong>الإجابة النموذجية</strong>` +
+    `<div class="lesson-question__formal-text md-content">${renderMarkdown(block.modelAnswer || "")}</div>` +
     `</div>` +
-    `<div class="lesson-question__feedback" role="status" aria-live="polite" hidden>` +
-    `<div class="lesson-question__verdict"><span class="lesson-question__verdict-icon" aria-hidden="true"></span><span class="lesson-question__verdict-text"></span></div>` +
-    `<div class="lesson-question__essay-rating" aria-label="التقييم التقريبي من خمسة"><span class="lesson-question__score-badge"></span><span class="lesson-question__stars" aria-hidden="true"></span></div>` +
-    `<div class="lesson-question__model-answer"><span class="lesson-question__answer-label">الإجابة النموذجية</span><div class="lesson-question__answer-body md-content">${renderMarkdown(block.modelAnswer || "")}</div></div>` +
-    (block.explanation
-      ? `<div class="lesson-question__explanation"><div class="lesson-question__explanation-label">الشرح</div><div class="md-content">${renderMarkdown(block.explanation)}</div></div>`
-      : "") +
-    `</div>` +
+    renderQuestionFeedback(block.explanation, " lesson-question__feedback--essay") +
     `</article>`
   );
 }
@@ -446,6 +459,11 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
         ?.scrollIntoView({ behavior: document.documentElement.dataset.motion === "reduced" ? "auto" : "smooth", block: "center" });
       return;
     }
+    const actionBtn = e.target.closest("[data-question-action]");
+    if (actionBtn) {
+      handleQuestionAction(actionBtn, lessonId);
+      return;
+    }
     const btn = e.target.closest("[data-explain-wrong]");
     if (!btn || typeof onExplainWrong !== "function") return;
     const questionEl = btn.closest(".lesson-question");
@@ -455,8 +473,7 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
     if (questionEl.dataset.questionKind === "mcq") {
       const options = [...questionEl.querySelectorAll(".lesson-question__option-text")].map((el) => el.textContent.trim());
       const correctIndexes = (() => { try { return JSON.parse(questionEl.dataset.correctIndexes || "[]"); } catch { return []; } })();
-      const chosenIndexes = [...questionEl.querySelectorAll(".lesson-question__option.is-selected")]
-        .map((el) => Number(el.dataset.optionIndex));
+      const chosenIndexes = getSelectedIndexes(questionEl);
       onExplainWrong({
         kind: "mcq",
         question: questionText,
@@ -478,7 +495,6 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
     const questionId = questionEl.dataset.questionId;
     let correctIndexes = [0];
     try { correctIndexes = JSON.parse(questionEl.dataset.correctIndexes || "[0]"); } catch (_) { }
-    const multiSelect = questionEl.dataset.multiSelect === "true";
 
     // Replay a stored answer into the DOM without re-firing the handler.
     const prior = getLessonProgress(lessonId)?.questions?.[questionId];
@@ -486,28 +502,19 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
       revealMcqAnswer(questionEl, correctIndexes, prior.wasCorrect, prior.selectedIndexes || null);
     }
 
-    questionEl.querySelectorAll(".lesson-question__option").forEach((optionBtn) => {
-      optionBtn.addEventListener("click", () => {
+    // Native radio / checkbox inputs inside <label> rows: the browser handles
+    // click, keyboard and the single-select grouping; we only mirror state.
+    questionEl.querySelectorAll(".lesson-question__option input").forEach((input) => {
+      input.addEventListener("change", () => {
         if (questionEl.dataset.answered === "true") return; // reveal-once
-        const chosen = Number(optionBtn.dataset.optionIndex);
-        if (multiSelect) {
-          optionBtn.classList.toggle("is-selected");
-        } else {
-          questionEl.querySelectorAll(".lesson-question__option").forEach((option) => {
-            const selected = option === optionBtn;
-            option.classList.toggle("is-selected", selected);
-            option.setAttribute("aria-pressed", String(selected));
-          });
-        }
-        optionBtn.setAttribute("aria-pressed", String(optionBtn.classList.contains("is-selected")));
+        syncOptionSelection(questionEl);
         const checkBtn = questionEl.querySelector("[data-question-check]");
-        if (checkBtn) checkBtn.disabled = questionEl.querySelectorAll(".lesson-question__option.is-selected").length === 0;
+        if (checkBtn) checkBtn.disabled = getSelectedIndexes(questionEl).length === 0;
       });
     });
     questionEl.querySelector("[data-question-check]")?.addEventListener("click", () => {
       if (questionEl.dataset.answered === "true") return;
-      const selected = [...questionEl.querySelectorAll(".lesson-question__option.is-selected")]
-        .map((button) => Number(button.dataset.optionIndex));
+      const selected = getSelectedIndexes(questionEl);
       if (!selected.length) return;
       const wasCorrect = isAnswerCorrect(selected, correctIndexes);
       recordQuestionAnswer(lessonId, questionId, wasCorrect, selected);
@@ -539,12 +546,8 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
       // it is not submitted or included in an overall lesson score.
       const score = gradeEssay(answerText, modelAnswer);
       recordQuestionAnswer(lessonId, questionId, score >= 3);
-      // recordQuestionAnswer only stores {answered, wasCorrect} by default
-      // (see lesson-schema.js) — essay questions additionally need their
-      // own answer text preserved so a reload can redisplay what the
-      // reader wrote, so this call directly extends that same stored
-      // entry rather than growing recordQuestionAnswer's signature for a
-      // field only essay questions use.
+      // recordQuestionAnswer only stores {answered, wasCorrect}; essay
+      // questions additionally keep the answer text so a reload can show it.
       appendEssayAnswerText(lessonId, questionId, answerText);
       revealEssayAnswer(questionEl, modelAnswer, answerText);
       if (typeof onAnswered === "function") onAnswered();
@@ -552,17 +555,60 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
   });
 }
 
+/** Star / flag / report buttons in a question's header. */
+function handleQuestionAction(button, lessonId) {
+  const questionEl = button.closest(".lesson-question");
+  const questionId = questionEl?.dataset.questionId;
+  if (!questionId) return;
+  const kind = button.dataset.questionAction;
+  if (kind === "report") {
+    const numberText = questionEl.querySelector(".lesson-question__number")?.textContent || "";
+    const ordinal = Number((numberText.match(/\d+/) || [])[0]) || 1;
+    openReportModal({
+      quizId: lessonId,
+      questionIndex: ordinal - 1,
+      questionText: questionEl.querySelector(".lesson-question__prompt")?.textContent?.trim() || numberText,
+      onSuccess: () => {
+        button.classList.add("active");
+        button.title = REPORTED_TITLE;
+        button.setAttribute("aria-label", REPORTED_TITLE);
+      },
+    });
+    return;
+  }
+  const active = toggleQuestionMark(lessonId, questionId, kind);
+  button.classList.toggle("active", active);
+  button.setAttribute("aria-pressed", String(active));
+  const title = questionActionTitle(kind, active);
+  button.title = title;
+  button.setAttribute("aria-label", title);
+  if (kind === "star") showNotification(active ? "تم حفظ السؤال" : "تمت إزالة السؤال من المحفوظات");
+  else showNotification(active ? "تمت إضافة علامة للمراجعة" : "تمت إزالة العلامة");
+}
+
+function getSelectedIndexes(questionEl) {
+  return [...questionEl.querySelectorAll(".lesson-question__option input:checked")]
+    .map((input) => Number(input.value));
+}
+
+/** Mirrors each input's checked state onto its row (`is-selected`) for styling. */
+function syncOptionSelection(questionEl) {
+  questionEl.querySelectorAll(".lesson-question__option").forEach((row) => {
+    row.classList.toggle("is-selected", Boolean(row.querySelector("input")?.checked));
+  });
+}
+
 /** Returns one embedded question's DOM to its unanswered state (no storage writes). */
 export function resetQuestionElement(qEl) {
   qEl.dataset.answered = "false";
   delete qEl.dataset.result;
-  qEl.querySelectorAll(".lesson-question__option").forEach((btn) => {
-    btn.classList.remove("is-selected", "is-correct", "is-wrong", "is-missed");
-    btn.disabled = false;
-    btn.setAttribute("aria-pressed", "false");
+  qEl.querySelectorAll(".lesson-question__option").forEach((row) => {
+    row.classList.remove("is-selected", "is-correct", "is-wrong", "is-locked");
+    const input = row.querySelector("input");
+    if (input) { input.checked = false; input.disabled = false; }
   });
   const checkBtn = qEl.querySelector("[data-question-check]");
-  if (checkBtn) checkBtn.disabled = true;
+  if (checkBtn) { checkBtn.disabled = true; checkBtn.hidden = false; }
 
   const textarea = qEl.querySelector(".lesson-question__essay-input");
   if (textarea) {
@@ -570,13 +616,16 @@ export function resetQuestionElement(qEl) {
     textarea.disabled = false;
   }
   const essayCheck = qEl.querySelector(".lesson-question__essay-check-btn");
-  if (essayCheck) essayCheck.disabled = true;
+  if (essayCheck) { essayCheck.disabled = true; essayCheck.hidden = false; }
 
+  const formal = qEl.querySelector(".lesson-question__formal-answer");
+  if (formal) formal.hidden = true;
   const feedback = qEl.querySelector(".lesson-question__feedback");
   if (feedback) {
     feedback.hidden = true;
-    feedback.querySelector("[data-explain-wrong]")?.remove();
+    feedback.classList.remove("correct", "wrong");
   }
+  qEl.querySelector(".lesson-question__tools")?.remove();
 }
 
 /** Static recap card shell, mounted after the last section; filled by refreshLessonRecap(). */
@@ -637,59 +686,55 @@ export function refreshLessonRecap(root, lessonId, questions) {
   }));
 }
 
-function renderExplainWrongButton(feedback) {
-  // One "اشرح لي إجابتي" trigger per feedback block — re-grading via
-  // "إعادة المحاولة" removes the whole feedback block anyway (see the
-  // reset handler above), so there's no separate cleanup needed when a
-  // question moves from wrong back to ungraded.
-  if (feedback.querySelector("[data-explain-wrong]")) return;
+function renderExplainWrongButton(questionEl) {
+  // One "اشرح لي إجابتي" trigger per question — re-grading via "إعادة المحاولة"
+  // resets the element (see resetQuestionElement), which removes this wrapper.
+  if (questionEl.querySelector("[data-explain-wrong]")) return;
+  const tools = document.createElement("div");
+  tools.className = "lesson-question__tools";
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "lesson-question__explain-wrong-btn";
   btn.dataset.explainWrong = "true";
   btn.textContent = "اشرح لي ليه إجابتي غلط";
-  feedback.appendChild(btn);
+  tools.appendChild(btn);
+  questionEl.appendChild(tools);
 }
 
-function setVerdict(verdict, text, good) {
-  verdict.querySelector(".lesson-question__verdict-text").textContent = text;
-  verdict.querySelector(".lesson-question__verdict-icon").textContent = good ? "✓" : "✕";
-  verdict.classList.toggle("is-correct", good);
-  verdict.classList.toggle("is-wrong", !good);
+/** Shows the explanation card (when the question has one), coloured by the result. */
+function showFeedback(questionEl, good, essay = false) {
+  const feedback = questionEl.querySelector(".lesson-question__feedback");
+  if (!feedback || !feedback.querySelector(".feedback-body")) return;
+  feedback.classList.remove("correct", "wrong");
+  if (!essay) feedback.classList.add(good ? "correct" : "wrong");
+  feedback.hidden = false;
 }
 
 function revealMcqAnswer(questionEl, correctIndexes, wasCorrect, chosenIndexes) {
   questionEl.dataset.answered = "true";
   questionEl.dataset.result = wasCorrect ? "correct" : "wrong";
-  const multi = questionEl.dataset.multiSelect === "true";
-  questionEl.querySelectorAll(".lesson-question__option").forEach((btn) => {
-    const idx = Number(btn.dataset.optionIndex);
+  questionEl.querySelectorAll(".lesson-question__option").forEach((row) => {
+    const idx = Number(row.dataset.optionIndex);
     const selected = chosenIndexes?.includes(idx) || false;
-    btn.classList.toggle("is-selected", selected);
-    btn.setAttribute("aria-pressed", String(selected));
-    btn.disabled = true;
+    const input = row.querySelector("input");
+    if (input) { input.checked = selected; input.disabled = true; }
     const isCorrect = correctIndexes.includes(idx);
-    // A correct option the reader skipped in a multi-select question is
-    // marked "missed" (dashed) so it reads differently from a correct pick.
-    if (isCorrect && (selected || !multi)) btn.classList.add("is-correct");
-    if (isCorrect && !selected && multi) btn.classList.add("is-missed");
-    if (selected && !isCorrect) btn.classList.add("is-wrong");
+    row.classList.toggle("is-selected", selected);
+    row.classList.add("is-locked");
+    // Same as the quiz: every correct option turns green, a wrong pick turns red.
+    if (isCorrect) row.classList.add("is-correct");
+    if (selected && !isCorrect) row.classList.add("is-wrong");
   });
   const checkBtn = questionEl.querySelector("[data-question-check]");
-  if (checkBtn) checkBtn.disabled = true;
+  if (checkBtn) { checkBtn.disabled = true; checkBtn.hidden = true; }
 
-  const feedback = questionEl.querySelector(".lesson-question__feedback");
-  if (feedback) {
-    feedback.hidden = false;
-    const verdict = feedback.querySelector(".lesson-question__verdict");
-    if (verdict) setVerdict(verdict, wasCorrect ? "إجابة صحيحة" : "إجابة غير صحيحة — راجع الخيارات الصحيحة", wasCorrect);
-    if (!wasCorrect) renderExplainWrongButton(feedback);
-  }
+  showFeedback(questionEl, wasCorrect);
+  if (!wasCorrect) renderExplainWrongButton(questionEl);
 }
 
 /**
- * Reveals an essay question's self-check: disables further editing, shows
- * the model answer, and displays gradeEssay()'s approximate local rating.
+ * Reveals an essay question's self-check: locks the textarea, shows the model
+ * answer block with gradeEssay()'s approximate local rating, then the explanation.
  */
 function revealEssayAnswer(questionEl, modelAnswer, answerText) {
   questionEl.dataset.answered = "true";
@@ -699,25 +744,18 @@ function revealEssayAnswer(questionEl, modelAnswer, answerText) {
     textarea.disabled = true;
   }
   const checkBtn = questionEl.querySelector(".lesson-question__essay-check-btn");
-  if (checkBtn) checkBtn.disabled = true;
+  if (checkBtn) { checkBtn.disabled = true; checkBtn.hidden = true; }
 
   const score = gradeEssay(answerText, modelAnswer);
   const wasClose = score >= 3;
   questionEl.dataset.result = wasClose ? "correct" : "wrong";
 
-  const feedback = questionEl.querySelector(".lesson-question__feedback");
-  if (feedback) {
-    feedback.hidden = false;
-    const verdict = feedback.querySelector(".lesson-question__verdict");
-    if (verdict) setVerdict(verdict, wasClose ? "إجابتك قريبة من النموذجية" : "راجع الإجابة النموذجية", wasClose);
-    const rating = feedback.querySelector(".lesson-question__essay-rating");
-    if (rating) {
-      const badge = rating.querySelector(".lesson-question__score-badge");
-      const stars = rating.querySelector(".lesson-question__stars");
-      if (badge) badge.textContent = `${score}/5`;
-      if (stars) stars.textContent = "★".repeat(score) + "☆".repeat(5 - score);
-      rating.setAttribute("aria-label", `التقييم التقريبي: ${score} من 5`);
-    }
-    if (!wasClose) renderExplainWrongButton(feedback);
+  const formal = questionEl.querySelector(".lesson-question__formal-answer");
+  if (formal) {
+    const scoreEl = formal.querySelector(".lesson-question__formal-score");
+    if (scoreEl) scoreEl.textContent = `(${score}/5) ${"★".repeat(score)}${"☆".repeat(5 - score)}`;
+    formal.hidden = false;
   }
+  showFeedback(questionEl, wasClose, true);
+  if (!wasClose) renderExplainWrongButton(questionEl);
 }
