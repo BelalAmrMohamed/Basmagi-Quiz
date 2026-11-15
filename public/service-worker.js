@@ -12,10 +12,10 @@
 //    they are revalidated on every load (cheap 304), otherwise a rebuilt runtime is not seen for weeks.
 //  * bump CACHE_VERSION only when the SW logic itself changes (it also drops older caches).
 
-const CACHE_VERSION = "basmagi-v9.0.2";
+const CACHE_VERSION = "basmagi-v9.0.3";
 const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
 const OFFLINE_URL = "/offline";
-const PRECACHE = [OFFLINE_URL, "/favicon.png", "/"];
+const PRECACHE = [OFFLINE_URL, "/favicon.png", "/favicon-48.png", "/"];
 
 function isAppAsset(url) {
   return url.origin === self.location.origin &&

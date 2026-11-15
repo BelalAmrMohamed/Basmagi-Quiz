@@ -21,6 +21,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ### Create Quiz & Create Lesson Pages
 * Pressing (`ctrl` + `S`) to save doesn't always work.
+* Input Fields throughout the whole 2 pages: When a user opens 
 * Implement the rich markdown input field from the AI Agent in place of all input fields, which currently just use (textarea).
   * The Makrdown options stay at the top bar. 
   * But update the top bar icons to match those that exist in the AI Agent's rich markdown input field, because they are way better.

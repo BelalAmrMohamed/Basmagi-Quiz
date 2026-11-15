@@ -4,11 +4,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#fafbfc">
+  <meta name="theme-color" content="#fafbfc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
   <title>غير متصل — منصة امتحانات بصمجي</title>
   <link rel="icon" href="/favicon.png" type="image/png">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="canonical" href="https://basmagi.vercel.app/offline">
+  <script>
+    // Runs before first paint so there is no light/dark flash.
+    // Saved platform theme wins; otherwise follow the OS setting.
+    (function () {
+      var root = document.documentElement;
+      var theme = "light";
+      try {
+        var saved = localStorage.getItem("quiz_theme_pref");
+        if (saved === "light" || saved === "dark" || saved === "dark-slate") {
+          theme = saved;
+        } else if (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) {
+          theme = "dark";
+        }
+      } catch (_) {
+        if (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) theme = "dark";
+      }
+      root.setAttribute("data-theme", theme);
+      var colors = { light: "#fafbfc", dark: "#0a0a0a", "dark-slate": "#0f172a" };
+      // Replace the two media-specific tags with one that matches the chosen theme.
+      var metas = document.querySelectorAll('meta[name="theme-color"]');
+      for (var i = 0; i < metas.length; i++) metas[i].parentNode.removeChild(metas[i]);
+      var meta = document.createElement("meta");
+      meta.name = "theme-color";
+      meta.content = colors[theme];
+      document.head.appendChild(meta);
+    })();
+  </script>
   <style>
     :root {
       color-scheme: light;
@@ -17,11 +44,12 @@
       --text: #111827;
       --muted: #6b7280;
       --border: #e5e7eb;
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --on-primary: #ffffff;
       --error-bg: #fef2f2;
       --error: #b91c1c;
-      --focus: rgba(99, 102, 241, .35);
+      --focus: rgba(79, 70, 229, .4);
     }
 
     html[data-theme="dark"] {
@@ -31,11 +59,11 @@
       --text: #ededed;
       --muted: #a3a3a3;
       --border: #262626;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
       --error-bg: rgba(239, 68, 68, .14);
       --error: #fca5a5;
-      --focus: rgba(59, 130, 246, .45);
+      --focus: rgba(96, 165, 250, .55);
     }
 
     html[data-theme="dark-slate"] {
@@ -45,11 +73,11 @@
       --text: #f8fafc;
       --muted: #94a3b8;
       --border: #334155;
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
       --error-bg: rgba(239, 68, 68, .16);
       --error: #fca5a5;
-      --focus: rgba(99, 102, 241, .45);
+      --focus: rgba(129, 140, 248, .55);
     }
 
     * { box-sizing: border-box; }
@@ -63,8 +91,7 @@
       place-items: center;
       background: var(--page);
       color: var(--text);
-      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-      transition: background-color .2s ease, color .2s ease;
+      font-family: system-ui, "Segoe UI", Tahoma, Arial, sans-serif;
     }
 
     main {
@@ -101,9 +128,12 @@
     }
 
     .icon svg { width: 32px; height: 32px; }
+
     h1 { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.45; }
     .description { margin: 0; color: var(--muted); line-height: 1.8; font-size: .98rem; }
+    .hint { margin: 8px 0 0; color: var(--muted); line-height: 1.7; font-size: .88rem; }
 
+    /* Always rendered (never display:none) so screen readers announce updates reliably. */
     .status {
       margin: 18px 0 0;
       padding: 11px 13px;
@@ -112,30 +142,43 @@
       background: var(--error-bg);
       line-height: 1.65;
       font-size: .9rem;
-      text-align: right;
+      text-align: start;
     }
 
-    .status:empty { display: none; }
+    .status:empty { margin: 0; padding: 0; }
+    .status.is-checking { color: var(--muted); background: transparent; padding-inline: 0; text-align: center; }
 
-    button {
+    .actions { display: grid; gap: 10px; margin-top: 24px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       width: 100%;
       min-height: 48px;
-      margin-top: 24px;
       padding: 12px 18px;
-      border: 0;
+      border: 1px solid transparent;
       border-radius: 10px;
-      background: var(--primary);
-      color: #fff;
       font: inherit;
       font-weight: 700;
+      text-decoration: none;
       cursor: pointer;
       transition: background-color .15s ease, transform .15s ease;
     }
 
-    button:hover:not(:disabled) { background: var(--primary-hover); }
-    button:active:not(:disabled) { transform: scale(.985); }
-    button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
-    button:disabled { opacity: .75; cursor: wait; }
+    .btn-primary { background: var(--primary); color: var(--on-primary, #fff); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: transparent; color: var(--text); border-color: var(--border); }
+    .btn-secondary:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+    .btn:active { transform: scale(.985); }
+    .btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+    .btn[aria-busy="true"] { opacity: .75; cursor: progress; }
+
+    .is-busy .icon svg { animation: pulse 1.2s ease-in-out infinite; }
+
+    @keyframes pulse {
+      50% { opacity: .35; }
+    }
 
     @media (max-width: 480px) {
       body { padding: 16px; }
@@ -143,7 +186,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { transition-duration: .01ms !important; }
+      *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
     }
   </style>
 </head>
@@ -151,7 +194,7 @@
 <body>
   <main>
     <div class="brand">
-      <img src="/favicon.png" alt="" width="24" height="24" onerror="this.style.display='none'">
+      <img id="brand-img" src="/favicon-48.png" alt="" width="24" height="24">
       <span>منصة امتحانات بصمجي</span>
     </div>
 
@@ -165,40 +208,63 @@
 
     <h1>لا يوجد اتصال بالإنترنت</h1>
     <p class="description">تحقق من اتصالك بالشبكة، ثم أعد المحاولة للعودة إلى المنصة.</p>
+    <p class="hint">سنعيد الاتصال تلقائيًا فور عودة الشبكة. وقد يظل المحتوى الذي فتحته سابقًا متاحًا من الصفحة الرئيسية.</p>
     <p class="status" id="status" role="status" aria-live="polite"></p>
-    <button type="button" id="retry-btn">إعادة المحاولة</button>
+
+    <div class="actions">
+      <button type="button" class="btn btn-primary" id="retry-btn">إعادة المحاولة</button>
+      <a class="btn btn-secondary" href="/">الصفحة الرئيسية</a>
+    </div>
   </main>
 
   <script>
     (() => {
-      const THEME_KEY = "quiz_theme_pref";
-      const themes = ["light", "dark", "dark-slate"];
+      const PING_URL = "/ping.txt";
+      const RELOAD_KEY = "offline_last_reload";
       const root = document.documentElement;
       const button = document.getElementById("retry-btn");
       const status = document.getElementById("status");
+      const brandImg = document.getElementById("brand-img");
 
-      // Match the platform's saved theme; standalone/offline visits default to light.
-      try {
-        const savedTheme = localStorage.getItem(THEME_KEY);
-        root.dataset.theme = themes.includes(savedTheme) ? savedTheme : "light";
-      } catch (_) {
-        root.dataset.theme = "light";
+      const IDLE_LABEL = "إعادة المحاولة";
+      const BUSY_LABEL = "جارٍ التحقق…";
+      const messages = {
+        offline: "ما زال جهازك غير متصل بالشبكة. تحقق من الواي فاي أو بيانات الهاتف ثم حاول مجددًا.",
+        timeout: "استغرق الاتصال بخادم المنصة وقتًا أطول من المعتاد. تحقق من الشبكة وحاول مجددًا.",
+        unreachable: "تعذر الوصول إلى خادم المنصة. قد يكون اتصالك غير مستقر؛ تحقق منه ثم حاول مجددًا.",
+        "server-error": "وصلنا إلى الخادم، لكنه لم يتمكن من إكمال الطلب الآن. حاول مرة أخرى بعد قليل."
+      };
+
+      brandImg.addEventListener("error", () => { brandImg.style.display = "none"; });
+
+      // The service worker serves this page *in place of* the URL that failed, so
+      // location.href is the page the user wanted: reload it. Only when this is the
+      // standalone /offline URL is there nothing to reload, so go back / home instead.
+      function returnToApp() {
+        const isStandalone = /^\/offline\/?$/.test(location.pathname);
+        if (!isStandalone) {
+          location.reload();
+          return;
+        }
+        const referrer = document.referrer;
+        location.replace(referrer && referrer.indexOf(location.origin) === 0 && !/\/offline\/?$/.test(referrer) ? referrer : "/");
       }
 
-      function redirectBack() {
-        const referrer = document.referrer;
-        if (referrer && referrer.indexOf(location.origin) === 0) {
-          location.replace(referrer);
-        } else {
-          location.replace("/");
-        }
+      // Guard against a reload loop if the app page still falls back to this page.
+      function canAutoReload() {
+        try {
+          const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
+          if (Date.now() - last < 5000) return false;
+          sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+        } catch (_) { /* storage unavailable: allow */ }
+        return true;
       }
 
       async function checkServer() {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000);
         try {
-          const response = await fetch("/favicon.png?_=" + Date.now(), {
+          const response = await fetch(PING_URL + "?_=" + Date.now(), {
             method: "HEAD",
             cache: "no-store",
             signal: controller.signal
@@ -211,49 +277,62 @@
         }
       }
 
-      async function retry() {
-        if (button.disabled) return;
-        status.textContent = "جارٍ التحقق من الاتصال…";
-        status.style.color = "var(--muted)";
-        status.style.background = "transparent";
-        button.disabled = true;
-        button.textContent = "جارٍ التحقق…";
+      let busy = false;
 
-        let result;
-        if (!navigator.onLine) {
-          result = "offline";
-        } else {
-          result = await checkServer();
-        }
+      function setBusy(value) {
+        busy = value;
+        button.setAttribute("aria-busy", String(value));
+        button.textContent = value ? BUSY_LABEL : IDLE_LABEL;
+        root.classList.toggle("is-busy", value);
+      }
+
+      // Manual retry. The button stays focusable (aria-busy, not disabled) so keyboard
+      // and screen-reader users keep their place.
+      async function retry() {
+        if (busy) return;
+        setBusy(true);
+        status.className = "status is-checking";
+        status.textContent = "جارٍ التحقق من الاتصال…";
+
+        const result = navigator.onLine ? await checkServer() : "offline";
 
         if (result === "connected") {
-          redirectBack();
+          returnToApp();
           return;
         }
-
-        const messages = {
-          offline: "ما زال جهازك غير متصل بالشبكة. تحقق من الواي فاي أو بيانات الهاتف ثم حاول مجددًا.",
-          timeout: "استغرق الاتصال بخادم المنصة وقتًا أطول من المعتاد. تحقق من الشبكة وحاول مجددًا.",
-          unreachable: "تعذر الوصول إلى خادم المنصة. قد يكون اتصالك غير مستقر؛ تحقق منه ثم حاول مجددًا.",
-          "server-error": "وصلنا إلى الخادم، لكنه لم يتمكن من إكمال الطلب الآن. حاول مرة أخرى بعد قليل."
-        };
+        status.className = "status";
         status.textContent = messages[result];
-        status.style.color = "";
-        status.style.background = "";
-        button.disabled = false;
-        button.textContent = "إعادة المحاولة";
+        setBusy(false);
       }
 
       button.addEventListener("click", retry);
-      window.addEventListener("online", async () => {
-        if (await checkServer() === "connected") redirectBack();
+
+      // Automatic reconnect: the "online" event is unreliable on flaky or captive
+      // networks, so also poll with backoff while the tab is visible.
+      let delay = 6000;
+      let timer = 0;
+
+      async function autoCheck() {
+        clearTimeout(timer);
+        if (!busy && !document.hidden && navigator.onLine && await checkServer() === "connected") {
+          if (canAutoReload()) { returnToApp(); return; }
+        }
+        delay = Math.min(delay * 1.5, 30000);
+        timer = setTimeout(autoCheck, delay);
+      }
+
+      function restartPolling() {
+        clearTimeout(timer);
+        delay = 6000;
+        autoCheck();
+      }
+
+      window.addEventListener("online", restartPolling);
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) restartPolling();
       });
 
-      if (navigator.onLine) {
-        checkServer().then((result) => {
-          if (result === "connected") redirectBack();
-        });
-      }
+      autoCheck();
     })();
   </script>
 </body>
