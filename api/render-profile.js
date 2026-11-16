@@ -136,7 +136,7 @@ export default async function handler(req, res) {
   const lookupPromise = supabase
     .from("admin_users")
     .select(
-      "display_name, handle, bio, avatar_url, thumbnail_url, current_level, uploaded_quizzes, uploaded_lessons, total_points, total_badges",
+      "id, display_name, handle, bio, avatar_url, thumbnail_url, current_level, uploaded_quizzes, uploaded_lessons, uploaded_notebooks, social_links, total_points, total_badges",
     )
     .ilike("handle", normalizedHandle)
     .maybeSingle()
@@ -224,9 +224,10 @@ export default async function handler(req, res) {
   const level = Math.max(1, Math.floor(Number(adminData.current_level) || 1));
   const uploaded = Math.max(0, Math.floor(Number(adminData.uploaded_quizzes) || 0));
   const uploadedLessons = Math.max(0, Math.floor(Number(adminData.uploaded_lessons) || 0));
+  const uploadedNotebooks = Math.max(0, Math.floor(Number(adminData.uploaded_notebooks) || 0));
   const bio = String(adminData.bio || "").replace(/\s+/g, " ").trim();
   const roleLabel = role === "developer" ? "مطوّر" : "مشرف";
-  const description = buildProfileDescription({ role, level, uploaded, uploadedLessons, bio });
+  const description = buildProfileDescription({ role, level, uploaded, uploadedLessons, uploadedNotebooks, bio });
 
   // /api/og?profile=… is an Edge function that already exists (merged into
   // api/og.js — no extra function slot). `v` fingerprints everything the card
@@ -242,6 +243,7 @@ export default async function handler(req, res) {
         level,
         uploaded,
         uploadedLessons,
+        uploadedNotebooks,
         adminData.total_points,
         adminData.total_badges,
         adminData.avatar_url,
@@ -253,7 +255,12 @@ export default async function handler(req, res) {
   const ogImageUrl = `${SITE_ORIGIN}/api/og?profile=${encodeURIComponent(
     String(adminData.handle || cleanHandle).toLowerCase(),
   )}&v=${ogVersion}`;
-  const ogImageAlt = `${roleLabel} على منصة امتحانات بصمجي: ${displayLabel} (@${adminData.handle || cleanHandle}) — المستوى ${level} · ${uploaded} امتحان · ${uploadedLessons} درس مرفوع`;
+  const countsText = [
+    `${uploaded} امتحان`,
+    `${uploadedLessons} درس`,
+    ...(uploadedNotebooks > 0 ? [`${uploadedNotebooks} دفتر`] : []),
+  ].join(" · ");
+  const ogImageAlt = `${roleLabel} على منصة امتحانات بصمجي: ${displayLabel} (@${adminData.handle || cleanHandle}) — المستوى ${level} · ${countsText} مرفوع`;
 
   // Inject meta tags for client-side JS to pick up. avatar_url is a (possibly
   // large) data-URL — escapeHtml handles the characters that matter inside a
@@ -265,6 +272,10 @@ export default async function handler(req, res) {
   const avatarMetaTag = adminData.avatar_url
     ? `  <meta name="admin:avatar" content="${escapeHtml(adminData.avatar_url)}">\n`
     : "";
+  const socialLinksMetaTag =
+    adminData.social_links && Object.keys(adminData.social_links).length > 0
+      ? `  <meta name="admin:social-links" content="${escapeHtml(JSON.stringify(adminData.social_links))}">\n`
+      : "";
   // No thumbnail set -> fall back to the default Featured Thumbnail (2.jpg),
   // same asset path convention as the Featured Thumbnails picker
   // (public/assets/profile-featured/thumbnails/, see avatarEngine.js's
@@ -315,6 +326,7 @@ export default async function handler(req, res) {
     displayNameMetaTag +
     avatarMetaTag +
     thumbnailMetaTag +
+    socialLinksMetaTag +
     assetPreconnect +
     `  <script type="application/ld+json">${JSON.stringify(profileJsonLd)}</script>\n`;
 
@@ -387,9 +399,14 @@ function applyHeadRewrites(
 // og:title), which also avoids a Latin name bleeding into the Arabic sentence
 // and scrambling the bidi order in Telegram/WhatsApp previews. Kept under
 // ~200 chars so previews don't cut it.
-function buildProfileDescription({ role, level, uploaded, uploadedLessons = 0, bio }) {
+function buildProfileDescription({ role, level, uploaded, uploadedLessons = 0, uploadedNotebooks = 0, bio }) {
   const who = role === "developer" ? "مطوّر في منصة امتحانات بصمجي" : "مشرف على منصة امتحانات بصمجي";
-  const facts = `${who} · المستوى ${level} · ${uploaded} امتحان · ${uploadedLessons} درس مرفوع`;
+  const contentParts = [
+    `${uploaded} امتحان`,
+    `${uploadedLessons} درس`,
+    ...(uploadedNotebooks > 0 ? [`${uploadedNotebooks} دفتر`] : []),
+  ];
+  const facts = `${who} · المستوى ${level} · ${contentParts.join(" · ")} مرفوع`;
   if (!bio) return facts;
   const room = 200 - facts.length - 3;
   if (room < 20) return facts;

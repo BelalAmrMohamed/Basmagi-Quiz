@@ -510,29 +510,33 @@ let uploadsRequestId = 0;
 const UPLOAD_ICONS = {
   quiz: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
   lesson: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+  notebook: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>`,
 };
 
 function uploadedItemHtml(item) {
   const isLesson = item.type === "lesson";
+  const isNotebook = item.type === "notebook";
   const date = item.createdAt
     ? new Date(item.createdAt).toLocaleDateString("ar-EG")
     : "";
   const subtitleParts = (
-    isLesson ? [item.course] : [item.category, item.subject]
+    isLesson || isNotebook ? [item.course] : [item.category, item.subject]
   ).filter(Boolean);
   const subtitle = [...subtitleParts, date].filter(Boolean).map(escHtml).join(" • ");
-  const typeLabel = isLesson ? "درس" : "امتحان";
-  const fallbackTitle = isLesson ? "درس بدون عنوان" : "امتحان بدون عنوان";
-  const buttonLabel = isLesson ? "اذهب إلى الدرس" : "اذهب إلى الامتحان";
+  const typeLabel = isNotebook ? "دفتر" : isLesson ? "درس" : "امتحان";
+  const fallbackTitle = isNotebook ? "دفتر بدون عنوان" : isLesson ? "درس بدون عنوان" : "امتحان بدون عنوان";
+  const buttonLabel = isNotebook ? "اذهب إلى الدفتر" : isLesson ? "اذهب إلى الدرس" : "اذهب إلى الامتحان";
+  const iconKey = isNotebook ? "notebook" : isLesson ? "lesson" : "quiz";
+  const badgeClass = isNotebook ? "notebook" : isLesson ? "lesson" : "quiz";
   // href is null for a quiz that has no short id (no valid public URL yet) —
   // better no button than one that 404s.
   const action = item.href
     ? `<a href="${escHtml(item.href)}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">${buttonLabel}</a>`
     : "";
   return `
-      <div class="history-item upload-item" data-type="${isLesson ? "lesson" : "quiz"}">
+      <div class="history-item upload-item" data-type="${badgeClass}">
         <div class="history-info">
-          <h4><span class="upload-type-badge is-${isLesson ? "lesson" : "quiz"}">${UPLOAD_ICONS[isLesson ? "lesson" : "quiz"]}${typeLabel}</span>${escHtml(item.title || fallbackTitle)}</h4>
+          <h4><span class="upload-type-badge is-${badgeClass}">${UPLOAD_ICONS[iconKey]}${typeLabel}</span>${escHtml(item.title || fallbackTitle)}</h4>
           <small>${subtitle}</small>
         </div>
         <div class="history-actions">${action}</div>
@@ -597,7 +601,7 @@ export async function renderUploadedContent(handle = null) {
       containerEl: container,
       items: uploads,
       renderItem: uploadedItemHtml,
-      emptyHtml: `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path class="icon-line" pathLength="1" d="M12 3v12"/><path class="icon-line" pathLength="1" d="m7 8 5-5 5 5"/><path class="icon-line" pathLength="1" d="M5 21h14"/></svg></div><p>لم يتم رفع أي امتحانات أو دروس بعد</p></div>`,
+      emptyHtml: `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path class="icon-line" pathLength="1" d="M12 3v12"/><path class="icon-line" pathLength="1" d="m7 8 5-5 5 5"/><path class="icon-line" pathLength="1" d="M5 21h14"/></svg></div><p>لم يتم رفع أي محتوى بعد</p></div>`,
       mode: "button",
     });
     uploadedListInstance.mount();
