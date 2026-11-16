@@ -26,12 +26,11 @@ import { hasSameLevelCollision } from "../home/user-quizzes-folders.js";
 import { renderCreateQuestionNavigator, initCreateQuestionNavigator } from "./question-navigator.js";
 import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar.js";
 import { applyMarkdownToolbarAction } from "../../shared/markdown-toolbar-actions.js";
-import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
+import { mountSourceField } from "../../shared/rich-input/source-field.js";
 import { fetchImportDraft } from "../../shared/import-draft.js";
 import { reserveStorage, releaseStorage } from "../../shared/storage-guard.js";
 import { checkQuiz, cleanSource, stripLegacySource } from "../../shared/content-rules.js";
 
-observeRichInputHighlighters({ selector: ".md-source" });
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -165,6 +164,9 @@ function mdEditorHtml(id, value, placeholder, rows = 2) {
  * default single question-text line.
  */
 function autoResizeMdSource(ta, minPx = 40, maxPx = 240) {
+  // Rich source fields (Tiptap) grow with their content on their own and
+  // scroll inside their own max-height — only native textareas need this.
+  if (!(ta instanceof HTMLTextAreaElement)) return;
   ta.style.height = "auto";
   const next = Math.min(Math.max(ta.scrollHeight, minPx), maxPx);
   ta.style.height = next + "px";
@@ -187,6 +189,12 @@ function autoResizeMdSource(ta, minPx = 40, maxPx = 240) {
  * unavailable, so nothing breaks in that rare case.
  */
 function replaceTextareaRange(ta, start, end, text) {
+  // Rich source field: one undoable editor transaction (see rich-input/source-field.js).
+  if (typeof ta.replaceRange === "function") {
+    ta.focus();
+    ta.replaceRange(start, end, text);
+    return;
+  }
   ta.focus();
   ta.setSelectionRange(start, end);
   const ok =
@@ -209,12 +217,16 @@ function replaceTextareaRange(ta, start, end, text) {
  * function gets it for free: question text, options, explanation, and the
  * essay/formal-answer editor. */
 function setupMdEditor(id, onChange) {
-  const source = document.getElementById(id);
-  if (!source) return;
+  const textarea = document.getElementById(id);
+  if (!textarea) return;
 
   const isOption = id.startsWith("option-text-");
   const minPx = isOption ? 36 : 40;
   const maxPx = isOption ? 140 : 240;
+
+  // The textarea becomes a flat Tiptap source field (same id/classes, no
+  // per-field toolbar): the one global bar formats whichever field is focused.
+  const source = mountSourceField(textarea, { maxHeight: maxPx, minHeight: minPx });
 
   autoResizeMdSource(source, minPx, maxPx);
 
@@ -339,13 +351,20 @@ function pushHistorySnapshot() {
 // to the structural stack when the field has nothing to undo.
 let lastTextField = null;
 
+/** The text field an event target belongs to (rich source fields report their inner editor as the target). */
+function historyFieldOf(el) {
+  return el?.closest?.(".rmci-host.md-source") || el;
+}
+
 function isHistoryTextField(el) {
-  return el instanceof HTMLTextAreaElement ||
+  return el?.classList?.contains("rmci-host") ||
+    el instanceof HTMLTextAreaElement ||
     (el instanceof HTMLInputElement && /^(text|search|url|)$/.test(el.type));
 }
 
 function textHistoryAvailable(kind) {
   if (!lastTextField || !document.body.contains(lastTextField)) return false;
+  if (typeof lastTextField.canHistory === "function") return lastTextField.canHistory(kind); // rich field: its own history
   try {
     const active = document.activeElement;
     if (active !== lastTextField) {
@@ -368,11 +387,13 @@ function updateUndoRedoButtons() {
 }
 
 document.addEventListener("focusin", (e) => {
-  if (isHistoryTextField(e.target)) lastTextField = e.target;
+  const f = historyFieldOf(e.target);
+  if (isHistoryTextField(f)) lastTextField = f;
   updateUndoRedoButtons();
 });
 document.addEventListener("input", (e) => {
-  if (isHistoryTextField(e.target)) { lastTextField = e.target; updateUndoRedoButtons(); }
+  const f = historyFieldOf(e.target);
+  if (isHistoryTextField(f)) { lastTextField = f; updateUndoRedoButtons(); }
 });
 // Keep focus in the field when a history button is pressed so execCommand
 // targets it.
@@ -410,7 +431,8 @@ function refreshEditorAfterHistoryChange() {
 window.performUndo = function () {
   if (textHistoryAvailable("undo")) {
     lastTextField.focus({ preventScroll: true });
-    document.execCommand("undo");
+    if (typeof lastTextField.runHistory === "function") lastTextField.runHistory("undo");
+    else document.execCommand("undo");
     updateUndoRedoButtons();
     return;
   }
@@ -431,7 +453,8 @@ window.performUndo = function () {
 window.performRedo = function () {
   if (textHistoryAvailable("redo")) {
     lastTextField.focus({ preventScroll: true });
-    document.execCommand("redo");
+    if (typeof lastTextField.runHistory === "function") lastTextField.runHistory("redo");
+    else document.execCommand("redo");
     updateUndoRedoButtons();
     return;
   }
@@ -2836,27 +2859,30 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
   textarea.addEventListener("dragenter", (e) => {
     if (!e.dataTransfer?.types?.includes("Files")) return;
     e.preventDefault();
+    e.stopPropagation();
     dragDepth++;
     textarea.classList.add("md-source--drag-active");
-  });
+  }, true);
   textarea.addEventListener("dragover", (e) => {
     if (!e.dataTransfer?.types?.includes("Files")) return;
     e.preventDefault();
-  });
+    e.stopPropagation();
+  }, true);
   textarea.addEventListener("dragleave", () => {
     dragDepth = Math.max(0, dragDepth - 1);
     if (dragDepth === 0) textarea.classList.remove("md-source--drag-active");
-  });
+  }, true);
   textarea.addEventListener("drop", (e) => {
     const files = e.dataTransfer?.files;
     if (!files || !files.length) return;
     e.preventDefault();
+    e.stopPropagation();
     dragDepth = 0;
     textarea.classList.remove("md-source--drag-active");
     Array.from(files).forEach((file) =>
       handleMarkdownMediaFile(textarea, file, onChange),
     );
-  });
+  }, true);
 
   textarea.addEventListener("paste", (e) => {
     // Case 1: an actual image/file sitting on the clipboard (e.g. a
@@ -2866,6 +2892,7 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
     );
     if (fileItems.length) {
       e.preventDefault();
+      e.stopPropagation();
       fileItems.forEach((item) => {
         const file = item.getAsFile();
         if (file) handleMarkdownMediaFile(textarea, file, onChange);
@@ -2888,6 +2915,7 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
       const mediaType = detectMediaTypeFromUrl(trimmed);
       if (mediaType) {
         e.preventDefault();
+        e.stopPropagation();
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         const tag = buildMediaHtmlTag(mediaType, trimmed);
@@ -2918,6 +2946,7 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
       );
       if (isMediaTag) {
         e.preventDefault();
+        e.stopPropagation();
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         replaceTextareaRange(textarea, start, end, trimmed);
@@ -2932,7 +2961,7 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
     }
     // Anything else (plain text, non-media links): fall through to the
     // browser's default paste behavior.
-  });
+  }, true);
 }
 
 
@@ -5773,4 +5802,4 @@ function hideLoading() {
   if (overlay) {
     overlay.style.display = "none";
   }
-}
+}

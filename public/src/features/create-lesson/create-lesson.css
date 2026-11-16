@@ -1942,10 +1942,9 @@ body.sidebar-expanded .global-md-bar {
     position: relative;
 }
 
-/* The rich Markdown highlighter wraps .md-source in a mirror surface. Hide
-   the whole surface in preview mode so syntax tokens never bleed beside the
-   rendered Markdown (including when the observer attaches the wrapper late). */
-.lesson-md-editor.is-previewing .rich-input-highlighter {
+/* The rich source field's root wraps .md-source. Hide the whole root in
+   preview mode so no editor chrome shows beside the rendered Markdown. */
+.lesson-md-editor.is-previewing .rmci-root {
     display: none;
 }
 

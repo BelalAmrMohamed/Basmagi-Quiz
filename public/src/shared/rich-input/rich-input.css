@@ -335,3 +335,21 @@ html[data-theme="dark-slate"] .rmci-root {
    .ai-agent-dictation-wave in ai-agent.css, created by dictation.js). Inside the
    rich input's bottom bar the mic is 32px, exactly as in the AI Agent window. */
 .rmci-bar .ai-agent-mic-btn { width: 32px; height: 32px; }
+
+/* ── Source mode (create-quiz / create-lesson authoring fields) ──
+   A flat text surface: the page's own field wrapper (.wp-field) draws the box,
+   so nothing here may add a second border, ring, shadow or background. */
+.rmci-root--source { width: 100%; }
+.rmci-root--source .rmci-editor,
+.rmci-root--source .rmci-editor:focus-within {
+  border: 0; border-radius: 0; background: transparent; box-shadow: none; color: inherit;
+}
+.rmci-root--source .rmci-scroll { padding: 0; cursor: text; }
+.rmci-root--source .rmci-host { border: 0; } /* padding/background come from the page's .wp-textarea class */
+.rmci-root--source .rmci-host .ProseMirror { min-height: 1.6em; font-size: inherit; line-height: inherit; color: inherit; }
+.rmci-root--source .rmci-host .ProseMirror p { margin: 0; }
+.rmci-root--source .rmci-host .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder); float: inline-start; height: 0; pointer-events: none;
+  color: color-mix(in srgb, currentColor 45%, transparent);
+}
+.rmci-root--source.is-disabled .rmci-editor { opacity: .6; }

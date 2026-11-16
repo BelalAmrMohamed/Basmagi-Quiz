@@ -2,10 +2,9 @@
 // ai-agent-message-tokens.js
 // Command/mention token decoration and tooltip for rendered chat bubbles.
 //
-// Extracted from shared/rich-input-highlighter.js — only the parts that work
-// on *rendered* Markdown (decorateMessageTokens) and the shared tooltip logic
-// (attachMessageTooltips). The textarea mirror code stays in that file until
-// it is fully removed by the Rich Input migration.
+// Decorates /commands and @mentions in *rendered* Markdown (decorateMessageTokens)
+// and owns the shared tooltip logic (attachMessageTooltips). It replaced the old
+// textarea highlighter, which has been removed.
 //
 // CSS classes used here:
 //   .ai-agent__token                    — base token span

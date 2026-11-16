@@ -16,6 +16,16 @@
 // the quiz and lesson pages (see essay-field.js). It must not import from any
 // one feature — feature-specific data is injected through options.
 //
+// SOURCE MODE ({ sourceMode: true }) — used by the create-quiz / create-lesson
+// authoring fields. The field is a chrome-less, flat text surface (no toolbar,
+// no bottom bar, no border of its own: the page's field wrapper draws the box,
+// and the page's single global markdown bar formats it). The document is the
+// markdown *source*, one paragraph per line, verbatim: no markdown input rules,
+// no typography substitutions, nothing is parsed or re-serialised, so `value`
+// and `markdown` are both the exact text the author typed (LaTeX, tables,
+// ==highlights==, raw media tags… all survive). `host.replaceRange()` does
+// undoable range edits for the global bar.
+//
 // INTEGRATION CONTRACT
 //   const rich = createRichInput({ placeholder, getCommands, getMentions, onSubmit });
 //   rich.el          -> mount this
@@ -65,8 +75,27 @@ function loadExtraLanguages() {
   return extraLanguagesPromise;
 }
 
+let stylesRequested = false;
+/** The component's stylesheet, added once (pages other than the AI window never link it themselves). */
+function ensureStyles() {
+  if (stylesRequested || typeof document === "undefined") return;
+  stylesRequested = true;
+  const href = new URL("./rich-input.css", import.meta.url).href;
+  const present = [...document.querySelectorAll('link[rel="stylesheet"]')].some((l) => /rich-input\.css(\?|$)/.test(l.getAttribute("href") || ""));
+  if (present) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  document.head.appendChild(link);
+}
+
 const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const textToHtml = (text) => text.split("\n").map((l) => `<p>${escapeHtml(l)}</p>`).join("");
+/** Verbatim doc (one paragraph per line, whitespace and blank lines intact) for source mode. */
+const textToDoc = (text) => ({
+  type: "doc",
+  content: String(text).split("\n").map((l) => (l ? { type: "paragraph", content: [{ type: "text", text: l }] } : { type: "paragraph" })),
+});
 
 /** All text blocks of a doc with their start position and length. */
 function textBlocks(doc) {
@@ -246,13 +275,16 @@ export function createRichInput(options = {}) {
     hint: "",
     initialMarkdown: "",
     hideControlsWhenDisabled: false,
+    sourceMode: false,
     ...options,
   };
+  const source = !!opts.sourceMode;
+  ensureStyles();
   const rtlPlaceholder = opts.direction === "rtl" || (opts.direction === "auto" && RTL_CHARS.test(opts.placeholder));
 
   // ── DOM shell ────────────────────────────────────────────────────────────
   const root = document.createElement("div");
-  root.className = `rmci-root${rtlPlaceholder ? " rmci-ph-rtl" : ""}${opts.hideControlsWhenDisabled ? " rmci-root--lockable" : ""}`;
+  root.className = `rmci-root${rtlPlaceholder ? " rmci-ph-rtl" : ""}${opts.hideControlsWhenDisabled ? " rmci-root--lockable" : ""}${source ? " rmci-root--source" : ""}`;
 
   const shell = document.createElement("div");
   shell.className = "rmci-editor";
@@ -291,7 +323,9 @@ export function createRichInput(options = {}) {
   endSlot.appendChild(modelSlot);
 
   bar.append(startSlot, endSlot);
-  shell.append(toolbarSlot, scroller, bar);
+  // Source mode is just the text surface: no toolbar slot, no bottom bar.
+  if (source) shell.append(scroller);
+  else shell.append(toolbarSlot, scroller, bar);
   root.appendChild(shell);
 
   if (opts.hint) {
@@ -303,7 +337,7 @@ export function createRichInput(options = {}) {
 
   // Only the padding area focuses the editor; never steal focus from controls.
   scroller.addEventListener("mousedown", (e) => {
-    if (e.target === scroller) {
+    if (e.target === scroller || (source && e.target === host)) {
       e.preventDefault();
       focus("end");
     }
@@ -327,11 +361,12 @@ export function createRichInput(options = {}) {
 
   const getText = () => (editor ? plainTextOf(editor.state.doc) : pendingValue);
   const isEmpty = () => (editor ? editor.isEmpty : pendingValue.trim() === "");
-  const getMarkdown = () => (editor ? toMarkdown(editor.getJSON()) : (pendingMarkdown ?? pendingValue).trim());
+  const getMarkdown = () => (source ? getText() : editor ? toMarkdown(editor.getJSON()) : (pendingMarkdown ?? pendingValue).trim());
 
   /** Replaces the whole document with `md`, formatting included. Never fires "input". */
   function setMarkdown(md) {
     md = String(md ?? "");
+    if (source) { host.value = md; return; }
     if (!editor) { pendingMarkdown = md; pendingValue = md; return; }
     withSilent(() => editor.commands.setContent(parseMarkdown(md), { emitUpdate: false }));
   }
@@ -373,7 +408,7 @@ export function createRichInput(options = {}) {
           while (s < cur.length - p && s < v.length - p && cur[cur.length - 1 - s] === v[v.length - 1 - s]) s++;
           const ins = v.slice(p, v.length - s);
           if (ins.includes("\n")) {
-            editor.commands.setContent(textToHtml(v), { emitUpdate: false });
+            editor.commands.setContent(source ? textToDoc(v) : textToHtml(v), { emitUpdate: false });
             return;
           }
           const doc = editor.state.doc;
@@ -411,7 +446,47 @@ export function createRichInput(options = {}) {
       },
     },
     focus: { value: (o) => focus(o && typeof o === "string" ? o : undefined) },
+    replaceRange: { value: replaceRange },
+    // Editor history for the page's own undo / redo buttons ("undo" | "redo").
+    canHistory: { value: (kind) => !!editor && !disabled && (kind === "redo" ? editor.can().redo() : editor.can().undo()) },
+    runHistory: { value: (kind) => !!editor && (kind === "redo" ? editor.commands.redo() : editor.commands.undo()) },
   });
+
+  /**
+   * Source mode: replaces the plain-text range [start, end) with `text` as ONE
+   * undoable edit (only the touched lines are rewritten), fires "input" like a
+   * keystroke would, and leaves the caret after the inserted text.
+   */
+  function replaceRange(start, end, text) {
+    text = String(text ?? "");
+    if (!editor || disabled) return false;
+    const cur = getText();
+    start = Math.max(0, Math.min(start, cur.length));
+    end = Math.max(start, Math.min(end, cur.length));
+    const doc = editor.state.doc;
+    const blocks = textBlocks(doc);
+    // Lines (blocks) touched by the range.
+    let base = 0, first = 0, last = blocks.length - 1;
+    const starts = blocks.map((b) => { const s0 = base; base += b.len + 1; return s0; });
+    for (let i = 0; i < blocks.length; i++) {
+      if (start >= starts[i] && start <= starts[i] + blocks[i].len) { first = i; break; }
+    }
+    for (let i = first; i < blocks.length; i++) {
+      if (end >= starts[i] && end <= starts[i] + blocks[i].len) { last = i; break; }
+    }
+    const head = cur.slice(starts[first], start);
+    const tail = cur.slice(end, starts[last] + blocks[last].len);
+    const merged = head + text + tail;
+    const { schema } = editor.state;
+    const paras = merged.split("\n").map((l) => schema.nodes.paragraph.create(null, l ? schema.text(l) : null));
+    const from = blocks[first].start - 1;
+    const to = blocks[last].start + blocks[last].len + 1;
+    const tr = editor.state.tr.replaceWith(from, to, paras);
+    editor.view.dispatch(tr);
+    const caret = start + text.length;
+    editor.commands.setTextSelection(offsetToPos(editor.state.doc, caret));
+    return true;
+  }
 
   /** Enter must keep its editor meaning (list item, code fence, code block…) instead of sending. */
   function enterIsStructural() {
@@ -809,6 +884,7 @@ export function createRichInput(options = {}) {
       extraLanguages,
       placeholder: opts.placeholder,
       direction: opts.direction,
+      sourceMode: source,
       getCommands: opts.getCommands,
       getMentions: opts.getMentions,
       onSubmit: () => {
@@ -821,10 +897,24 @@ export function createRichInput(options = {}) {
     editor = new T.Editor({
       element: host,
       extensions,
-      content: pendingMarkdown !== null ? parseMarkdown(pendingMarkdown) : pendingValue ? textToHtml(pendingValue) : "",
+      content: source
+        ? textToDoc(pendingValue)
+        : pendingMarkdown !== null ? parseMarkdown(pendingMarkdown) : pendingValue ? textToHtml(pendingValue) : "",
       autofocus: false,
       editable: !disabled,
       editorProps: {
+        // Source mode pastes plain text only, line for line (ProseMirror's own
+        // text parser would drop blank lines and keep pasted rich formatting).
+        ...(source ? {
+          handlePaste: (view, event) => {
+            const t = event.clipboardData?.getData("text/plain");
+            if (t == null || t === "") return false;
+            const text = t.replace(/\r\n?/g, "\n");
+            event.preventDefault();
+            replaceRange(posToOffset(view.state.doc, view.state.selection.from), posToOffset(view.state.doc, view.state.selection.to), text);
+            return true;
+          },
+        } : {}),
         attributes: {
           role: "textbox",
           "aria-multiline": "true",
