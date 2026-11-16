@@ -117,9 +117,6 @@ async function init() {
   const { notebook } = prepared;
   const lang = resolveNotebookLang(row.language || row.content?.language, notebook);
   applyPageLang(lang);
-  const disclaimer = $("notebookDisclaimer");
-  disclaimer.textContent = notebookText(lang, "disclaimer", notebook.runtime);
-  disclaimer.hidden = false;
 
   document.title = `${notebook.title} | دفتر تفاعلي | منصة امتحانات بصمجي`;
   const metaDescription = notebook.runtime === "cpp"
@@ -190,7 +187,6 @@ async function init() {
 
 /** /notebook/new and /notebook/edit/<id>: the editor (and, for admins, publishing) loads on demand. */
 async function startEditorMode(route) {
-  $("notebookDisclaimer").hidden = true;
   if (route.mode === "edit" && !route.ref) return showError("رابط الدفتر غير صالح.");
   $("notebookStatus").hidden = true;
   $("notebookRoot").hidden = true;

@@ -1,6 +1,13 @@
 /* /notebook/:id page chrome. The interactive UI itself is styled by the
   runtime (assets/notebook-runtime/runtime.css, scoped under .mlweb). */
 
+body {
+    padding-top: 0;
+    padding-left: 0;
+    padding-right: calc(var(--sidebar-collapsed-width));
+}
+
+
 /* Code cells: a normal code editor doesn't soft-wrap long lines — it scrolls
    horizontally instead. The runtime's CodeMirror instance ships with line
    wrapping on (assets/notebook-runtime/runtime.css); override it here rather
@@ -352,4 +359,10 @@
 
 .mlweb .toolbar-menu-items button[data-nb-drive][hidden] {
   display: none;
+}
+
+@media(max-width: 768px){
+      body {
+        padding-right: 0;
+    }
 }

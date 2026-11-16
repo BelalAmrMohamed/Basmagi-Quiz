@@ -7,24 +7,15 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Profile Page
-* Notebooks (دفتر): Aren't counted anywhere in the page. It wasn't updated since then.
-* `أفضل المشرفين`: 
-  * Remove the scrollbar, scrolling through them is either by using the 2 buttons on the sides or by hand on phones.
-  * It shows emtpy admin profiles that don't have links, these are probably poeple who have been made admin, but haven't signed in for the first time, remove that.
-* Syncing is so messed up for developer/admin profiles.
+### Themes.css Animation isn't working for some users
+
+### Info modals
+Info modals shouldn't show platform links for items inside user content (i.e., `/my-content` page).
 
 ### Sign in
 ![Screenshot](image.png).
 * This is extremely annoying, it's telling me my session has ended, but its still showing me that I'm signed in in the sidebar's dropdown and in the profile page, and I don't know why are sessions ending quickly.
 * Sometimes it tells me that, then when the page reloads automatically and I find that I'm still signed in, I try again, and it works this time.
-
-### Create Quiz & Create Lesson Pages
-* Pressing (`ctrl` + `S`) to save doesn't always work.
-* Input Fields throughout the whole 2 pages: When a user opens 
-* Implement the rich markdown input field from the AI Agent in place of all input fields, which currently just use (textarea).
-  * The Makrdown options stay at the top bar. 
-  * But update the top bar icons to match those that exist in the AI Agent's rich markdown input field, because they are way better.
 
 ### Home Page: Passwords are exposed
 The home page downloads every password (Of lessons and quizzes) to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be patched. (This issue is partially solved)
@@ -52,15 +43,8 @@ Related Files:
 ### Update the `createEmptyState`
 * Update the `createEmptyState` to include a link to the `/how-to-create-content`
 
-### Profile Page (i.e., `public/profile.html`)
-Implement this new feature for admins: Connect/ADD LinekdIn, Github, Telegram, & WhatsApp. 
-
-What happens when they do:
-* Icons for LinekdIn, Github, Telegram, & WhatsApp appear on their profile at the top containing their links so everyone can visit them.
-
 ### Code Blocks
 * Add Line numbers, VS-Code-style.
-
 
 ### Result Pages
 
@@ -106,7 +90,6 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 
 ### AI Agent
 Is making an independent page something usefull?
-
 
 ## Suggestions
 
