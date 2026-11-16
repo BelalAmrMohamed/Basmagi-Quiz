@@ -1968,6 +1968,7 @@ body.sidebar-expanded .global-md-bar {
     color: var(--color-text-primary);
     font-size: 0.9rem;
     line-height: 1.6;
+    min-height: 0;
     resize: none;
     box-sizing: border-box;
     display: block;

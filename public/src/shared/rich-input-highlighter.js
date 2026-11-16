@@ -502,6 +502,13 @@ export function attachRichInputHighlighter({
 
   const wrapper = document.createElement("div");
   wrapper.className = "rich-input-highlighter";
+  // Keep the mirror out of normal flow and layer it beneath the native
+  // textarea. Without these base layout styles, the mirror becomes a second
+  // block above the textarea and every highlighted field shows duplicate,
+  // vertically offset text. Inline styles keep this shared engine reliable
+  // for callers whose page stylesheet does not import highlighter CSS.
+  wrapper.style.position = "relative";
+  wrapper.style.width = "100%";
   if (wrapperClass) wrapper.classList.add(...wrapperClass.split(/\s+/).filter(Boolean));
   wrapper.dataset.richInputHighlighter = "";
   preservingEditorState(textarea, () => {
@@ -511,6 +518,10 @@ export function attachRichInputHighlighter({
 
   const mirror = document.createElement("div");
   mirror.className = "rich-input-highlighter__mirror";
+  mirror.style.position = "absolute";
+  mirror.style.pointerEvents = "none";
+  mirror.style.overflow = "hidden";
+  mirror.style.zIndex = "0";
   mirror.setAttribute("aria-hidden", "true");
   wrapper.insertBefore(mirror, textarea);
 

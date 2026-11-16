@@ -3664,6 +3664,7 @@ body.reorder-mode-active .question-card {
   color: var(--color-text-primary);
   font-size: 0.9rem;
   line-height: 1.6;
+  min-height: 0;
   resize: none;
   box-sizing: border-box;
   display: block;
