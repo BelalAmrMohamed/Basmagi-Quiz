@@ -569,7 +569,7 @@
    bubbles already sit on the accent gradient, so reusing --color-primary
    makes command chips disappear into the bubble. Keep the token bright and
    give it a distinct translucent surface on every theme. */
-.ai-agent-msg--user .rich-input-highlight--command {
+.ai-agent-msg--user .ai-agent__token--command {
   color: #fff;
   background: rgba(20, 16, 72, 0.28);
   border: 1px solid rgba(255, 255, 255, 0.32);
@@ -579,7 +579,7 @@
   -webkit-text-fill-color: #fff;
 }
 
-.ai-agent-msg--user .rich-input-highlight--mention {
+.ai-agent-msg--user .ai-agent__token--mention {
   color: #effff8;
   background: rgba(8, 75, 55, 0.34);
   border: 1px solid rgba(220, 255, 239, 0.34);
@@ -1166,66 +1166,6 @@
   text-align: right;
 }
 
-/* ── Reusable native-textarea syntax mirror (shared/rich-input-highlighter.js) ──
-   The textarea remains the real editing/caret/selection surface. A visual
-   mirror underneath it colors recognized spans without contenteditable's
-   cursor, paste, undo, and IME edge cases. Keep token styles metric-neutral so
-   the mirror never drifts away from the textarea's caret positions. */
-.rich-input-highlighter {
-  position: relative;
-  display: flex;
-  flex: 1 1 0;
-  align-self: stretch;
-  min-width: 0;
-  min-height: 36px;
-  overflow: hidden;
-}
-
-.rich-input-highlighter--field {
-  width: 100%;
-  flex: 1 1 auto;
-  overflow: visible;
-}
-
-.rich-input-highlighter__textarea {
-  position: relative;
-  z-index: 1;
-  display: block;
-  flex: 1 1 auto;
-  width: 100%;
-  min-width: 0;
-  color: transparent !important;
-  -webkit-text-fill-color: transparent;
-  background: transparent !important;
-  caret-color: var(--color-text-primary, currentColor);
-}
-
-.rich-input-highlighter__textarea::placeholder {
-  color: var(--color-text-secondary, #777) !important;
-  -webkit-text-fill-color: var(--color-text-secondary, #777);
-  opacity: 1;
-}
-
-.rich-input-highlighter__textarea::selection {
-  color: var(--color-text-primary, #111);
-  -webkit-text-fill-color: var(--color-text-primary, #111);
-  background: color-mix(in srgb, var(--color-primary) 35%, transparent);
-}
-
-.rich-input-highlighter__mirror {
-  position: absolute;
-  z-index: 0;
-  top: 0;
-  left: 0;
-  box-sizing: border-box;
-  overflow: visible;
-  pointer-events: none;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  word-break: normal;
-  color: var(--color-text-primary);
-  background: transparent;
-}
 
 .rich-input-highlight--heading {
   color: var(--color-primary, #6366f1);
@@ -1419,7 +1359,7 @@
 /* Delimiters (`**`, backticks, `](url)` …) recede so the content reads first.
    Color/opacity only — never weight or size, which would move glyphs off the
    textarea's caret. */
-.rich-input-highlighter__marker {
+.ai-agent__token-tooltip__marker {
   opacity: 0.5;
 }
 
@@ -1450,22 +1390,23 @@
   color: var(--color-primary, #6366f1);
 }
 
-.rich-input-highlight--command,
-.rich-input-highlight--mention {
+.ai-agent__token--command,
+.ai-agent__token--mention {
   border-radius: 4px;
+  cursor: default;
 }
 
-.rich-input-highlight--command {
+.ai-agent__token--command {
   color: var(--color-primary, #4f46e5);
   background: color-mix(in srgb, var(--color-primary) 15%, transparent);
 }
 
-.rich-input-highlight--mention {
+.ai-agent__token--mention {
   color: var(--color-success, #15803d);
   background: color-mix(in srgb, var(--color-success, #15803d) 14%, transparent);
 }
 
-.rich-input-highlighter__tooltip {
+.ai-agent__token-tooltip {
   position: fixed;
   z-index: var(--z-toast, 9000);
   width: max-content;
@@ -1486,7 +1427,7 @@
   animation: aiAgentTooltipIn 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.rich-input-highlighter__tooltip::before {
+.ai-agent__token-tooltip::before {
   position: absolute;
   z-index: 0;
   inset: 0 0 auto;
@@ -1495,7 +1436,7 @@
   content: "";
 }
 
-.rich-input-highlighter__tooltip>* {
+.ai-agent__token-tooltip>* {
   position: relative;
   z-index: 1;
 }
@@ -1512,11 +1453,11 @@
   }
 }
 
-.rich-input-highlighter__tooltip[hidden] {
+.ai-agent__token-tooltip[hidden] {
   display: none;
 }
 
-.rich-input-highlighter__badge {
+.ai-agent__token-tooltip__badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1530,17 +1471,17 @@
   letter-spacing: 0.01em;
 }
 
-.rich-input-highlighter__badge--command {
+.ai-agent__token-tooltip__badge--command {
   background: color-mix(in srgb, var(--color-primary) 13%, var(--color-surface));
   color: var(--color-primary);
 }
 
-.rich-input-highlighter__badge--mention {
+.ai-agent__token-tooltip__badge--mention {
   background: color-mix(in srgb, var(--color-success, #15803d) 13%, var(--color-surface));
   color: var(--color-success, #15803d);
 }
 
-.rich-input-highlighter__title {
+.ai-agent__token-tooltip__title {
   display: block;
   margin-bottom: 5px;
   color: var(--color-text-primary);
@@ -1550,8 +1491,8 @@
   overflow-wrap: anywhere;
 }
 
-.rich-input-highlighter__description,
-.rich-input-highlighter__purpose {
+.ai-agent__token-tooltip__description,
+.ai-agent__token-tooltip__purpose {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: 0.8rem;
@@ -1559,13 +1500,13 @@
   overflow-wrap: anywhere;
 }
 
-.rich-input-highlighter__purpose {
+.ai-agent__token-tooltip__purpose {
   margin-top: 9px;
   padding-top: 8px;
   border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
 }
 
-.rich-input-highlighter__usage {
+.ai-agent__token-tooltip__usage {
   display: block;
   margin-top: 10px;
   padding: 7px 9px;

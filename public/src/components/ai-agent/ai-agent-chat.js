@@ -38,9 +38,9 @@ import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
 import { renderCreatorCard, creatorCardModelSummary } from "./ai-agent-creator-tools.js";
 import { renderResultCard, resultCardModelSummary } from "./ai-agent-result-cards.js";
 import {
-  decorateRichContent,
-  attachRichMessageTooltips,
-} from "../../shared/rich-input-highlighter.js";
+  decorateMessageTokens,
+  attachMessageTooltips,
+} from "./ai-agent-message-tokens.js";
 
 
 // Safety cap on how many tool-driven rounds resendLastUserTurn() will
@@ -315,7 +315,7 @@ export function createChatPanel(options = {}) {
   const messagesEl = document.createElement("div");
   messagesEl.className = "ai-agent-chat-messages";
   panel.appendChild(messagesEl);
-  attachRichMessageTooltips(messagesEl);
+  attachMessageTooltips(messagesEl);
 
   function extractQuizTitle(value) {
     if (!value || typeof value !== "object") return "امتحان";
@@ -1554,7 +1554,7 @@ export function createChatPanel(options = {}) {
       // so this also keeps the "mixed Arabic/English line" behavior that
       // _processByLine used to provide directly.
       el.insertAdjacentHTML("beforeend", renderMarkdown(content));
-      decorateRichContent(el, {
+      decorateMessageTokens(el, {
         getCommands: () => getPageActions(pageKey, options.actions),
         getMentions: getQuickAccessMentionDefinitions,
       });
