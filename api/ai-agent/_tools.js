@@ -13,6 +13,7 @@ export const CREATE_QUIZ_TOOL = {
   description:
     "Create a new quiz and save it for the user. Only call this when the user has explicitly confirmed they want the quiz created (e.g. after you've shown them a preview and they said yes/أنشئ/تمام). " +
     "For MCQ/True-False questions, `correct` MUST always be an array of 0-based option indices — use a single-element array like [2] for one correct answer, or multiple indices like [0, 2] if more than one option is correct. Omit `correct` (and `options`) entirely for essay/free-text questions and use `answer` instead. " +
+    "For fill-in-the-blank (complete) questions set `questionKind` to \"complete\" and write each blank inline in `q` as {{answer}} or {{answer|alternative|alternative}} (all accepted answers, separated by |); omit `options`, `correct` and `answer`. Use 1-20 blanks; `strictMatch: true` makes matching case/diacritics-sensitive (default lenient). " +
     "`multiSelect` controls whether the quiz-taker sees checkboxes (true) or radio buttons (false) — it is independent of how many indices are in `correct`. Default to `false` unless the user specifically wants a \"choose one or more\" question or `correct` has more than one index (in which case set it to `true`). " +
     "Math must always be LaTeX ($...$ inline, $$...$$ display) in `q`, options, `answer` and `explanation` — never plain text like x^2, sqrt(x), 1/2, x² or ≤. " +
     "True/False options must be in the quiz's language: [\"صح\",\"خطأ\"] for Arabic, [\"True\",\"False\"] for English. " +
@@ -45,6 +46,8 @@ export const CREATE_QUIZ_TOOL = {
             // this explicitly rather than rely on the fallback.
             multiSelect: { type: "boolean" },
             answer: { type: "string" },
+            questionKind: { type: "string", enum: ["complete"], description: "Set to 'complete' for fill-in-the-blank questions whose blanks are written inline in q as {{answer|alt}}." },
+            strictMatch: { type: "boolean" },
             explanation: { type: "string" },
           },
           required: ["q"],
@@ -85,6 +88,8 @@ export const EDIT_QUIZ_TOOL = {
             correct: { type: "array", items: { type: "integer" } },
             multiSelect: { type: "boolean" },
             answer: { type: "string" },
+            questionKind: { type: "string", enum: ["complete"], description: "Set to 'complete' for fill-in-the-blank questions whose blanks are written inline in q as {{answer|alt}}." },
+            strictMatch: { type: "boolean" },
             explanation: { type: "string" },
           },
           required: ["q"],
@@ -141,6 +146,8 @@ export const EDIT_CURRENT_QUIZ_TOOL = {
             correct: { type: "array", items: { type: "integer" } },
             multiSelect: { type: "boolean" },
             answer: { type: "string" },
+            questionKind: { type: "string", enum: ["complete"], description: "Set to 'complete' for fill-in-the-blank questions whose blanks are written inline in q as {{answer|alt}}." },
+            strictMatch: { type: "boolean" },
             explanation: { type: "string" },
           },
           required: ["q"],
@@ -355,17 +362,18 @@ export const CREATE_FLASHCARDS_TOOL = {
 // is atomic, undoable, and never replaces the rest of the lesson.
 export const ADD_LESSON_QUESTION_TOOL = {
   name: "add_lesson_question",
-  description: "Insert one embedded question into the current lesson. Only call after the creator explicitly confirms the proposed question. Use questionKind 'essay' with a complete modelAnswer and an explanation; the reader sees an approximate 0-5 self-check rating. For MCQ, provide 2-8 options, an explanation, and a zero-based correctIndexes array; use one index for a single-answer question and set multiSelect true when there is more than one correct option. Represent true/false as two options. sectionTitle must exactly match a section supplied in the current lesson summary, or omit it to use the first section.",
+  description: "Insert one embedded question into the current lesson. Only call after the creator explicitly confirms the proposed question. Use questionKind 'complete' for fill-in-the-blank (write each blank inline in prompt as {{answer}} or {{answer|alt}}; no options or modelAnswer; optional strictMatch). Use questionKind 'essay' with a complete modelAnswer and an explanation; the reader sees an approximate 0-5 self-check rating. For MCQ, provide 2-8 options, an explanation, and a zero-based correctIndexes array; use one index for a single-answer question and set multiSelect true when there is more than one correct option. Represent true/false as two options. sectionTitle must exactly match a section supplied in the current lesson summary, or omit it to use the first section.",
   input_schema: {
     type: "object",
     properties: {
       sectionTitle: { type: "string" },
-      questionKind: { type: "string", enum: ["mcq", "essay"] },
+      questionKind: { type: "string", enum: ["mcq", "essay", "complete"] },
       prompt: { type: "string" },
       options: { type: "array", items: { type: "string" } },
       correctIndexes: { type: "array", items: { type: "integer" } },
       multiSelect: { type: "boolean" },
       modelAnswer: { type: "string" },
+      strictMatch: { type: "boolean" },
       explanation: { type: "string" },
     },
     required: ["prompt"],
@@ -374,7 +382,7 @@ export const ADD_LESSON_QUESTION_TOOL = {
 
 export const CREATE_LESSON_TOOL = {
   name: "create_lesson",
-  description: "Create a lesson with ordered sections containing a blocks array. Use {type:'markdown',body} for lesson content and {type:'question',questionKind:'mcq'|'essay',prompt,...} for embedded questions. MCQs require 2-8 options, an explanation, a zero-based correctIndex (single answer) or correctIndexes (multiple answers), and multiSelect:true for multiple answers; represent true/false as a two-option MCQ. Essays require a complete modelAnswer and explanation; readers see an approximate 0-5 self-check rating, not an overall lesson grade. Keep title, description, section titles, Markdown, and question data in this structured JSON shape. On the home page, only call after the user confirms the proposed lesson; on the lesson editor, only call after confirmation before replacing existing lesson content. An explicit /create-lesson command is confirmation.",
+  description: "Create a lesson with ordered sections containing a blocks array. Use {type:'markdown',body} for lesson content and {type:'question',questionKind:'mcq'|'essay'|'complete',prompt,...} (a 'complete' question writes blanks inline in prompt as {{answer|alt}} with no options) for embedded questions. MCQs require 2-8 options, an explanation, a zero-based correctIndex (single answer) or correctIndexes (multiple answers), and multiSelect:true for multiple answers; represent true/false as a two-option MCQ. Essays require a complete modelAnswer and explanation; readers see an approximate 0-5 self-check rating, not an overall lesson grade. Keep title, description, section titles, Markdown, and question data in this structured JSON shape. On the home page, only call after the user confirms the proposed lesson; on the lesson editor, only call after confirmation before replacing existing lesson content. An explicit /create-lesson command is confirmation.",
   input_schema: {
     type: "object",
     properties: {
@@ -395,13 +403,14 @@ export const CREATE_LESSON_TOOL = {
                 properties: {
                   type: { type: "string", enum: ["markdown", "question"] },
                   body: { type: "string" },
-                  questionKind: { type: "string", enum: ["mcq", "essay"] },
+                  questionKind: { type: "string", enum: ["mcq", "essay", "complete"] },
                   prompt: { type: "string" },
                   options: { type: "array", items: { type: "string" } },
                   correctIndex: { type: "integer", description: "Zero-based index of the correct option for a single-answer MCQ." },
                   correctIndexes: { type: "array", items: { type: "integer" }, description: "Zero-based indexes of all correct options for a multi-select MCQ." },
                   multiSelect: { type: "boolean" },
                   modelAnswer: { type: "string" },
+      strictMatch: { type: "boolean" },
                   explanation: { type: "string" },
                 },
               },

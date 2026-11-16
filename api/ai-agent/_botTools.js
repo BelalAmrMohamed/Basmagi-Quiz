@@ -229,7 +229,7 @@ export const BOT_TOOLS = [
                   properties: {
                     type: { type: "string", enum: ["markdown", "question"] },
                     body: { type: "string" },
-                    questionKind: { type: "string", enum: ["mcq", "essay"], description: "Use mcq for single/multiple choice and true/false; use essay for free-text answers." },
+                    questionKind: { type: "string", enum: ["mcq", "essay", "complete"], description: "Use mcq for single/multiple choice and true/false; use essay for free-text answers." },
                     prompt: { type: "string" },
                     options: { type: "array", items: { type: "string" } },
                     correctIndex: { type: "integer", description: "Zero-based correct option index for a single-answer MCQ." },

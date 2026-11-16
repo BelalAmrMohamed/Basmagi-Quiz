@@ -179,3 +179,26 @@ test("notebook challenges: validated, normalized, counted and round-tripped", ()
   assert.equal(bad({ expectedOutput: "1", extra: 1 }).ok, false);
   assert.ok(AUTHORING_GUIDE.notebook.includes("Challenges"));
 });
+
+test("validateQuiz / validateLesson keep Complete (fill-in-the-blank) questions", async () => {
+  const { validateQuiz, validateLesson } = await import("../supabase/functions/mcp/lib.ts");
+  const quiz = validateQuiz({
+    title: "T",
+    description: "d",
+    source: "",
+    questions: [{ q: "Capital: {{Cairo|القاهرة}}", questionKind: "complete", explanation: "e", strictMatch: true }],
+  });
+  assert.equal(quiz.ok, true, JSON.stringify(quiz.errors));
+  assert.equal(quiz.stats.complete, 1);
+  assert.equal(quiz.data.questions[0].questionKind, "complete");
+  assert.equal(quiz.data.questions[0].options, undefined);
+  const bad = validateQuiz({ title: "T", description: "d", source: "", questions: [{ q: "no blanks", questionKind: "complete", explanation: "e" }] });
+  assert.equal(bad.ok, false);
+  const lesson = validateLesson({
+    title: "L",
+    description: "d",
+    source: "",
+    sections: [{ title: "S", blocks: [{ type: "question", questionKind: "complete", prompt: "x {{y}}", explanation: "e" }] }],
+  });
+  assert.equal(lesson.data.sections[0].blocks[0].questionKind, "complete");
+});

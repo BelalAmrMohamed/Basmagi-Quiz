@@ -37,6 +37,9 @@ const ALLOWED_QUESTION_KEYS = new Set([
   "multiSelect",
   "explanation",
   "answer",
+  // "complete" = fill-in-the-blank (blanks are written inline as {{answer|alt}} in `q`).
+  "questionKind",
+  "strictMatch",
 ]);
 
 // Base32-style 8-character ID: uppercase A-Z plus digits 2-7
@@ -52,9 +55,10 @@ const SAFE_PATH_REGEX = /^[\p{L}\p{M}\p{N}\p{Z}\p{P}\p{S}]+$/u;
 /**
  * Infer the type of a single question.
  * @param {object} q
- * @returns {"MCQ"|"True/False"|"Essay"}
+ * @returns {"MCQ"|"True/False"|"Essay"|"Complete"}
  */
 export function inferQuestionType(q) {
+  if (q.questionKind === "complete") return "Complete";
   if (!Array.isArray(q.options) || q.options.length === 0) return "Essay";
   if (q.options.length === 2) return "True/False";
   return "MCQ";
@@ -173,6 +177,9 @@ export function validateQuizPayload(raw) {
     }
     if (q.multiSelect !== undefined && typeof q.multiSelect !== "boolean") {
       throw new Error(`INVALID_QUESTION[${i}]: multiSelect must be a boolean`);
+    }
+    if (q.strictMatch !== undefined && typeof q.strictMatch !== "boolean") {
+      throw new Error(`INVALID_QUESTION[${i}]: strictMatch must be a boolean`);
     }
   });
 

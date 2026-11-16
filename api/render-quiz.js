@@ -62,6 +62,7 @@ const QUESTION_TYPE_AR = {
   "MCQ": "إختياري",
   "Essay": "مقالي",
   "True/False": "صح/خطأ",
+  "Complete": "إكمال",
 };
 
 /**

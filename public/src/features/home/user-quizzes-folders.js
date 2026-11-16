@@ -1,4 +1,5 @@
 // public/src/features/home/user-quizzes-folders.js
+import { inferQuestionType } from "../../shared/rate-answers.js";
 import { getFolderContentsCount, formatFolderAndQuizCount } from "./folder-counts.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { _prompt, _confirm, _confirmTyped, showNotification } from "../../components/notifications/notifications.js";
@@ -1511,9 +1512,7 @@ function quizToPayload(entry) {
   // (STATS_MISMATCH), so this can never be a placeholder/empty value.
   const types = new Set();
   questions.forEach((q) => {
-    if (!Array.isArray(q.options) || q.options.length === 0) types.add("Essay");
-    else if (q.options.length === 2) types.add("True/False");
-    else types.add("MCQ");
+    types.add(inferQuestionType(q));
   });
   return {
     meta,

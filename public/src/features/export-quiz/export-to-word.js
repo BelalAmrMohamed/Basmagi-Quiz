@@ -3,6 +3,7 @@
 // Deals with the export from both main page and results page
 // `docx` library used, included in this file.
 
+import { degradeCompleteForExport } from "../../shared/complete-question.js";
 import {
   _alert,
   showNotification,
@@ -42,6 +43,7 @@ export async function exportToWord(
   onProgress = null,
   signal = null,
 ) {
+  ({ questions, userAnswers } = degradeCompleteForExport(questions, userAnswers));
   try {
     await loadDocx();
 

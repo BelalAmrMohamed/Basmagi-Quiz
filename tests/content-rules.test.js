@@ -120,3 +120,18 @@ test("lesson: notebook/folder/course references (kebab + aliases) pass shared + 
   assert.doesNotThrow(() => validateLessonContent(content));
   assert.throws(() => validateLessonContent({ sections: [{ id: "s1", title: "s", blocks: [{ type: "folder-reference", folderId: "x" }] }] }), /UUID/);
 });
+
+test("Complete quiz question: valid, then each broken shape", async () => {
+  const { checkQuiz, checkLesson } = await import("../public/src/shared/content-rules.js");
+  const base = { title: "T", description: "d", source: "", questions: [] };
+  const ok = checkQuiz({ ...base, questions: [{ q: "Capital: {{Cairo|القاهرة}}", questionKind: "complete", explanation: "e" }] });
+  assert.equal(ok.errors.length, 0);
+  const code = (q) => checkQuiz({ ...base, questions: [q] }).errors.map((e) => e.code);
+  assert.ok(code({ q: "no blanks", questionKind: "complete" }).includes("COMPLETE_NO_BLANKS"));
+  assert.ok(code({ q: "{{a}}", questionKind: "complete", options: ["x", "y"] }).includes("COMPLETE_HAS_OPTIONS"));
+  assert.ok(code({ q: "{{a}}", questionKind: "complete", answer: "a" }).includes("COMPLETE_HAS_ANSWER"));
+  assert.ok(code({ q: "{{a", questionKind: "complete" }).includes("COMPLETE_SYNTAX"));
+  assert.ok(code({ q: "x", questionKind: "essay", answer: "a" }).includes("QUESTION_KIND_INVALID"));
+  const lesson = checkLesson({ title: "L", description: "d", sections: [{ title: "S", blocks: [{ type: "question", questionKind: "complete", prompt: "{{a}}" }] }] });
+  assert.equal(lesson.errors.length, 0);
+});

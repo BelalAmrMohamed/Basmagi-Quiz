@@ -99,6 +99,7 @@ Schema and content rules:
 - Use {"q":"...","answer":"...","explanation":"..."} for open-ended/essay questions.
 - A two-option question can be used for true/false. True/False options must be in the quiz's language: ["صح","خطأ"] for Arabic, ["True","False"] for English. "correct" is 0 or 1.
 - Essay questions must have a non-empty "answer" and no "options" key.
+- Use {"q":"... {{answer|alt}} ...","questionKind":"complete","explanation":"..."} for fill-in-the-blank questions: blanks are written inline as {{answer}} or {{answer|alt|alt}}; never add options, correct or answer to them; optional "strictMatch": true.
 - Math: Every formula, variable, exponent, fraction, root, Greek letter or math symbol in q/options/answer/explanation/lesson bodies must be LaTeX: $...$ inline, $$...$$ display. Never plain text (x^2, sqrt(x), 1/2, x², √, ≤). Escape backslashes in JSON (\\\\frac).
 - Media is written inline with Markdown syntax: ![description](url) for image, ![audio](url) for audio, ![video](url) for video.`;
 
@@ -355,6 +356,8 @@ const TOOLS = [
               },
               multiSelect: { type: "boolean", description: "True if multiple choices are correct" },
               answer: { type: "string", description: "Model answer for open-ended / essay question (REQUIRED for essays; omit options)" },
+              questionKind: { type: "string", enum: ["complete"], description: "Set to 'complete' for fill-in-the-blank: write each blank inline in q as {{answer|alt}}; omit options/correct/answer" },
+              strictMatch: { type: "boolean", description: "complete questions only: true = case/diacritics-sensitive matching (default lenient)" },
               explanation: { type: "string", description: "Educational explanation of the correct answer" },
             },
             required: ["q"],
@@ -399,7 +402,8 @@ const TOOLS = [
                     notebookId: { type: "string", description: "UUID, for notebook-reference blocks" },
                     folderId: { type: "string", description: "UUID, for folder-reference blocks" },
                     courseId: { type: "string", description: "UUID, for course-reference blocks" },
-                    questionKind: { type: "string", enum: ["mcq", "essay"] },
+                    questionKind: { type: "string", enum: ["mcq", "essay", "complete"] },
+                    strictMatch: { type: "boolean" },
                     prompt: { type: "string" },
                     options: { type: "array", items: { type: "string" } },
                     correctIndex: { type: "integer" },
@@ -1338,7 +1342,9 @@ async function handleGetLessonContent(args: { lessonId: string; format?: string 
           } else if (block.type === "media") {
             blockLines.push(`[${block.kind || "media"}: ${block.url}${block.alt ? ` - ${block.alt}` : ""}]`);
           } else if (block.type === "question") {
-            if (block.questionKind === "essay") {
+            if (block.questionKind === "complete") {
+              blockLines.push(`❓ سؤال إكمال: ${block.prompt}${block.explanation ? `\n   التفسير: ${block.explanation}` : ""}`);
+            } else if (block.questionKind === "essay") {
               blockLines.push(`❓ سؤال مقالي: ${block.prompt}\n   الإجابة: ${block.modelAnswer || ""}${block.explanation ? `\n   التفسير: ${block.explanation}` : ""}`);
             } else {
               const opts = (block.options || []).map((o: string, i: number) => `    ${i}) ${o}`).join("\n");
@@ -1563,7 +1569,7 @@ async function handleCreateQuizImportLink(args: any) {
   if (args?.dry_run) return [`✅ (تجربة فقط — لم يُحفظ شيء) الامتحان صالح: ${JSON.stringify(v.stats)}`, formatIssues("الامتحان", v)].filter(Boolean).join("\n\n");
   const { url, short } = await saveDraft("quiz", v.data);
   const s = v.stats!;
-  const head = `✅ تم التحقق من الامتحان: ${s.questions} سؤال (اختيار فردي ${s.mcq} · متعدد ${s.multiSelect} · مقالي ${s.essay}).`;
+  const head = `✅ تم التحقق من الامتحان: ${s.questions} سؤال (اختيار فردي ${s.mcq} · متعدد ${s.multiSelect} · مقالي ${s.essay}${s.complete ? ` · إكمال ${s.complete}` : ""}).`;
   const how = short
     ? `🔗 رابط قصير صالح ${DRAFT_TTL_HOURS} ساعة (بلا تسجيل دخول). عند فتحه يُحفظ الامتحان مباشرة في «محتواي» ويظهر مميّزاً بشارة «جديد»:\n${url}`
     : `🔗 تعذّر إنشاء رابط قصير فاستُخدم رابط الاستيراد الطويل (انسخه كاملاً دون تعديل):\n${url}`;

@@ -15,9 +15,12 @@ import { showDownloadModal } from "../../components/download-quiz-modal/download
 import { showNotification } from "../../components/notifications/notifications.js";
 
 // Question helpers
+import { parseComplete, completeInputsHtml, completeToPlain } from "../../shared/complete-question.js";
 import {
   gradeEssay,
   isEssayQuestion,
+  isCompleteQuestion,
+  gradeCompleteQuestion,
   calculateQuizMetrics,
   isAnswerCorrect,
   isMultiSelectQuestion,
@@ -275,10 +278,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ── Score breakdown via centralised metrics calculator ─────────────────────
   const {
-    mcqCorrect,
-    mcqWrong,
-    mcqSkipped,
-    mcqTotal,
+    mcqCorrect: baseMcqCorrect,
+    mcqWrong: baseMcqWrong,
+    mcqSkipped: baseMcqSkipped,
+    mcqTotal: baseMcqTotal,
+    completeCount,
+    completeCorrect,
+    completeSkipped,
     essayCount,
     essayScoreTotal,
     essayMaxTotal,
@@ -286,6 +292,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     percentage,
     actualPercentage,
   } = calculateQuizMetrics(questions, result.userAnswers);
+  // "Complete" questions are objective: fully correct = correct, nothing typed = skipped,
+  // anything else = wrong (partial credit is already inside `percentage`).
+  const mcqCorrect = baseMcqCorrect + completeCorrect;
+  const mcqSkipped = baseMcqSkipped + completeSkipped;
+  const mcqWrong = baseMcqWrong + (completeCount - completeCorrect - completeSkipped);
+  const mcqTotal = baseMcqTotal + completeCount;
 
   openDownloadModalBtn &&
     (openDownloadModalBtn.onclick = () => {
@@ -412,6 +424,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const perQuestion = questions.map((q, i) => {
       const ua = result.userAnswers?.[i];
+      if (isCompleteQuestion(q)) {
+        const g = gradeCompleteQuestion(q, ua);
+        const blanks = parseComplete(q.q).blanks;
+        return {
+          question: completeToPlain(q.q),
+          options: null,
+          userAnswer: g.perBlank.map((p, k) => `${k + 1}) ${p.given || "—"}`).join("  "),
+          correctAnswer: blanks.map((b, k) => `${k + 1}) ${b.answers.join(" / ")}`).join("  "),
+          wasCorrect: g.allCorrect,
+          explanation: q.explanation || "",
+        };
+      }
       const essay = isEssayQuestion(q);
       const options = Array.isArray(q.options) ? q.options : null;
       const userAnswer = essay ? (ua ?? "—") : answerToText(ua, options);
@@ -807,6 +831,33 @@ function renderReview(container, questions, userAnswers) {
     const reportBtnHtml = quizDbId
       ? `<button class="report-question-btn ${alreadyReported ? "active" : ""}" onclick="window.reportReviewQuestion(${index})" title="${alreadyReported ? "تم الإبلاغ عن هذا السؤال" : "الإبلاغ عن خطأ في هذا السؤال"}"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>`
       : "";
+
+    if (isCompleteQuestion(q)) {
+      const g = gradeCompleteQuestion(q, userAns);
+      const parsed = parseComplete(q.q);
+      const statusClass = g.allCorrect ? "correct" : g.answered === 0 ? "skipped" : "wrong";
+      const textHtml = completeInputsHtml(renderMarkdown(parsed.marked, { mediaBaseUrl: resultBaseUrl }), {
+        blanks: parsed.blanks,
+        values: Array.isArray(userAns) ? userAns : [],
+        locked: true,
+        perBlank: g.perBlank,
+      });
+      const explanationText = q.explanation ? renderMarkdown(q.explanation, { mediaBaseUrl: resultBaseUrl }) : "";
+      html += `
+        <div class="review-card ${statusClass}">
+          <div class="review-header">
+            <span class="q-num">#${index + 1}</span>
+            <div class="review-header-right">
+              <span class="complete-score show" title="الفراغات الصحيحة">(${g.correct}/${g.total})</span>
+              ${reportBtnHtml}
+            </div>
+          </div>
+          ${renderReadingPassage(q.passage)}
+          <div class="q-text">${textHtml}</div>
+          ${explanationText ? `<div class="explanation"><div class="explanation-body">${explanationText}</div></div>` : ""}
+        </div>`;
+      return;
+    }
 
     if (isEssay) {
       const score = gradeEssay(userAns, getEssayAnswer(q));

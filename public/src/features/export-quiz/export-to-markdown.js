@@ -2,6 +2,7 @@
 // Downloads the quiz as markdown (.md)
 // Deals with the export from both main page and results page
 // No libraries used
+import { degradeCompleteForExport } from "../../shared/complete-question.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 
 // Question helpers
@@ -29,6 +30,7 @@ const mdLineBreaks = (str) => {
  *   the instant "copy as markdown" button, which has no settings step).
  */
 export function buildQuizMarkdown(config, questions, userAnswers = [], mdOptions = {}) {
+  ({ questions, userAnswers } = degradeCompleteForExport(questions, userAnswers));
   const {
     includeAnswers = true,
     includeUserAnswers = true,

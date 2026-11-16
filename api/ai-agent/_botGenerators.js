@@ -41,6 +41,7 @@ import { buildStandaloneQuizHtml as buildPlatformQuizHtml } from "../../public/s
 import { buildQuizHtml as buildPlatformQuizDocument } from "../../public/src/features/export-quiz/export-to-html.js";
 import { buildQuizMarkdown as buildPlatformQuizMarkdown } from "../../public/src/features/export-quiz/export-to-markdown.js";
 import { gradeEssay } from "../../public/src/shared/rate-answers.js";
+import { completeToPlain, completeAnswerKey } from "../../public/src/shared/complete-question.js";
 
 // ── 3.1: Standalone Interactive Quiz HTML ────────────────────────────────────
 
@@ -326,7 +327,17 @@ function lessonSectionBlocks(section) {
   if (Array.isArray(section?.questions)) {
     blocks.push(...section.questions.map((question) => ({ type: "question", ...question })));
   }
-  return blocks.map((block) => block?.type === "question"
+  return blocks.map((block) => block?.type === "question" && block.questionKind === "complete"
+    // Fill-in-the-blank has no interactive runtime in these generated files: show it as
+    // an open question with the blanks' accepted answers as the model answer.
+    ? {
+      ...block,
+      questionKind: "essay",
+      options: undefined,
+      q: completeToPlain(block.prompt || block.q || ""),
+      answer: completeAnswerKey(block.prompt || block.q || ""),
+    }
+    : block?.type === "question"
     ? {
       ...block,
       q: block.prompt || block.q || "",

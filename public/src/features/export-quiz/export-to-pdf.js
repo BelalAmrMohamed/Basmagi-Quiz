@@ -21,6 +21,7 @@
 // us reimplementing a page-layout engine by hand.
 // -------------------------------------------------------------------------
 
+import { degradeCompleteForExport } from "../../shared/complete-question.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { buildQuizHtml } from "./export-to-html.js";
 
@@ -313,6 +314,7 @@ export async function exportToPdf(
   onProgress = null,
   pdfOptions = {},
 ) {
+  ({ questions, userAnswers } = degradeCompleteForExport(questions, userAnswers));
   const backgroundChoice = pdfOptions.backgroundColor === "dark" ? "dark" : "light";
   try {
     if (!config || !questions || !Array.isArray(questions)) {

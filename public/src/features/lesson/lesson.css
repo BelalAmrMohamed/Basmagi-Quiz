@@ -4851,3 +4851,28 @@ html[data-motion="reduced"] .lesson-question__option.is-correct {
   direction: ltr;
   unicode-bidi: isolate;
 }
+
+/* ── "Complete" (fill-in-the-blank) question ───────────────────────────── */
+.complete-blank-wrap { display: inline-flex; flex-direction: column; align-items: center; vertical-align: baseline; margin: 0 4px; }
+.complete-blank {
+  min-width: 8ch;
+  max-width: 100%;
+  field-sizing: content;
+  padding: 2px 8px;
+  font: inherit;
+  text-align: center;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid currentColor;
+  border-radius: 6px 6px 0 0;
+  outline: none;
+}
+.complete-blank:focus { background: rgba(99, 102, 241, 0.10); border-bottom-color: #6366f1; }
+.complete-blank.is-correct { background: rgba(16, 185, 129, 0.14); border-bottom-color: #10b981; }
+.complete-blank.is-wrong { background: rgba(239, 68, 68, 0.14); border-bottom-color: #ef4444; text-decoration: line-through; }
+.complete-blank:disabled { opacity: 1; cursor: not-allowed; }
+.complete-expected { display: none; margin-top: 2px; padding: 0 6px; font-size: 0.78em; font-weight: 700; color: #10b981; border-radius: 6px; background: rgba(16, 185, 129, 0.12); }
+.complete-blank.is-wrong + .complete-expected { display: inline-block; }
+.complete-score { display: none; margin: 10px 0; text-align: center; font-weight: 700; }
+.complete-score.show { display: block; }

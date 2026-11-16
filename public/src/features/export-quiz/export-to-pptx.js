@@ -25,6 +25,7 @@ of buttons vanishing elsewhere on the site after a PPTX export. See
 Fix #critical near renderTextToImage().
    ============== End ============== */
 
+import { degradeCompleteForExport } from "../../shared/complete-question.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 
 import {
@@ -185,6 +186,7 @@ export async function exportToPptx(
   signal = null,
   pptxOptions = {},
 ) {
+  ({ questions, userAnswers } = degradeCompleteForExport(questions, userAnswers));
   const {
     includeAnswers = true,
     includeUserAnswers = true,

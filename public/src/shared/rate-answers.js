@@ -2,10 +2,32 @@
 // Global Helper functions for rating questions
 // Import: import { gradeEssay, isEssayQuestion, calculateQuizMetrics } from "../shared/rate-answers.js";
 
+import { parseComplete, gradeComplete } from "./complete-question.js";
+
+// === Helper: Check if Complete (fill-in-the-blank) Question ===
+// Explicit marker: `questionKind: "complete"` (quiz questions and lesson blocks).
+export const isCompleteQuestion = (q) => q?.questionKind === "complete";
+
 // === Helper: Check if Essay Question ===
 export const isEssayQuestion = (q) => {
-  return !Array.isArray(q.options) && q.answer !== undefined;
+  return !isCompleteQuestion(q) && !Array.isArray(q.options) && q.answer !== undefined;
 };
+
+// === Helper: "complete" | "essay" | "mcq" ===
+export const getQuestionKind = (q) =>
+  isCompleteQuestion(q) ? "complete" : isEssayQuestion(q) ? "essay" : "mcq";
+
+// === Helper: stats label of one quiz question (single source for all copies) ===
+export const inferQuestionType = (q) => {
+  if (isCompleteQuestion(q)) return "Complete";
+  if (!Array.isArray(q?.options) || q.options.length === 0) return "Essay";
+  if (q.options.length === 2) return "True/False";
+  return "MCQ";
+};
+
+// === Helper: grade a Complete quiz question; `userAnswer` is a string[] ===
+export const gradeCompleteQuestion = (q, userAnswer) =>
+  gradeComplete(parseComplete(q?.q).blanks, userAnswer, q?.strictMatch === true);
 
 // === Helper: Check if a question's UI should render checkboxes (multi-
 // select) vs. radio buttons (single-select) ===
@@ -311,12 +333,22 @@ export function calculateQuizMetrics(questions, userAnswers) {
   let essayCount = 0,
     essayScoreTotal = 0,
     essayMaxTotal = 0;
+  let completeCount = 0,
+    completeEarned = 0,
+    completeCorrect = 0,
+    completeSkipped = 0;
 
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i];
     const ua = userAnswers[i];
 
-    if (isEssayQuestion(q)) {
+    if (isCompleteQuestion(q)) {
+      completeCount++;
+      const g = gradeCompleteQuestion(q, ua);
+      completeEarned += g.earned;
+      if (g.allCorrect) completeCorrect++;
+      else if (g.answered === 0) completeSkipped++;
+    } else if (isEssayQuestion(q)) {
       essayCount++;
       essayScoreTotal += gradeEssay(ua, q.answer ?? "");
       essayMaxTotal += 5;
@@ -329,7 +361,8 @@ export function calculateQuizMetrics(questions, userAnswers) {
     }
   }
 
-  const isEssayOnly = mcqTotal === 0;
+  const objectiveTotal = mcqTotal + completeCount;
+  const isEssayOnly = objectiveTotal === 0;
 
   let percentage = 0;
   if (isEssayOnly) {
@@ -338,7 +371,7 @@ export function calculateQuizMetrics(questions, userAnswers) {
         ? Math.round((essayScoreTotal / essayMaxTotal) * 100)
         : 0;
   } else {
-    percentage = mcqTotal > 0 ? Math.round((mcqCorrect / mcqTotal) * 100) : 0;
+    percentage = Math.round(((mcqCorrect + completeEarned) / objectiveTotal) * 100);
   }
 
   // Comprehensive percentage: combines MCQ correct points + essay score points
@@ -348,8 +381,8 @@ export function calculateQuizMetrics(questions, userAnswers) {
   //   • MCQ-only    → same as `percentage` (no essay denominator)
   //   • Mixed       → holistic view that weights both question types by their point value
   //   • Empty quiz  → 0 (guarded by totalPossible check)
-  const totalEarned = mcqCorrect + essayScoreTotal;
-  const totalPossible = mcqTotal + essayMaxTotal;
+  const totalEarned = mcqCorrect + completeEarned + essayScoreTotal;
+  const totalPossible = objectiveTotal + essayMaxTotal;
   const actualPercentage =
     totalPossible > 0 ? Math.round((totalEarned / totalPossible) * 100) : 0;
 
@@ -361,6 +394,10 @@ export function calculateQuizMetrics(questions, userAnswers) {
     essayCount,
     essayScoreTotal,
     essayMaxTotal,
+    completeCount,
+    completeEarned,
+    completeCorrect,
+    completeSkipped,
     isEssayOnly,
     percentage,
     actualPercentage,

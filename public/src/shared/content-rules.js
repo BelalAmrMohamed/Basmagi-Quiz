@@ -17,6 +17,8 @@
 // supabase/functions/mcp/content-rules.js is out of sync).
 // =============================================================================
 
+import { parseComplete } from "./complete-question.js";
+
 export const LEGACY_AI_SOURCE = "تم التوليد بواسطة الذكاء الاصطناعي";
 
 export const LIMITS = {
@@ -37,6 +39,9 @@ export const LIMITS = {
   modelAnswerMax: 20000,
   explanationMax: 20000,
   optionsMax: 8, // lesson MCQ options
+  completeBlanksMax: 20, // "Complete" question: blanks per question
+  completeAnswerMax: 200, // one accepted answer
+  completeVariantsMax: 10, // accepted answers per blank
   lessonBytes: 200_000,
   notebookTitle: 200,
   notebookDescription: 1200,
@@ -114,6 +119,32 @@ export function formatIssueList(issues, max = 20) {
   const shown = list.slice(0, max).map((m, i) => `${i + 1}. ${m}`);
   if (list.length > max) shown.push(`… و${list.length - max} مشكلة أخرى.`);
   return shown.join("\n");
+}
+
+/** Shared "Complete" (fill-in-the-blank) checks for quiz questions and lesson blocks. */
+function checkCompleteText(c, path, at, text, obj) {
+  const p = parseComplete(text);
+  p.errors.forEach((e) => {
+    if (e.code === "COMPLETE_SYNTAX") c.err(e.code, path, `${at}: فتحة {{ بلا إغلاق }} — اكتب كل فراغ بالشكل {{الإجابة}} أو {{الإجابة|بديل}}.`);
+    else c.err(e.code, path, `${at}: ${e.message}`);
+  });
+  if (!p.blanks.length && !p.errors.length) {
+    c.err("COMPLETE_NO_BLANKS", path, `${at}: سؤال الإكمال بلا فراغات — ضع الإجابة بين {{ }} مثل: عاصمة مصر {{القاهرة}}.`);
+  }
+  if (p.blanks.length > LIMITS.completeBlanksMax) {
+    c.err("COMPLETE_TOO_MANY_BLANKS", path, `${at}: ${p.blanks.length} فراغاً — الحد الأقصى ${LIMITS.completeBlanksMax}.`);
+  }
+  p.blanks.forEach((b, i) => {
+    if (b.answers.length > LIMITS.completeVariantsMax) {
+      c.err("COMPLETE_TOO_MANY_VARIANTS", path, `${at}: الفراغ ${i + 1} له ${b.answers.length} إجابة بديلة — الحد الأقصى ${LIMITS.completeVariantsMax}.`);
+    }
+    if (b.answers.some((a) => a.length > LIMITS.completeAnswerMax)) {
+      c.err("COMPLETE_ANSWER_TOO_LONG", path, `${at}: إجابة الفراغ ${i + 1} أطول من ${LIMITS.completeAnswerMax} حرف.`);
+    }
+  });
+  if (obj.strictMatch !== undefined && typeof obj.strictMatch !== "boolean") {
+    c.err("COMPLETE_STRICT_TYPE", path, `${at}: strictMatch يجب أن يكون true أو false.`);
+  }
 }
 
 function makeCollector() {
@@ -228,6 +259,17 @@ export function checkQuiz(input) {
     if (key) {
       if (seen.has(key)) c.warn("DUPLICATE_QUESTION", path, `${at}: مكرر للسؤال ${seen.get(key)}.`);
       else seen.set(key, n);
+    }
+
+    if (q?.questionKind !== undefined && q.questionKind !== "complete") {
+      c.err("QUESTION_KIND_INVALID", path, `${at}: questionKind="${q.questionKind}" غير مدعوم في الامتحانات — القيمة الوحيدة المسموحة "complete" (اختيار من متعدد/مقالي يُستنتجان من options و answer).`);
+    }
+    if (q?.questionKind === "complete") {
+      if (text) checkCompleteText(c, path, at, text, q);
+      if (Array.isArray(q.options) && q.options.length) c.err("COMPLETE_HAS_OPTIONS", path, `${at}: سؤال الإكمال لا يحتوي options — الإجابات داخل {{ }} في نص السؤال.`);
+      if (q.answer !== undefined && str(q.answer)) c.err("COMPLETE_HAS_ANSWER", path, `${at}: سؤال الإكمال لا يحتوي answer — الإجابات داخل {{ }} في نص السؤال.`);
+      if (hasPlainTextMath([q.q, q.explanation].join("\n"))) mathQs.push(n);
+      return;
     }
 
     const hasOptions = Array.isArray(q?.options) && q.options.length > 0;
@@ -394,12 +436,18 @@ export function checkLesson(input, opts = {}) {
         }
         const hasOptions = Array.isArray(b.options) && b.options.length > 0;
         const modelAnswer = str(b.modelAnswer ?? b.answer);
-        const isEssay = b.questionKind === "essay" || (!hasOptions && !!modelAnswer);
+        const isComplete = b.questionKind === "complete";
+        const isEssay = !isComplete && (b.questionKind === "essay" || (!hasOptions && !!modelAnswer));
 
         const mathText = [b.prompt ?? b.q, b.explanation, modelAnswer, ...(hasOptions ? b.options : [])].join("\n");
         if (hasPlainTextMath(mathText)) mathAt.push(`${sn}/${bn}`);
 
-        if (isEssay) {
+        if (isComplete) {
+          if (prompt) checkCompleteText(c, path, qAt, prompt, b);
+          if (hasOptions) c.err("COMPLETE_HAS_OPTIONS", path, `${qAt}: سؤال الإكمال لا يحتوي options — الإجابات داخل {{ }} في prompt.`);
+          if (modelAnswer) c.err("COMPLETE_HAS_ANSWER", path, `${qAt}: سؤال الإكمال لا يحتوي modelAnswer — الإجابات داخل {{ }} في prompt.`);
+          if (!explanation) c.warn("NO_EXPLANATION", path, `${qAt}: سؤال بلا explanation.`);
+        } else if (isEssay) {
           if (!modelAnswer) c.err("MODEL_ANSWER_REQUIRED", path, `${qAt}: السؤال المقالي يحتاج modelAnswer (الإجابة النموذجية).`);
           else if (modelAnswer.length > LIMITS.modelAnswerMax) {
             c.err("MODEL_ANSWER_TOO_LONG", path, `${qAt}: modelAnswer يتجاوز ${LIMITS.modelAnswerMax} حرف.`);

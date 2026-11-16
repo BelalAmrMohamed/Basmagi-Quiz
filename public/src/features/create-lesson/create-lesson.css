@@ -2704,3 +2704,14 @@ html {
   background: var(--color-error-light, rgba(220, 38, 38, 0.08));
   border-color: var(--color-error, #dc2626);
 }
+
+/* ── "Complete" question editor panel ──────────────────────────────────── */
+.complete-editor { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px dashed currentColor; border-radius: 12px; }
+.complete-editor-hint { font-size: 0.9em; opacity: 0.85; }
+.complete-editor-hint code { direction: ltr; unicode-bidi: isolate; }
+.complete-strict { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.complete-preview { display: flex; flex-wrap: wrap; gap: 6px; }
+.complete-preview-chip { padding: 2px 10px; border-radius: 999px; background: rgba(16, 185, 129, 0.14); }
+.complete-preview-chip b { margin-inline-end: 4px; }
+.complete-preview-error { width: 100%; color: #ef4444; font-weight: 700; }
+.complete-preview-empty { opacity: 0.7; }
