@@ -3181,21 +3181,26 @@ html[data-motion="reduced"] {
   width: min(100%, 400px);
   padding: 28px 24px 24px;
   position: relative;
-  display: flex;
-  flex-direction: column;
   box-sizing: border-box;
-  /* The social form is taller than many phone viewports. Keep it within the
-     visible viewport and let the card scroll so the title and close control
-     remain reachable while editing every field. */
+  /* Keep the full modal card within the visible viewport; the card itself
+     scrolls when the form is taller than the available space. */
   max-height: calc(100vh - 40px);
   max-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 #socialLinksOverlay {
   padding: max(12px, env(safe-area-inset-top, 0px)) 12px
     max(12px, env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
+  box-sizing: border-box;
+  /* The shared contact overlay sits below #bottomNav (z-index 4001 on
+     phones). Keep this dialog in the modal layer so the nav cannot paint
+     over the form. */
+  z-index: var(--z-modal, 6000);
 }
 
 .social-links-close-btn {
@@ -3255,10 +3260,6 @@ html[data-motion="reduced"] {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
 }
 
 .social-input-group {
@@ -3365,6 +3366,19 @@ html[data-motion="reduced"] {
 
   .social-modal-actions .avatar-action-btn {
     flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  #socialLinksOverlay {
+    /* Center the dialog in the space above the fixed phone navigation and
+       home-indicator area, instead of centering it behind the navigation. */
+    padding-block-end: calc(var(--bottom-nav-height, 54px) + max(12px, env(safe-area-inset-bottom, 0px)));
+  }
+
+  .social-links-card {
+    max-height: calc(100dvh - var(--bottom-nav-height, 54px) - 48px
+      - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   }
 }
 
