@@ -3,7 +3,7 @@
 // Deals with the export from the main page, create-quiz page, and results page
 // No libraries used.
 
-import { degradeCompleteForExport } from "../../shared/complete-question.js";
+import { parseComplete, gradeComplete, completeInputsHtml } from "../../shared/complete-question.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 
 // Question helpers
@@ -165,7 +165,6 @@ const hashQuizIdentity = (title, processedQuestions) => {
 };
 
 export async function buildStandaloneQuizHtml(config, questions, exportOptions = {}) {
-  ({ questions } = degradeCompleteForExport(questions));
   const {
     showAnswersButton = false,
     layout = "pagination",
@@ -1843,6 +1842,32 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   .essay-score.partial { background: var(--warning-bg); border-color: var(--warning); color: var(--warning-text); }
   .essay-score.wrong   { background: var(--error-bg);   border-color: var(--error);   color: var(--error-text);   }
 
+  /* ── Complete (Fill-in-the-blank) ─────────────────────────────────── */
+  .complete-blank-wrap { display: inline-flex; flex-direction: column; align-items: center; vertical-align: baseline; margin: 0 4px; }
+  .complete-blank {
+    min-width: 8ch;
+    max-width: 100%;
+    field-sizing: content;
+    padding: 2px 8px;
+    font: inherit;
+    text-align: center;
+    color: inherit;
+    background: rgba(99, 102, 241, 0.06);
+    border: 0;
+    border-bottom: 2px solid rgba(99, 102, 241, 0.45);
+    border-radius: 6px 6px 0 0;
+    outline: none;
+    cursor: text;
+  }
+  .complete-blank:focus { background: rgba(99, 102, 241, 0.10); border-bottom-color: #6366f1; }
+  .complete-blank.is-correct { background: rgba(16, 185, 129, 0.14); border-bottom-color: #10b981; }
+  .complete-blank.is-wrong { background: rgba(239, 68, 68, 0.14); border-bottom-color: #ef4444; text-decoration: line-through; }
+  .complete-blank:disabled { opacity: 1; cursor: not-allowed; }
+  .complete-expected { display: none; margin-top: 2px; padding: 0 6px; font-size: 0.78em; font-weight: 700; color: #10b981; border-radius: 6px; background: rgba(16, 185, 129, 0.12); }
+  .complete-blank.is-wrong + .complete-expected { display: inline-block; }
+  .complete-score { display: none; margin: 10px 0; text-align: center; font-weight: 700; }
+  .complete-score.show { display: block; }
+
   @keyframes slideDown {
     from { opacity: 0; transform: translateY(-8px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -2980,6 +3005,12 @@ ${quizInfoModalHtml}
   
   ${calculateQuizMetrics.toString()}
 
+  ${parseComplete.toString()}
+
+  ${gradeComplete.toString()}
+
+  ${completeInputsHtml.toString()}
+
   const _BLOCK_CHILD_SELECTOR = ${JSON.stringify(_BLOCK_CHILD_SELECTOR)};
   const _LTR_ONLY_SELECTOR = ${JSON.stringify(_LTR_ONLY_SELECTOR)};
   const _ARABIC_REGEX = ${_ARABIC_REGEX.toString()};
@@ -3009,6 +3040,8 @@ ${quizInfoModalHtml}
   const isEssayQuestion = (question) => {
     return question.answer;
   };
+
+  const isCompleteQuestion = (question) => question?.questionKind === "complete";
 
   // Mirrors isMultiSelectQuestion()/singleCorrectIndex() from
   // shared/rate-answers.js — duplicated here (rather than imported) because
@@ -3045,6 +3078,7 @@ ${quizInfoModalHtml}
       this.loadPreferences();
       this.loadProgress();
       this.renderQuiz();
+      this.setupCompleteInputListeners();
       this.renderNav();
       this.updateProgress();
       this.setupMenuToggle();
@@ -3619,26 +3653,45 @@ ${quizInfoModalHtml}
     },
   
     renderQuestion(q, i) {
-      const isEssay = isEssayQuestion(q);
-      const isTrueFalse = !isEssay && Array.isArray(q.options) && q.options.length === 2;
-      const badgeText = isEssay ? "مقالي" : (isTrueFalse ? "صح أم خطأ" : "إختياري");
-      const badgeClass = isEssay ? "essay" : (isTrueFalse ? "truefalse" : "");
+      const isComplete = isCompleteQuestion(q);
+      const isEssay = !isComplete && isEssayQuestion(q);
+      const isTrueFalse = !isComplete && !isEssay && Array.isArray(q.options) && q.options.length === 2;
+      const badgeText = isComplete ? "أكمل الفراغ" : (isEssay ? "مقالي" : (isTrueFalse ? "صح أم خطأ" : "إختياري"));
+      const badgeClass = isComplete ? "complete" : (isEssay ? "essay" : (isTrueFalse ? "truefalse" : ""));
       const isLocked = this.lockedQuestions.has(i);
-      const hasOptions = !isEssay && Array.isArray(q.options) && q.options.length > 0;
-      // "Check Answer" only makes sense once submission itself is still
-      // meaningful (before the whole quiz is submitted) and there's an
-      // actual answer to check against — essay questions and MCQ/T-F
-      // both qualify; the "no options, no essay answer" fallback case
-      // does not (nothing to check).
-      const canCheckAnswer = !this.submitted && (isEssay || hasOptions);
+      const hasOptions = !isComplete && !isEssay && Array.isArray(q.options) && q.options.length > 0;
+      const canCheckAnswer = !this.submitted && (isComplete || isEssay || hasOptions);
       const userAnswerForCheck = this.userAnswers[i];
-      const hasUserResponse = isEssay
-        ? typeof userAnswerForCheck === "string" && userAnswerForCheck.trim() !== ""
-        : userAnswerForCheck !== null && userAnswerForCheck !== undefined &&
-          (!Array.isArray(userAnswerForCheck) || userAnswerForCheck.length > 0);
-  
+      const hasUserResponse = isComplete
+        ? Array.isArray(userAnswerForCheck) && userAnswerForCheck.some((val) => typeof val === "string" && val.trim() !== "")
+        : isEssay
+          ? typeof userAnswerForCheck === "string" && userAnswerForCheck.trim() !== ""
+          : userAnswerForCheck !== null && userAnswerForCheck !== undefined &&
+            (!Array.isArray(userAnswerForCheck) || userAnswerForCheck.length > 0);
+
+      let questionTextHtml = "";
       let optionsHtml = "";
-      if (isEssay) {
+
+      if (isComplete) {
+        const parsed = parseComplete(q.q);
+        const savedAnswers = Array.isArray(this.userAnswers[i]) ? this.userAnswers[i] : [];
+        let perBlank = null;
+        if (isLocked) {
+          const g = gradeComplete(parsed.blanks, savedAnswers, q.strictMatch === true);
+          perBlank = g.perBlank;
+        }
+        const renderedMarked = renderMarkdown(parsed.marked);
+        questionTextHtml = completeInputsHtml(renderedMarked, {
+          blanks: parsed.blanks,
+          values: savedAnswers,
+          locked: isLocked,
+          perBlank,
+        });
+        optionsHtml = \`
+          <div class="complete-score\${isLocked ? " show" : ""}" id="completeScore\${i}"></div>
+        \`;
+      } else if (isEssay) {
+        questionTextHtml = renderMarkdown(q.q);
         const savedAnswer = this.userAnswers[i] || "";
         optionsHtml = \`
           <textarea 
@@ -3659,12 +3712,7 @@ ${quizInfoModalHtml}
           <div class="essay-score" id="essayScore\${i}"></div>
         \`;
       } else if (!Array.isArray(q.options) || q.options.length === 0) {
-        // Fix #empty-render-fallback: neither essay (isEssayQuestion needs
-        // q.answer !== undefined) nor valid MCQ (no options array) — e.g. a
-        // multi-part free-response question. q.options.map() below would
-        // otherwise throw on undefined and crash renderQuiz() for the
-        // ENTIRE quiz (not just this one question), since renderQuestion()
-        // is called synchronously for every question in one .map() chain.
+        questionTextHtml = renderMarkdown(q.q);
         optionsHtml = q.answer
           ? \`<div class="model-answer" style="display:block;">
               <strong class="answer-label">✓ Answer</strong><br>
@@ -3674,6 +3722,7 @@ ${quizInfoModalHtml}
               <em>لا توجد خيارات إجابة متاحة لهذا السؤال</em>
             </div>\`;
       } else {
+        questionTextHtml = renderMarkdown(q.q);
         const isMultiple = isMultiSelectQuestion(q);
         const userSelected = this.userAnswers[i];
         optionsHtml = \`<div class="options">\${
@@ -3682,9 +3731,6 @@ ${quizInfoModalHtml}
             const prefix = isMultiple 
               ? '<input type="checkbox" class="export-checkbox" disabled style="pointer-events: none; margin-right: 12px; transform: scale(1.2); accent-color: var(--gradient-start);">' 
               : \`<span class="option-letter">\${letter}</span>\`;
-            // When locked (checked, not full-submit), reflect correct/wrong
-            // the same way handleMCQSubmission does at whole-quiz submit —
-            // but scoped to just this question's buttons.
             let lockedClass = "";
             if (isLocked) {
               const isCorrectOption = isMultiple ? q.correct.includes(j) : j === singleCorrectIndex(q);
@@ -3727,7 +3773,7 @@ ${quizInfoModalHtml}
         : "";
   
       return \`
-        <div class="question-card" id="q\${i}">
+        <div class="question-card" id="q\${i}" data-q-index="\${i}">
           <div class="question-header">
             <div class="question-num">سؤال\${i + 1}</div>
             <div class="question-actions">
@@ -3739,7 +3785,7 @@ ${quizInfoModalHtml}
           </div>
           
           \${this.renderReadingPassage(q.passage)}
-          <div class="question-text">\${renderMarkdown(q.q)}</div>
+          <div class="question-text">\${questionTextHtml}</div>
           \${optionsHtml}
           \${checkAnswerBtnHtml}
           \${explanationHtml}
@@ -3986,7 +4032,7 @@ ${quizInfoModalHtml}
       if (this.submitted) return;
   
       // Always show confirmation before submitting
-      const unanswered = this.userAnswers.filter(a => a === null || (Array.isArray(a) && a.length === 0)).length;
+      const unanswered = this.userAnswers.filter((a, idx) => { if (a === null || a === undefined) return true; if (Array.isArray(a)) { if (isCompleteQuestion(questions[idx])) return !a.some(v => v && v.trim() !== ""); return a.length === 0; } return false; }).length;
       
       let message = '<p>هل أنت متأكد من تسليم الامتحان؟</p>';
       if (unanswered > 0) {
@@ -4110,7 +4156,7 @@ ${quizInfoModalHtml}
       return isCorrect;
     },
   
-    showResults(mcqCorrect, mcqTotal, essayScore, essayMaxScore, actualPercentage) {
+    showResults(mcqCorrect, mcqTotal, essayScore, essayMaxScore, actualPercentage, metrics = {}) {
       const totalScore = mcqCorrect + essayScore;
       const totalPossible = mcqTotal + essayMaxScore;
       // Use the pre-computed actualPercentage from calculateQuizMetrics when available;

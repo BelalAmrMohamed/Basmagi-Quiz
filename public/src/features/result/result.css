@@ -1328,6 +1328,10 @@ html[data-motion="normal"] {
   color: var(--color-text-muted, #94a3b8) !important;
 }
 
+.sdt-partial {
+  color: var(--color-warning, #f59e0b) !important;
+}
+
 .sdt-pct {
   color: var(--color-text-muted, #94a3b8);
   font-size: 12px;

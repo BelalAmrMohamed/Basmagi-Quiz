@@ -3571,11 +3571,12 @@ body.is-resizing-media .media-container.resizable-media {
   font: inherit;
   text-align: center;
   color: inherit;
-  background: transparent;
+  background: rgba(99, 102, 241, 0.06);
   border: 0;
-  border-bottom: 2px solid currentColor;
+  border-bottom: 2px solid rgba(99, 102, 241, 0.45);
   border-radius: 6px 6px 0 0;
   outline: none;
+  cursor: text;
 }
 .complete-blank:focus { background: rgba(99, 102, 241, 0.10); border-bottom-color: #6366f1; }
 .complete-blank.is-correct { background: rgba(16, 185, 129, 0.14); border-bottom-color: #10b981; }

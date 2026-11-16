@@ -41,7 +41,7 @@ import { buildStandaloneQuizHtml as buildPlatformQuizHtml } from "../../public/s
 import { buildQuizHtml as buildPlatformQuizDocument } from "../../public/src/features/export-quiz/export-to-html.js";
 import { buildQuizMarkdown as buildPlatformQuizMarkdown } from "../../public/src/features/export-quiz/export-to-markdown.js";
 import { gradeEssay } from "../../public/src/shared/rate-answers.js";
-import { completeToPlain, completeAnswerKey } from "../../public/src/shared/complete-question.js";
+import { completeToPlain, completeAnswerKey, parseComplete, gradeComplete } from "../../public/src/shared/complete-question.js";
 
 // ── 3.1: Standalone Interactive Quiz HTML ────────────────────────────────────
 
@@ -138,9 +138,16 @@ export function generateLessonMarkdown(title, sections) {
       } else {
         questionNumber += 1;
         const q = block;
-        const essay = q.questionKind === "essay" || !Array.isArray(q.options) || q.options.length === 0;
-        const typeLabel = essay ? "سؤال مقالي" : q.multiSelect ? "اختيار متعدد" : "اختيار من متعدد";
-        md += `### ${questionNumber}/${questionCount} · ${typeLabel}: ${q.q || ""}\n\n`;
+        const isComplete = q.questionKind === "complete";
+        const essay = !isComplete && (q.questionKind === "essay" || !Array.isArray(q.options) || q.options.length === 0);
+        const typeLabel = isComplete ? "أكمل الفراغ" : essay ? "سؤال مقالي" : q.multiSelect ? "اختيار متعدد" : "اختيار من متعدد";
+        md += `### ${questionNumber}/${questionCount} · ${typeLabel}: ${isComplete ? completeToPlain(q.q || "") : (q.q || "")}\n\n`;
+        if (isComplete) {
+          md += `   **الإجابات:** ${completeAnswerKey(q.q || "")}\n`;
+          if (q.explanation) md += `   **Explanation:** ${q.explanation}\n`;
+          md += "\n";
+          return;
+        }
         if (Array.isArray(q.options)) {
           q.options.forEach((opt, oi) => {
             md += `   ${String.fromCharCode(65 + oi)}. ${opt}\n`;
@@ -220,10 +227,21 @@ export function generateLessonHtml(title, sections) {
         `<button type="button" class="lesson-question__option" data-option-index="${optionIndex}" aria-pressed="false"><span class="lesson-question__option-marker" aria-hidden="true">${String.fromCharCode(65 + optionIndex)}</span><span>${escapeHtml(option)}</span></button>`,
       ).join("");
       const modelAnswer = escapeHtml(question.modelAnswer || question.answer || "");
-      const essay = question.questionKind === "essay" || options.length === 0;
-      const typeLabel = essay ? "سؤال مقالي" : question.multiSelect ? "اختيار متعدد" : "اختيار من متعدد";
+      const essay = question.questionKind === "essay" || (question.questionKind !== "complete" && options.length === 0);
+      const isComplete = question.questionKind === "complete";
+      const typeLabel = isComplete ? "أكمل الفراغ" : essay ? "سؤال مقالي" : question.multiSelect ? "اختيار متعدد" : "اختيار من متعدد";
       const correctAnswers = correct.map((index) => options[index]).filter(Boolean);
       const explanation = question.explanation ? `<div class="lesson-question__explanation">${escapeHtml(question.explanation)}</div>` : "";
+      if (isComplete) {
+        const parsed = parseComplete(question.q || "");
+        const blanksJson = escapeHtml(JSON.stringify(parsed.blanks));
+        const strict = question.strictMatch === true;
+        // Build prompt HTML: replace tokens with <input> elements
+        let promptHtml = escapeHtml(parsed.marked)
+          .replace(/\uE000(\d+)\uE001/g, (_, i) => `<span class="complete-blank-wrap"><input type="text" class="complete-blank" data-blank="${i}" dir="auto" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="فراغ ${Number(i) + 1}"><span class="complete-expected"></span></span>`)
+          .replace(/[\uE000\uE001]/g, "");
+        return `<article class="lesson-question" data-question-kind="complete" data-complete-blanks="${blanksJson}" data-strict="${strict}"><div class="lesson-question__header"><span class="lesson-question__number">سؤال ${questionNumber} من ${questionCount}</span><span class="lesson-question__type">${typeLabel}</span></div><h3 class="lesson-question__prompt">${promptHtml}</h3><button type="button" class="lesson-question__check-btn" data-complete-check disabled>تحقق من الإجابة</button><div class="complete-score"></div><div class="lesson-question__feedback" role="status" aria-live="polite" hidden><strong class="lesson-question__verdict"></strong><div class="lesson-question__explanation-inner">${escapeHtml(question.explanation || "")}</div></div></article>`;
+      }
       return `<article class="lesson-question" data-question-kind="${essay ? "essay" : "mcq"}" data-correct-indexes="${escapeHtml(JSON.stringify(correct))}" data-multi-select="${question.multiSelect === true}" data-model-answer="${modelAnswer}"><div class="lesson-question__header"><span class="lesson-question__number">سؤال ${questionNumber} من ${questionCount}</span><span class="lesson-question__type">${typeLabel}</span></div><h3 class="lesson-question__prompt">${questionTitle}</h3>${essay
         ? `<label class="lesson-question__essay-wrap"><span>إجابتك</span><textarea dir="auto" class="lesson-question__essay-input" rows="4" placeholder="اكتب إجابتك هنا"></textarea></label><button type="button" class="lesson-question__check-btn">تحقق من الإجابة</button>`
         : `<div class="lesson-question__options">${optionsHtml}</div><button type="button" class="lesson-question__check-btn" data-question-check disabled>${question.multiSelect ? "تحقق من الإجابات" : "تحقق من الإجابة"}</button>`
@@ -235,16 +253,19 @@ export function generateLessonHtml(title, sections) {
     return `<section><h2>${escapeHtml(section.title || `قسم ${sectionIndex + 1}`)}</h2>${blocksHtml}</section>`;
   }).join("");
   const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle}</title><style>
-    *{box-sizing:border-box}body{max-width:900px;margin:0 auto;padding:clamp(16px,4vw,36px);font:16px/1.8 Tahoma,Arial,sans-serif;color:#18181b;background:#f7f8fc}main{padding:clamp(16px,3vw,30px);border:1px solid #e1e5ee;border-radius:20px;background:white;box-shadow:0 14px 40px #182b4b0b}h1{margin:0 0 1.5rem;color:#1d4ed8}section{margin:2rem 0}section>h2{border-bottom:1px solid #ddd;padding-bottom:.5rem}.content{white-space:pre-wrap}.lesson-question{margin:1.3rem 0;padding:clamp(16px,3vw,24px);border:1px solid #e1e5ee;border-radius:16px;background:#fff;box-shadow:0 8px 24px #182b4b0a}.lesson-question__header{display:flex;justify-content:space-between;gap:12px;margin-bottom:14px}.lesson-question__number,.lesson-question__type{padding:3px 10px;border:1px solid #d8deea;border-radius:999px;font-size:.78rem;font-weight:700}.lesson-question__number{color:#2563eb;background:#eff6ff}.lesson-question__type{color:#64748b}.lesson-question__prompt{margin:0 0 14px;font-size:1.05rem}.lesson-question__options{display:grid;gap:9px}.lesson-question__option{display:flex;align-items:flex-start;gap:12px;width:100%;padding:12px;border:1px solid #d8deea;border-radius:11px;background:#fff;font:inherit;text-align:start;cursor:pointer}.lesson-question__option:hover:not(:disabled),.lesson-question__option.is-selected{border-color:#2563eb;background:#eff6ff}.lesson-question__option-marker{display:grid;flex:0 0 25px;height:25px;place-items:center;border:1px solid #cbd5e1;border-radius:50%;font-size:.75rem;font-weight:700}.lesson-question__option.is-selected .lesson-question__option-marker{border-color:#2563eb;background:#2563eb;color:white}.lesson-question__option.is-correct{border-color:#16a34a;background:#f0fdf4}.lesson-question__option.is-wrong{border-color:#dc2626;background:#fef2f2}.lesson-question__option:disabled{cursor:default}.lesson-question__check-btn{min-height:42px;margin-top:14px;padding:8px 16px;border:0;border-radius:9px;background:#2563eb;color:white;font:inherit;font-weight:700;cursor:pointer}.lesson-question__check-btn:disabled{opacity:.5;cursor:not-allowed}.lesson-question__essay-wrap{display:grid;gap:6px;color:#64748b;font-size:.85rem;font-weight:700}.lesson-question__essay-input{width:100%;padding:12px;border:1px solid #d8deea;border-radius:10px;font:inherit;resize:vertical}.lesson-question__feedback{display:grid;gap:8px;margin-top:16px;padding:14px;border:1px solid #e1e5ee;border-radius:11px;background:#f8fafc}.lesson-question__feedback[hidden]{display:none}.lesson-question__verdict{font-weight:800}.lesson-question__verdict.is-correct{color:#15803d}.lesson-question__verdict.is-wrong{color:#b91c1c}.lesson-question__correct-answer,.lesson-question__explanation,.lesson-question__model-answer{color:#475569;line-height:1.7}.lesson-question__essay-rating{color:#b7791f;font-weight:800;letter-spacing:.04em}.lesson-question__model-answer{padding-top:8px;border-top:1px solid #d8deea}@media(max-width:600px){body{padding:12px}main{padding:16px}.lesson-question__header{align-items:flex-start;flex-direction:column}.lesson-question__check-btn{width:100%}}
+    *{box-sizing:border-box}body{max-width:900px;margin:0 auto;padding:clamp(16px,4vw,36px);font:16px/1.8 Tahoma,Arial,sans-serif;color:#18181b;background:#f7f8fc}main{padding:clamp(16px,3vw,30px);border:1px solid #e1e5ee;border-radius:20px;background:white;box-shadow:0 14px 40px #182b4b0b}h1{margin:0 0 1.5rem;color:#1d4ed8}section{margin:2rem 0}section>h2{border-bottom:1px solid #ddd;padding-bottom:.5rem}.content{white-space:pre-wrap}.lesson-question{margin:1.3rem 0;padding:clamp(16px,3vw,24px);border:1px solid #e1e5ee;border-radius:16px;background:#fff;box-shadow:0 8px 24px #182b4b0a}.lesson-question__header{display:flex;justify-content:space-between;gap:12px;margin-bottom:14px}.lesson-question__number,.lesson-question__type{padding:3px 10px;border:1px solid #d8deea;border-radius:999px;font-size:.78rem;font-weight:700}.lesson-question__number{color:#2563eb;background:#eff6ff}.lesson-question__type{color:#64748b}.lesson-question__prompt{margin:0 0 14px;font-size:1.05rem}.lesson-question__options{display:grid;gap:9px}.lesson-question__option{display:flex;align-items:flex-start;gap:12px;width:100%;padding:12px;border:1px solid #d8deea;border-radius:11px;background:#fff;font:inherit;text-align:start;cursor:pointer}.lesson-question__option:hover:not(:disabled),.lesson-question__option.is-selected{border-color:#2563eb;background:#eff6ff}.lesson-question__option-marker{display:grid;flex:0 0 25px;height:25px;place-items:center;border:1px solid #cbd5e1;border-radius:50%;font-size:.75rem;font-weight:700}.lesson-question__option.is-selected .lesson-question__option-marker{border-color:#2563eb;background:#2563eb;color:white}.lesson-question__option.is-correct{border-color:#16a34a;background:#f0fdf4}.lesson-question__option.is-wrong{border-color:#dc2626;background:#fef2f2}.lesson-question__option:disabled{cursor:default}.lesson-question__check-btn{min-height:42px;margin-top:14px;padding:8px 16px;border:0;border-radius:9px;background:#2563eb;color:white;font:inherit;font-weight:700;cursor:pointer}.lesson-question__check-btn:disabled{opacity:.5;cursor:not-allowed}.lesson-question__essay-wrap{display:grid;gap:6px;color:#64748b;font-size:.85rem;font-weight:700}.lesson-question__essay-input{width:100%;padding:12px;border:1px solid #d8deea;border-radius:10px;font:inherit;resize:vertical}.lesson-question__feedback{display:grid;gap:8px;margin-top:16px;padding:14px;border:1px solid #e1e5ee;border-radius:11px;background:#f8fafc}.lesson-question__feedback[hidden]{display:none}.lesson-question__verdict{font-weight:800}.lesson-question__verdict.is-correct{color:#15803d}.lesson-question__verdict.is-wrong{color:#b91c1c}.lesson-question__correct-answer,.lesson-question__explanation,.lesson-question__model-answer{color:#475569;line-height:1.7}.lesson-question__essay-rating{color:#b7791f;font-weight:800;letter-spacing:.04em}.lesson-question__model-answer{padding-top:8px;border-top:1px solid #d8deea}.complete-blank-wrap{display:inline-flex;flex-direction:column;align-items:center;vertical-align:baseline;margin:0 4px}.complete-blank{min-width:8ch;field-sizing:content;padding:2px 8px;font:inherit;text-align:center;color:inherit;background:rgba(99,102,241,0.06);border:0;border-bottom:2px solid rgba(99,102,241,0.45);border-radius:6px 6px 0 0;outline:none;cursor:text}.complete-blank:focus{background:rgba(99,102,241,0.10);border-bottom-color:#6366f1}.complete-blank.is-correct{background:rgba(16,185,129,0.14);border-bottom-color:#10b981}.complete-blank.is-wrong{background:rgba(239,68,68,0.14);border-bottom-color:#ef4444;text-decoration:line-through}.complete-blank:disabled{opacity:1;cursor:not-allowed}.complete-expected{display:none;margin-top:2px;padding:0 6px;font-size:.78em;font-weight:700;color:#10b981;border-radius:6px;background:rgba(16,185,129,.12)}.complete-blank.is-wrong+.complete-expected{display:inline-block}.complete-score{display:none;margin:8px 0;font-weight:700;font-size:.9em;color:#6366f1}.complete-score.show{display:block}@media(max-width:600px){body{padding:12px}main{padding:16px}.lesson-question__header{align-items:flex-start;flex-direction:column}.lesson-question__check-btn{width:100%}}
   </style></head><body><main><h1>${safeTitle}</h1>${sectionHtml}</main><script>
   const gradeEssay=(${gradeEssay.toString()});
+  const gradeComplete=(${gradeComplete.toString()});
   document.querySelectorAll(".lesson-question[data-question-kind='mcq']").forEach(q=>{const correct=JSON.parse(q.dataset.correctIndexes||"[]"),multi=q.dataset.multiSelect==="true",feedback=q.querySelector(".lesson-question__feedback"),check=q.querySelector("[data-question-check]");
     const reveal=chosen=>{q.dataset.answered="true";q.querySelectorAll(".lesson-question__option").forEach(b=>{const i=Number(b.dataset.optionIndex);b.disabled=true;b.classList.toggle("is-selected",chosen.includes(i));b.setAttribute("aria-pressed",String(chosen.includes(i)));if(correct.includes(i))b.classList.add("is-correct");if(chosen.includes(i)&&!correct.includes(i))b.classList.add("is-wrong")});
       const right=correct.length===chosen.length&&correct.every(i=>chosen.includes(i)),verdict=feedback.querySelector(".lesson-question__verdict");feedback.hidden=false;verdict.textContent=right?"إجابة صحيحة":"إجابة غير صحيحة — راجع الإجابة الصحيحة والشرح";verdict.classList.toggle("is-correct",right);verdict.classList.toggle("is-wrong",!right);check.disabled=true;};
     q.querySelectorAll(".lesson-question__option").forEach(b=>b.addEventListener("click",()=>{if(q.dataset.answered==="true")return;if(multi)b.classList.toggle("is-selected");else q.querySelectorAll(".lesson-question__option").forEach(option=>{const selected=option===b;option.classList.toggle("is-selected",selected);option.setAttribute("aria-pressed",String(selected))});b.setAttribute("aria-pressed",String(b.classList.contains("is-selected")));check.disabled=!q.querySelector(".lesson-question__option.is-selected")}));
     check.addEventListener("click",()=>{const chosen=[...q.querySelectorAll(".lesson-question__option.is-selected")].map(b=>Number(b.dataset.optionIndex));if(chosen.length)reveal(chosen)});
   });
-  document.querySelectorAll(".lesson-question[data-question-kind='essay']").forEach(q=>{const input=q.querySelector(".lesson-question__essay-input"),button=q.querySelector(".lesson-question__check-btn");input.addEventListener("input",()=>button.disabled=!input.value.trim());button.disabled=true;button.addEventListener("click",()=>{const answer=input.value.trim();if(!answer)return;input.disabled=true;const score=gradeEssay(answer,q.dataset.modelAnswer||""),feedback=q.querySelector(".lesson-question__feedback"),verdict=feedback.querySelector(".lesson-question__verdict"),close=score>=3;feedback.hidden=false;verdict.textContent=close?"إجابتك قريبة من الإجابة النموذجية":"راجع الإجابة النموذجية";verdict.classList.toggle("is-correct",close);verdict.classList.toggle("is-wrong",!close);const rating=feedback.querySelector(".lesson-question__essay-rating");rating.textContent=score+" من 5 · "+"★".repeat(score)+"☆".repeat(5-score);rating.setAttribute("aria-label","التقييم التقريبي: "+score+" من 5");button.disabled=true})});
+  document.querySelectorAll(".lesson-question[data-question-kind='essay']").forEach(q=>{const input=q.querySelector(".lesson-question__essay-input"),button=q.querySelector(".lesson-question__check-btn");input.addEventListener("input",()=>button.disabled=!input.value.trim());button.disabled=true;button.addEventListener("click",()=>{const answer=input.value.trim();if(!answer)return;input.disabled=true;const score=gradeEssay(answer,q.dataset.modelAnswer||""),feedback=q.querySelector(".lesson-question__feedback"),verdict=feedback.querySelector(".lesson-question__verdict"),close=score>=3;feedback.hidden=false;verdict.textContent=close?"إجابتك قريبة من الإجابة النموذجية":"راجع الإجابة النموذجية";verdict.classList.toggle("is-correct",close);verdict.classList.toggle("is-wrong",!close);const rating=feedback.querySelector(".lesson-question__essay-rating");rating&&(rating.textContent=score+" من 5 · "+"★".repeat(score)+"☆".repeat(5-score));button.disabled=true})});
+  document.querySelectorAll(".lesson-question[data-question-kind='complete']").forEach(q=>{const button=q.querySelector("[data-complete-check]"),inputs=()=>[...q.querySelectorAll(".complete-blank")],blanks=JSON.parse(q.dataset.completeBlanks||"[]"),strict=q.dataset.strict==="true";q.addEventListener("input",()=>{if(q.dataset.answered!=="true"&&button)button.disabled=!inputs().some(el=>el.value.trim())});button&&button.addEventListener("click",()=>{if(q.dataset.answered==="true")return;const g=gradeComplete(blanks,inputs().map(el=>el.value),strict);if(!g.answered)return;q.dataset.answered="true";inputs().forEach(el=>{const st=g.perBlank[Number(el.dataset.blank)];el.disabled=true;el.classList.toggle("is-correct",!!st&&st.ok);el.classList.toggle("is-wrong",!!st&&!st.ok);const exp=el.nextElementSibling;if(exp&&st&&!st.ok)exp.textContent=st.expected});const score=q.querySelector(".complete-score");if(score){score.textContent="("+g.correct+"/"+g.total+")";score.classList.add("show")}button.disabled=true;button.hidden=true;const feedback=q.querySelector(".lesson-question__feedback");if(feedback){const verdict=feedback.querySelector(".lesson-question__verdict");verdict&&(verdict.textContent=g.allCorrect?"إجابة صحيحة ✓":"("+g.correct+"/"+g.total+") إجابات صحيحة",verdict.classList.toggle("is-correct",g.allCorrect),verdict.classList.toggle("is-wrong",!g.allCorrect));feedback.hidden=false}});
+  });
   </script></body></html>`;
   return Buffer.from(html, "utf-8");
 }
@@ -284,9 +305,11 @@ export async function generateLessonPdf(title, sections) {
         questionNumber += 1;
         doc.moveDown(0.5);
         const options = Array.isArray(question.options) ? question.options : [];
-        const essay = question.questionKind === "essay" || options.length === 0;
-        const typeLabel = essay ? "Essay" : question.multiSelect ? "Multiple choice (select all)" : "Multiple choice";
-        doc.fontSize(12).font("Helvetica-Bold").text(`${questionNumber}/${questionCount} · ${typeLabel}: ${question.q || question.prompt || ""}`);
+        const isComplete = question.questionKind === "complete";
+        const essay = !isComplete && (question.questionKind === "essay" || options.length === 0);
+        const typeLabel = isComplete ? "Complete (fill-in-the-blank)" : essay ? "Essay" : question.multiSelect ? "Multiple choice (select all)" : "Multiple choice";
+        const questionText = isComplete ? completeToPlain(question.q || question.prompt || "") : (question.q || question.prompt || "");
+        doc.fontSize(12).font("Helvetica-Bold").text(`${questionNumber}/${questionCount} · ${typeLabel}: ${questionText}`);
         let correctIndexes = Array.isArray(question.correct)
           ? question.correct.map(Number)
           : Array.isArray(question.correctIndexes)
@@ -304,10 +327,12 @@ export async function generateLessonPdf(title, sections) {
           const correctMark = correctIndexes.includes(optionIndex) ? " [correct]" : "";
           doc.fontSize(10).font("Helvetica").text(`${String.fromCharCode(65 + optionIndex)}. ${option}${correctMark}`);
         });
-        if (question.answer || question.modelAnswer) {
+        if (isComplete) {
+          doc.moveDown(0.2).fontSize(10).font("Helvetica-Oblique").text(`Answers: ${completeAnswerKey(question.q || question.prompt || "")}`);
+        } else if (question.answer || question.modelAnswer) {
           doc.moveDown(0.2).fontSize(10).font("Helvetica-Oblique").text(`Answer: ${question.answer || question.modelAnswer}`);
         }
-        if (essay) {
+        if (!isComplete && essay) {
           doc.moveDown(0.2).fontSize(9).font("Helvetica-Oblique").text("Approximate self-check rating: 0-5 (not a final grade)");
         }
         if (question.explanation) {
@@ -327,17 +352,7 @@ function lessonSectionBlocks(section) {
   if (Array.isArray(section?.questions)) {
     blocks.push(...section.questions.map((question) => ({ type: "question", ...question })));
   }
-  return blocks.map((block) => block?.type === "question" && block.questionKind === "complete"
-    // Fill-in-the-blank has no interactive runtime in these generated files: show it as
-    // an open question with the blanks' accepted answers as the model answer.
-    ? {
-      ...block,
-      questionKind: "essay",
-      options: undefined,
-      q: completeToPlain(block.prompt || block.q || ""),
-      answer: completeAnswerKey(block.prompt || block.q || ""),
-    }
-    : block?.type === "question"
+  return blocks.map((block) => block?.type === "question"
     ? {
       ...block,
       q: block.prompt || block.q || "",
