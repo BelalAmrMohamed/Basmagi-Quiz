@@ -3192,6 +3192,31 @@ html[data-motion="reduced"] {
   -webkit-overflow-scrolling: touch;
 }
 
+/* side-menu.css is bundled after profile.css and gives every shared contact
+   card `overflow: hidden`. The ID selector keeps this one card scrollable in
+   the final cascade, including on phones where scrollbar tracks are hidden. */
+#socialLinksOverlay .social-links-card {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+#socialLinksOverlay .social-links-card::-webkit-scrollbar {
+  width: 10px;
+}
+
+#socialLinksOverlay .social-links-card::-webkit-scrollbar-track {
+  margin-block: 12px;
+}
+
+#socialLinksOverlay .social-links-card::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+
 #socialLinksOverlay {
   padding: max(12px, env(safe-area-inset-top, 0px)) 12px
     max(12px, env(safe-area-inset-bottom, 0px));
