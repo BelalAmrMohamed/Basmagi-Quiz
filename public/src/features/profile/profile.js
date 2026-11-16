@@ -193,7 +193,16 @@ export function refreshUI(options = {}) {
       // isVisitorContext=false: this is the owner's own dashboard, so the
       // response is a sync confirmation only — it never overwrites the
       // localStorage-driven totalPoints/totalQuizzes/totalBadges/currentLevel.
-      fetchAndRenderAdminStats(undefined, myToken, false);
+      fetchAndRenderAdminStats(undefined, myToken, false).then((result) => {
+        if (result) {
+          setupSocialLinks(true, result.socialLinks || {});
+        }
+      });
+    } else {
+      // Even on a local-only refresh (skipNetworkFetches), show the social
+      // links strip in owner mode (icons will be populated once a full refresh
+      // runs; for now just show the connect button).
+      setupSocialLinks(true, currentSocialLinks);
     }
   } else {
     setActivityLabel(null);
@@ -456,6 +465,8 @@ async function fetchAndRenderAdminStats(
         data.uploadedQuizzes || 0;
       const lessonsEl = document.getElementById("adminUploadedLessons");
       if (lessonsEl) lessonsEl.textContent = data.uploadedLessons || 0;
+      const notebooksEl = document.getElementById("adminUploadedNotebooks");
+      if (notebooksEl) notebooksEl.textContent = data.uploadedNotebooks || 0;
       document.getElementById("adminReportsCount").textContent =
         data.reportsCount || 0;
       document.getElementById("adminResolvedReportsCount").textContent =
@@ -501,6 +512,8 @@ async function fetchAndRenderAdminStats(
         displayName: data.displayName || null,
         bio: data.bio || null,
         uploadedQuizzes: data.uploadedQuizzes || 0,
+        uploadedNotebooks: data.uploadedNotebooks || 0,
+        socialLinks: data.socialLinks || {},
         totalPoints:
           typeof data.totalPoints !== "undefined" ? data.totalPoints : 0,
         totalQuizzes:
@@ -762,6 +775,216 @@ function renderBioDisplay(bio) {
   }
 }
 
+// ============================================================
+// SOCIAL LINKS — render brand icons, owner connect modal
+// ============================================================
+
+const SOCIAL_ICONS = {
+  linkedin: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>`,
+  github: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.98 5.24.98 11.52c0 5.02 3.26 9.28 7.78 10.78.57.1.78-.25.78-.55 0-.27-.01-1.16-.02-2.11-3.17.69-3.84-1.34-3.84-1.34-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.75 1.18 1.75 1.18 1.02 1.75 2.67 1.24 3.32.95.1-.74.4-1.24.72-1.53-2.53-.29-5.19-1.27-5.19-5.63 0-1.24.44-2.26 1.17-3.06-.12-.29-.51-1.45.11-3.02 0 0 .96-.31 3.14 1.17a10.9 10.9 0 0 1 5.72 0c2.18-1.48 3.14-1.17 3.14-1.17.62 1.57.23 2.73.11 3.02.73.8 1.17 1.82 1.17 3.06 0 4.37-2.67 5.34-5.21 5.62.41.35.77 1.05.77 2.12 0 1.53-.01 2.76-.01 3.14 0 .3.2.66.79.55A11.03 11.03 0 0 0 23.02 11.5C23.02 5.24 18.27.5 12 .5z"/></svg>`,
+  telegram: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.820 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.782-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>`,
+  whatsapp: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`,
+};
+
+const SOCIAL_LABELS = {
+  linkedin: "LinkedIn",
+  github: "GitHub",
+  telegram: "Telegram",
+  whatsapp: "WhatsApp",
+};
+
+// Normalize a raw user input into a full URL for a given platform.
+// Returns empty string if the input is blank.
+function normalizeSocialUrl(platform, raw) {
+  const val = (raw || "").trim();
+  if (!val) return "";
+  if (platform === "linkedin") {
+    // Accept: full URL or username
+    const m = val.match(/linkedin\.com\/in\/([^/?#\s]+)/i);
+    if (m) return `https://linkedin.com/in/${m[1]}`;
+    // Plain username
+    return `https://linkedin.com/in/${val.replace(/^\/+/, "")}`;
+  }
+  if (platform === "github") {
+    const m = val.match(/github\.com\/([^/?#\s]+)/i);
+    if (m) return `https://github.com/${m[1]}`;
+    return `https://github.com/${val.replace(/^\/+/, "")}`;
+  }
+  if (platform === "telegram") {
+    const m = val.match(/t\.me\/([^/?#\s]+)/i);
+    if (m) return `https://t.me/${m[1]}`;
+    // Strip @ prefix
+    return `https://t.me/${val.replace(/^@+/, "")}`;
+  }
+  if (platform === "whatsapp") {
+    const m = val.match(/wa\.me\/([0-9]+)/i);
+    if (m) return `https://wa.me/${m[1]}`;
+    // Strip non-digits for plain phone
+    const digits = val.replace(/\D/g, "");
+    if (digits) return `https://wa.me/${digits}`;
+    return "";
+  }
+  return val;
+}
+
+// Extract display text from a full URL (for pre-filling the input fields).
+function socialUrlToInput(platform, url) {
+  if (!url) return "";
+  if (platform === "linkedin") {
+    const m = url.match(/linkedin\.com\/in\/([^/?#\s]+)/i);
+    return m ? m[1] : url;
+  }
+  if (platform === "github") {
+    const m = url.match(/github\.com\/([^/?#\s]+)/i);
+    return m ? m[1] : url;
+  }
+  if (platform === "telegram") {
+    const m = url.match(/t\.me\/([^/?#\s]+)/i);
+    return m ? `@${m[1]}` : url;
+  }
+  if (platform === "whatsapp") {
+    const m = url.match(/wa\.me\/([0-9]+)/i);
+    return m ? m[1] : url;
+  }
+  return url;
+}
+
+// Render social link icon anchors into #profileSocialLinks.
+function renderSocialLinkIcons(links) {
+  const container = document.getElementById("profileSocialLinks");
+  if (!container) return;
+  container.innerHTML = "";
+  const platforms = ["linkedin", "github", "telegram", "whatsapp"];
+  platforms.forEach((p) => {
+    const url = links[p];
+    if (!url) return;
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.className = `social-link-icon is-${p}`;
+    a.setAttribute("aria-label", SOCIAL_LABELS[p]);
+    a.setAttribute("title", SOCIAL_LABELS[p]);
+    a.setAttribute("role", "listitem");
+    a.innerHTML = SOCIAL_ICONS[p];
+    container.appendChild(a);
+  });
+}
+
+// Show/hide the social wrap + connect button based on context.
+// isAdmin = true  → owner dashboard (can connect)
+// isAdmin = false → visitor (read-only)
+let currentSocialLinks = {};
+function setupSocialLinks(isAdmin, links) {
+  currentSocialLinks = links || {};
+  const wrap = document.getElementById("profileSocialWrap");
+  const connectBtn = document.getElementById("connectSocialBtn");
+  if (!wrap) return;
+
+  renderSocialLinkIcons(currentSocialLinks);
+
+  const hasLinks = Object.values(currentSocialLinks).some(Boolean);
+  // Show the wrap if owner (always, so they can add links) or if visitor with links
+  if (isAdmin || hasLinks) {
+    wrap.style.display = "flex";
+  } else {
+    wrap.style.display = "none";
+  }
+  if (connectBtn) {
+    connectBtn.style.display = isAdmin ? "" : "none";
+    // Update button text to reflect whether links are already set
+    const btnText = document.getElementById("connectSocialBtnText");
+    if (btnText) {
+      btnText.textContent = hasLinks ? "تعديل وسائل التواصل" : "ربط وسائل التواصل";
+    }
+    connectBtn.onclick = openSocialLinksModal;
+  }
+}
+
+function openSocialLinksModal() {
+  const overlay = document.getElementById("socialLinksOverlay");
+  if (!overlay) return;
+  // Pre-fill inputs with current values (decoded to display format)
+  ["linkedin", "github", "telegram", "whatsapp"].forEach((p) => {
+    const input = document.getElementById(`socialInput${p.charAt(0).toUpperCase() + p.slice(1)}`);
+    if (input) input.value = socialUrlToInput(p, currentSocialLinks[p] || "");
+  });
+  const statusEl = document.getElementById("socialSaveStatus");
+  if (statusEl) statusEl.textContent = "";
+  overlay.style.display = "";
+  // Focus first input
+  const first = document.getElementById("socialInputLinkedin");
+  if (first) setTimeout(() => first.focus(), 50);
+}
+
+function closeSocialLinksModal() {
+  const overlay = document.getElementById("socialLinksOverlay");
+  if (overlay) overlay.style.display = "none";
+}
+
+async function saveSocialLinks() {
+  const saveBtn = document.getElementById("saveSocialLinksBtn");
+  const statusEl = document.getElementById("socialSaveStatus");
+  if (saveBtn) saveBtn.disabled = true;
+  if (statusEl) statusEl.textContent = "جارٍ الحفظ...";
+
+  const platforms = ["linkedin", "github", "telegram", "whatsapp"];
+  const newLinks = {};
+  platforms.forEach((p) => {
+    const input = document.getElementById(`socialInput${p.charAt(0).toUpperCase() + p.slice(1)}`);
+    newLinks[p] = normalizeSocialUrl(p, input ? input.value : "");
+  });
+
+  try {
+    const token = getToken();
+    const res = await fetch("/api/admin-stats", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ socialLinks: newLinks }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    currentSocialLinks = newLinks;
+    renderSocialLinkIcons(currentSocialLinks);
+    const hasLinks = Object.values(currentSocialLinks).some(Boolean);
+    const wrap = document.getElementById("profileSocialWrap");
+    if (wrap) wrap.style.display = "flex";
+    const btnText = document.getElementById("connectSocialBtnText");
+    if (btnText) btnText.textContent = hasLinks ? "تعديل وسائل التواصل" : "ربط وسائل التواصل";
+    if (statusEl) statusEl.textContent = "✓ تم الحفظ";
+    setTimeout(closeSocialLinksModal, 800);
+  } catch (e) {
+    console.error("Failed to save social links", e);
+    if (statusEl) statusEl.textContent = "حدث خطأ، حاول مرة أخرى";
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+  }
+}
+
+function wireSocialLinksModal() {
+  const closeBtn = document.getElementById("closeSocialLinksBtn");
+  const cancelBtn = document.getElementById("cancelSocialLinksBtn");
+  const saveBtn = document.getElementById("saveSocialLinksBtn");
+  const overlay = document.getElementById("socialLinksOverlay");
+  if (closeBtn) closeBtn.onclick = closeSocialLinksModal;
+  if (cancelBtn) cancelBtn.onclick = closeSocialLinksModal;
+  if (saveBtn) saveBtn.onclick = saveSocialLinks;
+  // Close on backdrop click
+  if (overlay) {
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeSocialLinksModal();
+    });
+  }
+  // Close on Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && overlay && overlay.style.display !== "none") {
+      closeSocialLinksModal();
+    }
+  });
+}
+
 async function setupVisitorView(handle) {
   // Setup UI for visitor view
   document.querySelectorAll(".content-section").forEach((el) => {
@@ -937,6 +1160,12 @@ async function setupVisitorView(handle) {
 
   if (visitedRole && (visitedRole.role || visitedRole.isOwner)) {
     applyRoleBadges(visitedRole.role, !!visitedRole.isOwner);
+  }
+
+  // Social links — visitor view: read from API response (most up to date)
+  // and render as read-only icons (no connect button).
+  if (visitedRole) {
+    setupSocialLinks(false, visitedRole.socialLinks || {});
   }
   // Top Admins gallery — same call as the owner-dashboard path in
   // refreshUI(); visitor view has no local-only refresh gate, so this
@@ -1241,6 +1470,11 @@ function whenIdle(fn, timeout = 1200) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Wire social links modal buttons (overlay backdrop is handled by the
+  // generic .contact-overlay loop below, so only the close/cancel/save
+  // buttons are wired here, plus the Escape key).
+  wireSocialLinksModal();
+
   // Add overlay backdrop click handler for all contact overlays
   document.querySelectorAll(".contact-overlay").forEach((overlay) => {
     overlay.addEventListener("click", (e) => {

@@ -2103,6 +2103,7 @@ async function handleStatsSync(req, res) {
     activityHeatmap,
     bio,
     handle,
+    socialLinks,
   } = req.body || {};
 
   const hasProgressFields =
@@ -2203,6 +2204,33 @@ async function handleStatsSync(req, res) {
       });
     }
     updates.bio = cleanBio || null;
+  }
+
+  // Social links (LinkedIn, GitHub, Telegram, WhatsApp) — editable any time
+  // from the owner's own dashboard. Allowed platforms are strictly limited.
+  if (socialLinks !== undefined) {
+    if (socialLinks !== null && (typeof socialLinks !== "object" || Array.isArray(socialLinks))) {
+      return res.status(400).json({ error: "Invalid socialLinks payload" });
+    }
+    if (socialLinks === null) {
+      updates.social_links = {};
+    } else {
+      const allowedKeys = ["linkedin", "github", "telegram", "whatsapp"];
+      const cleanSocial = {};
+      for (const key of allowedKeys) {
+        const val = socialLinks[key];
+        if (typeof val === "string") {
+          const trimmed = val.trim();
+          if (trimmed.length > 300) {
+            return res.status(400).json({ error: `رابط ${key} طويل جداً (الحد الأقصى 300 حرف)` });
+          }
+          if (trimmed) {
+            cleanSocial[key] = trimmed;
+          }
+        }
+      }
+      updates.social_links = cleanSocial;
+    }
   }
 
   // Handle is claimed via claimHandle() below rather than a plain column
@@ -2345,11 +2373,11 @@ async function handleStats(req, res) {
       .from("admin_users")
       .select("id", { count: "exact", head: true });
 
-    // Tooltip data: top creators by quizzes + lessons. Same public fields the
+    // Tooltip data: top creators by quizzes + lessons + notebooks. Same public fields the
     // ?leaderboard=true endpoint already exposes (never the email).
     const { data: creatorRows } = await supabase
       .from("admin_users")
-      .select("display_name, handle, uploaded_quizzes, uploaded_lessons, avatar_url, thumbnail_url, email")
+      .select("display_name, handle, uploaded_quizzes, uploaded_lessons, uploaded_notebooks, avatar_url, thumbnail_url, email")
       .limit(200);
     const ownerEmailList = getOwnerEmails();
     const topCreators = (creatorRows || [])
@@ -2358,10 +2386,11 @@ async function handleStats(req, res) {
         displayName: row.display_name || null,
         quizzes: row.uploaded_quizzes || 0,
         lessons: row.uploaded_lessons || 0,
+        notebooks: row.uploaded_notebooks || 0,
         avatarUrl: row.avatar_url || row.thumbnail_url || null,
         isOwner: !!(row.email && ownerEmailList.includes(row.email.trim().toLowerCase())),
       }))
-      .sort((a, b) => b.quizzes + b.lessons - (a.quizzes + a.lessons))
+      .sort((a, b) => b.quizzes + b.lessons + b.notebooks - (a.quizzes + a.lessons + a.notebooks))
       .slice(0, 5);
 
     return res.status(200).json({
@@ -2382,34 +2411,33 @@ async function handleStats(req, res) {
     const { data, error } = await supabase
       .from("admin_users")
       .select(
-        "display_name, handle, uploaded_quizzes, uploaded_lessons, current_level, avatar_url, thumbnail_url, total_points, email",
+        "display_name, handle, uploaded_quizzes, uploaded_lessons, uploaded_notebooks, current_level, avatar_url, thumbnail_url, total_points, email",
       )
+      .not("handle", "is", null)
+      .neq("handle", "")
       .order("uploaded_quizzes", { ascending: false })
-      // Admin rows are few. Pull them all and rank by quizzes + lessons in
-      // JS below (PostgREST can't order by a sum of two columns), then keep
-      // the top 10 — so a lesson-heavy admin isn't cut off by the SQL order.
+      // Admin rows are few. Pull them all and rank by quizzes + lessons + notebooks in
+      // JS below (PostgREST can't order by a sum of three columns), then keep
+      // the top 10 — so a lesson- or notebook-heavy admin isn't cut off by the SQL order.
       .limit(200);
 
     if (error) {
       return res.status(500).json({ error: error.message });
     }
 
-    // Shape to match what the client (Top Admins gallery) reads: totalQuizzes
-    // and displayName. Returning the raw uploaded_quizzes/display_name column
-    // names here previously left entry.totalQuizzes undefined client-side,
-    // which threw inside the renderer's try/catch and silently fell back to
-    // a hardcoded mock leaderboard.
-    // role/isOwner: same derivation as the single-admin lookup below (email
-    // intentionally excluded from the response for the same enumeration
-    // reason noted there — this is a public/anon-key read).
+    // Shape to match what the client (Top Admins gallery) reads: totalQuizzes,
+    // totalLessons, totalNotebooks, and displayName.
+    // Exclude uninitialized admins who have no public handle / have never signed in.
     const ownerEmails = getOwnerEmails();
     const leaderboard = (data || [])
+      .filter((row) => row.handle && row.handle.trim())
       .slice()
       .sort(
         (a, b) =>
           (b.uploaded_quizzes || 0) +
-          (b.uploaded_lessons || 0) -
-          ((a.uploaded_quizzes || 0) + (a.uploaded_lessons || 0)),
+          (b.uploaded_lessons || 0) +
+          (b.uploaded_notebooks || 0) -
+          ((a.uploaded_quizzes || 0) + (a.uploaded_lessons || 0) + (a.uploaded_notebooks || 0)),
       )
       .slice(0, 10)
       .map((row) => ({
@@ -2417,6 +2445,7 @@ async function handleStats(req, res) {
       displayName: row.display_name || null,
       totalQuizzes: row.uploaded_quizzes || 0,
       totalLessons: row.uploaded_lessons || 0,
+      totalNotebooks: row.uploaded_notebooks || 0,
       currentLevel: row.current_level || 1,
       avatarUrl: row.avatar_url || null,
       thumbnailUrl: row.thumbnail_url || null,
@@ -2443,7 +2472,7 @@ async function handleStats(req, res) {
     const { data } = await supabase
       .from("admin_users")
       .select(
-        "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, uploaded_lessons, activity_heatmap",
+        "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, uploaded_lessons, uploaded_notebooks, social_links, activity_heatmap",
       )
       .eq("id", id)
       .maybeSingle();
@@ -2457,7 +2486,7 @@ async function handleStats(req, res) {
     const { data } = await supabase
       .from("admin_users")
       .select(
-        "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, uploaded_lessons, activity_heatmap",
+        "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, uploaded_lessons, uploaded_notebooks, social_links, activity_heatmap",
       )
       .ilike("handle", normalizedHandle)
       .maybeSingle();
@@ -2486,7 +2515,7 @@ async function handleStats(req, res) {
           const { data } = await supabase
             .from("admin_users")
             .select(
-              "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, uploaded_lessons, activity_heatmap",
+              "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, uploaded_lessons, uploaded_notebooks, social_links, activity_heatmap",
             )
             .ilike("email", normalizedEmail)
             .maybeSingle();
@@ -2536,7 +2565,7 @@ async function handleStats(req, res) {
       Date.UTC(new Date().getUTCFullYear(), 0, 1) - 24 * 60 * 60 * 1000,
     ).toISOString();
 
-    const [quizList, lessonList, quizActivity, lessonActivity] =
+    const [quizList, lessonList, notebookList, quizActivity, lessonActivity, notebookActivity] =
       await Promise.all([
         supabase
           .from("quizzes")
@@ -2553,6 +2582,12 @@ async function handleStats(req, res) {
           .order("created_at", { ascending: false })
           .limit(LIST_LIMIT),
         supabase
+          .from("notebooks")
+          .select("id, slug, title, created_at, course:courses(name)")
+          .eq("created_by", adminUser.id)
+          .order("created_at", { ascending: false })
+          .limit(LIST_LIMIT),
+        supabase
           .from("quizzes")
           .select("created_at")
           .eq("uploaded_by", adminUser.id)
@@ -2564,9 +2599,15 @@ async function handleStats(req, res) {
           .eq("created_by", adminUser.id)
           .gte("created_at", activitySince)
           .limit(ACTIVITY_LIMIT),
+        supabase
+          .from("notebooks")
+          .select("created_at")
+          .eq("created_by", adminUser.id)
+          .gte("created_at", activitySince)
+          .limit(ACTIVITY_LIMIT),
       ]);
 
-    const failed = [quizList, lessonList, quizActivity, lessonActivity].find(
+    const failed = [quizList, lessonList, notebookList, quizActivity, lessonActivity, notebookActivity].find(
       (r) => r.error,
     );
     if (failed) {
@@ -2595,13 +2636,23 @@ async function handleStats(req, res) {
       href: `/lesson/${encodeURIComponent(l.slug || l.id)}`,
     }));
 
-    const uploads = [...quizItems, ...lessonItems]
+    const notebookItems = (notebookList.data || []).map((n) => ({
+      type: "notebook",
+      id: n.id,
+      title: n.title,
+      course: n.course?.name || null,
+      createdAt: n.created_at,
+      href: `/notebook/${encodeURIComponent(n.slug || n.id)}`,
+    }));
+
+    const uploads = [...quizItems, ...lessonItems, ...notebookItems]
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, LIST_LIMIT * 2);
+      .slice(0, LIST_LIMIT * 3);
 
     const activity = [
       ...(quizActivity.data || []),
       ...(lessonActivity.data || []),
+      ...(notebookActivity.data || []),
     ].map((r) => r.created_at);
 
     return res.status(200).json({
@@ -2659,6 +2710,11 @@ async function handleStats(req, res) {
       typeof adminUser.uploaded_lessons !== "undefined"
         ? adminUser.uploaded_lessons || 0
         : 0,
+    uploadedNotebooks:
+      typeof adminUser.uploaded_notebooks !== "undefined"
+        ? adminUser.uploaded_notebooks || 0
+        : 0,
+    socialLinks: adminUser.social_links || {},
     reportsCount: reportsCount,
     resolvedReports: resolvedCount || 0,
     totalPoints: adminUser.total_points || 0,
