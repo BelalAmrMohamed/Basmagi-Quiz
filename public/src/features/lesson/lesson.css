@@ -90,7 +90,7 @@
   font: inherit;
 }
 
-.lesson-comments__form button {
+.lesson-comments__form button:not(.rmci-root *) {
   justify-self: start;
   padding: .55rem 1rem;
   border: 0;
@@ -587,7 +587,7 @@
 }
 
 .lesson-comments__form-row button,
-.lesson-comment__edit-form button {
+.lesson-comment__edit-form button:not(.rmci-root *) {
   padding: .5rem 1rem;
   border: 0;
   border-radius: 8px;
@@ -3892,22 +3892,32 @@
 
 /* Comment boxes are the full rich markdown input (shared/rich-input/). It draws
    its own box; sit it flush in the form and keep the page's Arabic font. */
+/* Comment boxes are the full rich markdown input (shared/rich-input/). It draws
+   its own box; keep it flush in the form, on the page's surface and border. */
 .lesson-comments__rich {
   margin: 0;
   font-family: inherit;
+  --rmci-card: color-mix(in srgb, var(--color-surface) 88%, var(--color-background));
 }
 
 .lesson-comments__rich .rmci-editor {
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow: none;
 }
 
 .lesson-comments__rich .rmci-editor:focus-within {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rmci-ring) 30%, transparent);
+  border-color: color-mix(in srgb, var(--rmci-ring) 55%, var(--rmci-border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rmci-ring) 22%, transparent);
 }
 
 .lesson-comments__rich .rmci-scroll {
+  padding: 12px 14px 0;
+  font-size: .88rem;
   overflow-wrap: anywhere;
+}
+
+.lesson-comments__rich .rmci-bar {
+  padding: 4px 8px 8px;
 }
 
 .lesson-comment__body.md-content {
@@ -3954,7 +3964,7 @@
 }
 
 .lesson-comments__form--reply .lesson-comments__form-row button,
-.lesson-comment__edit-form button {
+.lesson-comment__edit-form button:not(.rmci-root *) {
   min-height: 36px;
   padding: .45rem .8rem;
   border-radius: 9px;

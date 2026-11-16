@@ -334,7 +334,29 @@ html[data-theme="dark-slate"] .rmci-root {
    Buttons and wave are the AI Agent's own (.ai-agent-mic-btn /
    .ai-agent-dictation-wave in ai-agent.css, created by dictation.js). Inside the
    rich input's bottom bar the mic is 32px, exactly as in the AI Agent window. */
-.rmci-bar .ai-agent-mic-btn { width: 32px; height: 32px; }
+/* Self-contained (ai-agent.css is only loaded with the AI window): same look as the
+   toolbar's icon buttons, so the mic never turns into an unstyled native button. */
+.rmci-bar .ai-agent-mic-btn,
+.rmci-bar .ai-agent-dictation-wave:not([hidden]) {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 32px; height: 32px; padding: 0; border: 0; border-radius: 10px; cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.rmci-bar .ai-agent-mic-btn { background: transparent; color: var(--rmci-muted); }
+.rmci-bar .ai-agent-mic-btn:hover { background: var(--rmci-hover); color: var(--rmci-fg); }
+.rmci-bar .ai-agent-mic-btn svg { display: block; }
+.rmci-bar .ai-agent-mic-btn[hidden], .rmci-bar .ai-agent-dictation-wave[hidden] { display: none; }
+.rmci-bar .ai-agent-dictation-wave:not([hidden]) { background: color-mix(in srgb, var(--rmci-ring) 16%, transparent); color: var(--rmci-ring); }
+.rmci-bar .ai-agent-dictation-wave-bars { display: flex; align-items: center; justify-content: center; gap: 2.5px; height: 16px; }
+.rmci-bar .ai-agent-dictation-wave-bars span {
+  display: block; width: 2.5px; border-radius: 2px; background: currentColor; transform-origin: center;
+  animation: rmci-wave-bounce 1.1s ease-in-out infinite;
+}
+.rmci-bar .ai-agent-dictation-wave-bars span:nth-child(1), .rmci-bar .ai-agent-dictation-wave-bars span:nth-child(5) { height: 6px; }
+.rmci-bar .ai-agent-dictation-wave-bars span:nth-child(2), .rmci-bar .ai-agent-dictation-wave-bars span:nth-child(4) { height: 11px; animation-delay: .15s; }
+.rmci-bar .ai-agent-dictation-wave-bars span:nth-child(3) { height: 16px; animation-delay: .3s; }
+.rmci-bar .ai-agent-dictation-wave--live .ai-agent-dictation-wave-bars span { animation: none; }
+@keyframes rmci-wave-bounce { 0%, 100% { transform: scaleY(.35); } 50% { transform: scaleY(1); } }
 
 /* ── Source mode (create-quiz / create-lesson authoring fields) ──
    A flat text surface: the page's own field wrapper (.wp-field) draws the box,

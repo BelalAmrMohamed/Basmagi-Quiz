@@ -52,6 +52,16 @@ Related Files:
 ### Update the `createEmptyState`
 * Update the `createEmptyState` to include a link to the `/how-to-create-content`
 
+### Profile Page (i.e., `public/profile.html`)
+Implement this new feature for admins: Connect/ADD LinekdIn, Github, Telegram, & WhatsApp. 
+
+What happens when they do:
+* Icons for LinekdIn, Github, Telegram, & WhatsApp appear on their profile at the top containing their links so everyone can visit them.
+
+### Code Blocks
+* Add Line numbers, VS-Code-style.
+
+
 ### Result Pages
 
 #### Videos (Easy to make and intersting idea)
