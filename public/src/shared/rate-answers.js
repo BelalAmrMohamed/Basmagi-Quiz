@@ -336,7 +336,8 @@ export function calculateQuizMetrics(questions, userAnswers) {
   let completeCount = 0,
     completeEarned = 0,
     completeCorrect = 0,
-    completeSkipped = 0;
+    completeSkipped = 0,
+    completePartial = 0;
 
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i];
@@ -348,6 +349,7 @@ export function calculateQuizMetrics(questions, userAnswers) {
       completeEarned += g.earned;
       if (g.allCorrect) completeCorrect++;
       else if (g.answered === 0) completeSkipped++;
+      else completePartial++;
     } else if (isEssayQuestion(q)) {
       essayCount++;
       essayScoreTotal += gradeEssay(ua, q.answer ?? "");
@@ -398,6 +400,7 @@ export function calculateQuizMetrics(questions, userAnswers) {
     completeEarned,
     completeCorrect,
     completeSkipped,
+    completePartial,
     isEssayOnly,
     percentage,
     actualPercentage,

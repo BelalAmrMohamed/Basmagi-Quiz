@@ -285,6 +285,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     completeCount,
     completeCorrect,
     completeSkipped,
+    completePartial,
     essayCount,
     essayScoreTotal,
     essayMaxTotal,
@@ -293,10 +294,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     actualPercentage,
   } = calculateQuizMetrics(questions, result.userAnswers);
   // "Complete" questions are objective: fully correct = correct, nothing typed = skipped,
-  // anything else = wrong (partial credit is already inside `percentage`).
+  // partly correct = partial (shown separately), all wrong = wrong.
+  // Partial credit is already inside `percentage`; the integer counts here stay consistent.
   const mcqCorrect = baseMcqCorrect + completeCorrect;
   const mcqSkipped = baseMcqSkipped + completeSkipped;
-  const mcqWrong = baseMcqWrong + (completeCount - completeCorrect - completeSkipped);
+  const mcqWrong = baseMcqWrong + (completeCount - completeCorrect - completeSkipped - completePartial);
   const mcqTotal = baseMcqTotal + completeCount;
 
   openDownloadModalBtn &&
@@ -382,6 +384,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     essayCount,
     essayScoreTotal,
     essayMaxTotal,
+    completePartial,
   );
   // Fade out the static fraction text that renderHeader just wrote, then let
   // countUp rewrite textContent from 0→displayScore while fading back in.
@@ -634,6 +637,7 @@ function renderHeader(
   essayCount,
   essayScoreTotal,
   essayMaxTotal,
+  completePartial = 0,
 ) {
   // ── Time display ───────────────────────────────────────────────────────────
   // For timed/timed_exam modes the meaningful number is how much time was
@@ -715,6 +719,14 @@ function renderHeader(
         <span class="sdt-label">خطأ</span>
         <span class="sdt-value sdt-wrong">${mcqWrong}</span>
       </div>
+      ${completePartial > 0
+        ? `
+      <div class="sdt-row">
+        <span class="sdt-label">جزئي</span>
+        <span class="sdt-value sdt-partial">${completePartial}</span>
+      </div>`
+        : ""
+      }
       ${mcqSkipped > 0
         ? `
       <div class="sdt-row">
@@ -768,6 +780,14 @@ function renderHeader(
         <span class="sdt-label">الإجابات الخاطئة</span>
         <span class="sdt-value sdt-wrong">${mcqWrong}</span>
       </div>
+      ${completePartial > 0
+        ? `
+      <div class="sdt-row">
+        <span class="sdt-label">جزئي</span>
+        <span class="sdt-value sdt-partial">${completePartial}</span>
+      </div>`
+        : ""
+      }
       ${mcqSkipped > 0
         ? `
       <div class="sdt-row">
