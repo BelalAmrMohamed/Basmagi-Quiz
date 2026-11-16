@@ -3178,9 +3178,24 @@ html[data-motion="reduced"] {
 /* Social Links Modal */
 .social-links-card {
   max-width: 400px;
-  width: 94%;
+  width: min(100%, 400px);
   padding: 28px 24px 24px;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  /* The social form is taller than many phone viewports. Keep it within the
+     visible viewport and let the card scroll so the title and close control
+     remain reachable while editing every field. */
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+}
+
+#socialLinksOverlay {
+  padding: max(12px, env(safe-area-inset-top, 0px)) 12px
+    max(12px, env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
 }
 
 .social-links-close-btn {
@@ -3240,6 +3255,10 @@ html[data-motion="reduced"] {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .social-input-group {
@@ -3271,12 +3290,6 @@ html[data-motion="reduced"] {
 .social-platform-badge.is-github { background: #24292f; color: #fff; }
 .social-platform-badge.is-telegram { background: #26a5e4; color: #fff; }
 .social-platform-badge.is-whatsapp { background: #25d366; color: #fff; }
-
-.social-input-hint {
-  font-size: 0.72rem;
-  color: var(--color-text-tertiary);
-  padding-inline-start: 2px;
-}
 
 .social-input-field {
   width: 100%;
@@ -3311,6 +3324,48 @@ html[data-motion="reduced"] {
   align-self: center;
   flex: 1;
   text-align: start;
+}
+
+@media (max-width: 480px) {
+  .social-links-card {
+    width: 100%;
+    padding: 22px 18px 18px;
+    border-radius: 14px;
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+
+  .social-modal-header {
+    gap: 7px;
+    margin-bottom: 16px;
+  }
+
+  .social-modal-desc {
+    max-width: 100%;
+    line-height: 1.6;
+  }
+
+  .social-links-form {
+    gap: 12px;
+  }
+
+  .social-input-field {
+    /* Prevent mobile Safari from zooming the page when an input receives focus. */
+    font-size: 16px;
+  }
+
+  .social-modal-actions {
+    gap: 8px;
+  }
+
+  .social-save-status {
+    flex-basis: 100%;
+    min-height: 1em;
+  }
+
+  .social-modal-actions .avatar-action-btn {
+    flex: 1 1 auto;
+  }
 }
 
 /* Shared shimmer, same sweep as the page skeleton (skeleton-sweep). Own
