@@ -2,11 +2,14 @@
   runtime (assets/notebook-runtime/runtime.css, scoped under .mlweb). */
 
 body {
-    padding-top: 0;
-    padding-left: 0;
-    padding-right: calc(var(--sidebar-collapsed-width));
+  padding-top: 0;
+  padding-left: 0;
+  padding-right: calc(var(--sidebar-collapsed-width));
 }
 
+body.sidebar-expanded {
+  padding-right: calc(var(--sidebar-expanded-width));
+}
 
 /* Code cells: a normal code editor doesn't soft-wrap long lines — it scrolls
    horizontally instead. The runtime's CodeMirror instance ships with line

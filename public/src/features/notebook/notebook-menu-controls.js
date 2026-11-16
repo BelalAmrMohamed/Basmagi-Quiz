@@ -44,7 +44,13 @@ function positionMenu(details) {
   const anchor = summary.getBoundingClientRect();
   const viewportWidth = document.documentElement.clientWidth;
   const viewportHeight = document.documentElement.clientHeight;
+  // The app's fixed navigation rail sits outside the notebook content surface.
+  // Use the notebook bounds so the popup cannot slide underneath that rail.
+  const surface = details.closest(".notebook-root, .notebook-page-shell, .mlweb")?.getBoundingClientRect();
+  const surfaceLeft = Math.max(0, surface?.left ?? 0);
+  const surfaceRight = Math.min(viewportWidth, surface?.right ?? viewportWidth);
   const edge = Math.min(VIEWPORT_GAP, viewportWidth / 4, viewportHeight / 4);
+  const maxMenuWidth = Math.max(120, surfaceRight - surfaceLeft - edge * 2);
 
   const keepScroll = content.scrollTop;
   content.style.position = "fixed";
@@ -54,18 +60,21 @@ function positionMenu(details) {
   content.style.right = "auto";
   content.style.bottom = "auto";
   content.style.zIndex = "1000";
-  content.style.maxWidth = `${Math.max(120, viewportWidth - edge * 2)}px`;
+  content.style.maxWidth = `${maxMenuWidth}px`;
   const band = safeBand(details, viewportHeight, edge);
   content.style.maxHeight = `${Math.max(80, band.bottom - band.top)}px`;
   content.style.overflowY = "auto";
   content.style.visibility = "hidden";
 
   const natural = content.getBoundingClientRect();
-  const width = Math.min(natural.width, viewportWidth - edge * 2);
+  // Fixed menus can briefly measure at zero height while opening. Their scroll
+  // height still includes the menu items and gives placement a useful size.
+  const naturalHeight = Math.max(natural.height, content.scrollHeight);
+  const width = Math.min(natural.width, maxMenuWidth);
   const below = band.bottom - anchor.bottom - MENU_GAP;
   const above = anchor.top - MENU_GAP - band.top;
   const rtl = getComputedStyle(details).direction === "rtl";
-  const clampX = (x) => Math.max(edge, Math.min(viewportWidth - width - edge, x));
+  const clampX = (x) => Math.max(surfaceLeft + edge, Math.min(surfaceRight - width - edge, x));
   const xCandidates = viewportWidth <= 760
     ? [rtl ? anchor.right + MENU_GAP : anchor.left - width - MENU_GAP, rtl ? anchor.left - width - MENU_GAP : anchor.right + MENU_GAP]
     : [rtl ? anchor.left : anchor.right - width];
@@ -78,7 +87,7 @@ function positionMenu(details) {
     { top: anchor.bottom + MENU_GAP, available: below, preference: 0 },
     { top: anchor.top - MENU_GAP, available: above, preference: 1 },
   ].flatMap(({ top, available, preference }) => xs.map((left) => {
-    const height = Math.min(natural.height, Math.max(0, Math.min(band.bottom - band.top, available)));
+    const height = Math.min(naturalHeight, Math.max(0, Math.min(band.bottom - band.top, available)));
     const rawTop = preference === 0 ? top : top - height;
     const y = Math.max(band.top, Math.min(band.bottom - height, rawTop));
     const overlap = triggers.reduce((area, rect) => {
@@ -86,9 +95,15 @@ function positionMenu(details) {
       const heightOverlap = Math.max(0, Math.min(y + height, rect.bottom) - Math.max(y, rect.top));
       return area + widthOverlap * heightOverlap;
     }, 0);
-    return { left, top: y, height, overlap, clipped: natural.height - height, preference };
+    return { left, top: y, height, overlap, clipped: naturalHeight - height, preference };
   }));
-  candidates.sort((a, b) => a.overlap - b.overlap || a.clipped - b.clipped || a.preference - b.preference);
+  if (details.matches(".toolbar-menu")) {
+    // The toolbar popup belongs below its trigger; scoring against page cell
+    // menus could otherwise move it over the toolbar controls.
+    candidates.sort((a, b) => a.clipped - b.clipped || a.preference - b.preference);
+  } else {
+    candidates.sort((a, b) => a.overlap - b.overlap || a.clipped - b.clipped || a.preference - b.preference);
+  }
   const [best] = candidates;
 
   content.style.left = `${best.left}px`;
