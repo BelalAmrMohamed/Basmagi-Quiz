@@ -1190,13 +1190,45 @@ async function init() {
         return;
       }
 
-      const userQuiz = JSON.parse(userQuizData);
+      let userQuiz = JSON.parse(userQuizData);
+      let userQuizQuestions = Array.isArray(userQuiz?.questions)
+        ? userQuiz.questions
+        : [];
+      // A stale session entry can shadow a complete copy in localStorage.
+      // Recover by ID before treating the quiz as malformed.
+      if (userQuizQuestions.length === 0 && examId) {
+        try {
+          const allUserQuizzes = JSON.parse(
+            localStorage.getItem("user_quizzes") || "[]",
+          );
+          const recovered = allUserQuizzes.find(
+            (q) => q.id === examId && Array.isArray(q.questions) && q.questions.length > 0,
+          );
+          if (recovered) {
+            userQuiz = recovered;
+            userQuizQuestions = recovered.questions;
+            sessionStorage.setItem("active_user_quiz", JSON.stringify(recovered));
+          }
+        } catch (e) {
+          console.warn("[Quiz] Could not recover the saved quiz:", e);
+        }
+      }
+      if (userQuizQuestions.length === 0) {
+        throw new Error("This saved quiz has no questions or uses an unsupported format.");
+      }
 
       // Map user questions to ensure correct format, handling both old and new essay style
-      questions = userQuiz.questions.map((q) => {
+      questions = userQuizQuestions.map((q) => {
         const out = { q: q.q };
         if (q.passage) out.passage = q.passage;
         if (q.explanation) out.explanation = q.explanation;
+        // Complete questions have no options or answer field. Preserve their
+        // discriminator so the renderer and grader use the fill-in-the-blank UI.
+        if (q.questionKind === "complete") {
+          out.questionKind = "complete";
+          if (q.strictMatch === true) out.strictMatch = true;
+          return out;
+        }
         // Normalize essay: old 1-option → new answer field
         if (Array.isArray(q.options) && q.options.length === 1) {
           out.answer = q.options[0] ?? "";
