@@ -19,7 +19,8 @@ const commandName = (c) => String(c?.command ?? "").trim().replace(/^\//, "");
 const mentionName = (m) => String(m?.name ?? m?.token ?? "").trim().replace(/^@/, "");
 
 export function buildExtensions(T, options) {
-  const { placeholder, direction, onSubmit, getCommands, getMentions, extraLanguages } = options;
+  const { placeholder, direction, onSubmit, getCommands, getMentions, extraLanguages, sourceMode } = options;
+  if (sourceMode) return buildSourceExtensions(T, { placeholder, direction });
   const lowlight = T.createLowlight(T.common);
   // Grammars beyond lowlight's `common` set (hljs-extra.js). Never let a bad
   // pack take the editor down — those languages just stay unhighlighted.
@@ -226,5 +227,47 @@ export function buildExtensions(T, options) {
     BidiBlocks,
     ChatShortcuts,
     TokenHighlight,
+  ];
+}
+
+/**
+ * Source mode: plain lines only. Everything that would rewrite what the author
+ * types (markdown input rules, marks, lists, code blocks, typography) is off,
+ * so the document text IS the markdown source.
+ */
+function buildSourceExtensions(T, { placeholder, direction }) {
+  const auto = direction === "auto";
+  const Bidi = T.Extension.create({
+    name: "bidiBlocks",
+    addGlobalAttributes() {
+      return [{
+        types: ["paragraph"],
+        attributes: {
+          dir: {
+            default: auto ? "auto" : null,
+            parseHTML: (el) => el.getAttribute("dir") || (auto ? "auto" : null),
+            renderHTML: (attrs) => (attrs.dir ? { dir: attrs.dir } : {}),
+          },
+        },
+      }];
+    },
+  });
+  // Shift+Enter is a new line like Enter (a soft break would not be a "\n" in the source).
+  const Lines = T.Extension.create({
+    name: "sourceLines",
+    priority: 1000,
+    addKeyboardShortcuts() {
+      return { "Shift-Enter": ({ editor }) => editor.commands.splitBlock() };
+    },
+  });
+  return [
+    T.StarterKit.configure({
+      bold: false, italic: false, strike: false, underline: false, code: false, codeBlock: false,
+      heading: false, blockquote: false, bulletList: false, orderedList: false, listItem: false,
+      listKeymap: false, horizontalRule: false, link: false,
+    }),
+    T.Placeholder.configure({ placeholder }),
+    Bidi,
+    Lines,
   ];
 }

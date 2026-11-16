@@ -23,6 +23,7 @@
 //   Batch quizzes - opened via openAdminUploadModal(quizzes[]) from bulk action bar
 // =============================================================================
 
+import { inferQuestionType } from "../../shared/rate-answers.js";
 import { apiUrl } from "../../shared/api-base.js";
 import { prepareNotebookAssets, rollbackAssets } from "../../shared/notebook-publish-assets.js";
 import { formatItemCounts } from "./upload-counts.js";
@@ -1552,9 +1553,7 @@ function normalizeQuizSchema(quiz) {
   });
   const types = new Set();
   questions.forEach((q) => {
-    if (!Array.isArray(q.options) || q.options.length === 0) types.add("Essay");
-    else if (q.options.length === 2) types.add("True/False");
-    else types.add("MCQ");
+    types.add(inferQuestionType(q));
   });
   const meta = { title: (quiz.meta?.title || quiz.title || "").trim() };
   const src = quiz.meta?.createdAt || quiz.createdAt;

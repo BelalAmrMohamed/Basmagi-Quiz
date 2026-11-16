@@ -19,6 +19,12 @@ for (const target of targets) {
   console.log(`Synced content-rules.js -> ${target}`);
 }
 
+// complete-question.js is imported by content-rules.js, so it travels with it.
+for (const dir of ["supabase/functions/mcp", "scripts/lib"]) {
+  copyFileSync(join(root, "public/src/shared/complete-question.js"), join(root, dir, "complete-question.js"));
+  console.log(`Synced complete-question.js -> ${dir}`);
+}
+
 // notebook-convert.js: pure converters used by api/ (upload) and scripts/ (seed).
 copyFileSync(join(root, "public/src/shared/notebook-convert.js"), join(root, "scripts/lib/notebook-convert.js"));
 console.log("Synced notebook-convert.js -> scripts/lib/notebook-convert.js");

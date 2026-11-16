@@ -3,6 +3,7 @@
 // Deals with the export from both main page and result page
 // No libraries used
 
+import { degradeCompleteForExport } from "../../shared/complete-question.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 
 // Question helpers
@@ -30,6 +31,7 @@ export async function buildQuizHtml(
     userAnswers = [],
     htmlOptions = {},
 ) {
+  ({ questions, userAnswers } = degradeCompleteForExport(questions, userAnswers));
     // Fix #settings-panel: buildQuizHtml() is shared by the standalone
     // "results" HTML export and the PDF exporter, and PDF reaches it
     // through download-quiz-modal.js's Settings Panel. The panel's

@@ -7,6 +7,12 @@
 // ============================================================================
 
 function replaceTextareaRange(textarea, start, end, text) {
+  // Rich source fields (Tiptap, see rich-input/source-field.js) do the edit as one undoable transaction.
+  if (typeof textarea.replaceRange === "function") {
+    textarea.focus();
+    textarea.replaceRange(start, end, text);
+    return;
+  }
   textarea.focus();
   textarea.setSelectionRange(start, end);
   const nativeInsert = typeof document.execCommand === "function"
@@ -21,6 +27,7 @@ function replaceTextareaRange(textarea, start, end, text) {
 }
 
 function resizeTextarea(textarea) {
+  if (!(textarea instanceof HTMLTextAreaElement)) return; // rich source fields size themselves
   textarea.style.height = "auto";
   const maxPx = textarea.id?.startsWith("option-text-") ? 140 : 240;
   const minPx = textarea.id?.startsWith("option-text-") ? 36 : 40;
@@ -36,7 +43,8 @@ function resizeTextarea(textarea) {
  * @returns {boolean} whether an editor mutation was applied
  */
 export function applyMarkdownToolbarAction({ cmd = null, latex = null, extra = null, textarea = null } = {}) {
-  if (!(textarea instanceof HTMLTextAreaElement) || !document.body.contains(textarea)) return false;
+  const isField = textarea instanceof HTMLTextAreaElement || textarea?.classList?.contains("rmci-host");
+  if (!isField || !document.body.contains(textarea)) return false;
 
   const value = textarea.value || "";
   let start = textarea.selectionStart ?? 0;

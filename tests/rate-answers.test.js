@@ -56,3 +56,16 @@ test("gradeEssay stays self-contained (it is embedded via toString())", () => {
   assert.equal(embedded("الْعِلْمُ نُورٌ", "العلم نور"), 5);
   assert.equal(embedded("٤٢", "$42$"), 5);
 });
+
+import { calculateQuizMetrics, getQuestionKind, inferQuestionType } from "../public/src/shared/rate-answers.js";
+
+test("Complete questions are their own kind and score with partial credit", () => {
+  const cq = { q: "{{a}} and {{b}}", questionKind: "complete" };
+  assert.equal(getQuestionKind(cq), "complete");
+  assert.equal(inferQuestionType(cq), "Complete");
+  assert.equal(inferQuestionType({ q: "x", answer: "y" }), "Essay");
+  const m = calculateQuizMetrics([cq, { q: "m", options: ["1", "2", "3"], correct: [0] }], [["a", "x"], 0]);
+  assert.equal(m.completeCount, 1);
+  assert.equal(m.percentage, 75);
+  assert.equal(m.isEssayOnly, false);
+});

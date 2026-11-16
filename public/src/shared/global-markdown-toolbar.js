@@ -35,7 +35,11 @@ function showNoFieldTip() {
 }
 
 function updateActiveFromTarget(target) {
-  if (!target || !(target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement)) return;
+  // Rich source fields: focus/keys/mouse events come from the inner contenteditable.
+  if (target instanceof Element && !(target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement)) {
+    target = target.closest(".rmci-host.md-source") || null;
+  }
+  if (!target || !(target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement || target.classList?.contains("rmci-host"))) return;
   if (
     target.classList.contains("md-source") ||
     target.classList.contains("wp-textarea") ||
@@ -104,12 +108,13 @@ function captureSelection() {
     return { ...lastCapturedSelection };
   }
   const ae = document.activeElement;
-  if ((ae instanceof HTMLTextAreaElement || ae instanceof HTMLInputElement) && ae.classList.contains("md-source")) {
-    activeTextarea = ae;
+  const aeField = ae instanceof Element && !(ae instanceof HTMLTextAreaElement || ae instanceof HTMLInputElement) ? ae.closest(".rmci-host.md-source") : ae;
+  if (aeField && (aeField instanceof HTMLTextAreaElement || aeField instanceof HTMLInputElement || aeField.classList?.contains("rmci-host")) && aeField.classList.contains("md-source")) {
+    activeTextarea = aeField;
     return {
-      textarea: ae,
-      start: ae.selectionStart ?? 0,
-      end: ae.selectionEnd ?? 0,
+      textarea: aeField,
+      start: aeField.selectionStart ?? 0,
+      end: aeField.selectionEnd ?? 0,
     };
   }
   return null;

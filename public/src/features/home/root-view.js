@@ -44,6 +44,7 @@ import {
 } from "./admin-item-actions.js";
 import {
   MORE_DOTS_ICON_SVG,
+  MORE_DOTS_HORIZONTAL_ICON_SVG,
   SPARKLE_ICON_SVG,
   COPY_ICON_SVG,
   DUPLICATE_ICON_SVG,
@@ -69,7 +70,7 @@ export function attachCourseActionsMenu(card, course, categoryTree, { showUnsubs
   const moreBtn = document.createElement("button");
   moreBtn.type = "button";
   moreBtn.className = "exam-more-btn exam-more-btn--lg hx-more";
-  moreBtn.innerHTML = MORE_DOTS_ICON_SVG;
+  moreBtn.innerHTML = MORE_DOTS_HORIZONTAL_ICON_SVG;
   moreBtn.setAttribute("aria-label", `خيارات ${course.name}`);
   moreBtn.onclick = (event) => {
     event.stopPropagation();
@@ -366,7 +367,7 @@ export async function renderRootCategories() {
       const rootMenuBtn = document.createElement("button");
       rootMenuBtn.type = "button";
       rootMenuBtn.className = "exam-more-btn exam-more-btn--lg hx-more";
-      rootMenuBtn.innerHTML = MORE_DOTS_ICON_SVG;
+      rootMenuBtn.innerHTML = MORE_DOTS_HORIZONTAL_ICON_SVG;
       rootMenuBtn.setAttribute("aria-label", "خيارات محتواي");
       rootMenuBtn.onclick = (event) => {
         event.stopPropagation();

@@ -1,6 +1,7 @@
 // public/src/shared/quiz-json.js
 // JSON-only quiz import/export helpers. Document/text parsers were removed —
 // quizzes are authored and exchanged as JSON.
+import { inferQuestionType } from "./rate-answers.js";
 import { generateQuizId } from "./quizId.js";
 
 /**
@@ -92,7 +93,10 @@ export async function buildJsonQuizExport(
     // image/audio/video fields to carry over anymore (legacy ones are folded
     // into the body on load; see foldLegacyMediaIntoQuestionBody in
     // create-quiz.js).
-    if (Array.isArray(q.options) && q.options.length === 1) {
+    if (q.questionKind === "complete") {
+      out.questionKind = "complete";
+      if (q.strictMatch === true) out.strictMatch = true;
+    } else if (Array.isArray(q.options) && q.options.length === 1) {
       out.answer = q.options[0] || "";
     } else if (!Array.isArray(q.options) || q.options.length === 0) {
       out.answer = q.answer || "";
@@ -112,9 +116,7 @@ export async function buildJsonQuizExport(
 
   const statsTypes = new Set();
   exportQuestions.forEach((q) => {
-    if (!Array.isArray(q.options) || q.options.length === 0) statsTypes.add("Essay");
-    else if (q.options.length === 2) statsTypes.add("True/False");
-    else statsTypes.add("MCQ");
+    statsTypes.add(inferQuestionType(q));
   });
 
   const meta = {

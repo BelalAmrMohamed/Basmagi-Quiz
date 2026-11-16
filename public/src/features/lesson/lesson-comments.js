@@ -13,7 +13,7 @@ import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { getUserToken } from "../../shared/userLevel.js";
 import { getToken as getAdminToken, isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { renderMarkdown } from "../../shared/markdown.js";
-import { attachRichInputHighlighter } from "../../shared/rich-input-highlighter.js";
+import { mountEssayField } from "../../shared/rich-input/essay-field.js";
 import { showNotification, _confirm } from "../../components/notifications/notifications.js";
 
 const SORTS = [
@@ -88,6 +88,8 @@ export async function equipLessonComments(root, lessonId) {
   const moreBtn = section.querySelector(".lesson-comments__more");
   const topForm = section.querySelector('.lesson-comments__form[data-role="top-level"]');
   const topTextarea = topForm.querySelector("textarea");
+  topTextarea.removeAttribute("required");
+  topTextarea.removeAttribute("maxlength");
   const topCount = topForm.querySelector(".lesson-comments__count");
   const visibleCount = section.querySelector("#lessonCommentsVisibleCount");
 
@@ -95,7 +97,37 @@ export async function equipLessonComments(root, lessonId) {
   let activeAuthorCard = null;
   let activeAuthorTrigger = null;
   let activeAuthorParent = null;
-  const highlighters = new Map();
+  // Every comment box (top-level, reply, inline edit) is the full rich markdown
+  // input (toolbar + mic). host element -> rich-input instance.
+  const richInputs = new Map();
+  const MAX_BODY = 2000;
+
+  /** Swaps a <textarea> for the rich input; returns its textarea-compatible host. `.markdown` is the comment body. */
+  function mountCommentInput(textarea, { maxHeight = 260 } = {}) {
+    const rich = mountEssayField(textarea, {
+      maxHeight,
+      hideControlsWhenDisabled: false,
+      essay: false,
+      onError: (message) => showNotification("الإملاء الصوتي", message, "error"),
+    });
+    rich.el.classList.add("lesson-comments__rich");
+    rich.host.addEventListener("rmci-submit", () => rich.host.closest("form")?.requestSubmit()); // Ctrl/Cmd+Enter
+    richInputs.set(rich.host, rich);
+    return rich.host;
+  }
+
+  function destroyCommentInput(host) {
+    if (!host) return;
+    richInputs.get(host)?.destroy();
+    richInputs.delete(host);
+  }
+
+  /** True (with a notice) when a body is over the server limit. */
+  function overLimit(body) {
+    if (body.length <= MAX_BODY) return false;
+    showNotification("التعليق طويل", `الحد الأقصى ${MAX_BODY} حرف (الآن ${body.length}).`, "error");
+    return true;
+  }
   const pendingReactions = new Set();
   let sortRequestVersion = 0;
 
@@ -118,41 +150,31 @@ export async function equipLessonComments(root, lessonId) {
   }
 
   function autoSize(textarea) {
+    if (!(textarea instanceof HTMLTextAreaElement)) return; // rich input sizes itself
     textarea.style.height = "auto";
     textarea.style.height = `${Math.min(textarea.scrollHeight, 180)}px`;
     textarea.style.overflowY = textarea.scrollHeight > 180 ? "auto" : "hidden";
   }
 
-  const topHighlighter = attachRichInputHighlighter({ textarea: topTextarea, wrapperClass: "lesson-comments__input-wrapper" });
-  highlighters.set(topTextarea, topHighlighter);
+  const topInput = mountCommentInput(topTextarea);
 
   function updateTopCount() {
-    const length = topTextarea.value.length;
-    topCount.textContent = `${length} / 2000`;
+    const length = topInput.markdown.length;
+    topCount.textContent = `${length} / ${MAX_BODY}`;
     topCount.classList.toggle("is-near-limit", length >= 1800);
-    autoSize(topTextarea);
-    topHighlighter.refresh();
-    // Resizing a capped textarea can make the browser scroll its native text
-    // to keep the caret visible after this input handler returns. Refresh once
-    // layout/scroll have settled or the syntax mirror lags behind selection.
-    requestAnimationFrame(() => {
-      if (topTextarea.isConnected) topHighlighter.refresh();
-    });
   }
 
   // Restore a preserved top-level draft (plan step 4.4.8 — survive
   // navigation/accidental close).
   const savedDraft = getFromStorage(draftKey(lessonId), "");
   if (savedDraft) {
-    topTextarea.value = savedDraft;
+    topInput.markdown = savedDraft;
     updateTopCount();
   }
-  topTextarea.addEventListener("input", () => {
+  topInput.addEventListener("input", () => {
     updateTopCount();
-    setInStorage(draftKey(lessonId), topTextarea.value);
+    setInStorage(draftKey(lessonId), topInput.markdown);
   });
-  autoSize(topTextarea);
-  topHighlighter.refresh();
 
   async function ensureToken() {
     if (isAdminAuthenticated()) return getAdminToken();
@@ -499,22 +521,18 @@ export async function equipLessonComments(root, lessonId) {
   function openReplyComposer(parentId) {
     const slot = section.querySelector(`[data-reply-slot="${parentId}"]`);
     if (!slot) return;
-    if (slot.querySelector("form")) { slot.querySelector("textarea")?.focus(); return; }
+    if (slot.querySelector("form")) { slot.querySelector(".rmci-host")?.focus(); return; }
     const saved = getFromStorage(draftKey(lessonId, parentId), "");
     slot.innerHTML = `<form class="lesson-comments__form lesson-comments__form--reply" data-role="reply" data-parent="${parentId}">
-      <textarea dir="auto" maxlength="2000" required placeholder="اكتب ردك…">${escapeHtml(saved)}</textarea>
+      <textarea dir="auto" placeholder="اكتب ردك…">${escapeHtml(saved)}</textarea>
       <div class="lesson-comments__form-row">
         <button type="button" data-action="cancel-reply">إلغاء</button>
         <button type="submit">إرسال الرد</button>
       </div>
     </form>`;
-    const textarea = slot.querySelector("textarea");
-    const highlighter = attachRichInputHighlighter({ textarea, wrapperClass: "lesson-comments__input-wrapper" });
-    highlighters.set(textarea, highlighter);
-    autoSize(textarea);
-    highlighter.refresh();
-    textarea.addEventListener("input", () => setInStorage(draftKey(lessonId, parentId), textarea.value));
-    textarea.focus();
+    const input = mountCommentInput(slot.querySelector("textarea"), { maxHeight: 220 });
+    input.addEventListener("input", () => setInStorage(draftKey(lessonId, parentId), input.markdown));
+    input.focus("end");
   }
 
   async function submitComment({ body, parentId, button }) {
@@ -549,12 +567,12 @@ export async function equipLessonComments(root, lessonId) {
     event.preventDefault();
     const button = topForm.querySelector("button[type=submit]");
     if (button?.disabled) return;
-    const body = topTextarea.value.trim();
-    if (!body) return;
+    const body = topInput.markdown.trim();
+    if (!body || overLimit(body)) return;
     button.disabled = true;
     const pendingId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     appendSubmittedComment({ id: pendingId, body, author: "أنت", created_at: new Date().toISOString(), parent_id: null, replies: [], like_count: 0, dislike_count: 0, is_mine: false, pending: true });
-    topTextarea.value = "";
+    topInput.markdown = "";
     setInStorage(draftKey(lessonId), "");
     updateTopCount();
     const created = await submitComment({ body, button });
@@ -563,7 +581,7 @@ export async function equipLessonComments(root, lessonId) {
       showPublishedNotice("نُشرت مشاركتك في النقاش.");
     } else {
       removePendingComment(pendingId);
-      topTextarea.value = body;
+      topInput.markdown = body;
       setInStorage(draftKey(lessonId), body);
       updateTopCount();
     }
@@ -615,18 +633,15 @@ export async function equipLessonComments(root, lessonId) {
     const button = form.querySelector("button[type=submit]");
     if (button?.disabled) return;
     const parentId = form.dataset.parent;
-    const textarea = form.querySelector("textarea");
-    const body = textarea.value.trim();
-    if (!body) return;
+    const body = form.querySelector(".rmci-host").markdown.trim();
+    if (!body || overLimit(body)) return;
     button.disabled = true;
     const pendingId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     appendSubmittedComment({ id: pendingId, body, author: "أنت", created_at: new Date().toISOString(), parent_id: parentId, replies: [], like_count: 0, dislike_count: 0, is_mine: false, pending: true }, parentId);
     const created = await submitComment({ body, parentId, button });
     if (created) {
       replacePendingComment(pendingId, created, parentId);
-      const textarea = form.querySelector("textarea");
-      highlighters.get(textarea)?.destroy();
-      highlighters.delete(textarea);
+      destroyCommentInput(form.querySelector(".rmci-host"));
       form.remove();
       showPublishedNotice("نُشر ردك في النقاش.");
     } else {
@@ -638,9 +653,7 @@ export async function equipLessonComments(root, lessonId) {
     const cancelBtn = event.target.closest('[data-action="cancel-reply"]');
     if (cancelBtn) {
       const slot = cancelBtn.closest("[data-reply-slot]");
-      const textarea = slot?.querySelector("textarea");
-      highlighters.get(textarea)?.destroy();
-      highlighters.delete(textarea);
+      destroyCommentInput(slot?.querySelector(".rmci-host"));
       if (slot) slot.innerHTML = "";
       return;
     }
@@ -767,19 +780,16 @@ export async function equipLessonComments(root, lessonId) {
       if (article.querySelector(".lesson-comment__edit-form")) return;
       bodyEl.insertAdjacentHTML(
         "afterend",
-        `<form class="lesson-comment__edit-form"><textarea dir="auto" maxlength="2000">${escapeHtml(current)}</textarea><div class="lesson-comments__form-row"><button type="button" data-action="cancel-edit">إلغاء</button><button type="submit">حفظ</button></div></form>`
+        `<form class="lesson-comment__edit-form"><textarea dir="auto">${escapeHtml(current)}</textarea><div class="lesson-comments__form-row"><button type="button" data-action="cancel-edit">إلغاء</button><button type="submit">حفظ</button></div></form>`
       );
       bodyEl.hidden = true;
-      const editTextarea = article.querySelector(".lesson-comment__edit-form textarea");
-      highlighters.set(editTextarea, attachRichInputHighlighter({ textarea: editTextarea, wrapperClass: "lesson-comments__input-wrapper" }));
+      mountCommentInput(article.querySelector(".lesson-comment__edit-form textarea"), { maxHeight: 260 }).focus("end");
       return;
     }
 
     if (action === "cancel-edit") {
       const article = actionBtn.closest(".lesson-comment");
-      const textarea = article.querySelector(".lesson-comment__edit-form textarea");
-      highlighters.get(textarea)?.destroy();
-      highlighters.delete(textarea);
+      destroyCommentInput(article.querySelector(".lesson-comment__edit-form .rmci-host"));
       article.querySelector(".lesson-comment__edit-form").remove();
       article.querySelector(".lesson-comment__body").hidden = false;
       return;
@@ -853,15 +863,13 @@ export async function equipLessonComments(root, lessonId) {
     event.preventDefault();
     const article = form.closest(".lesson-comment");
     const id = article.dataset.id;
-    const body = form.querySelector("textarea").value.trim();
-    if (!body) return;
+    const body = form.querySelector(".rmci-host").markdown.trim();
+    if (!body || overLimit(body)) return;
     const comment = findComment(id);
     if (!comment) return;
     const before = { body: comment.body, edited_at: comment.edited_at };
     const editedAt = new Date().toISOString();
-    const textarea = form.querySelector("textarea");
-    highlighters.get(textarea)?.destroy();
-    highlighters.delete(textarea);
+    destroyCommentInput(form.querySelector(".rmci-host"));
     setEditedComment(comment, body, editedAt);
     try {
       const token = await ensureToken();
@@ -898,7 +906,7 @@ export async function equipLessonComments(root, lessonId) {
     closeAuthorCard();
     document.removeEventListener("click", handleDocumentClick);
     document.removeEventListener("keydown", handleDocumentKeydown);
-    for (const highlighter of highlighters.values()) highlighter.destroy();
-    highlighters.clear();
+    for (const rich of richInputs.values()) rich.destroy();
+    richInputs.clear();
   };
 }

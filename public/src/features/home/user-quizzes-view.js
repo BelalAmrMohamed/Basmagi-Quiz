@@ -84,7 +84,7 @@ function userItemRoute(item, items) {
   const kind = item.kind;
   const id = item.id || item.meta?.id;
   if (kind === "quiz") return `/quiz/${encodeURIComponent(id)}?type=user`;
-  if (kind === "lesson") return `/lesson/${encodeURIComponent(id)}`;
+  if (kind === "lesson") return `/lesson/${encodeURIComponent(id)}?type=user`;
   if (kind === "notebook") return `/notebook/${encodeURIComponent(id)}?type=user`;
   if (kind !== "folder" && kind !== "course") return "/my-content";
 

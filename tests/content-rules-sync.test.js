@@ -10,6 +10,16 @@ for (const copy of ["supabase/functions/mcp/content-rules.js", "scripts/lib/cont
   });
 }
 
+for (const dir of ["supabase/functions/mcp", "scripts/lib"]) {
+  test(`complete-question copy is in sync: ${dir}`, () => {
+    assert.equal(
+      readFileSync(`${dir}/complete-question.js`, "utf8"),
+      readFileSync("public/src/shared/complete-question.js", "utf8"),
+      "run `npm run sync:mcp`",
+    );
+  });
+}
+
 test("notebook-convert copy is in sync", () => {
   assert.equal(
     readFileSync("scripts/lib/notebook-convert.js", "utf8"),

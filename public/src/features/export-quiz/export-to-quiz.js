@@ -3,6 +3,7 @@
 // Deals with the export from the main page, create-quiz page, and results page
 // No libraries used.
 
+import { degradeCompleteForExport } from "../../shared/complete-question.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 
 // Question helpers
@@ -164,6 +165,7 @@ const hashQuizIdentity = (title, processedQuestions) => {
 };
 
 export async function buildStandaloneQuizHtml(config, questions, exportOptions = {}) {
+  ({ questions } = degradeCompleteForExport(questions));
   const {
     showAnswersButton = false,
     layout = "pagination",

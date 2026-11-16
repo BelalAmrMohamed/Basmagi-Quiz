@@ -4,6 +4,7 @@ import { renderBlock } from "../lesson/lesson-blocks.js";
 import { normalizeLessonContent } from "../lesson/lesson-schema.js";
 import { escapeHtml } from "./escape-html.js";
 import { gradeEssay } from "../../shared/rate-answers.js";
+import { gradeComplete } from "../../shared/complete-question.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { buildExportCard, buildSourceActions } from "../../components/download-quiz-modal/export-card.js";
 import { JSON_FILE_ICON_SVG } from "./icons.js";
@@ -23,6 +24,7 @@ function updateProgress(callback, percent, label) {
 const LESSON_INTERACTION_SCRIPT = `
 (function(){var d=document.querySelector(".lesson-export-info");if(!d)return;document.addEventListener("click",function(e){if(e.target.closest("[data-lesson-info-open]"))d.showModal();else if(e.target.closest("[data-lesson-info-close]")||e.target===d)d.close();});})();
 const gradeEssay = (${gradeEssay.toString()});
+const gradeComplete = (${gradeComplete.toString()});
 const revealAdaptiveSection = (question, wasCorrect) => {
   const rules = JSON.parse(question.dataset.revealRule || "{}");
   const target = rules[wasCorrect ? "onCorrect" : "onWrong"]?.revealSection;
@@ -65,6 +67,36 @@ document.querySelectorAll(".lesson-question[data-question-kind='mcq']").forEach(
     if (question.dataset.answered === "true") return;
     const selected = selectedIndexes();
     if (selected.length) reveal(selected);
+  });
+});
+document.querySelectorAll(".lesson-question[data-question-kind='complete']").forEach((question) => {
+  const button = question.querySelector("[data-complete-check]");
+  const inputs = () => [...question.querySelectorAll(".complete-blank")];
+  const blanks = JSON.parse(question.dataset.completeBlanks || "[]");
+  question.addEventListener("input", () => {
+    if (question.dataset.answered !== "true" && button) button.disabled = !inputs().some((el) => el.value.trim());
+  });
+  button?.addEventListener("click", () => {
+    if (question.dataset.answered === "true") return;
+    const g = gradeComplete(blanks, inputs().map((el) => el.value), question.dataset.strict === "true");
+    if (!g.answered) return;
+    question.dataset.answered = "true";
+    inputs().forEach((el) => {
+      const st = g.perBlank[Number(el.dataset.blank)];
+      el.disabled = true;
+      el.classList.toggle("is-correct", !!st && st.ok);
+      el.classList.toggle("is-wrong", !!st && !st.ok);
+    });
+    const score = question.querySelector(".complete-score");
+    if (score) { score.textContent = "(" + g.correct + "/" + g.total + ")"; score.classList.add("show"); }
+    button.disabled = true;
+    button.hidden = true;
+    const feedback = question.querySelector(".lesson-question__feedback");
+    if (feedback && feedback.querySelector(".feedback-body")) {
+      feedback.classList.add(g.allCorrect ? "correct" : "wrong");
+      feedback.hidden = false;
+    }
+    revealAdaptiveSection(question, g.allCorrect);
   });
 });
 document.querySelectorAll(".lesson-question[data-question-kind='essay']").forEach((question) => {

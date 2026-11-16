@@ -1942,10 +1942,9 @@ body.sidebar-expanded .global-md-bar {
     position: relative;
 }
 
-/* The rich Markdown highlighter wraps .md-source in a mirror surface. Hide
-   the whole surface in preview mode so syntax tokens never bleed beside the
-   rendered Markdown (including when the observer attaches the wrapper late). */
-.lesson-md-editor.is-previewing .rich-input-highlighter {
+/* The rich source field's root wraps .md-source. Hide the whole root in
+   preview mode so no editor chrome shows beside the rendered Markdown. */
+.lesson-md-editor.is-previewing .rmci-root {
     display: none;
 }
 
@@ -1968,6 +1967,7 @@ body.sidebar-expanded .global-md-bar {
     color: var(--color-text-primary);
     font-size: 0.9rem;
     line-height: 1.6;
+    min-height: 0;
     resize: none;
     box-sizing: border-box;
     display: block;
@@ -2704,3 +2704,14 @@ html {
   background: var(--color-error-light, rgba(220, 38, 38, 0.08));
   border-color: var(--color-error, #dc2626);
 }
+
+/* ── "Complete" question editor panel ──────────────────────────────────── */
+.complete-editor { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px dashed currentColor; border-radius: 12px; }
+.complete-editor-hint { font-size: 0.9em; opacity: 0.85; }
+.complete-editor-hint code { direction: ltr; unicode-bidi: isolate; }
+.complete-strict { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.complete-preview { display: flex; flex-wrap: wrap; gap: 6px; }
+.complete-preview-chip { padding: 2px 10px; border-radius: 999px; background: rgba(16, 185, 129, 0.14); }
+.complete-preview-chip b { margin-inline-end: 4px; }
+.complete-preview-error { width: 100%; color: #ef4444; font-weight: 700; }
+.complete-preview-empty { opacity: 0.7; }

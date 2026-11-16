@@ -21,17 +21,17 @@ import { loadFullQuizData, checkQuizHasPassword } from "../home/quiz-data-loader
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
 import { CREATE_QUIZ_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
-import { isMultiSelectQuestion } from "../../shared/rate-answers.js";
+import { isMultiSelectQuestion, isCompleteQuestion } from "../../shared/rate-answers.js";
+import { parseComplete, completeToFirstAnswers, completeToPlain } from "../../shared/complete-question.js";
 import { hasSameLevelCollision } from "../home/user-quizzes-folders.js";
 import { renderCreateQuestionNavigator, initCreateQuestionNavigator } from "./question-navigator.js";
 import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar.js";
 import { applyMarkdownToolbarAction } from "../../shared/markdown-toolbar-actions.js";
-import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
+import { mountSourceField } from "../../shared/rich-input/source-field.js";
 import { fetchImportDraft } from "../../shared/import-draft.js";
 import { reserveStorage, releaseStorage } from "../../shared/storage-guard.js";
 import { checkQuiz, cleanSource, stripLegacySource } from "../../shared/content-rules.js";
 
-observeRichInputHighlighters({ selector: ".md-source" });
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -165,6 +165,9 @@ function mdEditorHtml(id, value, placeholder, rows = 2) {
  * default single question-text line.
  */
 function autoResizeMdSource(ta, minPx = 40, maxPx = 240) {
+  // Rich source fields (Tiptap) grow with their content on their own and
+  // scroll inside their own max-height — only native textareas need this.
+  if (!(ta instanceof HTMLTextAreaElement)) return;
   ta.style.height = "auto";
   const next = Math.min(Math.max(ta.scrollHeight, minPx), maxPx);
   ta.style.height = next + "px";
@@ -187,6 +190,12 @@ function autoResizeMdSource(ta, minPx = 40, maxPx = 240) {
  * unavailable, so nothing breaks in that rare case.
  */
 function replaceTextareaRange(ta, start, end, text) {
+  // Rich source field: one undoable editor transaction (see rich-input/source-field.js).
+  if (typeof ta.replaceRange === "function") {
+    ta.focus();
+    ta.replaceRange(start, end, text);
+    return;
+  }
   ta.focus();
   ta.setSelectionRange(start, end);
   const ok =
@@ -209,12 +218,16 @@ function replaceTextareaRange(ta, start, end, text) {
  * function gets it for free: question text, options, explanation, and the
  * essay/formal-answer editor. */
 function setupMdEditor(id, onChange) {
-  const source = document.getElementById(id);
-  if (!source) return;
+  const textarea = document.getElementById(id);
+  if (!textarea) return;
 
   const isOption = id.startsWith("option-text-");
   const minPx = isOption ? 36 : 40;
   const maxPx = isOption ? 140 : 240;
+
+  // The textarea becomes a flat Tiptap source field (same id/classes, no
+  // per-field toolbar): the one global bar formats whichever field is focused.
+  const source = mountSourceField(textarea, { maxHeight: maxPx, minHeight: minPx });
 
   autoResizeMdSource(source, minPx, maxPx);
 
@@ -339,13 +352,20 @@ function pushHistorySnapshot() {
 // to the structural stack when the field has nothing to undo.
 let lastTextField = null;
 
+/** The text field an event target belongs to (rich source fields report their inner editor as the target). */
+function historyFieldOf(el) {
+  return el?.closest?.(".rmci-host.md-source") || el;
+}
+
 function isHistoryTextField(el) {
-  return el instanceof HTMLTextAreaElement ||
+  return el?.classList?.contains("rmci-host") ||
+    el instanceof HTMLTextAreaElement ||
     (el instanceof HTMLInputElement && /^(text|search|url|)$/.test(el.type));
 }
 
 function textHistoryAvailable(kind) {
   if (!lastTextField || !document.body.contains(lastTextField)) return false;
+  if (typeof lastTextField.canHistory === "function") return lastTextField.canHistory(kind); // rich field: its own history
   try {
     const active = document.activeElement;
     if (active !== lastTextField) {
@@ -368,11 +388,13 @@ function updateUndoRedoButtons() {
 }
 
 document.addEventListener("focusin", (e) => {
-  if (isHistoryTextField(e.target)) lastTextField = e.target;
+  const f = historyFieldOf(e.target);
+  if (isHistoryTextField(f)) lastTextField = f;
   updateUndoRedoButtons();
 });
 document.addEventListener("input", (e) => {
-  if (isHistoryTextField(e.target)) { lastTextField = e.target; updateUndoRedoButtons(); }
+  const f = historyFieldOf(e.target);
+  if (isHistoryTextField(f)) { lastTextField = f; updateUndoRedoButtons(); }
 });
 // Keep focus in the field when a history button is pressed so execCommand
 // targets it.
@@ -410,7 +432,8 @@ function refreshEditorAfterHistoryChange() {
 window.performUndo = function () {
   if (textHistoryAvailable("undo")) {
     lastTextField.focus({ preventScroll: true });
-    document.execCommand("undo");
+    if (typeof lastTextField.runHistory === "function") lastTextField.runHistory("undo");
+    else document.execCommand("undo");
     updateUndoRedoButtons();
     return;
   }
@@ -431,7 +454,8 @@ window.performUndo = function () {
 window.performRedo = function () {
   if (textHistoryAvailable("redo")) {
     lastTextField.focus({ preventScroll: true });
-    document.execCommand("redo");
+    if (typeof lastTextField.runHistory === "function") lastTextField.runHistory("redo");
+    else document.execCommand("redo");
     updateUndoRedoButtons();
     return;
   }
@@ -2260,18 +2284,15 @@ function renderQuestion(question, insertAtIndex = null) {
   questionCard.dataset.questionId = question.id;
 
   // ── Detect question type and tag the card ──────────────────────────────────
-  const isEssay = question.answer;
+  const isComplete = isCompleteQuestion(question);
+  const isEssay = isComplete ? false : question.answer;
   if (isEssay) questionCard.classList.add("question-card--essay");
+  if (isComplete) questionCard.classList.add("question-card--complete");
 
-  if (!isEssay) normalizeCorrectField(question);
+  if (!isEssay && !isComplete) normalizeCorrectField(question);
 
   // Check if question is incomplete
-  const isIncomplete =
-    !question.q ||
-    question.q.trim() === "" ||
-    question.options.some((opt) => !opt || opt.trim() === "") ||
-    (!isEssay &&
-      (!Array.isArray(question.correct) || question.correct.length === 0));
+  const isIncomplete = isQuestionIncomplete(question);
   if (isIncomplete) {
     questionCard.classList.add("incomplete");
   }
@@ -2336,7 +2357,7 @@ function renderQuestion(question, insertAtIndex = null) {
                              </svg>
                             <span>طي/توسيع السؤال</span>
                         </button>
-                        ${!isEssay
+                        ${!isEssay && !isComplete
       ? `<button type="button" id="multiSelectToggle-${question.id}" class="question-menu-option" role="menuitem" onclick="setMultiSelect(${question.id}, ${!isMultiSelectQuestion(question)}); closeAllQuestionMenus();">
                             <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v-4a4 4 0 0 1 8 0v4"/></svg>
                             <span>${isMultiSelectQuestion(question) ? "تحويل إلى إجابة واحدة فقط" : "اختر إجابة واحدة أو أكثر"}</span>
@@ -2364,12 +2385,12 @@ function renderQuestion(question, insertAtIndex = null) {
             </div>
             
             <div class="form-group">
-                <label class="options-label">${isEssay ? "الإجابة المرجعية" : "الإختيارات"}</label>
+                <label class="options-label">${isComplete ? "الفراغات" : isEssay ? "الإجابة المرجعية" : "الإختيارات"}</label>
                 <div id="options-container-${question.id}" class="options-list">
                     ${renderOptions(question)}
                 </div>
                 <div id="option-btn-${question.id}">
-                  ${isEssay
+                  ${isComplete ? completeConvertButtons(question.id) : isEssay
       ? `<button class="add-option-btn add-option-btn--convert" onclick="convertEssayToMcq(${question.id})">
                          <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> تحويل إلى اختيار متعدد
                        </button>`
@@ -2380,6 +2401,7 @@ function renderQuestion(question, insertAtIndex = null) {
                          <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg> تحويل إلى سؤال مقالي
                        </button>`
     }
+                  ${isComplete ? "" : toCompleteButton(question.id)}
                 </div>
             </div>
             
@@ -2447,9 +2469,10 @@ window.toggleQuestionCollapse = function (questionId) {
 
 function setupQuestionEventListeners(questionId) {
   // Question text: inline md editor
-  setupMdEditor(`question-text-${questionId}`, (val) =>
-    updateQuestionData(questionId, "q", val),
-  );
+  setupMdEditor(`question-text-${questionId}`, (val) => {
+    updateQuestionData(questionId, "q", val);
+    refreshCompletePreview(questionId);
+  });
 
   // Explanation: inline md editor
   setupMdEditor(`question-explanation-${questionId}`, (val) =>
@@ -2836,27 +2859,30 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
   textarea.addEventListener("dragenter", (e) => {
     if (!e.dataTransfer?.types?.includes("Files")) return;
     e.preventDefault();
+    e.stopPropagation();
     dragDepth++;
     textarea.classList.add("md-source--drag-active");
-  });
+  }, true);
   textarea.addEventListener("dragover", (e) => {
     if (!e.dataTransfer?.types?.includes("Files")) return;
     e.preventDefault();
-  });
+    e.stopPropagation();
+  }, true);
   textarea.addEventListener("dragleave", () => {
     dragDepth = Math.max(0, dragDepth - 1);
     if (dragDepth === 0) textarea.classList.remove("md-source--drag-active");
-  });
+  }, true);
   textarea.addEventListener("drop", (e) => {
     const files = e.dataTransfer?.files;
     if (!files || !files.length) return;
     e.preventDefault();
+    e.stopPropagation();
     dragDepth = 0;
     textarea.classList.remove("md-source--drag-active");
     Array.from(files).forEach((file) =>
       handleMarkdownMediaFile(textarea, file, onChange),
     );
-  });
+  }, true);
 
   textarea.addEventListener("paste", (e) => {
     // Case 1: an actual image/file sitting on the clipboard (e.g. a
@@ -2866,6 +2892,7 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
     );
     if (fileItems.length) {
       e.preventDefault();
+      e.stopPropagation();
       fileItems.forEach((item) => {
         const file = item.getAsFile();
         if (file) handleMarkdownMediaFile(textarea, file, onChange);
@@ -2888,6 +2915,7 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
       const mediaType = detectMediaTypeFromUrl(trimmed);
       if (mediaType) {
         e.preventDefault();
+        e.stopPropagation();
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         const tag = buildMediaHtmlTag(mediaType, trimmed);
@@ -2918,6 +2946,7 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
       );
       if (isMediaTag) {
         e.preventDefault();
+        e.stopPropagation();
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         replaceTextareaRange(textarea, start, end, trimmed);
@@ -2932,7 +2961,7 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
     }
     // Anything else (plain text, non-media links): fall through to the
     // browser's default paste behavior.
-  });
+  }, true);
 }
 
 
@@ -3265,6 +3294,7 @@ function getSingleCorrectMultiSelectQuestions() {
   return quizData.questions.filter(
     (question) =>
       !question.answer &&
+      !isCompleteQuestion(question) &&
       isMultiSelectQuestion(question) &&
       Array.isArray(question.correct) &&
       question.correct.length === 1,
@@ -3316,7 +3346,7 @@ window.toggleSingleCorrectMcqsSelectMode = async function () {
   }
 
   const singleSelectQuestions = quizData.questions.filter(
-    (question) => !question.answer && !isMultiSelectQuestion(question),
+    (question) => !question.answer && !isCompleteQuestion(question) && !isMultiSelectQuestion(question),
   );
 
   if (singleSelectQuestions.length === 0) {
@@ -3358,7 +3388,133 @@ window.toggleSingleCorrectMcqsSelectMode = async function () {
 // Compatibility for callers that used the old one-way action name.
 window.convertSingleCorrectMcqsToSingleSelect = window.toggleSingleCorrectMcqsSelectMode;
 
+// ============================================================================
+// "COMPLETE" (FILL-IN-THE-BLANK) QUESTIONS
+// Blanks are written inline in the question text as {{answer|alt}}; the model
+// keeps questionKind:"complete" with options:[] and no `answer` marker.
+// ============================================================================
+
+function isQuestionIncomplete(question) {
+  if (!question.q || question.q.trim() === "") return true;
+  if (isCompleteQuestion(question)) {
+    const p = parseComplete(question.q);
+    return p.errors.length > 0 || p.blanks.length === 0;
+  }
+  const isEssay = Boolean(question.answer);
+  return (
+    question.options.some((opt) => !opt || opt.trim() === "") ||
+    (!isEssay && (!Array.isArray(question.correct) || question.correct.length === 0))
+  );
+}
+
+function completePreviewInner(question) {
+  const p = parseComplete(question.q || "");
+  const errors = p.errors.map((e) => `<div class="complete-preview-error">${escapeHtml(e.message)}</div>`).join("");
+  const chips = p.blanks
+    .map((b, i) => `<span class="complete-preview-chip" dir="auto"><b>${i + 1}</b> ${b.answers.map(escapeHtml).join(" | ") || "—"}</span>`)
+    .join("");
+  return errors + (chips || (errors ? "" : `<span class="complete-preview-empty">لا توجد فراغات بعد — حدّد كلمة في نص السؤال واضغط «تحويل النص المحدد إلى فراغ».</span>`));
+}
+
+function completePanelHtml(question) {
+  return `
+    <div class="complete-editor" id="complete-editor-${question.id}">
+      <div class="complete-editor-hint">اكتب كل إجابة داخل <code>{{ }}</code> في نص السؤال، وافصل الإجابات البديلة بـ <code>|</code> مثل: <code>عاصمة مصر {{القاهرة|Cairo}}</code></div>
+      <button type="button" class="add-option-btn" onclick="makeCompleteBlank(${question.id})">تحويل النص المحدد إلى فراغ</button>
+      <label class="complete-strict">
+        <input type="checkbox" ${question.strictMatch === true ? "checked" : ""} onchange="setCompleteStrict(${question.id}, this.checked)">
+        مطابقة صارمة (حالة الأحرف والتشكيل والهمزات تُحسب)
+      </label>
+      <div class="complete-preview" id="complete-preview-${question.id}">${completePreviewInner(question)}</div>
+    </div>`;
+}
+
+function refreshCompletePreview(questionId) {
+  const question = quizData.questions.find((q) => q.id === questionId);
+  if (!question || !isCompleteQuestion(question)) return;
+  const el = document.getElementById(`complete-preview-${questionId}`);
+  if (el) el.innerHTML = completePreviewInner(question);
+  updateIncompleteState(questionId);
+}
+
+function toCompleteButton(questionId) {
+  return `<button type="button" class="add-option-btn add-option-btn--convert" onclick="convertToComplete(${questionId})">تحويل إلى سؤال إكمال</button>`;
+}
+
+function completeConvertButtons(questionId) {
+  return `<button type="button" class="add-option-btn add-option-btn--convert" onclick="convertCompleteTo(${questionId}, 'mcq')">تحويل إلى اختيار متعدد</button>
+    <button type="button" class="add-option-btn add-option-btn--convert" onclick="convertCompleteTo(${questionId}, 'essay')">تحويل إلى مقالي</button>`;
+}
+
+function rebuildQuestionCard(question) {
+  const idx = quizData.questions.findIndex((q) => q.id === question.id);
+  document.getElementById(`question-${question.id}`)?.remove();
+  renderQuestion(question, idx);
+}
+
+window.makeCompleteBlank = function (questionId) {
+  const ta = document.getElementById(`question-text-${questionId}`);
+  if (!ta || typeof ta.selectionStart !== "number" || ta.selectionStart === ta.selectionEnd) {
+    showNotification("حدّد نصاً", "حدّد الكلمة التي تريد تحويلها إلى فراغ داخل نص السؤال أولاً", "info");
+    return;
+  }
+  const s = ta.selectionStart;
+  const e = ta.selectionEnd;
+  ta.value = `${ta.value.slice(0, s)}{{${ta.value.slice(s, e).trim()}}}${ta.value.slice(e)}`;
+  ta.dispatchEvent(new Event("input", { bubbles: true }));
+};
+
+window.setCompleteStrict = function (questionId, checked) {
+  const question = quizData.questions.find((q) => q.id === questionId);
+  if (!question) return;
+  pushHistorySnapshot();
+  if (checked) question.strictMatch = true;
+  else delete question.strictMatch;
+  autosave();
+};
+
+window.convertToComplete = function (questionId) {
+  const question = quizData.questions.find((q) => q.id === questionId);
+  if (!question) return;
+  pushHistorySnapshot();
+  question.questionKind = "complete";
+  question.options = [];
+  question.correct = [];
+  delete question.answer;
+  delete question.multiSelect;
+  rebuildQuestionCard(question);
+  updateStatistics();
+  autosave();
+  showNotification("تم التحويل", "حوّل الكلمات المطلوبة إلى فراغات بالشكل {{الإجابة}}", "success");
+};
+
+window.convertCompleteTo = function (questionId, kind) {
+  const question = quizData.questions.find((q) => q.id === questionId);
+  if (!question) return;
+  pushHistorySnapshot();
+  const blanks = parseComplete(question.q || "").blanks;
+  delete question.questionKind;
+  delete question.strictMatch;
+  if (kind === "essay") {
+    const answer = blanks.map((b, i) => `${i + 1}) ${b.answers[0] ?? ""}`).join("\n") || ESSAY_MARKER;
+    question.q = completeToPlain(question.q || "");
+    question.answer = answer;
+    question.options = [answer];
+    question.correct = [];
+  } else {
+    question.q = completeToFirstAnswers(question.q || "");
+    question.options = ["", "", "", ""];
+    question.correct = [0];
+    question.answer = "";
+  }
+  rebuildQuestionCard(question);
+  updateStatistics();
+  autosave();
+  showNotification("تم التحويل", "تم تحويل سؤال الإكمال", "success");
+};
+
 function renderOptions(question) {
+  if (isCompleteQuestion(question)) return completePanelHtml(question);
   if (question.answer) {
     const optId = `option-text-${question.id}-0`;
     return `
@@ -3516,24 +3672,28 @@ function rerenderOptions(questionId) {
   // essay's actual "تحويل إلى اختيار متعدد" button, corrupting the
   // single-slot essay `options` array instead of doing anything visible as
   // "add a question".
-  const isEssay = Boolean(question.answer);
+  const isComplete = isCompleteQuestion(question);
+  const isEssay = !isComplete && Boolean(question.answer);
   const card = document.getElementById(`question-${questionId}`);
   if (card) {
     card.classList.toggle("question-card--essay", isEssay);
+    card.classList.toggle("question-card--complete", isComplete);
   }
 
   const label = document.querySelector(
     `#question-${questionId} .options-label`,
   );
   if (label) {
-    label.textContent = isEssay
+    label.textContent = isComplete ? "الفراغات" : isEssay
       ? "الإجابة المرجعية"
       : "الإختيارات";
   }
 
   const btnDiv = document.getElementById(`option-btn-${questionId}`);
   if (btnDiv) {
-    if (isEssay) {
+    if (isComplete) {
+      btnDiv.innerHTML = completeConvertButtons(questionId);
+    } else if (isEssay) {
       btnDiv.innerHTML = `<button class="add-option-btn add-option-btn--convert" onclick="convertEssayToMcq(${questionId})">
         <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> تحويل إلى اختيار متعدد
       </button>`;
@@ -3545,6 +3705,7 @@ function rerenderOptions(questionId) {
         <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg> تحويل إلى سؤال مقالي
       </button>`;
     }
+    if (!isComplete) btnDiv.insertAdjacentHTML("beforeend", toCompleteButton(questionId));
   }
 }
 
@@ -3645,14 +3806,7 @@ function updateIncompleteState(questionId) {
   const card = document.getElementById(`question-${questionId}`);
   if (!question || !card) return;
 
-  const isIncomplete =
-    !question.q ||
-    question.q.trim() === "" ||
-    question.options.some((opt) => !opt || opt.trim() === "") ||
-    (!question.answer &&
-      (!Array.isArray(question.correct) || question.correct.length === 0));
-
-  card.classList.toggle("incomplete", isIncomplete);
+  card.classList.toggle("incomplete", isQuestionIncomplete(question));
 }
 
 // ============================================================================
@@ -3941,6 +4095,9 @@ function quizToRuleInput() {
     description: quizData.description,
     source: quizData.source,
     questions: quizData.questions.map((q) => {
+      if (isCompleteQuestion(q)) {
+        return { q: q.q, questionKind: "complete", strictMatch: q.strictMatch, explanation: q.explanation };
+      }
       const isEssay = Boolean(q.answer) || (Array.isArray(q.options) && q.options.length === 1);
       if (isEssay) {
         return { q: q.q, answer: q.options?.[0] ?? "", explanation: q.explanation };
@@ -4206,6 +4363,10 @@ function updateAutosaveIndicator(status) {
  * user_quizzes but the editor always uses { q, options: [answer] }.
  */
 function normalizeQuestionForEditor(q) {
+  if (q.questionKind === "complete") {
+    const { answer, options, correct, multiSelect, ...rest } = q;
+    return { ...rest, questionKind: "complete", options: [], correct: [] };
+  }
   if (!Array.isArray(q.options)) {
     // Essay: answer field present, no options array. `answer` here becomes
     // the editor's isEssay marker (see ESSAY_MARKER) — it must stay
@@ -4623,6 +4784,12 @@ function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
   // over anymore.
   const questions = (quizToSave.questions || []).map((q) => {
     const out = { q: q.q };
+    if (q.questionKind === "complete") {
+      out.questionKind = "complete";
+      if (q.strictMatch === true) out.strictMatch = true;
+      if (q.explanation?.trim()) out.explanation = q.explanation;
+      return out;
+    }
     // Normalize essay: old 1-option → new answer field
     if (Array.isArray(q.options) && q.options.length === 1) {
       out.answer = q.options[0] ?? "";
@@ -4651,7 +4818,8 @@ function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
 
   const types = new Set();
   questions.forEach((q) => {
-    if (!Array.isArray(q.options) || q.options.length === 0) types.add("Essay");
+    if (q.questionKind === "complete") types.add("Complete");
+    else if (!Array.isArray(q.options) || q.options.length === 0) types.add("Essay");
     else if (q.options.length === 2) types.add("True/False");
     else types.add("MCQ");
   });
@@ -4793,6 +4961,12 @@ window.exportQuiz = function () {
   };
   const exportQuestions = quizData.questions.map((q) => {
     const out = { q: q.q };
+    if (q.questionKind === "complete") {
+      out.questionKind = "complete";
+      if (q.strictMatch === true) out.strictMatch = true;
+      if (q.explanation?.trim()) out.explanation = q.explanation;
+      return out;
+    }
     // Essay question: has 1 option (legacy) or has `answer` field → export as { q, answer }
     if (Array.isArray(q.options) && q.options.length === 1) {
       out.answer = q.options[0] || "";
@@ -5053,14 +5227,17 @@ async function saveSharedQuizEdit() {
  * quiz) and previewSingleQuestion() (one question from its ⋮ menu) so the
  * two stay visually identical. */
 function renderQuestionPreviewHtml(q, index) {
-  const isEssay = Boolean(q.answer);
+  const isComplete = isCompleteQuestion(q);
+  const isEssay = !isComplete && Boolean(q.answer);
   const correctSet = Array.isArray(q.correct)
     ? q.correct
     : typeof q.correct === "number"
       ? [q.correct]
       : [];
 
-  const optionsHtml = isEssay
+  const optionsHtml = isComplete
+    ? `<div class="preview-essay-answer">${parseComplete(q.q).blanks.map((b, i) => `${i + 1}) ${escapeHtml(b.answers.join(" / "))}`).join("<br>")}</div>`
+    : isEssay
     ? `<div class="preview-essay-answer">${renderMarkdown(q.options?.[0] || "")}</div>`
     : `<ul class="preview-options">
           ${q.options
@@ -5773,4 +5950,4 @@ function hideLoading() {
   if (overlay) {
     overlay.style.display = "none";
   }
-}
+}

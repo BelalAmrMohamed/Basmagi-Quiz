@@ -117,6 +117,19 @@ export function normalizeLessonJson(value) {
       }
       questionCount += 1;
       const explanation = text(block.explanation ?? "", "Question explanation", LIMITS.explanationMax);
+      if (block.questionKind === "complete") {
+        if (!/\{\{[^}]+\}\}/.test(prompt)) {
+          invalid(`Complete question ${blockIndex + 1} in section ${sectionIndex + 1} needs at least one {{blank}} in its prompt.`);
+        }
+        return {
+          type: "question",
+          id: crypto.randomUUID(),
+          questionKind: "complete",
+          prompt,
+          ...(block.strictMatch === true ? { strictMatch: true } : {}),
+          explanation,
+        };
+      }
       if (block.questionKind === "essay") {
         const modelAnswer = typeof block.modelAnswer === "string" ? block.modelAnswer.trim() : "";
         if (!modelAnswer || modelAnswer.length > LIMITS.modelAnswerMax) {
@@ -241,7 +254,16 @@ export function normalizeLessonDraft(value) {
         const explanation = str(block.explanation);
         const hasOptions = Array.isArray(block.options) && block.options.length > 0;
         const modelAnswer = str(block.modelAnswer ?? block.answer);
-        if (block.questionKind === "essay" || (!hasOptions && modelAnswer)) {
+        if (block.questionKind === "complete") {
+          blocks.push({
+            type: "question",
+            id: crypto.randomUUID(),
+            questionKind: "complete",
+            prompt,
+            ...(block.strictMatch === true ? { strictMatch: true } : {}),
+            explanation,
+          });
+        } else if (block.questionKind === "essay" || (!hasOptions && modelAnswer)) {
           blocks.push({ type: "question", id: crypto.randomUUID(), questionKind: "essay", prompt, modelAnswer, explanation });
         } else {
           const options = hasOptions ? block.options.map((o) => str(o)) : ["", ""];

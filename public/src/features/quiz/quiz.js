@@ -25,11 +25,14 @@ import { initKeyboardNav } from "./keyboard-nav.js";
 import {
   gradeEssay,
   isEssayQuestion,
+  isCompleteQuestion,
+  gradeCompleteQuestion,
   isAnswerCorrect,
   isMultiSelectQuestion,
   singleCorrectIndex,
 } from "../../shared/rate-answers.js";
 import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
+import { parseComplete, completeInputsHtml } from "../../shared/complete-question.js";
 import { mountEssayFields } from "../../shared/rich-input/essay-field.js";
 import {
   getMediaUrlCandidates as _getMediaUrlCandidates,
@@ -328,7 +331,9 @@ window.handleSelectForQuestion = (qIdx, optIdx) => {
 window.checkAnswerForQuestion = (qIdx) => {
   const q = questions[qIdx];
   const isEssay = isEssayQuestion(q);
-  if (isEssay) {
+  if (isCompleteQuestion(q)) {
+    if (!hasCompleteAnswer(qIdx)) return;
+  } else if (isEssay) {
     const textarea = document.getElementById(`essayInput-${qIdx}`);
     if (!textarea || !textarea.value.trim()) return;
   } else {
@@ -358,6 +363,70 @@ window.handleEssayInputForQuestion = (qIdx) => {
     if (checkBtn) checkBtn.disabled = !textarea.value.trim();
   }
 };
+
+// === "Complete" (fill-in-the-blank) helpers ===
+const completeBlanksCache = new Map();
+const completeBlanksOf = (q) => {
+  const key = q?.q ?? "";
+  if (!completeBlanksCache.has(key)) completeBlanksCache.set(key, parseComplete(key));
+  return completeBlanksCache.get(key);
+};
+// Question text with its blanks rendered as inputs (answers never reach the DOM as text
+// of the prompt; the first accepted answer sits only in the hidden "expected" chip).
+const renderCompleteText = (q, idx) => {
+  const parsed = completeBlanksOf(q);
+  const isLocked = !!lockedQuestions[idx];
+  const values = Array.isArray(userAnswers[idx]) ? userAnswers[idx] : [];
+  const grade = gradeCompleteQuestion(q, values);
+  const html = renderMarkdown(parsed.marked, { mediaBaseUrl: quizBaseUrl });
+  return completeInputsHtml(html, { blanks: parsed.blanks, values, locked: isLocked, perBlank: grade.perBlank });
+};
+const completeScoreText = (q, idx) => {
+  const g = gradeCompleteQuestion(q, userAnswers[idx]);
+  return `(${g.correct}/${g.total})`;
+};
+const hasCompleteAnswer = (idx) =>
+  Array.isArray(userAnswers[idx]) && userAnswers[idx].some((v) => String(v ?? "").trim() !== "");
+
+// One delegated listener for every blank (vertical + paginated styles).
+document.addEventListener("input", (e) => {
+  const el = e.target?.closest?.(".complete-blank");
+  if (!el) return;
+  const card = el.closest("[data-question-index]");
+  if (!card) return;
+  const idx = Number(card.dataset.questionIndex);
+  const q = questions[idx];
+  if (!q || lockedQuestions[idx] || !isCompleteQuestion(q)) return;
+  const n = completeBlanksOf(q).blanks.length;
+  const arr = Array.from({ length: n }, (_, i) =>
+    Array.isArray(userAnswers[idx]) ? String(userAnswers[idx][i] ?? "") : "",
+  );
+  arr[Number(el.dataset.blank)] = el.value;
+  if (arr.some((v) => v.trim() !== "")) userAnswers[idx] = arr;
+  else delete userAnswers[idx];
+  saveStateDebounced();
+  const checkBtn = card.querySelector(".check-answer-btn");
+  if (checkBtn) checkBtn.disabled = !hasCompleteAnswer(idx);
+});
+// Enter: next blank; on the last blank, check the answer.
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" || e.isComposing) return;
+  const el = e.target?.closest?.(".complete-blank");
+  if (!el) return;
+  e.preventDefault();
+  const card = el.closest("[data-question-index]");
+  const inputs = [...card.querySelectorAll(".complete-blank")];
+  const next = inputs[inputs.indexOf(el) + 1];
+  if (next) next.focus();
+  else card.querySelector(".check-answer-btn:not(.hidden):not([disabled])")?.click();
+});
+
+const buildCompleteBlock = (header, q, idx, isLocked, showCheckButton, feedbackHtml, checkCall) => `
+  ${header}
+  <div class="complete-score${isLocked ? " show" : ""}">${completeScoreText(q, idx)}</div>
+  <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" title="إظهار الإجابة الصحيحة" onclick="${checkCall}" ${hasCompleteAnswer(idx) ? "" : "disabled"}>تحقق من الإجابة</button>
+  ${feedbackHtml}
+`;
 
 // === Helper: HTML Escaping ===
 const escapeHtml = (unsafe) => {
@@ -1121,13 +1190,45 @@ async function init() {
         return;
       }
 
-      const userQuiz = JSON.parse(userQuizData);
+      let userQuiz = JSON.parse(userQuizData);
+      let userQuizQuestions = Array.isArray(userQuiz?.questions)
+        ? userQuiz.questions
+        : [];
+      // A stale session entry can shadow a complete copy in localStorage.
+      // Recover by ID before treating the quiz as malformed.
+      if (userQuizQuestions.length === 0 && examId) {
+        try {
+          const allUserQuizzes = JSON.parse(
+            localStorage.getItem("user_quizzes") || "[]",
+          );
+          const recovered = allUserQuizzes.find(
+            (q) => q.id === examId && Array.isArray(q.questions) && q.questions.length > 0,
+          );
+          if (recovered) {
+            userQuiz = recovered;
+            userQuizQuestions = recovered.questions;
+            sessionStorage.setItem("active_user_quiz", JSON.stringify(recovered));
+          }
+        } catch (e) {
+          console.warn("[Quiz] Could not recover the saved quiz:", e);
+        }
+      }
+      if (userQuizQuestions.length === 0) {
+        throw new Error("This saved quiz has no questions or uses an unsupported format.");
+      }
 
       // Map user questions to ensure correct format, handling both old and new essay style
-      questions = userQuiz.questions.map((q) => {
+      questions = userQuizQuestions.map((q) => {
         const out = { q: q.q };
         if (q.passage) out.passage = q.passage;
         if (q.explanation) out.explanation = q.explanation;
+        // Complete questions have no options or answer field. Preserve their
+        // discriminator so the renderer and grader use the fill-in-the-blank UI.
+        if (q.questionKind === "complete") {
+          out.questionKind = "complete";
+          if (q.strictMatch === true) out.strictMatch = true;
+          return out;
+        }
         // Normalize essay: old 1-option → new answer field
         if (Array.isArray(q.options) && q.options.length === 1) {
           out.answer = q.options[0] ?? "";
@@ -1731,7 +1832,9 @@ function createGridItem(q, idx) {
     statusClass = "current";
   } else if (isLocked) {
     let isCorrect;
-    if (isEssayQuestion(q)) {
+    if (isCompleteQuestion(q)) {
+      isCorrect = gradeCompleteQuestion(q, userAnswers[idx]).allCorrect;
+    } else if (isEssayQuestion(q)) {
       // Bug 1 Fix: grade essay by score (≥3/5), not by exact string match
       const essayScore = gradeEssay(userAnswers[idx], getEssayAnswer(q));
       isCorrect = essayScore >= 3;
@@ -1819,7 +1922,9 @@ function createListItem(q, idx) {
     statusClass = "current";
   } else if (isLocked) {
     let isCorrect;
-    if (isEssayQuestion(q)) {
+    if (isCompleteQuestion(q)) {
+      isCorrect = gradeCompleteQuestion(q, userAnswers[idx]).allCorrect;
+    } else if (isEssayQuestion(q)) {
       // Bug 1 Fix: grade essay by score (≥3/5), not by exact string match
       const essayScore = gradeEssay(userAnswers[idx], getEssayAnswer(q));
       isCorrect = essayScore >= 3;
@@ -1870,6 +1975,7 @@ function flagIconSvg(active) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${active ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></svg>`;
 }
 function buildVerticalQuestionBodyHTML(q, idx) {
+  const isComplete = isCompleteQuestion(q);
   const isEssay = isEssayQuestion(q);
   const correctIdx = q.correct ?? q.answer;
   const isMultiple = isMultiSelectQuestion(q);
@@ -1912,7 +2018,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
          \`passage\` field. A <div> has no content-model restriction;
          role="heading" aria-level="2" preserves the same heading
          semantics for screen readers that the real <h2> provided. -->
-    <div class="question-text" role="heading" aria-level="2">${renderMarkdown(q.q, { mediaBaseUrl: quizBaseUrl })}</div>
+    <div class="question-text" role="heading" aria-level="2">${isComplete ? renderCompleteText(q, idx) : renderMarkdown(q.q, { mediaBaseUrl: quizBaseUrl })}</div>
   `;
 
   // Feedback/model-answer content is ALWAYS rendered here, up front —
@@ -1930,7 +2036,10 @@ function buildVerticalQuestionBodyHTML(q, idx) {
   let feedbackText = "";
   const explanationText =
     q.explanation || q.desc || q.info || "No explanation provided.";
-  if (isEssay) {
+  if (isComplete) {
+    feedbackCorrectClass = gradeCompleteQuestion(q, userSelected).allCorrect ? "correct" : "wrong";
+    feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div></div>`;
+  } else if (isEssay) {
     feedbackCorrectClass = "essay-feedback";
     feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
   } else {
@@ -1949,6 +2058,14 @@ function buildVerticalQuestionBodyHTML(q, idx) {
   }
   const feedbackShowClass = `${feedbackCorrectClass ? ` ${feedbackCorrectClass}` : ""}${isLocked ? " show" : ""}`;
   const feedbackHtml = `<div class="feedback${feedbackShowClass}" data-correct-class="${feedbackCorrectClass}">${feedbackText}</div>`;
+
+  if (isComplete) {
+    return {
+      largeClass,
+      mediaHTML,
+      html: buildCompleteBlock(header, q, idx, isLocked, showCheckButton, feedbackHtml, `window.checkAnswerForQuestion(${idx})`),
+    };
+  }
 
   if (isEssay) {
     const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
@@ -2042,7 +2159,28 @@ function patchQuestionAnswerState(cardEl, q, idx) {
   const userSelected = userAnswers[idx];
   const showCheckButton = quizMode !== "exam" && quizMode !== "timed_exam";
 
-  if (isEssay) {
+  if (isCompleteQuestion(q)) {
+    const grade = gradeCompleteQuestion(q, userSelected);
+    cardEl.querySelectorAll(".complete-blank").forEach((input) => {
+      const b = Number(input.dataset.blank);
+      const st = grade.perBlank[b];
+      input.disabled = isLocked;
+      input.classList.toggle("is-correct", isLocked && !!st?.ok);
+      input.classList.toggle("is-wrong", isLocked && !!st && !st.ok);
+      const want = Array.isArray(userSelected) ? String(userSelected[b] ?? "") : "";
+      if (document.activeElement !== input && input.value !== want) input.value = want;
+    });
+    const scoreEl = cardEl.querySelector(".complete-score");
+    if (scoreEl) {
+      scoreEl.textContent = completeScoreText(q, idx);
+      scoreEl.classList.toggle("show", isLocked);
+    }
+    const checkBtn = cardEl.querySelector(".check-answer-btn");
+    if (checkBtn) {
+      checkBtn.classList.toggle("hidden", isLocked || !showCheckButton);
+      checkBtn.disabled = !hasCompleteAnswer(idx);
+    }
+  } else if (isEssay) {
     const textarea = cardEl.querySelector(`#essayInput-${idx}, .essay-textarea`);
     if (textarea) {
       textarea.disabled = isLocked;
@@ -2110,7 +2248,9 @@ function patchQuestionAnswerState(cardEl, q, idx) {
   if (feedbackEl) {
     let feedbackCorrectClass = isEssay ? "essay-feedback" : "";
     if (isLocked) {
-      if (!isEssay) {
+      if (isCompleteQuestion(q)) {
+        feedbackCorrectClass = gradeCompleteQuestion(q, userSelected).allCorrect ? "correct" : "wrong";
+      } else if (!isEssay) {
         const isMultiple = isMultiSelectQuestion(q);
         const correctIdx = q.correct ?? q.answer;
         const isCorrect = isMultiple
@@ -2328,6 +2468,7 @@ function renderAllQuestionsVertical(opts) {
 // input interaction without touching the media DOM at all — so audio/video/
 // YouTube elements never unmount, reload, or flicker while answering.
 function buildQuestionBodyHTML(q, idx) {
+  const isComplete = isCompleteQuestion(q);
   const isEssay = isEssayQuestion(q);
   const correctIdx = q.correct ?? q.answer;
   const isLocked = !!lockedQuestions[idx];
@@ -2341,7 +2482,10 @@ function buildQuestionBodyHTML(q, idx) {
   const explanationText =
     q.explanation || q.desc || q.info || "No explanation provided.";
 
-  if (isEssay) {
+  if (isComplete) {
+    feedbackCorrectClass = gradeCompleteQuestion(q, userSelected).allCorrect ? "correct" : "wrong";
+    feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div></div>`;
+  } else if (isEssay) {
     feedbackCorrectClass = "essay-feedback";
     feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
   } else {
@@ -2386,8 +2530,24 @@ function buildQuestionBodyHTML(q, idx) {
       ${actionButtons}
     </div>
     ${renderReadingPassage(q.passage)}
-    <div class="question-text" role="heading" aria-level="2">${renderMarkdown(q.q, { mediaBaseUrl: quizBaseUrl })}</div>
+    <div class="question-text" role="heading" aria-level="2">${isComplete ? renderCompleteText(q, idx) : renderMarkdown(q.q, { mediaBaseUrl: quizBaseUrl })}</div>
   `;
+
+  if (isComplete) {
+    return {
+      largeClass,
+      mediaHTML,
+      html: buildCompleteBlock(
+        reloadableHeaderHTML,
+        q,
+        idx,
+        isLocked,
+        showCheckButton,
+        `<div class="${feedbackClass}">${feedbackText}</div>`,
+        "window.checkAnswer()",
+      ),
+    };
+  }
 
   if (isEssay) {
     const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
@@ -2693,8 +2853,13 @@ async function finish(skipconfirmationNotification) {
   let essayMaxScore = 0; // Essay points possible
   let essayQuestions = [];
 
+  let completeEarned = 0;
+  let completeCount = 0;
   questions.forEach((q, i) => {
-    if (isEssayQuestion(q)) {
+    if (isCompleteQuestion(q)) {
+      completeCount++;
+      completeEarned += gradeCompleteQuestion(q, userAnswers[i]).earned;
+    } else if (isEssayQuestion(q)) {
       essayQuestions.push(i);
       const score = gradeEssay(userAnswers[i], getEssayAnswer(q));
       essayScore += score;
@@ -2706,7 +2871,7 @@ async function finish(skipconfirmationNotification) {
   });
 
   const mcqCount = questions.length - essayQuestions.length;
-  const totalScore = correctCount + essayScore;
+  const totalScore = correctCount + completeEarned + essayScore;
   const totalPossible = mcqCount + essayMaxScore;
 
   const rawResult = {
@@ -2846,7 +3011,9 @@ function checkAnswer() {
   const q = questions[currentIdx];
   const isEssay = isEssayQuestion(q);
 
-  if (isEssay) {
+  if (isCompleteQuestion(q)) {
+    if (!hasCompleteAnswer(currentIdx)) return;
+  } else if (isEssay) {
     const textarea = document.getElementById("essayInput");
     if (!textarea || !textarea.value.trim()) return;
   } else {

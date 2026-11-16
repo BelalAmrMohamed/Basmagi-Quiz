@@ -73,9 +73,16 @@ html, body { overflow-x: clip; }
 .hive-root .face i { font-style: normal; font-size: 2.6em; line-height: 1; filter: drop-shadow(0 4px 8px #0006); }
 .hive-root .face b {
   font-weight: 700; max-width: 100%; overflow-wrap: anywhere; text-align: center;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  text-overflow: ellipsis; unicode-bidi: plaintext; /* ellipsis follows each title's own direction */
 }
-.hive-root .face s { text-decoration: none; color: var(--hv-mute); font-size: .82em; transition: color .25s; }
+.hive-root .face s {
+  text-decoration: none; color: var(--hv-mute); font-size: .82em; transition: color .25s;
+  display: block; max-width: 100%; min-width: 0; text-align: center; unicode-bidi: plaintext;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* keep text clear of the ⋮ button that sits at the bottom of the cell */
+.hive-root .hx:has(> .exam-more-btn) .face { padding-bottom: calc(var(--w) * .13); }
 
 /* states: colour and opacity only, nothing moves or resizes */
 .hive-root .face:hover::before, .hive-root .face:focus-visible::before { background: var(--hv-cell-hi); }
@@ -160,7 +167,8 @@ html[dir="rtl"] .hive-root .hx:has(> .subscribe-btn-container) > .exam-more-btn 
   .hive-root .hx:nth-child(5n+5 of :not([hidden])) { --x: 4; }
   .hive-root .hx:nth-child(5n+4 of :not([hidden]))::before,
   .hive-root .hx:nth-child(5n+5 of :not([hidden]))::after { content: ""; }
-  .hive-root .hx > .exam-more-btn { bottom: 7%; width: 24px; height: 24px; }
+  .hive-root .hx > .exam-more-btn { bottom: 7%; width: 22px; height: 22px; }
+  .hive-root .hx > .exam-more-btn svg { width: 14px; height: 14px; }
   .hive-root .hx-new { top: 15%; }
   .hive-root .hx:has(> .subscribe-btn-container) > .exam-more-btn { top: 15%; }
 }

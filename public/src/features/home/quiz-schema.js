@@ -4,6 +4,7 @@
 // schemas, normalizing legacy question shapes, and building new entries.
 // ============================================================================
 
+import { inferQuestionType } from "../../shared/rate-answers.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { hasSameLevelCollision } from "./user-quizzes-folders.js";
 
@@ -70,9 +71,7 @@ export function buildUserQuizEntry(id, parsed, titleFallback, parentId = null) {
   const questions = normalizeQuestions(parsed.questions || []);
   const types = new Set();
   questions.forEach((q) => {
-    if (!Array.isArray(q.options) || q.options.length === 0) types.add("Essay");
-    else if (q.options.length === 2) types.add("True/False");
-    else types.add("MCQ");
+    types.add(inferQuestionType(q));
   });
 
   // Preserve ALL original meta fields (including id, createdAt, source, etc.)

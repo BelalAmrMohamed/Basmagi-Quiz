@@ -18,6 +18,7 @@ import { _confirm, showNotification } from "../../components/notifications/notif
 import { openReportModal, isQuestionReported } from "../../components/report-question/report-question.js";
 import { getQuestionMarks, toggleQuestionMark } from "./lesson-question-marks.js";
 import { gradeEssay, isAnswerCorrect } from "../../shared/rate-answers.js";
+import { parseComplete, gradeComplete, completeInputsHtml, completeAnswerKey } from "../../shared/complete-question.js";
 import { mountEssayFields } from "../../shared/rich-input/essay-field.js";
 import { lessonIcon } from "./lesson-icons.js";
 import { ogThumbUrl } from "../../shared/og-thumb.js";
@@ -285,6 +286,10 @@ function renderQuestionBlock(block, ctx) {
   const questionNumber = ctx.questionLabels?.get(questionId);
   const questionHeader = renderQuestionHeader(questionNumber, ctx.lessonId, questionId);
 
+  if (block.questionKind === "complete") {
+    return renderCompleteQuestionBody(block, questionId, prior, questionHeader);
+  }
+
   if (isEssay) {
     if (!block.modelAnswer) return "";
     return renderEssayQuestionBody(block, questionId, prior, questionHeader);
@@ -402,6 +407,34 @@ function renderEssayQuestionBody(block, questionId, prior, header) {
   );
 }
 
+/** Fill-in-the-blank question: blanks are inline inputs inside the prompt. */
+function renderCompleteQuestionBody(block, questionId, prior, header) {
+  const parsed = parseComplete(block.prompt || "");
+  if (!parsed.blanks.length) return "";
+  let values = [];
+  try {
+    const v = JSON.parse(prior?.answerText || "[]");
+    if (Array.isArray(v)) values = v;
+  } catch { /* ignore corrupt stored answer */ }
+  const promptHtml = completeInputsHtml(renderMarkdown(parsed.marked), { blanks: parsed.blanks, values });
+  return (
+    `<article class="lesson-block lesson-block--question lesson-question" ` +
+    `data-question-kind="complete" ` +
+    `id="lesson-question-${escapeHtml(questionId)}" ` +
+    `data-question-id="${escapeHtml(questionId)}" ` +
+    `data-complete-blanks="${escapeHtml(JSON.stringify(parsed.blanks))}" ` +
+    `data-strict="${block.strictMatch === true ? "true" : "false"}"` +
+    (prior?.answered ? ` data-answered="true"` : "") +
+    `>` +
+    header +
+    `<div class="lesson-question__prompt md-content">${promptHtml}</div>` +
+    `<div class="complete-score" role="status"></div>` +
+    `<button type="button" class="lesson-question__complete-check-btn lesson-question__check-btn" data-complete-check title="إظهار الإجابة الصحيحة" disabled>تحقق من الإجابة</button>` +
+    renderQuestionFeedback(block.explanation) +
+    `</article>`
+  );
+}
+
 /**
  * Wires click handling for every embedded question inside `root`.
  *
@@ -482,6 +515,14 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
         correctAnswers: correctIndexes.map((i) => options[i]).filter(Boolean),
         chosenAnswers: chosenIndexes.map((i) => options[i]).filter(Boolean),
       });
+    } else if (questionEl.dataset.questionKind === "complete") {
+      const blanks = readCompleteBlanks(questionEl);
+      onExplainWrong({
+        kind: "essay",
+        question: questionText,
+        modelAnswer: blanks.map((b, i) => `${i + 1}) ${b.answers.join(" / ")}`).join("\n"),
+        myAnswer: readCompleteAnswers(questionEl).map((v, i) => `${i + 1}) ${v || "—"}`).join("\n"),
+      });
     } else {
       const modelAnswer = questionEl.dataset.modelAnswer || "";
       const myAnswer = questionEl.querySelector(".lesson-question__essay-input")?.markdown || "";
@@ -520,6 +561,37 @@ export function equipQuestionBlocks(root, lessonId, onAnswered, onExplainWrong) 
       const wasCorrect = isAnswerCorrect(selected, correctIndexes);
       recordQuestionAnswer(lessonId, questionId, wasCorrect, selected);
       revealMcqAnswer(questionEl, correctIndexes, wasCorrect, selected);
+      if (typeof onAnswered === "function") onAnswered();
+    });
+  });
+
+  root.querySelectorAll('.lesson-question[data-question-kind="complete"]').forEach((questionEl) => {
+    const questionId = questionEl.dataset.questionId;
+    const prior = getLessonProgress(lessonId)?.questions?.[questionId];
+    const checkBtn = questionEl.querySelector("[data-complete-check]");
+    if (prior?.answered) revealCompleteAnswer(questionEl);
+    else if (checkBtn) checkBtn.disabled = !readCompleteAnswers(questionEl).some((v) => v.trim());
+    questionEl.addEventListener("input", (e) => {
+      if (!e.target.closest(".complete-blank") || questionEl.dataset.answered === "true") return;
+      if (checkBtn) checkBtn.disabled = !readCompleteAnswers(questionEl).some((v) => v.trim());
+    });
+    questionEl.addEventListener("keydown", (e) => {
+      const el = e.target.closest?.(".complete-blank");
+      if (!el || e.key !== "Enter" || e.isComposing) return;
+      e.preventDefault();
+      const inputs = [...questionEl.querySelectorAll(".complete-blank")];
+      const next = inputs[inputs.indexOf(el) + 1];
+      if (next) next.focus();
+      else if (checkBtn && !checkBtn.disabled && !checkBtn.hidden) checkBtn.click();
+    });
+    checkBtn?.addEventListener("click", () => {
+      if (questionEl.dataset.answered === "true") return; // reveal-once
+      const answers = readCompleteAnswers(questionEl);
+      if (!answers.some((v) => v.trim())) return;
+      const g = gradeComplete(readCompleteBlanks(questionEl), answers, questionEl.dataset.strict === "true");
+      recordQuestionAnswer(lessonId, questionId, g.allCorrect);
+      appendEssayAnswerText(lessonId, questionId, JSON.stringify(answers));
+      revealCompleteAnswer(questionEl);
       if (typeof onAnswered === "function") onAnswered();
     });
   });
@@ -607,6 +679,15 @@ function syncOptionSelection(questionEl) {
 export function resetQuestionElement(qEl) {
   qEl.dataset.answered = "false";
   delete qEl.dataset.result;
+  qEl.querySelectorAll(".complete-blank").forEach((input) => {
+    input.value = "";
+    input.disabled = false;
+    input.classList.remove("is-correct", "is-wrong");
+  });
+  const completeScore = qEl.querySelector(".complete-score");
+  if (completeScore) { completeScore.textContent = ""; completeScore.classList.remove("show"); }
+  const completeCheck = qEl.querySelector("[data-complete-check]");
+  if (completeCheck) { completeCheck.disabled = true; completeCheck.hidden = false; }
   qEl.querySelectorAll(".lesson-question__option").forEach((row) => {
     row.classList.remove("is-selected", "is-correct", "is-wrong", "is-locked");
     const input = row.querySelector("input");
@@ -713,6 +794,33 @@ function showFeedback(questionEl, good, essay = false) {
   feedback.classList.remove("correct", "wrong");
   if (!essay) feedback.classList.add(good ? "correct" : "wrong");
   feedback.hidden = false;
+}
+
+function readCompleteBlanks(questionEl) {
+  try { return JSON.parse(questionEl.dataset.completeBlanks || "[]"); } catch { return []; }
+}
+
+function readCompleteAnswers(questionEl) {
+  return [...questionEl.querySelectorAll(".complete-blank")].map((el) => el.value);
+}
+
+/** Locks the blanks, marks each right/wrong in place, shows the (n/total) score and the explanation. */
+function revealCompleteAnswer(questionEl) {
+  questionEl.dataset.answered = "true";
+  const g = gradeComplete(readCompleteBlanks(questionEl), readCompleteAnswers(questionEl), questionEl.dataset.strict === "true");
+  questionEl.querySelectorAll(".complete-blank").forEach((input) => {
+    const st = g.perBlank[Number(input.dataset.blank)];
+    input.disabled = true;
+    input.classList.toggle("is-correct", !!st?.ok);
+    input.classList.toggle("is-wrong", !!st && !st.ok);
+  });
+  const scoreEl = questionEl.querySelector(".complete-score");
+  if (scoreEl) { scoreEl.textContent = `(${g.correct}/${g.total})`; scoreEl.classList.add("show"); }
+  const checkBtn = questionEl.querySelector("[data-complete-check]");
+  if (checkBtn) { checkBtn.disabled = true; checkBtn.hidden = true; }
+  questionEl.dataset.result = g.allCorrect ? "correct" : "wrong";
+  showFeedback(questionEl, g.allCorrect);
+  if (!g.allCorrect) renderExplainWrongButton(questionEl);
 }
 
 function revealMcqAnswer(questionEl, correctIndexes, wasCorrect, chosenIndexes) {

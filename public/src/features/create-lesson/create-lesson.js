@@ -50,6 +50,7 @@ import {
 import { normalizeLessonContent, hasLessonLevelCollision } from "../lesson/lesson-schema.js";
 import { normalizeLessonJson, normalizeLessonDraft } from "../lesson/lesson-json.js";
 import { checkLesson, stripLegacySource } from "../../shared/content-rules.js";
+import { parseComplete, completeToFirstAnswers, completeToPlain } from "../../shared/complete-question.js";
 import { FONT_CHOICES, normalizeFontId, applyReaderPrefs } from "../lesson/lesson-reader-prefs.js";
 import { sha256Hex, validateLessonPasswordInput } from "../lesson/lesson-access.js";
 import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar.js";
@@ -58,10 +59,9 @@ import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
 import { CREATE_LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { CREATE_LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { downloadLesson } from "../home/lesson-download.js";
-import { observeRichInputHighlighters } from "../../shared/rich-input-highlighter.js";
+import { mountSourceField } from "../../shared/rich-input/source-field.js";
 import { fetchImportDraft } from "../../shared/import-draft.js";
 
-observeRichInputHighlighters({ selector: ".md-source" });
 
 // Matches the canonical published-lesson id shape used across the lesson
 // feature (lesson-view.js, lesson-schema.js): a Supabase UUID. Local-only
@@ -269,13 +269,20 @@ function pushHistorySnapshot() {
 // to the structural stack above when the field has nothing to undo.
 let lastTextField = null;
 
+/** The text field an event target belongs to (rich source fields report their inner editor as the target). */
+function historyFieldOf(el) {
+    return el?.closest?.(".rmci-host.md-source") || el;
+}
+
 function isHistoryTextField(el) {
-    return el instanceof HTMLTextAreaElement ||
+    return el?.classList?.contains("rmci-host") ||
+        el instanceof HTMLTextAreaElement ||
         (el instanceof HTMLInputElement && /^(text|search|url|)$/.test(el.type));
 }
 
 function textHistoryAvailable(kind) {
     if (!lastTextField || !document.body.contains(lastTextField)) return false;
+    if (typeof lastTextField.canHistory === "function") return lastTextField.canHistory(kind); // rich field: its own history
     try {
         const active = document.activeElement;
         if (active !== lastTextField) {
@@ -299,11 +306,13 @@ function updateUndoRedoButtons() {
 }
 
 document.addEventListener("focusin", (e) => {
-    if (isHistoryTextField(e.target)) lastTextField = e.target;
+    const f = historyFieldOf(e.target);
+    if (isHistoryTextField(f)) lastTextField = f;
     updateUndoRedoButtons();
 });
 document.addEventListener("input", (e) => {
-    if (isHistoryTextField(e.target)) { lastTextField = e.target; updateUndoRedoButtons(); }
+    const f = historyFieldOf(e.target);
+    if (isHistoryTextField(f)) { lastTextField = f; updateUndoRedoButtons(); }
 });
 // Keep focus in the field when a history button is pressed so execCommand
 // targets it.
@@ -330,7 +339,8 @@ function refreshEditorAfterHistoryChange() {
 window.performUndo = function () {
     if (textHistoryAvailable("undo")) {
         lastTextField.focus({ preventScroll: true });
-        document.execCommand("undo");
+        if (typeof lastTextField.runHistory === "function") lastTextField.runHistory("undo");
+        else document.execCommand("undo");
         updateUndoRedoButtons();
         return;
     }
@@ -351,7 +361,8 @@ window.performUndo = function () {
 window.performRedo = function () {
     if (textHistoryAvailable("redo")) {
         lastTextField.focus({ preventScroll: true });
-        document.execCommand("redo");
+        if (typeof lastTextField.runHistory === "function") lastTextField.runHistory("redo");
+        else document.execCommand("redo");
         updateUndoRedoButtons();
         return;
     }
@@ -1070,6 +1081,19 @@ function addLessonQuestionFromAgent(toolCall) {
         throw error;
     }
     const isEssay = input.questionKind === "essay";
+    if (input.questionKind === "complete") {
+        if (!/\{\{[^}]+\}\}/.test(prompt)) {
+            const error = new Error("Complete question needs a {{blank}}");
+            error.userMessage = "سؤال الإكمال يحتاج فراغاً واحداً على الأقل بالشكل {{الإجابة}}.";
+            throw error;
+        }
+        pushHistorySnapshot();
+        target.blocks.push({ type: "question", id: newLocalId("q"), _localId: newLocalId("b"), questionKind: "complete", prompt, ...(input.strictMatch === true ? { strictMatch: true } : {}), explanation: String(input.explanation || "") });
+        renderSections();
+        autosave();
+        showNotification("تمت الإضافة", `أُضيف السؤال إلى ${target.title || "القسم الأول"}.`, "success");
+        return `✅ تمت إضافة السؤال إلى ${target.title || "القسم الأول"}.`;
+    }
     const options = Array.isArray(input.options) ? input.options.map((option) => String(option || "").trim()) : [];
     const correctIndexes = Array.isArray(input.correctIndexes) ? input.correctIndexes.map(Number) : [0];
     if (isEssay && !String(input.modelAnswer || "").trim()) {
@@ -1397,7 +1421,13 @@ function hydrateBlock(block) {
     if (b.type === "folderRef") b.type = "folder-reference";
     if (b.type === "courseRef") b.type = "course-reference";
     if (b.type === "question") {
-        if (b.questionKind === "essay") {
+        if (b.questionKind === "complete") {
+            delete b.options;
+            delete b.correctIndex;
+            delete b.correctIndexes;
+            delete b.multiSelect;
+            delete b.modelAnswer;
+        } else if (b.questionKind === "essay") {
             b.questionKind = "essay";
             b.modelAnswer = b.modelAnswer || "";
             delete b.options;
@@ -1599,6 +1629,9 @@ function mdEditorHtml(id, value, placeholder, rows = 2) {
 
 /** AI-chat-style growing textarea: grows with content up to a cap, then scrolls. */
 function autoResizeMdSource(ta, minPx = 40, maxPx = 320) {
+    // Rich source fields (Tiptap) grow with their content on their own and
+    // scroll inside their own max-height — only native textareas need this.
+    if (!(ta instanceof HTMLTextAreaElement)) return;
     ta.style.height = "auto";
     const next = Math.min(Math.max(ta.scrollHeight, minPx), maxPx);
     ta.style.height = next + "px";
@@ -1611,6 +1644,12 @@ function autoResizeMdSource(ta, minPx = 40, maxPx = 320) {
  * execCommand("insertText") goes through the real input pipeline instead).
  */
 function replaceTextareaRange(ta, start, end, text) {
+    // Rich source field: one undoable editor transaction (see rich-input/source-field.js).
+    if (typeof ta.replaceRange === "function") {
+        ta.focus();
+        ta.replaceRange(start, end, text);
+        return;
+    }
     ta.focus();
     ta.setSelectionRange(start, end);
     const ok = typeof document.execCommand === "function" && document.execCommand("insertText", false, text);
@@ -1623,8 +1662,11 @@ function replaceTextareaRange(ta, start, end, text) {
 
 /** Wire one textarea: auto-resize, onChange, and media drop/paste embedding. */
 function setupMdField(id, onChange, { minPx = 40, maxPx = 320 } = {}) {
-    const source = document.getElementById(id);
-    if (!source) return;
+    const textarea = document.getElementById(id);
+    if (!textarea) return;
+    // The textarea becomes a flat Tiptap source field (same id/classes, no
+    // per-field toolbar): the one global bar formats whichever field is focused.
+    const source = mountSourceField(textarea, { maxHeight: maxPx, minHeight: minPx });
     autoResizeMdSource(source, minPx, maxPx);
     source.addEventListener("input", () => {
         autoResizeMdSource(source, minPx, maxPx);
@@ -1920,31 +1962,35 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
     textarea.addEventListener("dragenter", (e) => {
         if (!e.dataTransfer?.types?.includes("Files")) return;
         e.preventDefault();
+        e.stopPropagation();
         dragDepth++;
         textarea.classList.add("md-source--drag-active");
-    });
+    }, true);
     textarea.addEventListener("dragover", (e) => {
         if (!e.dataTransfer?.types?.includes("Files")) return;
         e.preventDefault();
-    });
+        e.stopPropagation();
+    }, true);
     textarea.addEventListener("dragleave", () => {
         dragDepth = Math.max(0, dragDepth - 1);
         if (dragDepth === 0) textarea.classList.remove("md-source--drag-active");
-    });
+    }, true);
     textarea.addEventListener("drop", (e) => {
         const files = e.dataTransfer?.files;
         if (!files || !files.length) return;
         e.preventDefault();
+        e.stopPropagation();
         dragDepth = 0;
         textarea.classList.remove("md-source--drag-active");
         Array.from(files).forEach((f) => handleMarkdownMediaFile(textarea, f, onChange));
-    });
+    }, true);
 
     textarea.addEventListener("paste", (e) => {
         // Case 1: an actual file/screenshot on the clipboard.
         const fileItems = Array.from(e.clipboardData?.items || []).filter((i) => i.kind === "file");
         if (fileItems.length) {
             e.preventDefault();
+            e.stopPropagation();
             fileItems.forEach((item) => {
                 const f = item.getAsFile();
                 if (f) handleMarkdownMediaFile(textarea, f, onChange);
@@ -1959,6 +2005,7 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
         const mediaType = detectMediaTypeFromUrl(trimmed);
         if (mediaType) {
             e.preventDefault();
+            e.stopPropagation();
             replaceTextareaRange(textarea, textarea.selectionStart, textarea.selectionEnd, buildMediaHtmlTag(mediaType, trimmed));
             autoResizeMdSource(textarea);
             if (onChange) onChange(textarea.value);
@@ -1968,11 +2015,12 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
         // Case 3: a raw <img>/<video>/<audio> snippet ("copy image").
         if (/^<(img|video|audio|source)\b[^>]*\bsrc=["'][^"']*["'][^>]*>/i.test(trimmed)) {
             e.preventDefault();
+            e.stopPropagation();
             replaceTextareaRange(textarea, textarea.selectionStart, textarea.selectionEnd, trimmed);
             autoResizeMdSource(textarea);
             if (onChange) onChange(textarea.value);
         }
-    });
+    }, true);
 }
 
 // =============================================================================
@@ -2522,10 +2570,8 @@ window.setMdMode = function (fieldId, mode) {
     if (!textarea || !preview) return;
     root.querySelectorAll(".lesson-md-tab").forEach((t) => t.classList.toggle("active", t.dataset.mode === mode));
     root.classList.toggle("is-previewing", mode === "preview");
-    // The shared highlighter wraps the textarea in its own mirror surface.
-    // Hiding only the textarea leaves that mirror visible beside the preview
-    // (the narrow blue column of Markdown tokens seen in the editor).
-    const inputSurface = textarea.closest(".rich-input-highlighter") || textarea;
+    // The field is a rich source field: hide its whole root (not just the host) in preview.
+    const inputSurface = textarea.closest(".rmci-root") || textarea;
     if (mode === "preview") {
         preview.innerHTML = renderMarkdown(textarea.value || "");
         inputSurface.style.display = "none";
@@ -3048,12 +3094,67 @@ function buildEmbedPreviewLookups() {
 // `.md-source` fields (so the global bar works on them), and a question can be
 // converted between multiple-choice and essay in either direction.
 
+// ── "Complete" (fill-in-the-blank): blanks are written inline as {{answer|alt}} ──
+function lessonCompletePreviewInner(block) {
+    const p = parseComplete(block.prompt || "");
+    const errors = p.errors.map((e) => `<div class="complete-preview-error">${escapeHtml(e.message)}</div>`).join("");
+    const chips = p.blanks
+        .map((b, i) => `<span class="complete-preview-chip" dir="auto"><b>${i + 1}</b> ${b.answers.map(escapeHtml).join(" | ") || "—"}</span>`)
+        .join("");
+    return errors + (chips || (errors ? "" : `<span class="complete-preview-empty">لا توجد فراغات بعد — اكتب الإجابة داخل {{ }} في نص السؤال.</span>`));
+}
+
+function lessonCompletePanelHtml(sectionId, block) {
+    const sid = escapeHtml(sectionId);
+    const bid = escapeHtml(block._localId);
+    return `
+      <div class="complete-editor">
+        <div class="complete-editor-hint">اكتب كل إجابة داخل <code>{{ }}</code> في نص السؤال، وافصل البدائل بـ <code>|</code> مثل: <code>عاصمة مصر {{القاهرة|Cairo}}</code></div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="makeLessonCompleteBlank('${bid}')">تحويل النص المحدد إلى فراغ</button>
+        <label class="complete-strict">
+          <input type="checkbox" ${block.strictMatch === true ? "checked" : ""} onchange="setLessonCompleteStrict('${sid}', '${bid}', this.checked)">
+          مطابقة صارمة (حالة الأحرف والتشكيل والهمزات تُحسب)
+        </label>
+        <div class="complete-preview" id="lesson-complete-preview-${bid}">${lessonCompletePreviewInner(block)}</div>
+      </div>`;
+}
+
+function refreshLessonCompletePreview(block) {
+    if (block.questionKind !== "complete") return;
+    const el = document.getElementById(`lesson-complete-preview-${block._localId}`);
+    if (el) el.innerHTML = lessonCompletePreviewInner(block);
+}
+
+window.makeLessonCompleteBlank = function (localId) {
+    const ta = document.getElementById(`q-prompt-${localId}`);
+    if (!ta || typeof ta.selectionStart !== "number" || ta.selectionStart === ta.selectionEnd) {
+        showNotification("حدّد نصاً", "حدّد الكلمة التي تريد تحويلها إلى فراغ داخل نص السؤال أولاً", "info");
+        return;
+    }
+    const s = ta.selectionStart;
+    const e = ta.selectionEnd;
+    ta.value = `${ta.value.slice(0, s)}{{${ta.value.slice(s, e).trim()}}}${ta.value.slice(e)}`;
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+};
+
+window.setLessonCompleteStrict = function (sectionId, localId, checked) {
+    const block = findBlock(sectionId, localId);
+    if (!block) return;
+    pushHistorySnapshot();
+    if (checked) block.strictMatch = true;
+    else delete block.strictMatch;
+    autosave();
+};
+
 function questionBlockInnerHtml(sectionId, block) {
     const sid = escapeHtml(sectionId);
     const bid = escapeHtml(block._localId);
     const isEssay = block.questionKind === "essay";
+    const isComplete = block.questionKind === "complete";
 
-    const optionsHtml = isEssay
+    const optionsHtml = isComplete
+        ? lessonCompletePanelHtml(sectionId, block)
+        : isEssay
         ? `
       <div class="essay-answer-container">
         <div class="essay-answer-label">
@@ -3099,14 +3200,19 @@ function questionBlockInnerHtml(sectionId, block) {
       ${mdEditorHtml(`q-prompt-${block._localId}`, block.prompt, "أدخل سؤالك هنا...", 1)}
     </div>
     <div class="lesson-question-options">
-      <label>${isEssay ? "الإجابة المرجعية" : block.multiSelect ? "الإختيارات (حدد كل الإجابات الصحيحة)" : "الإختيارات (اختر الإجابة الصحيحة)"}</label>
+      <label>${isComplete ? "الفراغات" : isEssay ? "الإجابة المرجعية" : block.multiSelect ? "الإختيارات (حدد كل الإجابات الصحيحة)" : "الإختيارات (اختر الإجابة الصحيحة)"}</label>
       ${optionsHtml}
       <div class="lesson-question-type-actions">
-        ${isEssay
-            ? `<button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'mcq')">تحويل إلى اختيار متعدد</button>`
+        ${isComplete
+            ? `<button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'mcq')">تحويل إلى اختيار متعدد</button>
+               <button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'essay')">تحويل إلى سؤال مقالي</button>`
+        : isEssay
+            ? `<button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'mcq')">تحويل إلى اختيار متعدد</button>
+               <button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'complete')">تحويل إلى سؤال إكمال</button>`
             : `<button type="button" class="btn btn-secondary btn-sm" ${block.options.length >= 8 ? "disabled" : ""} onclick="addQuestionOption('${sid}', '${bid}')">+ خيار</button>
                    <button type="button" class="btn btn-secondary btn-sm" onclick="toggleQuestionMultiSelect('${sid}', '${bid}')">${block.multiSelect ? "إجابة واحدة" : "إجابات متعددة"}</button>
-                   <button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'essay')">تحويل إلى سؤال مقالي</button>`
+                   <button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'essay')">تحويل إلى سؤال مقالي</button>
+                   <button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'complete')">تحويل إلى سؤال إكمال</button>`
         }
       </div>
     </div>
@@ -3140,11 +3246,11 @@ function refreshAllRuleDropdowns() {
 }
 
 function wireQuestionBlock(sectionId, block) {
-    setupMdField(`q-prompt-${block._localId}`, (v) => { block.prompt = v; autosave(); });
+    setupMdField(`q-prompt-${block._localId}`, (v) => { block.prompt = v; autosave(); refreshLessonCompletePreview(block); });
     setupMdField(`q-expl-${block._localId}`, (v) => { block.explanation = v; autosave(); });
     if (block.questionKind === "essay") {
         setupMdField(`q-model-${block._localId}`, (v) => { block.modelAnswer = v; autosave(); }, { minPx: 80 });
-    } else {
+    } else if (block.questionKind !== "complete") {
         block.options.forEach((_, i) => {
             setupMdField(`q-opt-${block._localId}-${i}`, (v) => { block.options[i] = v; autosave(); }, { minPx: 36, maxPx: 160 });
         });
@@ -3153,7 +3259,7 @@ function wireQuestionBlock(sectionId, block) {
 
 window.addQuestionOption = function (sectionId, localId) {
     const block = findBlock(sectionId, localId);
-    if (!block || block.questionKind === "essay" || block.options.length >= 8) return;
+    if (!block || block.questionKind === "essay" || block.questionKind === "complete" || block.options.length >= 8) return;
     pushHistorySnapshot();
     block.options.push("");
     renderSections();
@@ -3162,7 +3268,7 @@ window.addQuestionOption = function (sectionId, localId) {
 
 window.removeQuestionOption = function (sectionId, localId, index) {
     const block = findBlock(sectionId, localId);
-    if (!block || block.questionKind === "essay" || block.options.length <= 2) return;
+    if (!block || block.questionKind === "essay" || block.questionKind === "complete" || block.options.length <= 2) return;
     pushHistorySnapshot();
     block.options.splice(index, 1);
     block.correctIndexes = (block.correctIndexes || [block.correctIndex]).filter((i) => i !== index).map((i) => i > index ? i - 1 : i);
@@ -3276,7 +3382,7 @@ async function openPublishedLessonById(id) {
 
 window.toggleQuestionMultiSelect = function (sectionId, localId) {
     const block = findBlock(sectionId, localId);
-    if (!block || block.questionKind === "essay") return;
+    if (!block || block.questionKind === "essay" || block.questionKind === "complete") return;
     pushHistorySnapshot();
     block.multiSelect = !block.multiSelect;
     block.correctIndexes = block.multiSelect ? (block.correctIndexes || [block.correctIndex]) : [block.correctIndexes?.[0] ?? block.correctIndex];
@@ -3303,6 +3409,44 @@ window.setQuestionRevealRule = function (sectionId, localId, ruleKey, targetSect
 window.convertQuestionKind = async function (sectionId, localId, kind) {
     const block = findBlock(sectionId, localId);
     if (!block || block.type !== "question") return;
+
+    if (block.questionKind === "complete") {
+        pushHistorySnapshot();
+        const blanks = parseComplete(block.prompt || "").blanks;
+        delete block.strictMatch;
+        if (kind === "essay") {
+            block.modelAnswer = blanks.map((b, i) => `${i + 1}) ${b.answers[0] ?? ""}`).join("\n");
+            block.prompt = completeToPlain(block.prompt || "");
+            block.questionKind = "essay";
+            delete block.onWrong;
+            delete block.onCorrect;
+        } else {
+            block.prompt = completeToFirstAnswers(block.prompt || "");
+            block.questionKind = "mcq";
+            block.options = ["", "", "", ""];
+            block.correctIndex = 0;
+            block.multiSelect = false;
+            block.correctIndexes = [0];
+        }
+        renderSections();
+        autosave();
+        showNotification("تم التحويل", "تم تحويل سؤال الإكمال", "success");
+        return;
+    }
+
+    if (kind === "complete") {
+        pushHistorySnapshot();
+        block.questionKind = "complete";
+        delete block.options;
+        delete block.correctIndex;
+        delete block.correctIndexes;
+        delete block.multiSelect;
+        delete block.modelAnswer;
+        renderSections();
+        autosave();
+        showNotification("تم التحويل", "حوّل الكلمات المطلوبة إلى فراغات بالشكل {{الإجابة}}", "success");
+        return;
+    }
 
     if (kind === "essay") {
         if (
@@ -3493,7 +3637,7 @@ function lessonToRuleInput() {
         sections: lessonData.sections.map((section) => ({
             title: section.title,
             blocks: section.blocks.map((block) => {
-                if (block.type !== "question" || block.questionKind === "essay") return block;
+                if (block.type !== "question" || block.questionKind === "essay" || block.questionKind === "complete") return block;
                 return { ...block, correctIndexes: block.multiSelect ? block.correctIndexes : [block.correctIndex] };
             }),
         })),

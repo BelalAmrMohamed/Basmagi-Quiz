@@ -21,24 +21,41 @@ import { createDictation } from "./dictation.js";
 
 const live = new Set();
 
-export function mountEssayFields(root = document, { onError } = {}) {
+/** Destroys editors whose DOM was thrown away by a re-render. */
+function sweep() {
   for (const inst of live) {
     if (!inst.el.isConnected) { inst.destroy(); live.delete(inst); }
   }
-  root.querySelectorAll("textarea[data-essay-field]").forEach((ta) => {
+}
+
+export function mountEssayFields(root = document, { onError } = {}) {
+  sweep();
+  root.querySelectorAll("textarea[data-essay-field]").forEach((ta) => mountEssayField(ta, { onError }));
+}
+
+/**
+ * Replaces ONE textarea with the full rich markdown input (formatting toolbar,
+ * mic + volume wave). Returns the rich-input instance (`rich.host` is the
+ * textarea stand-in, `rich.destroy()` tears it down). Used directly by the
+ * lesson comment forms, which manage their own lifetime.
+ * @param {HTMLTextAreaElement} ta
+ * @param {{ onError?: (msg: string) => void, maxHeight?: number, hideControlsWhenDisabled?: boolean, essay?: boolean }} [o]
+ */
+export function mountEssayField(ta, { onError, maxHeight = 360, hideControlsWhenDisabled = true, essay = true } = {}) {
+  {
     const rich = createRichInput({
       placeholder: ta.getAttribute("placeholder") || "",
       direction: "auto",
-      maxHeight: 360,
+      maxHeight,
       initialMarkdown: ta.value,
-      hideControlsWhenDisabled: true,
+      hideControlsWhenDisabled,
     });
     const host = rich.host;
     host.id = ta.id;
     host.className += ` ${ta.className}`;
     const inline = ta.getAttribute("oninput");
     if (inline) host.setAttribute("oninput", inline); // legacy inline handler keeps working
-    rich.el.classList.add("rmci-root--essay");
+    if (essay) rich.el.classList.add("rmci-root--essay");
 
     // Same mic + live volume wave as the AI Agent chat (shared dictation.js).
     const dictation = createDictation({
@@ -71,5 +88,6 @@ export function mountEssayFields(root = document, { onError } = {}) {
       destroy();
     };
     live.add(rich);
-  });
+    return rich;
+  }
 }

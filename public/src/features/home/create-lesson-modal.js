@@ -33,6 +33,13 @@ Use this exact structure:
           "prompt": "Essay question",
           "modelAnswer": "A complete model answer",
           "explanation": "Optional guidance"
+        },
+        {
+          "type": "question",
+          "questionKind": "complete",
+          "prompt": "Fill-in-the-blank: the capital of Egypt is {{Cairo|القاهرة}}.",
+          "strictMatch": false,
+          "explanation": "Optional guidance"
         }
       ]
     }

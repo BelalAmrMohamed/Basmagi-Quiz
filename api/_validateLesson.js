@@ -54,6 +54,7 @@ const ALLOWED_BLOCK_KEYS_BY_TYPE = {
         "correctIndex",
         "correctIndexes",
         "multiSelect",
+        "strictMatch",
         "modelAnswer",
         "explanation",
         "onWrong",
@@ -168,7 +169,31 @@ function validateBlock(block, index, sectionIds) {
     // for quizzes (see that file's header comment on why quizzes use a
     // sentinel answer value instead — lessons don't share that constraint
     // since this whitelist already rejects unknown shapes outright).
-    const questionKind = block.questionKind === "essay" ? "essay" : "mcq";
+    const questionKind = block.questionKind === "essay" ? "essay" : block.questionKind === "complete" ? "complete" : "mcq";
+
+    // Fill-in-the-blank: blanks live inline in `prompt` as {{answer|alt}}. Grading is
+    // deterministic, so adaptive onWrong/onCorrect rules are allowed (unlike essay).
+    if (questionKind === "complete") {
+        if (!/\{\{[^}]+\}\}/.test(prompt)) {
+            throw new Error(`سؤال الإكمال في العنصر رقم ${index + 1} يحتاج فراغاً واحداً على الأقل بالشكل {{الإجابة}}.`);
+        }
+        if (block.options !== undefined || block.modelAnswer !== undefined) {
+            throw new Error(`سؤال الإكمال لا يحتوي options أو modelAnswer (العنصر رقم ${index + 1}).`);
+        }
+        if (block.strictMatch !== undefined && typeof block.strictMatch !== "boolean") {
+            throw new Error(`strictMatch يجب أن يكون true أو false (العنصر رقم ${index + 1}).`);
+        }
+        const clean = { type: "question", id, questionKind: "complete", prompt };
+        if (block.strictMatch === true) clean.strictMatch = true;
+        if (typeof block.explanation === "string" && block.explanation) {
+            clean.explanation = block.explanation.slice(0, MAX_MARKDOWN_LENGTH);
+        }
+        const onWrong = validateRevealRule(block.onWrong, sectionIds, `العنصر رقم ${index + 1}.onWrong`);
+        if (onWrong) clean.onWrong = onWrong;
+        const onCorrect = validateRevealRule(block.onCorrect, sectionIds, `العنصر رقم ${index + 1}.onCorrect`);
+        if (onCorrect) clean.onCorrect = onCorrect;
+        return clean;
+    }
 
     if (questionKind === "essay") {
         const modelAnswer = typeof block.modelAnswer === "string" ? block.modelAnswer : "";
