@@ -90,7 +90,7 @@ html[data-theme="dark-slate"] .rmci-root {
   color: var(--rmci-muted); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer;
   transition: background .15s ease, color .15s ease;
 }
-.rmci-model-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rmci-model-label { direction: ltr; unicode-bidi: isolate; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rmci-model-btn:hover:not(:disabled) { background: var(--rmci-hover); color: var(--rmci-fg); }
 .rmci-model-btn:disabled { opacity: .55; cursor: not-allowed; }
 .rmci-model-btn .rmci-icon { transition: transform .2s ease; }

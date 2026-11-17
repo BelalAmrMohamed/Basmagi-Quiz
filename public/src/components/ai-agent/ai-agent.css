@@ -4341,3 +4341,51 @@ body.sidebar-expanded .ai-agent-fab {
 .ai-agent-chat-messages > .ai-agent-msg--tool-result {
   width: min(100%, 760px);
 }
+
+/* History items: more room for the title, slim vertical-dots button */
+.ai-agent-history-item {
+  padding-inline: 12px 4px;
+  gap: 4px;
+}
+
+.ai-agent-history-item-more {
+  width: 22px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+/* On desktop the time lives in the tooltip (item title attribute) */
+@media (hover: hover) and (pointer: fine) {
+  .ai-agent-history-item-time {
+    display: none;
+  }
+}
+
+/* Input area: same centered column as the messages, plus a soft shade above it */
+.ai-agent-chat-messages {
+  scrollbar-gutter: stable both-edges;
+}
+
+.ai-agent-chat-input-controls {
+  max-width: 760px;
+}
+
+.ai-agent-chat-input-row {
+  position: relative;
+}
+
+.ai-agent-chat-input-row::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 50%;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--color-background) 95%, transparent) 0%,
+    color-mix(in srgb, var(--color-background) 65%, transparent) 30%,
+    color-mix(in srgb, var(--color-background) 25%, transparent) 65%,
+    transparent 100%
+  );
+  pointer-events: none;
+}

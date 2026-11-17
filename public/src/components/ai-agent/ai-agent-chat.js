@@ -536,7 +536,7 @@ export function createChatPanel(options = {}) {
    * @param {Array<object>} historyToPersist
    */
   function toPersistedMessages(historyToPersist) {
-    return historyToPersist.filter((m) => !m.hidden).map(({ role, content, attachments, type, toolName }) => {
+    return historyToPersist.filter((m) => !m.hidden).map(({ role, content, attachments, type, toolName, thinking }) => {
       const first = attachments?.[0];
       const firstLabel = first?.name || first?.title;
       return {
@@ -544,6 +544,7 @@ export function createChatPanel(options = {}) {
         content,
         ...(type ? { type } : {}),
         ...(toolName ? { toolName } : {}),
+        ...(thinking ? { thinking } : {}),
         ...(firstLabel ? { attachmentName: firstLabel } : {}),
         ...(first?.kind ? { attachmentKind: first.kind } : {}),
         ...(first?.itemType ? { attachmentItemType: first.itemType } : {}),
@@ -2116,7 +2117,7 @@ export function createChatPanel(options = {}) {
           const w = msgEl.parentElement;
           w.insertBefore(buildThinkingBlock(data.thinking), msgEl);
         }
-        history.push({ role: "assistant", content: data.text });
+        history.push({ role: "assistant", content: data.text, ...(data.thinking ? { thinking: data.thinking } : {}) });
         typingController.moveToBottom();
       }
 
@@ -2613,6 +2614,8 @@ export function createChatPanel(options = {}) {
   };
 
   panel.loadConversation = function loadConversation(conversation) {
+    // Cancel a stuck/in-flight request so the new view is never left locked.
+    if (isGenerating) abortCurrentTurn("");
     stopSpeaking();
     typingController.clear();
     removeSuggestions();
@@ -2632,7 +2635,7 @@ export function createChatPanel(options = {}) {
     // branches on att.kind === "file") keeps working the same way it does
     // for a live, never-reloaded attachment.
     history.push(
-      ...conversation.messages.map(({ role, content, attachmentName, attachmentKind, attachmentItemType, attachmentSummary, type, toolName }) => {
+      ...conversation.messages.map(({ role, content, attachmentName, attachmentKind, attachmentItemType, attachmentSummary, type, toolName, thinking }) => {
         const kind = attachmentKind || "file"; // older saved records predate attachmentKind — file was the only kind that ever existed before platform-item attachments
         const attachment = attachmentName
           ? {
@@ -2647,6 +2650,7 @@ export function createChatPanel(options = {}) {
           content,
           ...(type ? { type } : {}),
           ...(toolName ? { toolName } : {}),
+          ...(thinking ? { thinking } : {}),
           ...(attachment ? { attachments: [attachment] } : {}),
         };
       }),
@@ -2660,7 +2664,10 @@ export function createChatPanel(options = {}) {
         if (m.type === "tool-result") {
           appendToolResultMessage(m.content, m.toolName || "");
         } else {
-          appendMessage(m.role, m.content, m.attachments, i);
+          const msgEl = appendMessage(m.role, m.content, m.attachments, i);
+          if (m.thinking && m.role === "assistant") {
+            msgEl.parentElement.insertBefore(buildThinkingBlock(m.thinking), msgEl);
+          }
         }
       });
     }
@@ -2680,6 +2687,8 @@ export function createChatPanel(options = {}) {
    * a chat stuck without them for the rest of the panel's lifetime.
    */
   panel.startNewConversation = function startNewConversation() {
+    // Cancel a stuck/in-flight request so the new view is never left locked.
+    if (isGenerating) abortCurrentTurn("");
     stopSpeaking();
     typingController.clear();
     conversationId = crypto.randomUUID();
