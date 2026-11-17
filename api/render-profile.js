@@ -44,7 +44,7 @@ const DEVELOPERS_EMAILS = (process.env.DEVELOPERS_EMAILS || "")
   .filter(Boolean);
 
 const TEMPLATE_PATH = path.join(process.cwd(), "public", "profile.html");
-const SITE_ORIGIN = "https://basmagi.vercel.app";
+const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
 
 // Upper bound on how long we'll wait for the handle lookup before falling back
 // to an un-personalised shell. Sits comfortably under Vercel's own function
@@ -146,16 +146,16 @@ export default async function handler(req, res) {
   const rolePromise =
     supabaseService && DEVELOPERS_EMAILS.length
       ? supabaseService
-          .from("admin_users")
-          .select("email")
-          .ilike("handle", normalizedHandle)
-          .maybeSingle()
-          .then(({ data }) =>
-            data?.email && DEVELOPERS_EMAILS.includes(String(data.email).trim().toLowerCase())
-              ? "developer"
-              : "admin",
-          )
-          .catch(() => "admin")
+        .from("admin_users")
+        .select("email")
+        .ilike("handle", normalizedHandle)
+        .maybeSingle()
+        .then(({ data }) =>
+          data?.email && DEVELOPERS_EMAILS.includes(String(data.email).trim().toLowerCase())
+            ? "developer"
+            : "admin",
+        )
+        .catch(() => "admin")
       : Promise.resolve("admin");
 
   let html;

@@ -22,8 +22,8 @@
     <meta property="og:type" content="website" />
     <meta property="og:title" content="عن المنصة | منصة امتحانات بصمجي" />
     <meta property="og:description" content="منصة عربية تجعل إنشاء الامتحانات ومراجعتها وحلها أكثر وضوحاً." />
-    <meta property="og:url" content="https://basmagi.vercel.app/about" />
-    <link rel="canonical" href="https://basmagi.vercel.app/about" />
+    <meta property="og:url" content="https://basmagi-quiz.vercel.app/about" />
+    <link rel="canonical" href="https://basmagi-quiz.vercel.app/about" />
     <link rel="icon" href="/favicon.png" type="image/png" />
     <title>عن المنصة | منصة امتحانات بصمجي</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -176,8 +176,8 @@
                         <span class="platform-stat-label">مقرر دراسي (مادة)</span>
                     </div>
                     <div class="platform-stat-card platform-stat-loading" id="statCardEducationTracks"
-                        data-stat-index="05"
-                        data-pop="tracks" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false" aria-label="المسارات التعليمية النشطة — اضغط لعرض التفاصيل">
+                        data-stat-index="05" data-pop="tracks" tabindex="0" role="button" aria-haspopup="dialog"
+                        aria-expanded="false" aria-label="المسارات التعليمية النشطة — اضغط لعرض التفاصيل">
                         <span class="platform-stat-icon" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -191,7 +191,8 @@
                         <span class="platform-stat-label">مسار تعليمي نشط</span>
                     </div>
                     <div class="platform-stat-card platform-stat-loading" id="statCardCreators" data-stat-index="06"
-                        data-pop="creators" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false" aria-label="أبرز صنّاع المحتوى — اضغط لعرض التفاصيل">
+                        data-pop="creators" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false"
+                        aria-label="أبرز صنّاع المحتوى — اضغط لعرض التفاصيل">
                         <span class="platform-stat-icon" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -212,11 +213,12 @@
 
                 <div class="live-stats" id="liveStats" aria-live="off">
                     <div class="live-stats-block live-stats-block--total platform-stat-loading" id="liveCardTotal">
-                        <span class="live-stats-label">إجمالي زوار المنصة الفريدين (منذ بدء تسجيل الزوار في شهر 11 عام 2026)</span>
+                        <span class="live-stats-label">إجمالي زوار المنصة الفريدين (منذ بدء تسجيل الزوار في شهر 11 عام
+                            2026)</span>
                         <strong class="platform-stat-value live-stats-total" id="liveTotalVisitors">—</strong>
                         <div class="live-stats-meta-row">
-                            <span class="live-online" id="liveOnline"><span class="live-dot" aria-hidden="true"></span><b
-                                    id="liveOnlineCount">—</b> متصل الآن</span>
+                            <span class="live-online" id="liveOnline"><span class="live-dot"
+                                    aria-hidden="true"></span><b id="liveOnlineCount">—</b> متصل الآن</span>
                             <span class="live-sub-stat">إجمالي المشاهدات: <b id="liveTotalViews">—</b></span>
                         </div>
                     </div>
@@ -230,9 +232,11 @@
                         <div class="trend-head">
                             <figcaption class="live-stats-label" id="liveTrendCaption">الزوار الفريدون في آخر 30 يومًا
                             </figcaption>
-                            <div class="range-picker" id="rangePicker" role="group" aria-label="الفترة الزمنية للرسم البياني">
+                            <div class="range-picker" id="rangePicker" role="group"
+                                aria-label="الفترة الزمنية للرسم البياني">
                                 <button type="button" class="range-chip" data-range="7">أسبوع</button>
-                                <button type="button" class="range-chip is-active" data-range="30" aria-pressed="true">شهر</button>
+                                <button type="button" class="range-chip is-active" data-range="30"
+                                    aria-pressed="true">شهر</button>
                                 <button type="button" class="range-chip" data-range="90">3 أشهر</button>
                                 <button type="button" class="range-chip" data-range="365">سنة</button>
                                 <button type="button" class="range-chip" data-range="all">الكل</button>
@@ -247,9 +251,18 @@
                             <p class="range-error" id="rangeError" role="alert" hidden></p>
                         </form>
                         <dl class="trend-summary" id="trendSummary">
-                            <div><dt>مجموع الزوار اليومي</dt><dd id="trendTotal">—</dd></div>
-                            <div><dt>المتوسط اليومي</dt><dd id="trendAvg">—</dd></div>
-                            <div><dt>أعلى يوم</dt><dd id="trendPeak">—</dd></div>
+                            <div>
+                                <dt>مجموع الزوار اليومي</dt>
+                                <dd id="trendTotal">—</dd>
+                            </div>
+                            <div>
+                                <dt>المتوسط اليومي</dt>
+                                <dd id="trendAvg">—</dd>
+                            </div>
+                            <div>
+                                <dt>أعلى يوم</dt>
+                                <dd id="trendPeak">—</dd>
+                            </div>
                         </dl>
                         <div class="live-spark-wrap" id="liveSparkWrap" tabindex="0">
                             <svg class="live-spark" id="liveSpark" role="img"
@@ -258,7 +271,8 @@
                         </div>
                         <div class="live-spark-axis" aria-hidden="true"><span id="axisStart"></span><span
                                 id="axisEnd"></span></div>
-                        <p class="trend-hint" id="trendHint">المس الرسم أو مرّر عليه لرؤية تفاصيل كل يوم. الزائر الذي يعود في يوم آخر يُحتسب مجددًا، لأن معرّفه المجهول يتغيّر يوميًا حفاظًا على الخصوصية.</p>
+                        <p class="trend-hint" id="trendHint">المس الرسم أو مرّر عليه لرؤية تفاصيل كل يوم. الزائر الذي
+                            يعود في يوم آخر يُحتسب مجددًا، لأن معرّفه المجهول يتغيّر يوميًا حفاظًا على الخصوصية.</p>
                     </figure>
                 </div>
             </section>
@@ -334,8 +348,8 @@
                         </span>
                     </span>
                     <span class="oss-repo-cta" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="m15 18-6-6 6-6" />
                         </svg>
                     </span>
@@ -362,8 +376,10 @@
                 <div class="oss-clone">
                     <span class="oss-clone-label">انسخ المشروع إلى جهازك</span>
                     <div class="oss-clone-row">
-                        <code dir="ltr" id="ossCloneCmd">git clone https://github.com/BelalAmrMohamed/Basmagi-Quiz.git</code>
-                        <button type="button" class="oss-copy" id="ossCopyBtn" aria-label="نسخ أمر الاستنساخ">نسخ</button>
+                        <code dir="ltr"
+                            id="ossCloneCmd">git clone https://github.com/BelalAmrMohamed/Basmagi-Quiz.git</code>
+                        <button type="button" class="oss-copy" id="ossCopyBtn"
+                            aria-label="نسخ أمر الاستنساخ">نسخ</button>
                     </div>
                     <span class="oss-copy-status" id="ossCopyStatus" role="status" aria-live="polite"></span>
                 </div>
@@ -428,7 +444,7 @@
                     </a>
 
                     <a class="featured-link-card featured-link-profile" id="platformProfileCard"
-                        href="https://basmagi.vercel.app/@belalamrofficial" target="_blank"
+                        href="https://basmagi-quiz.vercel.app/@belalamrofficial" target="_blank"
                         rel="noopener noreferrer" aria-label="الملف الشخصي على المنصة">
                         <span class="featured-link-profile-avatar-wrap">
                             <img class="featured-link-profile-avatar" id="platformProfileAvatar" src="" alt=""
@@ -447,7 +463,7 @@
                                 <span class="featured-link-profile-level" id="platformProfileLevel" hidden></span>
                             </span>
                             <span class="featured-link-profile-handle"
-                                id="platformProfileHandle">basmagi.vercel.app/@belalamrofficial</span>
+                                id="platformProfileHandle">basmagi-quiz.vercel.app/@belalamrofficial</span>
                             <span class="featured-link-profile-stats" id="platformProfileStats"></span>
                         </span>
                     </a>

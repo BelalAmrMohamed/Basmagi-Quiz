@@ -156,11 +156,11 @@ export async function renderCourseImage(courseId, folderPath) {
   // chips. Labels are always Arabic, same as the old info table.
   const countsRows = meta
     ? [
-        { label: "المجلدات", val: String(meta.folderCount ?? 0), dim: !meta.folderCount },
-        { label: "الامتحانات", val: String(meta.quizCount ?? 0), dim: !meta.quizCount },
-        { label: "الدروس", val: String(meta.arabicCount ?? 0), dim: !meta.arabicCount },
-        { label: "الدفاتر", val: String(meta.notebookCount ?? 0), dim: !meta.notebookCount },
-      ]
+      { label: "المجلدات", val: String(meta.folderCount ?? 0), dim: !meta.folderCount },
+      { label: "الامتحانات", val: String(meta.quizCount ?? 0), dim: !meta.quizCount },
+      { label: "الدروس", val: String(meta.arabicCount ?? 0), dim: !meta.arabicCount },
+      { label: "الدفاتر", val: String(meta.notebookCount ?? 0), dim: !meta.notebookCount },
+    ]
     : [];
   const infoChips = [
     ...(!isFolder && isFeatured ? [{ featured: true }] : []),
@@ -188,16 +188,16 @@ export async function renderCourseImage(courseId, folderPath) {
     : "";
   const fullLinkPath =
     folderPath && folderPath.length > 0
-      ? `basmagi.vercel.app/course/${courseSlug}/${folderPath
+      ? `basmagi-quiz.vercel.app/course/${courseSlug}/${folderPath
         .map((seg) => renderBidiSlugSegment(slugify(seg)))
         .join("/")}`
-      : `basmagi.vercel.app/course/${courseSlug}`;
+      : `basmagi-quiz.vercel.app/course/${courseSlug}`;
 
   // Footer link — MUST stay on one line. Long paths used to wrap onto a
   // second line (ugly). Fix: hard single-line + truncate from the FRONT
   // ("…" + tail) once it's too long to fit, so the most identifying part
   // — the actual course/folder slug at the end of the path — stays
-  // visible instead of the always-identical "basmagi.vercel.app/
+  // visible instead of the always-identical "basmagi-quiz.vercel.app/
   // course/" prefix. Budget is generous (the footer now spans the full
   // centered canvas width, ~1120px, not just the narrow right-hand
   // content column) — this is a plain character-count clamp, not a
@@ -234,13 +234,13 @@ export async function renderCourseImage(courseId, folderPath) {
         children: chips.map((c) =>
           c.featured
             ? pill(
-                [textRun(EDU_TYPE_AR.Featured, true, { fontSize: "20px", fontWeight: "700", color: "#b45309" })],
-                { background: "rgba(245,158,11,0.14)", border: "1px solid rgba(245,158,11,0.4)" },
-              )
+              [textRun(EDU_TYPE_AR.Featured, true, { fontSize: "20px", fontWeight: "700", color: "#b45309" })],
+              { background: "rgba(245,158,11,0.14)", border: "1px solid rgba(245,158,11,0.4)" },
+            )
             : pill([
-                textRun(c.label, true, { fontSize: "19px", color: "#6b7280", fontWeight: "400" }),
-                textRun(String(c.val), !!detectArabic(String(c.val)), { fontSize: "19px", color: BRAND_BLUE, fontWeight: "700" }),
-              ]),
+              textRun(c.label, true, { fontSize: "19px", color: "#6b7280", fontWeight: "400" }),
+              textRun(String(c.val), !!detectArabic(String(c.val)), { fontSize: "19px", color: BRAND_BLUE, fontWeight: "700" }),
+            ]),
         ),
       },
     };
@@ -430,7 +430,7 @@ export async function renderCourseImage(courseId, folderPath) {
               fontWeight: "400",
               direction: "ltr",
             },
-            children: "basmagi.vercel.app",
+            children: "basmagi-quiz.vercel.app",
           },
         },
 

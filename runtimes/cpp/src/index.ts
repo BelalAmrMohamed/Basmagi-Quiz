@@ -20,7 +20,7 @@ const execute: CppExecute = async ({ cells, target, signal }) => {
   } catch (e) {
     if ((e as Error)?.name === 'AbortError') throw e;
     // fetch() rejects with a bare TypeError for offline, DNS failure and blocked CORS alike.
-    throw new Error('Could not reach the compile service (network error, or this site is not in the function\'s ALLOWED_ORIGINS).');
+    throw new Error('Could not reach the compile service (network error, or this site is not in the function\'s ALLOWED_ORIGIN).');
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : `Compile service returned HTTP ${response.status}.`);

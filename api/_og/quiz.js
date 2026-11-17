@@ -161,7 +161,7 @@ function loadBackgroundImage() {
 // pixel-measured quiz-thumbnail background here is quiz-specific artwork
 // (bulb card, button, pill) that doesn't make sense for a course page.
 export async function renderQuizImage(quizId) {
-  
+
   // ── 1. Fetch external assets in parallel ─────────────────────────────────
   const [fontData, quizData, bgImageBase64] = await Promise.all([
     // If the font fetch/parse ever fails again (network hiccup, Google
@@ -260,7 +260,7 @@ export async function renderQuizImage(quizId) {
               fontWeight: "400",
               direction: "ltr",
             },
-            children: "basmagi.vercel.app",
+            children: "basmagi-quiz.vercel.app",
           },
         },
 

@@ -8,7 +8,13 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Patches
 
 ### Animation aren't working for some users
+
 `html[data-animations="enabled"]` isn't working for some users for somereason. Some devices don't make it work.
+
+Probably the issue:
+* The platform uses a custom `html[data-motion="reduced"]` instead of `prefers-reduced-motion: reduce`, but some pages and features still use the `prefers-reduced-motion: reduce` and need to be updated, that might be the issue.
+* Make sure you update them in their place, don't keep everything in themes.css
+
 
 ### Info modals
 Info modals shouldn't show platform links for items inside user content (i.e., `/my-content` page).

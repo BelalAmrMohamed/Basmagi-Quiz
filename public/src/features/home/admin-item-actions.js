@@ -252,7 +252,7 @@ export async function renameSharedItem(item) {
 
   const label = item.title || item.name || "العنصر";
   showNotification(
-    "تمت تغيير العنوان",
+    "تم تغيير العنوان",
     `تم تغيير اسم "${label}" بنجاح`,
     "success",
   );

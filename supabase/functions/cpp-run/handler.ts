@@ -3,7 +3,7 @@
 import { assemble, splitSections, validRunRequest, truncateOutput, truncateSections } from './assemble.js';
 import { LIMITS, ProvidersFailed } from './providers.ts';
 
-const DEFAULT_ORIGINS = ['https://basmagi.vercel.app', 'http://localhost:8080', 'http://localhost:8081'];
+const DEFAULT_ORIGINS = (process.env.ALLOWED_ORIGIN || ['https://basmagi-quiz.vercel.app', "https://basmagi.vercel.app", 'http://localhost:8080', 'http://localhost:8081']);
 
 export type Deps = {
   env: (key: string) => string | undefined;
@@ -21,7 +21,7 @@ async function hash(s: string) {
 }
 
 export async function handle(req: Request, deps: Deps): Promise<Response> {
-  const configured = (deps.env('ALLOWED_ORIGINS') || DEFAULT_ORIGINS.join(',')).split(',').map((x) => x.trim());
+  const configured = (deps.env('ALLOWED_ORIGIN') || DEFAULT_ORIGINS.join(',')).split(',').map((x) => x.trim());
   const origin = req.headers.get('origin') || '';
   const cors = {
     'access-control-allow-origin': configured.includes(origin) ? origin : configured[0],
