@@ -13,6 +13,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 Probably the issue:
 * The platform uses a custom `html[data-motion="reduced"]` instead of `prefers-reduced-motion: reduce`, but some pages and features still use the `prefers-reduced-motion: reduce` and need to be updated, that might be the issue.
+* Make sure you update them in their place, don't keep everything in themes.css
 
 
 ### Info modals

@@ -721,6 +721,8 @@ function handleLessonAgentToolCall(toolCall) {
   } catch (cause) {
     const error = new Error(cause.message || "Invalid quiz");
     error.userMessage = cause.message || "تعذر إنشاء تدريب صالح من الدرس.";
+    error.agentRetryable = cause.agentRetryable;
+    error.agentMessage = cause.agentMessage;
     throw error;
   }
 }
@@ -1141,6 +1143,11 @@ export async function renderLessonView() {
       slot.innerHTML = renderLessonQuiz();
       equipLessonQuiz(slot, rerenderQuizSlot);
     }
+  };
+
+  rerenderLessonQuiz = () => {
+    rerenderQuizSlot();
+    container.querySelector("#lesson-ai-quiz-slot")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const handleBookmarksChange = () => {

@@ -89,14 +89,13 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, request
     body.systemInstruction = { parts: [{ text: systemPrompt }] };
   }
 
+  // includeThoughts asks Gemini to return thought *summaries* as parts flagged
+  // `thought: true`. They are kept out of `text` and returned as `thinking`.
+  const thinkingConfig = { includeThoughts: true };
   if (effort && ["low", "medium", "high"].includes(effort)) {
-    body.generationConfig = {
-      ...(body.generationConfig || {}),
-      thinkingConfig: {
-        thinkingLevel: effort,
-      },
-    };
+    thinkingConfig.thinkingLevel = effort;
   }
+  body.generationConfig = { ...(body.generationConfig || {}), thinkingConfig };
 
   if (Array.isArray(tools) && tools.length) {
     body.tools = [
@@ -137,11 +136,17 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, request
   const data = await res.json();
   const parts = data?.candidates?.[0]?.content?.parts || [];
   const text = parts
-    .filter((p) => p.text)
+    .filter((p) => p.text && !p.thought)
     .map((p) => p.text)
     .join("");
+  const thinking = parts
+    .filter((p) => p.text && p.thought)
+    .map((p) => p.text)
+    .join("\n\n")
+    .trim();
   const funcCalls = parts.filter((p) => p.functionCall).map((p) => p.functionCall);
   const result = { text };
+  if (thinking) result.thinking = thinking;
   if (funcCalls.length) {
     result.toolCalls = funcCalls.map((fc) => ({ name: fc.name, input: fc.args || {} }));
   }

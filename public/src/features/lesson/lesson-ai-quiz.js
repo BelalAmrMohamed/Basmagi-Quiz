@@ -9,38 +9,70 @@ import { escapeHtml } from "../home/escape-html.js";
 const norm = (v) => String(v ?? "").trim().toLocaleLowerCase().replace(/\s+/g, " ");
 let activeQuiz = null;
 
+const LETTERS = "abcdefghij";
+
+function toIndex(v, options) {
+  if (typeof v === "number") return v;
+  const str = String(v ?? "").trim();
+  if (/^\d+$/.test(str)) return Number(str);
+  if (/^[a-jA-J]$/.test(str)) return LETTERS.indexOf(str.toLowerCase());
+  const byText = options.findIndex((o) => norm(o) === norm(str));
+  return byText;
+}
+
+function parseBlanks(text) {
+  const blanks = [];
+  const display = text.replace(/\{\{([^}]*)\}\}/g, (_, inner) => {
+    blanks.push(inner.split("|").map((a) => a.trim()).filter(Boolean));
+    return "_____";
+  });
+  return { blanks: blanks.filter((b) => b.length), display };
+}
+
 function normalizeQuestion(raw, index) {
   if (!raw || typeof raw !== "object") return null;
-  const text = String(raw.q ?? "").trim();
+  const text = String(raw.q ?? raw.question ?? "").trim();
   if (!text) return null;
+  const explanation = String(raw.explanation ?? "").slice(0, 2000);
 
-  const hasChoices = Array.isArray(raw.options) && raw.options.length >= 2 && Array.isArray(raw.correct);
-  if (hasChoices) {
-    const options = raw.options.slice(0, 10).map((o) => String(o ?? ""));
-    const correct = raw.correct
-      .map(Number)
+  // Fill-in-the-blank: blanks written inline as {{answer|alt}}.
+  if (/\{\{[^}]+\}\}/.test(text)) {
+    const { blanks, display } = parseBlanks(text);
+    if (blanks.length) {
+      return {
+        id: `q${index}`,
+        kind: "text",
+        question: display.slice(0, 2000),
+        answer: blanks.map((b) => b[0]).join("، "),
+        blanks,
+        explanation,
+      };
+    }
+  }
+
+  const rawOptions = Array.isArray(raw.options) ? raw.options : Array.isArray(raw.choices) ? raw.choices : null;
+  if (rawOptions && rawOptions.length >= 2) {
+    const options = rawOptions.slice(0, 10).map((o) => String(o?.text ?? o ?? ""));
+    const rawCorrect = raw.correct ?? raw.correctAnswer ?? raw.correct_index;
+    const list = Array.isArray(rawCorrect) ? rawCorrect : rawCorrect === undefined || rawCorrect === null ? [] : [rawCorrect];
+    const correct = [...new Set(list.map((v) => toIndex(v, options)))]
       .filter((i) => Number.isInteger(i) && i >= 0 && i < options.length);
-    if (!correct.length) return null;
-    return {
-      id: `q${index}`,
-      kind: "choice",
-      question: text.slice(0, 2000),
-      options,
-      correct,
-      multiSelect: Boolean(raw.multiSelect) || correct.length > 1,
-      explanation: String(raw.explanation ?? "").slice(0, 2000),
-    };
+    if (correct.length) {
+      return {
+        id: `q${index}`,
+        kind: "choice",
+        question: text.slice(0, 2000),
+        options,
+        correct,
+        multiSelect: Boolean(raw.multiSelect) || correct.length > 1,
+        explanation,
+      };
+    }
   }
 
   const answer = String(raw.answer ?? "").trim();
   if (!answer) return null;
-  return {
-    id: `q${index}`,
-    kind: "text",
-    question: text.slice(0, 2000),
-    answer: answer.slice(0, 500),
-    explanation: String(raw.explanation ?? "").slice(0, 2000),
-  };
+  return { id: `q${index}`, kind: "text", question: text.slice(0, 2000), answer: answer.slice(0, 500), explanation };
 }
 
 export function createLessonQuiz(input = {}) {
@@ -51,7 +83,13 @@ export function createLessonQuiz(input = {}) {
     .slice(0, 50)
     .map(normalizeQuestion)
     .filter(Boolean);
-  if (!questions.length) throw new Error("لا توجد أسئلة صالحة لإنشاء تدريب.");
+  if (!questions.length) {
+    const err = new Error("لا توجد أسئلة صالحة لإنشاء تدريب.");
+    err.agentRetryable = true;
+    err.agentMessage =
+      "[system] create_quiz failed: none of the questions were valid. Every question needs `q`, plus either `options` with `correct` (array of 0-based indices), or `answer`, or inline {{blank}} markers in `q`. Call create_quiz again now with correctly shaped questions.";
+    throw err;
+  }
   activeQuiz = {
     title: String(input.title || "تدريب سريع من الدرس").slice(0, 160),
     questions,
@@ -79,7 +117,12 @@ function isCorrect(q, value) {
     }
     return q.correct.length === 1 && Number(value) === q.correct[0];
   }
-  return norm(value) !== "" && norm(value) === norm(q.answer);
+  if (norm(value) === "") return false;
+  if (q.blanks) {
+    const given = String(value).split(/[,،]/).map(norm);
+    return given.length === q.blanks.length && q.blanks.every((alts, i) => alts.some((a) => norm(a) === given[i]));
+  }
+  return norm(value) === norm(q.answer);
 }
 
 function renderQuestionNav(quiz) {

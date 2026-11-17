@@ -234,6 +234,7 @@ export function createChatPanel(options = {}) {
     generatingListeners.forEach((fn) => { try { fn(value); } catch { /* listener error */ } });
   }
   let sessionExecutedTools = new Set();
+  let toolRetryUsed = false;
   let attachmentToolHandler = null;
 
   const panel = document.createElement("div");
@@ -535,7 +536,7 @@ export function createChatPanel(options = {}) {
    * @param {Array<object>} historyToPersist
    */
   function toPersistedMessages(historyToPersist) {
-    return historyToPersist.map(({ role, content, attachments, type, toolName }) => {
+    return historyToPersist.filter((m) => !m.hidden).map(({ role, content, attachments, type, toolName }) => {
       const first = attachments?.[0];
       const firstLabel = first?.name || first?.title;
       return {
@@ -1602,6 +1603,26 @@ export function createChatPanel(options = {}) {
     return el;
   }
 
+  function buildThinkingBlock(text) {
+    const d = document.createElement("details");
+    d.className = "ai-agent-thinking";
+    const sum = document.createElement("summary");
+    sum.className = "ai-agent-thinking-summary";
+    sum.innerHTML = '<span>Thought process</span><svg class="ai-agent-thinking-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+    const body = document.createElement("div");
+    body.className = "ai-agent-thinking-body";
+    body.innerHTML = renderMarkdown(text);
+    d.append(sum, body);
+    return d;
+  }
+
+  function appendThinkingBlock(text) {
+    const wrap = document.createElement("div");
+    wrap.className = "ai-agent-msg-wrap ai-agent-msg-wrap--assistant";
+    wrap.appendChild(buildThinkingBlock(text));
+    messagesEl.appendChild(wrap);
+  }
+
   // Tracks the most recently appended error bubble and its exact message,
   // so a repeat of the SAME error (e.g. mashing the dictation button on a
   // browser that blocks it — see the Brave "network" error above) updates
@@ -1786,10 +1807,10 @@ export function createChatPanel(options = {}) {
     let onStopCallback = null;
 
     function formatElapsed(seconds) {
-      if (seconds < 60) return `${seconds}ث`;
+      if (seconds < 60) return `${seconds}s`;
       const m = Math.floor(seconds / 60);
       const s = seconds % 60;
-      return `${m}د ${s}ث`;
+      return `${m}m ${s}s`;
     }
 
     function buildElement() {
@@ -1829,9 +1850,9 @@ export function createChatPanel(options = {}) {
       stopBtn = document.createElement("button");
       stopBtn.type = "button";
       stopBtn.className = "ai-agent-typing-stop-btn";
-      stopBtn.setAttribute("aria-label", "إيقاف الرد");
-      stopBtn.title = "إيقاف الرد";
-      stopBtn.innerHTML = `${TYPING_STOP_ICON_SVG}<span>إيقاف</span>`;
+      stopBtn.setAttribute("aria-label", "Stop");
+      stopBtn.title = "Stop";
+      stopBtn.innerHTML = `${TYPING_STOP_ICON_SVG}<span>Stop</span>`;
       stopBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         if (typeof onStopCallback === "function") {
@@ -1868,7 +1889,7 @@ export function createChatPanel(options = {}) {
     }
 
     return {
-      show({ label = "جارِ التفكير…", kind = "thinking", step = "", onStop = null } = {}) {
+      show({ label = "Thinking…", kind = "thinking", step = "", onStop = null } = {}) {
         onStopCallback = onStop;
 
         if (!activeEl || !activeEl.isConnected) {
@@ -1921,7 +1942,7 @@ export function createChatPanel(options = {}) {
     };
   })();
 
-  function showTyping(label = "جارِ التفكير…", kind = "thinking") {
+  function showTyping(label = "Thinking…", kind = "thinking") {
     typingController.show({ label, kind });
     return {
       setLabel(text, nextKind) {
@@ -1955,11 +1976,12 @@ export function createChatPanel(options = {}) {
       currentAbortController = new AbortController();
       setGenerating(true);
       sessionExecutedTools.clear();
+      toolRetryUsed = false;
     }
     sendBtn.disabled = true;
 
     typingController.show({
-      label: "جارِ التفكير…",
+      label: "Thinking…",
       kind: "thinking",
       onStop: () => abortCurrentTurn("تم إيقاف الرد بواسطة المستخدم."),
     });
@@ -2085,8 +2107,15 @@ export function createChatPanel(options = {}) {
         return;
       }
 
+      if (data.thinking && !data.text) {
+        appendThinkingBlock(data.thinking);
+      }
       if (data.text) {
-        appendMessage("assistant", data.text);
+        const msgEl = appendMessage("assistant", data.text);
+        if (data.thinking) {
+          const w = msgEl.parentElement;
+          w.insertBefore(buildThinkingBlock(data.thinking), msgEl);
+        }
         history.push({ role: "assistant", content: data.text });
         typingController.moveToBottom();
       }
@@ -2148,9 +2177,9 @@ export function createChatPanel(options = {}) {
           sessionExecutedTools.add(sig);
           executedCount++;
 
-          const stepLabel = totalTools > 1 ? `خطوة ${i + 1} من ${totalTools}` : "";
+          const stepLabel = totalTools > 1 ? `Step ${i + 1}/${totalTools}` : "";
           typingController.show({
-            label: `جارِ استخدام أداة: ${describeToolCall(toolCall)}`,
+            label: "Using tool…",
             kind: "tool",
             step: stepLabel,
             onStop: () => abortCurrentTurn("تم إيقاف الرد بواسطة المستخدم."),
@@ -2185,6 +2214,20 @@ export function createChatPanel(options = {}) {
             }
           } catch (toolErr) {
             console.error("[ai-agent-chat] onToolCall failed:", toolErr);
+            if (toolErr?.agentRetryable && !toolRetryUsed && !currentAbortController?.signal?.aborted) {
+              // Tell the model its output was malformed and let it try once more.
+              toolRetryUsed = true;
+              sessionExecutedTools.delete(sig);
+              history.push({ role: "user", content: toolErr.agentMessage || "[system] The tool call failed. Try again with a valid payload.", hidden: true });
+              typingController.show({
+                label: "Thinking…",
+                kind: "thinking",
+                step: "Retrying",
+                onStop: () => abortCurrentTurn("Stopped by user."),
+              });
+              await resendLastUserTurn(agentDepth + 1);
+              return;
+            }
             appendError(toolErr?.userMessage || "تعذر تنفيذ العملية. حاول مرة أخرى.");
             allToolCallsSucceeded = false;
             break;
@@ -2207,7 +2250,7 @@ export function createChatPanel(options = {}) {
           return;
         }
         typingController.show({
-          label: "جارِ التفكير…",
+          label: "Thinking…",
           kind: "thinking",
           step: "",
           onStop: () => abortCurrentTurn("تم إيقاف الرد بواسطة المستخدم."),
