@@ -21,7 +21,7 @@ async function hash(s: string) {
 }
 
 export async function handle(req: Request, deps: Deps): Promise<Response> {
-  const configured = (deps.env('ALLOWED_ORIGINS') || DEFAULT_ORIGINS.join(',')).split(',').map((x) => x.trim());
+  const configured = (deps.env('ALLOWED_ORIGIN') || DEFAULT_ORIGINS.join(',')).split(',').map((x) => x.trim());
   const origin = req.headers.get('origin') || '';
   const cors = {
     'access-control-allow-origin': configured.includes(origin) ? origin : configured[0],
