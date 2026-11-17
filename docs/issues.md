@@ -15,10 +15,6 @@ Probably the issue:
 * The platform uses a custom `html[data-motion="reduced"]` instead of `prefers-reduced-motion: reduce`, but some pages and features still use the `prefers-reduced-motion: reduce` and need to be updated, that might be the issue.
 * Make sure you update them in their place, don't keep everything in themes.css
 
-
-### Info modals
-Info modals shouldn't show platform links for items inside user content (i.e., `/my-content` page).
-
 ### Sign in
 ![Screenshot](image.png).
 * This is extremely annoying, it's telling me my session has ended, but its still showing me that I'm signed in in the sidebar's dropdown and in the profile page, and I don't know why are sessions ending quickly.
