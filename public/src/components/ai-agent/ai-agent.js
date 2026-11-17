@@ -516,11 +516,13 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
     sidebar.classList.remove("ai-agent-sidebar--collapsed");
     sidebar.classList.add("ai-agent-sidebar--mobile-open");
     if (mobileBackdrop) mobileBackdrop.classList.add("ai-agent-mobile-backdrop--visible");
+    widget.dispatchEvent(new CustomEvent("aiagent:sidebar", { detail: { open: true } }));
   }
   function closeMobileSidebarSheet() {
     sidebar.classList.remove("ai-agent-sidebar--mobile-open");
     sidebar.classList.toggle("ai-agent-sidebar--collapsed", sidebarCollapsed);
     if (mobileBackdrop) mobileBackdrop.classList.remove("ai-agent-mobile-backdrop--visible");
+    widget.dispatchEvent(new CustomEvent("aiagent:sidebar", { detail: { open: false } }));
   }
   widget.openMobileSidebarSheet = openMobileSidebarSheet;
   widget.closeMobileSidebarSheet = closeMobileSidebarSheet;
@@ -794,6 +796,13 @@ export function openAIAgentModal(options, fab) {
       event.stopPropagation();
       toggleMobileSidebar();
     });
+  });
+  // Internal closes (backdrop tap, picking a chat, new chat) bypass the
+  // patched functions below, so keep the toggle icon in sync via an event.
+  widgetEl.addEventListener("aiagent:sidebar", (e) => {
+    const open = !!e.detail?.open;
+    toggleBtns().forEach((b) => b.setAttribute("aria-expanded", String(open)));
+    updateSidebarToggleIcon(open);
   });
   const originalCloseMobileSheet = widgetEl.closeMobileSidebarSheet;
   widgetEl.closeMobileSidebarSheet = function patchedCloseMobileSidebarSheet() {

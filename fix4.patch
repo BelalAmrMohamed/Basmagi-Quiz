@@ -1,0 +1,147 @@
+--- a/public/src/components/ai-agent/ai-agent.js	2026-11-17 22:44:51.565439013 +0200
++++ b/public/src/components/ai-agent/ai-agent.js	2026-11-17 22:44:51.603717331 +0200
+@@ -516,11 +516,13 @@
+     sidebar.classList.remove("ai-agent-sidebar--collapsed");
+     sidebar.classList.add("ai-agent-sidebar--mobile-open");
+     if (mobileBackdrop) mobileBackdrop.classList.add("ai-agent-mobile-backdrop--visible");
++    widget.dispatchEvent(new CustomEvent("aiagent:sidebar", { detail: { open: true } }));
+   }
+   function closeMobileSidebarSheet() {
+     sidebar.classList.remove("ai-agent-sidebar--mobile-open");
+     sidebar.classList.toggle("ai-agent-sidebar--collapsed", sidebarCollapsed);
+     if (mobileBackdrop) mobileBackdrop.classList.remove("ai-agent-mobile-backdrop--visible");
++    widget.dispatchEvent(new CustomEvent("aiagent:sidebar", { detail: { open: false } }));
+   }
+   widget.openMobileSidebarSheet = openMobileSidebarSheet;
+   widget.closeMobileSidebarSheet = closeMobileSidebarSheet;
+@@ -795,6 +797,13 @@
+       toggleMobileSidebar();
+     });
+   });
++  // Internal closes (backdrop tap, picking a chat, new chat) bypass the
++  // patched functions below, so keep the toggle icon in sync via an event.
++  widgetEl.addEventListener("aiagent:sidebar", (e) => {
++    const open = !!e.detail?.open;
++    toggleBtns().forEach((b) => b.setAttribute("aria-expanded", String(open)));
++    updateSidebarToggleIcon(open);
++  });
+   const originalCloseMobileSheet = widgetEl.closeMobileSidebarSheet;
+   widgetEl.closeMobileSidebarSheet = function patchedCloseMobileSidebarSheet() {
+     toggleBtns().forEach((b) => b.setAttribute("aria-expanded", "false"));
+--- a/public/src/components/ai-agent/ai-agent-window.css	2026-11-17 22:44:51.565474964 +0200
++++ b/public/src/components/ai-agent/ai-agent-window.css	2026-11-17 22:44:51.604268798 +0200
+@@ -57,7 +57,7 @@
+   transition: inset 0.22s ease, width 0.22s ease, height 0.22s ease, box-shadow 0.18s ease;
+ }
+ .aiw.is-minimized .aiw-body, .aiw.is-minimized .aiw-resizer, .aiw.is-minimized .aiw-grip,
+-.aiw.is-minimized .btn-min, .aiw.is-minimized .aiw-sidebar-toggle { display: none !important; }
++.aiw.is-minimized .btn-max, .aiw.is-minimized .aiw-sidebar-toggle { display: none !important; }
+ @media (max-width: 600px) {
+   .aiw.is-minimized { inset-block-end: calc(var(--bottom-nav-height, 54px) + 12px + env(safe-area-inset-bottom, 0px)) !important; inset-inline-start: max(8px, env(safe-area-inset-left, 0px)) !important; width: min(300px, calc(100vw - 16px)) !important; }
+ }
+@@ -92,7 +92,7 @@
+ .aiw .aiw-controls:hover .aiw-btn svg, .aiw .aiw-controls:focus-within .aiw-btn svg { opacity: 1; }
+ .aiw .ic-restore { display: none; }
+ .aiw.is-maximized .ic-max, .aiw.is-minimized .ic-max { display: none; }
+-.aiw.is-maximized .ic-restore, .aiw.is-minimized .ic-restore { display: block; opacity: 1; }
++.aiw.is-maximized .ic-restore, .aiw.is-minimized .ic-restore { display: block; }
+ @media (hover: none) {
+   .aiw .aiw-controls { gap: 10px; }
+   .aiw .aiw-btn { flex-basis: 16px; width: 16px; height: 16px; }
+--- a/public/src/components/ai-agent/ai-agent-chat.js	2026-11-17 22:44:51.565491024 +0200
++++ b/public/src/components/ai-agent/ai-agent-chat.js	2026-11-17 22:44:51.605699600 +0200
+@@ -536,7 +536,7 @@
+    * @param {Array<object>} historyToPersist
+    */
+   function toPersistedMessages(historyToPersist) {
+-    return historyToPersist.filter((m) => !m.hidden).map(({ role, content, attachments, type, toolName }) => {
++    return historyToPersist.filter((m) => !m.hidden).map(({ role, content, attachments, type, toolName, thinking }) => {
+       const first = attachments?.[0];
+       const firstLabel = first?.name || first?.title;
+       return {
+@@ -544,6 +544,7 @@
+         content,
+         ...(type ? { type } : {}),
+         ...(toolName ? { toolName } : {}),
++        ...(thinking ? { thinking } : {}),
+         ...(firstLabel ? { attachmentName: firstLabel } : {}),
+         ...(first?.kind ? { attachmentKind: first.kind } : {}),
+         ...(first?.itemType ? { attachmentItemType: first.itemType } : {}),
+@@ -2116,7 +2117,7 @@
+           const w = msgEl.parentElement;
+           w.insertBefore(buildThinkingBlock(data.thinking), msgEl);
+         }
+-        history.push({ role: "assistant", content: data.text });
++        history.push({ role: "assistant", content: data.text, ...(data.thinking ? { thinking: data.thinking } : {}) });
+         typingController.moveToBottom();
+       }
+ 
+@@ -2634,7 +2635,7 @@
+     // branches on att.kind === "file") keeps working the same way it does
+     // for a live, never-reloaded attachment.
+     history.push(
+-      ...conversation.messages.map(({ role, content, attachmentName, attachmentKind, attachmentItemType, attachmentSummary, type, toolName }) => {
++      ...conversation.messages.map(({ role, content, attachmentName, attachmentKind, attachmentItemType, attachmentSummary, type, toolName, thinking }) => {
+         const kind = attachmentKind || "file"; // older saved records predate attachmentKind — file was the only kind that ever existed before platform-item attachments
+         const attachment = attachmentName
+           ? {
+@@ -2649,6 +2650,7 @@
+           content,
+           ...(type ? { type } : {}),
+           ...(toolName ? { toolName } : {}),
++          ...(thinking ? { thinking } : {}),
+           ...(attachment ? { attachments: [attachment] } : {}),
+         };
+       }),
+@@ -2662,7 +2664,10 @@
+         if (m.type === "tool-result") {
+           appendToolResultMessage(m.content, m.toolName || "");
+         } else {
+-          appendMessage(m.role, m.content, m.attachments, i);
++          const msgEl = appendMessage(m.role, m.content, m.attachments, i);
++          if (m.thinking && m.role === "assistant") {
++            msgEl.parentElement.insertBefore(buildThinkingBlock(m.thinking), msgEl);
++          }
+         }
+       });
+     }
+--- a/public/src/components/ai-agent/ai-agent.css	2026-11-17 22:44:51.565531993 +0200
++++ b/public/src/components/ai-agent/ai-agent.css	2026-11-17 22:44:51.606439718 +0200
+@@ -4361,3 +4361,26 @@
+     display: none;
+   }
+ }
++
++/* Input area: same centered column as the messages, plus a soft shade above it */
++.ai-agent-chat-messages {
++  scrollbar-gutter: stable both-edges;
++}
++
++.ai-agent-chat-input-controls {
++  max-width: 760px;
++}
++
++.ai-agent-chat-input-row {
++  position: relative;
++}
++
++.ai-agent-chat-input-row::before {
++  content: "";
++  position: absolute;
++  inset-inline: 0;
++  bottom: 100%;
++  height: 28px;
++  background: linear-gradient(to top, color-mix(in srgb, var(--color-text-primary) 10%, transparent), transparent);
++  pointer-events: none;
++}
+--- a/public/src/shared/rich-input/rich-input.css	2026-11-17 22:44:51.566660829 +0200
++++ b/public/src/shared/rich-input/rich-input.css	2026-11-17 22:44:51.603078442 +0200
+@@ -90,7 +90,7 @@
+   color: var(--rmci-muted); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer;
+   transition: background .15s ease, color .15s ease;
+ }
+-.rmci-model-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
++.rmci-model-label { direction: ltr; unicode-bidi: isolate; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+ .rmci-model-btn:hover:not(:disabled) { background: var(--rmci-hover); color: var(--rmci-fg); }
+ .rmci-model-btn:disabled { opacity: .55; cursor: not-allowed; }
+ .rmci-model-btn .rmci-icon { transition: transform .2s ease; }

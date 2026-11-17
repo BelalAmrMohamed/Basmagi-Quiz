@@ -23,7 +23,7 @@ import { openAgentDropdown } from "./ai-agent-dropdown.js";
 import { _confirm } from "../notifications/notifications.js";
 
 const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
-const MORE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>`;
+const MORE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg>`;
 const RENAME_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>`;
 // Filled-pin / outline-pin — swapped per conv.pinned so the same menu row
 // reads as "طي/تثبيت" correctly regardless of current state, same idea as
@@ -241,6 +241,9 @@ export function createHistoryPanel(options = {}) {
 
       textCol.appendChild(titleEl);
       textCol.appendChild(timeEl);
+      // Desktop tooltip: full title + relative time (the time row is hidden
+      // on hover-capable devices via CSS).
+      item.title = `${displayTitle}\n${timeEl.textContent}`;
 
       const moreBtn = document.createElement("button");
       moreBtn.type = "button";
@@ -267,4 +270,4 @@ export function createHistoryPanel(options = {}) {
 
   panel.refresh = refresh;
   return panel;
-}
+}

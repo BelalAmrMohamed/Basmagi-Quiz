@@ -57,7 +57,7 @@ html[data-theme="dark-slate"] .aiw { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
   transition: inset 0.22s ease, width 0.22s ease, height 0.22s ease, box-shadow 0.18s ease;
 }
 .aiw.is-minimized .aiw-body, .aiw.is-minimized .aiw-resizer, .aiw.is-minimized .aiw-grip,
-.aiw.is-minimized .btn-min, .aiw.is-minimized .aiw-sidebar-toggle { display: none !important; }
+.aiw.is-minimized .btn-max, .aiw.is-minimized .aiw-sidebar-toggle { display: none !important; }
 @media (max-width: 600px) {
   .aiw.is-minimized { inset-block-end: calc(var(--bottom-nav-height, 54px) + 12px + env(safe-area-inset-bottom, 0px)) !important; inset-inline-start: max(8px, env(safe-area-inset-left, 0px)) !important; width: min(300px, calc(100vw - 16px)) !important; }
 }
@@ -92,7 +92,7 @@ html[data-theme="dark-slate"] .aiw { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
 .aiw .aiw-controls:hover .aiw-btn svg, .aiw .aiw-controls:focus-within .aiw-btn svg { opacity: 1; }
 .aiw .ic-restore { display: none; }
 .aiw.is-maximized .ic-max, .aiw.is-minimized .ic-max { display: none; }
-.aiw.is-maximized .ic-restore, .aiw.is-minimized .ic-restore { display: block; opacity: 1; }
+.aiw.is-maximized .ic-restore, .aiw.is-minimized .ic-restore { display: block; }
 @media (hover: none) {
   .aiw .aiw-controls { gap: 10px; }
   .aiw .aiw-btn { flex-basis: 16px; width: 16px; height: 16px; }
@@ -271,6 +271,7 @@ html[data-theme="dark-slate"] .aiw { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
   right: auto;
   z-index: 5;
   width: 100%;
+  max-width: 220px;
   height: 100%;
   border-inline-start: none;
   border-inline-start: 1px solid var(--color-border);
