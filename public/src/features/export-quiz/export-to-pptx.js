@@ -47,7 +47,7 @@ import { renderMarkdown } from "../../shared/markdown.js";
 // "nice to have" and starts being worth doing. Kept as a local duplicate
 // for now to avoid widening this session's blast radius across files, but
 // flagged here for a follow-up `shared/media-url.js` extraction.
-const PLATFORM_ORIGIN = "https://basmagi.vercel.app";
+const PLATFORM_ORIGIN = "https://basmagi-quiz.vercel.app";
 const resolveMediaUrl = (url) => {
   if (!url || typeof url !== "string") return url;
   if (/^(https?:|data:|blob:)/i.test(url)) return url;
@@ -2113,7 +2113,7 @@ export async function exportToPptx(
       color: COLORS.primary,
       align: "center",
     });
-    ctaSlide.addText("https://basmagi.vercel.app/", {
+    ctaSlide.addText("https://basmagi-quiz.vercel.app/", {
       x: 1,
       y: 3.1,
       w: 8,
@@ -2123,7 +2123,7 @@ export async function exportToPptx(
       color: COLORS.info,
       align: "center",
       hyperlink: {
-        url: "https://basmagi.vercel.app/",
+        url: "https://basmagi-quiz.vercel.app/",
         tooltip: "Go to The quiz website again.",
       },
     });

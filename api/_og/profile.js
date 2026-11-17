@@ -18,7 +18,7 @@ import { BRAND_BLUE, FONT_FAMILY_STACK, SITE_ORIGIN, SUPABASE_ANON_KEY, SUPABASE
 //   │   @handle  · مشرف                          ★ المستوى 12    │
 //   │   │ bio, up to two lines                                   │
 //   │ [ شارات ] [ النقاط ] [ الامتحانات المرفوعة ]                │ 482–566
-//   │               basmagi.vercel.app/@handle              │
+//   │               basmagi-quiz.vercel.app/@handle              │
 //   └────────────────────────────────────────────────────────────┘
 //
 // Data comes straight from the public `admin_users` row over Supabase REST
@@ -422,7 +422,7 @@ function buildProfileElement({ meta, avatar, banner, logo }) {
     position: "absolute", left: "60px", right: "60px", top: "490px", flexDirection: "row-reverse", gap: "20px",
   }, [
     tile(PROFILE_ICONS.upload, BRAND_BLUE, // Quizzes + lessons + notebooks in one tile: a 4th tile would not fit the card width.
-    profileFormatCount((Number(meta.uploaded_quizzes) || 0) + (Number(meta.uploaded_lessons) || 0) + (Number(meta.uploaded_notebooks) || 0)), "المحتوى المرفوع"),
+      profileFormatCount((Number(meta.uploaded_quizzes) || 0) + (Number(meta.uploaded_lessons) || 0) + (Number(meta.uploaded_notebooks) || 0)), "المحتوى المرفوع"),
     tile(PROFILE_ICONS.zap, "#d97706", profileFormatCount(meta.total_points), "النقاط"),
     tile(PROFILE_ICONS.award, "#7c3aed", profileFormatCount(meta.total_badges), "الشارات"),
   ]);
@@ -430,7 +430,7 @@ function buildProfileElement({ meta, avatar, banner, logo }) {
   const footer = pd({
     position: "absolute", left: "40px", right: "40px", bottom: "16px", justifyContent: "center",
     fontSize: "20px", color: "#94a3b8", fontWeight: "400", whiteSpace: "nowrap", direction: "ltr",
-  }, `basmagi.vercel.app/@${handle.length > 40 ? handle.slice(0, 39) + "…" : handle}`);
+  }, `basmagi-quiz.vercel.app/@${handle.length > 40 ? handle.slice(0, 39) + "…" : handle}`);
 
   return pd({
     width: "100%", height: "100%", position: "relative", fontFamily: FONT_FAMILY_STACK, backgroundColor: "#f8fafc",

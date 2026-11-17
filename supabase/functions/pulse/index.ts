@@ -10,7 +10,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const ALLOWED_HOSTS = new Set(
-  (Deno.env.get("ANALYTICS_ALLOWED_HOSTS") || "basmagi.vercel.app")
+  (Deno.env.get("ANALYTICS_ALLOWED_HOSTS") || "basmagi-quiz.vercel.app")
     .split(",").map((s) => s.trim()).filter(Boolean),
 );
 const BOT_UA =

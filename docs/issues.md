@@ -7,8 +7,31 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### AI Agent: Lesson Page Error
+I'm getting this error at the lesson page when I ask the AI Agent to create an interactive quiz of it.: ![screenshot](image-1.png) `"لا توجد أسئلة صالحة لإنشاء تدريب."`
+
+Related Files:
+* `public\src\features\lesson\lesson-ai-quiz.js`
+
+### Set `ALLOWED_ORIGINS` for the c++ runtime.
+
+Allowed origins should be: 
+* basmagi-quiz.vercel.app
+* basmagi.vercel.app
+* localhost:8080
+* localhost:3000
+
+Related Files:
+* `runtimes\cpp\src\index.ts`
+* `supabase\functions\cpp-run\handler.ts`
+
 ### Animation aren't working for some users
+
 `html[data-animations="enabled"]` isn't working for some users for somereason. Some devices don't make it work.
+
+Probably the issue:
+* The platform uses a custom `html[data-motion="reduced"]` instead of `prefers-reduced-motion: reduce`, but some pages and features still use the `prefers-reduced-motion: reduce` and need to be updated, that might be the issue.
+
 
 ### Info modals
 Info modals shouldn't show platform links for items inside user content (i.e., `/my-content` page).

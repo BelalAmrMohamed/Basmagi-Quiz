@@ -140,15 +140,15 @@ export async function renderNotebookImage(notebookId) {
   });
   const codeBody = codeLines.length
     ? codeLines.map((line) => ({
-        type: "div",
-        props: {
-          style: { display: "flex", flexDirection: "row", whiteSpace: "pre", direction: "ltr", overflow: "hidden", width: "100%", fontSize: "19px", height: "28px", alignItems: "center" },
-          children: nbTokenizeCode(line).map((t) => ({
-            type: "div",
-            props: { style: { display: "flex", color: t.color, whiteSpace: "pre" }, children: t.text.replace(/ /g, "\u00a0") },
-          })),
-        },
-      }))
+      type: "div",
+      props: {
+        style: { display: "flex", flexDirection: "row", whiteSpace: "pre", direction: "ltr", overflow: "hidden", width: "100%", fontSize: "19px", height: "28px", alignItems: "center" },
+        children: nbTokenizeCode(line).map((t) => ({
+          type: "div",
+          props: { style: { display: "flex", color: t.color, whiteSpace: "pre" }, children: t.text.replace(/ /g, "\u00a0") },
+        })),
+      },
+    }))
     : [skeleton("88%"), skeleton("64%", 0.8), skeleton("78%"), skeleton("52%", 0.8)];
 
   // Decorative sine "plot" — purely visual, never claims to be real output.
@@ -273,7 +273,7 @@ export async function renderNotebookImage(notebookId) {
       },
       children: [
         accentStripe(NB_ACCENT, BRAND_BLUE),
-        { type: "div", props: { style: { display: "flex", position: "absolute", right: "40px", top: "24px", fontSize: "16px", color: "#64748b", direction: "ltr" }, children: "basmagi.vercel.app" } },
+        { type: "div", props: { style: { display: "flex", position: "absolute", right: "40px", top: "24px", fontSize: "16px", color: "#64748b", direction: "ltr" }, children: "basmagi-quiz.vercel.app" } },
         sheet,
         windowCard,
         rightColumn([kindRow, crumb, titleEl, descEl, chipsEl], NB_COLUMN),

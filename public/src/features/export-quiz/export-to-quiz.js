@@ -187,7 +187,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
       }
       const cleanHandle = creatorProfile.handle ? creatorProfile.handle.replace(/^@/, "") : "";
       if (cleanHandle) {
-        creatorProfile.profileUrl = `https://basmagi.vercel.app/@${encodeURIComponent(cleanHandle)}`;
+        creatorProfile.profileUrl = `https://basmagi-quiz.vercel.app/@${encodeURIComponent(cleanHandle)}`;
       }
     }
   }
