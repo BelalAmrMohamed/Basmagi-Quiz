@@ -77,7 +77,9 @@ export function buildExtensions(T, options) {
         "Mod-Enter": () => onSubmit(),
         "Shift-Enter": ({ editor }) => {
           if (editor.isActive("codeBlock")) return editor.commands.newlineInCode();
-          if (editor.isActive("bulletList") || editor.isActive("orderedList")) return editor.commands.setHardBreak();
+          if (editor.isActive("bulletList") || editor.isActive("orderedList")) {
+            return editor.commands.splitListItem("listItem");
+          }
           return editor.commands.splitBlock();
         },
         Enter: ({ editor }) => {

@@ -242,9 +242,32 @@ html[data-theme="dark-slate"] .rmci-root {
   background: color-mix(in srgb, currentColor 5%, transparent);
   border-start-end-radius: .6rem; border-end-end-radius: .6rem;
 }
-/* Lists / quotes can't use dir="auto" themselves; flip them from their first block. */
+/* Lists / quotes follow the direction of their first block child (Arabic -> RTL, English -> LTR) */
 .rmci-editor .ProseMirror :is(ul, ol):has(> li:first-child > :is(p, h1, h2, h3):dir(rtl)),
 .rmci-editor .ProseMirror blockquote:has(> :is(p, h1, h2, h3):first-child:dir(rtl)) { direction: rtl; }
+
+.rmci-editor .ProseMirror :is(ul, ol):has(> li:first-child > :is(p, h1, h2, h3):dir(ltr)),
+.rmci-editor .ProseMirror blockquote:has(> :is(p, h1, h2, h3):first-child:dir(ltr)) { direction: ltr; }
+
+/* In an RTL list (starts with Arabic), align all items and text to the right */
+.rmci-editor .ProseMirror :is(ul, ol):has(> li:first-child > :is(p, h1, h2, h3):dir(rtl)) li,
+.rmci-editor .ProseMirror :is(ul, ol):has(> li:first-child > :is(p, h1, h2, h3):dir(rtl)) li :is(p, h1, h2, h3) {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+/* In an LTR list (starts with English), align all items and text to the left */
+.rmci-editor .ProseMirror :is(ul, ol):has(> li:first-child > :is(p, h1, h2, h3):dir(ltr)) li,
+.rmci-editor .ProseMirror :is(ul, ol):has(> li:first-child > :is(p, h1, h2, h3):dir(ltr)) li :is(p, h1, h2, h3) {
+  direction: ltr !important;
+  text-align: left !important;
+}
+
+.rmci-editor .ProseMirror :is(ul, ol) li,
+.rmci-editor .ProseMirror :is(ul, ol) li :is(p, h1, h2, h3) {
+  direction: inherit;
+  text-align: inherit;
+}
 .rmci-editor .ProseMirror code:not(pre code) {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em; padding: .12rem .38rem; border-radius: .4rem;
   background: color-mix(in srgb, currentColor 10%, transparent); border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
