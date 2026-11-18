@@ -162,7 +162,7 @@ export async function downloadLesson(lesson, triggerBtn = null, { format = null,
       });
       throwIfAborted(signal);
       updateProgress(onProgress, 100, "اكتمل تجهيز الدرس.");
-      showNotification("جاهز للطباعة", "اختر «حفظ بتنسيق PDF» من نافذة الطباعة لتنزيل الدرس.", "success");
+      showNotification("جاهز للطباعة", "اختر «حفظ بتنسيق PDF» من نافذة الطباعة لتحميل الدرس.", "success");
       return true;
     }
     let content;
@@ -192,7 +192,7 @@ export async function downloadLesson(lesson, triggerBtn = null, { format = null,
     return true;
   } catch (error) {
     if (signal?.aborted || error?.name === "AbortError") {
-      showNotification("تم الإلغاء", "أُلغيت عملية تنزيل الدرس.", "info");
+      showNotification("تم الإلغاء", "أُلغيت عملية تحميل الدرس.", "info");
       return false;
     }
     console.error("[lesson-download] export failed:", error);
@@ -210,7 +210,7 @@ export async function downloadLesson(lesson, triggerBtn = null, { format = null,
 async function prepareLessonPayload(lesson, { skipProtection = false, signal, onProgress } = {}) {
   throwIfAborted(signal);
   let payload = lessonPayload(lesson);
-  updateProgress(onProgress, 12, "التحقق من صلاحية تنزيل الدرس…");
+  updateProgress(onProgress, 12, "التحقق من صلاحية تحميل الدرس…");
   if (!skipProtection && isLessonProtected(lesson)) {
     const isLocal = Boolean(lesson.lesson || lesson.meta?.type === "lesson" || /^user_lesson_/i.test(String(lesson.id || "")));
     if (isLocal) {
@@ -390,12 +390,12 @@ function openLessonDownloadOptions(lesson, triggerBtn) {
   const header = document.createElement("div");
   header.className = "modal-header";
   header.innerHTML = `
-    <h2 id="lessonDownloadTitle"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg> تنزيل الدرس</h2>
+    <h2 id="lessonDownloadTitle"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg> تحميل الدرس</h2>
     <button type="button" class="close-btn dl-close" aria-label="إغلاق"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>`;
   const grid = document.createElement("div");
   grid.className = "mode-grid lesson-dl-grid";
   grid.setAttribute("role", "group");
-  grid.setAttribute("aria-label", "خيارات تنزيل الدرس");
+  grid.setAttribute("aria-label", "خيارات تحميل الدرس");
   const progressPanel = document.createElement("div");
   progressPanel.className = "dl-progress-panel";
   progressPanel.style.display = "none";

@@ -5,7 +5,13 @@
 
 Issues in here have to be studies and tested well, then turned into a plan, before actually implementing it.
 
-## Patches
+## Patches 
+
+### Code Cleanup
+Go through the codebase, update the naming of everything, many items are named `quiz` or their name contains `quiz`
+
+### User Content (/my-content)
+Items that are saved in user content shouldn't have a link, because they are local, they wouldn't work for any body else. Links are only for items that are already published, not for ones saved locally in the `/my-content` page.
 
 ### Animation aren't working for some users
 
@@ -91,8 +97,12 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 ### Translation and content expansion (Suggestion)
 * Native English translation support with native LTR pages.
 
-### AI Agent
+### AI Agent: New Page
 Is making an independent page something usefull?
+
+Suggestion: Maximizing the chat of the AI Agent while inside of the `/my-content` page, makes the URL Path `/ai-agent` or `/my-content/ai-agent`, and when that link is shared and opened by another user, it opens the `/my-content` section with the window of the AI Agent open. 
+
+Or
 
 ## Suggestions
 

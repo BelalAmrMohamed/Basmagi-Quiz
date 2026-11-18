@@ -3757,7 +3757,7 @@ window.saveLesson = async function () {
 
 window.downloadLessonFile = function (format) {
     if (!["html", "pdf"].includes(format)) {
-        showNotification("صيغة غير مدعومة", "يمكن تنزيل الدرس بصيغة HTML أو PDF.", "error");
+        showNotification("صيغة غير مدعومة", "يمكن تحميل الدرس بصيغة HTML أو PDF.", "error");
         return;
     }
     void downloadLesson({

@@ -48,18 +48,94 @@ html[data-theme="dark-slate"] .aiw { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
 }
 .aiw.is-maximized .aiw-resizer, .aiw.is-maximized .aiw-grip { display: none !important; }
 
-/* Minimized: a pill in the bottom corner */
+/* Minimized: a pill snapping to any of the 4 screen corners */
 .aiw.is-minimized {
-  inset: auto auto calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)) !important;
-  width: min(300px, calc(100vw - 32px)) !important; height: 48px !important;
-  min-width: 0 !important; min-height: 0 !important; max-height: 48px !important;
-  border-radius: 12px !important; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
-  transition: inset 0.22s ease, width 0.22s ease, height 0.22s ease, box-shadow 0.18s ease;
+  width: min(300px, calc(100vw - 32px)) !important;
+  height: 48px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: 48px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+  user-select: none;
+  -webkit-user-select: none;
 }
-.aiw.is-minimized .aiw-body, .aiw.is-minimized .aiw-resizer, .aiw.is-minimized .aiw-grip,
-.aiw.is-minimized .btn-max, .aiw.is-minimized .aiw-sidebar-toggle { display: none !important; }
+.aiw.is-minimized:not(.is-dragging) {
+  transition: top 0.22s ease, bottom 0.22s ease, left 0.22s ease, right 0.22s ease, width 0.22s ease, height 0.22s ease, box-shadow 0.18s ease;
+}
+.aiw.is-minimized.is-dragging {
+  transition: none !important;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.45);
+  opacity: 0.92;
+  cursor: grabbing !important;
+}
+.aiw.is-minimized.is-dragging * {
+  cursor: grabbing !important;
+}
+.aiw.is-minimized .aiw-body,
+.aiw.is-minimized .aiw-resizer,
+.aiw.is-minimized .aiw-grip,
+.aiw.is-minimized .btn-max,
+.aiw.is-minimized .aiw-sidebar-toggle {
+  display: none !important;
+}
+
+/* 4 corner positions - only when NOT dragging */
+.aiw.is-minimized:not(.is-dragging).corner-bottom-left,
+.aiw.is-minimized:not(.is-dragging):not(.corner-bottom-right):not(.corner-top-left):not(.corner-top-right) {
+  top: auto !important;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+  left: max(16px, env(safe-area-inset-left, 0px)) !important;
+  right: auto !important;
+}
+.aiw.is-minimized:not(.is-dragging).corner-bottom-right {
+  top: auto !important;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+  right: max(16px, env(safe-area-inset-right, 0px)) !important;
+  left: auto !important;
+}
+.aiw.is-minimized:not(.is-dragging).corner-top-left {
+  top: max(16px, env(safe-area-inset-top, 0px)) !important;
+  bottom: auto !important;
+  left: max(16px, env(safe-area-inset-left, 0px)) !important;
+  right: auto !important;
+}
+.aiw.is-minimized:not(.is-dragging).corner-top-right {
+  top: max(16px, env(safe-area-inset-top, 0px)) !important;
+  bottom: auto !important;
+  right: max(16px, env(safe-area-inset-right, 0px)) !important;
+  left: auto !important;
+}
+
 @media (max-width: 600px) {
-  .aiw.is-minimized { inset-block-end: calc(var(--bottom-nav-height, 54px) + 12px + env(safe-area-inset-bottom, 0px)) !important; inset-inline-start: max(8px, env(safe-area-inset-left, 0px)) !important; width: min(300px, calc(100vw - 16px)) !important; }
+  .aiw.is-minimized {
+    width: min(300px, calc(100vw - 16px)) !important;
+  }
+  .aiw.is-minimized:not(.is-dragging).corner-bottom-left,
+  .aiw.is-minimized:not(.is-dragging):not(.corner-bottom-right):not(.corner-top-left):not(.corner-top-right) {
+    bottom: calc(var(--bottom-nav-height, 54px) + 12px + env(safe-area-inset-bottom, 0px)) !important;
+    left: max(8px, env(safe-area-inset-left, 0px)) !important;
+    top: auto !important;
+    right: auto !important;
+  }
+  .aiw.is-minimized:not(.is-dragging).corner-bottom-right {
+    bottom: calc(var(--bottom-nav-height, 54px) + 12px + env(safe-area-inset-bottom, 0px)) !important;
+    right: max(8px, env(safe-area-inset-right, 0px)) !important;
+    top: auto !important;
+    left: auto !important;
+  }
+  .aiw.is-minimized:not(.is-dragging).corner-top-left {
+    top: max(8px, env(safe-area-inset-top, 0px)) !important;
+    left: max(8px, env(safe-area-inset-left, 0px)) !important;
+    bottom: auto !important;
+    right: auto !important;
+  }
+  .aiw.is-minimized:not(.is-dragging).corner-top-right {
+    top: max(8px, env(safe-area-inset-top, 0px)) !important;
+    right: max(8px, env(safe-area-inset-right, 0px)) !important;
+    bottom: auto !important;
+    left: auto !important;
+  }
 }
 
 /* ── Title bar + controls (LTR layout: start = toggle + title/logo on left; controls on right) ── */
@@ -251,10 +327,10 @@ html[data-theme="dark-slate"] .aiw { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
 .aiw .rmci-bar .ai-agent-more-btn:hover { background: var(--color-hover-overlay, rgba(128,128,128,.15)); color: var(--color-text-primary); }
 .aiw .rmci-bar .ai-agent-mic-btn { width: 32px; height: 32px; }
 .aiw .rmci-bar .ai-agent-send-btn {
-  width: 36px; height: 36px; background: var(--color-primary, #b94a16); color: #fff; box-shadow: none;
+  width: 36px; height: 36px; color: #fff; box-shadow: none;
   transition: transform .15s ease, opacity .2s ease, filter .15s ease;
 }
-.aiw .rmci-bar .ai-agent-send-btn:hover:not(:disabled):not(.is-idle) { transform: scale(1.06); filter: brightness(1.08); }
+.aiw .rmci-bar .ai-agent-send-btn:hover:not(:disabled):not(.is-idle) { filter: brightness(1.08); }
 .aiw .rmci-bar .ai-agent-send-btn:active:not(:disabled) { transform: scale(.95); }
 .aiw .rmci-bar .ai-agent-send-btn.is-idle, .aiw .rmci-bar .ai-agent-send-btn:disabled { opacity: .3; cursor: not-allowed; }
 .aiw.aiw-narrow .rmci-hint { display: none; }

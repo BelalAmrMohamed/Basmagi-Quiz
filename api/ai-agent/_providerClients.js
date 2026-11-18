@@ -9,7 +9,7 @@
 // =============================================================================
 
 /**
- * messages: [{ role: "user"|"assistant", content: string, attachments?: [{mimeType, base64, name}] }, ...]
+ * messages: [{ role: "user"|"assistant"|"tool", content: string, toolCalls?: [...], toolCallId?: string, toolName?: string, isError?: boolean, attachments?: [{mimeType, base64, name}] }, ...]
  *
  * `attachments` is only ever meaningful on user-role messages (a file the
  * user just uploaded). Each provider adapter below either forwards it
@@ -61,18 +61,45 @@ function resolveModel(provider, requestedModel) {
   return DEFAULT_MODELS[provider];
 }
 
-async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, requestedModel, effort) {
-  // Defaults to the lightest, cheapest, latest available model — see
-  // resolveModel()/DEFAULT_MODELS above — but honors a validated
-  // client-supplied override (Settings tab's model picker).
-  let model = resolveModel("google", requestedModel);
-  if (model === "gemini-2.5-pro") {
-    model = "gemini-3.1-pro-preview";
-  }
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-  const contents = messages.map((m) => {
-    const parts = [{ text: m.content }];
+export function buildGeminiContents(messages) {
+  const contents = [];
+  for (const m of messages) {
+    if (m.role === "tool") {
+      const part = {
+        functionResponse: {
+          name: m.toolName || "tool",
+          response: {
+            output: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+            ...(m.isError ? { error: true } : {}),
+          },
+        },
+      };
+      const last = contents[contents.length - 1];
+      if (last && last.role === "user" && last.parts.some((p) => p.functionResponse)) {
+        last.parts.push(part);
+      } else {
+        contents.push({ role: "user", parts: [part] });
+      }
+      continue;
+    }
+    if (m.role === "assistant") {
+      const parts = [];
+      if (m.content) parts.push({ text: m.content });
+      if (Array.isArray(m.toolCalls) && m.toolCalls.length) {
+        m.toolCalls.forEach((tc) => {
+          const sig = tc.thoughtSignature || tc.thought_signature || "skip_thought_signature_validator";
+          parts.push({
+            functionCall: { name: tc.name, args: tc.input || {} },
+            thought_signature: sig,
+            thoughtSignature: sig,
+          });
+        });
+      }
+      if (!parts.length) parts.push({ text: "" });
+      contents.push({ role: "model", parts });
+      continue;
+    }
+    const parts = [{ text: m.content || "" }];
     if (Array.isArray(m.attachments)) {
       m.attachments.forEach((att) => {
         if (att?.base64 && att?.mimeType) {
@@ -80,8 +107,19 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, request
         }
       });
     }
-    return { role: m.role === "assistant" ? "model" : "user", parts };
-  });
+    contents.push({ role: "user", parts });
+  }
+  return contents;
+}
+
+async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, requestedModel, effort) {
+  let model = resolveModel("google", requestedModel);
+  if (model === "gemini-2.5-pro") {
+    model = "gemini-3.1-pro-preview";
+  }
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const contents = buildGeminiContents(messages);
 
   const body = { contents };
 
@@ -102,15 +140,6 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, request
       {
         functionDeclarations: tools.map((t) => {
           const decl = { name: t.name, description: t.description };
-          // Only attach `parameters` when there's at least one declared
-          // property. Gemini's proto-based schema is known to be picky
-          // about JSON-Schema shapes it doesn't expect (see the union-type
-          // note on CREATE_QUIZ_TOOL's `correct` field in _tools.js) —
-          // rather than assume an empty `{type:"object", properties:{}}`
-          // round-trips cleanly through every SDK version, just omit
-          // `parameters` altogether for schemas with nothing to declare
-          // (e.g. RESET_QUIZ_PAGE_TOOL). A function with no parameters is
-          // valid without a `parameters` field at all.
           if (t.input_schema?.properties && Object.keys(t.input_schema.properties).length) {
             decl.parameters = t.input_schema;
           }
@@ -144,17 +173,46 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, request
     .map((p) => p.text)
     .join("\n\n")
     .trim();
-  const funcCalls = parts.filter((p) => p.functionCall).map((p) => p.functionCall);
+  const funcCallParts = parts.filter((p) => p.functionCall);
   const result = { text };
   if (thinking) result.thinking = thinking;
-  if (funcCalls.length) {
-    result.toolCalls = funcCalls.map((fc) => ({ name: fc.name, input: fc.args || {} }));
+  if (funcCallParts.length) {
+    result.toolCalls = funcCallParts.map((p, idx) => ({
+      id: `call_${Date.now()}_${idx}`,
+      name: p.functionCall.name,
+      input: p.functionCall.args || {},
+      thoughtSignature: p.thoughtSignature || p.thought_signature || undefined,
+    }));
   }
   return result;
 }
 
 async function callDeepSeek(apiKey, messages, systemPrompt, tools, requestedModel) {
-  const chatMessages = messages.map((m) => ({ role: m.role, content: m.content }));
+  const chatMessages = messages.map((m) => {
+    if (m.role === "tool") {
+      return {
+        role: "tool",
+        tool_call_id: m.toolCallId || m.toolName || "call_default",
+        content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+      };
+    }
+    if (m.role === "assistant") {
+      const msg = { role: "assistant", content: m.content || "" };
+      if (Array.isArray(m.toolCalls) && m.toolCalls.length) {
+        msg.tool_calls = m.toolCalls.map((tc, idx) => ({
+          id: tc.id || `call_${idx}_${tc.name}`,
+          type: "function",
+          function: {
+            name: tc.name,
+            arguments: JSON.stringify(tc.input || {}),
+          },
+        }));
+      }
+      return msg;
+    }
+    return { role: m.role, content: m.content || "" };
+  });
+
   if (systemPrompt) {
     chatMessages.unshift({ role: "system", content: systemPrompt });
   }
@@ -164,7 +222,6 @@ async function callDeepSeek(apiKey, messages, systemPrompt, tools, requestedMode
     messages: chatMessages,
   };
 
-  // DeepSeek uses an OpenAI-compatible tools/tool_choice shape.
   if (Array.isArray(tools) && tools.length) {
     body.tools = tools.map((t) => ({
       type: "function",
@@ -206,7 +263,7 @@ async function callDeepSeek(apiKey, messages, systemPrompt, tools, requestedMode
       } catch {
         input = {};
       }
-      return { name: tc.function.name, input };
+      return { id: tc.id, name: tc.function.name, input };
     });
   if (parsedCalls.length) {
     result.toolCalls = parsedCalls;
@@ -214,9 +271,6 @@ async function callDeepSeek(apiKey, messages, systemPrompt, tools, requestedMode
   return result;
 }
 
-// Claude's /v1/messages content blocks: "image" wants source.media_type in
-// {jpeg,png,gif,webp}; anything else (PDFs, mainly — the only other file
-// type Claude accepts natively) goes through the "document" block instead.
 const CLAUDE_IMAGE_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -225,34 +279,68 @@ const CLAUDE_IMAGE_MIME_TYPES = new Set([
 ]);
 
 async function callClaude(apiKey, messages, systemPrompt, tools, requestedModel) {
+  const claudeMessages = [];
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
+    if (m.role === "tool") {
+      const toolBlock = {
+        type: "tool_result",
+        tool_use_id: m.toolCallId || m.toolName || "tool_default",
+        content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+        is_error: !!m.isError,
+      };
+      const lastMsg = claudeMessages[claudeMessages.length - 1];
+      if (lastMsg && lastMsg.role === "user" && Array.isArray(lastMsg.content) && lastMsg.content[0]?.type === "tool_result") {
+        lastMsg.content.push(toolBlock);
+      } else {
+        claudeMessages.push({ role: "user", content: [toolBlock] });
+      }
+      continue;
+    }
+    if (m.role === "assistant") {
+      if (Array.isArray(m.toolCalls) && m.toolCalls.length) {
+        const blocks = [];
+        if (m.content) blocks.push({ type: "text", text: m.content });
+        m.toolCalls.forEach((tc, idx) => {
+          blocks.push({
+            type: "tool_use",
+            id: tc.id || `toolu_${idx}_${tc.name}`,
+            name: tc.name,
+            input: tc.input || {},
+          });
+        });
+        claudeMessages.push({ role: "assistant", content: blocks });
+        continue;
+      }
+      claudeMessages.push({ role: "assistant", content: m.content || "" });
+      continue;
+    }
+    if (!Array.isArray(m.attachments) || !m.attachments.length) {
+      claudeMessages.push({ role: m.role, content: m.content || "" });
+      continue;
+    }
+    const blocks = [{ type: "text", text: m.content || "" }];
+    m.attachments.forEach((att) => {
+      if (!att?.base64 || !att?.mimeType) return;
+      if (CLAUDE_IMAGE_MIME_TYPES.has(att.mimeType)) {
+        blocks.push({
+          type: "image",
+          source: { type: "base64", media_type: att.mimeType, data: att.base64 },
+        });
+      } else if (att.mimeType === "application/pdf") {
+        blocks.push({
+          type: "document",
+          source: { type: "base64", media_type: att.mimeType, data: att.base64 },
+        });
+      }
+    });
+    claudeMessages.push({ role: m.role, content: blocks });
+  }
+
   const body = {
     model: resolveModel("claude", requestedModel),
-    max_tokens: 1024,
-    messages: messages.map((m) => {
-      if (!Array.isArray(m.attachments) || !m.attachments.length) {
-        return { role: m.role, content: m.content };
-      }
-      const blocks = [{ type: "text", text: m.content }];
-      m.attachments.forEach((att) => {
-        if (!att?.base64 || !att?.mimeType) return;
-        if (CLAUDE_IMAGE_MIME_TYPES.has(att.mimeType)) {
-          blocks.push({
-            type: "image",
-            source: { type: "base64", media_type: att.mimeType, data: att.base64 },
-          });
-        } else if (att.mimeType === "application/pdf") {
-          blocks.push({
-            type: "document",
-            source: { type: "base64", media_type: att.mimeType, data: att.base64 },
-          });
-        }
-        // Other mime types (docx/pptx) are handled upstream in chat.js via
-        // extractAttachmentText, which turns them into plain text folded
-        // into `content` before this function is ever called — nothing
-        // left to attach here for those.
-      });
-      return { role: m.role, content: blocks };
-    }),
+    max_tokens: 2048,
+    messages: claudeMessages,
   };
 
   if (systemPrompt) {
@@ -289,7 +377,7 @@ async function callClaude(apiKey, messages, systemPrompt, tools, requestedModel)
   const result = { text };
   const toolUses = blocks.filter((b) => b.type === "tool_use");
   if (toolUses.length) {
-    result.toolCalls = toolUses.map((tu) => ({ name: tu.name, input: tu.input || {} }));
+    result.toolCalls = toolUses.map((tu) => ({ id: tu.id, name: tu.name, input: tu.input || {} }));
   }
   return result;
 }
@@ -303,14 +391,12 @@ const PROVIDERS = {
 /**
  * @param {"google"|"deepseek"|"claude"} provider
  * @param {string} apiKey
- * @param {Array<{role:string, content:string}>} messages
+ * @param {Array<{role:string, content:string, toolCalls?:Array<object>, toolCallId?:string, toolName?:string, isError?:boolean}>} messages
  * @param {string} [systemPrompt]
  * @param {Array<object>} [tools]
- * @param {string} [model] - optional client-requested model id (Settings
- *   tab's model picker); validated against ALLOWED_MODELS above and
- *   silently falls back to the provider's own lightest/cheapest/latest
- *   default (DEFAULT_MODELS) when omitted or not recognized.
- * @returns {Promise<{ text: string, toolCalls?: Array<{name: string, input: object}> }>}
+ * @param {string} [model]
+ * @param {string} [effort]
+ * @returns {Promise<{ text: string, toolCalls?: Array<{id?: string, name: string, input: object}>, thinking?: string }>}
  */
 export async function callProvider(provider, apiKey, messages, systemPrompt, tools, model, effort) {
   const fn = PROVIDERS[provider];

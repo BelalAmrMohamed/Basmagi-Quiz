@@ -85,7 +85,7 @@ import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { recordPlatformUsage } from "./_usage.js";
 import { callProvider, isSupportedProvider, DEFAULT_MODELS } from "./_providerClients.js";
-import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, CREATE_LESSON_TOOL, ADD_LESSON_SECTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL, GET_CREATOR_INFO_TOOL, DISPLAY_CREATOR_CARD_TOOL, CREATE_FLASHCARDS_TOOL, NOTEBOOK_ADD_CELL_TOOL, NOTEBOOK_EDIT_CELL_TOOL, NOTEBOOK_DELETE_CELL_TOOL, NOTEBOOK_RUN_CELL_TOOL } from "./_tools.js";
+import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, CREATE_LESSON_TOOL, ADD_LESSON_SECTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL, GET_CREATOR_INFO_TOOL, DISPLAY_CREATOR_CARD_TOOL, CREATE_FLASHCARDS_TOOL, NOTEBOOK_ADD_CELL_TOOL, NOTEBOOK_EDIT_CELL_TOOL, NOTEBOOK_DELETE_CELL_TOOL, NOTEBOOK_RUN_CELL_TOOL, CREATE_NOTEBOOK_TOOL, EDIT_ITEM_TOOL, GET_AUTHORING_GUIDE_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
 import { createClient } from "@supabase/supabase-js";
@@ -357,7 +357,7 @@ async function checkAndIncrementDailyUsage(profileId) {
 // its schema-level presence, even as merely optional, invited the model to
 // fill in a currentTitle that page's tool handler would ignore anyway. Only
 // one of the two should ever appear in a single request's `toolNames`.
-const TOOLS_BY_NAME = {
+export const TOOLS_BY_NAME = {
   create_quiz: CREATE_QUIZ_TOOL,
   add_lesson_question: ADD_LESSON_QUESTION_TOOL,
   create_lesson: CREATE_LESSON_TOOL,
@@ -386,6 +386,9 @@ const TOOLS_BY_NAME = {
   get_creator_info: GET_CREATOR_INFO_TOOL,
   display_creator_card: DISPLAY_CREATOR_CARD_TOOL,
   create_flashcards: CREATE_FLASHCARDS_TOOL,
+  create_notebook: CREATE_NOTEBOOK_TOOL,
+  edit_item: EDIT_ITEM_TOOL,
+  get_authoring_guide: GET_AUTHORING_GUIDE_TOOL,
 };
 
 // Historical default — the home page's original three tools — kept so

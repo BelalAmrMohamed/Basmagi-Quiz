@@ -166,13 +166,13 @@ export function showNotebookDownloadModal(row, triggerBtn = null) {
   const header = document.createElement("div");
   header.className = "modal-header";
   header.innerHTML = `
-    <h2 id="notebookDownloadTitle">${DOWNLOAD_ICON_SVG}<span>تنزيل الدفتر</span></h2>
+    <h2 id="notebookDownloadTitle">${DOWNLOAD_ICON_SVG}<span>تحميل الدفتر</span></h2>
     <button type="button" class="close-btn dl-close" aria-label="إغلاق">×</button>`;
 
   const grid = document.createElement("div");
   grid.className = "mode-grid lesson-dl-grid";
   grid.setAttribute("role", "group");
-  grid.setAttribute("aria-label", "خيارات تنزيل الدفتر");
+  grid.setAttribute("aria-label", "خيارات تحميل الدفتر");
 
   const isCpp = rowToNotebook(row).runtime === "cpp";
   const CPP_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 15l-2 -2 2-2M15 11l2 2-2 2"/></svg>';
