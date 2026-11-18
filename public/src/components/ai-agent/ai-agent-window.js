@@ -20,6 +20,20 @@
 // =============================================================================
 
 const GEO_KEY = "bq-ai-agent-window-geom";
+const CORNER_KEY = "bq-ai-agent-minimized-corner";
+const CORNERS = ["bottom-left", "bottom-right", "top-left", "top-right"];
+
+function readCorner() {
+  try {
+    const c = localStorage.getItem(CORNER_KEY);
+    return CORNERS.includes(c) ? c : "bottom-left";
+  } catch {
+    return "bottom-left";
+  }
+}
+function writeCorner(corner) {
+  try { localStorage.setItem(CORNER_KEY, corner); } catch {}
+}
 const SNAP = 14;
 const AERO_EDGE = 14;
 const AERO_CORNER = 110;
@@ -210,12 +224,23 @@ export function createAgentWindow(cfg) {
     requestAnimationFrame(measure);
   }
 
+  function applyCorner(corner) {
+    CORNERS.forEach((c) => win.classList.remove(`corner-${c}`));
+    win.classList.add(`corner-${corner}`);
+  }
+
   function toggleMinimize() {
     window.dispatchEvent(new CustomEvent("aiw:close-popups"));
     if (state.maximized) toggleMaximize();
     state.lastMinToggle = Date.now();
     state.minimized = !state.minimized;
     win.classList.toggle("is-minimized", state.minimized);
+    if (state.minimized) {
+      applyCorner(readCorner());
+    } else {
+      CORNERS.forEach((c) => win.classList.remove(`corner-${c}`));
+      if (state.savedRect) Object.assign(win.style, state.savedRect);
+    }
     setMaxButton(state.minimized);
     if (!state.minimized) requestAnimationFrame(measure);
     else document.activeElement?.blur?.();
@@ -272,7 +297,64 @@ export function createAgentWindow(cfg) {
   titlebar.addEventListener("pointerdown", (e) => {
     window.dispatchEvent(new CustomEvent("aiw:close-popups"));
     if (e.target.closest("button")) return;
-    if (state.maximized || state.minimized) return;
+
+    if (state.minimized) {
+      e.preventDefault();
+      const rect = win.getBoundingClientRect();
+      let hasDragged = false;
+      const startX = e.clientX, startY = e.clientY;
+      const initialLeft = rect.left, initialTop = rect.top;
+      titlebar.setPointerCapture(e.pointerId);
+
+      const onMinMove = (ev) => {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        if (!hasDragged && Math.hypot(dx, dy) > 5) {
+          hasDragged = true;
+          win.classList.add("is-dragging");
+          CORNERS.forEach((c) => win.classList.remove(`corner-${c}`));
+        }
+        if (hasDragged) {
+          win.style.left = `${initialLeft + dx}px`;
+          win.style.top = `${initialTop + dy}px`;
+          win.style.right = "auto";
+          win.style.bottom = "auto";
+        }
+      };
+
+      const onMinUp = (ev) => {
+        try { titlebar.releasePointerCapture(ev.pointerId); } catch {}
+        titlebar.removeEventListener("pointermove", onMinMove);
+        titlebar.removeEventListener("pointerup", onMinUp);
+        titlebar.removeEventListener("pointercancel", onMinUp);
+
+        win.classList.remove("is-dragging");
+        win.style.left = "";
+        win.style.top = "";
+        win.style.right = "";
+        win.style.bottom = "";
+
+        if (hasDragged) {
+          state.lastMinToggle = Date.now();
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
+          const isTop = ev.clientY < vh / 2;
+          const isLeft = ev.clientX < vw / 2;
+          const targetCorner = `${isTop ? "top" : "bottom"}-${isLeft ? "left" : "right"}`;
+          applyCorner(targetCorner);
+          writeCorner(targetCorner);
+        } else {
+          toggleMinimize();
+        }
+      };
+
+      titlebar.addEventListener("pointermove", onMinMove);
+      titlebar.addEventListener("pointerup", onMinUp);
+      titlebar.addEventListener("pointercancel", onMinUp);
+      return;
+    }
+
+    if (state.maximized) return;
     e.preventDefault();
     const startX = e.clientX, startY = e.clientY;
     let startLeft = win.offsetLeft;
@@ -318,7 +400,7 @@ export function createAgentWindow(cfg) {
   });
 
   titlebar.addEventListener("click", (e) => {
-    if (state.minimized && !e.target.closest("button")) toggleMinimize();
+    if (state.minimized) return; // Handled by pointerup to prevent duplicate toggling
   });
   titlebar.addEventListener("dblclick", (e) => {
     if (e.target.closest("button")) return;
@@ -385,6 +467,7 @@ export function createAgentWindow(cfg) {
 
   // ── Mount ────────────────────────────────────────────────────────────────
   applyInitialGeometry();
+  applyCorner(readCorner());
   document.body.appendChild(win);
   document.body.classList.add("ai-agent-window-open");
   if (window.innerWidth <= PHONE_MAX) toggleMaximize(); // phones: full screen, still restorable

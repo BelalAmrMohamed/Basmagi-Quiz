@@ -37,6 +37,8 @@ import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js
 import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
 import { renderCreatorCard, creatorCardModelSummary } from "./ai-agent-creator-tools.js";
 import { renderResultCard, resultCardModelSummary } from "./ai-agent-result-cards.js";
+import { createToolCallCard } from "./components/tool-call-card.js";
+import { runAgentLoop } from "./core/agent-loop.js";
 import {
   decorateMessageTokens,
   attachMessageTooltips,
@@ -62,6 +64,9 @@ const TYPING_TOOL_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>';
 const TYPING_STOP_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>';
+const SEND_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>';
+const STOP_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect width="12" height="12" x="6" y="6" rx="2"/></svg>';
+
 
 /**
  * Reads a File into a bare base64 string (no "data:...;base64," prefix —
@@ -231,6 +236,20 @@ export function createChatPanel(options = {}) {
   function setGenerating(value) {
     if (isGenerating === value) return;
     isGenerating = value;
+    if (value) {
+      sendBtn.innerHTML = STOP_ICON_SVG;
+      sendBtn.classList.add("is-generating");
+      sendBtn.classList.remove("is-idle");
+      sendBtn.setAttribute("aria-label", "إيقاف");
+      sendBtn.title = "إيقاف";
+      sendBtn.disabled = false;
+    } else {
+      sendBtn.innerHTML = SEND_ICON_SVG;
+      sendBtn.classList.remove("is-generating");
+      sendBtn.setAttribute("aria-label", "إرسال");
+      sendBtn.title = "إرسال";
+      updateSendBtnVisibility();
+    }
     generatingListeners.forEach((fn) => { try { fn(value); } catch { /* listener error */ } });
   }
   let sessionExecutedTools = new Set();
@@ -536,7 +555,7 @@ export function createChatPanel(options = {}) {
    * @param {Array<object>} historyToPersist
    */
   function toPersistedMessages(historyToPersist) {
-    return historyToPersist.filter((m) => !m.hidden).map(({ role, content, attachments, type, toolName, thinking }) => {
+    return historyToPersist.filter((m) => !m.hidden).map(({ role, content, attachments, type, toolName, toolCallId, toolCalls, isError, input, thinking }) => {
       const first = attachments?.[0];
       const firstLabel = first?.name || first?.title;
       return {
@@ -544,6 +563,10 @@ export function createChatPanel(options = {}) {
         content,
         ...(type ? { type } : {}),
         ...(toolName ? { toolName } : {}),
+        ...(toolCallId ? { toolCallId } : {}),
+        ...(Array.isArray(toolCalls) && toolCalls.length ? { toolCalls } : {}),
+        ...(isError ? { isError: true } : {}),
+        ...(input ? { input } : {}),
         ...(thinking ? { thinking } : {}),
         ...(firstLabel ? { attachmentName: firstLabel } : {}),
         ...(first?.kind ? { attachmentKind: first.kind } : {}),
@@ -1128,8 +1151,7 @@ export function createChatPanel(options = {}) {
   sendBtn.className = "ai-agent-send-btn";
   sendBtn.setAttribute("aria-label", "إرسال");
   sendBtn.title = "إرسال";
-  sendBtn.innerHTML =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>';
+  sendBtn.innerHTML = SEND_ICON_SVG;
 
   // Assemble the input row now that every optional piece (more button,
   // mic/cancel button, dictation wave) has been conditionally built
@@ -1802,10 +1824,8 @@ export function createChatPanel(options = {}) {
     let labelEl = null;
     let stepEl = null;
     let timerEl = null;
-    let stopBtn = null;
     let timerInterval = null;
     let startTime = 0;
-    let onStopCallback = null;
 
     function formatElapsed(seconds) {
       if (seconds < 60) return `${seconds}s`;
@@ -1848,20 +1868,7 @@ export function createChatPanel(options = {}) {
       metaEl.append(dotsEl, timerEl);
       contentEl.append(headerEl, metaEl);
 
-      stopBtn = document.createElement("button");
-      stopBtn.type = "button";
-      stopBtn.className = "ai-agent-typing-stop-btn";
-      stopBtn.setAttribute("aria-label", "Stop");
-      stopBtn.title = "Stop";
-      stopBtn.innerHTML = `${TYPING_STOP_ICON_SVG}<span>Stop</span>`;
-      stopBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (typeof onStopCallback === "function") {
-          onStopCallback();
-        }
-      });
-
-      el.append(iconEl, contentEl, stopBtn);
+      el.append(iconEl, contentEl);
       return el;
     }
 
@@ -1890,9 +1897,7 @@ export function createChatPanel(options = {}) {
     }
 
     return {
-      show({ label = "Thinking…", kind = "thinking", step = "", onStop = null } = {}) {
-        onStopCallback = onStop;
-
+      show({ label = "Thinking…", kind = "thinking", step = "" } = {}) {
         if (!activeEl || !activeEl.isConnected) {
           activeEl = buildElement();
           messagesEl.appendChild(activeEl);
@@ -1910,13 +1915,6 @@ export function createChatPanel(options = {}) {
 
         iconEl.innerHTML = kind === "tool" ? TYPING_TOOL_ICON_SVG : TYPING_THINKING_ICON_SVG;
         activeEl.classList.toggle("ai-agent-typing--tool", kind === "tool");
-
-        if (typeof onStop === "function") {
-          stopBtn.style.display = "inline-flex";
-        } else {
-          stopBtn.style.display = "none";
-        }
-
         messagesEl.scrollTop = messagesEl.scrollHeight;
       },
 
@@ -1929,7 +1927,6 @@ export function createChatPanel(options = {}) {
 
       clear() {
         stopTimer();
-        onStopCallback = null;
         if (activeEl) {
           activeEl.remove();
           activeEl = null;
@@ -1972,20 +1969,50 @@ export function createChatPanel(options = {}) {
    *   every turn can't recurse indefinitely and hang the panel — it gets
    *   a plain error instead once the cap is hit.
    */
-  async function resendLastUserTurn(agentDepth = 0) {
-    if (agentDepth === 0) {
-      currentAbortController = new AbortController();
-      setGenerating(true);
-      sessionExecutedTools.clear();
-      toolRetryUsed = false;
+  function serializeWireMessage(m) {
+    if (m.role === "tool" || m.type === "tool-result") {
+      return {
+        role: "tool",
+        toolCallId: m.toolCallId || `call_legacy_${m.toolName || "tool"}`,
+        toolName: m.toolName || "tool",
+        content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+        isError: !!m.isError,
+      };
     }
-    sendBtn.disabled = true;
+    const fileAttachments = (m.attachments || [])
+      .filter((a) => a.kind === "file" || (!a.kind && a.base64))
+      .map(({ mimeType, base64, name }) => ({ mimeType, base64, name }));
+    const platformAttachments = (m.attachments || []).filter(
+      (a) => a.kind === "quiz" || a.kind === "lesson" || a.kind === "course" || a.kind === "folder",
+    );
+    const expandedContext = platformAttachments.length
+      ? platformAttachments.map(expandPlatformAttachment).join("\n\n")
+      : "";
+    let effectiveContent = expandedContext
+      ? [m.content, expandedContext].filter(Boolean).join("\n\n")
+      : (m.content || "");
 
-    typingController.show({
-      label: "Thinking…",
-      kind: "thinking",
-      onStop: () => abortCurrentTurn("تم إيقاف الرد بواسطة المستخدم."),
-    });
+    if (m.isSlashCommand || (m.role === "user" && typeof effectiveContent === "string" && effectiveContent.trim().startsWith("/"))) {
+      const cmdName = m.slashCmdName || effectiveContent.trim().match(/^\/([^\s]+)/)?.[1] || "";
+      const directive = m.slashDirective || "نفّذ المطلوب واستدعِ الأداة فوراً دون طلب تأكيد";
+      effectiveContent = `${effectiveContent}\n\n[توجيه تنفيذي مباشر: هذا طلب صريح ومباشر عبر أمر Slash (/${cmdName}). ${directive}].`;
+    }
+
+    const out = {
+      role: m.role,
+      content: effectiveContent,
+    };
+    if (fileAttachments.length) out.attachments = fileAttachments;
+    if (Array.isArray(m.toolCalls) && m.toolCalls.length) out.toolCalls = m.toolCalls;
+    return out;
+  }
+
+  async function resendLastUserTurn() {
+    currentAbortController = new AbortController();
+    setGenerating(true);
+    sessionExecutedTools.clear();
+    // Tracks the current tool-call group wrapper for this turn (reset each agent step).
+    let currentToolGroup = null;
 
     const { key: ownKey, hasKey: hasOwnKey } = getOwnKey();
     const provider = getSelectedProvider();
@@ -2003,66 +2030,8 @@ export function createChatPanel(options = {}) {
         : "";
     const combinedContext = [resolvedContextPrompt, summaryText].filter(Boolean).join("\n\n");
 
-    // PHASE 2b adaptation: the plan's own text describes the backend
-    // "resolving" a platform-item attachment server-side by id. That
-    // doesn't fit how this app actually stores quizzes/courses/folders —
-    // they live in the BROWSER's localStorage (see user_quizzes reads
-    // throughout public/src/features/home/), not a server DB the backend
-    // can look up by id. So resolution happens HERE, client-side, where
-    // the full quiz/course/folder data already is — expanded into
-    // readable context text and folded into the outgoing message's
-    // `content`, distinctly labeled so the model treats it as "the user
-    // is asking about THIS specific item" rather than freeform pasted
-    // text (same intent as the plan's 2b, adapted to where the data
-    // actually lives). The client still renders it as a chip in the UI
-    // the whole time (see renderAttachmentChips/appendMessage) — it never
-    // disappears from the user's view, exactly as required.
-    const toWireMessage = ({ role, content, attachments, type, toolName, isSlashCommand, slashCmdName, slashDirective }) => {
-      const fileAttachments = (attachments || [])
-        .filter((a) => a.kind === "file" || (!a.kind && a.base64))
-        .map(({ mimeType, base64, name }) => ({ mimeType, base64, name }));
-      const platformAttachments = (attachments || []).filter(
-        (a) => a.kind === "quiz" || a.kind === "lesson" || a.kind === "course" || a.kind === "folder",
-      );
-      const expandedContext = platformAttachments.length
-        ? platformAttachments.map(expandPlatformAttachment).join("\n\n")
-        : "";
-      let effectiveContent = expandedContext
-        ? [content, expandedContext].filter(Boolean).join("\n\n")
-        : content;
-
-      if (isSlashCommand || (role === "user" && typeof content === "string" && content.trim().startsWith("/"))) {
-        const cmdName = slashCmdName || content.trim().match(/^\/([^\s]+)/)?.[1] || "";
-        const directive = slashDirective || "نفّذ المطلوب واستدعِ الأداة فوراً دون طلب تأكيد";
-        effectiveContent = `${effectiveContent}\n\n[توجيه تنفيذي مباشر: هذا طلب صريح ومباشر عبر أمر Slash (/${cmdName}). ${directive}].`;
-      }
-
-      if (type === "tool-result") {
-        return {
-          role: "user",
-          content: `[نتيجة أداة${toolName ? ` ${toolName}` : ""}]: ${sanitizeToolOutput(content)}\n(توجيه للنظام: تم تنفيذ هذا الإجراء بنجاح وأصبح موجوداً بالفعل. لا تُعد إنشاء أو تكرار نفس العنصر مجدداً، وتابع لتنفيذ بقية خطوات المستخدم إن وُجدت، أو قدم الرد النهائي).`,
-          attachments: fileAttachments,
-          type,
-        };
-      }
-      return {
-        role,
-        content: effectiveContent,
-        attachments: fileAttachments,
-        type,
-      };
-    };
-
-    const outgoingMessages = combinedContext
-      ? [{ role: "user", content: combinedContext }, ...history.map(toWireMessage)]
-      : history.map(toWireMessage);
-
     let authToken = null;
     if (!hasOwnKey) {
-      // An admin JWT left in sessionStorage may be expired; the server
-      // answers that with a hard 401 instead of falling back to the
-      // regular-user quota path. Only send it while it is still valid,
-      // otherwise behave like a normal user.
       const adminToken = isAdminAuthenticated() ? getAdminToken() : null;
       const adminUsable = !!adminToken && !isJwtExpired(adminToken);
       authToken = adminUsable ? adminToken : await getUserToken();
@@ -2070,194 +2039,103 @@ export function createChatPanel(options = {}) {
     const useOwnKeyNow = hasOwnKey && !authToken;
 
     try {
-      const headers = { "Content-Type": "application/json" };
-      if (authToken) headers.Authorization = `Bearer ${authToken}`;
-
-      const res = await fetch(apiUrl("/api/ai-agent/chat"), {
-        method: "POST",
-        headers,
-        signal: currentAbortController?.signal,
-        body: JSON.stringify({
-          provider,
-          model: model || undefined,
-          effort: getSelectedEffort(provider) || undefined,
-          messages: outgoingMessages,
-          useOwnKey: useOwnKeyNow,
-          ownKey: useOwnKeyNow ? ownKey : undefined,
-          systemPrompt: getSystemPrompt(pageKey, defaultSystemPrompt),
-          enableTools,
-          toolNames: toolNames || undefined,
-        }),
-      });
-
-      if (currentAbortController?.signal?.aborted) return;
-
-      const data = await res.json().catch(() => ({}));
-
-      if (currentAbortController?.signal?.aborted) return;
-
-      if (!res.ok) {
-        console.error(
-          `[ai-agent-chat] /api/ai-agent/chat responded ${res.status}:`,
-          data,
-        );
-        const msg = data.detail
-          ? `${data.error || "خطأ"}: ${data.detail}`
-          : data.error || "حدث خطأ أثناء التواصل مع الباشــمبصمج";
-        appendError(msg);
-        return;
-      }
-
-      if (data.thinking && !data.text) {
-        appendThinkingBlock(data.thinking);
-      }
-      if (data.text) {
-        const msgEl = appendMessage("assistant", data.text);
-        if (data.thinking) {
-          const w = msgEl.parentElement;
-          w.insertBefore(buildThinkingBlock(data.thinking), msgEl);
-        }
-        history.push({ role: "assistant", content: data.text, ...(data.thinking ? { thinking: data.thinking } : {}) });
-        typingController.moveToBottom();
-      }
-
-      const toolCallsToRun = Array.isArray(data.toolCalls)
-        ? data.toolCalls
-        : data.toolCall?.name
-          ? [data.toolCall]
-          : [];
-
-      if (!data.text && toolCallsToRun.length) {
-        const toolSummary = toolCallsToRun.map((tc) => describeToolCall(tc)).join("، ");
-        history.push({ role: "assistant", content: `[تم استدعاء: ${toolSummary}]` });
-      }
-
-      // toPersistedMessages (defined once, near createChatPanel's other
-      // helpers below) maps in-memory `history` down to the lightweight
-      // shape IndexedDB actually stores.
-      try {
-        await saveConversation({
-          id: conversationId,
-          pageKey,
-          title: deriveConversationTitle(history),
-          createdAt: conversationCreatedAt,
-          updatedAt: Date.now(),
-          messages: toPersistedMessages(history),
-        });
-        if (typeof onHistoryChanged === "function") onHistoryChanged();
-      } catch (histErr) {
-        console.error("[ai-agent-chat] failed to save conversation:", histErr);
-      }
-
-      let allToolCallsSucceeded = true;
-
-      function getToolSignature(toolCall) {
-        const name = toolCall?.name || "";
-        const input = toolCall?.input || {};
-        const primary = input.title || input.name || input.itemName || input.currentTitle || "";
-        const secondary = input.destinationFolder || input.parentFolder || "";
-        return `${name}::${String(primary).trim().toLowerCase()}::${String(secondary).trim().toLowerCase()}`;
-      }
-
-      if (toolCallsToRun.length && (typeof onToolCall === "function" || attachmentToolHandler)) {
-        const totalTools = toolCallsToRun.length;
-        let executedCount = 0;
-
-        for (let i = 0; i < totalTools; i++) {
-          if (currentAbortController?.signal?.aborted) {
-            allToolCallsSucceeded = false;
-            break;
+      const loopResult = await runAgentLoop({
+        history,
+        systemPrompt: getSystemPrompt(pageKey, defaultSystemPrompt),
+        provider,
+        model,
+        effort: getSelectedEffort(provider) || undefined,
+        useOwnKey: useOwnKeyNow,
+        ownKey: useOwnKeyNow ? ownKey : undefined,
+        authToken,
+        enableTools,
+        toolNames: toolNames || undefined,
+        signal: currentAbortController.signal,
+        apiUrl,
+        toWireMessage: (m) => {
+          const wire = serializeWireMessage(m);
+          if (m === history[0] && combinedContext && wire.role === "user") {
+            wire.content = [combinedContext, wire.content].filter(Boolean).join("\n\n");
           }
-          const toolCall = toolCallsToRun[i];
-          const sig = getToolSignature(toolCall);
-
-          if (sessionExecutedTools.has(sig)) {
-            console.warn("[ai-agent-chat] Duplicate tool call prevented in loop:", sig);
-            continue;
+          return wire;
+        },
+        sessionExecutedTools,
+        onThinking: (thinking) => {
+          appendThinkingBlock(thinking);
+        },
+        onAssistantMessage: (text, thinking) => {
+          const msgEl = appendMessage("assistant", text);
+          if (thinking) {
+            const w = msgEl.parentElement;
+            w.insertBefore(buildThinkingBlock(thinking), msgEl);
           }
-          sessionExecutedTools.add(sig);
-          executedCount++;
-
-          const stepLabel = totalTools > 1 ? `Step ${i + 1}/${totalTools}` : "";
-          typingController.show({
-            label: "Using tool…",
-            kind: "tool",
-            step: stepLabel,
-            onStop: () => abortCurrentTurn("تم إيقاف الرد بواسطة المستخدم."),
+          typingController.moveToBottom();
+        },
+        onStepChange: ({ label, kind, step }) => {
+          // A new thinking phase = new agent step: reset group so next batch gets its own wrapper.
+          if (kind === "thinking") currentToolGroup = null;
+          typingController.show({ label, kind, step });
+        },
+        onToolCallStart: (tc) => {
+          const card = createToolCallCard({
+            id: tc.id,
+            name: tc.name,
+            input: tc.input || {},
+            status: "running",
           });
-
-          try {
-            const handler = ["fetch_attached_quiz", "fetch_attached_lesson"].includes(toolCall?.name) && attachmentToolHandler
-              ? attachmentToolHandler
-              : onToolCall;
-            const resultText = await handler(toolCall);
-            if (currentAbortController?.signal?.aborted) {
-              allToolCallsSucceeded = false;
-              break;
-            }
-            if (resultText) {
-              appendToolResultMessage(resultText, toolCall?.name || "");
-              history.push({ role: "assistant", type: "tool-result", toolName: toolCall?.name || "", content: resultText });
-              try {
-                await saveConversation({
-                  id: conversationId,
-                  pageKey,
-                  title: deriveConversationTitle(history),
-                  createdAt: conversationCreatedAt,
-                  updatedAt: Date.now(),
-                  messages: toPersistedMessages(history),
-                });
-                if (typeof onHistoryChanged === "function") onHistoryChanged();
-              } catch (histErr) {
-                console.error("[ai-agent-chat] failed to save conversation (tool result):", histErr);
-              }
+          if (messagesEl.querySelector(".ai-agent-msg--empty")) {
+            messagesEl.innerHTML = "";
+          }
+          // Lazily create a group wrapper for this step's parallel tool calls.
+          if (!currentToolGroup) {
+            currentToolGroup = document.createElement("div");
+            currentToolGroup.className = "ai-agent-msg-wrap ai-agent-msg-wrap--assistant ai-agent-tool-group";
+            messagesEl.appendChild(currentToolGroup);
+          }
+          currentToolGroup.appendChild(card);
+          typingController.moveToBottom();
+          return card;
+        },
+        executeToolCall: async (toolCall, signal) => {
+          const handler = ["fetch_attached_quiz", "fetch_attached_lesson"].includes(toolCall?.name) && attachmentToolHandler
+            ? attachmentToolHandler
+            : onToolCall;
+          if (typeof handler !== "function") {
+            throw new Error(`لا يوجد معالج متاح للأداة: ${toolCall?.name}`);
+          }
+          const resultText = await handler(toolCall);
+          if (resultText) {
+            const resultCard = renderResultCard(resultText);
+            const creatorCard = resultCard ? null : renderCreatorCard(resultText);
+            if (resultCard || creatorCard) {
+              const el = document.createElement("div");
+              el.className = "ai-agent-msg ai-agent-msg--assistant ai-agent-msg--tool-result";
+              el.appendChild(resultCard || creatorCard);
+              messagesEl.appendChild(el);
               typingController.moveToBottom();
             }
-          } catch (toolErr) {
-            console.error("[ai-agent-chat] onToolCall failed:", toolErr);
-            if (toolErr?.agentRetryable && !toolRetryUsed && !currentAbortController?.signal?.aborted) {
-              // Tell the model its output was malformed and let it try once more.
-              toolRetryUsed = true;
-              sessionExecutedTools.delete(sig);
-              history.push({ role: "user", content: toolErr.agentMessage || "[system] The tool call failed. Try again with a valid payload.", hidden: true });
-              typingController.show({
-                label: "Thinking…",
-                kind: "thinking",
-                step: "Retrying",
-                onStop: () => abortCurrentTurn("Stopped by user."),
-              });
-              await resendLastUserTurn(agentDepth + 1);
-              return;
-            }
-            appendError(toolErr?.userMessage || "تعذر تنفيذ العملية. حاول مرة أخرى.");
-            allToolCallsSucceeded = false;
-            break;
           }
-        }
+          return resultText;
+        },
+        onHistoryPersist: async () => {
+          try {
+            await saveConversation({
+              id: conversationId,
+              pageKey,
+              title: deriveConversationTitle(history),
+              createdAt: conversationCreatedAt,
+              updatedAt: Date.now(),
+              messages: toPersistedMessages(history),
+            });
+            if (typeof onHistoryChanged === "function") onHistoryChanged();
+          } catch (histErr) {
+            console.error("[ai-agent-chat] failed to save conversation:", histErr);
+          }
+        },
+      });
 
-        // If the model returned tool calls but every single one of them was a duplicate that already ran,
-        // stop recursion to prevent an infinite loop!
-        if (executedCount === 0 && toolCallsToRun.length > 0) {
-          console.warn("[ai-agent-chat] All requested tools were duplicates. Halting agent loop.");
-          return;
-        }
-      }
-
-      if (toolCallsToRun.length && allToolCallsSucceeded && !currentAbortController?.signal?.aborted) {
-        if (agentDepth + 1 >= MAX_AGENT_DEPTH) {
-          appendError(
-            "توقف الباشــمبصمج بعد عدد كبير من خطوات الأدوات المتتالية في نفس الطلب. أعد صياغة طلبك أو قسّمه إلى خطوات أصغر.",
-          );
-          return;
-        }
-        typingController.show({
-          label: "Thinking…",
-          kind: "thinking",
-          step: "",
-          onStop: () => abortCurrentTurn("تم إيقاف الرد بواسطة المستخدم."),
-        });
-        await resendLastUserTurn(agentDepth + 1);
-        return;
+      if (loopResult?.error) {
+        appendError(loopResult.error);
       }
     } catch (err) {
       if (err?.name === "AbortError" || currentAbortController?.signal?.aborted) {
@@ -2266,13 +2144,11 @@ export function createChatPanel(options = {}) {
       console.error("[ai-agent-chat] request failed:", err);
       appendError("تعذر الاتصال بالخادم. حاول مرة أخرى.");
     } finally {
-      if (agentDepth === 0) {
-        typingController.clear();
-        currentAbortController = null;
-        setGenerating(false);
-        sendBtn.disabled = false;
-        updateAvailabilityGate();
-      }
+      typingController.clear();
+      currentAbortController = null;
+      setGenerating(false);
+      updateSendBtnVisibility();
+      updateAvailabilityGate();
     }
   }
 
@@ -2346,7 +2222,13 @@ export function createChatPanel(options = {}) {
     await resendLastUserTurn();
   }
 
-  sendBtn.addEventListener("click", sendMessage);
+  sendBtn.addEventListener("click", () => {
+    if (isGenerating) {
+      abortCurrentTurn("تم إيقاف الرد بواسطة المستخدم.");
+    } else if (!sendBtn.disabled) {
+      sendMessage();
+    }
+  });
   textarea.addEventListener("rmci-submit", () => { if (!sendBtn.disabled) sendMessage(); });
   textarea.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.isComposing) {
@@ -2381,8 +2263,12 @@ export function createChatPanel(options = {}) {
    * intentional.
    */
   function updateSendBtnVisibility() {
-    // Always visible (like the rich input design); dimmed while there's nothing to send.
     sendBtn.hidden = false;
+    if (isGenerating) {
+      sendBtn.classList.remove("is-idle");
+      sendBtn.disabled = false;
+      return;
+    }
     const idle = !dictation.isActive() && textarea.value.trim().length === 0 && !pendingAttachments.length;
     sendBtn.classList.toggle("is-idle", idle);
   }
@@ -2635,8 +2521,8 @@ export function createChatPanel(options = {}) {
     // branches on att.kind === "file") keeps working the same way it does
     // for a live, never-reloaded attachment.
     history.push(
-      ...conversation.messages.map(({ role, content, attachmentName, attachmentKind, attachmentItemType, attachmentSummary, type, toolName, thinking }) => {
-        const kind = attachmentKind || "file"; // older saved records predate attachmentKind — file was the only kind that ever existed before platform-item attachments
+      ...conversation.messages.map(({ role, content, attachmentName, attachmentKind, attachmentItemType, attachmentSummary, type, toolName, toolCallId, toolCalls, isError, input, thinking }) => {
+        const kind = attachmentKind || "file";
         const attachment = attachmentName
           ? {
             kind,
@@ -2650,6 +2536,10 @@ export function createChatPanel(options = {}) {
           content,
           ...(type ? { type } : {}),
           ...(toolName ? { toolName } : {}),
+          ...(toolCallId ? { toolCallId } : {}),
+          ...(Array.isArray(toolCalls) && toolCalls.length ? { toolCalls } : {}),
+          ...(isError ? { isError: true } : {}),
+          ...(input ? { input } : {}),
           ...(thinking ? { thinking } : {}),
           ...(attachment ? { attachments: [attachment] } : {}),
         };
@@ -2661,8 +2551,48 @@ export function createChatPanel(options = {}) {
       renderEmptyState();
     } else {
       history.forEach((m, i) => {
-        if (m.type === "tool-result") {
-          appendToolResultMessage(m.content, m.toolName || "");
+        if (m.role === "tool" || m.type === "tool-result") {
+          let toolInput = m.input;
+          if (!toolInput || (typeof toolInput === "object" && Object.keys(toolInput).length === 0)) {
+            for (let j = i - 1; j >= 0; j--) {
+              const prev = history[j];
+              if (prev.role === "assistant" && Array.isArray(prev.toolCalls)) {
+                const match = prev.toolCalls.find((tc) => (m.toolCallId && tc.id === m.toolCallId) || tc.name === m.toolName);
+                if (match && match.input) {
+                  toolInput = match.input;
+                  break;
+                }
+              }
+            }
+          }
+          const card = createToolCallCard({
+            id: m.toolCallId,
+            name: m.toolName || "tool",
+            input: toolInput || {},
+            status: m.isError ? "error" : "success",
+            result: !m.isError ? m.content : "",
+            error: m.isError ? m.content : "",
+          });
+          // Group consecutive tool cards into a shared wrapper (matches live rendering)
+          const prevGroup = messagesEl.lastElementChild;
+          if (prevGroup && prevGroup.classList.contains("ai-agent-tool-group")) {
+            prevGroup.appendChild(card);
+          } else {
+            const group = document.createElement("div");
+            group.className = "ai-agent-msg-wrap ai-agent-msg-wrap--assistant ai-agent-tool-group";
+            group.appendChild(card);
+            messagesEl.appendChild(group);
+          }
+          const resultCard = renderResultCard(m.content);
+          const creatorCard = resultCard ? null : renderCreatorCard(m.content);
+          if (resultCard || creatorCard) {
+            const el = document.createElement("div");
+            el.className = "ai-agent-msg ai-agent-msg--assistant ai-agent-msg--tool-result";
+            el.appendChild(resultCard || creatorCard);
+            messagesEl.appendChild(el);
+          }
+        } else if (m.role === "assistant" && Array.isArray(m.toolCalls) && m.toolCalls.length && !m.content) {
+          // Empty assistant message representing tool call trigger, rendered by tool card
         } else {
           const msgEl = appendMessage(m.role, m.content, m.attachments, i);
           if (m.thinking && m.role === "assistant") {

@@ -1,3 +1,4 @@
+import { handleCreateNotebookToolCall, handleEditItemToolCall, handleGetAuthoringGuideToolCall } from "../../components/ai-agent/core/tool-registry.js";
 // ============================================================================
 // public/src/features/home/user-quizzes-view.js
 // USER CONTENT VIEW — the "محتواي" (My Content) screen: card grid,
@@ -525,6 +526,12 @@ function buildFolderTreeContextPrompt(userQuizzes) {
  */
 async function handleQuizToolCall(toolCall) {
   switch (toolCall?.name) {
+    case "create_notebook":
+      return handleCreateNotebookToolCall(toolCall);
+    case "edit_item":
+      return handleEditItemToolCall(toolCall);
+    case "get_authoring_guide":
+      return handleGetAuthoringGuideToolCall(toolCall);
     case "create_lesson":
       return handleCreateLessonToolCall(toolCall);
     case "create_quiz":

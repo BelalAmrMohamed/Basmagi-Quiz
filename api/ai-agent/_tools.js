@@ -11,7 +11,7 @@
 export const CREATE_QUIZ_TOOL = {
   name: "create_quiz",
   description:
-    "Create a new quiz and save it for the user. Only call this when the user has explicitly confirmed they want the quiz created (e.g. after you've shown them a preview and they said yes/أنشئ/تمام). " +
+    "Create a new quiz and save it directly in the user's library («محتواي»). Execute immediately when the user's request to create a quiz is clear; do not ask for confirmation or propose a draft first unless critical details are missing. " +
     "For MCQ/True-False questions, `correct` MUST always be an array of 0-based option indices — use a single-element array like [2] for one correct answer, or multiple indices like [0, 2] if more than one option is correct. Omit `correct` (and `options`) entirely for essay/free-text questions and use `answer` instead. " +
     "For fill-in-the-blank (complete) questions set `questionKind` to \"complete\" and write each blank inline in `q` as {{answer}} or {{answer|alternative|alternative}} (all accepted answers, separated by |); omit `options`, `correct` and `answer`. Use 1-20 blanks; `strictMatch: true` makes matching case/diacritics-sensitive (default lenient). " +
     "`multiSelect` controls whether the quiz-taker sees checkboxes (true) or radio buttons (false) — it is independent of how many indices are in `correct`. Default to `false` unless the user specifically wants a \"choose one or more\" question or `correct` has more than one index (in which case set it to `true`). " +
@@ -67,9 +67,9 @@ export const CREATE_QUIZ_TOOL = {
 export const EDIT_QUIZ_TOOL = {
   name: "edit_quiz",
   description:
-    "Edit an existing quiz's title, description, or questions. Only call this when the user has explicitly confirmed the specific change (e.g. after you've restated what will change and they said yes/عدّل/تمام). " +
+    "Edit an existing quiz's title, description, or questions. Execute immediately when the requested edit is clear. " +
     "Identify the quiz using `currentTitle`, matched exactly against one of the titles already given to you. Only include the fields that actually change — omit `questions` entirely if only the title/description changed. " +
-    "If `questions` is included, it REPLACES the quiz's entire question list, so include every question that should remain, not just the changed ones. " +
+    "If `questions` is included, it REPLACES the quiz's entire question list, so include every question that should remain, not just the changed ones. (For atomic edits to individual questions without rewriting all of them, use edit_item instead). " +
     "`multiSelect` controls whether the quiz-taker sees checkboxes (true) or radio buttons (false) — it is independent of how many indices are in `correct`. Default to `false` unless the user specifically wants a \"choose one or more\" question or `correct` has more than one index. " +
     "To embed an image, audio, or video in a question, do NOT use dedicated fields — embed it directly inline inside `q` (or `explanation`/`answer`) using markdown bracket syntax: `![alt text](url)` for an image, `![audio](url)` for audio, `![video](url)` for video (YouTube links auto-embed).",
   input_schema: {
@@ -117,16 +117,11 @@ export const DELETE_QUIZ_TOOL = {
 // field). Same edit semantics/question-shape as EDIT_QUIZ_TOOL above, but
 // deliberately has NO currentTitle field at all — that page has exactly
 // one quiz in scope (the one currently in the editor form), so there's
-// nothing to disambiguate. A previous version reused EDIT_QUIZ_TOOL as-is
-// on this page, but its schema-level `required: ["currentTitle"]` meant
-// providers could still push the model to supply *something* there even
-// though the page's own tool handler (create-quiz.js::handleAiEditQuizToolCall)
-// always ignores it — removing the field entirely is cleaner than leaving
-// it present-but-unused.
+// nothing to disambiguate.
 export const EDIT_CURRENT_QUIZ_TOOL = {
   name: "edit_quiz",
   description:
-    "Edit the single quiz currently open in this page's editor — its title, description, and/or questions. There is only one quiz in scope on this page, so no identifier is needed. Only call this when the user has explicitly confirmed the specific change (e.g. after you've restated what will change and they said yes/عدّل/تمام). " +
+    "Edit the single quiz currently open in this page's editor — its title, description, and/or questions. There is only one quiz in scope on this page, so no identifier is needed. Execute immediately when the requested edit is clear. " +
     "Only include the fields that actually change — omit `questions` entirely if only the title/description changed. " +
     "If `questions` is included, it REPLACES the quiz's entire question list, so include every question that should remain (not just new/changed ones) — this is also how you fully replace the current quiz with a different one in a single call, without a separate reset step. " +
     "`multiSelect` controls whether the quiz-taker sees checkboxes (true) or radio buttons (false) — it is independent of how many indices are in `correct`. Default to `false` unless the user specifically wants a \"choose one or more\" question or `correct` has more than one index. " +
@@ -157,26 +152,10 @@ export const EDIT_CURRENT_QUIZ_TOOL = {
   },
 };
 
-// Create-quiz page only (see chat.js's TOOLS_BY_NAME / toolNames request
-// field). Unlike delete_quiz (which removes a saved quiz from the user's
-// library by title), this clears the single in-progress draft the editor
-// page is currently showing — there's no title to disambiguate since
-// there's only ever one quiz on that page. Input is intentionally empty:
-// nothing to configure, it's an unconditional wipe.
-// Home page only (see chat.js's TOOLS_BY_NAME / toolNames request field).
-// Courses and folders are both plain organizational containers backed by
-// the same user_quizzes records as quizzes themselves (see
-// createFolderOrCourseNamed in user-quizzes-folders.js) — the model never
-// sees or produces an internal id for either; every reference here is a
-// title, resolved against the folder-tree text listing already included
-// in this page's system prompt (buildFolderTreeContextPrompt in
-// user-quizzes-view.js). That listing is the ONLY way the model can know
-// what folders/courses currently exist and how they nest, so it must
-// always be present in context whenever these tools are offered.
 export const CREATE_FOLDER_TOOL = {
   name: "create_folder",
   description:
-    "Create a new folder to organize the user's quizzes. Only call this when the user has explicitly confirmed the folder name and location (e.g. after you've restated what will be created and they said yes/أنشئ/تمام). " +
+    "Create a new folder to organize the user's content in «محتواي». Execute immediately when the user's intent to create a folder is clear. " +
     "`parentFolder` is the exact title of an existing folder or course to nest the new folder inside, matched against the folder tree listing already given to you — omit it (or pass null) to create the new folder at the top level, alongside courses. " +
     "Unlike courses, folders CAN be nested inside other folders (or inside a course) to any depth.",
   input_schema: {
@@ -192,7 +171,7 @@ export const CREATE_FOLDER_TOOL = {
 export const CREATE_COURSE_TOOL = {
   name: "create_course",
   description:
-    "Create a new course — a top-level subject grouping for quizzes (e.g. \"تشريح\", \"فسيولوجيا\"). Only call this when the user has explicitly confirmed the course name (e.g. after you've restated it and they said yes/أنشئ/تمام). " +
+    "Create a new course — a top-level subject grouping in «محتواي» (e.g. \"تشريح\", \"فسيولوجيا\"). Execute immediately when the user's intent to create a course is clear. " +
     "Courses always live at the top level and can never be nested inside a folder or another course — there is no parent to specify, unlike create_folder.",
   input_schema: {
     type: "object",
@@ -206,8 +185,8 @@ export const CREATE_COURSE_TOOL = {
 export const MOVE_ITEM_TOOL = {
   name: "move_item",
   description:
-    "Move an existing quiz, folder, or course to a different location in the user's folder tree. Only call this when the user has explicitly confirmed the specific move (e.g. after you've restated what will move where and they said yes/انقل/تمام). " +
-    "`itemName` is the exact title of the quiz/folder/course to move, matched against the folder tree listing and quiz titles already given to you. `destinationFolder` is the exact title of the folder or course to move it into, matched the same way — omit it (or pass null) to move the item to the top level. " +
+    "Move an existing quiz, lesson, notebook, folder, or course to a different location in the user's folder tree. Execute immediately when the user's intent is clear. " +
+    "`itemName` is the exact title of the item to move, matched against the folder tree listing and titles already given to you. `destinationFolder` is the exact title of the folder or course to move it into, matched the same way — omit it (or pass null) to move the item to the top level. " +
     "A course can never be moved into a folder (courses only exist at the top level) and nothing can be moved into itself or one of its own descendants — if the user asks for either, tell them it isn't possible instead of calling this tool.",
   input_schema: {
     type: "object",
@@ -251,26 +230,6 @@ export const FETCH_ATTACHED_LESSON_TOOL = {
   },
 };
 
-// ── Conversational discovery tools (home page) ──────────────────────────
-// All three below are read-only and resolved entirely CLIENT-SIDE (see
-// ai-agent-attach-launcher.js / user-quizzes-view.js's onToolCall dispatch
-// and ai-agent-library-search.js) — never on the server, unlike this
-// file's own comment block up top might otherwise suggest for a "backend
-// tool". Two reasons:
-//   1. Half of what they search/read (user_quizzes) only ever lives in the
-//      browser's localStorage; the server has no access to it and never
-//      should (privacy — that data shouldn't need to transit this
-//      endpoint just to be searched).
-//   2. The other half (platform courses/quizzes) is ALREADY fully
-//      client-resolvable without a server round-trip at all — see
-//      quizManifest.js's own header comment: this project moved manifest
-//      loading off a serverless function specifically because of Vercel
-//      Hobby's 12-function cap, and a public RLS SELECT policy already
-//      permits the exact reads these tools need directly from the client.
-// So these tool schemas exist purely to tell the MODEL what it can ask
-// for; chat.js's TOOLS_BY_NAME map below never executes them — the
-// resulting tool_use always round-trips back to the client's onToolCall,
-// same as create_quiz/edit_quiz/etc. already do.
 export const SEARCH_LIBRARY_TOOL = {
   name: "search_library",
   description:
@@ -293,12 +252,13 @@ export const SEARCH_LIBRARY_TOOL = {
 export const PARSE_ITEM_INFO_TOOL = {
   name: "parse_item_info",
   description:
-    "Fetch full contents and metadata for one specific quiz, folder, or course by id — from either the user's own library or the platform's main-page content. Use this after search_library (or an @-mention already in the conversation) has told you the id you need, when the user asks something the id/title alone doesn't answer.",
+    "Fetch full contents and metadata for one specific quiz, folder, course, lesson, or notebook by id or title — from either the user's own library or the platform's catalog. Supports format 'outline' (compact numbered list of questions, sections, or cells) or 'json' / 'text'.",
   input_schema: {
     type: "object",
     properties: {
       id: { type: "string" },
-      kind: { type: "string", enum: ["quiz", "folder", "course"] },
+      kind: { type: "string", enum: ["quiz", "folder", "course", "lesson", "notebook"] },
+      format: { type: "string", enum: ["outline", "text", "json"], description: "Defaults to 'outline' for cheap, structured inspection before editing." },
     },
     required: ["id"],
   },
@@ -357,12 +317,10 @@ export const CREATE_FLASHCARDS_TOOL = {
   },
 };
 
-// Create-lesson page only. One question per call is intentional: the chat
-// provider executes at most one tool call per turn, and inserting one block
-// is atomic, undoable, and never replaces the rest of the lesson.
+// Create-lesson page only.
 export const ADD_LESSON_QUESTION_TOOL = {
   name: "add_lesson_question",
-  description: "Insert one embedded question into the current lesson. Only call after the creator explicitly confirms the proposed question. Use questionKind 'complete' for fill-in-the-blank (write each blank inline in prompt as {{answer}} or {{answer|alt}}; no options or modelAnswer; optional strictMatch). Use questionKind 'essay' with a complete modelAnswer and an explanation; the reader sees an approximate 0-5 self-check rating. For MCQ, provide 2-8 options, an explanation, and a zero-based correctIndexes array; use one index for a single-answer question and set multiSelect true when there is more than one correct option. Represent true/false as two options. sectionTitle must exactly match a section supplied in the current lesson summary, or omit it to use the first section.",
+  description: "Insert one embedded question into the current lesson. Execute immediately when the creator's request is clear. Use questionKind 'complete' for fill-in-the-blank (write each blank inline in prompt as {{answer}} or {{answer|alt}}; no options or modelAnswer; optional strictMatch). Use questionKind 'essay' with a complete modelAnswer and an explanation; the reader sees an approximate 0-5 self-check rating. For MCQ, provide 2-8 options, an explanation, and a zero-based correctIndexes array; use one index for a single-answer question and set multiSelect true when there is more than one correct option. Represent true/false as two options. sectionTitle must exactly match a section supplied in the current lesson summary, or omit it to use the first section.",
   input_schema: {
     type: "object",
     properties: {
@@ -382,12 +340,13 @@ export const ADD_LESSON_QUESTION_TOOL = {
 
 export const CREATE_LESSON_TOOL = {
   name: "create_lesson",
-  description: "Create a lesson with ordered sections containing a blocks array. Use {type:'markdown',body} for lesson content and {type:'question',questionKind:'mcq'|'essay'|'complete',prompt,...} (a 'complete' question writes blanks inline in prompt as {{answer|alt}} with no options) for embedded questions. MCQs require 2-8 options, an explanation, a zero-based correctIndex (single answer) or correctIndexes (multiple answers), and multiSelect:true for multiple answers; represent true/false as a two-option MCQ. Essays require a complete modelAnswer and explanation; readers see an approximate 0-5 self-check rating, not an overall lesson grade. Keep title, description, section titles, Markdown, and question data in this structured JSON shape. On the home page, only call after the user confirms the proposed lesson; on the lesson editor, only call after confirmation before replacing existing lesson content. An explicit /create-lesson command is confirmation.",
+  description: "Create a lesson with ordered sections containing a blocks array and save it in «محتواي». Execute immediately when the user's intent to create a lesson is clear; do not ask for confirmation or propose a draft first unless critical details are missing. Use {type:'markdown',body} for lesson content and {type:'question',questionKind:'mcq'|'essay'|'complete',prompt,...} (a 'complete' question writes blanks inline in prompt as {{answer|alt}} with no options) for embedded questions. MCQs require 2-8 options, an explanation, a zero-based correctIndex (single answer) or correctIndexes (multiple answers), and multiSelect:true for multiple answers; represent true/false as a two-option MCQ. Essays require a complete modelAnswer and explanation; readers see an approximate 0-5 self-check rating, not an overall lesson grade. Keep title, description, section titles, Markdown, and question data in this structured JSON shape.",
   input_schema: {
     type: "object",
     properties: {
       title: { type: "string" },
       description: { type: "string" },
+      folder: { type: "string", description: "Optional folder or course title to place the lesson inside." },
       sections: {
         type: "array",
         items: {
@@ -410,7 +369,7 @@ export const CREATE_LESSON_TOOL = {
                   correctIndexes: { type: "array", items: { type: "integer" }, description: "Zero-based indexes of all correct options for a multi-select MCQ." },
                   multiSelect: { type: "boolean" },
                   modelAnswer: { type: "string" },
-      strictMatch: { type: "boolean" },
+                  strictMatch: { type: "boolean" },
                   explanation: { type: "string" },
                 },
               },
@@ -426,7 +385,7 @@ export const CREATE_LESSON_TOOL = {
 
 export const ADD_LESSON_SECTION_TOOL = {
   name: "add_lesson_section",
-  description: "Append one section to the lesson currently open in the lesson editor. The section content is Markdown. Only call after the creator confirms the proposed section; an explicit /add-section command is confirmation.",
+  description: "Append one section to the lesson currently open in the lesson editor. The section content is Markdown. Execute immediately when the requested section is clear.",
   input_schema: {
     type: "object",
     properties: {
@@ -456,7 +415,7 @@ const NOTEBOOK_CHALLENGE_SCHEMA = {
 
 export const NOTEBOOK_ADD_CELL_TOOL = {
   name: "notebook_add_cell",
-  description: "Insert one cell into the notebook currently open. type 'markdown' for explanations (Markdown, math in LaTeX) or 'code' for runnable code in the notebook's language. Use position to insert before an existing cell number; omit it to append at the end. Only call after the user confirmed, unless they used an explicit slash command.",
+  description: "Insert one cell into the notebook currently open. type 'markdown' for explanations (Markdown, math in LaTeX) or 'code' for runnable code in the notebook's language. Use position to insert before an existing cell number; omit it to append at the end. Execute immediately when the user's request is clear.",
   input_schema: {
     type: "object",
     properties: {
@@ -471,7 +430,7 @@ export const NOTEBOOK_ADD_CELL_TOOL = {
 
 export const NOTEBOOK_EDIT_CELL_TOOL = {
   name: "notebook_edit_cell",
-  description: "Replace the content of an existing cell (fix a bug, improve code, rewrite an explanation). Give the cell number exactly as listed in the notebook context, and the COMPLETE new source (not a diff). Optionally set or remove its challenge. Only call after the user confirmed, unless they used an explicit slash command.",
+  description: "Replace the content of an existing cell (fix a bug, improve code, rewrite an explanation). Give the cell number exactly as listed in the notebook context, and the COMPLETE new source (not a diff). Optionally set or remove its challenge. Execute immediately when the user's request is clear.",
   input_schema: {
     type: "object",
     properties: {
@@ -501,5 +460,125 @@ export const NOTEBOOK_RUN_CELL_TOOL = {
     type: "object",
     properties: { cell: { type: "integer", description: "1-based cell number of a code cell." } },
     required: ["cell"],
+  },
+};
+
+// ── Authoring & Management Tools (Parity with MCP) ──────────────────────────
+
+export const CREATE_NOTEBOOK_TOOL = {
+  name: "create_notebook",
+  description:
+    "Create a new interactive executable notebook (MATLAB or C++) and save it directly in the user's library («محتواي»). " +
+    "Execute immediately when the user asks to create a notebook; do not ask for confirmation or propose a draft first. " +
+    "runtime MUST be 'matlab' or 'cpp'. language is 'ar' or 'en' (defaults to 'ar'). " +
+    "Alternate short Markdown cells (explanations) with runnable code cells. Each cell must be clear and self-contained. " +
+    "Math in Markdown must always be LaTeX ($...$ inline, $$...$$ display). " +
+    "Optional 'challenge' object on code cells turns them into graded coding challenges evaluated on program stdout. " +
+    "Optional 'folder' specifies the exact title of an existing folder or course to save inside.",
+  input_schema: {
+    type: "object",
+    properties: {
+      title: { type: "string", description: "Notebook title (1-200 chars)." },
+      description: { type: "string", description: "Short summary of the notebook." },
+      runtime: { type: "string", enum: ["matlab", "cpp"], description: "Execution environment ('matlab' for web MATLAB, 'cpp' for C++)." },
+      language: { type: "string", enum: ["ar", "en"], description: "Language for markdown explanations. Defaults to 'ar'." },
+      source: { type: "string", description: "Direct URL to source material, or empty string." },
+      folder: { type: "string", description: "Exact title of an existing folder or course to place the notebook inside." },
+      cells: {
+        type: "array",
+        description: "Ordered cells (1-200 cells).",
+        items: {
+          type: "object",
+          properties: {
+            type: { type: "string", enum: ["markdown", "code"] },
+            source: { type: "string", description: "Cell markdown or code source." },
+            stdin: { type: "string", description: "C++ only: input for cin." },
+            challenge: NOTEBOOK_CHALLENGE_SCHEMA,
+          },
+          required: ["type", "source"],
+        },
+      },
+    },
+    required: ["title", "runtime", "cells"],
+  },
+};
+
+export const EDIT_ITEM_TOOL = {
+  name: "edit_item",
+  description:
+    "Edit an existing quiz, lesson, notebook, folder, or course in «محتواي». " +
+    "Execute immediately when the user's requested edit is clear. " +
+    "Identify the item using `targetTitle` (matched exactly against one of the titles in the user's library). " +
+    "To rename or update description, pass `newTitle` and/or `description`. " +
+    "To modify questions, sections, blocks, or cells without resending the entire item, pass atomic operations in `patch.ops`: " +
+    "For quizzes: set_question{at, question}, insert_question{at, question}, append_questions{questions}, delete_question{at}, move_question{at, to}. " +
+    "For notebooks: set_cell{at, cell}, insert_cell{at, cell}, append_cells{cells}, delete_cell{at}, move_cell{at, to}. " +
+    "For lessons: set_section{at, section}, insert_section{at, section}, append_sections{sections}, delete_section{at}, move_section{at, to}, set_block{section, at, block}, insert_block{section, at, block}, append_blocks{section, blocks}, delete_block{section, at}, move_block{section, at, to}. " +
+    "For all items: replace_text{find, replace} to search and replace text across all strings in the item. Positions are 1-based.",
+  input_schema: {
+    type: "object",
+    properties: {
+      targetTitle: { type: "string", description: "Exact title of the existing item to edit." },
+      newTitle: { type: "string", description: "Optional new title to rename the item." },
+      description: { type: "string", description: "Optional new description." },
+      patch: {
+        type: "object",
+        description: "Atomic patch operations object: { meta?: {title, description, source, runtime}, ops?: [...] }",
+        properties: {
+          meta: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              description: { type: "string" },
+              source: { type: "string" },
+              runtime: { type: "string" },
+            },
+          },
+          ops: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                op: { type: "string" },
+                at: { type: "integer" },
+                to: { type: "integer" },
+                section: { type: "integer" },
+                find: { type: "string" },
+                replace: { type: "string" },
+                question: { type: "object" },
+                questions: { type: "array" },
+                cell: { type: "object" },
+                cells: { type: "array" },
+                sectionItem: { type: "object" },
+                sections: { type: "array" },
+                block: { type: "object" },
+                blocks: { type: "array" },
+              },
+              required: ["op"],
+            },
+          },
+        },
+      },
+      questions: { type: "array", description: "Optional full questions replacement for a quiz." },
+      sections: { type: "array", description: "Optional full sections replacement for a lesson." },
+      cells: { type: "array", description: "Optional full cells replacement for a notebook." },
+    },
+    required: ["targetTitle"],
+  },
+};
+
+export const GET_AUTHORING_GUIDE_TOOL = {
+  name: "get_authoring_guide",
+  description:
+    "Retrieve authoritative guidelines, specifications, quality rules, and JSON schemas for authoring or converting quizzes, lessons, and notebooks in Basmagi platform. Call topic='convert' when converting existing files or Google Drive folders.",
+  input_schema: {
+    type: "object",
+    properties: {
+      topic: {
+        type: "string",
+        enum: ["all", "workflow", "convert", "quiz", "lesson", "notebook", "markdown"],
+        description: "Guide topic. Defaults to 'all'.",
+      },
+    },
   },
 };

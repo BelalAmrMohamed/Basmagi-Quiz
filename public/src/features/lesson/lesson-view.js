@@ -1095,7 +1095,7 @@ export async function renderLessonView() {
       ? "Read through, track your progress, and ask Al-Basmagi whenever you need clarification."
       : "تابع القراءة وراجع تقدمك، واسأل الباشــمبصمج عندما تحتاج إلى توضيح.",
     infoBtn: isEnglish ? "Lesson Info" : "معلومات الدرس",
-    downloadBtn: isEnglish ? "Download Lesson" : "تنزيل الدرس",
+    downloadBtn: isEnglish ? "Download Lesson" : "تحميل الدرس",
     resetBtn: isEnglish ? "Reset Questions" : "إعادة ضبط الأسئلة",
     quickFactsAria: isEnglish ? "Quick lesson facts" : "معلومات سريعة عن الدرس",
     toolsAria: isEnglish ? "Lesson tools" : "أدوات الدرس",

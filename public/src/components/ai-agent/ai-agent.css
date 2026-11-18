@@ -1527,34 +1527,45 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   border: none;
   border-radius: 999px;
   background: transparent;
-  color: var(--color-text-primary);
+  color: var(--color-primary, #6366f1);
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 
-/* The .ai-agent-send-btn `display: inline-flex` above wins over the
-   browser's default `[hidden] { display: none }` UA rule (same
-   specificity, later in the cascade) — without this override, setting
-   sendBtn.hidden = true from updateSendBtnVisibility() (ai-agent-chat.js)
-   would have no visible effect at all. */
 .ai-agent-send-btn[hidden] {
-  display: none;
+  display: none !important;
 }
 
 .ai-agent-send-btn:hover:not(:disabled) {
-  /* transform: scale(1.05); */
-  box-shadow: var(--shadow-md);
+  background: color-mix(in srgb, var(--color-primary, #6366f1) 12%, transparent);
+  color: var(--color-primary-dark, var(--color-primary, #6366f1));
 }
 
-.ai-agent-send-btn:disabled {
-  opacity: 0.4;
+.ai-agent-send-btn.is-idle {
+  opacity: 0.45;
+}
+
+.ai-agent-send-btn.is-generating {
+  color: var(--color-error, #ef4444);
+  background: color-mix(in srgb, var(--color-error, #ef4444) 10%, transparent);
+  opacity: 1 !important;
+  cursor: pointer !important;
+}
+
+.ai-agent-send-btn.is-generating:hover {
+  background: color-mix(in srgb, var(--color-error, #ef4444) 20%, transparent);
+  transform: scale(1.05);
+}
+
+.ai-agent-send-btn:disabled:not(.is-generating) {
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
@@ -4388,4 +4399,278 @@ body.sidebar-expanded .ai-agent-fab {
     transparent 100%
   );
   pointer-events: none;
+}
+
+/* =============================================================================
+   Agentic Tool-Call Card UI
+   ============================================================================= */
+
+.ai-agent-tool-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 680px;
+  margin: 6px 0;
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #ffffff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  font-size: 0.84rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  direction: rtl;
+  text-align: right;
+}
+
+.ai-agent-tool-card:hover {
+  border-color: color-mix(in srgb, var(--color-primary, #6366f1) 40%, var(--color-border, #e2e8f0));
+}
+
+.ai-agent-tool-card[data-status="running"] {
+  border-color: color-mix(in srgb, var(--color-primary, #6366f1) 50%, var(--color-border, #e2e8f0));
+  background: color-mix(in srgb, var(--color-primary, #6366f1) 3%, var(--color-surface, #ffffff));
+}
+
+.ai-agent-tool-card[data-status="success"] {
+  border-color: color-mix(in srgb, var(--color-success, #10b981) 35%, var(--color-border, #e2e8f0));
+  background: color-mix(in srgb, var(--color-success, #10b981) 3%, var(--color-surface, #ffffff));
+}
+
+.ai-agent-tool-card[data-status="error"] {
+  border-color: color-mix(in srgb, var(--color-error, #ef4444) 50%, var(--color-border, #e2e8f0));
+  background: color-mix(in srgb, var(--color-error, #ef4444) 4%, var(--color-surface, #ffffff));
+}
+
+.ai-agent-tool-card[data-status="aborted"] {
+  opacity: 0.65;
+}
+
+.ai-agent-tool-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  min-height: 42px;
+}
+
+.ai-agent-tool-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.ai-agent-tool-card__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ai-agent-tool-card__icon--running {
+  color: var(--color-primary, #6366f1);
+}
+
+.ai-agent-tool-card__spinner {
+  animation: ai-agent-tool-spin 0.9s linear infinite;
+}
+
+@keyframes ai-agent-tool-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ai-agent-tool-card__icon--success {
+  color: var(--color-success, #10b981);
+}
+
+.ai-agent-tool-card__icon--error {
+  color: var(--color-error, #ef4444);
+}
+
+.ai-agent-tool-card__icon--aborted {
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+.ai-agent-tool-card__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-text-secondary, #94a3b8);
+}
+
+.ai-agent-tool-card__title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ai-agent-tool-card__title {
+  font-weight: 600;
+  color: var(--color-text-primary, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-agent-tool-card__badge {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: var(--color-background-secondary, #f1f5f9);
+  color: var(--color-text-secondary, #64748b);
+  border: 1px solid var(--color-border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.ai-agent-tool-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-inline-start: auto;
+}
+
+.ai-agent-tool-card__timer {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.74rem;
+  color: var(--color-text-secondary, #64748b);
+}
+
+.ai-agent-tool-card__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary, #64748b);
+  cursor: pointer;
+  padding: 0;
+  border-radius: 4px;
+  transition: transform 0.2s ease, color 0.15s ease;
+}
+
+.ai-agent-tool-card__chevron {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease;
+}
+
+.ai-agent-tool-card.is-expanded .ai-agent-tool-card__chevron {
+  transform: rotate(180deg);
+}
+
+.ai-agent-tool-card__body {
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-background-secondary, #f8fafc);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.ai-agent-tool-card__body[hidden] {
+  display: none !important;
+}
+
+.ai-agent-tool-card__section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-agent-tool-card__section-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ai-agent-tool-card__code {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--color-text-primary, #1e293b);
+  overflow-x: auto;
+  direction: ltr;
+  text-align: left;
+}
+
+.ai-agent-tool-card__output {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--color-text-primary, #1e293b);
+  word-break: break-word;
+}
+
+.ai-agent-tool-card__error-box {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-error, #ef4444) 8%, var(--color-surface, #ffffff));
+  border: 1px solid color-mix(in srgb, var(--color-error, #ef4444) 30%, transparent);
+  color: var(--color-error, #ef4444);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.ai-agent-tool-card__error-box p {
+  margin: 0;
+}
+
+.ai-agent-tool-card__retry-badge {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-primary, #6366f1);
+}
+
+.ai-agent-tool-card__aborted-box {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--color-background-secondary, #f1f5f9);
+  color: var(--color-text-secondary, #64748b);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+/* ── Tool-call group ── */
+/* Wraps one agent step's parallel tool cards on the assistant side. */
+.ai-agent-tool-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  /* Align content to the assistant (start) side — same as ai-agent-msg-wrap--assistant */
+  align-items: flex-start;
+}
+
+/* Cards inside a group drop their own vertical margin (the gap handles spacing) */
+.ai-agent-tool-group .ai-agent-tool-card {
+  margin: 0;
 }
