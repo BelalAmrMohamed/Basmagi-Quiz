@@ -309,16 +309,17 @@ export function createAgentWindow(cfg) {
       const onMinMove = (ev) => {
         const dx = ev.clientX - startX;
         const dy = ev.clientY - startY;
-        if (!hasDragged && Math.hypot(dx, dy) > 5) {
+        if (!hasDragged && Math.hypot(dx, dy) > 4) {
           hasDragged = true;
           win.classList.add("is-dragging");
-          CORNERS.forEach((c) => win.classList.remove(`corner-${c}`));
         }
         if (hasDragged) {
-          win.style.left = `${initialLeft + dx}px`;
-          win.style.top = `${initialTop + dy}px`;
-          win.style.right = "auto";
-          win.style.bottom = "auto";
+          const nextLeft = Math.max(8, Math.min(window.innerWidth - rect.width - 8, initialLeft + dx));
+          const nextTop = Math.max(8, Math.min(window.innerHeight - rect.height - 8, initialTop + dy));
+          win.style.setProperty("left", `${nextLeft}px`, "important");
+          win.style.setProperty("top", `${nextTop}px`, "important");
+          win.style.setProperty("right", "auto", "important");
+          win.style.setProperty("bottom", "auto", "important");
         }
       };
 
@@ -329,10 +330,10 @@ export function createAgentWindow(cfg) {
         titlebar.removeEventListener("pointercancel", onMinUp);
 
         win.classList.remove("is-dragging");
-        win.style.left = "";
-        win.style.top = "";
-        win.style.right = "";
-        win.style.bottom = "";
+        win.style.removeProperty("left");
+        win.style.removeProperty("top");
+        win.style.removeProperty("right");
+        win.style.removeProperty("bottom");
 
         if (hasDragged) {
           state.lastMinToggle = Date.now();

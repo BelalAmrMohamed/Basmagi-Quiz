@@ -75,7 +75,11 @@ export function buildExtensions(T, options) {
     addKeyboardShortcuts() {
       return {
         "Mod-Enter": () => onSubmit(),
-        "Shift-Enter": ({ editor }) => (editor.isActive("codeBlock") ? editor.commands.newlineInCode() : false),
+        "Shift-Enter": ({ editor }) => {
+          if (editor.isActive("codeBlock")) return editor.commands.newlineInCode();
+          if (editor.isActive("bulletList") || editor.isActive("orderedList")) return editor.commands.setHardBreak();
+          return editor.commands.splitBlock();
+        },
         Enter: ({ editor }) => {
           const { $from, empty } = editor.state.selection;
           const parent = $from.parent;
