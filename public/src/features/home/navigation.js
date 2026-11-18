@@ -33,10 +33,10 @@ import { migrateLegacyUserProfile } from "./profile-migration.js";
 import { initializeSearchManager } from "./search-integration.js";
 import { renderRootCategories } from "./root-view.js";
 import { renderCategory } from "./category-view.js";
-import { renderUserQuizzesView } from "./user-quizzes-view.js";
+import { renderUserContentView } from "./user-content-view.js";
 import { renderLandingScreen } from "./landing-screen.js";
 import { toSlug, fromSlug } from "./slug-utils.js";
-import { setFolderState } from "./user-quizzes-folders.js";
+import { setFolderState } from "./user-content-folders.js";
 import { getFromStorage } from "../../shared/storage-helpers.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { renderLessonView } from "../lesson/lesson-view.js";
@@ -80,7 +80,7 @@ function findCategoryAncestors(targetKey, tree) {
 //   • popstate listener    - on every browser back / forward navigation
 //
 // IMPORTANT: This function must always be called with _isRestoringState = true
-// so that renderCategory / renderUserQuizzesView use history.replaceState
+// so that renderCategory / renderUserContentView use history.replaceState
 // (stamp the state object) rather than history.pushState (add a new entry).
 
 export function restoreViewFromURL() {
@@ -218,7 +218,7 @@ export function restoreViewFromURL() {
     return;
   }
 
-    // ── User content view — pathname-based: /my-content or /my-content/:subSlug/... ──
+  // ── User content view — pathname-based: /my-content or /my-content/:subSlug/... ──
   // /ai-agent and /my-content/ai-agent are deep links to the agent window
   // (see ai-agent-route.js): they render the plain my-content root view.
   const isAgentRoute = isAIAgentPath(pathname);
@@ -234,13 +234,13 @@ export function restoreViewFromURL() {
       });
 
     if (extraSegments.length > 0) {
-      const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
       const stack = [];
       let parentId = null;
       let resolved = true;
 
       for (const slug of extraSegments) {
-        const match = userQuizzes.find(
+        const match = userContent.find(
           (q) =>
             (q.meta?.parentId || null) === parentId &&
             (q.meta?.type === "folder" || q.meta?.type === "course") &&
@@ -255,14 +255,14 @@ export function restoreViewFromURL() {
       if (resolved && stack.length > 0) {
         setNavigationStack([]);
         setFolderState(stack, stack[stack.length - 1].id);
-        renderUserQuizzesView();
+        renderUserContentView();
         return;
       }
     }
 
     setNavigationStack([]);
     setFolderState([], null);
-    renderUserQuizzesView();
+    renderUserContentView();
     return;
   }
 
@@ -275,9 +275,9 @@ export function restoreViewFromURL() {
   // ── Local user-content folders ────────────────────────────────────────────
   const localContentRoute = hash === "my-content" || hash === "my-quizzes";
   if (localContentRoute) {
-    setNavigationStack([]); // reset so renderUserQuizzesView can push cleanly
+    setNavigationStack([]); // reset so renderUserContentView can push cleanly
     setFolderState([], null); // reset to root
-    renderUserQuizzesView();
+    renderUserContentView();
     return;
   }
 
@@ -298,13 +298,13 @@ export function restoreViewFromURL() {
 
     if (segments.length > 0) {
       // Sequentially match each slug against the stored user_quizzes
-      const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
       const stack = [];
       let parentId = null;
       let resolved = true;
 
       for (const slug of segments) {
-        const match = userQuizzes.find(
+        const match = userContent.find(
           (q) =>
             (q.meta?.parentId || null) === parentId &&
             (q.meta?.type === "folder" || q.meta?.type === "course") &&
@@ -319,14 +319,14 @@ export function restoreViewFromURL() {
       if (resolved && stack.length > 0) {
         setNavigationStack([]);
         setFolderState(stack, stack[stack.length - 1].id);
-        renderUserQuizzesView();
+        renderUserContentView();
         return;
       }
     }
     // Slug didn't resolve — fall back to root my-quizzes view
     setNavigationStack([]);
     setFolderState([], null);
-    renderUserQuizzesView();
+    renderUserContentView();
     return;
   }
 
@@ -395,7 +395,7 @@ export function finalizeAppRender() {
 
     // ── Restore the view indicated by the current URL ───────────────────────
     // _isRestoringState suppresses pushState inside renderCategory /
-    // renderUserQuizzesView so we don't create a phantom forward entry on
+    // renderUserContentView so we don't create a phantom forward entry on
     // the very first load.
     setRestoring(true);
     try {

@@ -2,12 +2,12 @@
 // ============================================================================
 // SHARED MOVE-TO DIALOG — storage-agnostic folder-tree picker.
 // ============================================================================
-// Extracted out of user-quizzes-folders.js (see
+// Extracted out of user-content-folders.js (see
 // docs/plans/Admin actions and deletion flow for quizzes.md, step 5) so the
 // same visual tree/breadcrumb/guide-line picker can be reused by BOTH:
-//   - the "امتحاناتك" (/#my-quizzes) localStorage area (its own adapter
-//     lives in user-quizzes-folders.js, built by
-//     createLocalUserQuizzesMoveSource()), and
+//   - the "محتواي" (/my-content) localStorage area (its own adapter
+//     lives in user-content-folders.js, built by
+//     createLocalUserContentMoveSource()), and
 //   - the shared/admin Supabase-backed courses+folders area (its adapter
 //     will be built alongside the dropdown wiring in step 6, once there's a
 //     concrete "fetch the admin's course/folder tree" call site to build it
@@ -29,8 +29,8 @@
 //     formatted by the caller (pluralization/quoting is caller-specific).
 //
 //   rootLabel: string
-//     Label for the depth-0 "root" destination row (e.g. "امتحاناتك
-//     (الرئيسية)" for the local tree). A MoveSource with no meaningful root
+//     Label for the depth-0 "root" destination row (e.g. «محتواي» 
+//     for the local tree). A MoveSource with no meaningful root
 //     destination (nothing can ever move to the top level) can omit this —
 //     see includeRoot below.
 //
@@ -71,7 +71,7 @@
 //
 //   onMoved(): void
 //     Called once after a successful move (moved > 0), once the dialog has
-//     already closed — e.g. renderUserQuizzesView() for the local tree, or
+//     already closed — e.g. renderUserContentView() for the local tree, or
 //     whatever refresh the admin tree needs later.
 // ============================================================================
 

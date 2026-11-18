@@ -1,6 +1,6 @@
 // ============================================================================
 // public/src/features/home/quiz-file-import.js
-// Shared JSON quiz file import used by the امتحاناتك drop-zone and the
+// Shared JSON quiz file import used by the «محتواي» drop-zone and the
 // inline create-quiz modal drop-zone.
 // ============================================================================
 
@@ -8,7 +8,7 @@ import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { parseQuizJson } from "../../shared/quiz-json.js";
 import { buildUserQuizEntry } from "./quiz-schema.js";
 import { showNotification } from "../../components/notifications/notifications.js";
-import { hasSameLevelCollision } from "./user-quizzes-folders.js";
+import { hasSameLevelCollision } from "./user-content-folders.js";
 
 function defaultTitleFromFilename(name) {
   return String(name || "quiz")
@@ -36,7 +36,7 @@ function looksLikeQuestionEntry(item) {
 }
 
 /**
- * Normalize one parsed JSON value into zero or more user-quiz entries.
+ * Normalize one parsed JSON value into zero or more user-content entries.
  * Supports:
  *  - single quiz object `{ meta?, questions, stats? }`
  *  - questions-only array `[{ q, options... }, ...]`
@@ -138,7 +138,7 @@ export async function importJsonQuizFiles(files, { refresh = true } = {}) {
   // Names skipped for colliding with an existing root-level quiz (or with
   // another file already imported earlier in this same batch — checked
   // against `existingQuizzes`, which each accepted entry is pushed into
-  // immediately below, same pattern copyCategoryTreeToUserQuizzes uses for
+  // immediately below, same pattern copyCategoryTreeToUserContent uses for
   // its own partial-success reporting).
   const skippedNames = [];
 
@@ -184,7 +184,7 @@ export async function importJsonQuizFiles(files, { refresh = true } = {}) {
         const title = entry.meta?.title || "";
         // Imports always land at root (buildUserQuizEntry leaves parentId
         // unset) — same-level rule (see hasSameLevelCollision's doc
-        // comment in user-quizzes-folders.js) only needs to check root here.
+        // comment in user-content-folders.js) only needs to check root here.
         if (hasSameLevelCollision(existingQuizzes, { type: "quiz", title, parentId: null })) {
           skippedNames.push(title || file.name);
           return;
@@ -227,9 +227,9 @@ export async function importJsonQuizFiles(files, { refresh = true } = {}) {
 
     if (refresh) {
       const { renderRootCategories } = await import("./root-view.js");
-      const { renderUserQuizzesView } = await import("./user-quizzes-view.js");
+      const { renderUserContentView } = await import("./user-content-view.js");
       renderRootCategories();
-      renderUserQuizzesView();
+      renderUserContentView();
     }
   } else if (skippedNames.length) {
     showNotification(
@@ -261,7 +261,7 @@ export function wireJsonFileDropZone(el, onFiles, options = {}) {
   if (!el || el.dataset.jsonDropReady === "1") return;
   el.dataset.jsonDropReady = "1";
 
-  const activeClass = options.activeClass || "user-quizzes-drag-over";
+  const activeClass = options.activeClass || "user-content-drag-over";
   const isEnabled = options.isEnabled || (() => true);
 
   const isFileDrag = (e) =>

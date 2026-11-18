@@ -1,5 +1,5 @@
 // Drafts intentionally live outside the workspace item tree, so incomplete
-// editors cannot appear as quizzes or lessons in "امتحاناتك".
+// editors cannot appear as quizzes or lessons in "محتواي".
 const DRAFTS_KEY = "user_quiz_drafts";
 const WORKSPACE_KEY = "user_quizzes";
 

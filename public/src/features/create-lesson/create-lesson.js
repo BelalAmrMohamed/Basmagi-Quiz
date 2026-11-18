@@ -6,9 +6,9 @@
 //
 // This page is deliberately a sibling of create-quiz.js and behaves like it:
 //   * Lessons are created for EVERYONE (no admin gate) and are saved into the
-//     user's own workspace "امتحاناتك" — the `user_quizzes` localStorage list —
+//     user's own workspace "محتواي" — the `user_quizzes` localStorage list —
 //     exactly like a quiz. There is no course/folder picker: placement inside
-//     امتحاناتك is done afterwards with the workspace's own move/organize UI.
+//     «محتواي» is done afterwards with the workspace's own move/organize UI.
 //   * Auto-save keeps a draft row in `user_quizzes` (meta.type = "draft" while
 //     work-in-progress, promoted to meta.type = "lesson" on حفظ), the same
 //     lifecycle create-quiz uses.
@@ -137,7 +137,7 @@ function _cleanupMenuKeyboard(dropdown) {
 }
 
 // =============================================================================
-// LOCAL STORAGE MODEL — the "امتحاناتك" workspace
+// LOCAL STORAGE MODEL — the "محتواي" workspace
 // =============================================================================
 // Rows live in the same `user_quizzes` array quizzes/folders/courses use, so
 // the workspace's collision, move, rename and trash machinery treats a lesson
@@ -525,11 +525,11 @@ export function decodeBase64Utf8(str) {
                 try {
                     JSON.parse(trimmed);
                     return decoded;
-                } catch (_) {}
+                } catch (_) { }
             } else {
                 return decoded;
             }
-        } catch (_) {}
+        } catch (_) { }
     }
 
     let cleaned = candidateStrip;
@@ -1300,7 +1300,7 @@ window.renameEntryItem = async function (event, id) {
         row.meta?.type === LESSON_TYPE &&
         hasLessonLevelCollision(items, { title, parentId: row.meta?.parentId || null, excludeId: id })
     ) {
-        showNotification("تنبيه", "يوجد درس بنفس الاسم في هذا المستوى من امتحاناتك بالفعل.", "warning");
+        showNotification("تنبيه", "يوجد درس بنفس الاسم في هذا المستوى من محتواي بالفعل.", "warning");
         return;
     }
     const updated = { ...row, meta: { ...row.meta, title, updatedAt: new Date().toISOString() } };
@@ -3155,7 +3155,7 @@ function questionBlockInnerHtml(sectionId, block) {
     const optionsHtml = isComplete
         ? lessonCompletePanelHtml(sectionId, block)
         : isEssay
-        ? `
+            ? `
       <div class="essay-answer-container">
         <div class="essay-answer-label">
           <span class="essay-badge">سؤال مقالي</span>
@@ -3164,9 +3164,9 @@ function questionBlockInnerHtml(sectionId, block) {
         </div>
         ${mdEditorHtml(`q-model-${block._localId}`, block.modelAnswer || "", "اكتب الإجابة النموذجية هنا...", 4)}
       </div>`
-        : block.options
-            .map(
-                (opt, i) => `
+            : block.options
+                .map(
+                    (opt, i) => `
       <div class="lesson-question-option-row">
         <input type="${block.multiSelect ? "checkbox" : "radio"}" name="correct-${bid}" ${(block.correctIndexes || [block.correctIndex]).includes(i) ? "checked" : ""}
           title="تحديد كإجابة صحيحة" aria-label="تحديد الخيار ${i + 1} كإجابة صحيحة"
@@ -3179,8 +3179,8 @@ function questionBlockInnerHtml(sectionId, block) {
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
       </div>`,
-            )
-            .join("");
+                )
+                .join("");
 
     const otherSections = lessonData.sections.filter((s) => s.id !== sectionId);
     const ruleHtml = isEssay
@@ -3206,10 +3206,10 @@ function questionBlockInnerHtml(sectionId, block) {
         ${isComplete
             ? `<button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'mcq')">تحويل إلى اختيار متعدد</button>
                <button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'essay')">تحويل إلى سؤال مقالي</button>`
-        : isEssay
-            ? `<button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'mcq')">تحويل إلى اختيار متعدد</button>
+            : isEssay
+                ? `<button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'mcq')">تحويل إلى اختيار متعدد</button>
                <button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'complete')">تحويل إلى سؤال إكمال</button>`
-            : `<button type="button" class="btn btn-secondary btn-sm" ${block.options.length >= 8 ? "disabled" : ""} onclick="addQuestionOption('${sid}', '${bid}')">+ خيار</button>
+                : `<button type="button" class="btn btn-secondary btn-sm" ${block.options.length >= 8 ? "disabled" : ""} onclick="addQuestionOption('${sid}', '${bid}')">+ خيار</button>
                    <button type="button" class="btn btn-secondary btn-sm" onclick="toggleQuestionMultiSelect('${sid}', '${bid}')">${block.multiSelect ? "إجابة واحدة" : "إجابات متعددة"}</button>
                    <button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'essay')">تحويل إلى سؤال مقالي</button>
                    <button type="button" class="btn btn-secondary btn-sm" onclick="convertQuestionKind('${sid}', '${bid}', 'complete')">تحويل إلى سؤال إكمال</button>`
@@ -3668,7 +3668,7 @@ function validateLesson() {
 }
 
 // =============================================================================
-// SAVE — promote the draft to a real lesson in "امتحاناتك"
+// SAVE — promote the draft to a real lesson in "محتواي"
 // =============================================================================
 // Same flow as create-quiz.js's saveLocally():
 //   * validate, then write the row into user_quizzes;
@@ -3711,7 +3711,7 @@ window.saveLesson = async function () {
                         excludeId: editingLessonId,
                     })
                 ) {
-                    errorMessage = "يوجد درس بنفس الاسم في هذا المستوى من امتحاناتك بالفعل.";
+                    errorMessage = "يوجد درس بنفس الاسم في هذا المستوى من محتواي بالفعل.";
                 } else {
                     items[idx] = buildRow(editingLessonId, LESSON_TYPE, items[idx]);
                     _writeUserItems(items);
@@ -3723,7 +3723,7 @@ window.saveLesson = async function () {
                 if (hasLessonLevelCollision(items, { title, parentId: targetParent })) {
                     errorMessage = targetParent
                         ? "يوجد درس بنفس الاسم في هذا المجلد بالفعل."
-                        : "يوجد درس بنفس الاسم في المستوى الرئيسي من امتحاناتك بالفعل.";
+                        : "يوجد درس بنفس الاسم في المستوى الرئيسي من محتواي بالفعل.";
                 } else {
                     const id = `user_lesson_${Date.now()}`;
                     items.push(buildRow(id, LESSON_TYPE, null));
@@ -3742,7 +3742,7 @@ window.saveLesson = async function () {
         if (savedId) {
             editingLessonId = savedId;
             updateAutosaveIndicator("saved");
-            showNotification("تم الحفظ!", 'يمكنك العثور عليه في "امتحاناتك"', "success");
+            showNotification("تم الحفظ!", 'يمكنك العثور عليه في "محتواي"', "success");
             setTimeout(() => {
                 editingLessonId = null;
                 currentDraftId = null;

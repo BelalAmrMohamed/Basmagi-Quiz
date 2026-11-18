@@ -12,8 +12,8 @@
 //   - renameSharedItem() / deleteSharedItem() — prompt/confirm + the matching
 //     /api/admin?action=... server call.
 //   - openSharedMoveToDialog() — the Supabase-backed MoveSource adapter for
-//     move-to-dialog.js (the localStorage "امتحاناتك" half lives in
-//     user-quizzes-folders.js).
+//     move-to-dialog.js (the localStorage "محتواي" half lives in
+//     user-content-folders.js).
 //   - refreshSharedArea() — invalidate manifest, refetch, re-render the view.
 //
 // The server is ALWAYS the real authorization boundary (isAuthorizedForItem
@@ -227,7 +227,7 @@ export async function refreshSharedArea() {
 /**
  * Renames a shared (Supabase-backed) quiz/folder/course via
  * action=rename-item. Uses the same _prompt() flow as the localStorage
- * renameItem() in user-quizzes-folders.js.
+ * renameItem() in user-content-folders.js.
  * @param {object} item - quiz entry / course / folder node
  * @returns {Promise<boolean>} true on success (refresh already triggered)
  */
@@ -419,8 +419,8 @@ function isFolderDescendant(nodesByPrefix, ancestorPrefix, nodePrefix) {
 /**
  * Builds the MoveSource adapter (see move-to-dialog.js's interface doc) for
  * the shared Supabase-backed courses+folders tree, then opens the shared
- * dialog with it. Mirrors createLocalUserQuizzesMoveSource() in
- * user-quizzes-folders.js but for DB quizzes/folders.
+ * dialog with it. Mirrors createLocalUserContentMoveSource() in
+ * user-content-folders.js but for DB quizzes/folders.
  *
  * Courses are never move targets (they're top-level by construction — the
  * server enforces this via canPlaceItemServer), so this dialog has no root
@@ -437,7 +437,7 @@ export async function openSharedMoveToDialog(item) {
 
   if (itemType === "course") {
     // Courses are top-level only — nowhere to move them to (mirrors the
-    // localStorage lone-course guard in createLocalUserQuizzesMoveSource).
+    // localStorage lone-course guard in createLocalUserContentMoveSource).
     showNotification(
       "لا يمكن النقل",
       "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن نقلها.",

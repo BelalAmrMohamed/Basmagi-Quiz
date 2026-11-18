@@ -1,6 +1,6 @@
 // =============================================================================
 // public/src/shared/notebook-export.js
-// Pure helpers for notebooks that live in cards (local امتحاناتك rows and
+// Pure helpers for notebooks that live in cards (local «محتواي» rows and
 // platform notebook_public rows): normalisation, info, AI-attachment payload,
 // and the export formats .ipynb / .m / printable HTML. No DOM, no network.
 // =============================================================================

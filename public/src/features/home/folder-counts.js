@@ -7,11 +7,11 @@
 
 /**
  * Recursively count all subfolders, quizzes, lessons and notebooks inside a folder or course.
- * @param {object[]} userQuizzes
+ * @param {object[]} userContent
  * @param {string} folderId
  * @returns {{ subfolderCount: number, quizCount: number, lessonCount: number, notebookCount: number }}
  */
-export function getFolderContentsCount(userQuizzes, folderId) {
+export function getFolderContentsCount(userContent, folderId) {
   let subfolderCount = 0;
   let quizCount = 0;
   let lessonCount = 0;
@@ -21,7 +21,7 @@ export function getFolderContentsCount(userQuizzes, folderId) {
   function walk(currentId) {
     if (seen.has(currentId)) return; // defensive: never loop on a corrupt parent cycle
     seen.add(currentId);
-    const children = userQuizzes.filter(
+    const children = userContent.filter(
       (q) =>
         (q.meta?.parentId || null) === currentId &&
         // Drafts are never shown in the tree (see getChildren), so they must not be counted either.

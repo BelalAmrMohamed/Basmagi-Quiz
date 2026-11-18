@@ -2,7 +2,7 @@
 // api/_itemActions.js
 // Small shared validators for the move-item/rename-item admin actions.
 //
-// canPlaceItemServer mirrors public/src/features/home/user-quizzes-folders.js's
+// canPlaceItemServer mirrors public/src/features/home/user-content-folders.js's
 // canPlaceItem() invariant ("courses are always top-level; nothing may be
 // moved into a course except directly") — ported server-side per the plan's
 // explicit instruction not to trust the client-side check alone. Keep both
@@ -67,7 +67,7 @@ export function validateItemName(name) {
  * This is a pre-check query, not a constraint, so — unlike the 23505
  * branches for folders/courses — it can race against a concurrent
  * rename/move landing on the same name between the check and the write.
- * Accepted here: the local "امتحاناتك" side has the same race (a plain
+ * Accepted here: the local "محتواي" side has the same race (a plain
  * array read-modify-write, no locking) and it's never been a practical
  * problem, since two admins concurrently renaming into the exact same
  * title at the exact same spot is a vanishingly rare collision to begin

@@ -55,7 +55,7 @@ const HOME_CSS = [
   "src/styles/themes.css",
   "src/features/home/index.css",
   "src/components/quiz-info-modal/quiz-info-modal.css",
-  "src/features/home/user-quizzes-trash-panel.css",
+  "src/features/home/user-content-trash-panel.css",
   "src/components/download-quiz-modal/download-quiz-modal.css",
   "src/styles/advanced-liquid-metal-animations.css",
   "src/components/side-menu/side-menu.css",

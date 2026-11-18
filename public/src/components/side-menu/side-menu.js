@@ -423,8 +423,8 @@ initMenuIconDrawing();
             if (isMobile()) closeMobileSidebar();
             if (typeof window.navigateToMyContent === "function") {
               window.navigateToMyContent();
-            } else if (typeof window.renderUserQuizzesView === "function") {
-              window.renderUserQuizzesView();
+            } else if (typeof window.renderUserContentView === "function") {
+              window.renderUserContentView();
             } else {
               window.location.href = "/my-content";
             }
@@ -463,8 +463,8 @@ initMenuIconDrawing();
             e.preventDefault();
             if (typeof window.navigateToMyContent === "function") {
               window.navigateToMyContent();
-            } else if (typeof window.renderUserQuizzesView === "function") {
-              window.renderUserQuizzesView();
+            } else if (typeof window.renderUserContentView === "function") {
+              window.renderUserContentView();
             }
           } else if (href === "/" || href === "/index.html" || link.dataset.bottomNav === "home") {
             e.preventDefault();

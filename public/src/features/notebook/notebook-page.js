@@ -68,7 +68,7 @@ async function fetchNotebookRow(ref) {
 
 const cellToPlain = (c) => ({ type: c.type, source: c.source, ...(typeof c.stdin === "string" ? { stdin: c.stdin } : {}), ...(c.challenge && typeof c.challenge === "object" ? { challenge: c.challenge } : {}) });
 
-/** Workspace (browser-only) notebook from امتحاناتك: /notebook/<user_notebook_…>?type=user */
+/** Workspace (browser-only) notebook from «محتواي»: /notebook/<user_notebook_…>?type=user */
 function readLocalNotebookRow(ref) {
   let items;
   try { items = JSON.parse(localStorage.getItem("user_quizzes") || "[]"); } catch { return null; }
@@ -113,7 +113,7 @@ async function init() {
 
   const prepared = prepareNotebook(row);
   if (!prepared.ok) return showError(prepared.message);
-  if (!isLocal && row?.id) import("../home/info-details.js").then((m) => m.recordNotebookView(row.id)).catch(() => {});
+  if (!isLocal && row?.id) import("../home/info-details.js").then((m) => m.recordNotebookView(row.id)).catch(() => { });
   const { notebook } = prepared;
   const lang = resolveNotebookLang(row.language || row.content?.language, notebook);
   applyPageLang(lang);
@@ -142,7 +142,7 @@ async function init() {
       lang,
       onInfo: () => showNotebookInfoModal(row),
       onPrompt: (message, value) => _prompt(message, value, { dismissOnBackdrop: false }),
-            onNotice: (message) => window.dispatchEvent(new CustomEvent("notebook:notice", { detail: message })),
+      onNotice: (message) => window.dispatchEvent(new CustomEvent("notebook:notice", { detail: message })),
     });
   } catch (e) {
     console.error("[notebook-page] mount failed:", e);

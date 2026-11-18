@@ -1,14 +1,14 @@
 // ============================================================================
-// public/src/features/home/user-quizzes-trash.js
-// LOCAL ("امتحاناتك") TRASH — client-side soft-delete for the localStorage-only
+// public/src/features/home/user-content-trash.js
+// LOCAL ("محتواي") TRASH — client-side soft-delete for the localStorage-only
 // user_quizzes tree. See docs/plans/Admin actions and deletion flow for
 // quizzes.md §4 for the full design rationale; this is that section's Step 8.
 //
-// There is no server table backing "امتحاناتك" at all (it's pure
+// There is no server table backing "محتواي" at all (it's pure
 // localStorage), so this trash is a second bucket — a new "user_quizzes_trash"
 // key — rather than a server-side soft-delete flag. That also means there is
 // no cron/job runner to enforce retention: expiry is enforced lazily, via
-// sweepExpiredUserQuizzesTrash(), called once whenever the trash is opened
+// sweepExpiredUserContentTrash(), called once whenever the trash is opened
 // (mirrors the server's own "vacuum on access" pattern for consistency, see
 // plan §2's purge-expired action).
 //
@@ -24,7 +24,7 @@
 // ============================================================================
 
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
-import { hasSameLevelCollision } from "./user-quizzes-folders.js";
+import { hasSameLevelCollision } from "./user-content-folders.js";
 
 const TRASH_KEY = "user_quizzes_trash";
 const RETENTION_SETTING_KEY = "user_quizzes_trash_retention_days";
@@ -101,7 +101,7 @@ export function moveToTrash(items, label) {
  * objects the way shared/uploaded quizzes can).
  * @returns {number} how many entries were purged
  */
-export function sweepExpiredUserQuizzesTrash() {
+export function sweepExpiredUserContentTrash() {
     const trash = readTrash();
     const now = Date.now();
     const kept = trash.filter((entry) => new Date(entry.expiresAt).getTime() > now);
@@ -110,7 +110,7 @@ export function sweepExpiredUserQuizzesTrash() {
 }
 
 export function listTrashEntries() {
-    sweepExpiredUserQuizzesTrash();
+    sweepExpiredUserContentTrash();
     // Newest deletion first — matches the admin trash panel's ordering.
     return readTrash().slice().sort((a, b) => new Date(b.deletedAt) - new Date(a.deletedAt));
 }
@@ -135,7 +135,7 @@ function findEntry(trash, batchId) {
  *
  * Name collisions at the restored level are resolved with an auto-suffix
  * ("(2)", "(3)", ...), consistent with the existing collision-avoidance
- * convention used elsewhere in user-quizzes-folders.js, rather than blocking
+ * convention used elsewhere in user-content-folders.js, rather than blocking
  * the restore outright.
  *
  * @param {string} batchId
@@ -146,8 +146,8 @@ export function restoreTrashBatch(batchId) {
     const entry = findEntry(trash, batchId);
     if (!entry) return { ok: false, reason: "لم يتم العثور على العنصر في سلة المهملات." };
 
-    const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-    const liveIds = new Set(userQuizzes.map((q) => q.id || q.meta?.id).filter(Boolean));
+    const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
+    const liveIds = new Set(userContent.map((q) => q.id || q.meta?.id).filter(Boolean));
     const batchIds = new Set(entry.items.map((it) => it.id || it.meta?.id).filter(Boolean));
 
     entry.items.forEach((item) => {
@@ -162,13 +162,13 @@ export function restoreTrashBatch(batchId) {
         item.meta.parentId = parentStillResolvable ? originalParentId : null;
 
         // Auto-suffix on same-level collision, checked against the *current*
-        // userQuizzes array as it's being built up (so two items in the same
+        // userContent array as it's being built up (so two items in the same
         // batch restoring to the same level, or a name reused since deletion,
         // both get resolved rather than silently colliding).
         let title = item.meta.title || "";
         let suffix = 1;
         while (
-            hasSameLevelCollision(userQuizzes, {
+            hasSameLevelCollision(userContent, {
                 type: item.meta.type || "quiz",
                 title,
                 parentId: item.meta.parentId,
@@ -180,10 +180,10 @@ export function restoreTrashBatch(batchId) {
         }
         item.meta.title = title;
 
-        userQuizzes.push(item);
+        userContent.push(item);
     });
 
-    setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+    setInStorage("user_quizzes", JSON.stringify(userContent));
 
     const remaining = trash.filter((e) => e.batchId !== batchId);
     writeTrash(remaining);

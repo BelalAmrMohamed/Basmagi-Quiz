@@ -3,7 +3,7 @@
 // Chat tab: conversation state, sending messages to /api/ai-agent/chat,
 // and rendering the message list. Self-contained — takes everything it
 // needs via createChatPanel(options) so it can be mounted from either the
-// "امتحاناتك" view or result.html with different contextual system prompts.
+// "محتواي" view or result.html with different contextual system prompts.
 // =============================================================================
 
 import { apiUrl } from "../../shared/api-base.js";
@@ -526,8 +526,8 @@ export function createChatPanel(options = {}) {
   // any file attachment that isn't an image; images get a real thumbnail
   // instead, built in buildAttachmentTile below) and one glyph per
   // platform-item kind, reusing the same shapes the rest of the app already
-  // uses for quizzes/courses/folders (see user-quiz-card.js/
-  // user-quizzes-folders.js's 📝/📚/📁-style conventions) so a tile reads
+  // uses for quizzes/courses/folders (see user-content-card.js/
+  // user-content-folders.js's 📝/📚/📁-style conventions) so a tile reads
   // as "the same kind of thing" wherever it shows up, not a new icon set
   // invented just for this popover.
   const ATTACHMENT_FILE_ICON_SVG =
@@ -1115,7 +1115,7 @@ export function createChatPanel(options = {}) {
   });
 
   // The rich input grows/scrolls on its own; kept as a no-op for existing call sites.
-  function resizeChatInput() {}
+  function resizeChatInput() { }
 
   // Voice dictation (mic button, live volume wave, Firefox note, network retry)
   // is the shared implementation in shared/rich-input/dictation.js — the quiz and
@@ -1204,7 +1204,7 @@ export function createChatPanel(options = {}) {
     // "unavailable" state left to special-case here — a daily-limit 429, if
     // it happens, surfaces from the backend once the user actually sends a
     // message (via appendError), not as an upfront empty-state placeholder.
-    messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty">اسأل الباشــمبصمج عن أي سؤال متعلق بامتحاناتك 👋</div>`;
+    messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty">اسأل الباشــمبصمج عن أي سؤال متعلق محتواك 👋</div>`;
     updateAvailabilityGate();
   }
   renderEmptyState();
@@ -2354,7 +2354,7 @@ export function createChatPanel(options = {}) {
   // and fixed-mention metadata come from the same registries/menu definitions
   // as their live pickers, so page-specific actions stay in sync automatically.
   // Command / @mention highlighting is done inside the rich input itself now.
-  const inputHighlighter = { refresh() {}, destroy() {} };
+  const inputHighlighter = { refresh() { }, destroy() { } };
 
   textarea.addEventListener("keydown", (e) => {
     // Escape (and, when the menu is open, arrow keys / Enter for keyboard

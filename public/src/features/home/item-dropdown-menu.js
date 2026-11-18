@@ -7,7 +7,7 @@
 // ⋮ trigger button. It's appended to <body> (not the card) and positioned
 // with getBoundingClientRect() so it's never clipped by a card's
 // overflow:hidden, then closed on outside click / Escape / scroll / resize.
-// Shared by showExamActionsOverlay and showUserQuizActionsOverlay.
+// Shared by showExamActionsOverlay and showUserContentActionsOverlay.
 //
 // NOTE: this is the reference implementation for correct modal-dismiss
 // cleanup — closeMenu() is the ONLY exit path and every close route
@@ -20,7 +20,7 @@
 import { positionItemDropdownMenu } from "./floating-position.js";
 import { escapeHtml } from "./escape-html.js";
 import { INFO_ICON_SVG, COPY_CHECK_ICON_SVG } from "./icons.js";
-import { closeUserQuizContextMenu } from "./user-quizzes-folders.js";
+import { closeUserContentContextMenu } from "./user-content-folders.js";
 import { orderItemMenu } from "./item-menu-order.js";
 
 /** Removes any currently-open dropdown menu(s). Defensive — normally only
@@ -47,7 +47,7 @@ export function openItemDropdownMenu(triggerBtn, buildContent, { ordered = true 
   const wasOpenForThisTrigger = openTriggerBtn === triggerBtn;
   closeAllItemDropdownMenus();
 
-  closeUserQuizContextMenu();
+  closeUserContentContextMenu();
   if (wasOpenForThisTrigger) {
     return null;
   }

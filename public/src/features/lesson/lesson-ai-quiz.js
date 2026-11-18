@@ -213,7 +213,7 @@ export function renderLessonQuiz() {
     `<div class="lesson-ai-quiz__heading">` +
     `<span class="lesson-ai-quiz__badge">تدريب مؤقت</span>` +
     `<h2>${escapeHtml(quiz.title)}</h2>` +
-    `<p>لا يُحفظ هذا التدريب داخل «امتحاناتك».</p>` +
+    `<p>لا يُحفظ هذا التدريب داخل «محتواي».</p>` +
     `</div>` +
     `<button type="button" class="lesson-ai-quiz__close" data-quiz-close aria-label="إغلاق التدريب">×</button>` +
     `</header>` +

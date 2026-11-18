@@ -259,10 +259,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   } else {
     try {
-      const userQuizzes = JSON.parse(
+      const userContent = JSON.parse(
         localStorage.getItem("user_quizzes") || "[]",
       );
-      const found = userQuizzes.find((q) => q.id === result.examId);
+      const found = userContent.find((q) => q.id === result.examId);
       if (found) {
         questions = found.questions || [];
         config.title = found.title || config.title;

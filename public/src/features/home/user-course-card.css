@@ -122,11 +122,11 @@ html:not([data-theme]) #contentArea .user-course-card { --uc: #db2777; }
 #contentArea .user-course-card .ucc-more:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--hv-base), 0 0 0 4px var(--uc); }
 
 /* ── selection checkbox: sits where the total is, so nothing shifts ───────── */
-#contentArea .user-course-card .user-quiz-select-checkbox {
+#contentArea .user-course-card .user-content-select-checkbox {
   inset: auto; top: auto; left: auto; inset-block-end: .8rem; inset-inline-start: calc(var(--spine) / 2 - 11px); z-index: 3;
 }
-.user-quizzes-container.selection-mode-active .user-course-card .ucc-total { visibility: hidden; }
-#contentArea .user-course-card:has(.user-quiz-select-checkbox:checked) {
+.user-content-container.selection-mode-active .user-course-card .ucc-total { visibility: hidden; }
+#contentArea .user-course-card:has(.user-content-select-checkbox:checked) {
   --face: var(--hv-cell-sel); --stroke: var(--uc);
   --blur: 12px; --glow: color-mix(in srgb, var(--uc) 40%, transparent);
 }

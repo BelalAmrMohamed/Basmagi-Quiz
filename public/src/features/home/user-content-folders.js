@@ -1,17 +1,17 @@
-// public/src/features/home/user-quizzes-folders.js
+// public/src/features/home/user-content-folders.js
 import { inferQuestionType } from "../../shared/rate-answers.js";
 import { getFolderContentsCount, formatFolderAndQuizCount } from "./folder-counts.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { _prompt, _confirm, _confirmTyped, showNotification } from "../../components/notifications/notifications.js";
 import { isAdminAuthenticated } from "../../shared/adminAuth.js";
-import { renderUserQuizzesView, updateBulkActionBar } from "./user-quizzes-view.js";
-import { getSelectedUserQuizzes } from "./app-state.js";
+import { renderUserContentView, updateBulkActionBar } from "./user-content-view.js";
+import { getSelectedUserContent } from "./app-state.js";
 import { toSlug } from "./slug-utils.js";
 import { createFolderCard } from "./item-card.js";
 import { buildUserQuizEntry, qz } from "./quiz-schema.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { openMoveToDialogWithSource } from "./move-to-dialog.js";
-import { getTrashItemCount } from "./user-quizzes-trash.js";
+import { getTrashItemCount } from "./user-content-trash.js";
 import { closeAllItemDropdownMenus } from "./item-dropdown-menu.js";
 import { createUserCourseCard } from "./user-course-card.js";
 
@@ -28,16 +28,16 @@ let folderPathStack = [];
  * delete/rename/move function was mid-call with no error shown to the user
  * and no re-render. That reads exactly like "nothing happens when I click
  * حذف/تغيير العنوان/نقل إلى" — this is one of two fixes made for that report
- * (see saveUserQuizzes below for the other). Falls back to an empty tree
+ * (see saveUserContent below for the other). Falls back to an empty tree
  * and warns via showNotification rather than crashing the calling action.
  * @returns {Array}
  */
-function readUserQuizzes() {
+function readUserContent() {
   try {
     const parsed = JSON.parse(getFromStorage("user_quizzes", "[]"));
     return Array.isArray(parsed) ? parsed : [];
   } catch (err) {
-    console.error("[user-quizzes-folders] Corrupt user_quizzes data:", err);
+    console.error("[user-content-folders] Corrupt user_quizzes data:", err);
     showNotification(
       "خطأ في البيانات",
       "تعذّرت قراءة بيانات محتواي المحفوظة محلياً. قد تكون تالفة.",
@@ -57,11 +57,11 @@ function readUserQuizzes() {
  * underlying data silently never persisted, then reverted on next load.
  * Returns the same boolean so a caller that needs to bail out before
  * re-rendering can (see deleteFolder/renameItem/moveItemsToFolder below).
- * @param {Array} userQuizzes
+ * @param {Array} userContent
  * @returns {boolean} true if the write succeeded
  */
-function saveUserQuizzes(userQuizzes) {
-  const ok = setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+function saveUserContent(userContent) {
+  const ok = setInStorage("user_quizzes", JSON.stringify(userContent));
   if (!ok) {
     showNotification(
       "تعذّر الحفظ",
@@ -72,8 +72,8 @@ function saveUserQuizzes(userQuizzes) {
   return ok;
 }
 
-export function getChildren(userQuizzes, parentId) {
-  return userQuizzes.filter((q) =>
+export function getChildren(userContent, parentId) {
+  return userContent.filter((q) =>
     (q.meta?.parentId || null) === parentId &&
     q.meta?.type !== "draft" && q.meta?.type !== "draft-lesson",
   );
@@ -82,7 +82,7 @@ export function getChildren(userQuizzes, parentId) {
 /**
  * Walks a row's full parentId chain up to a root (parentId === null) and
  * returns true only if every ancestor along the way actually exists in
- * `userQuizzes`. A row one level below a missing parent is caught by a
+ * `userContent`. A row one level below a missing parent is caught by a
  * simple "does my direct parent exist" check, but a row whose *grandparent*
  * is missing (its direct parent still exists as a row, but that parent's
  * own parent doesn't) would incorrectly pass a one-level check — this walks
@@ -99,17 +99,17 @@ export function getChildren(userQuizzes, parentId) {
  *    legitimate new copy/create/rename/move.
  *
  * @param {object} row - a user_quizzes entry
- * @param {Array} userQuizzes
+ * @param {Array} userContent
  * @param {Map<string, object>} [byId] - optional id→row lookup to reuse
  *   across many calls in the same pass instead of re-scanning the array
  *   each time (collision checks and bulk operations call this per-row).
  * @returns {boolean}
  */
-export function isRowReachable(row, userQuizzes, byId = null) {
+export function isRowReachable(row, userContent, byId = null) {
   const lookup =
     byId ||
     new Map(
-      userQuizzes.map((q) => [q.id || q.meta?.id, q]).filter(([id]) => id),
+      userContent.map((q) => [q.id || q.meta?.id, q]).filter(([id]) => id),
     );
   const seen = new Set();
   let current = row;
@@ -128,8 +128,8 @@ export function isRowReachable(row, userQuizzes, byId = null) {
  * The one rule the whole "محتواي" section must follow, enforced
  * identically everywhere a new name can be introduced at a level: create
  * (createFolderOrCourseNamed), rename (renameItem), move
- * (moveItemsToFolder), single-quiz copy (copyQuizToUserQuizzes), and
- * tree copy (copyCategoryTreeToUserQuizzes's copyNode, every node type).
+ * (moveItemsToFolder), single-quiz copy (copyQuizToUserContent), and
+ * tree copy (copyCategoryTreeToUserContent's copyNode, every node type).
  *
  * "No two elements of the same type AND same name may share the same
  * parentId." Different levels are always allowed regardless of name reuse;
@@ -149,28 +149,28 @@ export function isRowReachable(row, userQuizzes, byId = null) {
  * collision — a leftover row from an old bug shouldn't block a legitimate
  * new item from taking that name.
  *
- * @param {Array} userQuizzes - checked as given, so a caller that has
+ * @param {Array} userContent - checked as given, so a caller that has
  *   already `.push()`-ed newly copied siblings earlier in the same pass
- *   (copyCategoryTreeToUserQuizzes copying two subtrees in one call) gets
+ *   (copyCategoryTreeToUserContent copying two subtrees in one call) gets
  *   those included automatically — pass the same live array reference
  *   you're building, not a stale snapshot.
  * @param {{type: "quiz"|"lesson"|"folder"|"course", title: string, parentId: string|null, excludeId?: string}} candidate
  * @returns {boolean} true if placing `candidate` would collide
  */
-export function hasSameLevelCollision(userQuizzes, { type, title, parentId, excludeId = null }) {
+export function hasSameLevelCollision(userContent, { type, title, parentId, excludeId = null }) {
   const normalizedTitle = (title || "").trim().toLowerCase();
   const normalizedParentId = parentId || null;
   const byId = new Map(
-    userQuizzes.map((q) => [q.id || q.meta?.id, q]).filter(([id]) => id),
+    userContent.map((q) => [q.id || q.meta?.id, q]).filter(([id]) => id),
   );
-  return userQuizzes.some((q) => {
+  return userContent.some((q) => {
     const qId = q.id || q.meta?.id;
     if (excludeId && qId === excludeId) return false;
     const qType = q.meta?.type || "quiz"; // plain quiz rows carry no meta.type
     if (qType !== (type || "quiz")) return false;
     if ((q.meta?.parentId || null) !== normalizedParentId) return false;
     if ((q.meta?.title || "").trim().toLowerCase() !== normalizedTitle) return false;
-    return isRowReachable(q, userQuizzes, byId);
+    return isRowReachable(q, userContent, byId);
   });
 }
 
@@ -181,13 +181,13 @@ export function hasSameLevelCollision(userQuizzes, { type, title, parentId, excl
  * path below funnels through, so the rule can't drift out of sync between
  * drag-and-drop, the move-to dialog, the context menu, and the breadcrumb
  * drop targets the way separate ad-hoc checks would.
- * @param {object[]} userQuizzes
+ * @param {object[]} userContent
  * @param {string} itemId - the item being placed somewhere
  * @param {string|null} targetFolderId - where it would be placed (null = root)
  * @returns {{allowed: boolean, reason?: string}}
  */
-export function canPlaceItem(userQuizzes, itemId, targetFolderId) {
-  const item = userQuizzes.find((q) => (q.id || q.meta?.id) === itemId);
+export function canPlaceItem(userContent, itemId, targetFolderId) {
+  const item = userContent.find((q) => (q.id || q.meta?.id) === itemId);
   const isCourse = item?.meta?.type === "course";
 
   // A course may only ever sit at the root — moving it anywhere else
@@ -224,7 +224,7 @@ export function moveItemOutOfFolder(itemId) {
   if (currentFolderId === null) return;
   const { moved } = moveItemsToFolder([itemId], pathStackParentId());
   if (moved > 0) showNotification("تم النقل", "تم نقل العنصر خارج المجلد الحالي.", "success");
-  renderUserQuizzesView();
+  renderUserContentView();
 }
 
 export function navigateToFolder(folderId, folderTitle) {
@@ -240,7 +240,7 @@ export function navigateToFolder(folderId, folderTitle) {
       folderPathStack.push({ id: folderId, title: folderTitle });
     }
   }
-  renderUserQuizzesView();
+  renderUserContentView();
 }
 
 /**
@@ -264,7 +264,7 @@ function _legacyBuildFolderHash() {
 }
 
 /**
- * Restore folder state without triggering a new renderUserQuizzesView().
+ * Restore folder state without triggering a new renderUserContentView().
  * Called by restoreViewFromURL() so the URL → state sync doesn't cause
  * double renders or phantom pushState entries.
  */
@@ -281,7 +281,7 @@ export async function createNewFolderOrCourse(type = "folder") {
     showNotification("تعذر الإنشاء", result.reason, "warning");
     return;
   }
-  renderUserQuizzesView();
+  renderUserContentView();
 }
 
 /**
@@ -308,9 +308,9 @@ export function createFolderOrCourseNamed(type, name, parentId) {
     return { ok: false, reason: "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن إنشاؤها داخل مجلد." };
   }
 
-  const userQuizzes = readUserQuizzes();
+  const userContent = readUserContent();
 
-  if (hasSameLevelCollision(userQuizzes, { type, title: trimmedName, parentId: parentId || null })) {
+  if (hasSameLevelCollision(userContent, { type, title: trimmedName, parentId: parentId || null })) {
     return { ok: false, reason: "يوجد عنصر بنفس الاسم والنوع في هذا المستوى بالفعل." };
   }
 
@@ -327,8 +327,8 @@ export function createFolderOrCourseNamed(type, name, parentId) {
     stats: { questionCount: 0, questionTypes: [] },
     questions: [],
   };
-  userQuizzes.push(newFolder);
-  if (!saveUserQuizzes(userQuizzes)) {
+  userContent.push(newFolder);
+  if (!saveUserContent(userContent)) {
     return { ok: false, reason: "تعذّر حفظ العنصر الجديد محلياً." };
   }
   return { ok: true, id: newFolder.id };
@@ -338,7 +338,7 @@ export function createFolderOrCourseNamed(type, name, parentId) {
  * Resolves a folder/course by title (case-insensitive) rather than id, so
  * callers working from human-readable names (the AI agent only ever sees
  * titles, never internal UUIDs — see the folder-tree contextPrompt built
- * in user-quizzes-view.js) can find the right target without the caller
+ * in user-content-view.js) can find the right target without the caller
  * needing to already know the id. When `parentTitle` is omitted, matches
  * anywhere in the tree; multiple same-named folders at different depths is
  * an accepted ambiguity here (returns the first match) since duplicate
@@ -349,12 +349,12 @@ export function createFolderOrCourseNamed(type, name, parentId) {
  * @returns {{id: string, type: string}|null}
  */
 export function findFolderByName(title, parentTitle = null) {
-  const userQuizzes = readUserQuizzes();
+  const userContent = readUserContent();
   const normalize = (s) => (s || "").trim().toLowerCase();
 
   let parentId = null;
   if (parentTitle) {
-    const parent = userQuizzes.find(
+    const parent = userContent.find(
       (q) => (q.meta?.type === "folder" || q.meta?.type === "course") &&
         normalize(q.meta?.title) === normalize(parentTitle),
     );
@@ -362,7 +362,7 @@ export function findFolderByName(title, parentTitle = null) {
     parentId = parent.id || parent.meta?.id;
   }
 
-  const match = userQuizzes.find((q) => {
+  const match = userContent.find((q) => {
     if (q.meta?.type !== "folder" && q.meta?.type !== "course") return false;
     if (normalize(q.meta?.title) !== normalize(title)) return false;
     if (parentTitle && (q.meta?.parentId || null) !== parentId) return false;
@@ -376,41 +376,41 @@ export async function renameItem(itemId, currentTitle) {
   const newName = await _prompt("أدخل الاسم الجديد:", currentTitle, { dismissOnBackdrop: false });
   if (!newName || !newName.trim()) return;
 
-  const userQuizzes = readUserQuizzes();
-  const item = userQuizzes.find((q) => q.id === itemId || q.meta?.id === itemId);
+  const userContent = readUserContent();
+  const item = userContent.find((q) => q.id === itemId || q.meta?.id === itemId);
   if (!item || !item.meta) return;
 
   const trimmedName = newName.trim();
   const parentId = item.meta?.parentId || null;
   const itemType = item.meta?.type || "quiz";
 
-  if (hasSameLevelCollision(userQuizzes, { type: itemType, title: trimmedName, parentId, excludeId: itemId })) {
+  if (hasSameLevelCollision(userContent, { type: itemType, title: trimmedName, parentId, excludeId: itemId })) {
     showNotification("الاسم مستخدم", "يوجد عنصر بنفس الاسم والنوع في هذا المستوى. اختر اسماً مختلفاً.", "warning");
     return;
   }
 
   item.meta.title = trimmedName;
-  if (!saveUserQuizzes(userQuizzes)) return;
-  renderUserQuizzesView();
+  if (!saveUserContent(userContent)) return;
+  renderUserContentView();
 }
 
 /**
  * Given a set of ids the user explicitly selected, expands it to also
  * include every descendant of any folder/course among them, against a given
- * userQuizzes snapshot. Shared by deleteFolder() (single item, always a
- * folder/course) and the bulk-delete action in user-quizzes-view.js (a mixed
+ * userContent snapshot. Shared by deleteFolder() (single item, always a
+ * folder/course) and the bulk-delete action in user-content-view.js (a mixed
  * selection that may or may not include folders/courses).
  *
  * @param {Set<string>} selectedIds
- * @param {Array} userQuizzes
+ * @param {Array} userContent
  * @returns {Set<string>}
  */
-export function expandSelectionWithDescendants(selectedIds, userQuizzes) {
+export function expandSelectionWithDescendants(selectedIds, userContent) {
   const idsToDelete = new Set(selectedIds);
   let added = true;
   while (added) {
     added = false;
-    for (const q of userQuizzes) {
+    for (const q of userContent) {
       const qId = q.id || q.meta?.id;
       if (q.meta?.parentId && idsToDelete.has(q.meta.parentId) && !idsToDelete.has(qId)) {
         idsToDelete.add(qId);
@@ -423,35 +423,35 @@ export function expandSelectionWithDescendants(selectedIds, userQuizzes) {
 
 /* Soft-deletes an item (quiz/folder/course, called from showContextMenu's
  * "حذف" for any targetType) into the local trash instead of discarding it —
- * see user-quizzes-trash.js and plan §4. Cascades to every descendant via
+ * see user-content-trash.js and plan §4. Cascades to every descendant via
  * expandSelectionWithDescendants (unchanged from the old hard-delete
  * behavior) so a folder/course and everything inside it move to the trash
  * together, as one restorable/purgeable batch. */
 export async function deleteFolder(folderId) {
-  const userQuizzes = readUserQuizzes();
-  const target = userQuizzes.find((q) => (q.id || q.meta?.id) === folderId);
+  const userContent = readUserContent();
+  const target = userContent.find((q) => (q.id || q.meta?.id) === folderId);
   if (!target) return;
 
   if (!(await _confirm("سيُنقل هذا العنصر إلى سلة المهملات. هل تريد المتابعة؟"))) return;
 
-  const idsToDelete = expandSelectionWithDescendants(new Set([folderId]), userQuizzes);
-  const itemsToTrash = userQuizzes.filter(
+  const idsToDelete = expandSelectionWithDescendants(new Set([folderId]), userContent);
+  const itemsToTrash = userContent.filter(
     (q) => idsToDelete.has(q.id) || idsToDelete.has(q.meta?.id),
   );
-  const newQuizzes = userQuizzes.filter((q) => !idsToDelete.has(q.id) && !idsToDelete.has(q.meta?.id));
+  const newQuizzes = userContent.filter((q) => !idsToDelete.has(q.id) && !idsToDelete.has(q.meta?.id));
 
-  const { moveToTrash } = await import("./user-quizzes-trash.js");
+  const { moveToTrash } = await import("./user-content-trash.js");
   moveToTrash(itemsToTrash, target.meta?.title || "عنصر بلا اسم");
 
-  if (!saveUserQuizzes(newQuizzes)) return;
-  renderUserQuizzesView();
+  if (!saveUserContent(newQuizzes)) return;
+  renderUserContentView();
 
-  const { refreshUserQuizzesCard } = await import("./course-count.js");
-  refreshUserQuizzesCard();
+  const { refreshUserContentCard } = await import("./course-count.js");
+  refreshUserContentCard();
 }
 
 /**
- * "حذف الكل" — wipes the entire "امتحاناتك" collection (every quiz, folder,
+ * "حذف الكل" — wipes the entire "محتواي" collection (every quiz, folder,
  * and course) in one action, unconditionally, regardless of current folder
  * or selection state.
  *
@@ -465,24 +465,24 @@ export async function deleteFolder(folderId) {
  * address rows that are technically reachable yet never rendered due to an
  * unrelated view-layer bug — this button is the deliberately blunter, fully
  * manual alternative for exactly that residual case. */
-export async function deleteAllUserQuizzes() {
+export async function deleteAllUserContent() {
   const confirmed = await _confirmTyped({
     message:
-      "سيتم حذف كل امتحاناتك ومجلداتك نهائياً ولا يمكن التراجع عن هذا الإجراء.\nللمتابعة، اضغط \"نعم\" ثم اكتب العبارة المطلوبة في الخطوة التالية.",
+      "سيتم حذف كل محتواك ومجلداتك نهائياً ولا يمكن التراجع عن هذا الإجراء.\nللمتابعة، اضغط \"نعم\" ثم اكتب العبارة المطلوبة في الخطوة التالية.",
     confirmPhrase: "حذف الكل",
     confirmButtonLabel: "حذف كل شيء نهائياً",
   });
   if (!confirmed) return;
 
-  if (!saveUserQuizzes([])) return;
+  if (!saveUserContent([])) return;
   // navigateToFolder(null, ...) resets to root AND calls
-  // renderUserQuizzesView() itself — no need to call it again here.
+  // renderUserContentView() itself — no need to call it again here.
   navigateToFolder(null, null);
 
-  const { refreshUserQuizzesCard } = await import("./course-count.js");
-  refreshUserQuizzesCard();
+  const { refreshUserContentCard } = await import("./course-count.js");
+  refreshUserContentCard();
 
-  showNotification("تم الحذف", "تم حذف كل امتحاناتك ومجلداتك.", "success");
+  showNotification("تم الحذف", "تم حذف كل محتواك ومجلداتك.", "success");
 }
 
 // Drag and drop logic
@@ -517,27 +517,27 @@ export function handleDrop(e, targetFolderId) {
   if (!itemId || itemId === targetFolderId) return;
 
   // Prevent moving a folder into itself or its children
-  const userQuizzes = readUserQuizzes();
-  if (isDescendant(userQuizzes, itemId, targetFolderId)) {
+  const userContent = readUserContent();
+  if (isDescendant(userContent, itemId, targetFolderId)) {
     showNotification("خطأ", "لا يمكن نقل المجلد إلى داخله.", "./favicon.png");
     return;
   }
 
   // Courses are top-level only — see canPlaceItem's doc comment.
-  const placement = canPlaceItem(userQuizzes, itemId, targetFolderId);
+  const placement = canPlaceItem(userContent, itemId, targetFolderId);
   if (!placement.allowed) {
     showNotification("لا يمكن النقل", placement.reason, "warning");
     return;
   }
 
-  const itemIndex = userQuizzes.findIndex((q) => q.id === itemId || q.meta?.id === itemId);
+  const itemIndex = userContent.findIndex((q) => q.id === itemId || q.meta?.id === itemId);
   if (itemIndex === -1) return;
-  if (!userQuizzes[itemIndex].meta) userQuizzes[itemIndex].meta = {};
-  if ((userQuizzes[itemIndex].meta.parentId || null) === (targetFolderId || null)) return; // already there
+  if (!userContent[itemIndex].meta) userContent[itemIndex].meta = {};
+  if ((userContent[itemIndex].meta.parentId || null) === (targetFolderId || null)) return; // already there
 
-  const item = userQuizzes[itemIndex];
+  const item = userContent[itemIndex];
   if (
-    hasSameLevelCollision(userQuizzes, {
+    hasSameLevelCollision(userContent, {
       type: item.meta?.type || "quiz",
       title: item.meta?.title || "",
       parentId: targetFolderId || null,
@@ -553,8 +553,8 @@ export function handleDrop(e, targetFolderId) {
   }
 
   item.meta.parentId = targetFolderId;
-  if (!saveUserQuizzes(userQuizzes)) return;
-  renderUserQuizzesView();
+  if (!saveUserContent(userContent)) return;
+  renderUserContentView();
 }
 
 function isDescendant(quizzes, parentId, checkId) {
@@ -577,27 +577,27 @@ function isDescendant(quizzes, parentId, checkId) {
  * @returns {{moved: number, blocked: number, saveFailed?: boolean}}
  */
 export function moveItemsToFolder(itemIds, targetFolderId) {
-  const userQuizzes = readUserQuizzes();
+  const userContent = readUserContent();
   let moved = 0;
   let blocked = 0;
 
   itemIds.forEach((itemId) => {
     if (itemId === targetFolderId) return;
-    if (isDescendant(userQuizzes, itemId, targetFolderId)) {
+    if (isDescendant(userContent, itemId, targetFolderId)) {
       blocked++;
       return;
     }
     // Courses are top-level only — see canPlaceItem's doc comment.
-    if (!canPlaceItem(userQuizzes, itemId, targetFolderId).allowed) {
+    if (!canPlaceItem(userContent, itemId, targetFolderId).allowed) {
       blocked++;
       return;
     }
-    const item = userQuizzes.find((q) => q.id === itemId || q.meta?.id === itemId);
+    const item = userContent.find((q) => q.id === itemId || q.meta?.id === itemId);
     if (!item) return;
     if (!item.meta) item.meta = {};
     if ((item.meta.parentId || null) === (targetFolderId || null)) return; // already there
     if (
-      hasSameLevelCollision(userQuizzes, {
+      hasSameLevelCollision(userContent, {
         type: item.meta?.type || "quiz",
         title: item.meta?.title || "",
         parentId: targetFolderId || null,
@@ -611,12 +611,12 @@ export function moveItemsToFolder(itemIds, targetFolderId) {
     moved++;
   });
 
-  if (moved > 0 && !saveUserQuizzes(userQuizzes)) {
-    // Save failed (see saveUserQuizzes, which already surfaced its own
+  if (moved > 0 && !saveUserContent(userContent)) {
+    // Save failed (see saveUserContent, which already surfaced its own
     // notification) — don't report a successful move that never actually
     // persisted. `saveFailed` lets a caller distinguish this from an
     // ordinary placement-rule block (see resolveFolderTitleToId's caller in
-    // user-quizzes-view.js, which used to always blame a "already there"
+    // user-content-view.js, which used to always blame a "already there"
     // rule violation here regardless of the real cause).
     return { moved: 0, blocked, saveFailed: true };
   }
@@ -633,9 +633,9 @@ export function moveItemsToFolder(itemIds, targetFolderId) {
  *   refused outright (see the lone-course guard below) before any dialog
  *   opens at all.
  */
-function createLocalUserQuizzesMoveSource(itemIds) {
-  const userQuizzes = readUserQuizzes();
-  const folders = userQuizzes.filter(
+function createLocalUserContentMoveSource(itemIds) {
+  const userContent = readUserContent();
+  const folders = userContent.filter(
     (q) => q.meta?.type === "folder" || q.meta?.type === "course",
   );
 
@@ -647,7 +647,7 @@ function createLocalUserQuizzesMoveSource(itemIds) {
   // (e.g. a future bulk-select that includes a course) with the same
   // message instead of an empty-looking dialog.
   const movingCourseIds = itemIds.filter((id) => {
-    const item = userQuizzes.find((q) => (q.id || q.meta?.id) === id);
+    const item = userContent.find((q) => (q.id || q.meta?.id) === id);
     return item?.meta?.type === "course";
   });
   if (movingCourseIds.length && itemIds.length === movingCourseIds.length) {
@@ -661,7 +661,7 @@ function createLocalUserQuizzesMoveSource(itemIds) {
 
   // Current location of the item(s) being moved, so it can be excluded/
   // marked as "current" rather than offered as a no-op destination.
-  const firstItem = userQuizzes.find((q) => (q.id || q.meta?.id) === itemIds[0]);
+  const firstItem = userContent.find((q) => (q.id || q.meta?.id) === itemIds[0]);
   const currentParentId = firstItem?.meta?.parentId || null;
 
   const itemLabel =
@@ -705,7 +705,7 @@ function createLocalUserQuizzesMoveSource(itemIds) {
       if (itemIds.includes(nodeId)) {
         return "لا يمكن نقل عنصر إلى نفسه.";
       }
-      if (itemIds.some((id) => isDescendant(userQuizzes, id, nodeId))) {
+      if (itemIds.some((id) => isDescendant(userContent, id, nodeId))) {
         return "لا يمكن نقل مجلد إلى داخل نفسه أو أحد مجلداته الفرعية.";
       }
       if (movingCourseIds.length) {
@@ -714,9 +714,9 @@ function createLocalUserQuizzesMoveSource(itemIds) {
       // Checked against EVERY item being moved (not just the first) so a
       // bulk move is flagged if it would collide for any one of them.
       const collides = itemIds.some((id) => {
-        const movingItem = userQuizzes.find((q) => (q.id || q.meta?.id) === id);
+        const movingItem = userContent.find((q) => (q.id || q.meta?.id) === id);
         if (!movingItem) return false;
-        return hasSameLevelCollision(userQuizzes, {
+        return hasSameLevelCollision(userContent, {
           type: movingItem.meta?.type || "quiz",
           title: movingItem.meta?.title || "",
           parentId: nodeId,
@@ -730,7 +730,7 @@ function createLocalUserQuizzesMoveSource(itemIds) {
     },
 
     isFullyBlocked(nodeId) {
-      return itemIds.every((id) => isDescendant(userQuizzes, id, nodeId) || id === nodeId);
+      return itemIds.every((id) => isDescendant(userContent, id, nodeId) || id === nodeId);
     },
 
     moveTo(nodeId) {
@@ -738,7 +738,7 @@ function createLocalUserQuizzesMoveSource(itemIds) {
     },
 
     onMoved() {
-      renderUserQuizzesView();
+      renderUserContentView();
     },
   };
 }
@@ -751,7 +751,7 @@ function createLocalUserQuizzesMoveSource(itemIds) {
  * case and the bulk-selection case with one shared implementation.
  *
  * Thin wrapper: builds the localStorage MoveSource (see
- * createLocalUserQuizzesMoveSource above) and hands it to the shared,
+ * createLocalUserContentMoveSource above) and hands it to the shared,
  * storage-agnostic dialog renderer in move-to-dialog.js. The exported
  * signature is unchanged so every existing caller (the context menu, the
  * card ⋮ overlay, the bulk-selection action bar) needs no changes.
@@ -759,7 +759,7 @@ function createLocalUserQuizzesMoveSource(itemIds) {
  */
 export function openMoveToDialog(itemIds) {
   if (!itemIds || itemIds.length === 0) return;
-  const source = createLocalUserQuizzesMoveSource(itemIds);
+  const source = createLocalUserContentMoveSource(itemIds);
   if (!source) return; // lone-course guard already showed its own notification
   openMoveToDialogWithSource(source);
 }
@@ -808,7 +808,7 @@ const SUBMENU_CARET_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" he
 export function initContextMenu() {
   if (contextMenuEl) return;
   contextMenuEl = document.createElement("div");
-  contextMenuEl.id = "userQuizContextMenu";
+  contextMenuEl.id = "userContentContextMenu";
   contextMenuEl.style.cssText = `
     display: none; position: absolute; z-index: 9999;
     background: var(--color-surface); border: 1px solid var(--color-border);
@@ -823,7 +823,7 @@ export function initContextMenu() {
   });
 }
 
-export function closeUserQuizContextMenu() {
+export function closeUserContentContextMenu() {
   if (!contextMenuEl) return;
   contextMenuEl.style.display = "none";
   customMenuJustOpened = false;
@@ -846,7 +846,7 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   // Right-click (or ⋮) on an item shows ONLY that item's own commands.
   // The global commands (create, import, trash, delete-all) are shown only
   // when right-clicking empty space; on touch devices they are reachable from
-  // the امتحاناتك card ⋮ menu and the "إنشاء" button instead.
+  // the «محتواي» card ⋮ menu and the "إنشاء" button instead.
   if (targetType === "item" || targetType === "folder" || targetType === "course") {
     buildItemMenuItems(targetType, targetId, targetTitle);
   } else {
@@ -864,7 +864,7 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
 function buildItemMenuItems(targetType, targetId, targetTitle) {
   contextMenuEl.appendChild(createMenuItem(SELECT_SVG, "تحديد", () => selectItem(targetId)));
 
-  const targetRow = readUserQuizzes().find((q) => (q.id || q.meta?.id) === targetId);
+  const targetRow = readUserContent().find((q) => (q.id || q.meta?.id) === targetId);
   const isLesson = targetRow?.meta?.type === "lesson";
   const rename = { icon: RENAME_SVG, label: "تغيير العنوان", onClick: () => renameItem(targetId, targetTitle) };
 
@@ -880,7 +880,7 @@ function buildItemMenuItems(targetType, targetId, targetTitle) {
           onClick: async () => {
             const [{ openDescriptionSourceModal }, { saveLocalItemMetadata }] = await Promise.all([
               import("./description-source-modal.js"),
-              import("./user-quiz-card.js"),
+              import("./user-content-card.js"),
             ]);
             openDescriptionSourceModal({
               title: targetRow?.meta?.title || targetTitle || "",
@@ -1012,22 +1012,22 @@ function buildGlobalMenuItems() {
   }
 
   // "سلة المهملات" — local trash panel entry point (item 9). Mirrors the
-  // exact gating root-view.js's own "امتحاناتك" card ⋮ menu already uses:
+  // exact gating root-view.js's own "محتواي" card ⋮ menu already uses:
   // shown only once there's at least one trashed item, regardless of
-  // whether "امتحاناتك" itself currently has any live content.
-  // getTrashItemCount() is imported statically above (user-quizzes-trash.js
+  // whether "محتواي" itself currently has any live content.
+  // getTrashItemCount() is imported statically above (user-content-trash.js
   // already statically imports back from this module — hasSameLevelCollision
   // — so this doesn't introduce a new cycle, just uses the existing one, and
   // it's only ever called from inside this function body, well after both
   // modules have finished their own top-level evaluation). openLocalTrashPanel
-  // itself is still dynamically imported (user-quizzes-trash-panel.js pulls
+  // itself is still dynamically imported (user-content-trash-panel.js pulls
   // in more of this module's exports transitively) since the click only
   // happens well after page load, so the extra async hop there is free.
   const trashCount = getTrashItemCount();
   if (trashCount > 0) {
     contextMenuEl.appendChild(
       createMenuItem(TRASH_CAN_SVG, `سلة المهملات (${trashCount})`, async () => {
-        const { openLocalTrashPanel } = await import("./user-quizzes-trash-panel.js");
+        const { openLocalTrashPanel } = await import("./user-content-trash-panel.js");
         openLocalTrashPanel();
       }),
     );
@@ -1036,15 +1036,15 @@ function buildGlobalMenuItems() {
   // Divider + "حذف الكل" below — kept visually and physically separate from
   // the item-scoped "حذف" above so a misclick can't easily wipe everything
   // instead of one folder. Hidden entirely (not just disabled) once
-  // "امتحاناتك" is already empty — there's nothing left to wipe, and a
+  // "محتواي" is already empty — there's nothing left to wipe, and a
   // visible-but-inert danger button would just be confusing.
-  const userQuizzesForDeleteAll = readUserQuizzes();
-  if (userQuizzesForDeleteAll.length > 0) {
+  const userContentForDeleteAll = readUserContent();
+  if (userContentForDeleteAll.length > 0) {
     const dangerDivider = document.createElement("div");
     dangerDivider.style.cssText = "border-top: 1px solid var(--color-border); margin: 4px 0;";
     contextMenuEl.appendChild(dangerDivider);
     contextMenuEl.appendChild(
-      createMenuItem(DELETE_SVG, "حذف الكل", () => deleteAllUserQuizzes(), true),
+      createMenuItem(DELETE_SVG, "حذف الكل", () => deleteAllUserContent(), true),
     );
   }
 
@@ -1242,15 +1242,15 @@ function createMenuItem(iconSvg, label, onClick, isDanger = false, disabledReaso
  * @param {string} itemId
  */
 function uploadItemToPlatform(type, itemId) {
-  const userQuizzes = readUserQuizzes();
-  const item = userQuizzes.find((q) => (q.id || q.meta?.id) === itemId);
+  const userContent = readUserContent();
+  const item = userContent.find((q) => (q.id || q.meta?.id) === itemId);
   if (!item) return;
 
   import("./adminUpload.js").then((mod) => {
     if (type === "course") {
-      mod.openCourseUploadModal([item], userQuizzes);
+      mod.openCourseUploadModal([item], userContent);
     } else {
-      mod.openFolderUploadModal({ folders: [item], quizzes: [], userQuizzes });
+      mod.openFolderUploadModal({ folders: [item], quizzes: [], userContent });
     }
   });
 }
@@ -1397,7 +1397,7 @@ async function importFolderTree(jsonFiles, skippedCount = 0) {
   if (!confirmed) return;
 
   // 4. Materialize folder/course records + quiz entries, then write once.
-  const userQuizzes = readUserQuizzes();
+  const userContent = readUserContent();
   const keyToId = new Map();
 
   // Unlike createNewFolderOrCourse (which rejects a duplicate name outright
@@ -1407,7 +1407,7 @@ async function importFolderTree(jsonFiles, skippedCount = 0) {
   // exists locally, which is a worse outcome than a renamed folder.
   function uniqueNameAtLevel(name, parentId) {
     const takenLower = new Set(
-      userQuizzes
+      userContent
         .filter((q) => (q.meta?.parentId || null) === parentId)
         .map((q) => (q.meta?.title || "").trim().toLowerCase()),
     );
@@ -1428,7 +1428,7 @@ async function importFolderTree(jsonFiles, skippedCount = 0) {
     const isRootLevel = node.depth === 0;
     const id = crypto.randomUUID();
     const title = uniqueNameAtLevel(node.name, parentId);
-    userQuizzes.push({
+    userContent.push({
       id,
       meta: {
         id,
@@ -1451,17 +1451,17 @@ async function importFolderTree(jsonFiles, skippedCount = 0) {
       const quizId = crypto.randomUUID();
       const entry = buildUserQuizEntry(quizId, parsed, parsed.meta?.title);
       entry.meta.parentId = folderId;
-      userQuizzes.push(entry);
+      userContent.push(entry);
     });
   }
 
-  if (!saveUserQuizzes(userQuizzes)) return;
+  if (!saveUserContent(userContent)) return;
   showNotification(
     "تم الرفع",
     `تم إنشاء ${folderCount} مجلد/مادة ورفع ${quizCount} امتحان بنجاح.`,
     "success",
   );
-  renderUserQuizzesView();
+  renderUserContentView();
 }
 
 // ─── Upload-to-platform tree builders ──────────────────────────────────────
@@ -1474,8 +1474,8 @@ async function importFolderTree(jsonFiles, skippedCount = 0) {
 // has its course's name (+ any ancestor folders) directly above it, and a
 // quiz has whatever chain of course/folders sits above it.
 
-function walkChildren(userQuizzes, parentId) {
-  return userQuizzes.filter((q) => (q.meta?.parentId || null) === parentId);
+function walkChildren(userContent, parentId) {
+  return userContent.filter((q) => (q.meta?.parentId || null) === parentId);
 }
 
 // Mirrors api/_validateQuiz.js's ALLOWED_META_KEYS whitelist: the server
@@ -1549,8 +1549,8 @@ function notebookToPayload(nb, name) {
   };
 }
 
-function appendSubtree(userQuizzes, node, ancestorNames, rootName, items) {
-  const children = walkChildren(userQuizzes, node.id || node.meta?.id);
+function appendSubtree(userContent, node, ancestorNames, rootName, items) {
+  const children = walkChildren(userContent, node.id || node.meta?.id);
   for (const child of children) {
     const childId = child.id || child.meta?.id;
     const childName = (child.meta?.title || "").trim();
@@ -1583,7 +1583,7 @@ function appendSubtree(userQuizzes, node, ancestorNames, rootName, items) {
         folderSegments: [...ancestorNames],
         rootName,
       });
-      appendSubtree(userQuizzes, child, [...ancestorNames, childName], rootName, items);
+      appendSubtree(userContent, child, [...ancestorNames, childName], rootName, items);
     } else {
       // A plain quiz leaf.
       items.push({
@@ -1601,16 +1601,16 @@ function appendSubtree(userQuizzes, node, ancestorNames, rootName, items) {
  * Builds the flat `items` payload for uploading one or more entire courses
  * (with all of their nested folders and quizzes) to the platform in one
  * batch — the "مسار رفع المواد" workflow.
- * @param {Array} userQuizzes - full local user_quizzes collection
+ * @param {Array} userContent - full local user_quizzes collection
  * @param {Array} courseItems - the selected course rows (meta.type === "course")
  * @returns {{ items: Array, rootName: string }}
  */
-export function buildCourseUploadPayload(userQuizzes, courseItems) {
+export function buildCourseUploadPayload(userContent, courseItems) {
   const items = [];
   for (const course of courseItems) {
     const courseName = (course.meta?.title || "").trim();
     items.push({ type: "course", name: courseName, folderSegments: [], rootName: courseName });
-    appendSubtree(userQuizzes, course, [courseName], courseName, items);
+    appendSubtree(userContent, course, [courseName], courseName, items);
   }
   return { items, rootName: courseItems.length === 1 ? (courseItems[0].meta?.title || "").trim() : "" };
 }
@@ -1625,7 +1625,7 @@ export function buildCourseUploadPayload(userQuizzes, courseItems) {
  * folderSegments chain here is seeded with `targetCourseName` as its first
  * element to match what api/upload-quiz.js's folder mode expects (the
  * course name is always folderSegments[0] when no course item is present).
- * @param {Array} userQuizzes
+ * @param {Array} userContent
  * @param {Array} folderItems - selected folder rows (meta.type === "folder")
  * @param {Array} additionalQuizzes - selected plain quiz rows alongside the folders
  * @param {string} targetCourseName - name of the existing course on the platform
@@ -1633,7 +1633,7 @@ export function buildCourseUploadPayload(userQuizzes, courseItems) {
  *   names under the course to nest everything one level deeper into
  * @returns {{ items: Array, rootName: string }}
  */
-export function buildFolderUploadPayload(userQuizzes, folderItems, additionalQuizzes, targetCourseName, targetSubfolderPath = [], additionalLessons = [], additionalNotebooks = []) {
+export function buildFolderUploadPayload(userContent, folderItems, additionalQuizzes, targetCourseName, targetSubfolderPath = [], additionalLessons = [], additionalNotebooks = []) {
   const items = [];
   const baseChain = [targetCourseName, ...targetSubfolderPath];
 
@@ -1645,7 +1645,7 @@ export function buildFolderUploadPayload(userQuizzes, folderItems, additionalQui
       folderSegments: [...baseChain],
       rootName: targetCourseName,
     });
-    appendSubtree(userQuizzes, folder, [...baseChain, folderName], targetCourseName, items);
+    appendSubtree(userContent, folder, [...baseChain, folderName], targetCourseName, items);
   }
 
   for (const quiz of additionalQuizzes || []) {
@@ -1684,17 +1684,17 @@ export function buildFolderUploadPayload(userQuizzes, folderItems, additionalQui
 }
 
 export function selectItem(itemId) {
-  const container = document.querySelector(".user-quizzes-container");
+  const container = document.querySelector(".user-content-container");
   if (container) container.classList.add("selection-mode-active");
   const toggleBtn = document.querySelector(".selection-toggle-btn");
   if (toggleBtn) toggleBtn.classList.add("active");
 
   // Add itemId to the selection set
-  const selectedUserQuizzes = getSelectedUserQuizzes();
-  selectedUserQuizzes.add(itemId);
+  const selectedUserContent = getSelectedUserContent();
+  selectedUserContent.add(itemId);
 
   // Visually check the matching checkbox
-  const checkbox = document.querySelector(`.user-quiz-select-checkbox[data-quiz-id="${itemId}"]`);
+  const checkbox = document.querySelector(`.user-content-select-checkbox[data-quiz-id="${itemId}"]`);
   if (checkbox && !checkbox.checked) {
     checkbox.checked = true;
   }
@@ -1709,12 +1709,12 @@ export function createFolderOrCourseCard(item) {
   if (item.meta?.type === "course") {
     return createUserCourseCard(item, {
       showContextMenu, navigateToFolder, handleDragOver, handleDragLeave, handleDrop,
-      getSelectedUserQuizzes, updateBulkActionBar, readUserQuizzes, getChildren,
+      getSelectedUserContent, updateBulkActionBar, readUserContent, getChildren,
     });
   }
   const itemId = item.id || item.meta?.id;
   const title = item.meta?.title || "";
-  const { subfolderCount, quizCount, lessonCount, notebookCount } = getFolderContentsCount(readUserQuizzes(), itemId);
+  const { subfolderCount, quizCount, lessonCount, notebookCount } = getFolderContentsCount(readUserContent(), itemId);
   const type = item.meta?.type || "folder";
 
   const card = createFolderCard({

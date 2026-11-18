@@ -3,7 +3,7 @@
 // SHARED EMPTY STATE — one builder for every "nothing to show here" panel.
 // ============================================================================
 // DEDUPLICATION: three near-identical empty states used to be hand-rolled
-// inline (search-integration.js x2, user-quizzes-view.js x1), each with its
+// inline (search-integration.js x2, user-content-view.js x1), each with its
 // own emoji glyph, its own inline styles, and slightly different copy. This
 // is the single shared builder they all now call. All icons are inline SVG
 // (aria-hidden) — no emoji anywhere in this file or its callers.

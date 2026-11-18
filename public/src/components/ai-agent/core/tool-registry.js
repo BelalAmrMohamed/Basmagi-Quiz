@@ -7,8 +7,8 @@
 
 import { getFromStorage, setInStorage } from "../../../shared/storage-helpers.js";
 import { qz, buildUserQuizEntry } from "../../../features/home/quiz-schema.js";
-import { hasSameLevelCollision, currentFolderId, findFolderByName } from "../../../features/home/user-quizzes-folders.js";
-import { renderUserQuizzesView } from "../../../features/home/user-quizzes-view.js";
+import { hasSameLevelCollision, currentFolderId, findFolderByName } from "../../../features/home/user-content-folders.js";
+import { renderUserContentView } from "../../../features/home/user-content-view.js";
 import { renderRootCategories } from "../../../features/home/root-view.js";
 import { buildLocalNotebookEntry } from "../../../features/home/local-notebook.js";
 import { validateNotebookRecord } from "../../../features/home/notebook-input.js";
@@ -116,7 +116,7 @@ export async function handleCreateNotebookToolCall(toolCall) {
 
   try {
     renderRootCategories();
-    renderUserQuizzesView();
+    renderUserContentView();
   } catch {
     // Ignore render error if outside home view
   }
@@ -262,7 +262,7 @@ export async function handleEditItemToolCall(toolCall) {
 
   try {
     renderRootCategories();
-    renderUserQuizzesView();
+    renderUserContentView();
   } catch {
     // Ignore render error outside view
   }

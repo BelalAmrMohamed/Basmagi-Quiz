@@ -1,15 +1,15 @@
 // =============================================================================
 // public/src/components/ai-agent/ai-agent-readonly-tools.js
 // Read-only AI Agent tool-call handlers: search_library, parse_item_info,
-// get_user_activity. Extracted out of user-quizzes-view.js so that any
+// get_user_activity. Extracted out of user-content-view.js so that any
 // chat panel wired with HOME_PAGE_SYSTEM_PROMPT (which tells the model
 // these three tools exist — see ai-agent-default-prompts.js) can actually
-// answer them, without needing user-quizzes-view.js's own write-side tools
+// answer them, without needing user-content-view.js's own write-side tools
 // (create_quiz/edit_quiz/delete_quiz/create_folder/create_course/
 // move_item), which depend on page-local state (folder tree context,
 // re-rendering the grid) that only makes sense on the home page itself.
 //
-// Kept dependency-free of both user-quizzes-view.js and
+// Kept dependency-free of both user-content-view.js and
 // ai-agent-attach-launcher.js/ai-agent.js — only pulls in the already
 // DOM-free, headless helpers (ai-agent-library-search.js,
 // ai-agent-item-lookup.js, storage-helpers.js), the same pattern
@@ -134,7 +134,7 @@ export async function handleGetUserActivityToolCall(toolCall) {
  * Dispatches by tool name across all three read-only tools. Any caller
  * wiring up toolNames: [..., "search_library", "parse_item_info",
  * "get_user_activity"] can pass this straight through (or fold it into a
- * bigger switch, as user-quizzes-view.js's handleQuizToolCall does) rather
+ * bigger switch, as user-content-view.js's handleQuizToolCall does) rather
  * than re-listing the three cases itself.
  * @param {{name: string, input: object}} toolCall
  * @returns {Promise<string>}

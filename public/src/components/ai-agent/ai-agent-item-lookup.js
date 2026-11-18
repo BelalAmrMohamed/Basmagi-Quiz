@@ -20,7 +20,7 @@
 
 import { getFromStorage } from "../../shared/storage-helpers.js";
 import { qz } from "../../features/home/quiz-schema.js";
-import { getFolderContentsCount } from "../../features/home/user-quizzes-folders.js";
+import { getFolderContentsCount } from "../../features/home/user-content-folders.js";
 import { normalizeLessonContent } from "../../features/lesson/lesson-schema.js";
 import { summarizeNotebook, notebookAttachmentPayload } from "../../shared/notebook-export.js";
 
@@ -30,7 +30,7 @@ import { summarizeNotebook, notebookAttachmentPayload } from "../../shared/noteb
  * than throwing.
  * @returns {object[]}
  */
-export function readUserQuizzes() {
+export function readUserContent() {
   try {
     return JSON.parse(getFromStorage("user_quizzes", "[]")) || [];
   } catch {
@@ -90,12 +90,12 @@ function lessonPayload(lesson) {
 /**
  * Builds a compact summary for a folder/course — how many quizzes and
  * subfolders it contains, recursively (see getFolderContentsCount).
- * @param {object[]} userQuizzes
+ * @param {object[]} userContent
  * @param {string} folderId
  * @returns {string}
  */
-export function summarizeFolder(userQuizzes, folderId) {
-  const { subfolderCount, quizCount, lessonCount } = getFolderContentsCount(userQuizzes, folderId);
+export function summarizeFolder(userContent, folderId) {
+  const { subfolderCount, quizCount, lessonCount } = getFolderContentsCount(userContent, folderId);
   const parts = [];
   if (quizCount) parts.push(`${quizCount} امتحان`);
   if (lessonCount) parts.push(`${lessonCount} درس`);
@@ -103,8 +103,8 @@ export function summarizeFolder(userQuizzes, folderId) {
   return parts.length ? `يحتوي على: ${parts.join(" و")}` : "مجلد فارغ حاليًا";
 }
 
-function buildItemTree(userQuizzes, parentId) {
-  return userQuizzes
+function buildItemTree(userContent, parentId) {
+  return userContent
     .filter((item) => (item.meta?.parentId || null) === parentId)
     .map((item) => {
       const id = item.meta?.id || item.id;
@@ -114,7 +114,7 @@ function buildItemTree(userQuizzes, parentId) {
       const node = { kind, id, title: qz(item, "title") || item.meta?.title || "بدون عنوان" };
       if (kind === "quiz") node.questionCount = qz(item, "count");
       else if (kind === "lesson") node.sectionCount = item.stats?.sectionCount ?? (item.meta?.type === "notebook" ? item.stats?.cellCount ?? 0 : 0);
-      else node.children = buildItemTree(userQuizzes, id);
+      else node.children = buildItemTree(userContent, id);
       return node;
     });
 }
@@ -124,13 +124,13 @@ function buildItemTree(userQuizzes, parentId) {
  * {kind, id, title, summary, source} shape panel.addPendingAttachment
  * expects. Returns null if the id can't be found (e.g. a stale reference).
  * @param {string} id
- * @param {object[]} [userQuizzes] - pass a pre-fetched list to avoid a
+ * @param {object[]} [userContent] - pass a pre-fetched list to avoid a
  *   redundant localStorage read when a caller (see listRecentUserItems)
  *   already has one on hand.
  * @returns {{kind: "quiz"|"lesson"|"course"|"folder", itemType?: "notebook", id: string, title: string, summary: string, source: "local"} | null}
  */
-export function resolveUserItemById(id, userQuizzes = readUserQuizzes()) {
-  const item = userQuizzes.find((q) => (q.meta?.id || q.id) === id);
+export function resolveUserItemById(id, userContent = readUserContent()) {
+  const item = userContent.find((q) => (q.meta?.id || q.id) === id);
   if (!item) return null;
 
   const title = qz(item, "title") || item.meta?.title || "بدون عنوان";
@@ -170,8 +170,8 @@ export function resolveUserItemById(id, userQuizzes = readUserQuizzes()) {
     };
   }
 
-  const tree = buildItemTree(userQuizzes, id);
-  const counts = getFolderContentsCount(userQuizzes, id);
+  const tree = buildItemTree(userContent, id);
+  const counts = getFolderContentsCount(userContent, id);
   return {
     kind,
     id,
@@ -200,10 +200,10 @@ export function resolveUserItemById(id, userQuizzes = readUserQuizzes()) {
  * @returns {Array<{kind: "quiz"|"lesson"|"course"|"folder", itemType?: "notebook", id: string, title: string, summary: string, source: "local"}>}
  */
 export function listRecentUserItems(query = "", limit = 8) {
-  const userQuizzes = readUserQuizzes();
+  const userContent = readUserContent();
   const q = query.trim().toLowerCase();
 
-  const items = userQuizzes
+  const items = userContent
     .map((item) => {
       const id = item.meta?.id || item.id;
       if (!id) return null;
@@ -235,8 +235,8 @@ export function listRecentUserItems(query = "", limit = 8) {
   return items.slice(0, limit);
 }
 
-export function buildUserRootAttachment(userQuizzes = readUserQuizzes()) {
-  const tree = buildItemTree(userQuizzes, null);
+export function buildUserRootAttachment(userContent = readUserContent()) {
+  const tree = buildItemTree(userContent, null);
   const quizCount = tree.reduce((count, item) => {
     if (item.kind === "quiz") return count + 1;
     if (item.kind === "lesson") return count; // a lesson is not a quiz
@@ -248,8 +248,8 @@ export function buildUserRootAttachment(userQuizzes = readUserQuizzes()) {
   }, 0);
   return {
     kind: "folder",
-    id: "user-quizzes-root",
-    title: "امتحاناتك",
+    id: "user-content-root",
+    title: "محتواي",
     summary: `عدد الامتحانات: ${quizCount} — عدد المجلدات: ${folderCount}`,
     source: "local",
     payload: { totalQuizCount: quizCount, totalFolderCount: folderCount, tree },

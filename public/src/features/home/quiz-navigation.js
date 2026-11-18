@@ -2,7 +2,7 @@
 // public/src/features/home/quiz-navigation.js
 // QUIZ NAVIGATION — navigating to the quiz-taking page for a manifest exam.
 // (The user-created-quiz equivalent, playUserQuiz(), lives in
-// user-quiz-card.js since it's only ever called from that card.)
+// user-content-card.js since it's only ever called from that card.)
 // ============================================================================
 
 import { _alert } from "../../components/notifications/notifications.js";

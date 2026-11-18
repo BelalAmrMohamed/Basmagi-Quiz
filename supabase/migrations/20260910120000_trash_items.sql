@@ -1,7 +1,7 @@
 -- =============================================================================
 -- trash_items — soft-delete / recycle-bin for the shared quizzes/folders/
 -- courses area (Supabase-backed). Does NOT cover the localStorage-only
--- "/#my-quizzes" ("امتحاناتك") area — that gets its own client-side trash
+-- "/my-content" «محتواي» area — that gets its own client-side trash
 -- bucket (`user_quizzes_trash` in localStorage), since there is no server
 -- table backing that section at all.
 --

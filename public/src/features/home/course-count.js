@@ -5,7 +5,7 @@
 
 import { getCategoryTree } from "./app-state.js";
 import { getFromStorage } from "../../shared/storage-helpers.js";
-import { isRowReachable } from "./user-quizzes-folders.js";
+import { isRowReachable } from "./user-content-folders.js";
 
 let cache = new WeakMap();
 
@@ -48,11 +48,11 @@ export function getCourseItemCount(category) {
  * Drops "orphaned" rows from a flat user_quizzes array — rows that aren't
  * genuinely reachable from a root (parentId === null) node.
  *
- * @param {Array} userQuizzes - raw entries from the "user_quizzes" key
+ * @param {Array} userContent - raw entries from the "user_quizzes" key
  * @returns {Array} only the rows genuinely reachable from a root node
  */
-function pruneOrphanedRows(userQuizzes) {
-  const rows = userQuizzes || [];
+function pruneOrphanedRows(userContent) {
+  const rows = userContent || [];
   const byId = new Map(
     rows.map((row) => [row?.id || row?.meta?.id, row]).filter(([id]) => id),
   );
@@ -70,16 +70,16 @@ function pruneOrphanedRows(userQuizzes) {
  * so a partially-cascaded delete can't inflate these numbers past what's
  * actually visible in the "محتواي" view.
  *
- * @param {Array} userQuizzes - raw entries from the "user_quizzes" key
+ * @param {Array} userContent - raw entries from the "user_quizzes" key
  * @returns {{quizCount: number, lessonCount: number, notebookCount: number, folderCount: number, courseCount: number, total: number}}
  */
-export function getUserQuizzesBreakdown(userQuizzes) {
+export function getUserContentBreakdown(userContent) {
   let quizCount = 0;
   let lessonCount = 0;
   let notebookCount = 0;
   let folderCount = 0;
   let courseCount = 0;
-  for (const row of pruneOrphanedRows(userQuizzes)) {
+  for (const row of pruneOrphanedRows(userContent)) {
     if (row?.meta?.type === "course") courseCount += 1;
     else if (row?.meta?.type === "folder") folderCount += 1;
     else if (row?.meta?.type === "lesson") lessonCount += 1;
@@ -104,7 +104,7 @@ export function getUserQuizzesBreakdown(userQuizzes) {
  * workspace only has courses/folders, those counts become the visible
  * fallback so the card does not look empty.
  */
-export function formatUserQuizzesBreakdown({
+export function formatUserContentBreakdown({
   quizCount,
   lessonCount = 0,
   notebookCount = 0,
@@ -146,9 +146,9 @@ export function formatArabicQuestionCount(count) {
  * localStorage generally caps around 5–10MB total (across every key on the
  * origin, not just this one), so this is deliberately conservative — a
  * warning well before writes actually start failing, not a hard technical
- * limit. See getUserQuizzesStorageWarning() below.
+ * limit. See getUserContentStorageWarning() below.
  */
-const USER_QUIZZES_STORAGE_WARNING_BYTES = 2 * 1024 * 1024; // 2MB
+const USER_CONTENT_STORAGE_WARNING_BYTES = 2 * 1024 * 1024; // 2MB
 
 /**
  * Checks the raw serialized size of the "user_quizzes" localStorage value
@@ -158,19 +158,19 @@ const USER_QUIZZES_STORAGE_WARNING_BYTES = 2 * 1024 * 1024; // 2MB
  * orphan rows from a past bug — see A6 in the restriction/rules plan).
  *
  * Deliberately a *soft* ceiling with no automatic action taken — see
- * deleteAllUserQuizzes()'s doc comment for why an automatic cleanup
+ * deleteAllUserContent()'s doc comment for why an automatic cleanup
  * heuristic is the wrong call for real user data. This just surfaces the
- * number so the user can decide (export via exportUserQuizzesAsJson(),
+ * number so the user can decide (export via exportUserContentAsJson(),
  * manually delete some items, or reach for "حذف الكل").
  *
  * @param {string} [rawValue] - the raw JSON string as stored; re-reads from
  *   storage if omitted.
  * @returns {{warn: boolean, bytes: number, message?: string}}
  */
-export function getUserQuizzesStorageWarning(rawValue) {
+export function getUserContentStorageWarning(rawValue) {
   const raw = rawValue ?? getFromStorage("user_quizzes", "[]");
   const bytes = new Blob([raw]).size;
-  if (bytes < USER_QUIZZES_STORAGE_WARNING_BYTES) {
+  if (bytes < USER_CONTENT_STORAGE_WARNING_BYTES) {
     return { warn: false, bytes };
   }
   const mb = (bytes / (1024 * 1024)).toFixed(1);
@@ -191,9 +191,9 @@ export function getUserQuizzesStorageWarning(rawValue) {
  * `copy(localStorage.getItem('user_quizzes'))` — this gives every user (not
  * just ones comfortable with devtools) a one-click way to get the same data
  * out, both as a debugging aid and as a manual backup before a destructive
- * action like "حذف الكل" (deleteAllUserQuizzes in user-quizzes-folders.js).
+ * action like "حذف الكل" (deleteAllUserContent in user-content-folders.js).
  */
-export function exportUserQuizzesAsJson() {
+export function exportUserContentAsJson() {
   const raw = getFromStorage("user_quizzes", "[]");
   // Re-serialize with indentation for human readability rather than
   // exporting the raw single-line storage string as-is — this file is meant
@@ -210,7 +210,7 @@ export function exportUserQuizzesAsJson() {
   const a = document.createElement("a");
   const dateStamp = new Date().toISOString().slice(0, 10);
   a.href = url;
-  a.download = `my-quizzes-backup-${dateStamp}.json`;
+  a.download = `my-content-backup-${dateStamp}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -225,17 +225,17 @@ export function exportUserQuizzesAsJson() {
  * category-view.js and item-card.js can call it after their own copy
  * handlers without creating a circular import with root-view.js.
  */
-export function refreshUserQuizzesCard() {
+export function refreshUserContentCard() {
   const card = document.querySelector(
-    '[data-user-quizzes-card="true"]',
+    '[data-user-content-card="true"]',
   );
   if (!card) return;
   const subtextEl = card.querySelector(".face s");
   if (!subtextEl) return;
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-  const breakdown = getUserQuizzesBreakdown(userQuizzes);
-  subtextEl.textContent = formatUserQuizzesBreakdown(breakdown);
-  subtextEl.title = formatUserQuizzesBreakdown(breakdown, {
+  const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const breakdown = getUserContentBreakdown(userContent);
+  subtextEl.textContent = formatUserContentBreakdown(breakdown);
+  subtextEl.title = formatUserContentBreakdown(breakdown, {
     includeCourses: true,
     includeFolders: true,
   });

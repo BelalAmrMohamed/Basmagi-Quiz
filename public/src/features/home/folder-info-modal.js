@@ -1,7 +1,7 @@
 // ============================================================================
 // public/src/features/home/folder-info-modal.js
 // FOLDER INFO MODAL — "معلومات المجلد" for shared (platform) folders, plus a
-// local variant for folders/courses in "امتحاناتك". Same overlay shell and
+// local variant for folders/courses in "محتواي". Same overlay shell and
 // shimmer as the course info modal.
 // ============================================================================
 
@@ -58,7 +58,7 @@ export function showFolderInfoModal(folder) {
 }
 
 /**
- * Local (امتحاناتك) folder or course. Only fields that exist locally are
+ * Local «محتواي» folder or course. Only fields that exist locally are
  * shown — there is no creator or server-side update date.
  * @param {string} itemId
  */

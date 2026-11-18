@@ -6,8 +6,8 @@
 import { buildLocalNotebookEntry } from "./local-notebook.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { showNotification } from "../../components/notifications/notifications.js";
-import { hasSameLevelCollision, currentFolderId } from "./user-quizzes-folders.js";
-import { renderUserQuizzesView } from "./user-quizzes-view.js";
+import { hasSameLevelCollision, currentFolderId } from "./user-content-folders.js";
+import { renderUserContentView } from "./user-content-view.js";
 import { wireModalDismiss, fadeOutAndRemove } from "./modal-utils.js";
 import { NOTEBOOK_CREATION_PROMPT, NotebookInputError, parseNotebookInput, validateNotebookRecord } from "./notebook-input.js";
 
@@ -212,7 +212,7 @@ export function openInlineCreateNotebookModal() {
       return;
     }
     close();
-    renderUserQuizzesView();
+    renderUserContentView();
     const extra = [...rec.warnings, ...warnings];
     showNotification("تم إنشاء الدفتر",
       extra.length ? extra.slice(0, 2).join("\n")

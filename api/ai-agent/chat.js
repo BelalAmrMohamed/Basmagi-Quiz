@@ -39,7 +39,7 @@
 //                              // changes. The three folder/course tools only make
 //                              // sense on a page whose system prompt also includes a
 //                              // folder-tree listing (see buildFolderTreeContextPrompt
-//                              // in user-quizzes-view.js) — without it the model has
+//                              // in user-content-view.js) — without it the model has
 //                              // no titles to reference and every call would fail
 //                              // resolution.
 // }

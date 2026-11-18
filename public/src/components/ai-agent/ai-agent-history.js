@@ -74,7 +74,7 @@ export function createHistoryPanel(options = {}) {
    * PHASE 5: swaps a history item's title text for an inline `<input>`,
    * committing via renameConversation() on Enter/blur and reverting (no
    * write) on Escape — mirrors the lightweight inline-rename pattern
-   * already used for folders (see renameItem in user-quizzes-folders.js)
+   * already used for folders (see renameItem in user-content-folders.js)
    * rather than a separate modal/prompt() for something this small.
    * @param {HTMLElement} titleEl
    * @param {import("./ai-agent-history-idb.js").Conversation} conv
@@ -270,4 +270,4 @@ export function createHistoryPanel(options = {}) {
 
   panel.refresh = refresh;
   return panel;
-}
+}

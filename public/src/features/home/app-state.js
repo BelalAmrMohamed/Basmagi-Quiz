@@ -25,7 +25,7 @@ let searchManager = null;
 let navigationStack = [];
 let isRestoringState = false;
 let indexSupabaseClient = null;
-let selectedUserQuizzes = new Set();
+let selectedUserContent = new Set();
 let categoriesCache = null;
 
 export function getCategoryTree() {
@@ -67,10 +67,10 @@ export function setIndexSupabaseClient(client) {
   setSharedSupabaseClient(client);
 }
 
-// selectedUserQuizzes is a Set that's mutated in place (.add()/.delete()) by
+// selectedUserContent is a Set that's mutated in place (.add()/.delete()) by
 // callers rather than reassigned, so only a getter is needed — no setter.
-export function getSelectedUserQuizzes() {
-  return selectedUserQuizzes;
+export function getSelectedUserContent() {
+  return selectedUserContent;
 }
 
 // One-shot lazy cache of root categories, computed once by getCategoriesLazy()

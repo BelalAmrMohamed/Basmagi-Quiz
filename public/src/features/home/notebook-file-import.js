@@ -10,7 +10,7 @@
 // =============================================================================
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { showNotification } from "../../components/notifications/notifications.js";
-import { hasSameLevelCollision, currentFolderId } from "./user-quizzes-folders.js";
+import { hasSameLevelCollision, currentFolderId } from "./user-content-folders.js";
 import { importJsonQuizFiles } from "./quiz-file-import.js";
 import { parseNotebookInput, validateNotebookRecord, NotebookInputError } from "./notebook-input.js";
 import { partitionDroppedFiles, classifyDroppedFile, baseNameOf, dedupeTitle, buildLocalNotebookEntry } from "./local-notebook.js";
@@ -171,7 +171,7 @@ export async function handleMyContentDrop(files) {
   if (quizFiles.length) {
     await importJsonQuizFiles(quizFiles); // refreshes the view itself
   } else if (notebooksChanged) {
-    const { renderUserQuizzesView } = await import("./user-quizzes-view.js");
-    renderUserQuizzesView();
+    const { renderUserContentView } = await import("./user-content-view.js");
+    renderUserContentView();
   }
 }

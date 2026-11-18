@@ -60,7 +60,7 @@ export const CREATE_QUIZ_TOOL = {
 
 // Same question-shape rules as CREATE_QUIZ_TOOL above. `currentTitle` is how
 // the model identifies which existing quiz to modify — it's read out of the
-// contextSummary list already given to it (see user-quizzes-view.js). Every
+// contextSummary list already given to it (see user-content-view.js). Every
 // field besides currentTitle is optional so the model can send only what
 // actually changes (e.g. just `title` to rename, without resending all
 // questions).

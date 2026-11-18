@@ -10,7 +10,7 @@ import { getFromStorage } from "../../shared/storage-helpers.js";
 import { container, title } from "./dom-refs.js";
 import {
   getNavigationStack,
-  getSelectedUserQuizzes,
+  getSelectedUserContent,
   isRestoring,
   getSearchManager,
   getCategoryTree,
@@ -18,15 +18,15 @@ import {
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
-import { updateBulkActionBar, renderUserQuizzesView } from "./user-quizzes-view.js";
-import { setFolderState, deleteAllUserQuizzes } from "./user-quizzes-folders.js";
+import { updateBulkActionBar, renderUserContentView } from "./user-content-view.js";
+import { setFolderState, deleteAllUserContent } from "./user-content-folders.js";
 import {
   getCourseItemCount,
-  getUserQuizzesBreakdown,
-  formatUserQuizzesBreakdown,
-  refreshUserQuizzesCard,
-  exportUserQuizzesAsJson,
-  getUserQuizzesStorageWarning,
+  getUserContentBreakdown,
+  formatUserContentBreakdown,
+  refreshUserContentCard,
+  exportUserContentAsJson,
+  getUserContentStorageWarning,
 } from "./course-count.js";
 
 import { renderCategory, getCategoriesLazy } from "./category-view.js";
@@ -36,7 +36,7 @@ import { createExamInfoSubmenu, createActionGroupSubmenu } from "./item-dropdown
 import { showCourseInfoModal } from "./course-actions.js";
 import { buildCourseInfoRows } from "./course-info-fields.js";
 import { buildContainerInfoRows } from "./info-details.js";
-import { copyCategoryTreeToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
+import { copyCategoryTreeToUserContent, withCopyButtonLoadingState } from "./copy-to-my-content.js";
 import {
   canManageItem,
   renameSharedItem,
@@ -54,8 +54,8 @@ import {
   RENAME_ICON_SVG,
   TRASH_BIN_ICON_SVG,
 } from "./icons.js";
-import { openLocalTrashPanel } from "./user-quizzes-trash-panel.js";
-import { getTrashItemCount } from "./user-quizzes-trash.js";
+import { openLocalTrashPanel } from "./user-content-trash-panel.js";
+import { getTrashItemCount } from "./user-content-trash.js";
 import {
   openAIAgentWithAttachment,
   buildPlatformCourseAttachment,
@@ -115,9 +115,9 @@ export function attachCourseActionsMenu(card, course, categoryTree, { showUnsubs
       copyMine.onclick = async (e) => {
         e.stopPropagation();
         await withCopyButtonLoadingState(copyMine, () =>
-          copyCategoryTreeToUserQuizzes(course, categoryTree, "course"),
+          copyCategoryTreeToUserContent(course, categoryTree, "course"),
         );
-        refreshUserQuizzesCard();
+        refreshUserContentCard();
         closeMenu();
       };
       menu.appendChild(copyMine);
@@ -243,7 +243,7 @@ export async function renderRootCategories() {
     // floating bulk action bar belong to that view only. The bar lives on
     // document.body (not inside `container`), so it wouldn't otherwise get
     // cleaned up just because the view underneath it changed.
-    getSelectedUserQuizzes().clear();
+    getSelectedUserContent().clear();
     updateBulkActionBar(false);
 
     // ── Course URLs are now real pathnames (/course/:name), not hashes on
@@ -339,26 +339,26 @@ export async function renderRootCategories() {
 
     // 1. Add the locally stored user-content card.
     try {
-      const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-      const breakdown = getUserQuizzesBreakdown(userQuizzes);
+      const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      const breakdown = getUserContentBreakdown(userContent);
       const quizzesCard = createCourseCell({
         name: "محتواي",
-        subtext: formatUserQuizzesBreakdown(breakdown),
+        subtext: formatUserContentBreakdown(breakdown),
         icon: "✏️",
         href: "/my-content",
         onActivate: () => {
-          // Always reset to the root of user-quizzes, regardless of where the
+          // Always reset to the root of user-content, regardless of where the
           // user last navigated inside the folder tree.
           setFolderState([], null);
-          renderUserQuizzesView();
+          renderUserContentView();
         },
       });
-      // Tagged so refreshUserQuizzesCard() can find this specific card by
+      // Tagged so refreshUserContentCard() can find this specific card by
       // attribute instead of assuming DOM order.
-      quizzesCard.setAttribute("data-user-quizzes-card", "true");
+      quizzesCard.setAttribute("data-user-content-card", "true");
       const cardSubtext = quizzesCard.querySelector(".face s");
       if (cardSubtext) {
-        cardSubtext.title = formatUserQuizzesBreakdown(breakdown, {
+        cardSubtext.title = formatUserContentBreakdown(breakdown, {
           includeCourses: true,
           includeFolders: true,
         });
@@ -391,7 +391,7 @@ export async function renderRootCategories() {
           // المعلومات" button: there's no separate "full info" modal for
           // this card, since its contents are strictly local and already
           // fully described right here.
-          const freshBreakdown = getUserQuizzesBreakdown(
+          const freshBreakdown = getUserContentBreakdown(
             JSON.parse(getFromStorage("user_quizzes", "[]")),
           );
           const breakdownRows = [
@@ -417,7 +417,7 @@ export async function renderRootCategories() {
           // plan) — only shown once the raw "user_quizzes" value is large
           // enough to be a real risk; silent otherwise so this doesn't
           // clutter the menu for the overwhelming majority of users.
-          const storageWarning = getUserQuizzesStorageWarning();
+          const storageWarning = getUserContentStorageWarning();
           if (storageWarning.warn) {
             const warningEl = document.createElement("p");
             warningEl.className = "quiz-info-empty root-quizzes-storage-warning";
@@ -440,12 +440,12 @@ export async function renderRootCategories() {
             exportBtn.onclick = (clickEvent) => {
               clickEvent.stopPropagation();
               closeMenu();
-              exportUserQuizzesAsJson();
+              exportUserContentAsJson();
             };
             menu.appendChild(exportBtn);
           }
 
-          // "سلة المهملات" — local trash panel (see user-quizzes-trash.js
+          // "سلة المهملات" — local trash panel (see user-content-trash.js
           // and plan §4/§8 Step 8). Shown whenever there's at least one
           // trashed item, regardless of whether "محتواي" itself
           // currently has any live content — a fully-emptied collection can
@@ -467,7 +467,7 @@ export async function renderRootCategories() {
           // "حذف الكل" (Part C, item 1) — a fully destructive, collection-
           // wide wipe, kept separate from every other action here with its
           // own double-verification flow (button confirm + type-to-confirm,
-          // see deleteAllUserQuizzes's doc comment) rather than the single
+          // see deleteAllUserContent's doc comment) rather than the single
           // default _confirm wording used for single-item deletes elsewhere.
           // Hidden entirely once "محتواي" is already empty (freshBreakdown
           // computed above) — nothing left to wipe.
@@ -479,7 +479,7 @@ export async function renderRootCategories() {
             deleteAllBtn.onclick = async (clickEvent) => {
               clickEvent.stopPropagation();
               closeMenu();
-              await deleteAllUserQuizzes();
+              await deleteAllUserContent();
             };
             menu.appendChild(deleteAllBtn);
           }

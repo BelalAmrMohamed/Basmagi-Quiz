@@ -76,9 +76,12 @@ export function renderPlatformItemCard(value) {
   destination.textContent = item.destination || "مكتبتك التعليمية";
   footer.appendChild(destination);
   if (item.href) {
-    const link = document.createElement("a");
+    // A button, not an <a href>: items the agent creates live only in this
+    // browser (محتواي), so there must be no copyable/shareable link to them.
+    const link = document.createElement("button");
+    link.type = "button";
     link.className = "ai-agent-created-item-action";
-    link.href = item.href;
+    link.addEventListener("click", () => { window.location.href = item.href; });
     link.textContent = actionByKind[item.kind];
     const arrow = document.createElement("span");
     arrow.setAttribute("aria-hidden", "true");
@@ -175,7 +178,7 @@ export function renderFlashcardDeck(value) {
 
   const note = document.createElement("p");
   note.className = "ai-agent-flashcard-deck-note";
-  note.textContent = "اضغط على أي بطاقة لتقلبها. هذه البطاقات للمراجعة ولا تُحفظ ضمن امتحاناتك.";
+  note.textContent = "اضغط على أي بطاقة لتقلبها. هذه البطاقات للمراجعة ولا تُحفظ ضمن محتواي.";
   section.append(header, grid, note);
   return section;
 }

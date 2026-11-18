@@ -1,12 +1,12 @@
 import { handleCreateNotebookToolCall, handleEditItemToolCall, handleGetAuthoringGuideToolCall } from "../../components/ai-agent/core/tool-registry.js";
 // ============================================================================
-// public/src/features/home/user-quizzes-view.js
+// public/src/features/home/user-content-view.js
 // USER CONTENT VIEW — the "محتواي" (My Content) screen: card grid,
 // admin sign-in/out bar, bulk selection + bulk action bar, and drag-and-drop
 // file import.
 // ============================================================================
-// NOTE: this module and user-quiz-card.js import from each other
-// (renderUserQuizzesView/updateBulkActionBar here, createUserQuizCard there).
+// NOTE: this module and user-content-card.js import from each other
+// (renderUserContentView/updateBulkActionBar here, createUserContentCard there).
 // This is a real circular import, safe because neither side calls the
 // other's export at module-evaluation time — only from inside event
 // handlers/functions, by which point both modules have finished loading.
@@ -38,7 +38,7 @@ import {
   expandSelectionWithDescendants,
   hasSameLevelCollision,
   uploadFolderForAdmins,
-} from "./user-quizzes-folders.js";
+} from "./user-content-folders.js";
 import { openSignInDialog } from "../../components/log-in/sign-in.js";
 import { container, title } from "./dom-refs.js";
 import { createEmptyState } from "./empty-state.js";
@@ -46,14 +46,14 @@ import {
   getNavigationStack,
   isRestoring,
   getIndexSupabaseClient,
-  getSelectedUserQuizzes,
+  getSelectedUserContent,
   getSearchManager,
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
-import { createUserQuizCard, createUserLessonCard, createUserNotebookCard } from "./item-card.js";
+import { createUserContentCard, createUserLessonCard, createUserNotebookCard } from "./item-card.js";
 import { takePendingHighlight } from "./mcp-draft-import.js";
 import { openInlineCreateQuizModal } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
@@ -129,9 +129,9 @@ function createdItemResult(kind, item, items, detail) {
     href: userItemRoute({ ...item, kind }, items),
   });
 }
-import { moveToTrash, getTrashItemCount } from "./user-quizzes-trash.js";
-import { openLocalTrashPanel } from "./user-quizzes-trash-panel.js";
-import { refreshUserQuizzesCard } from "./course-count.js";
+import { moveToTrash, getTrashItemCount } from "./user-content-trash.js";
+import { openLocalTrashPanel } from "./user-content-trash-panel.js";
+import { refreshUserContentCard } from "./course-count.js";
 import { normalizeLessonJson } from "../lesson/lesson-json.js";
 
 /**
@@ -191,7 +191,7 @@ function handleCreateQuizToolCall(toolCall) {
     "success",
   );
   renderRootCategories();
-  renderUserQuizzesView();
+  renderUserContentView();
   const items = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const saved = items.find((item) => (item.id || item.meta?.id) === result.id) || result;
   return createdItemResult("quiz", saved, items, `${questions.length} سؤال${questions.length === 1 ? "" : "اً"} · جاهز للحل الآن`);
@@ -247,7 +247,7 @@ function handleCreateLessonToolCall(toolCall) {
 
   showNotification("تم إنشاء الدرس", 'تم إنشاء الدرس وإضافته إلى "محتواي".', "success");
   renderRootCategories();
-  renderUserQuizzesView();
+  renderUserContentView();
   const items = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const saved = items.find((item) => (item.id || item.meta?.id) === id) || entry;
   return createdItemResult("lesson", saved, items, `${sections.length} ${sections.length === 1 ? "قسم" : "أقسام"} · جاهز للقراءة`);
@@ -320,7 +320,7 @@ function handleEditQuizToolCall(toolCall) {
 
   showNotification("تم التعديل", `تم تعديل الامتحان "${newTitle}"`, "success");
   renderRootCategories();
-  renderUserQuizzesView();
+  renderUserContentView();
   return `✅ تم تعديل الامتحان: ${newTitle}`;
 }
 
@@ -363,12 +363,12 @@ function handleDeleteQuizToolCall(toolCall) {
 
   showNotification("تم الحذف", `تم حذف الامتحان "${title}"`, "success");
   renderRootCategories();
-  renderUserQuizzesView();
+  renderUserContentView();
   return `🗑️ تم حذف الامتحان: ${title}`;
 }
 
 /**
- * "محتواي الرئيسية" (root) is how the folder-tree context prompt and
+ * «محتواي» (root) is how the folder-tree context prompt and
  * move_item's destinationFolder both refer to the top level — resolve that
  * literal label the same way for both create_folder's parentFolder and
  * move_item's destinationFolder so the model can use the exact string it
@@ -408,7 +408,7 @@ function handleCreateFolderToolCall(toolCall) {
     throw err;
   }
 
-  renderUserQuizzesView();
+  renderUserContentView();
   const items = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const saved = items.find((item) => (item.id || item.meta?.id) === result.id);
   return createdItemResult("folder", saved || { id: result.id, meta: { title: name.trim(), parentId: parentResolution.id } }, items, "مجلد جديد · جاهز لتنظيم محتواك");
@@ -431,7 +431,7 @@ function handleCreateCourseToolCall(toolCall) {
     throw err;
   }
 
-  renderUserQuizzesView();
+  renderUserContentView();
   const items = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const saved = items.find((item) => (item.id || item.meta?.id) === result.id);
   return createdItemResult("course", saved || { id: result.id, meta: { title: name.trim(), parentId: null } }, items, "مادة جديدة · مساحة مرتبة لمحتواك");
@@ -448,9 +448,9 @@ function handleMoveItemToolCall(toolCall) {
   // The item being moved can be a quiz, a folder, or a course — quizzes
   // aren't findable via findFolderByName (folders/courses only), so quiz
   // titles are matched directly against user_quizzes here.
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const normalize = (s) => (s || "").trim().toLowerCase();
-  const item = userQuizzes.find((q) => normalize(q.meta?.title) === normalize(itemName));
+  const item = userContent.find((q) => normalize(q.meta?.title) === normalize(itemName));
   if (!item) {
     const err = new Error(`Item not found: ${itemName}`);
     err.userMessage = `لم يتم العثور على "${itemName}".`;
@@ -466,7 +466,7 @@ function handleMoveItemToolCall(toolCall) {
   }
 
   const { moved, blocked, saveFailed } = moveItemsToFolder([itemId], destResolution.id);
-  renderUserQuizzesView();
+  renderUserContentView();
 
   if (moved > 0) {
     return `✅ تم نقل "${itemName}" إلى ${destinationFolder || "محتواي الرئيسية"}.`;
@@ -487,11 +487,11 @@ function handleMoveItemToolCall(toolCall) {
  * way the model can resolve create_folder's parentFolder or move_item's
  * itemName/destinationFolder to a real location, since (like every other
  * tool on this page) it only ever sees titles, never internal ids.
- * @param {object[]} userQuizzes
+ * @param {object[]} userContent
  * @returns {string}
  */
-function buildFolderTreeContextPrompt(userQuizzes) {
-  const nodes = userQuizzes.filter(
+function buildFolderTreeContextPrompt(userContent) {
+  const nodes = userContent.filter(
     (q) => q.meta?.type === "folder" || q.meta?.type === "course",
   );
   const lines = ["هيكل المجلدات والمواد الحالي للمستخدم:", "- محتواي الرئيسية (المستوى الرئيسي)"];
@@ -589,14 +589,14 @@ function highlightNewItem(container, itemId) {
   requestAnimationFrame(() => card.scrollIntoView({ behavior: "smooth", block: "center" }));
 }
 
-export function renderUserQuizzesView() {
+export function renderUserContentView() {
   try {
-    const selectedUserQuizzes = getSelectedUserQuizzes();
-    selectedUserQuizzes.clear();
+    const selectedUserContent = getSelectedUserContent();
+    selectedUserContent.clear();
 
     // Update Navigation Stack — only push if we're not already sitting on
     // this same view. Without this guard, any re-render of this view while
-    // already inside it (e.g. renderUserQuizzesView() called again after a
+    // already inside it (e.g. renderUserContentView() called again after a
     // bulk delete) pushes a second "محتواي" frame, making the breadcrumb
     // read navigationStack[length - 2] (undefined) instead of the actual
     // parent, which broke both its label and its onclick handler.
@@ -617,7 +617,7 @@ export function renderUserQuizzesView() {
       if (typeof window.syncActiveNavState === "function") window.syncActiveNavState();
     }
 
-    // Fix the #breadcrumb back-button for nested user-quiz folders.
+    // Fix the #breadcrumb back-button for nested user-content folders.
     // updateBreadcrumb() only knows about the navigationStack which holds
     // a single "محتواي" entry — it always renders "الرجوع إلى المواد ←"
     // regardless of how deep we are in the folder tree. Override it directly
@@ -630,7 +630,7 @@ export function renderUserQuizzesView() {
       const breadcrumbText = breadcrumbEl.querySelector(".breadcrumb-text");
       if (breadcrumbText) {
         if (pathStack.length === 1) {
-          // Parent is the root of user-quizzes
+          // Parent is the root of user-content
           breadcrumbText.textContent = "الرجوع إلى محتواي ←";
           breadcrumbEl.onclick = () => navigateToFolder(null, null);
           breadcrumbEl.setAttribute("aria-label", "الرجوع إلى محتواي ←");
@@ -663,11 +663,11 @@ export function renderUserQuizzesView() {
     // Update Title: use the smart collapsible breadcrumb in #Subjects-text.
     // Build items from folderPathStack: root = "محتواي", then each folder.
     if (title) {
-      let userQuizzes = [];
+      let userContent = [];
       try {
-        userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+        userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
       } catch (e) {
-        userQuizzes = [];
+        userContent = [];
       }
 
       // dropTargetId is carried separately from onClick: every ancestor
@@ -681,7 +681,7 @@ export function renderUserQuizzesView() {
           dropTargetId: null,
         },
         ...pathStack.map((f, idx) => {
-          const item = userQuizzes.find((q) => (q.id || q.meta?.id) === f.id);
+          const item = userContent.find((q) => (q.id || q.meta?.id) === f.id);
           const isCourse = item?.meta?.type === "course" || (!item?.meta?.type && idx === 0);
           const icon = item?.meta?.icon || (isCourse ? getSubjectIcon(f.title, false) : "📁");
           return {
@@ -725,27 +725,27 @@ export function renderUserQuizzesView() {
     if (!container) return;
 
     container.innerHTML = "";
-    container.className = "grid-container user-quizzes-drop-zone";
+    container.className = "grid-container user-content-drop-zone";
 
-    const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+    const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
 
     // Update search context for user quizzes
     const searchManager = getSearchManager();
     if (searchManager) {
       searchManager.container.style.display = ""; // Reset inline hide
-      searchManager.setUserQuizzesContext(userQuizzes);
+      searchManager.setUserContentContext(userContent);
     }
 
     // 1. Create 'Create New Quiz' Button (Always visible at top)
     const actionsBar = document.createElement("div");
-    actionsBar.className = "user-quiz-search-actions";
+    actionsBar.className = "user-content-search-actions";
 
     // Mobile "مجلد جديد" button — a dropdown with both "مجلد جديد" and
     // "مادة جديدة" (previously hardcoded to always create a folder, so
     // phone users had no way to create a course at all — that was only
     // reachable via the desktop right-click context menu). Course creation
     // stays root-only, matching the same rule the desktop context menu
-    // already enforces (see showContextMenu in user-quizzes-folders.js).
+    // already enforces (see showContextMenu in user-content-folders.js).
     const createFolderBtn = document.createElement("button");
     createFolderBtn.type = "button";
     createFolderBtn.innerHTML = `<span>إنشاء</span> <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
@@ -764,7 +764,7 @@ export function renderUserQuizzesView() {
         // via the standalone .user-create-quiz-card in the quiz grid
         // (createInlineCreateQuizCard(), removed per docs/plans/
         // implementation-plan.md testing notes: it duplicated this menu
-        // entry once item 10 added it here and to #userQuizContextMenu).
+        // entry once item 10 added it here and to #userContentContextMenu).
         const quizOpt = document.createElement("button");
         quizOpt.type = "button";
         quizOpt.className = "exam-action-btn";
@@ -853,8 +853,8 @@ export function renderUserQuizzesView() {
         }
 
         // "سلة المهملات" — same gating as root-view.js's "محتواي" card
-        // ⋮ menu and the #userQuizContextMenu global actions (see
-        // user-quizzes-folders.js's showContextMenu): only shown once
+        // ⋮ menu and the #userContentContextMenu global actions (see
+        // user-content-folders.js's showContextMenu): only shown once
         // there's at least one trashed item.
         const trashCount = getTrashItemCount();
         if (trashCount > 0) {
@@ -875,13 +875,13 @@ export function renderUserQuizzesView() {
 
     // Selection mode only makes sense when there's actually something to
     // select — hide the toggle entirely for an empty quiz list.
-    if (userQuizzes.length > 0) {
+    if (userContent.length > 0) {
       const toggleSelectionBtn = document.createElement("button");
       toggleSelectionBtn.type = "button";
       toggleSelectionBtn.className = "btn selection-toggle-btn mobile-only-flex";
       toggleSelectionBtn.innerHTML = `<span>تحديد الامتحانات</span> ${CHECK_SQUARE_ICON_SVG}`;
       toggleSelectionBtn.onclick = () => {
-        const qzContainer = container.querySelector(".user-quizzes-container");
+        const qzContainer = container.querySelector(".user-content-container");
         if (qzContainer) {
           qzContainer.classList.toggle("selection-mode-active");
           const isActive = qzContainer.classList.contains(
@@ -889,9 +889,9 @@ export function renderUserQuizzesView() {
           );
           toggleSelectionBtn.classList.toggle("active", isActive);
           if (!isActive) {
-            selectedUserQuizzes.clear();
+            selectedUserContent.clear();
             document
-              .querySelectorAll(".user-quiz-select-checkbox")
+              .querySelectorAll(".user-content-select-checkbox")
               .forEach((cb) => (cb.checked = false));
           }
           // Show the bar as soon as selection mode turns on (even with
@@ -907,19 +907,19 @@ export function renderUserQuizzesView() {
 
     // Drag-and-drop import on the whole user-content section: .json (quiz), .ipynb / .m / .zip (notebooks)
     wireJsonFileDropZone(container, (files) => handleMyContentDrop(files), {
-      isEnabled: () => container.classList.contains("user-quizzes-drop-zone"),
+      isEnabled: () => container.classList.contains("user-content-drop-zone"),
     });
 
     // 2. Dedicated container for quiz cards — gets its own border/border-radius
     //    so the sign-in button and create card sit outside the bordered list.
     const quizzesContainer = document.createElement("div");
-    quizzesContainer.className = "user-quizzes-container";
+    quizzesContainer.className = "user-content-container";
 
     // (Breadcrumbs are now shown in the #Subjects-text header above, not here)
 
     // Attach Context Menu & Drop events to the container
     quizzesContainer.addEventListener("contextmenu", (e) => {
-      if (e.target === quizzesContainer || e.target.closest(".user-quizzes-drop-zone")) {
+      if (e.target === quizzesContainer || e.target.closest(".user-content-drop-zone")) {
         showContextMenu(e, "background", null, null);
       }
     });
@@ -928,8 +928,8 @@ export function renderUserQuizzesView() {
     quizzesContainer.addEventListener("dragleave", handleDragLeave);
     quizzesContainer.addEventListener("drop", (e) => handleDrop(e, currentFolderId));
 
-    // Filter userQuizzes based on current folder
-    const currentChildren = getChildren(userQuizzes, currentFolderId);
+    // Filter userContent based on current folder
+    const currentChildren = getChildren(userContent, currentFolderId);
 
     // 3. Quiz cards (or empty state) go into quizzesContainer, not container
     if (currentChildren.length === 0) {
@@ -953,7 +953,7 @@ export function renderUserQuizzesView() {
             ? createUserLessonCard(item)
             : item.meta?.type === "notebook"
               ? createUserNotebookCard(item)
-              : createUserQuizCard(item, index);
+              : createUserContentCard(item, index);
           // Attach drag and context menu to quiz card
           quizCard.draggable = true;
           quizCard.addEventListener("dragstart", (e) => handleDragStart(e, item.id || item.meta?.id));
@@ -971,7 +971,7 @@ export function renderUserQuizzesView() {
     // Prepend removed (docs/plans/implementation-plan.md testing notes):
     // the standalone create-quiz card used to be prepended here, but is
     // now redundant with the "امتحان جديد" entry in the
-    // create-folder-btn dropdown above and #userQuizContextMenu — both
+    // create-folder-btn dropdown above and #userContentContextMenu — both
     // call openInlineCreateQuizModal() directly, so no in-grid card is
     // needed to reach the same modal.
 
@@ -1010,17 +1010,17 @@ export function renderUserQuizzesView() {
     };
 
     const agentFab = createAIAgentFab({
-        placeholder: "اسأل الباشــمبصمج",
-        pageKey: "home",
-        defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
-        suggestedPrompts: HOME_PAGE_SUGGESTED_PROMPTS,
-        enableFileUpload: true,
-        contextSummary: getLiveContextSummary,
-        contextPrompt: getLiveFolderTreePrompt,
-        enableTools: true,
-        toolNames: ["create_lesson", "create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item", "fetch_attached_quiz", ...READONLY_LIBRARY_TOOL_NAMES, ...CREATOR_TOOL_NAMES],
-        onToolCall: handleQuizToolCall,
-      });
+      placeholder: "اسأل الباشــمبصمج",
+      pageKey: "home",
+      defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
+      suggestedPrompts: HOME_PAGE_SUGGESTED_PROMPTS,
+      enableFileUpload: true,
+      contextSummary: getLiveContextSummary,
+      contextPrompt: getLiveFolderTreePrompt,
+      enableTools: true,
+      toolNames: ["create_lesson", "create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item", "fetch_attached_quiz", ...READONLY_LIBRARY_TOOL_NAMES, ...CREATOR_TOOL_NAMES],
+      onToolCall: handleQuizToolCall,
+    });
     container.appendChild(agentFab);
 
     // Opened via /ai-agent (or /my-content/ai-agent): open the agent window,
@@ -1132,7 +1132,7 @@ function routeBulkUpload(selected) {
     return;
   }
 
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const selectedFolderIds = new Set(folders.map((item) => item.id || item.meta?.id));
   const notStandalone = (lesson) => {
     let parentId = lesson.meta?.parentId || null;
@@ -1140,7 +1140,7 @@ function routeBulkUpload(selected) {
     while (parentId && !visited.has(parentId)) {
       if (selectedFolderIds.has(parentId)) return false;
       visited.add(parentId);
-      const parent = userQuizzes.find((item) => (item.id || item.meta?.id) === parentId);
+      const parent = userContent.find((item) => (item.id || item.meta?.id) === parentId);
       parentId = parent?.meta?.parentId || null;
     }
     return true;
@@ -1150,14 +1150,14 @@ function routeBulkUpload(selected) {
 
   if (mode === "course") {
     import("./adminUpload.js").then((mod) => {
-      mod.openCourseUploadModal(courses, userQuizzes);
+      mod.openCourseUploadModal(courses, userContent);
     });
     return;
   }
 
   if (mode === "folder") {
     import("./adminUpload.js").then((mod) => {
-      mod.openFolderUploadModal({ folders, quizzes, lessons: standaloneLessons, notebooks: standaloneNotebooks, userQuizzes });
+      mod.openFolderUploadModal({ folders, quizzes, lessons: standaloneLessons, notebooks: standaloneNotebooks, userContent });
     });
     return;
   }
@@ -1185,7 +1185,7 @@ function routeBulkUpload(selected) {
  * selection/auth-relevant UI refresh) means the button appears as soon as
  * the admin session is recognized, without needing a reload.
  */
-function ensureBulkUploadButton(bar, selectedUserQuizzes) {
+function ensureBulkUploadButton(bar, selectedUserContent) {
   if (bar.querySelector(".bulk-upload-btn") || !isAdminAuthenticated()) return;
 
   const btn = document.createElement("button");
@@ -1201,10 +1201,10 @@ function ensureBulkUploadButton(bar, selectedUserQuizzes) {
   else bar.querySelector(".bulk-actions")?.appendChild(btn);
 
   btn.onclick = () => {
-    if (selectedUserQuizzes.size === 0) return;
-    const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-    const selected = userQuizzes.filter((q) =>
-      selectedUserQuizzes.has(q.id || q.meta?.id),
+    if (selectedUserContent.size === 0) return;
+    const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
+    const selected = userContent.filter((q) =>
+      selectedUserContent.has(q.id || q.meta?.id),
     );
     routeBulkUpload(selected);
   };
@@ -1220,13 +1220,13 @@ function ensureBulkUploadButton(bar, selectedUserQuizzes) {
  *   is inferred from whether the quiz grid is currently in selection mode.
  */
 export function updateBulkActionBar(forceActive) {
-  const selectedUserQuizzes = getSelectedUserQuizzes();
+  const selectedUserContent = getSelectedUserContent();
   const bar = document.getElementById("bulk-action-bar");
   if (!bar) return;
 
-  ensureBulkUploadButton(bar, selectedUserQuizzes);
+  ensureBulkUploadButton(bar, selectedUserContent);
 
-  const qzContainer = document.querySelector(".user-quizzes-container");
+  const qzContainer = document.querySelector(".user-content-container");
   const selectionModeActive =
     typeof forceActive === "boolean"
       ? forceActive
@@ -1239,7 +1239,7 @@ export function updateBulkActionBar(forceActive) {
 
   bar.style.display = "flex";
 
-  const count = selectedUserQuizzes.size;
+  const count = selectedUserContent.size;
   bar.querySelector(".bulk-count").textContent =
     count > 0 ? `تم تحديد ${count}` : "لم يتم تحديد أي شيء";
 
@@ -1258,7 +1258,7 @@ export function updateBulkActionBar(forceActive) {
   const selectAllBtn = bar.querySelector(".bulk-select-all-btn");
   if (selectAllBtn) {
     const totalCheckboxes = document.querySelectorAll(
-      ".user-quiz-select-checkbox",
+      ".user-content-select-checkbox",
     ).length;
     const allSelected = totalCheckboxes > 0 && count >= totalCheckboxes;
     selectAllBtn.textContent = allSelected ? "إلغاء التحديد" : "الكل";
@@ -1267,7 +1267,7 @@ export function updateBulkActionBar(forceActive) {
 }
 
 function renderBulkActionBar() {
-  const selectedUserQuizzes = getSelectedUserQuizzes();
+  const selectedUserContent = getSelectedUserContent();
   let bar = document.getElementById("bulk-action-bar");
   if (!bar) {
     bar = document.createElement("div");
@@ -1294,27 +1294,27 @@ function renderBulkActionBar() {
     document.body.appendChild(bar);
 
     bar.querySelector(".bulk-clear-btn").onclick = () => {
-      selectedUserQuizzes.clear();
-      const qzContainer = document.querySelector(".user-quizzes-container");
+      selectedUserContent.clear();
+      const qzContainer = document.querySelector(".user-content-container");
       if (qzContainer) qzContainer.classList.remove("selection-mode-active");
       const toggleBtn = document.querySelector(".selection-toggle-btn");
       if (toggleBtn) toggleBtn.classList.remove("active");
-      document.querySelectorAll(".user-quiz-select-checkbox").forEach((cb) => (cb.checked = false));
+      document.querySelectorAll(".user-content-select-checkbox").forEach((cb) => (cb.checked = false));
       bar.style.display = "none";
     };
     bar.querySelector(".bulk-select-all-btn").onclick = () => {
-      const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-      const allIds = userQuizzes.map((q) => qz(q, "id") || q.id);
+      const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      const allIds = userContent.map((q) => qz(q, "id") || q.id);
       const allCurrentlySelected =
-        allIds.length > 0 && allIds.every((id) => selectedUserQuizzes.has(id));
+        allIds.length > 0 && allIds.every((id) => selectedUserContent.has(id));
 
       if (allCurrentlySelected) {
-        selectedUserQuizzes.clear();
+        selectedUserContent.clear();
       } else {
-        allIds.forEach((id) => selectedUserQuizzes.add(id));
+        allIds.forEach((id) => selectedUserContent.add(id));
       }
 
-      document.querySelectorAll(".user-quiz-select-checkbox").forEach((cb) => {
+      document.querySelectorAll(".user-content-select-checkbox").forEach((cb) => {
         cb.checked = !allCurrentlySelected;
       });
 
@@ -1322,18 +1322,18 @@ function renderBulkActionBar() {
     };
 
     bar.querySelector(".bulk-delete-btn").onclick = async () => {
-      if (selectedUserQuizzes.size === 0) return;
+      if (selectedUserContent.size === 0) return;
       if (await _confirm("سيُنقل العناصر المحددة إلى سلة المهملات. هل تريد المتابعة؟")) {
-        let userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+        let userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
         const idsToDelete = expandSelectionWithDescendants(
-          selectedUserQuizzes,
-          userQuizzes,
+          selectedUserContent,
+          userContent,
         );
-        const itemsToTrash = userQuizzes.filter((q) => {
+        const itemsToTrash = userContent.filter((q) => {
           const qId = qz(q, "id") || q.id;
           return idsToDelete.has(qId);
         });
-        userQuizzes = userQuizzes.filter((q) => {
+        userContent = userContent.filter((q) => {
           const qId = qz(q, "id") || q.id;
           return !idsToDelete.has(qId);
         });
@@ -1342,35 +1342,35 @@ function renderBulkActionBar() {
             ? `${itemsToTrash.length} عناصر محددة`
             : itemsToTrash[0]?.meta?.title || qz(itemsToTrash[0], "title") || "عنصر بلا اسم";
         moveToTrash(itemsToTrash, label);
-        setInStorage("user_quizzes", JSON.stringify(userQuizzes));
-        selectedUserQuizzes.clear();
-        renderUserQuizzesView();
-        refreshUserQuizzesCard();
+        setInStorage("user_quizzes", JSON.stringify(userContent));
+        selectedUserContent.clear();
+        renderUserContentView();
+        refreshUserContentCard();
       }
     };
 
     // ── Bulk move — the folder-tree picker (openMoveToDialog) already
     // accepts an array of ids and moves all of them in one storage write
-    // (see moveItemsToFolder in user-quizzes-folders.js), so the only work
+    // (see moveItemsToFolder in user-content-folders.js), so the only work
     // here is collecting the current selection and handing it off. One
-    // gap: openMoveToDialog doesn't clear the shared selectedUserQuizzes
+    // gap: openMoveToDialog doesn't clear the shared selectedUserContent
     // Set itself (it's also used by the single-item "نقل إلى" menu action,
     // which never touches that Set at all), so without clearing it here the
     // moved ids would stay marked "selected" — stale entries that would
     // silently resurface the next time the bulk bar is used. Delete already
     // clears the same Set for the same reason; move needs to as well.
     bar.querySelector(".bulk-move-btn").onclick = () => {
-      if (selectedUserQuizzes.size === 0) return;
-      openMoveToDialog([...selectedUserQuizzes]);
-      selectedUserQuizzes.clear();
+      if (selectedUserContent.size === 0) return;
+      openMoveToDialog([...selectedUserContent]);
+      selectedUserContent.clear();
     };
 
     bar.querySelector(".bulk-extract-btn").onclick = async () => {
-      if (selectedUserQuizzes.size === 0) return;
-      const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-      const selected = userQuizzes.filter((q) => {
+      if (selectedUserContent.size === 0) return;
+      const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      const selected = userContent.filter((q) => {
         const qId = qz(q, "id") || q.id;
-        return selectedUserQuizzes.has(qId) && q.meta?.type !== "lesson";
+        return selectedUserContent.has(qId) && q.meta?.type !== "lesson";
       });
       if (selected.length === 0) {
         showNotification("التصدير غير متاح", "تصدير الدروس سيُضاف في مرحلة لاحقة.", "warning");
@@ -1391,10 +1391,10 @@ function renderBulkActionBar() {
 
     if (isAdminAuthenticated()) {
       bar.querySelector(".bulk-upload-btn").onclick = () => {
-        if (selectedUserQuizzes.size === 0) return;
-        const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-        const selected = userQuizzes.filter((q) =>
-          selectedUserQuizzes.has(q.id || q.meta?.id),
+        if (selectedUserContent.size === 0) return;
+        const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
+        const selected = userContent.filter((q) =>
+          selectedUserContent.has(q.id || q.meta?.id),
         );
         routeBulkUpload(selected);
       };

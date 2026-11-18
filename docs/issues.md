@@ -7,11 +7,38 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
-### Code Cleanup
-Go through the codebase, update the naming of everything, many items are named `quiz` or their name contains `quiz`
+### AI Agent
 
-### User Content (/my-content)
-Items that are saved in user content shouldn't have a link, because they are local, they wouldn't work for any body else. Links are only for items that are already published, not for ones saved locally in the `/my-content` page.
+#### Issue 1: Main Page Scrollbars
+* When the AI Agent's window is maximized, it shows the main page's scrollbar on the right. Fix it. 
+* See:
+  * ![Screenshot](image-1.png)
+  * `public\src\components\ai-agent\ai-agent-window.css`
+  * `public\src\components\ai-agent\ai-agent-window.js`
+
+#### Issue 2: Cards Designs
+* The files/cards are poorly designed.
+* They are too big, their height is too much. It should just be: Icon, Title, Label, and link.
+* They should use actual SVG icons.
+* They don't get presented like a typical agent chat. Typical agent chats push all presented files/cards at the bottom or the response, so the user see all of them at once. 
+
+* See `public\src\components\ai-agent\ai-agent-result-cards.js`
+
+#### Issue 3: Stupidly Designed Tool Limits
+* If the AI Agent tries to use a tool for more than 2 times, the chat stops: 
+  * If it tries to create 2 quizzes: The second tool usage doesn't happen, because of a limit.
+  * If it tries to search in the library twice, the second one doens't happen.
+  * etc...
+  * This should be removed immedietly and totally.
+
+* I don't exactly now the related files, but it might be one of these:
+  * `public\src\components\ai-agent\core\agent-loop.js`: The `DEFAULT_MAX_TOOL_RETRIES` or the `maxToolRetries`.
+  * `api\ai-agent\chat.js`
+  * Other files in `api\ai-agent\` might be for the Telegram Bot. 
+
+#### Issue 4: Redesign the `.ai-agent-dropdown-menu`
+* The current design of the `.ai-agent-dropdown-menu` was copied from other unrelated parts of the platform, which their design, doesn't match that of the AI Agent, I want something more elegant. And also design the tooltips on the history items, make them rich tooltips.
+* See `public\src\components\ai-agent\ai-agent.css` (.ai-agent-dropdown-menu)
 
 ### Sign in
 ![Screenshot](image.png).
@@ -24,15 +51,6 @@ Fix Dictation: The dictation doesn't work on Brave browser, even though other we
 ## New Features
 
 ### Implement the Rich Input Component into the Notebook page's Makrdown cells.
-
-### New Question Type: Complete
-* Implement a new question type in the quiz page and the lesson page: Complete.
-* A standard complete type of question.
-
-Related Files:
-* `public\src\features\lesson\`: Lesson page files.
-* `public\src\features\quiz\`: Quiz page files.
-* `public\src\shared\rate-answers.js`: Essay questions grading engine.
 
 ### Update the `createEmptyState`
 * Update the `createEmptyState` to include a link to the `/how-to-create-content`
@@ -57,10 +75,11 @@ Related Files:
 #### Redesign
 Redesign the whole page:
 * Journey style page with different scroll effects for each different sections.
+* Natural Scrolling smoothness, don't make it too smooth like how typical AI-made scroll effects look. See standards, or search.
 * It should use its own CSS styling instead of importing from the main page or other pages.
 * It sill should be resposive to the themes of the platform, even if new themes get added.
-* It shouldn't use the shared animations, it should get its own animations.
-* It lacks images or visual elements.
+* It shouldn't use the shared animations, it should get its own animations (or no animations).
+* It lacks images or visual elements. Tell me what you need to add.
 
 #### Suggestions
 * Add a short testimonial or review.

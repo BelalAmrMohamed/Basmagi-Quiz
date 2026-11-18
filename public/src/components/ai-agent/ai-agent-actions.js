@@ -85,13 +85,13 @@ export function getPageActions(pageKey, instanceActions = null) {
 
 // ── Built-in Standard Action Sets ─────────────────────────────────────────────
 
-// Home page actions ("امتحاناتك")
+// Home page actions ("محتواي")
 const HOME_PAGE_ACTIONS = [
     {
         id: "create-lesson",
         command: "create-lesson",
         label: "إنشاء درس",
-        description: "إنشاء درس جديد بأقسام ومحتوى تعليمي وحفظه في «امتحاناتك»",
+        description: "إنشاء درس جديد بأقسام ومحتوى تعليمي وحفظه في «محتواي»",
         icon: ICON_LESSON,
         systemDirective: "The user explicitly invoked /create-lesson. Prepare a lesson with a title, description, ordered sections, Markdown blocks, and suitable embedded interactive MCQ or essay questions. Use zero-based correctIndex/correctIndexes, multiSelect for multiple answers, explanations for MCQs, and a complete modelAnswer for essays. Call create_lesson immediately to save it in the user's library without confirmation.",
         placeholder: "موضوع الدرس ومستوى التفصيل المطلوب...",
@@ -100,25 +100,25 @@ const HOME_PAGE_ACTIONS = [
         id: "create-quiz",
         command: "create-quiz",
         label: "إنشاء امتحان",
-        description: "إنشاء امتحان جديد وحفظه مباشرة في قسم «امتحاناتك»",
+        description: "إنشاء امتحان جديد وحفظه مباشرة في قسم «محتواي»",
         icon: ICON_QUIZ,
-        systemDirective: "المستخدم يطلب إنشاء امتحان جديد بشكل صريح عبر أمر /create-quiz. نفّذ الإجراء مباشرة فوراً واستدعِ أداة create_quiz لحفظه في قسم «امتحاناتك» دون طلب أي تأكيد مسبق.",
+        systemDirective: "المستخدم يطلب إنشاء امتحان جديد بشكل صريح عبر أمر /create-quiz. نفّذ الإجراء مباشرة فوراً واستدعِ أداة create_quiz لحفظه في قسم «محتواي» دون طلب أي تأكيد مسبق.",
         placeholder: "اكتب موضوع الامتحان وعدد الأسئلة...",
     },
     {
         id: "create-notebook",
         command: "create-notebook",
         label: "إنشاء دفتر",
-        description: "إنشاء دفتر كود وملاحظات برمجية تفاعلي وحفظه في «امتحاناتك»",
+        description: "إنشاء دفتر كود وملاحظات برمجية تفاعلي وحفظه في «محتواي»",
         icon: ICON_NOTEBOOK,
-        systemDirective: "المستخدم يطلب إنشاء دفتر ملاحظات برمجية تفاعلي (Notebook) صراحة عبر أمر /create-notebook. جهّز محتوى الدفتر أو خلايا الكود والشرح واستدعِ أداة create_notebook فوراً لحفظه في «امتحاناتك» دون طلب أي تأكيد مسبق.",
+        systemDirective: "المستخدم يطلب إنشاء دفتر ملاحظات برمجية تفاعلي (Notebook) صراحة عبر أمر /create-notebook. جهّز محتوى الدفتر أو خلايا الكود والشرح واستدعِ أداة create_notebook فوراً لحفظه في «محتواي» دون طلب أي تأكيد مسبق.",
         placeholder: "موضوع الدفتر، لغة البرمجة، والملاحظات المطلوبة...",
     },
     {
         id: "create-folder",
         command: "create-folder",
         label: "إنشاء مجلد",
-        description: "إنشاء مجلد جديد لتنظيم وترتيب امتحاناتك",
+        description: "إنشاء مجلد جديد لتنظيم وترتيب محتواك",
         icon: ICON_FOLDER,
         systemDirective: "المستخدم يطلب إنشاء مجلد جديد صراحة عبر أمر /create-folder. استدعِ أداة create_folder فوراً دون طلب تأكيد.",
         placeholder: "اسم المجلد ومكانه...",
@@ -172,7 +172,7 @@ const LESSON_PAGE_ACTIONS = [
         label: "إنشاء تدريب من الدرس",
         description: "إنشاء تدريب تفاعلي مؤقت من محتوى هذا الدرس كاملاً، يظهر داخل الصفحة فقط",
         icon: ICON_QUIZ,
-        systemDirective: "المستخدم يطلب إنشاء تدريب تفاعلي مؤقت من محتوى هذا الدرس صراحة عبر أمر /create-quiz. استخرج الأسئلة من الدرس كاملاً واستدعِ أداة create_quiz فوراً لعرض التدريب داخل صفحة الدرس. هذا التدريب مؤقت ولا يُحفظ في «امتحاناتك» ولا يظهر فيها أبداً — دون طلب تأكيد.",
+        systemDirective: "المستخدم يطلب إنشاء تدريب تفاعلي مؤقت من محتوى هذا الدرس صراحة عبر أمر /create-quiz. استخرج الأسئلة من الدرس كاملاً واستدعِ أداة create_quiz فوراً لعرض التدريب داخل صفحة الدرس. هذا التدريب مؤقت ولا يُحفظ في «محتواي» ولا يظهر فيها أبداً — دون طلب تأكيد.",
         placeholder: "عدد الأسئلة أو الأقسام المراد التركيز عليها...",
     },
     {
@@ -181,7 +181,7 @@ const LESSON_PAGE_ACTIONS = [
         label: "تدريب من القسم الحالي فقط",
         description: "إنشاء تدريب تفاعلي مؤقت يغطي القسم الذي يقرأه المستخدم الآن فقط، لا الدرس كاملاً",
         icon: ICON_QUIZ,
-        systemDirective: "المستخدم يطلب إنشاء تدريب تفاعلي مؤقت من القسم الحالي فقط (وليس الدرس كاملاً) عبر أمر /create-quiz-section. استخدم القسم الحالي المُشار إليه في سياق الصفحة فقط كمصدر للأسئلة، واستدعِ أداة create_quiz فوراً لعرض التدريب داخل صفحة الدرس دون طلب تأكيد. هذا التدريب مؤقت ولا يُحفظ في «امتحاناتك».",
+        systemDirective: "المستخدم يطلب إنشاء تدريب تفاعلي مؤقت من القسم الحالي فقط (وليس الدرس كاملاً) عبر أمر /create-quiz-section. استخدم القسم الحالي المُشار إليه في سياق الصفحة فقط كمصدر للأسئلة، واستدعِ أداة create_quiz فوراً لعرض التدريب داخل صفحة الدرس دون طلب تأكيد. هذا التدريب مؤقت ولا يُحفظ في «محتواي».",
         placeholder: "عدد الأسئلة المطلوبة من هذا القسم...",
     },
     {

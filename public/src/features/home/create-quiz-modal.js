@@ -7,14 +7,14 @@
 //      (see ai-prompts.js) and copy it to clipboard for use with an external AI.
 //   2. openInlineCreateQuizModal() — paste text or import a file, parse it
 //      into quiz JSON, and save it to localStorage. Exported so the
-//      #userQuizContextMenu and create-folder-btn dropdowns
-//      (user-quizzes-folders.js / user-quizzes-view.js) can offer the same
+//      #userContentContextMenu and create-folder-btn dropdowns
+//      (user-content-folders.js / user-content-view.js) can offer the same
 //      "إنشاء امتحان جديد" action — see docs/plans/implementation-plan.md
 //      item 10. This used to also be reachable via a standalone
 //      .user-create-quiz-card rendered inline in the quiz grid
 //      (createInlineCreateQuizCard()); that card was removed once item 10
 //      made it fully redundant (per the plan's testing notes) — this
-//      function's caller was updated accordingly in user-quizzes-view.js.
+//      function's caller was updated accordingly in user-content-view.js.
 //
 // Both modals previously leaked a document-level Escape-key listener whenever
 // closed via a button rather than Escape/overlay-click — fixed here using the
@@ -31,8 +31,8 @@ import {
 } from "./ai-prompts.js";
 import { saveNewUserQuiz } from "./quiz-schema.js";
 import { renderRootCategories } from "./root-view.js";
-import { renderUserQuizzesView } from "./user-quizzes-view.js";
-import { currentFolderId } from "./user-quizzes-folders.js";
+import { renderUserContentView } from "./user-content-view.js";
+import { currentFolderId } from "./user-content-folders.js";
 import {
   importJsonQuizFiles,
   wireJsonFileDropZone,
@@ -204,7 +204,7 @@ export function openInlineCreateQuizModal() {
         if (count > 0) {
           close();
           renderRootCategories();
-          renderUserQuizzesView();
+          renderUserContentView();
         }
         return;
       }
@@ -235,7 +235,7 @@ export function openInlineCreateQuizModal() {
           if (count > 0) {
             close();
             renderRootCategories();
-            renderUserQuizzesView();
+            renderUserContentView();
           }
           return;
         }
@@ -325,8 +325,8 @@ export function openInlineCreateQuizModal() {
     }
 
     // Create inside whatever folder/course the user is currently browsing
-    // (currentFolderId, kept live by user-quizzes-folders.js as the user
-    // navigates), not always at the "امتحاناتك" root — previously this
+    // (currentFolderId, kept live by user-content-folders.js as the user
+    // navigates), not always at the "محتواي" root — previously this
     // modal never passed a destination at all, so every quiz landed at
     // root regardless of where the "إنشاء اختبار" button was opened from.
     const result = saveNewUserQuiz(parsed, title, currentFolderId);
@@ -344,7 +344,7 @@ export function openInlineCreateQuizModal() {
       "success",
     );
     renderRootCategories();
-    renderUserQuizzesView();
+    renderUserContentView();
   };
 
   // Escape-key and overlay-click dismissal are already wired by

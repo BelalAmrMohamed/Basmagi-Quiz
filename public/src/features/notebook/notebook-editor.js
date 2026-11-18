@@ -2,7 +2,7 @@
 // Loaded on demand by notebook-page.js (readers never download it).
 // Cells are edited/run by the notebook runtime in edit mode (assets/notebook-runtime);
 // this file owns the details form, validation and saving. Everyone saves to the
-// local "My Content" (امتحاناتك). Only an admin arriving with ?draft= (MCP) or
+// local "My Content" «محتواي». Only an admin arriving with ?draft= (MCP) or
 // /notebook/edit/<platform id> publishes through /api/admin.
 import { getToken, isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
@@ -60,8 +60,8 @@ const STR = {
     identityHeading: "تفاصيل الدفتر", identityIntro: "أضف سياقاً يساعد المتعلمين على معرفة محتوى الدفتر.", titleHint: "يساعد العنوان المختصر على العثور على الدفتر.", descriptionHint: "اشرح الموضوع أو الهدف أو نقطة البداية المتوقعة.", sourceHint: "أضف مرجعاً يمكن للمتعلمين فتحه لمعرفة المزيد.",
     settingsHeading: "اللغة وبيئة التشغيل", settingsIntro: "اختر لغة الدفتر والمحرك الذي يشغّل الشيفرة.", languageHint: "تحدد اتجاه النص ولغة واجهة الدفتر.", runtimeHintMatlab: "يعمل في المتصفح باستخدام بيئة MATLAB التعليمية.", runtimeHintCpp: "يشغّل شيفرة C++ عبر خدمة المترجم على الإنترنت.", runtimeLock: "مقفل بعد الحفظ",
     placementHeading: "مكان النشر", placementIntro: "اختر المكان الذي سيجد فيه المتعلمون هذا الدفتر.", course: "المادة", folder: "المجلد", slug: "معرّف الرابط", compressTitle: "تحسين صور الدفتر", compressShort: "ضغط الصور إلى WebP عند النشر.", compressHint: "سيتم تحديث أسماء الصور ومراجعها تلقائياً.",
-    import: "استيراد .ipynb / .m", save: "حفظ في امتحاناتك", saveEdit: "حفظ التغييرات", savePlatform: "حفظ ونشر", loading: "جاري تحميل المحرر…", runtimeLoading: (name) => `جارٍ تجهيز ${name}…`,
-    saved: "تم الحفظ", savedMsg: "تم حفظ الدفتر في «امتحاناتك».", driveDone: (n, f) => `ونُسخ احتياطياً إلى Google Drive: «${n}» داخل «${f}».`, publishedMsg: "تم نشر الدفتر.",
+    import: "استيراد .ipynb / .m", save: "حفظ في محتواي", saveEdit: "حفظ التغييرات", savePlatform: "حفظ ونشر", loading: "جاري تحميل المحرر…", runtimeLoading: (name) => `جارٍ تجهيز ${name}…`,
+    saved: "تم الحفظ", savedMsg: "تم حفظ الدفتر في «محتواي».", driveDone: (n, f) => `ونُسخ احتياطياً إلى Google Drive: «${n}» داخل «${f}».`, publishedMsg: "تم نشر الدفتر.",
     fail: "تعذر الحفظ", problems: (n) => `أصلح ${n} من المشاكل قبل الحفظ`, importFail: "فشل الاستيراد", importNotes: "ملاحظات الاستيراد",
     loadFail: "تعذر التحميل", runtimeFail: "تعذر تحميل محرر الدفاتر. تحقق من اتصالك وأعد تحميل الصفحة.", dup: "يوجد دفتر بنفس العنوان هنا بالفعل. اختر عنواناً مختلفاً.",
     discard: "لديك تغييرات غير محفوظة.", exportZip: "تصدير .zip", compress: "ضغط الصور إلى WebP عند النشر (يغيّر أسماء الملفات ويحدّث الإشارات إليها)",

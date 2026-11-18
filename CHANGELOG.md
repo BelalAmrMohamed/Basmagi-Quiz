@@ -1,15 +1,30 @@
-## Unreleased - Protected quizzes: questions locked server-side + rate-limited password checks
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [Unreleased]
+
+## محتواي naming cleanup
+- Renamed the `user-quizzes-*` / `user-quiz-*` modules, CSS classes and identifiers to `user-content-*` (and `copy-to-my-quizzes` to `copy-to-my-content`); «امتحاناتك» became «محتواي» in the UI. Storage keys and legacy routes are unchanged (see NOTES.md).
+- Local محتواي items no longer show or expose a link; only published items do.
+
+## Protected quizzes: questions locked server-side + rate-limited password checks
 - Security: the questions of a password-protected quiz are no longer downloadable. Browsers can't read `quizzes.data` anymore; `quiz_public` returns only `meta` + `stats` for a protected quiz, and the questions come from the new `unlock_quiz(quiz_id, password)` RPC after the server verifies the password (same model as lessons). This closes the API read, copy-to-my-quizzes, "ask the assistant" and embedded-lesson-quiz bypasses.
 - Security: password guessing is rate limited inside the database (`verify_quiz_password` / `unlock_quiz`): 8 wrong guesses per client per quiz per 10 minutes, and 150 per quiz overall per 10 minutes. The UI shows how long to wait.
 - Protected quizzes now ask for the password wherever their questions are needed (quiz page, download, copy). The assistant attach, the Telegram bot and lesson embeds never read protected questions. The admin editor loads a quiz through the new `get-quiz` admin action.
 - `api/render-quiz.js` and the OG image routes read `quiz_public` instead of `quizzes`.
 - Deploy: apply `20261118120000_quiz_questions_private.sql` together with this release (the previous front-end still selects `quizzes.data`).
 
-## Unreleased - AI agent deep link
+## AI agent deep link
 - New shareable route `/ai-agent` (alias `/my-content/ai-agent`): opens «محتواي» with الباشــمبصمج already open and maximized. Maximizing the agent on «محتواي» now changes the address bar to `/ai-agent`; restoring, minimizing or closing puts the previous URL back.
 - `api/render-ai-agent.js` serves these routes with the agent's own title, description and thumbnail (`ai-agent-thumbnail.png?v=3`) so shared links get a proper preview.
 
-## Unreleased - C++ notebooks round 2
+## C++ notebooks round 2
 - Local compiler: gzip copies (about 19 MB instead of 60 MB) in `public/assets/wasm-clang/`, unpacked in the browser; the download no longer blocks the page (close the dialog, keep editing; the toolbar button shows progress) and the button shows a "warming up" state until the first run is instant.
 - Pasting a whole program into an empty cell offers to split it into cells (header, prototypes, each function, main).
 - "Run" on one cell now explains that a function defined in a later cell needs "Run all".
@@ -23,17 +38,6 @@
 - Image Tool: click (or tap) a pixel to pin it. Its value stays in the status bar ("Pinned: ...") with a marker that follows pan and zoom; click it again to unpin.
 - Image Tool: windows now snap to the edges of neighbouring windows (moving and resizing), not only the screen edges, so before/after images tile cleanly.
 - Image Tool: minimized tabs show a thumbnail, the window number and the image name.
-
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
----
-
-## [Unreleased]
 
 ## [8.3.5] - 2026-11-07
 ### Changed

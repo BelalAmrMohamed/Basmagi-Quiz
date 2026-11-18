@@ -94,7 +94,7 @@ export async function runAgentLoop(params) {
     if (typeof onStepChange === "function") {
       const stepText = depth === 0 ? "" : `خطوة ${depth + 1}`;
       onStepChange({
-        label: depth === 0 ? "Thinking…" : "جاري التحليل والمتابعة…",
+        label: depth === 0 ? "Endeavoring…" : "Striving…",
         kind: "thinking",
         step: stepText,
       });
