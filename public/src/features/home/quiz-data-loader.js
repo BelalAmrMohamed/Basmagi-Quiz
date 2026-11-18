@@ -14,50 +14,89 @@
 // ============================================================================
 //
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+import { getUnlockedQuiz } from "./quiz-unlock-store.js";
 
 /**
- * Loads a DB-hosted quiz's full JSON directly from Supabase.
- * @param {string} dbId
- * @returns {Promise<object>} the quiz's `data` column (questions/meta/stats)
+ * Thrown when a password-protected quiz's questions are requested without an
+ * unlock the server has verified (see migration 20261118120000: the browser
+ * only receives meta/stats for such a quiz until unlock_quiz() succeeds).
  */
-async function loadDbQuizData(dbId) {
+export class QuizLockedError extends Error {
+  constructor(dbId) {
+    super("QUIZ_LOCKED");
+    this.name = "QuizLockedError";
+    this.code = "QUIZ_LOCKED";
+    this.dbId = dbId || null;
+  }
+}
+
+/**
+ * Loads a DB-hosted quiz from the quiz_public view. For a password-protected
+ * quiz the view returns only { meta, stats }; the questions come from the
+ * unlock store (filled by unlock_quiz) or, when `whenLocked` is "prompt", from
+ * a password dialog.
+ *
+ * @param {string} dbId
+ * @param {{whenLocked?: "prompt"|"cached"|"stub"|"never", title?: string}} [opts]
+ *   whenLocked, for a protected quiz:
+ *     "prompt" (default) use the unlocked copy, else ask for the password
+ *     "cached"  use the unlocked copy, else throw QuizLockedError
+ *     "stub"    never read questions: resolve { meta, stats, questions: [], locked: true }
+ *     "never"   always throw QuizLockedError (e.g. content bound for the AI model)
+ * @returns {Promise<object>} { ...quiz data, dbId }
+ */
+async function loadDbQuizData(dbId, { whenLocked = "prompt", title = "" } = {}) {
   const supabase = await ensureSharedSupabaseClient();
   if (!supabase) throw new Error("تعذّر الاتصال بقاعدة البيانات");
 
   const { data, error } = await supabase
-    .from("quizzes")
-    .select("id, data")
+    .from("quiz_public")
+    .select("id, data, password_protected")
     .eq("id", dbId)
     .maybeSingle();
 
   if (error) throw error;
   if (!data) throw new Error("الامتحان غير موجود");
 
-  return {
-    ...(data.data || {}),
-    dbId: data.id || null,
-  };
+  if (!data.password_protected) {
+    return { ...(data.data || {}), dbId: data.id || null };
+  }
+
+  // ── Protected quiz ────────────────────────────────────────────────────────
+  if (whenLocked === "stub") {
+    return { ...(data.data || {}), questions: [], locked: true, dbId: data.id || null };
+  }
+  if (whenLocked === "never") throw new QuizLockedError(dbId);
+
+  let unlocked = getUnlockedQuiz(dbId);
+  if (!unlocked && whenLocked === "prompt") {
+    const { unlockQuizWithPrompt } = await import("./download-password.js");
+    unlocked = await unlockQuizWithPrompt(dbId, title || data.data?.meta?.title || "");
+  }
+  if (!unlocked) throw new QuizLockedError(dbId);
+  return { ...unlocked, dbId: data.id || dbId };
 }
 
 /**
  * Loads the raw quiz payload behind a manifest exam entry.
- * Loads the raw quiz payload behind a relational manifest entry.
  *
  * @param {object} exam - manifest exam entry (must have `dbId`)
+ * @param {{whenLocked?: "prompt"|"cached"|"stub"|"never"}} [opts] see loadDbQuizData
  * @returns {Promise<{ dbId?: string|null, questions: Array, meta: object|null, stats: object|null }>}
- * @throws if the quiz file can't be loaded by any strategy
+ * @throws QuizLockedError when the quiz is protected and not unlocked; other errors if it can't be loaded
  */
-export async function loadFullQuizData(exam) {
+export async function loadFullQuizData(exam, opts = {}) {
   const dbId = exam?.dbId;
   if (!dbId) throw new Error("Exam has no database ID");
 
-  const data = await loadDbQuizData(dbId);
+  const data = await loadDbQuizData(dbId, { ...opts, title: exam?.title || "" });
 
   return {
     dbId: data.dbId || dbId,
     questions: data.questions || [],
     meta: data.meta || null,
     stats: data.stats || null,
+    ...(data.locked ? { locked: true } : {}),
   };
 }
 

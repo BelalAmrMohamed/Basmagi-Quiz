@@ -837,7 +837,7 @@ async function fetchCourseMeta(courseId, folderPath) {
       let questionCount = null;
       let lastUpdated = null;
       try {
-        const quizzesUrl = new URL(`${SUPABASE_URL}/rest/v1/quizzes`);
+        const quizzesUrl = new URL(`${SUPABASE_URL}/rest/v1/quiz_public`);
         quizzesUrl.searchParams.set("select", "data,created_at");
         // Scoped to the resolved folder's direct quizzes when a folder path
         // resolved, otherwise the whole course — same distinction as the

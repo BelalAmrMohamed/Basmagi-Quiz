@@ -168,7 +168,7 @@ async function fetchQuizRefs(quizIds) {
     // Postgres' "invalid input syntax for type uuid" error.
     const requests = [];
     if (uuidIds.length) {
-      requests.push(supabase.from("quizzes").select("id, data").in("id", uuidIds));
+      requests.push(supabase.from("quiz_public").select("id, data, password_protected").in("id", uuidIds));
     }
     if (metaIds.length) {
       // These are public 8-character quiz codes stored in data.meta.id, not
@@ -176,8 +176,8 @@ async function fetchQuizRefs(quizIds) {
       // that JSON-path text value directly and handles query serialization.
       requests.push(
         supabase
-          .from("quizzes")
-          .select("id, data")
+          .from("quiz_public")
+          .select("id, data, password_protected")
           .in("data->meta->>id", metaIds.map((id) => String(id).trim()).filter(Boolean)),
       );
     }
@@ -202,9 +202,11 @@ async function fetchQuizRefs(quizIds) {
           questionCount: stats.questionCount ?? null,
           source: "platform",
           meta,
+          passwordProtected: Boolean(row?.password_protected),
           // Full row data (questions/answers): lets the AI agent read an
-          // embedded quiz without a second network round trip.
-          fullData: row?.data || null,
+          // embedded quiz without a second network round trip. For a protected
+          // quiz the server only sends meta/stats, so there is nothing to read.
+          fullData: row?.password_protected ? null : (row?.data || null),
         };
         if (entry.id) lookup.set(String(entry.id), entry);
         if (entry.dbId) lookup.set(String(entry.dbId), entry);
@@ -656,12 +658,12 @@ function lessonAgentContext(lesson, normalized) {
 async function embeddedQuizToolResult(requestedId) {
   const entry = lessonEmbeds.quizLookup.get(requestedId);
   if (entry) {
-    const protectedQuiz = Boolean(entry.meta?.password || entry.meta?.passwordProtected || entry.password);
+    const protectedQuiz = Boolean(entry.passwordProtected || entry.meta?.password || entry.meta?.passwordProtected || entry.password);
     if (protectedQuiz) {
       return `الامتحان ${entry.title || requestedId} محمي بكلمة مرور، لذلك لا يمكن قراءة أسئلته من هنا. اطلب من المستخدم فتحه بنفسه.`;
     }
     let data = entry.fullData;
-    if (!data && entry.dbId) data = await loadFullQuizData({ dbId: entry.dbId });
+    if (!data && entry.dbId) data = await loadFullQuizData({ dbId: entry.dbId }, { whenLocked: "never" });
     const { password: _pw, passwordHash: _ph, ...meta } = data?.meta || entry.meta || {};
     return `بيانات الامتحان ${entry.title || requestedId} (المعرّف ${requestedId}):\n${JSON.stringify({ meta, stats: data?.stats || {}, questions: data?.questions || [] })}`;
   }

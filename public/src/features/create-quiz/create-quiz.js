@@ -17,7 +17,6 @@ import { renderMarkdown } from "../../shared/markdown.js";
 import { clearEditorDrafts, readEditorDrafts, upsertEditorDraft, removeEditorDraft, migrateWorkspaceDrafts } from "../../shared/editor-drafts.js";
 import { isAdminAuthenticated, getToken } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
-import { loadFullQuizData, checkQuizHasPassword } from "../home/quiz-data-loader.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
 import { CREATE_QUIZ_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
@@ -4638,33 +4637,43 @@ function loadQuizFromLocalStorage(quizId) {
 /**
  * Fetch a shared/admin (Supabase-backed) quiz by its DB row id and prefill
  * the editor form from it — the shared-quiz counterpart to
- * loadQuizFromLocalStorage() above. Reuses loadFullQuizData() (already
- * used by the download/copy/AI-attach paths) rather than a new fetch, since
- * it already returns exactly the {meta, stats, questions} shape this form
- * needs and public reads on `quizzes` already allow it (no auth token
- * needed just to populate the form — the real authorization check happens
- * server-side when the save actually posts to action=update-quiz).
+ * loadQuizFromLocalStorage() above. Loads through the admin API (get-quiz):
+ * protected quizzes hide their questions from the public quiz_public view
+ * (migration 20261118120000), and the real authorization check happens
+ * server-side there as well as on the later update-quiz save.
  *
  * Note meta.password is never present here (see the header comment on
  * handleUpdateQuiz in api/admin.js for why) — the password field simply
  * starts blank, same as it would look to a public visitor.
  */
+async function fetchSharedQuizForEdit(dbId) {
+  const token = getToken();
+  if (!token) throw new Error("يجب تسجيل الدخول كمشرف لتعديل هذا الامتحان.");
+  const res = await fetch("/api/admin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action: "get-quiz", id: dbId }),
+  });
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok || !result.quiz) throw new Error(result.error || "تعذّر تحميل الامتحان للتعديل.");
+  const data = result.quiz.data || {};
+  return {
+    dbId: result.quiz.dbId || dbId,
+    questions: data.questions || [],
+    meta: data.meta || null,
+    stats: data.stats || null,
+    passwordProtected: result.quiz.passwordProtected,
+  };
+}
+
 async function loadSharedQuizForEdit(dbId) {
   try {
-    const full = await loadFullQuizData({ dbId });
+    // Browsers can't read a protected quiz's questions (migration
+    // 20261118120000), so the editor loads the quiz through the authorized
+    // admin API, which also reports whether a password is set.
+    const full = await fetchSharedQuizForEdit(dbId);
     const meta = full.meta || {};
-
-    // See sharedEditHasPassword's declaration above — fetched alongside the
-    // quiz itself so updateSaveMenuOptionForSharedEdit() (called at the end
-    // of this function) knows whether to reveal the "remove password" row.
-    // Best-effort: if the check itself fails, fall back to not showing the
-    // row rather than blocking the rest of the load over it.
-    try {
-      sharedEditHasPassword = await checkQuizHasPassword(dbId);
-    } catch (pwError) {
-      console.error("Error checking quiz password state:", pwError);
-      sharedEditHasPassword = false;
-    }
+    sharedEditHasPassword = Boolean(full.passwordProtected);
 
     const headerTitle = document.querySelector(".header h1");
     if (headerTitle) headerTitle.textContent = "تعديل الامتحان";
@@ -5950,4 +5959,4 @@ function hideLoading() {
   if (overlay) {
     overlay.style.display = "none";
   }
-}
+}

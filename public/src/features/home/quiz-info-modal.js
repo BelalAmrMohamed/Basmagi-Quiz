@@ -83,7 +83,7 @@ export async function showQuizInfoModal(exam) {
 
   try {
     if (exam.dbId) {
-      const { questions, meta, stats } = await loadFullQuizData(exam);
+      const { questions, meta, stats } = await loadFullQuizData(exam, { whenLocked: "stub" });
       if (meta) {
         if (!config.description) config.description = meta.description || null;
         if (!config.source) config.source = meta.source || null;

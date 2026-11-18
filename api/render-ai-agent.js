@@ -11,11 +11,14 @@
 // title, description and thumbnail instead of the generic home-page ones.
 // =============================================================================
 
-import fs from "fs";
-import path from "path";
+// EDGE runtime on purpose: Vercel's Hobby plan allows 12 Node serverless
+// functions and the project already has exactly 12 (api/og.js is the other
+// edge function and doesn't count). Edge has no filesystem, so the shell is
+// fetched from this deployment's own home page (the static public/index.html)
+// and cached per instance.
+export const config = { runtime: "edge" };
 
 const SITE_ORIGIN = process.env.SITE_ORIGIN || "https://basmagi-quiz.vercel.app";
-const TEMPLATE_PATH = path.join(process.cwd(), "public", "index.html");
 
 const PAGE_URL = `${SITE_ORIGIN}/ai-agent`;
 const TITLE = "الباشــمبصمج | منصة امتحانات بصمجي";
@@ -30,9 +33,14 @@ const esc = (s) =>
   String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 let templateCache = null;
-function loadTemplate() {
-  if (templateCache === null) templateCache = fs.readFileSync(TEMPLATE_PATH, "utf8");
-  return templateCache;
+async function loadTemplate(origin) {
+  if (templateCache !== null) return templateCache;
+  const res = await fetch(`${origin}/`, { headers: { accept: "text/html" } });
+  if (!res.ok) throw new Error(`index.html fetch failed: ${res.status}`);
+  const html = await res.text();
+  if (!/<\/head>/i.test(html)) throw new Error("index.html looks wrong");
+  templateCache = html;
+  return html;
 }
 
 // Replaces the content="" of the first <meta> whose attribute matches, or adds
@@ -65,17 +73,24 @@ export function renderAIAgentHtml(html) {
   return out;
 }
 
-export default function handler(req, res) {
-  if (req.method !== "GET" && req.method !== "HEAD") return res.status(405).end();
+export default async function handler(request) {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return new Response(null, { status: 405 });
+  }
+  const origin = new URL(request.url).origin;
   let html;
   try {
-    html = renderAIAgentHtml(loadTemplate());
+    html = renderAIAgentHtml(await loadTemplate(origin));
   } catch (err) {
     console.error("[render-ai-agent] could not build page:", err);
-    return res.redirect(302, "/my-content");
+    return Response.redirect(`${origin}/my-content`, 302);
   }
-  res.setHeader("Content-Type", "text/html; charset=utf-8");
-  // Same shell for everyone; let the CDN hold it briefly but always revalidate.
-  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=300, stale-while-revalidate=86400");
-  return res.status(200).send(html);
+  return new Response(request.method === "HEAD" ? null : html, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      // Same shell for everyone; let the CDN hold it briefly but always revalidate.
+      "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
+    },
+  });
 }

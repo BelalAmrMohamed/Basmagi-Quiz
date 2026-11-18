@@ -13,6 +13,7 @@
 
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { checkQuizHasPassword } from "./quiz-data-loader.js";
+import { getUnlockedQuiz, storeUnlockedQuiz } from "./quiz-unlock-store.js";
 
 const DOWNLOAD_PASSWORD_SESSION_PREFIX = "dl_pw_ok:";
 
@@ -78,29 +79,67 @@ export function getVerifiedQuizPassword(quizId) {
   }
 }
 
+let lastFailure = null;
+
 /**
- * Checks a typed password for a shared (database) quiz ON THE SERVER. The
- * stored hash never reaches the browser. Resolves to the stored value (a
- * truthy string) when correct, or `false`.
+ * Message for the last failed verifyQuizPasswordRemote() — tells a throttled
+ * visitor to wait instead of "wrong password". `fallback` is the dialog's own
+ * wrong-password text.
+ */
+export function quizPasswordFailureMessage(fallback) {
+  if (lastFailure?.rateLimited) {
+    const s = Number(lastFailure.retryAfter) || 0;
+    const wait = s >= 90 ? `${Math.ceil(s / 60)} دقيقة` : s > 0 ? `${s} ثانية` : "قليلًا";
+    return `محاولات كثيرة خاطئة. حاول مرة أخرى بعد ${wait}.`;
+  }
+  return fallback;
+}
+
+/**
+ * Checks a typed password for a shared (database) quiz ON THE SERVER
+ * (public.unlock_quiz — rate limited). The stored hash never reaches the
+ * browser until the password is right; on success the quiz's questions are
+ * kept in the unlock store, because that is the only way to read them.
+ * Resolves to the stored value (a truthy string) when correct, or `false`
+ * (see quizPasswordFailureMessage() for why).
  */
 export async function verifyQuizPasswordRemote(dbId, input) {
+  lastFailure = null;
   if (!dbId) return false;
   try {
     const supabase = await ensureSharedSupabaseClient();
     if (!supabase) return false;
-    const { data, error } = await supabase.rpc("verify_quiz_password", {
+    const { data, error } = await supabase.rpc("unlock_quiz", {
       p_quiz_id: dbId,
       p_password: String(input ?? ""),
     });
     if (error) {
-      console.warn("[quiz-password] verification failed:", error.message);
+      if (/quiz_password_rate_limited/.test(error.message || "")) {
+        lastFailure = { rateLimited: true, retryAfter: Number.parseInt(error.details, 10) || 0 };
+      } else {
+        console.warn("[quiz-password] verification failed:", error.message);
+      }
       return false;
     }
-    return typeof data === "string" && data ? data : false;
+    if (!data || typeof data.stored !== "string" || !data.stored) return false;
+    storeUnlockedQuiz(dbId, data.data);
+    return data.stored;
   } catch (err) {
     console.warn("[quiz-password] verification failed:", err);
     return false;
   }
+}
+
+/**
+ * Password dialog for reading a protected quiz's questions (copy, info, ...).
+ * Resolves the unlocked quiz payload, or null when the user cancels.
+ */
+export async function unlockQuizWithPrompt(dbId, title) {
+  const cached = getUnlockedQuiz(dbId);
+  if (cached) return cached;
+  const result = await promptDownloadPassword(title || "", (input) => verifyQuizPasswordRemote(dbId, input), "لفتح");
+  if (!result) return null;
+  return getUnlockedQuiz(dbId);
 }
 
 /**
@@ -110,7 +149,7 @@ export async function verifyQuizPasswordRemote(dbId, input) {
  * Resolves that value if the correct password was entered, `false` if the
  * user cancelled.
  */
-function promptDownloadPassword(title, verify) {
+function promptDownloadPassword(title, verify, action = "لتنزيل") {
   return new Promise((resolve) => {
     const modal = document.createElement("div");
     modal.className = "modal-overlay";
@@ -138,7 +177,7 @@ function promptDownloadPassword(title, verify) {
     h2.textContent = "هذا الامتحان محمي بكلمة مرور";
 
     const p = document.createElement("p");
-    p.textContent = `أدخل كلمة المرور لتنزيل "${title}"`;
+    p.textContent = title ? `أدخل كلمة المرور ${action} "${title}"` : "أدخل كلمة المرور للمتابعة";
 
     const form = document.createElement("div");
     form.className = "download-password-form";
@@ -177,6 +216,7 @@ function promptDownloadPassword(title, verify) {
       if (ok) {
         finish(ok);
       } else {
+        errorMsg.textContent = quizPasswordFailureMessage("كلمة مرور غير صحيحة");
         errorMsg.style.display = "block";
         input.value = "";
         input.focus();

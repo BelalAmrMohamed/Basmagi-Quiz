@@ -302,7 +302,7 @@ export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, root
       }
       let loaded;
       try {
-        loaded = await loadFullQuizData({ dbId: sourceNode.dbId || sourceNode.id });
+        loaded = await loadFullQuizData({ dbId: sourceNode.dbId || sourceNode.id }, { whenLocked: "cached" });
       } catch (error) {
         console.error("Copy tree failed — could not load quiz data:", error);
         return null;

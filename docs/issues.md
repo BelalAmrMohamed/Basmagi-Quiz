@@ -13,25 +13,10 @@ Go through the codebase, update the naming of everything, many items are named `
 ### User Content (/my-content)
 Items that are saved in user content shouldn't have a link, because they are local, they wouldn't work for any body else. Links are only for items that are already published, not for ones saved locally in the `/my-content` page.
 
-### Animation aren't working for some users
-
-`html[data-animations="enabled"]` isn't working for some users for somereason. Some devices don't make it work.
-
-Probably the issue:
-* The platform uses a custom `html[data-motion="reduced"]` instead of `prefers-reduced-motion: reduce`, but some pages and features still use the `prefers-reduced-motion: reduce` and need to be updated, that might be the issue.
-* Make sure you update them in their place, don't keep everything in themes.css
-
 ### Sign in
 ![Screenshot](image.png).
 * This is extremely annoying, it's telling me my session has ended, but its still showing me that I'm signed in in the sidebar's dropdown and in the profile page, and I don't know why are sessions ending quickly.
 * Sometimes it tells me that, then when the page reloads automatically and I find that I'm still signed in, I try again, and it works this time.
-
-### Home Page: Passwords are exposed
-The home page downloads every password (Of lessons and quizzes) to the browser, so passwords are readable by anyone. Which is a security flaw that needs to be patched. (This issue is partially solved)
-
-Solved, but these are the remaining gaps:
-* The questions of protected quizzes are still publicly readable through the API. Copy-to-my-quizzes, “ask the assistant” and embedded lesson quizzes also bypass the lock. The hash can no longer be stolen, but the lock is still only a screen. Closing this would mean hiding the questions until the server verifies the password, as lessons already do. It touches the quiz page, export, copy, AI attach and lesson embeds, so I’d do it as its own task.
-* Anyone can still guess passwords through the verify function. Previously they could crack the hash offline, so this is better but not rate-limited.
 
 ### AI Agent (الباشــمبصمج): Dictation
 Fix Dictation: The dictation doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser when using the browser api for dictation.
