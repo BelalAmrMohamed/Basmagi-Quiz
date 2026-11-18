@@ -535,7 +535,7 @@ async function fetchQuizMeta(quizId) {
 
   try {
     // PostgREST filter: data->meta->>id = quizId
-    const url = new URL(`${SUPABASE_URL}/rest/v1/quizzes`);
+    const url = new URL(`${SUPABASE_URL}/rest/v1/quiz_public`);
     url.searchParams.set("select", "data,title,subject");
     url.searchParams.set("data->meta->>id", `eq.${quizId}`);
     url.searchParams.set("limit", "1");

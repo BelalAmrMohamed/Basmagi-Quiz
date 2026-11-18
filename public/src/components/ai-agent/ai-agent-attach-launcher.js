@@ -254,7 +254,7 @@ export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
       }
       let payload = directAttachedQuiz?.payload || attachedQuiz?.payload || quiz?.payload;
       if (!payload && attachedQuiz?.dbId) {
-        const loaded = await loadFullQuizData({ dbId: attachedQuiz.dbId });
+        const loaded = await loadFullQuizData({ dbId: attachedQuiz.dbId }, { whenLocked: "never" });
         payload = {
           meta: loaded.meta || {},
           stats: loaded.stats || {},

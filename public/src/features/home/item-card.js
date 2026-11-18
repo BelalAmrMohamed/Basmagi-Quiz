@@ -508,7 +508,8 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
       closeMenu();
       askAiOpt.disabled = true;
       try {
-        const fullQuiz = await loadFullQuizData(exam);
+        // whenLocked "never": a protected quiz's questions are not sent to the AI.
+        const fullQuiz = await loadFullQuizData(exam, { whenLocked: "never" });
         openAIAgentWithAttachment(
           buildPlatformQuizAttachment(exam, {
             meta: fullQuiz.meta || { title: exam.title || exam.id },
@@ -518,7 +519,13 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
           { defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT },
         );
       } catch (err) {
-        showNotification("تعذر الإرفاق", "تعذر تحميل محتوى الامتحان حاليًا.", "error");
+        showNotification(
+          "تعذر الإرفاق",
+          err?.code === "QUIZ_LOCKED"
+            ? "هذا الامتحان محمي بكلمة مرور، لذلك لا يمكن إرفاقه للمساعد."
+            : "تعذر تحميل محتوى الامتحان حاليًا.",
+          "error",
+        );
       } finally {
         askAiOpt.disabled = false;
       }

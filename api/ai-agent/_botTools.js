@@ -388,11 +388,18 @@ async function handleGetCourseContents(args, supabase) {
   };
 }
 
+// This bot reads with the service role, so it must enforce the quiz password
+// lock itself: a protected quiz's questions never leave the database except
+// through unlock_quiz() after the right password.
+const PROTECTED_QUIZ_REPLY = {
+  error: "This quiz is password-protected, so its questions can't be shown or exported here. The user must open it on the website and enter the password.",
+};
+
 async function handleFetchQuiz(args, supabase) {
   // Allow lookup by either 8-char base32 ID or UUID
   let { data, error } = await supabase
     .from("quizzes")
-    .select("id, title, data, path")
+    .select("id, title, data, path, password")
     .filter("data->meta->>id", "eq", args.quiz_id)
     .limit(1)
     .maybeSingle();
@@ -400,7 +407,7 @@ async function handleFetchQuiz(args, supabase) {
   if (!data) {
     const res = await supabase
       .from("quizzes")
-      .select("id, title, data, path")
+      .select("id, title, data, path, password")
       .eq("id", args.quiz_id)
       .limit(1)
       .maybeSingle();
@@ -410,6 +417,7 @@ async function handleFetchQuiz(args, supabase) {
 
   if (error) return { error: error.message };
   if (!data) return { error: "Quiz not found." };
+  if (data.password) return PROTECTED_QUIZ_REPLY;
 
   const quiz = data.data || {};
   const metaId = quiz.meta?.id || data.id;
@@ -439,7 +447,7 @@ async function handleExportQuiz(args, chatId, supabase) {
   // Look up quiz by 8-char meta ID first, then fallback to row UUID
   let { data: quizRow, error } = await supabase
     .from("quizzes")
-    .select("id, title, data")
+    .select("id, title, data, password")
     .filter("data->meta->>id", "eq", quiz_id)
     .limit(1)
     .maybeSingle();
@@ -447,7 +455,7 @@ async function handleExportQuiz(args, chatId, supabase) {
   if (!quizRow) {
     const res = await supabase
       .from("quizzes")
-      .select("id, title, data")
+      .select("id, title, data, password")
       .eq("id", quiz_id)
       .limit(1)
       .maybeSingle();
@@ -457,6 +465,7 @@ async function handleExportQuiz(args, chatId, supabase) {
 
   if (error) return { error: error.message };
   if (!quizRow) return { error: `Quiz not found with ID: ${quiz_id}` };
+  if (quizRow.password) return PROTECTED_QUIZ_REPLY;
 
   const quizData = quizRow.data || {};
   const title = quizRow.title || quizData.meta?.title || "Quiz";

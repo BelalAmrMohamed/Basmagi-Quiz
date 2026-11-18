@@ -1,3 +1,10 @@
+## Unreleased - Protected quizzes: questions locked server-side + rate-limited password checks
+- Security: the questions of a password-protected quiz are no longer downloadable. Browsers can't read `quizzes.data` anymore; `quiz_public` returns only `meta` + `stats` for a protected quiz, and the questions come from the new `unlock_quiz(quiz_id, password)` RPC after the server verifies the password (same model as lessons). This closes the API read, copy-to-my-quizzes, "ask the assistant" and embedded-lesson-quiz bypasses.
+- Security: password guessing is rate limited inside the database (`verify_quiz_password` / `unlock_quiz`): 8 wrong guesses per client per quiz per 10 minutes, and 150 per quiz overall per 10 minutes. The UI shows how long to wait.
+- Protected quizzes now ask for the password wherever their questions are needed (quiz page, download, copy). The assistant attach, the Telegram bot and lesson embeds never read protected questions. The admin editor loads a quiz through the new `get-quiz` admin action.
+- `api/render-quiz.js` and the OG image routes read `quiz_public` instead of `quizzes`.
+- Deploy: apply `20261118120000_quiz_questions_private.sql` together with this release (the previous front-end still selects `quizzes.data`).
+
 ## Unreleased - AI agent deep link
 - New shareable route `/ai-agent` (alias `/my-content/ai-agent`): opens «محتواي» with الباشــمبصمج already open and maximized. Maximizing the agent on «محتواي» now changes the address bar to `/ai-agent`; restoring, minimizing or closing puts the previous URL back.
 - `api/render-ai-agent.js` serves these routes with the agent's own title, description and thumbnail (`ai-agent-thumbnail.png?v=3`) so shared links get a proper preview.

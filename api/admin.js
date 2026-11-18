@@ -1794,6 +1794,29 @@ async function handleListLessons(req, res, adminPayload, adminId, supabase) {
   return res.status(200).json({ lessons: (data || []).map(stripLessonSecrets) });
 }
 
+// Quiz payload for the editor. Browsers can no longer read quizzes.data
+// directly (migration 20261118120000: protected quizzes hide their questions
+// until the password is verified), so authorized admins load it here. The
+// password itself is never returned, only whether one is set.
+// Body: { id }
+async function handleGetQuiz(req, res, adminPayload, adminId, supabase) {
+  const id = req.body?.id;
+  if (!id) return res.status(400).json({ error: "معرف الامتحان مطلوب." });
+  const fetched = await fetchItemForAuth(supabase, "quiz", id);
+  if (!fetched) return res.status(404).json({ error: "الامتحان غير موجود." });
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لعرض هذا الامتحان." });
+  }
+  const data = fetched.row.data && typeof fetched.row.data === "object" ? { ...fetched.row.data } : {};
+  if (data.meta && typeof data.meta === "object") {
+    const { password: _pw, passwordHash: _ph, ...safeMeta } = data.meta;
+    data.meta = safeMeta;
+  }
+  return res.status(200).json({
+    quiz: { dbId: fetched.row.id, data, passwordProtected: Boolean(fetched.row.password) },
+  });
+}
+
 async function handleGetLesson(req, res, adminPayload, adminId, supabase) {
   const id = req.body?.id;
   if (!id) return res.status(400).json({ error: "معرف الدرس مطلوب." });
@@ -2051,6 +2074,7 @@ async function handleItemActions(req, res) {
   if (action === "rename-item") return handleRenameItem(req, res, payload, adminId, supabase);
   if (action === "update-item-metadata") return handleUpdateItemMetadata(req, res, payload, adminId, supabase);
   if (action === "update-quiz") return handleUpdateQuiz(req, res, payload, adminId, supabase);
+  if (action === "get-quiz") return handleGetQuiz(req, res, payload, adminId, supabase);
   if (action === "list-lessons") return handleListLessons(req, res, payload, adminId, supabase);
   if (action === "get-lesson") return handleGetLesson(req, res, payload, adminId, supabase);
   if (action === "create-lesson") return handleCreateLesson(req, res, payload, adminId, supabase);

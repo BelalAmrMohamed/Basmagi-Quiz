@@ -46,11 +46,13 @@ import {
 } from "../../components/quiz-info-modal/quiz-info-html.js";
 import { bindInfoCopyButtons } from "../../shared/info-link.js";
 import { loadFullQuizData } from "../home/quiz-data-loader.js";
+import { getUnlockedQuiz } from "../home/quiz-unlock-store.js";
 import { openReportModal, isQuestionReported } from "../../components/report-question/report-question.js";
 import {
   isDownloadPasswordVerified,
   markDownloadPasswordVerified,
   verifyQuizPasswordRemote,
+  quizPasswordFailureMessage,
 } from "../home/download-password.js";
 
 // Bug 1 Fix — "start of exam" notification moved out of the top-level
@@ -248,6 +250,7 @@ function promptForQuizPassword(verify) {
         dialog.close();
         resolve(ok);
       } else {
+        errorEl.textContent = quizPasswordFailureMessage("كلمة السر غير صحيحة. حاول مرة أخرى.");
         errorEl.hidden = false;
         input.value = "";
         input.focus();
@@ -1270,6 +1273,22 @@ async function init() {
         return;
       }
 
+      // Protected shared quiz: the server only hands out the questions after
+      // the right password (unlock_quiz), so ask BEFORE loading anything.
+      if (config.passwordProtected && config.dbId && !getUnlockedQuiz(config.dbId)) {
+        const unlocked = await promptForQuizPassword((value) =>
+          verifyQuizPasswordRemote(config.dbId, value),
+        );
+        if (!unlocked) {
+          window.location.href = "/";
+          return;
+        }
+        markDownloadPasswordVerified(
+          examId,
+          typeof unlocked === "string" ? unlocked : undefined,
+        );
+      }
+
       // Use optimized loader with caching
       const module = await loadExamModule(config);
       questions = module.questions;
@@ -1368,7 +1387,8 @@ async function init() {
     // remembered the same way, so returning to the home page to download
     // the same quiz won't ask again either.
     if (metaData.password || metaData.passwordProtected) {
-      if (!isDownloadPasswordVerified(examId)) {
+      const alreadyUnlocked = metaData.passwordProtected && getUnlockedQuiz(quizDbId);
+      if (!alreadyUnlocked && !isDownloadPasswordVerified(examId)) {
         // Shared quizzes: the password lives only on the server.
         const verify = metaData.passwordProtected
           ? (value) => verifyQuizPasswordRemote(quizDbId, value)

@@ -241,8 +241,8 @@ export default async function handler(req, res) {
 async function fetchQuizMeta(quizId) {
   // The quiz ID is usually the 8-char base32 ID in data->meta->>'id'
   let { data, error } = await supabase
-    .from("quizzes")
-    .select("id, data, title")
+    .from("quiz_public") // view: protected quizzes expose meta/stats only, never questions
+    .select("id, data, title, course_id, folder_id, created_at, synced_at")
     .filter("data->meta->>id", "eq", quizId)
     .limit(1)
     .maybeSingle();
@@ -255,8 +255,8 @@ async function fetchQuizMeta(quizId) {
   // Fallback: match by row UUID if quizId was a database UUID
   if (!data) {
     const fallback = await supabase
-      .from("quizzes")
-      .select("id, data, title")
+      .from("quiz_public")
+      .select("id, data, title, course_id, folder_id, created_at, synced_at")
       .eq("id", quizId)
       .limit(1)
       .maybeSingle();
