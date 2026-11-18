@@ -303,8 +303,9 @@ function speakNext() {
   session.index += 1;
   clearHighlight(session.root);
   next.el.classList.add("lesson-tts-block--active");
-  const reducedMotion = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  next.el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+  const isReducedMotion = document.documentElement.getAttribute("data-motion") === "reduced" ||
+    (typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  next.el.scrollIntoView({ behavior: isReducedMotion ? "auto" : "smooth", block: "center" });
 
   const prefs = getReaderPrefs();
   const voice = chooseArabicVoice(prefs, loadVoices());

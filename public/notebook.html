@@ -117,6 +117,10 @@
       }
     }
 
+    html[data-motion="reduced"] #notebookStatus.notebook-status--loading .notebook-spinner {
+      animation: none;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       #notebookStatus.notebook-status--loading .notebook-spinner {
         animation: none;

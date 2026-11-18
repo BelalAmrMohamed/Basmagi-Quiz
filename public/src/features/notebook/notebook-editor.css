@@ -92,6 +92,7 @@
   animation: cnb-spin .8s linear infinite;
 }
 @keyframes cnb-spin { to { transform: rotate(360deg); } }
+html[data-motion="reduced"] .cnb-loading-spinner { animation: none; }
 @media (prefers-reduced-motion: reduce) { .cnb-loading-spinner { animation: none; } }
 .storage-banner { margin: 0 0 10px; padding: 8px 11px; border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-primary); font-size: .84rem; }
 .storage-banner--warn { background: color-mix(in srgb, var(--color-warning, #f59e0b) 14%, var(--color-surface)); border-color: var(--color-warning, #f59e0b); font-weight: 650; }
@@ -107,6 +108,11 @@
   .cnb-field-grid--placement { grid-template-columns: minmax(0, 1fr); }
   .cnb-btn { padding-inline: 9px; }
 }
+html[data-motion="reduced"] .cnb-btn,
+html[data-motion="reduced"] .cnb-field input,
+html[data-motion="reduced"] .cnb-field textarea,
+html[data-motion="reduced"] .cnb-field select { transition: none; }
+
 @media (prefers-reduced-motion: reduce) {
   .cnb-btn, .cnb-field input, .cnb-field textarea, .cnb-field select { transition: none; }
 }

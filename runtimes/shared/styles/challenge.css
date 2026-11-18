@@ -193,6 +193,10 @@
   }
 }
 
+html[data-motion="reduced"] .mlweb .ch-result.pass .ch-pill {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mlweb .ch-result.pass .ch-pill {
     animation: none;

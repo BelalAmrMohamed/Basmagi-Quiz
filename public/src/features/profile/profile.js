@@ -1382,6 +1382,7 @@ setTimeout(hideProfileSkeleton, 8000);
 // ============================================================
 function initEmptyStateIconDraw() {
   if (typeof window.matchMedia !== "function") return;
+  if (document.documentElement.getAttribute("data-motion") === "reduced") return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   if (!window.matchMedia("(hover: none)").matches) return;
   if (typeof IntersectionObserver !== "function") return;

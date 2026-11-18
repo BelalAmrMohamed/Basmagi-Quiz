@@ -805,6 +805,12 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
   }
 }
 
+html[data-motion="reduced"] .mlweb-imtool-win,
+html[data-motion="reduced"] .mlweb-imtool-win.is-minimized {
+  transition: none;
+  transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
 
   .mlweb-imtool-win,
@@ -1352,6 +1358,10 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
 
 .mlweb-imtool-snap-preview.is-visible {
   opacity: 1;
+}
+
+html[data-motion="reduced"] .mlweb-imtool-snap-preview {
+  transition: opacity .01s;
 }
 
 @media (prefers-reduced-motion: reduce) {

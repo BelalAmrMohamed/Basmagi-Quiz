@@ -167,6 +167,7 @@ let reducedMotionMedia = null;
 function animationsAllowed() {
   const disabledBySetting = document.documentElement.getAttribute("data-animations") === "disabled";
   if (disabledBySetting) return false;
+  if (document.documentElement.getAttribute("data-motion") === "reduced") return false;
   reducedMotionMedia ||= typeof window.matchMedia === "function"
     ? window.matchMedia("(prefers-reduced-motion: reduce)")
     : null;
@@ -205,10 +206,10 @@ function bootFlowField() {
   document.addEventListener("quiz:animations-changed", reactToAnimationsChange);
   reducedMotionMedia?.addEventListener?.("change", reactToAnimationsChange);
   new MutationObserver((mutations) => {
-    if (mutations.some((mutation) => mutation.attributeName === "data-animations" || mutation.attributeName === "data-theme")) {
+    if (mutations.some((mutation) => mutation.attributeName === "data-animations" || mutation.attributeName === "data-motion" || mutation.attributeName === "data-theme")) {
       reactToAnimationsChange();
     }
-  }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-animations", "data-theme"] });
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-animations", "data-motion", "data-theme"] });
 }
 
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootFlowField);

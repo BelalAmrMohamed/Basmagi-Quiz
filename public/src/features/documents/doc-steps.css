@@ -104,4 +104,5 @@
   .doc-step__num { width: 32px; height: 32px; font-size: .85rem; }
   .doc-step:not(:last-child)::before { inset-inline-start: 15px; top: 32px; }
 }
+html[data-motion="reduced"] .doc-quick a { transition: none; }
 @media (prefers-reduced-motion: reduce) { .doc-quick a { transition: none; } }

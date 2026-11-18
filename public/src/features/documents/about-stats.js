@@ -151,7 +151,8 @@ function animateNumber(el, to) {
     if (!el) return;
     const from = Number(el.dataset.shown || 0);
     if (rafHandles.has(el)) cancelAnimationFrame(rafHandles.get(el));
-    if (prefersReducedMotion || from === to) {
+    const isReduced = prefersReducedMotion || document.documentElement.getAttribute("data-motion") === "reduced";
+    if (isReduced || from === to) {
         setShown(el, to);
         return;
     }

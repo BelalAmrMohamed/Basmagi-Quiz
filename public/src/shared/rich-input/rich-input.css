@@ -337,6 +337,9 @@ html[data-theme="dark-slate"] .rmci-root {
 
 @keyframes rmci-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
 @keyframes rmci-fade-down { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+html[data-motion="reduced"] .rmci-menu,
+html[data-motion="reduced"] .rmci-toolbar-slot,
+html[data-motion="reduced"] .rmci-codeblock-pre { animation: none; transition: none; }
 @media (prefers-reduced-motion: reduce) {
   .rmci-menu, .rmci-toolbar-slot, .rmci-codeblock-pre { animation: none; transition: none; }
 }

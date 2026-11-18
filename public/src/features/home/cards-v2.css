@@ -222,6 +222,8 @@ html[data-theme="dark"] {
 @keyframes ic-pulse {
   50% { filter: drop-shadow(1px 0 0 var(--stroke)) drop-shadow(-1px 0 0 var(--stroke)) drop-shadow(0 1px 0 var(--stroke)) drop-shadow(0 -1px 0 var(--stroke)) drop-shadow(0 0 24px var(--glow)); }
 }
+html[data-motion="reduced"] .item-card.mcp-new-item > .shape { animation: none; }
+
 @media (prefers-reduced-motion: reduce) {
   .item-card.mcp-new-item > .shape { animation: none; }
 }

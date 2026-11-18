@@ -153,6 +153,12 @@
   animation-name: cm-cursor-expand-b;
 }
 
+html[data-motion="reduced"] .mlweb .code-editor .cm-cursorLayer .cm-cursor,
+html[data-motion="reduced"] .mlweb .code-editor .cm-cursorLayer[style*="cm-blink2"] .cm-cursor {
+  animation: none;
+  transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mlweb .code-editor .cm-cursorLayer .cm-cursor,
   .mlweb .code-editor .cm-cursorLayer[style*="cm-blink2"] .cm-cursor {

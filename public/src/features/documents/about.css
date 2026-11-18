@@ -629,6 +629,20 @@ html[data-theme="dark-slate"] .about-page {
   }
 }
 
+html[data-motion="reduced"] .about-page .live-dot {
+  animation: none;
+}
+
+html[data-motion="reduced"] .about-page .live-spark-line--draw {
+  animation: none;
+  stroke-dashoffset: 0;
+}
+
+html[data-motion="reduced"] .about-page .live-spark-area--fade {
+  animation: none;
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .about-page .live-dot {
     animation: none;
@@ -1919,6 +1933,12 @@ html[dir="rtl"] .about-page .stat-popover::before {
   .about-page .trend-summary > div:last-child {
     grid-column: 1 / -1;
   }
+}
+
+html[data-motion="reduced"] .about-page .stat-popover,
+html[data-motion="reduced"] .about-page .stat-popover.is-sheet {
+  transition: none;
+  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
