@@ -97,18 +97,6 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 ### Translation and content expansion (Suggestion)
 * Native English translation support with native LTR pages.
 
-### AI Agent: New Page
-
-1. Is making an independent page something usefull?
-2. Or: Maximizing the chat of the AI Agent while inside of the `/my-content` page, makes the URL Path `/ai-agent` or `/my-content/ai-agent`, and when that link is shared and opened by another user, it opens the `/my-content` section with the window of the AI Agent open. 
-3. Or: Your recommendation.
-
-In any way of the 3 ways, put a custom thumbnail on the ULR of the AI Agent: `https://basmagi-quiz.vercel.app/assets/images/thumbnails/ai-agent-thumbnail.png?v=3`
-
-Related Files: 
-* `public\src\components\ai-agent\`
-* `public\index.html`
-
 ## Suggestions
 
 ### Notebook Page (I.E., `public/notebook.html`)

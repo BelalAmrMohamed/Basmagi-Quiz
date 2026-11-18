@@ -53,6 +53,7 @@ import { createSettingsPanel } from "./ai-agent-settings.js";
 import { createHistoryPanel } from "./ai-agent-history.js";
 import { openAgentDropdown } from "./ai-agent-dropdown.js";
 import { createAgentWindow } from "./ai-agent-window.js";
+import { enterAgentUrl, leaveAgentUrl, consumeMaximizedOpen } from "./ai-agent-route.js";
 import { openTelegramBotModal, TELEGRAM_PLANE_ICON_SVG } from "../telegram-bot-card/telegram-bot-card.js";
 
 const CLOSE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
@@ -761,18 +762,28 @@ export function openAIAgentModal(options, fab) {
     else widgetEl.closeMobileSidebarSheet?.();
   }
 
+  // Only the «محتواي» agent owns the /ai-agent address; the agents on the
+  // result / create / lesson pages must never rewrite their page's URL.
+  const syncsUrl = options.pageKey === "home";
+
   const win = createAgentWindow({
     title: "الباشــمبصمج",
     logoSrc: "/assets/images/el-bash-mebasmag--no-bg.png",
     toggleHtml: EXPAND_ICONS_HTML,
     content: card,
     onToggleSidebar: toggleMobileSidebar,
+    onMaximizeChange: (maximized) => {
+      if (!syncsUrl) return;
+      if (maximized) enterAgentUrl();
+      else leaveAgentUrl();
+    },
     onResize: ({ compact }) => {
       // Desktop layout (permanent sidebar) is decided by the WINDOW width.
       card.classList.toggle("ai-agent-desktop-layout", !compact);
       if (!compact) widgetEl.closeMobileSidebarSheet?.();
     },
     onClose: () => {
+      if (syncsUrl) leaveAgentUrl();
       const activeChat = getChatPanelForPageKey(options.pageKey);
       if (activeChat) {
         activeChat.stopSpeaking?.();
@@ -823,6 +834,8 @@ export function openAIAgentModal(options, fab) {
   const stopBusySync = chatPanel.onGeneratingChange?.(syncBusy);
 
   if (fab) fab.style.display = "none";
+  // Deep link (/ai-agent): start maximized. (No-op on phones, which already are.)
+  if (syncsUrl && consumeMaximizedOpen() && !win.isMaximized()) win.toggleMaximize();
   return win;
 }
 
@@ -861,4 +874,4 @@ export function createAIAgentFab(options = {}) {
 // Kept for callers that genuinely want the tabbed widget embedded inline
 // rather than behind a FAB/modal (e.g. a future dedicated "AI Helper" page).
 export { buildWidgetContent as createAIAgentWidget };
-export { registerPageActions, getPageActions } from "./ai-agent-actions.js";
+export { registerPageActions, getPageActions } from "./ai-agent-actions.js";

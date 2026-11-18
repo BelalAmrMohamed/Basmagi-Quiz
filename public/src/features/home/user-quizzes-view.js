@@ -57,6 +57,7 @@ import { createUserQuizCard, createUserLessonCard, createUserNotebookCard } from
 import { takePendingHighlight } from "./mcp-draft-import.js";
 import { openInlineCreateQuizModal } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
+import { consumeAgentOpenIntent, requestMaximizedOpen } from "../../components/ai-agent/ai-agent-route.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { HOME_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { handleReadOnlyLibraryToolCall, READONLY_LIBRARY_TOOL_NAMES } from "../../components/ai-agent/ai-agent-readonly-tools.js";
@@ -1008,8 +1009,7 @@ export function renderUserQuizzesView() {
       return buildFolderTreeContextPrompt(liveQuizzes);
     };
 
-    container.appendChild(
-      createAIAgentFab({
+    const agentFab = createAIAgentFab({
         placeholder: "اسأل الباشــمبصمج",
         pageKey: "home",
         defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
@@ -1020,8 +1020,15 @@ export function renderUserQuizzesView() {
         enableTools: true,
         toolNames: ["create_lesson", "create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item", "fetch_attached_quiz", ...READONLY_LIBRARY_TOOL_NAMES, ...CREATOR_TOOL_NAMES],
         onToolCall: handleQuizToolCall,
-      }),
-    );
+      });
+    container.appendChild(agentFab);
+
+    // Opened via /ai-agent (or /my-content/ai-agent): open the agent window,
+    // maximized. The intent is one-shot, so re-renders never re-open it.
+    if (consumeAgentOpenIntent()) {
+      requestMaximizedOpen();
+      agentFab.click();
+    }
 
     renderBulkActionBar();
   } catch (error) {

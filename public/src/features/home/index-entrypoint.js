@@ -33,6 +33,7 @@ import { updateWelcomeMessage } from "./welcome-message.js";
 import { showShortcutsOverlay } from "./shortcuts-overlay.js";
 import { getCategoryTree, setRestoring, setNavigationStack } from "./app-state.js";
 import { escapeHtml } from "./escape-html.js";
+import { isAIAgentPath } from "../../components/ai-agent/ai-agent-route.js";
 import { getFromStorage } from "../../shared/storage-helpers.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 
@@ -107,6 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
     p.endsWith("/index") ||
     p === "/my-content" ||
     p.startsWith("/my-content/") ||
+    isAIAgentPath(p) ||
     /^\/course\/[^/]+(\/[^/]+)*\/?$/.test(p) ||
     // /lesson/:id — Phase 1 skeleton, renders inside this same SPA shell
     // (see render-course.js's contentType=lesson branch); same reasoning

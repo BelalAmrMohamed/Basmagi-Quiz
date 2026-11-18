@@ -172,6 +172,7 @@ initMenuIconDrawing();
     const isMyContent =
       pathname === "/my-content" ||
       pathname.startsWith("/my-content/") ||
+      pathname === "/ai-agent" ||
       hash === "my-content" ||
       hash === "my-quizzes" ||
       hash.startsWith("my-content/") ||
@@ -412,6 +413,7 @@ initMenuIconDrawing();
           p.endsWith("/index") ||
           p === "/my-content" ||
           p.startsWith("/my-content/") ||
+          p === "/ai-agent" ||
           p.startsWith("/course/") ||
           p.startsWith("/lesson/");
 
@@ -452,6 +454,7 @@ initMenuIconDrawing();
           p.endsWith("/index") ||
           p === "/my-content" ||
           p.startsWith("/my-content/") ||
+          p === "/ai-agent" ||
           p.startsWith("/course/") ||
           p.startsWith("/lesson/");
 
