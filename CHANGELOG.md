@@ -1,3 +1,7 @@
+## Unreleased - AI agent deep link
+- New shareable route `/ai-agent` (alias `/my-content/ai-agent`): opens «محتواي» with الباشــمبصمج already open and maximized. Maximizing the agent on «محتواي» now changes the address bar to `/ai-agent`; restoring, minimizing or closing puts the previous URL back.
+- `api/render-ai-agent.js` serves these routes with the agent's own title, description and thumbnail (`ai-agent-thumbnail.png?v=3`) so shared links get a proper preview.
+
 ## Unreleased - C++ notebooks round 2
 - Local compiler: gzip copies (about 19 MB instead of 60 MB) in `public/assets/wasm-clang/`, unpacked in the browser; the download no longer blocks the page (close the dialog, keep editing; the toolbar button shows progress) and the button shows a "warming up" state until the first run is instant.
 - Pasting a whole program into an empty cell offers to split it into cells (header, prototypes, each function, main).

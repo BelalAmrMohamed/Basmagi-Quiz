@@ -19,6 +19,7 @@
 // runtime global loaded via a non-module <script> tag — no import for it.
 // ============================================================================
 
+import { isAIAgentPath } from "../../components/ai-agent/ai-agent-route.js";
 import { getManifest } from "../../shared/quizManifest.js";
 import {
   getCategoryTree,
@@ -218,7 +219,12 @@ export function restoreViewFromURL() {
   }
 
     // ── User content view — pathname-based: /my-content or /my-content/:subSlug/... ──
-  const userContentMatch = pathname.match(/^\/my-content((?:\/[^/]+)*)\/?$/);
+  // /ai-agent and /my-content/ai-agent are deep links to the agent window
+  // (see ai-agent-route.js): they render the plain my-content root view.
+  const isAgentRoute = isAIAgentPath(pathname);
+  const userContentMatch = isAgentRoute
+    ? ["", ""]
+    : pathname.match(/^\/my-content((?:\/[^/]+)*)\/?$/);
   if (userContentMatch) {
     const extraSegments = userContentMatch[1]
       .split("/")

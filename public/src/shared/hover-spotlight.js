@@ -12,6 +12,7 @@ let installed = false;
 
 export function installHoverSpotlight(root = document) {
   if (installed || typeof window === "undefined") return;
+  if (document.documentElement.getAttribute("data-motion") === "reduced") return;
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
   installed = true;
 

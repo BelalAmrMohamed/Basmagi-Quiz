@@ -75,7 +75,7 @@ async function offlinePageResponse() {
 
 async function offlineNavigationResponse(request) {
   const url = new URL(request.url);
-  if (url.pathname === "/" || url.pathname === "/index.html" || url.pathname.startsWith("/my-content")) {
+  if (url.pathname === "/" || url.pathname === "/index.html" || url.pathname === "/ai-agent" || url.pathname.startsWith("/my-content")) {
     const appShell = await caches.match("/");
     if (appShell) return appShell;
   }

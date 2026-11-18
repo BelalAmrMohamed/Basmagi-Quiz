@@ -97,13 +97,6 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 ### Translation and content expansion (Suggestion)
 * Native English translation support with native LTR pages.
 
-### AI Agent: New Page
-Is making an independent page something usefull?
-
-Suggestion: Maximizing the chat of the AI Agent while inside of the `/my-content` page, makes the URL Path `/ai-agent` or `/my-content/ai-agent`, and when that link is shared and opened by another user, it opens the `/my-content` section with the window of the AI Agent open. 
-
-Or
-
 ## Suggestions
 
 ### Notebook Page (I.E., `public/notebook.html`)

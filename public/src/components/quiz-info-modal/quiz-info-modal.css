@@ -339,6 +339,7 @@ a.quiz-creator-card:hover .quiz-creator-cta {
 .info-skel--pill { height: 26px; width: 84px; border-radius: 999px; }
 .info-skel--row { height: 16px; }
 .info-skel--card { height: 58px; border-radius: 14px; }
+html[data-motion="reduced"] .info-skel::after { animation: none; }
 @media (prefers-reduced-motion: reduce) { .info-skel::after { animation: none; } }
 /* Attempts — highlighted stat in the quiz info hero */
 .quiz-attempts-stat {

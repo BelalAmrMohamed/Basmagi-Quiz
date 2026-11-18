@@ -133,6 +133,14 @@
       "destination": "/api/render-course?contentType=lesson&id=:id"
     },
     {
+      "source": "/ai-agent",
+      "destination": "/api/render-ai-agent"
+    },
+    {
+      "source": "/my-content/ai-agent",
+      "destination": "/api/render-ai-agent"
+    },
+    {
       "source": "/notebook/new",
       "destination": "/notebook?mode=new"
     },

@@ -185,6 +185,13 @@
       main { padding: 30px 22px 24px; }
     }
 
+    html[data-motion="reduced"] *,
+    html[data-motion="reduced"] *::before,
+    html[data-motion="reduced"] *::after {
+      animation: none !important;
+      transition-duration: .01ms !important;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
     }

@@ -177,6 +177,13 @@
   border-color: var(--accent-strong);
 }
 
+html[data-motion="reduced"] .mlweb *,
+html[data-motion="reduced"] .mlweb *:before,
+html[data-motion="reduced"] .mlweb *:after {
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mlweb *,
     .mlweb *:before,

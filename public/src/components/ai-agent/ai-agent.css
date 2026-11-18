@@ -2052,6 +2052,10 @@
   to { transform: rotate(360deg); }
 }
 
+html[data-motion="reduced"] .ai-agent-fab[aria-busy="true"]::after {
+  animation: ai-agent-fab-pulse 1.2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ai-agent-fab[aria-busy="true"]::after {
     animation: ai-agent-fab-pulse 1.2s ease-in-out infinite;

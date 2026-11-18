@@ -629,6 +629,13 @@
   }
 }
 
+html[data-motion="reduced"] .lesson-view *,
+html[data-motion="reduced"] .lesson-view *::before,
+html[data-motion="reduced"] .lesson-view *::after {
+  scroll-behavior: auto !important;
+  transition: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
 
   .lesson-view *,
@@ -726,6 +733,11 @@
 .lesson-section:focus {
   outline: 2px solid var(--accent-color, #3b82f6);
   outline-offset: 4px;
+}
+
+html[data-motion="reduced"] .lesson-view * {
+  scroll-behavior: auto !important;
+  transition-duration: .01ms !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -884,6 +896,10 @@
   outline-offset: 2px;
 }
 
+html[data-motion="reduced"] .lesson-selection-popup__btn {
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lesson-selection-popup__btn {
     transition: none;
@@ -910,6 +926,10 @@
   border-radius: 999px;
   background: var(--color-primary);
   transition: width 0.3s ease;
+}
+
+html[data-motion="reduced"] .lesson-progress-summary__bar-fill {
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -996,6 +1016,10 @@
   outline-offset: 2px;
 }
 
+html[data-motion="reduced"] .lesson-info-modal__ai-action {
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lesson-info-modal__ai-action {
     transition: none;
@@ -1026,6 +1050,10 @@
 .lesson-question__explain-wrong-btn:focus-visible {
   outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
+}
+
+html[data-motion="reduced"] .lesson-question__explain-wrong-btn {
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1962,6 +1990,15 @@
   .lesson-info-modal__prefs-grid {
     grid-template-columns: 1fr;
   }
+}
+
+html[data-motion="reduced"] .lesson-view--loading * {
+  animation: none !important;
+}
+
+html[data-motion="reduced"] .lesson-tts-block--active,
+html[data-motion="reduced"] .lesson-ai-quiz__progress-track>span {
+  transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2950,6 +2987,11 @@
   .lesson-ref-card {
     padding: .8rem;
   }
+}
+
+html[data-motion="reduced"] .lesson-ref-card,
+html[data-motion="reduced"] .lesson-password-dialog__panel {
+  scroll-behavior: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4095,6 +4137,14 @@
   .lesson-comment__vote-group {
     max-width: 100%;
   }
+}
+
+html[data-motion="reduced"] .lesson-comments *,
+html[data-motion="reduced"] .lesson-comments *::before,
+html[data-motion="reduced"] .lesson-comments *::after {
+  animation-duration: .01ms !important;
+  transition-duration: .01ms !important;
+  scroll-behavior: auto !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

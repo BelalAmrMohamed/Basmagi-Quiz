@@ -13,7 +13,7 @@
 //     (<=540px) classes are toggled so the chat can switch to its drawer /
 //     small-screen layout based on the WINDOW, not the viewport
 // The frame knows nothing about the chat: it hosts `content`, and the caller
-// reacts through the callbacks (onClose, onResize).
+// reacts through the callbacks (onClose, onResize, onMaximizeChange).
 //
 // While the window exists (open, maximized or minimized) <body> carries
 // `ai-agent-window-open`, which hides every AI FAB (see ai-agent-window.css).
@@ -221,6 +221,7 @@ export function createAgentWindow(cfg) {
       win.classList.add("is-maximized");
       setMaxButton(true);
     }
+    cfg.onMaximizeChange?.(state.maximized);
     requestAnimationFrame(measure);
   }
 

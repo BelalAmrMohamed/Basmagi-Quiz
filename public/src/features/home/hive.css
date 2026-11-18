@@ -227,6 +227,8 @@ html[dir="rtl"] .hive-root .hx:has(> .subscribe-btn-container) > .exam-more-btn 
 
 @keyframes hx-fill { from { opacity: 0; } }
 @keyframes hx-sheen { to { background-position: -300% 0; } }
+html[data-motion="normal"] .hive-root .is-loading .face::before { animation: hx-sheen 1.4s linear infinite; }
+html[data-motion="reduced"] .hive-root .face { animation: none; }
 @media (prefers-reduced-motion: no-preference) { .hive-root .is-loading .face::before { animation: hx-sheen 1.4s linear infinite; } }
 @media (prefers-reduced-motion: reduce) { .hive-root .face { animation: none; } }
 

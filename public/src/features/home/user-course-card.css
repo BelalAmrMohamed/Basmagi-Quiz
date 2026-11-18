@@ -153,6 +153,9 @@ html:not([data-theme]) #contentArea .user-course-card { --uc: #db2777; }
   0%, 100% { filter: drop-shadow(1px 0 0 var(--stroke)) drop-shadow(-1px 0 0 var(--stroke)) drop-shadow(0 1px 0 var(--stroke)) drop-shadow(0 -1px 0 var(--stroke)) drop-shadow(0 0 6px var(--hv-accent-2)); }
   50%      { filter: drop-shadow(1px 0 0 var(--stroke)) drop-shadow(-1px 0 0 var(--stroke)) drop-shadow(0 1px 0 var(--stroke)) drop-shadow(0 -1px 0 var(--stroke)) drop-shadow(0 0 18px var(--hv-accent-2)); }
 }
+html[data-motion="reduced"] #contentArea .user-course-card,
+html[data-motion="reduced"] #contentArea .user-course-card.mcp-new-item .ucc-shape { animation: none; }
+
 @media (prefers-reduced-motion: reduce) {
   #contentArea .user-course-card { animation: none; }
   #contentArea .user-course-card.mcp-new-item .ucc-shape { animation: none; }
