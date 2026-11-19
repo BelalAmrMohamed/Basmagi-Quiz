@@ -27,6 +27,7 @@ Fix #critical near renderTextToImage().
 
 import { degradeCompleteForExport } from "../../shared/complete-question.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { PPTX_FILE_ICON_SVG } from "../home/icons.js";
 
 import {
   gradeEssay,
@@ -2141,10 +2142,36 @@ export async function exportToPptx(
 
     if (typeof onProgress === "function") onProgress(100);
 
+    const PPTX_FILE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+      <defs>
+        <filter id="tileShadow" x="-15%" y="-15%" width="140%" height="140%">
+          <feDropShadow dx="1.5" dy="2" stdDeviation="1.8" flood-color="#000000" flood-opacity="0.35" />
+        </filter>
+      </defs>
+
+      <!-- Background Pie Chart -->
+      <g transform="translate(36, 32)">
+        <!-- Bottom Half (Darker Burnt Orange) -->
+        <path d="M -26,0 A 26,26 0 0,0 26,0 Z" fill="#D24726" />
+        
+        <!-- Top-Left Quadrant (Medium Coral Orange) -->
+        <path d="M 0,0 L -26,0 A 26,26 0 0,1 0,-26 Z" fill="#EB6C4D" />
+        
+        <!-- Top-Right Quadrant (Light Peach/Salmon Orange) -->
+        <path d="M 0,0 L 0,-26 A 26,26 0 0,1 26,0 Z" fill="#FF8F6B" />
+      </g>
+
+      <!-- Foreground Rounded Square Tile -->
+      <rect x="2.5" y="17" width="30" height="30" rx="3.5" fill="#C43E1C" filter="url(#tileShadow)" />
+
+      <!-- Letter "P" -->
+      <path d="M 10,41 V 23 H 18.2 C 21.8,23 24.3,25 24.3,28.7 C 24.3,32.5 21.8,34.5 18.1,34.5 H 13.7 V 41 H 10 Z M 13.7,31.5 H 17.6 C 19.6,31.5 20.6,30.5 20.6,28.7 C 20.6,27 19.6,26 17.6,26 H 13.7 V 31.5 Z" fill="#F8F8F8" />
+    </svg>`;
+
     showNotification(
       "PowerPoint file downloaded.",
       "You have it now",
-      "./assets/images/pptx_icon.png",
+      PPTX_FILE_ICON_SVG,
     );
 
     return true;

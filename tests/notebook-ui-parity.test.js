@@ -34,7 +34,9 @@ test("Google Drive source detection", () => {
   assert.equal(isGoogleDriveUrl("https://evil.com/drive.google.com"), false);
   assert.equal(isGoogleDriveUrl("javascript:alert(1)"), false);
   assert.equal(isGoogleDriveUrl("not a url"), false);
-  assert.match(sourceIconHtml("https://drive.google.com/x"), /google-drive-icon\.webp/);
+  assert.match(sourceIconHtml("https://drive.google.com/x"), /data:image\/svg\+xml/);
+  assert.match(sourceIconHtml("https://drive.google.com/x"), /alt="Google Drive"/);
+  assert.match(sourceIconHtml("https://www.youtube.com/watch?v=abc"), /alt="YouTube"/);
   assert.equal(sourceIconHtml("https://example.com"), "");
 });
 

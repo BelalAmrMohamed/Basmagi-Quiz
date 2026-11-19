@@ -7,11 +7,11 @@ import { gradeEssay } from "../../shared/rate-answers.js";
 import { gradeComplete } from "../../shared/complete-question.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { buildExportCard, buildSourceActions } from "../../components/download-quiz-modal/export-card.js";
-import { JSON_FILE_ICON_SVG } from "./icons.js";
+import { JSON_FILE_ICON_SVG, HTML5_ICON_SVG, PDF_ICON_SVG, svgDataUrl } from "./icons.js";
 
-const HTML_FILE_ICON = '<img src="/assets/images/HTML_Icon.png" alt="" class="icon" aria-hidden="true">';
-const PDF_FILE_ICON = '<img src="/assets/images/PDF_Icon.png" alt="" class="icon" aria-hidden="true">';
-const JSON_ICON_DATA_URL = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(JSON_FILE_ICON_SVG)}`;
+const HTML_ICON_DATA_URL = svgDataUrl(HTML5_ICON_SVG);
+const PDF_ICON_DATA_URL = svgDataUrl(PDF_ICON_SVG);
+const JSON_ICON_DATA_URL = svgDataUrl(JSON_FILE_ICON_SVG);
 
 function throwIfAborted(signal) {
   if (signal?.aborted) throw new DOMException("The export was cancelled.", "AbortError");
@@ -479,8 +479,8 @@ function openLessonDownloadOptions(lesson, triggerBtn) {
   };
 
   const formats = [
-    { format: "html", label: "HTML", extension: ".html", icon: HTML_FILE_ICON, iconUrl: "/assets/images/HTML_Icon.png", copy: true },
-    { format: "pdf", label: "PDF", extension: ".pdf", icon: PDF_FILE_ICON, iconUrl: "/assets/images/PDF_Icon.png", copy: false },
+    { format: "html", label: "HTML", extension: ".html", icon: HTML5_ICON_SVG, iconUrl: HTML_ICON_DATA_URL, copy: true },
+    { format: "pdf", label: "PDF", extension: ".pdf", icon: PDF_ICON_SVG, iconUrl: PDF_ICON_DATA_URL, copy: false },
     { format: "json", label: "JSON", extension: ".json", icon: JSON_FILE_ICON_SVG, iconUrl: JSON_ICON_DATA_URL, copy: true },
   ];
   for (const option of formats) {

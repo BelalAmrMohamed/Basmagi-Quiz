@@ -4,6 +4,7 @@
 // No libraries used
 import { degradeCompleteForExport } from "../../shared/complete-question.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { MD_ICON_SVG } from "../home/icons.js";
 
 // Question helpers
 import {
@@ -252,9 +253,48 @@ export function exportToMarkdown(config, questions, userAnswers = [], mdOptions 
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+
+  const MD_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+    <defs>
+      <linearGradient id="markGradient" gradientUnits="userSpaceOnUse" x1="6" y1="32" x2="58" y2="32">
+        <stop offset="0%" stop-color="#6018A8" />
+        <stop offset="48%" stop-color="#2B67D9" />
+        <stop offset="100%" stop-color="#00B5FF" />
+      </linearGradient>
+    </defs>
+
+    <g fill="none" stroke="url(#markGradient)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Document Outline -->
+      <path d="M14 40 V10 A3 3 0 0 1 17 7 H36 L50 21 V40" />
+
+      <!-- Folded Corner -->
+      <path d="M36 7 V21 H50" />
+
+      <!-- 3 Horizontal Lines -->
+      <path d="M18.5 14.5 H31.5" />
+      <path d="M18.5 21.5 H29.5" />
+      <path d="M18.5 28.5 H27.5" />
+
+      <!-- Bottom Label Box -->
+      <rect x="6" y="40" width="52" height="18" rx="3.5" ry="3.5" />
+
+      <!-- Letter M -->
+      <path d="M12.5 53.5 V47.5 A2.2 2.2 0 0 1 16.9 47.5 V53.5 M16.9 47.5 A2.2 2.2 0 0 1 21.3 47.5 V53.5" />
+
+      <!-- Letter A -->
+      <path d="M25.5 53.5 L29 45 L32.5 53.5 M26.8 50.8 H31.2" />
+
+      <!-- Letter R -->
+      <path d="M36.8 53.5 V45 H40.5 A2.3 2.3 0 0 1 40.5 49.6 H36.8 M40.2 49.6 L43.2 53.5" />
+
+      <!-- Letter K -->
+      <path d="M47.5 45 V53.5 M52.5 45 L47.5 49.5 L52.5 53.5" />
+    </g>
+  </svg>`;
+
   showNotification(
     "Markdown file downloaded.",
     "You have it now",
-    "./assets/images/mardownIcon.png",
+    MD_ICON_SVG,
   );
 }

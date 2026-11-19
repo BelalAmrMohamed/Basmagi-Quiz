@@ -56,9 +56,7 @@ export function showNotification(
   toast.className = `notification glass-toast ${typeClass}`;
 
   // 4. Construct HTML (Visual Structure from Function 1, Safety from Function 2)
-  const iconHTML = isURL_orPath(icon)
-    ? `<img src="${icon}" alt="Icon" class="notification-image">`
-    : `<span class="notification-icon">${icon}</span>`;
+  const iconHTML = notificationIconHtml(icon);
 
   toast.innerHTML = `
       <div class="notification-content" title="${escapeHtml(title)}">
@@ -108,31 +106,82 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function notificationIconHtml(icon) {
+  const value = typeof icon === "string" ? icon.trim() : "";
+  if (isSVG(value)) {
+    const src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(value)}`;
+    return `<img src="${src}" alt="" class="notification-image">`;
+  }
+  if (isURL_orPath(value)) {
+    return `<img src="${value}" alt="Icon" class="notification-image">`;
+  }
+  return `<span class="notification-icon">${icon}</span>`;
+}
+
 // Helper: URL or relative path Check (From Visual Source)
 function isURL_orPath(string) {
+  if (typeof string !== "string") return false;
+
+  const trimmed = string.trim();
+  if (!trimmed || trimmed.startsWith("<")) return false;
+
   // 1. Check if it is a valid Absolute URL (HTTP/HTTPS)
   try {
-    const url = new URL(string);
-    // Only return true for http/https, excluding ftp, mailto, etc.
+    const url = new URL(trimmed);
     return url.protocol === "http:" || url.protocol === "https:";
   } catch (_) {
     // 2. If Absolute check failed, check if it is a Relative Path
     try {
-      // We use a dummy base to validate that the string is a syntactically valid path
       const base = "http://example.com";
-      const url = new URL(string, base);
+      const url = new URL(trimmed, base);
 
-      // Verification logic:
-      // A. The origin must match the base (ensures the string didn't switch to a different protocol/domain)
-      // B. The string must contain a slash '/' or start with '.' (distinguishes paths from plain words like "hello")
       const isRelative = url.origin === base;
-      const isPathLike = string.includes("/") || string.startsWith(".");
+      const isPathLike = trimmed.includes("/") || trimmed.startsWith(".");
 
       return isRelative && isPathLike;
     } catch (_) {
       return false;
     }
   }
+}
+
+function isSVG(str) {
+  // Quick structural guard before parsing
+  if (!str.startsWith("<") || !str.includes("<svg")) {
+    return false;
+  }
+
+  // Strip optional XML declaration / leading comments so <svg> is the root
+  const withoutXmlDecl = str.replace(/^\s*<\?xml[\s\S]*?\?>\s*/i, "");
+
+  // Browser environment: parse with DOMParser
+  if (typeof DOMParser !== "undefined") {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(withoutXmlDecl, "image/svg+xml");
+
+    // DOMParser signals syntax/XML errors via <parsererror>
+    if (doc.querySelector("parsererror")) {
+      return false;
+    }
+
+    const root = doc.documentElement;
+    return (
+      root &&
+      root.tagName.toLowerCase() === "svg" &&
+      root.namespaceURI === "http://www.w3.org/2000/svg"
+    );
+  }
+
+  // Fallback for non-DOM environments (e.g., Node.js without DOMParser)
+  const openTagMatch = withoutXmlDecl.match(/^<svg(\s[^>]*)?>/i);
+  const closeTagMatch = withoutXmlDecl.match(/<\/svg>\s*$/i);
+  if (!openTagMatch || !closeTagMatch) {
+    return false;
+  }
+
+  // Reject unclosed tags or obvious malformed nesting/attributes
+  const hasUnescapedAmp = /&(?!#?\w+;)/.test(withoutXmlDecl);
+  return !hasUnescapedAmp;
 }
 
 /* ============================
