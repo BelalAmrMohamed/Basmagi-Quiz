@@ -14,6 +14,8 @@ import { buildLocalNotebookEntry } from "../../../features/home/local-notebook.j
 import { validateNotebookRecord } from "../../../features/home/notebook-input.js";
 import { normalizeLessonJson } from "../../../features/lesson/lesson-json.js";
 import { applyDraftPatch } from "./item-patch-engine.js";
+import { fingerprint } from "./undo.js";
+import { authoringRulesText } from "../../../shared/ai-agent-authoring.js";
 
 export const TOOL_METADATA = {
   create_quiz: { label: "إنشاء امتحان", badge: "Quiz", icon: "quiz" },
@@ -130,7 +132,7 @@ export async function handleCreateNotebookToolCall(toolCall) {
  * @param {{name: string, input: object}} toolCall
  * @returns {Promise<string>}
  */
-export async function handleEditItemToolCall(toolCall) {
+export async function handleEditItemToolCall(toolCall, ctx) {
   const input = toolCall?.input || {};
   const targetTitle = String(input.targetTitle || input.currentTitle || "").trim();
   if (!targetTitle) {
@@ -156,6 +158,7 @@ export async function handleEditItemToolCall(toolCall) {
   }
 
   const item = userItems[index];
+  const before = structuredClone(item); // for the card's undo button (item is mutated below)
   const kind =
     item.meta?.type ||
     item.type ||
@@ -260,6 +263,41 @@ export async function handleEditItemToolCall(toolCall) {
   userItems[index] = item;
   setInStorage("user_quizzes", JSON.stringify(userItems));
 
+  const itemId = item.id || item.meta?.id || qz(item, "id");
+  const afterFp = fingerprint(item);
+  const findCurrent = () => {
+    let list;
+    try {
+      list = JSON.parse(getFromStorage("user_quizzes", "[]")) || [];
+    } catch {
+      list = [];
+    }
+    const i = list.findIndex((it) => (it.id || it.meta?.id || qz(it, "id")) === itemId);
+    return { list, i };
+  };
+  if (itemId) {
+    ctx?.registerUndo?.({
+      label: `استرجاع «${qz(before, "title") || before.name || targetTitle}» كما كان`,
+      isStale: () => {
+        const { list, i } = findCurrent();
+        return i === -1 || fingerprint(list[i]) !== afterFp;
+      },
+      run: () => {
+        const { list, i } = findCurrent();
+        if (i === -1) return { ok: false, reason: "لم يعد العنصر موجوداً." };
+        if (fingerprint(list[i]) !== afterFp) return { ok: false, reason: "تم تعديل العنصر بعد هذه العملية." };
+        list[i] = before;
+        setInStorage("user_quizzes", JSON.stringify(list));
+        try {
+          renderRootCategories();
+          renderUserContentView();
+        } catch {
+          // Ignore render error outside view
+        }
+      },
+    });
+  }
+
   try {
     renderRootCategories();
     renderUserContentView();
@@ -281,15 +319,13 @@ export async function handleGetAuthoringGuideToolCall(toolCall) {
   const guides = {
     workflow: `## خطوات الإنشاء الذكي في منصة بصمجي
 1. نفّذ الإجراء مباشرة فور وضوح طلب المستخدم (create_quiz, create_lesson, create_notebook, create_folder, create_course).
-2. لا تطلب تأكيداً مسبقاً ("هل تريد...") للإنشاء — نفّذ الأداة فوراً. احتفظ بطلب التأكيد فقط لعمليات الحذف الدائم.
+2. لا تطلب تأكيداً مسبقاً ("هل تريد...") للإنشاء — نفّذ الأداة فوراً. احتفظ بطلب التأكيد فقط لعمليات الحذف أو مسح المحتوى.
 3. للتعديل على عناصر موجودة، استخدم edit_item مع patch.ops لتعديل الأسئلة أو الخلايا بدقة دون إعادة إرسال المحتوى كاملاً.
 4. الرياضيات: دائماً LaTeX: $...$ inline، $$...$$ display.`,
     quiz: `## مواصفات الامتحانات (create_quiz)
-- MCQ: options (2-8), correct (مصفوفة فهارس تبدأ من 0، مثل [1]), explanation.
-- MultiSelect: multiSelect: true, correct: [0, 2].
-- True/False: options: ["صح", "خطأ"]، correct: [0] أو [1].
-- Essay: answer (نموذج إجابة كامل ومفصل), explanation (بدون options).
-- Complete: questionKind: "complete", q: "عاصمة مصر {{القاهرة|Cairo}}", explanation.`,
+- MCQ: options (2-8), correct, explanation.
+${authoringRulesText()}
+- مثال Complete: q: "عاصمة مصر {{القاهرة|Cairo}}", questionKind: "complete".`,
     lesson: `## مواصفات الدروس (create_lesson)
 - يتكون الدرس من أقسام (sections)، وكل قسم يحتوي مصفوفة كتل (blocks).
 - الكتل: markdown {type:"markdown", body:"..."}، أو أسئلة تفاعلية مدمجة {type:"question", prompt:"...", questionKind:"mcq"|"essay"|"complete"}.`,

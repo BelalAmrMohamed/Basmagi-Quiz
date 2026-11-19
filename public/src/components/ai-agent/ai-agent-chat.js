@@ -38,7 +38,8 @@ import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
 import { renderCreatorCard, creatorCardModelSummary } from "./ai-agent-creator-tools.js";
 import { renderResultCard, resultCardModelSummary } from "./ai-agent-result-cards.js";
 import { createToolCallCard } from "./components/tool-call-card.js";
-import { runAgentLoop } from "./core/agent-loop.js";
+import { runTurn } from "./core/turn-runner.js";
+import { prependUndoNotes } from "./core/undo.js";
 import {
   decorateMessageTokens,
   attachMessageTooltips,
@@ -253,6 +254,9 @@ export function createChatPanel(options = {}) {
     generatingListeners.forEach((fn) => { try { fn(value); } catch { /* listener error */ } });
   }
   let sessionExecutedTools = new Set();
+  // Labels of changes the user reverted with a card's «تراجع» button; attached to the
+  // next user message so the model doesn't assume they still exist.
+  const pendingUndoNotes = [];
   let toolRetryUsed = false;
   let attachmentToolHandler = null;
 
@@ -2020,6 +2024,10 @@ export function createChatPanel(options = {}) {
       effectiveContent = `${effectiveContent}\n\n[توجيه تنفيذي مباشر: هذا طلب صريح ومباشر عبر أمر Slash (/${cmdName}). ${directive}].`;
     }
 
+    if (m.role === "user" && Array.isArray(m.undoNotes) && m.undoNotes.length) {
+      effectiveContent = prependUndoNotes(effectiveContent, m.undoNotes);
+    }
+
     const out = {
       role: m.role,
       content: effectiveContent,
@@ -2035,55 +2043,46 @@ export function createChatPanel(options = {}) {
     sessionExecutedTools.clear();
     // Tracks the current tool-call group wrapper for this turn (reset each agent step).
     let currentToolGroup = null;
-    // Result cards produced by this turn's tools; flushed below the response in `finally`.
-    const pendingResultCards = [];
 
     const { key: ownKey, hasKey: hasOwnKey } = getOwnKey();
     const provider = getSelectedProvider();
-    const model = getSelectedModel();
 
-    const resolvedContextPrompt =
-      typeof contextPrompt === "function" ? contextPrompt() : contextPrompt;
-    const resolvedContextSummary =
-      typeof contextSummary === "function" ? contextSummary() : contextSummary;
-    const summaryText =
-      Array.isArray(resolvedContextSummary) && resolvedContextSummary.length
-        ? `امتحانات المستخدم الحالية:\n${resolvedContextSummary
-          .map((q) => `- ${q.title} (${q.questionCount} سؤال، ${q.types || "غير محدد"})`)
-          .join("\n")}`
-        : "";
-    const combinedContext = [resolvedContextPrompt, summaryText].filter(Boolean).join("\n\n");
-
-    let authToken = null;
-    if (!hasOwnKey) {
-      const adminToken = isAdminAuthenticated() ? getAdminToken() : null;
-      const adminUsable = !!adminToken && !isJwtExpired(adminToken);
-      authToken = adminUsable ? adminToken : await getUserToken();
-    }
-    const useOwnKeyNow = hasOwnKey && !authToken;
-
-    try {
-      const loopResult = await runAgentLoop({
-        history,
-        systemPrompt: getSystemPrompt(pageKey, defaultSystemPrompt),
+    await runTurn({
+      history,
+      signal: currentAbortController.signal,
+      sessionExecutedTools,
+      pendingUndoNotes,
+      settings: {
         provider,
-        model,
+        model: getSelectedModel(),
         effort: getSelectedEffort(provider) || undefined,
-        useOwnKey: useOwnKeyNow,
-        ownKey: useOwnKeyNow ? ownKey : undefined,
-        authToken,
+        ownKey,
+        hasOwnKey,
+        systemPrompt: getSystemPrompt(pageKey, defaultSystemPrompt),
         enableTools,
-        toolNames: toolNames || undefined,
-        signal: currentAbortController.signal,
-        apiUrl,
-        toWireMessage: (m) => {
-          const wire = serializeWireMessage(m);
-          if (m === history[0] && combinedContext && wire.role === "user") {
-            wire.content = [combinedContext, wire.content].filter(Boolean).join("\n\n");
-          }
-          return wire;
-        },
-        sessionExecutedTools,
+        toolNames,
+        contextPrompt,
+        contextSummary,
+      },
+      auth: { isAdminAuthenticated, getAdminToken, isJwtExpired, getUserToken },
+      apiUrl,
+      serializeWireMessage,
+      onToolCall,
+      getAttachmentToolHandler: () => attachmentToolHandler,
+      renderResultCard,
+      renderCreatorCard,
+      persist: async () => {
+        await saveConversation({
+          id: conversationId,
+          pageKey,
+          title: deriveConversationTitle(history),
+          createdAt: conversationCreatedAt,
+          updatedAt: Date.now(),
+          messages: toPersistedMessages(history),
+        });
+        if (typeof onHistoryChanged === "function") onHistoryChanged();
+      },
+      ui: {
         onThinking: (thinking) => {
           appendThinkingBlock(thinking);
         },
@@ -2095,12 +2094,11 @@ export function createChatPanel(options = {}) {
           }
           typingController.moveToBottom();
         },
-        onStepChange: ({ label, kind, step }) => {
-          // A new thinking phase = new agent step: reset group so next batch gets its own wrapper.
-          if (kind === "thinking") currentToolGroup = null;
-          typingController.show({ label, kind, step });
+        setStep: ({ label, kind, step }) => typingController.show({ label, kind, step }),
+        resetToolGroup: () => {
+          currentToolGroup = null;
         },
-        onToolCallStart: (tc) => {
+        addToolCard: (tc) => {
           const card = createToolCallCard({
             id: tc.id,
             name: tc.name,
@@ -2120,59 +2118,17 @@ export function createChatPanel(options = {}) {
           typingController.moveToBottom();
           return card;
         },
-        executeToolCall: async (toolCall, signal) => {
-          const handler = ["fetch_attached_quiz", "fetch_attached_lesson"].includes(toolCall?.name) && attachmentToolHandler
-            ? attachmentToolHandler
-            : onToolCall;
-          if (typeof handler !== "function") {
-            throw new Error(`لا يوجد معالج متاح للأداة: ${toolCall?.name}`);
-          }
-          const resultText = await handler(toolCall);
-          if (resultText) {
-            const resultCard = renderResultCard(resultText);
-            const creatorCard = resultCard ? null : renderCreatorCard(resultText);
-            if (resultCard || creatorCard) {
-              pendingResultCards.push(resultCard || creatorCard);
-            }
-          }
-          return resultText;
+        flushResultCards: (cards) => appendResultCardsGroup(cards),
+        showError: (msg) => appendError(msg),
+        finish: () => {
+          typingController.clear();
+          currentAbortController = null;
+          setGenerating(false);
+          updateSendBtnVisibility();
+          updateAvailabilityGate();
         },
-        onHistoryPersist: async () => {
-          try {
-            await saveConversation({
-              id: conversationId,
-              pageKey,
-              title: deriveConversationTitle(history),
-              createdAt: conversationCreatedAt,
-              updatedAt: Date.now(),
-              messages: toPersistedMessages(history),
-            });
-            if (typeof onHistoryChanged === "function") onHistoryChanged();
-          } catch (histErr) {
-            console.error("[ai-agent-chat] failed to save conversation:", histErr);
-          }
-        },
-      });
-
-      if (loopResult?.error) {
-        appendError(loopResult.error);
-      }
-    } catch (err) {
-      if (err?.name === "AbortError" || currentAbortController?.signal?.aborted) {
-        return;
-      }
-      console.error("[ai-agent-chat] request failed:", err);
-      appendError("تعذر الاتصال بالخادم. حاول مرة أخرى.");
-    } finally {
-      // Cards go at the very bottom of this response (after the final text),
-      // also when the turn errored or was stopped after items were created.
-      appendResultCardsGroup(pendingResultCards);
-      typingController.clear();
-      currentAbortController = null;
-      setGenerating(false);
-      updateSendBtnVisibility();
-      updateAvailabilityGate();
-    }
+      },
+    });
   }
 
   /**
@@ -2237,6 +2193,8 @@ export function createChatPanel(options = {}) {
       slashDirective,
     };
     if (attachments.length) outgoingUserMessage.attachments = attachments;
+    // Tell the model about changes the user reverted since its last reply.
+    if (pendingUndoNotes.length) outgoingUserMessage.undoNotes = pendingUndoNotes.splice(0);
     // Push BEFORE rendering so the new message's own index (history.length
     // - 1) is known for addEditButton's historyIndex — appendMessage
     // reads history[] by index, not by object identity.

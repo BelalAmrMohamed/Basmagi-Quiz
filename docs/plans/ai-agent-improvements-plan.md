@@ -330,3 +330,37 @@ On the home page «محتواي» and the quiz editor, with a platform key and w
 5. **Streaming host:** Vercel only for now; edge host stays non-streaming?
 6. **Attachments in old turns (Phase 4):** keep base64 for the last 2 user turns only, older ones become a text marker?
 7. **CSS split:** skip for now?
+
+---
+
+## Implementation status (updated 2026-11-19)
+
+Delivered as two stacked patches: `ai-agent-improvements.patch` (phases 0-5, 7), then `ai-agent-improvements-2.patch` (phase 6a + this status). Apply them in that order. Test suite: `npm run test:ai-agent`; the full `node --test tests/*.test.js` has 5 failures that also fail on the untouched repo (docs sync, og PNG, gradeEssay LaTeX, two rich-input tests).
+
+| Phase | Status | Notes |
+| --- | --- | --- |
+| 0. Safety-net tests | Done (patch 1) | `tests/agent-loop.test.js`, `tests/helpers/fake-chat.js`. Also fixed a bug: stopping mid-tool left the remaining cards on "running". |
+| 1. Quota per user message | Done (patch 1) | Run migration `20261119120000_ai_agent_turn_quota.sql`. Verified with the 7 SQL checks on PostgreSQL 16. Old front-ends without `turnId` are charged per request. |
+| 2. Prompt audit | Done (patch 1) | Stale "one tool per turn" text removed; `ai-agent-page-tools.js` is the single tool list per page; guard tests in `tests/ai-agent-prompts.test.js`; Telegram bot uses a 45 s time budget (`_botLoop.js`) with a no-tools wrap-up call. |
+| 3. Parallel read-only tools | Done (patch 1) | `PARALLEL_SAFE_TOOLS` in `agent-loop.js`; mutating calls are barriers; results written in call order. |
+| 4. Context trimming | Done (patch 1) | `core/context-trim.js`. Stage 2 (shrinking old tool inputs) is implemented but off by default (`trimOldToolInputs`). |
+| 5. Undo | Done (patch 1) | «تراجع» on delete_quiz (now moves to trash), edit_quiz, edit_item, editor edit/reset. Undoing a reset may not restore the editor header title. |
+| 6a. Extract turn runner | Done (patch 2) | `core/turn-runner.js` (no DOM); `resendLastUserTurn()` in `ai-agent-chat.js` is now a thin wrapper. `tests/turn-runner.test.js`. Auth resolution now sits inside the try block, so a token failure no longer leaves the panel stuck in "generating". |
+| 6b. Streaming (SSE) | NOT done | Not in either patch. See "Remaining work". |
+| 7. Shared schemas | Done (patch 1) | `api/ai-agent/_schemas.js`, `public/src/shared/ai-agent-authoring.js`; the Telegram bot can now request fill-in-the-blank questions. Parity tests in `tests/ai-agent-schema-parity.test.js`. |
+| 8. File splits | NOT done | Not started. |
+
+### Decisions taken that go beyond the plan
+- The home page now offers `create_notebook`, `edit_item` and `get_authoring_guide` (its prompt already promised them).
+- Lesson-editor and notebook prompts: clear requests run immediately; confirmation stays for replacing a whole quiz/lesson and for deleting (same rule as the quiz editor).
+- The generated bundles `supabase/functions/ai-chat/index.ts` and `ai-bot/index.ts` are NOT in the patches. After applying, run `npm run build:edge -- ai-chat ai-bot` and commit them.
+
+### Remaining work
+**6b. Streaming.** Design agreed in the plan; a first server-side draft was written and then dropped from the patches because it has no tests yet. To do, in order:
+1. `core/sse.js`: pure incremental SSE parser + `readSse(body, signal)` (shared by server and browser; decode with a streaming `TextDecoder`).
+2. `api/ai-agent/_providerClients.js`: split each provider into request builder (`stream` flag: Gemini `streamGenerateContent?alt=sse`, DeepSeek/Claude `stream: true`), response parser, and a stream assembler (Gemini: parts arrive whole; DeepSeek: `tool_calls` fragments accumulate by `index`; Claude: `input_json_delta` pieces joined per block, parsed at `content_block_stop`). Add `openProviderStream()` that throws the same errors as `callProvider` before the first byte.
+3. `api/ai-agent/chat.js`: `stream: true` in the body answers with SSE events `thinking` / `text` / `toolCall` / `done` (full result + `quota`) / `error`; errors before the first byte stay normal JSON errors; abort the upstream request when the client disconnects; meter usage after the stream ends; `export const maxDuration = 60`.
+4. Client: `agent-loop.js` sends `stream: true`, reads SSE with `readSse`, calls a new `onAssistantStream` callback (already forwarded by `turn-runner.js` as `ui.onAssistantStream`), and falls back to the JSON path if the response is not `text/event-stream`. `ai-agent-chat.js` renders a live assistant bubble.
+5. Tests: fixture streams per provider (plain text, text + one tool call, text + two tool calls) fed through the assemblers, SSE parser split at every byte offset, and one end-to-end loop test with a fake streaming `fetch`.
+
+**8. File splits** (pure moves, no behaviour change, one commit each, `npm run build:web` + tests after each): history/storage helpers, attachments, the settings/model menu, and message rendering out of `ai-agent-chat.js`, keeping `createAIAgentFab()` as the public entry point.

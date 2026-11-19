@@ -57,6 +57,7 @@ import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar
 import { applyMarkdownToolbarAction } from "../../shared/markdown-toolbar-actions.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
 import { CREATE_LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
+import { CREATE_LESSON_PAGE_TOOL_NAMES } from "../../components/ai-agent/ai-agent-page-tools.js";
 import { CREATE_LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { downloadLesson } from "../home/lesson-download.js";
 import { mountSourceField } from "../../shared/rich-input/source-field.js";
@@ -1139,7 +1140,7 @@ function mountCreatorAgent() {
         contextSummary: lessonEditorContext,
         enableTools: true,
         enableFileUpload: true,
-        toolNames: ["create_lesson", "add_lesson_section", "add_lesson_question"],
+        toolNames: CREATE_LESSON_PAGE_TOOL_NAMES,
         onToolCall: handleLessonEditorToolCall,
     });
     fab.classList.add("create-lesson-agent-fab");

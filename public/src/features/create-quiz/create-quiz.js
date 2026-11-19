@@ -19,6 +19,7 @@ import { isAdminAuthenticated, getToken } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
 import { CREATE_QUIZ_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
+import { CREATE_QUIZ_PAGE_TOOL_NAMES } from "../../components/ai-agent/ai-agent-page-tools.js";
 import { CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { isMultiSelectQuestion, isCompleteQuestion } from "../../shared/rate-answers.js";
 import { parseComplete, completeToFirstAnswers, completeToPlain } from "../../shared/complete-question.js";
@@ -471,6 +472,25 @@ window.performRedo = function () {
   updateUndoRedoButtons();
   autosave();
 };
+
+/**
+ * Restores a quizData snapshot taken before an AI tool call (card «تراجع»).
+ * The current state goes onto the redo stack; the matching undo point pushed by
+ * the tool is dropped so the header undo doesn't need a second click.
+ */
+function restoreQuizSnapshot(snapshot) {
+  redoStack.push(cloneQuizData());
+  if (redoStack.length > UNDO_STACK_LIMIT) redoStack.shift();
+  const top = undoStack[undoStack.length - 1];
+  if (top && JSON.stringify(top) === JSON.stringify(snapshot)) undoStack.pop();
+  isRestoringHistory = true;
+  quizData = JSON.parse(JSON.stringify(snapshot));
+  questionIdCounter = Math.max(0, ...quizData.questions.map((q) => Number(q.id) || 0), questionIdCounter);
+  refreshEditorAfterHistoryChange();
+  isRestoringHistory = false;
+  updateUndoRedoButtons();
+  autosave();
+}
 
 /** Reset the history stacks — call whenever quizData is replaced wholesale
  * from outside the undo system itself (loading a draft, importing a quiz,
@@ -5796,7 +5816,7 @@ function buildCurrentQuizContextForAI() {
  * @param {{name: string, input: object}} toolCall
  * @returns {string} chat bubble text
  */
-function handleAiEditQuizToolCall(toolCall) {
+function handleAiEditQuizToolCall(toolCall, ctx) {
   const input = toolCall?.input || {};
   const hasTitle = typeof input.title === "string" && input.title.trim() !== "";
   const hasDescription = typeof input.description === "string";
@@ -5808,6 +5828,7 @@ function handleAiEditQuizToolCall(toolCall) {
     throw err;
   }
 
+  const snapshotBefore = cloneQuizData();
   pushHistorySnapshot();
 
   if (hasTitle) {
@@ -5849,6 +5870,13 @@ function handleAiEditQuizToolCall(toolCall) {
   updateStatistics();
   autosave();
 
+  const afterJson = JSON.stringify(quizData);
+  ctx?.registerUndo?.({
+    label: "استرجاع الامتحان كما كان قبل التعديل",
+    isStale: () => JSON.stringify(quizData) !== afterJson,
+    run: () => restoreQuizSnapshot(snapshotBefore),
+  });
+
   const parts = [];
   if (hasTitle) parts.push("العنوان");
   if (hasDescription) parts.push("الوصف");
@@ -5872,8 +5900,22 @@ function handleAiEditQuizToolCall(toolCall) {
  * @param {{name: string, input: object}} toolCall
  * @returns {string} chat bubble text
  */
-function handleAiResetPageToolCall(toolCall) {
+function handleAiResetPageToolCall(toolCall, ctx) {
+  // resetPageData() clears the undo stacks, so keep our own snapshot for the card.
+  const snapshotBefore = cloneQuizData();
+  const prevEditingId = editingQuizId;
+  const prevDraftId = currentDraftId;
   resetPageData();
+  const afterJson = JSON.stringify(quizData);
+  ctx?.registerUndo?.({
+    label: "استعادة الصفحة كما كانت قبل المسح",
+    isStale: () => JSON.stringify(quizData) !== afterJson,
+    run: () => {
+      editingQuizId = prevEditingId;
+      currentDraftId = prevDraftId;
+      restoreQuizSnapshot(snapshotBefore);
+    },
+  });
   showNotification("تم إعادة الضبط", "تم مسح جميع البيانات", "success");
   return "🗑️ تم مسح الصفحة بالكامل.";
 }
@@ -5884,12 +5926,12 @@ function handleAiResetPageToolCall(toolCall) {
  * @param {{name: string, input: object}} toolCall
  * @returns {string} chat bubble text
  */
-function handleCreateQuizPageToolCall(toolCall) {
+function handleCreateQuizPageToolCall(toolCall, ctx) {
   switch (toolCall?.name) {
     case "edit_quiz":
-      return handleAiEditQuizToolCall(toolCall);
+      return handleAiEditQuizToolCall(toolCall, ctx);
     case "reset_quiz_page":
-      return handleAiResetPageToolCall(toolCall);
+      return handleAiResetPageToolCall(toolCall, ctx);
     default: {
       const err = new Error(`Unknown tool call: ${toolCall?.name}`);
       err.userMessage = "أداة غير معروفة.";
@@ -5916,7 +5958,7 @@ function mountAIHelper() {
       suggestedPrompts: CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS,
       enableFileUpload: true,
       enableTools: true,
-      toolNames: ["edit_current_quiz", "reset_quiz_page"],
+      toolNames: CREATE_QUIZ_PAGE_TOOL_NAMES,
       contextPrompt: buildCurrentQuizContextForAI,
       onToolCall: handleCreateQuizPageToolCall,
     }),

@@ -60,8 +60,9 @@ import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
 import { consumeAgentOpenIntent, requestMaximizedOpen } from "../../components/ai-agent/ai-agent-route.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { HOME_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
-import { handleReadOnlyLibraryToolCall, READONLY_LIBRARY_TOOL_NAMES } from "../../components/ai-agent/ai-agent-readonly-tools.js";
-import { CREATOR_TOOL_NAMES, handleCreatorToolCall } from "../../components/ai-agent/ai-agent-creator-tools.js";
+import { handleReadOnlyLibraryToolCall } from "../../components/ai-agent/ai-agent-readonly-tools.js";
+import { handleCreatorToolCall } from "../../components/ai-agent/ai-agent-creator-tools.js";
+import { HOME_TOOL_NAMES } from "../../components/ai-agent/ai-agent-page-tools.js";
 import { createItemCardResult } from "../../components/ai-agent/ai-agent-result-cards.js";
 import { toSlug } from "./slug-utils.js";
 import { renderRootCategories } from "./root-view.js";
@@ -129,7 +130,8 @@ function createdItemResult(kind, item, items, detail) {
     href: userItemRoute({ ...item, kind }, items),
   });
 }
-import { moveToTrash, getTrashItemCount } from "./user-content-trash.js";
+import { moveToTrash, restoreTrashBatch, getTrashItemCount, hasTrashBatch } from "./user-content-trash.js";
+import { fingerprint } from "../../components/ai-agent/core/undo.js";
 import { openLocalTrashPanel } from "./user-content-trash-panel.js";
 import { refreshUserContentCard } from "./course-count.js";
 import { normalizeLessonJson } from "../lesson/lesson-json.js";
@@ -263,7 +265,7 @@ function handleCreateLessonToolCall(toolCall) {
  * @param {{name: string, input: object}} toolCall
  * @returns {string} text shown in the chat as the tool-result bubble
  */
-function handleEditQuizToolCall(toolCall) {
+function handleEditQuizToolCall(toolCall, ctx) {
   const input = toolCall?.input || {};
   const currentTitle = (input.currentTitle || "").trim();
 
@@ -283,6 +285,7 @@ function handleEditQuizToolCall(toolCall) {
   }
 
   const existing = quizzes[index];
+  const before = structuredClone(existing); // for the card's undo button
   const newTitle = input.title || qz(existing, "title");
 
   const existingId = qz(existing, "id") || existing.id;
@@ -318,6 +321,30 @@ function handleEditQuizToolCall(toolCall) {
   quizzes[index] = entry;
   setInStorage("user_quizzes", JSON.stringify(quizzes));
 
+  const afterFp = fingerprint(entry);
+  const findCurrent = () => {
+    const list = JSON.parse(getFromStorage("user_quizzes", "[]"));
+    const i = list.findIndex((q) => (qz(q, "id") || q.id) === existingId);
+    return { list, i };
+  };
+  ctx?.registerUndo?.({
+    label: `استرجاع «${qz(existing, "title")}» كما كان`,
+    isStale: () => {
+      const { list, i } = findCurrent();
+      return i === -1 || fingerprint(list[i]) !== afterFp;
+    },
+    run: () => {
+      const { list, i } = findCurrent();
+      if (i === -1) return { ok: false, reason: "لم يعد الامتحان موجوداً." };
+      if (fingerprint(list[i]) !== afterFp) return { ok: false, reason: "تم تعديل الامتحان بعد هذه العملية." };
+      list[i] = before;
+      setInStorage("user_quizzes", JSON.stringify(list));
+      renderRootCategories();
+      renderUserContentView();
+      showNotification("تم التراجع", `تمت استعادة الامتحان "${qz(before, "title")}"`, "success");
+    },
+  });
+
   showNotification("تم التعديل", `تم تعديل الامتحان "${newTitle}"`, "success");
   renderRootCategories();
   renderUserContentView();
@@ -339,7 +366,7 @@ function handleEditQuizToolCall(toolCall) {
  * @param {{name: string, input: object}} toolCall
  * @returns {string} text shown in the chat as the tool-result bubble
  */
-function handleDeleteQuizToolCall(toolCall) {
+function handleDeleteQuizToolCall(toolCall, ctx) {
   const input = toolCall?.input || {};
   const title = (input.title || "").trim();
 
@@ -358,13 +385,28 @@ function handleDeleteQuizToolCall(toolCall) {
     throw err;
   }
 
+  // Move to the trash (restorable) instead of a hard delete.
   const remaining = quizzes.filter((q) => q !== match);
+  const batchId = moveToTrash([match], title);
   setInStorage("user_quizzes", JSON.stringify(remaining));
 
-  showNotification("تم الحذف", `تم حذف الامتحان "${title}"`, "success");
+  ctx?.registerUndo?.({
+    label: `استعادة «${title}»`,
+    // Stale once the trash entry is gone (already restored or purged from the trash panel).
+    isStale: () => !hasTrashBatch(batchId),
+    run: () => {
+      const res = restoreTrashBatch(batchId);
+      if (!res?.ok) return { ok: false, reason: res?.reason || "تعذرت الاستعادة." };
+      renderRootCategories();
+      renderUserContentView();
+      showNotification("تم التراجع", `تمت استعادة الامتحان "${title}"`, "success");
+    },
+  });
+
+  showNotification("تم الحذف", `تم نقل الامتحان "${title}" إلى سلة المهملات`, "success");
   renderRootCategories();
   renderUserContentView();
-  return `🗑️ تم حذف الامتحان: ${title}`;
+  return `🗑️ تم نقل الامتحان إلى سلة المهملات (يمكن استعادته): ${title}`;
 }
 
 /**
@@ -525,12 +567,12 @@ function buildFolderTreeContextPrompt(userContent) {
  * @param {{name: string, input: object}} toolCall
  * @returns {Promise<string>} text shown in the chat as the tool-result bubble
  */
-async function handleQuizToolCall(toolCall) {
+async function handleQuizToolCall(toolCall, ctx) {
   switch (toolCall?.name) {
     case "create_notebook":
       return handleCreateNotebookToolCall(toolCall);
     case "edit_item":
-      return handleEditItemToolCall(toolCall);
+      return handleEditItemToolCall(toolCall, ctx);
     case "get_authoring_guide":
       return handleGetAuthoringGuideToolCall(toolCall);
     case "create_lesson":
@@ -538,9 +580,9 @@ async function handleQuizToolCall(toolCall) {
     case "create_quiz":
       return handleCreateQuizToolCall(toolCall);
     case "edit_quiz":
-      return handleEditQuizToolCall(toolCall);
+      return handleEditQuizToolCall(toolCall, ctx);
     case "delete_quiz":
-      return handleDeleteQuizToolCall(toolCall);
+      return handleDeleteQuizToolCall(toolCall, ctx);
     case "create_folder":
       return handleCreateFolderToolCall(toolCall);
     case "create_course":
@@ -1018,7 +1060,7 @@ export function renderUserContentView() {
       contextSummary: getLiveContextSummary,
       contextPrompt: getLiveFolderTreePrompt,
       enableTools: true,
-      toolNames: ["create_lesson", "create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item", "fetch_attached_quiz", ...READONLY_LIBRARY_TOOL_NAMES, ...CREATOR_TOOL_NAMES],
+      toolNames: HOME_TOOL_NAMES,
       onToolCall: handleQuizToolCall,
     });
     container.appendChild(agentFab);

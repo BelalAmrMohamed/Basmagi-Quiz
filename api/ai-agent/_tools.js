@@ -4,6 +4,7 @@
 // provider-agnostic here; each provider adapter in _providerClients.js
 // translates this into its own native tool/function-calling shape.
 // =============================================================================
+import { QUESTION_ITEM_SCHEMA, LESSON_BLOCK_SCHEMA } from "./_schemas.js";
 
 // Mirrors the JSON shape parseQuizJson()/buildUserQuizEntry() (in
 // public/src/shared/quiz-json.js and public/src/features/home/quiz-schema.js)
@@ -27,31 +28,7 @@ export const CREATE_QUIZ_TOOL = {
       folder: { type: "string" },
       questions: {
         type: "array",
-        items: {
-          type: "object",
-          properties: {
-            q: { type: "string" },
-            options: { type: "array", items: { type: "string" } },
-            // NOTE: Gemini's proto-based tool schema rejects JSON-Schema union
-            // types (e.g. type: ["integer","array"]) with a 400 — "Proto
-            // field is not repeating, cannot start list." Always use an
-            // array of 0-based indices here; the save path (buildUserQuizEntry
-            // in quiz-schema.js) unwraps a single-element array to a plain
-            // integer for single-answer questions, so no behavior changes.
-            correct: { type: "array", items: { type: "integer" } },
-            // Independent of `correct`'s length — see isMultiSelectQuestion()
-            // in rate-answers.js. Omitting this falls back to the legacy
-            // Array.isArray(correct) heuristic, which is always true now
-            // that `correct` is always an array, so the model should set
-            // this explicitly rather than rely on the fallback.
-            multiSelect: { type: "boolean" },
-            answer: { type: "string" },
-            questionKind: { type: "string", enum: ["complete"], description: "Set to 'complete' for fill-in-the-blank questions whose blanks are written inline in q as {{answer|alt}}." },
-            strictMatch: { type: "boolean" },
-            explanation: { type: "string" },
-          },
-          required: ["q"],
-        },
+        items: QUESTION_ITEM_SCHEMA,
       },
     },
     required: ["title", "questions"],
@@ -80,20 +57,7 @@ export const EDIT_QUIZ_TOOL = {
       description: { type: "string" },
       questions: {
         type: "array",
-        items: {
-          type: "object",
-          properties: {
-            q: { type: "string" },
-            options: { type: "array", items: { type: "string" } },
-            correct: { type: "array", items: { type: "integer" } },
-            multiSelect: { type: "boolean" },
-            answer: { type: "string" },
-            questionKind: { type: "string", enum: ["complete"], description: "Set to 'complete' for fill-in-the-blank questions whose blanks are written inline in q as {{answer|alt}}." },
-            strictMatch: { type: "boolean" },
-            explanation: { type: "string" },
-          },
-          required: ["q"],
-        },
+        items: QUESTION_ITEM_SCHEMA,
       },
     },
     required: ["currentTitle"],
@@ -103,7 +67,7 @@ export const EDIT_QUIZ_TOOL = {
 export const DELETE_QUIZ_TOOL = {
   name: "delete_quiz",
   description:
-    "Permanently delete a quiz. Only call this when the user has explicitly confirmed deletion of this specific quiz by name (e.g. they asked to delete it and then replied yes/احذف/تمام to your confirmation). Never call this speculatively or as a suggestion — deletion cannot be undone.",
+    "Delete a quiz (it is moved to the trash and can be restored from the tool card's undo button or the trash panel). Only call this when the user has explicitly confirmed deletion of this specific quiz by name (e.g. they asked to delete it and then replied yes/احذف/تمام to your confirmation). Never call this speculatively or as a suggestion.",
   input_schema: {
     type: "object",
     properties: {
@@ -133,20 +97,7 @@ export const EDIT_CURRENT_QUIZ_TOOL = {
       description: { type: "string" },
       questions: {
         type: "array",
-        items: {
-          type: "object",
-          properties: {
-            q: { type: "string" },
-            options: { type: "array", items: { type: "string" } },
-            correct: { type: "array", items: { type: "integer" } },
-            multiSelect: { type: "boolean" },
-            answer: { type: "string" },
-            questionKind: { type: "string", enum: ["complete"], description: "Set to 'complete' for fill-in-the-blank questions whose blanks are written inline in q as {{answer|alt}}." },
-            strictMatch: { type: "boolean" },
-            explanation: { type: "string" },
-          },
-          required: ["q"],
-        },
+        items: QUESTION_ITEM_SCHEMA,
       },
     },
   },
@@ -201,7 +152,7 @@ export const MOVE_ITEM_TOOL = {
 export const RESET_QUIZ_PAGE_TOOL = {
   name: "reset_quiz_page",
   description:
-    "Clear the quiz currently being edited on this page — its title, description, and every question. Only call this when the user has explicitly confirmed they want to start over from a blank quiz (e.g. after you've warned them this deletes everything currently on the page and they replied yes/امسح/ابدأ من جديد/تمام). This cannot be undone. Do NOT use this tool if the user wants to replace the current quiz with a different one — use edit_quiz for that instead (see its own description), since this page only supports one tool call per turn and a reset-then-create plan would silently only execute the reset.",
+    "Clear the quiz currently being edited on this page — its title, description, and every question. Only call this when the user has explicitly confirmed they want to start over from a blank quiz (e.g. after you've warned them this deletes everything currently on the page and they replied yes/امسح/ابدأ من جديد/تمام). Use it only for \"clear the page and stop there\". Do NOT use this tool if the user wants to replace the current quiz with a different one — call edit_quiz once with the new title, description and all the new questions instead; that replaces everything in a single step.",
   input_schema: {
     type: "object",
     properties: {},
@@ -357,22 +308,7 @@ export const CREATE_LESSON_TOOL = {
             defaultHidden: { type: "boolean" },
             blocks: {
               type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  type: { type: "string", enum: ["markdown", "question"] },
-                  body: { type: "string" },
-                  questionKind: { type: "string", enum: ["mcq", "essay", "complete"] },
-                  prompt: { type: "string" },
-                  options: { type: "array", items: { type: "string" } },
-                  correctIndex: { type: "integer", description: "Zero-based index of the correct option for a single-answer MCQ." },
-                  correctIndexes: { type: "array", items: { type: "integer" }, description: "Zero-based indexes of all correct options for a multi-select MCQ." },
-                  multiSelect: { type: "boolean" },
-                  modelAnswer: { type: "string" },
-                  strictMatch: { type: "boolean" },
-                  explanation: { type: "string" },
-                },
-              },
+              items: LESSON_BLOCK_SCHEMA,
             },
           },
           required: ["title", "blocks"],

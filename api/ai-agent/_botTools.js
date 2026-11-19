@@ -12,6 +12,8 @@
 // build in-memory buffers and send them via the Telegram Bot API.
 // =============================================================================
 
+import { QUESTION_ITEM_SCHEMA, LESSON_BLOCK_SCHEMA } from "./_schemas.js";
+import { authoringRulesText } from "../../public/src/shared/ai-agent-authoring.js";
 import {
   generateStandaloneQuizHtml,
   generateQuizJson,
@@ -160,7 +162,7 @@ export const BOT_TOOLS = [
   {
     name: "generate_quiz_file",
     description:
-      "Generate and send a brand new quiz file to the user from questions created by AI or extracted from user notes. Supported formats: 'html' (standalone interactive), 'pdf', 'markdown', 'json' (platform-importable). Defaults to HTML when the user does not choose a format.",
+      "Generate and send a brand new quiz file to the user from questions created by AI or extracted from user notes. Supported formats: 'html' (standalone interactive), 'pdf', 'markdown', 'json' (platform-importable). Defaults to HTML when the user does not choose a format. Question authoring rules:\n" + authoringRulesText(),
     parameters: {
       type: "object",
       properties: {
@@ -183,18 +185,7 @@ export const BOT_TOOLS = [
         questions: {
           type: "array",
           description: "Array of question objects.",
-          items: {
-            type: "object",
-            properties: {
-              q: { type: "string" },
-              options: { type: "array", items: { type: "string" } },
-              correct: { type: "array", items: { type: "integer" } },
-              multiSelect: { type: "boolean" },
-              answer: { type: "string" },
-              explanation: { type: "string" },
-            },
-            required: ["q"],
-          },
+          items: QUESTION_ITEM_SCHEMA,
         },
       },
       required: ["title", "questions"],
@@ -224,21 +215,7 @@ export const BOT_TOOLS = [
               content: { type: "string" },
               blocks: {
                 type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    type: { type: "string", enum: ["markdown", "question"] },
-                    body: { type: "string" },
-                    questionKind: { type: "string", enum: ["mcq", "essay", "complete"], description: "Use mcq for single/multiple choice and true/false; use essay for free-text answers." },
-                    prompt: { type: "string" },
-                    options: { type: "array", items: { type: "string" } },
-                    correctIndex: { type: "integer", description: "Zero-based correct option index for a single-answer MCQ." },
-                    correctIndexes: { type: "array", items: { type: "integer" }, description: "Zero-based correct option indexes for a multi-select MCQ." },
-                    multiSelect: { type: "boolean" },
-                    modelAnswer: { type: "string" },
-                    explanation: { type: "string", description: "Explain the correct answer; used in the reader's answer feedback." },
-                  },
-                },
+                items: LESSON_BLOCK_SCHEMA,
               },
               questions: {
                 type: "array",

@@ -11,10 +11,41 @@
 
 // Runaway-loop safety ceiling only (model round-trips in ONE user turn). It is
 // deliberately far above any real workflow; pass `maxDepth: Infinity` to lift it.
+import { trimContext } from "./context-trim.js";
+
 export const DEFAULT_MAX_DEPTH = 50;
 // If the model keeps re-issuing calls that were all already executed, stop after
 // this many consecutive steps instead of looping forever.
 const MAX_CONSECUTIVE_DUPLICATE_STEPS = 3;
+
+// Read-only tools: they never change the library, so consecutive calls to them
+// in one step may run in parallel. Any other tool is a barrier: it runs alone,
+// in its original position, after everything before it has finished.
+// Pass `parallelSafeTools: new Set()` to run everything strictly in sequence.
+export const PARALLEL_SAFE_TOOLS = new Set([
+  "search_library",
+  "parse_item_info",
+  "get_user_activity",
+  "get_creator_info",
+  "get_authoring_guide",
+  "fetch_attached_quiz",
+  "fetch_attached_lesson",
+]);
+
+// One id per USER message: every model round-trip of that message carries the
+// same id, so the server charges the daily quota once per message, not once per
+// step (see api/ai-agent/_quota.js).
+export function newTurnId() {
+  const c = globalThis.crypto;
+  if (c && typeof c.randomUUID === "function") return c.randomUUID();
+  const b = new Uint8Array(16);
+  if (c && typeof c.getRandomValues === "function") c.getRandomValues(b);
+  else for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256);
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
 
 function sanitizeToolOutput(val) {
   if (val == null) return "";
@@ -51,6 +82,15 @@ function getToolCallSignature(toolCall) {
   return `${name}::${input}`;
 }
 
+// Marks the cards of every call from `fromIndex` on as aborted (the call at
+// `fromIndex` itself is the one that was running when the user stopped).
+function markAborted(queue, fromIndex) {
+  for (let j = fromIndex; j < queue.length; j++) {
+    const card = queue[j].card;
+    if (card?.updateStatus) card.updateStatus("aborted");
+  }
+}
+
 /**
  * Executes a full agent turn, handling recursive model calls and tool executions.
  *
@@ -75,6 +115,10 @@ function getToolCallSignature(toolCall) {
  * @param {() => Promise<void>} [params.onHistoryPersist]
  * @param {Set<string>} [params.sessionExecutedTools]
  * @param {number} [params.maxDepth=50] - runaway-loop safety ceiling only
+ * @param {Set<string>} [params.parallelSafeTools] - read-only tool names whose
+ *   consecutive calls in one step run in parallel (default PARALLEL_SAFE_TOOLS).
+ * @param {string} [params.turnId] - one uuid per user message, sent on every step
+ *   (the server charges the daily quota once per turnId). Generated when omitted.
  * @returns {Promise<{ success: boolean, aborted?: boolean, error?: string }>}
  */
 export async function runAgentLoop(params) {
@@ -100,6 +144,8 @@ export async function runAgentLoop(params) {
     sessionExecutedTools = new Set(),
     maxDepth = DEFAULT_MAX_DEPTH,
     toWireMessage,
+    turnId = newTurnId(),
+    parallelSafeTools = PARALLEL_SAFE_TOOLS,
   } = params;
 
   const toolErrorCounts = new Map(); // informational only: never blocks a retry
@@ -122,7 +168,11 @@ export async function runAgentLoop(params) {
     }
 
     // Build wire messages
-    const wireMessages = history.map((m) => (toWireMessage ? toWireMessage(m) : m));
+    // Wire copy only: old tool results / attachments are trimmed, `history` is untouched.
+    const wireMessages = trimContext(
+      history.map((m) => (toWireMessage ? toWireMessage(m) : m)),
+      { debug: !!globalThis.__AI_AGENT_DEBUG_CONTEXT__ },
+    );
 
     // Request from backend
     const headers = { "Content-Type": "application/json" };
@@ -144,6 +194,7 @@ export async function runAgentLoop(params) {
           systemPrompt,
           enableTools,
           toolNames: toolNames || undefined,
+          turnId,
         }),
       });
     } catch (fetchErr) {
@@ -231,88 +282,112 @@ export async function runAgentLoop(params) {
         }
       }
 
-      toolExecutionQueue.push({ tc, card });
+      toolExecutionQueue.push({ tc, card, index: i });
     }
 
     let executedToolsCount = 0;
-    let anyErrorsOccurred = false;
 
-    // Execute tools
-    for (let i = 0; i < toolExecutionQueue.length; i++) {
+    // Split the calls into segments: a run of consecutive read-only calls is one
+    // parallel batch; every other call is a barrier segment of its own.
+    const segments = [];
+    for (const entry of toolExecutionQueue) {
+      const safe = parallelSafeTools.has(entry.tc.name);
+      const last = segments[segments.length - 1];
+      if (safe && last && last.parallel) last.entries.push(entry);
+      else segments.push({ parallel: safe, entries: [entry] });
+    }
+
+    // Runs one call; never throws (errors come back as { ok: false }), and never
+    // touches history or cards, so a batch can run it concurrently.
+    const runOne = async (entry) => {
+      try {
+        return { ok: true, resultText: await executeToolCall(entry.tc, signal) };
+      } catch (err) {
+        return { ok: false, err };
+      }
+    };
+
+    for (const segment of segments) {
+      const startIdx = segment.entries[0].index;
       if (signal?.aborted) {
-        toolExecutionQueue.slice(i).forEach(({ card }) => {
-          if (card?.updateStatus) card.updateStatus("aborted");
-        });
+        markAborted(toolExecutionQueue, startIdx);
         return { success: false, aborted: true };
       }
 
-      const { tc, card } = toolExecutionQueue[i];
-      const sig = getToolCallSignature(tc);
+      // Decide duplicates BEFORE anything runs, so two identical calls in one
+      // batch do not both execute.
+      const plan = segment.entries.map((entry) => {
+        const sig = getToolCallSignature(entry.tc);
+        if (sessionExecutedTools.has(sig)) return { entry, sig, duplicate: true };
+        sessionExecutedTools.add(sig);
+        return { entry, sig, duplicate: false };
+      });
+      const toRun = plan.filter((p) => !p.duplicate);
+      executedToolsCount += toRun.length;
 
-      if (sessionExecutedTools.has(sig)) {
-        console.warn("[agent-loop] Skipping exact duplicate tool execution:", sig);
-        if (card?.updateStatus) {
-          card.updateStatus("success", { result: "تم تنفيذ هذا الإجراء مسبقاً بنجاح." });
-        }
-        history.push({
-          role: "tool",
-          toolCallId: tc.id,
-          toolName: tc.name,
-          input: tc.input || {},
-          content: "تم تنفيذ هذا الإجراء بنفس المعاملات مسبقاً في هذا الطلب، فلم يُكرَّر. تابع بقية المطلوب أو أجب المستخدم.",
-        });
-        continue;
+      if (toRun.length && typeof onStepChange === "function") {
+        const first = toRun[0].entry.index + 1;
+        const lastNo = toRun[toRun.length - 1].entry.index + 1;
+        let stepLabel = "";
+        if (totalTools > 1) stepLabel = toRun.length > 1 ? `أدوات ${first}–${lastNo}/${totalTools}` : `أداة ${first}/${totalTools}`;
+        onStepChange({ label: "جاري تنفيذ الأداة…", kind: "tool", step: stepLabel });
       }
 
-      sessionExecutedTools.add(sig);
-      executedToolsCount++;
-
-      if (typeof onStepChange === "function") {
-        const stepLabel = totalTools > 1 ? `أداة ${i + 1}/${totalTools}` : "";
-        onStepChange({
-          label: "جاري تنفيذ الأداة…",
-          kind: "tool",
-          step: stepLabel,
-        });
+      const outcomes = new Map();
+      if (toRun.length) {
+        const results = await Promise.all(toRun.map((p) => runOne(p.entry)));
+        toRun.forEach((p, k) => outcomes.set(p, results[k]));
       }
 
-      try {
-        const resultText = await executeToolCall(tc, signal);
-        if (signal?.aborted) {
-          if (card?.updateStatus) card.updateStatus("aborted");
-          return { success: false, aborted: true };
+      if (signal?.aborted) {
+        markAborted(toolExecutionQueue, startIdx);
+        return { success: false, aborted: true };
+      }
+
+      // Apply the results to history and cards SEQUENTIALLY, in the original call
+      // order: tool replies must stay paired with, and ordered like, the calls.
+      for (const p of plan) {
+        const { tc, card } = p.entry;
+
+        if (p.duplicate) {
+          console.warn("[agent-loop] Skipping exact duplicate tool execution:", p.sig);
+          if (card?.updateStatus) {
+            card.updateStatus("success", { result: "تم تنفيذ هذا الإجراء مسبقاً بنجاح." });
+          }
+          history.push({
+            role: "tool",
+            toolCallId: tc.id,
+            toolName: tc.name,
+            input: tc.input || {},
+            content: "تم تنفيذ هذا الإجراء بنفس المعاملات مسبقاً في هذا الطلب، فلم يُكرَّر. تابع بقية المطلوب أو أجب المستخدم.",
+          });
+          continue;
         }
 
-        const safeResult = sanitizeToolOutput(resultText) || "تم تنفيذ العملية بنجاح.";
-        if (card?.updateStatus) {
-          card.updateStatus("success", { result: safeResult });
+        const outcome = outcomes.get(p);
+        if (outcome.ok) {
+          const safeResult = sanitizeToolOutput(outcome.resultText) || "تم تنفيذ العملية بنجاح.";
+          if (card?.updateStatus) {
+            card.updateStatus("success", { result: safeResult });
+          }
+          history.push({
+            role: "tool",
+            toolCallId: tc.id,
+            toolName: tc.name,
+            input: tc.input || {},
+            content: safeResult,
+          });
+          continue;
         }
 
-        history.push({
-          role: "tool",
-          toolCallId: tc.id,
-          toolName: tc.name,
-          input: tc.input || {},
-          content: safeResult,
-        });
-
-        if (typeof onHistoryPersist === "function") {
-          await onHistoryPersist().catch(() => { });
-        }
-      } catch (err) {
-        if (signal?.aborted) {
-          if (card?.updateStatus) card.updateStatus("aborted");
-          return { success: false, aborted: true };
-        }
-
+        const err = outcome.err;
         console.error(`[agent-loop] Tool "${tc.name}" failed:`, err);
-        anyErrorsOccurred = true;
 
         const nextRetryNum = (toolErrorCounts.get(tc.name) || 0) + 1;
         toolErrorCounts.set(tc.name, nextRetryNum);
 
         // Remove from sessionExecutedTools so the model is allowed to retry with fixed args
-        sessionExecutedTools.delete(sig);
+        sessionExecutedTools.delete(p.sig);
 
         const errorMsg = err?.userMessage || err?.agentMessage || err?.message || "فشل تنفيذ الأداة.";
         if (card?.updateStatus) {
@@ -334,10 +409,11 @@ export async function runAgentLoop(params) {
           content: agentFeedback,
           isError: true,
         });
+      }
 
-        if (typeof onHistoryPersist === "function") {
-          await onHistoryPersist().catch(() => { });
-        }
+      // Persist once per segment (not once per call).
+      if (typeof onHistoryPersist === "function") {
+        await onHistoryPersist().catch(() => { });
       }
     }
 

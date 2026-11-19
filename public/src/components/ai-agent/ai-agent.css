@@ -4784,6 +4784,33 @@ body.sidebar-expanded .ai-agent-fab {
   color: var(--color-text-secondary, #64748b);
 }
 
+.ai-agent-tool-card__undo {
+  border: 1px solid var(--color-border, #cbd5e1);
+  background: transparent;
+  color: var(--color-text-secondary, #475569);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font: inherit;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.ai-agent-tool-card__undo:hover:not(:disabled) {
+  background: var(--color-bg-hover, rgba(100, 116, 139, 0.12));
+}
+
+.ai-agent-tool-card__undo:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-agent-tool-card__reverted {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #64748b);
+}
+
 .ai-agent-tool-card__toggle {
   display: inline-flex;
   align-items: center;

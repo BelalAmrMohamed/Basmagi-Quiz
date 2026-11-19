@@ -119,6 +119,11 @@ function findEntry(trash, batchId) {
     return trash.find((e) => e.batchId === batchId) || null;
 }
 
+/** True while the trash still holds this batch (not restored, purged or expired). */
+export function hasTrashBatch(batchId) {
+    return !!findEntry(readTrash(), batchId);
+}
+
 /**
  * Restores one trashed batch back into `user_quizzes`.
  *

@@ -43,6 +43,7 @@ import { renderTtsControl, equipTts, readText } from "./lesson-tts.js";
 import { showLessonControlModal } from "./lesson-info-modal.js";
 import { createAIAgentFab, loadAIAgentModule } from "../../components/ai-agent/ai-agent-lazy.js";
 import { LESSON_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
+import { LESSON_VIEW_TOOL_NAMES } from "../../components/ai-agent/ai-agent-page-tools.js";
 import { renderLessonComments, equipLessonComments } from "./lesson-comments.js";
 import { LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { createLessonQuiz, renderLessonQuiz, equipLessonQuiz } from "./lesson-ai-quiz.js";
@@ -743,7 +744,7 @@ function lessonAgentOptions(lesson, normalized) {
     contextPrompt: () => lessonAgentContext(lesson, normalized),
     enableTools: true,
     enableFileUpload: true,
-    toolNames: ["create_quiz", "create_flashcards", "fetch_attached_quiz", "fetch_attached_lesson"],
+    toolNames: LESSON_VIEW_TOOL_NAMES,
     onToolCall: handleLessonAgentToolCall,
   };
 }

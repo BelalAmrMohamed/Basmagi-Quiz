@@ -25,6 +25,7 @@ import { getNextKey } from "./_keyPool.js";
 import { processTelegramInbound } from "./_telegramFiles.js";
 import { BOT_TOOLS, executeBotTool } from "./_botTools.js";
 import { sendTelegramChatAction } from "./_telegramFiles.js";
+import { MAX_TOOL_LOOPS, toolLoopPhase } from "./_botLoop.js";
 
 // Vercel serverless function max duration (up to 60s for tool loops & file generation)
 export const maxDuration = 60;
@@ -75,7 +76,7 @@ const FALLBACK_MESSAGE =
 
 const HISTORY_FETCH_LIMIT = 12; // last N messages for context window
 const HISTORY_PRUNE_LIMIT = 30; // max messages to keep per chat
-const MAX_TOOL_LOOPS = 5; // max function-calling round-trips per request
+// Tool-loop limits (time budget + high ceiling) live in _botLoop.js.
 const PRIMARY_GEMINI_MODEL = "gemini-3.8-flash";
 const FALLBACK_GEMINI_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest"];
 
@@ -235,7 +236,10 @@ function buildAlternatingContents(history, currentParts) {
  * Calls Gemini with multi-turn history and optional tool calling.
  * Implements the tool-calling loop: if Gemini returns functionCalls, execute
  * them via _botTools.js, append results as a single user turn, and call Gemini
- * again until a final text response is produced.
+ * again until a final text response is produced. The loop is bounded by a time
+ * budget (the function's maxDuration is the real limit), see _botLoop.js; when
+ * the budget or ceiling is reached, one last call is made with tool calling
+ * switched off so the user still gets a written answer.
  *
  * @param {Array} contents - Gemini-format contents array
  * @param {number|string} chatId - for tool execution (sending files)
@@ -254,8 +258,10 @@ async function generateGeminiReplyWithTools(contents, chatId) {
   });
 
   const modelsToTry = [PRIMARY_GEMINI_MODEL, ...FALLBACK_GEMINI_MODELS];
+  const startedAt = Date.now();
 
   for (let loop = 0; loop < MAX_TOOL_LOOPS; loop++) {
+    const wrapUp = toolLoopPhase({ loop, startedAt }) === "wrapup";
     let res = null;
     let data = null;
     let lastError = null;
@@ -269,6 +275,9 @@ async function generateGeminiReplyWithTools(contents, chatId) {
         systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
         contents,
         tools: [{ functionDeclarations: toolDeclarations }],
+        // Wrap-up round: keep the declarations (the history contains function
+        // calls) but forbid new calls, so the model must answer in text.
+        ...(wrapUp ? { toolConfig: { functionCallingConfig: { mode: "NONE" } } } : {}),
         generationConfig: { maxOutputTokens: 4096, temperature: 0.7 },
       };
 
@@ -326,7 +335,7 @@ async function generateGeminiReplyWithTools(contents, chatId) {
     }
 
     const parts = data?.candidates?.[0]?.content?.parts || [];
-    const funcCalls = parts.filter((p) => p.functionCall);
+    const funcCalls = wrapUp ? [] : parts.filter((p) => p.functionCall);
     const textParts = parts.filter((p) => p.text);
 
     if (funcCalls.length > 0) {
@@ -381,7 +390,7 @@ async function generateGeminiReplyWithTools(contents, chatId) {
     return text;
   }
 
-  throw new Error("Max tool-calling loops exceeded");
+  throw new Error("Max tool-calling loops exceeded");  // unreachable in practice: the last round is always a wrap-up
 }
 
 // ── WhatsApp Cloud API ────────────────────────────────────────────────────────

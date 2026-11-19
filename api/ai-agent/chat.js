@@ -23,6 +23,8 @@
 //   }, ...],
 //   useOwnKey?: boolean,
 //   ownKey?: string,           // required if useOwnKey is true
+//   turnId?: string,           // uuid, one per user message; same value on every
+//                              // request of that message (quota is per turn)
 //   systemPrompt?: string,     // optional system-role instructions
 //   enableTools?: boolean,     // if true, offers page-selected tools (see _tools.js)
 //   toolNames?: string[],      // which tools to offer when enableTools is true —
@@ -66,11 +68,16 @@
 //   - a valid regular-user JWT (see api/user-profile.js's action=identify,
 //     minted for every user including anonymous ones via a client-side
 //     device_id — see public/src/shared/userLevel.js) — capped at
-//     AI_AGENT_DAILY_LIMIT platform-key requests per UTC day, tracked in
-//     user_profiles.ai_agent_usage_count/_date and enforced atomically via
-//     the increment_ai_agent_usage() Postgres function (see the migration
-//     that added it) so concurrent requests can't race past the cap — see
-//     checkAndIncrementDailyUsage() below.
+//     AI_AGENT_DAILY_LIMIT platform-key USER MESSAGES per UTC day, tracked in
+//     user_profiles.ai_agent_usage_count/_date and enforced atomically in
+//     Postgres so concurrent requests can't race past the cap. The unit is
+//     one user message ("turn"): the client sends the same `turnId` (uuid)
+//     with every model round-trip of that message, the first request of a
+//     turn is charged and the later ones are free (while the turn is live:
+//     under 60 steps and 15 minutes) — see _quota.js::chargeAgentTurn and
+//     the increment_ai_agent_usage_turn() migration. A request without a
+//     valid turnId is charged per request (the old behaviour), so cached
+//     old front-ends keep working.
 // Both JWTs are minted server-side with a server-computed claim (admin
 // role / user profileId), so neither the identity nor the resulting quota
 // row is spoofable by a client.
@@ -84,6 +91,7 @@
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { recordPlatformUsage } from "./_usage.js";
+import { chargeAgentTurn } from "./_quota.js";
 import { callProvider, isSupportedProvider, DEFAULT_MODELS } from "./_providerClients.js";
 import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, CREATE_LESSON_TOOL, ADD_LESSON_SECTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL, GET_CREATOR_INFO_TOOL, DISPLAY_CREATOR_CARD_TOOL, CREATE_FLASHCARDS_TOOL, NOTEBOOK_ADD_CELL_TOOL, NOTEBOOK_EDIT_CELL_TOOL, NOTEBOOK_DELETE_CELL_TOOL, NOTEBOOK_RUN_CELL_TOOL, CREATE_NOTEBOOK_TOOL, EDIT_ITEM_TOOL, GET_AUTHORING_GUIDE_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
@@ -275,9 +283,10 @@ export const ownKeyRequestLog = new Map(); // ip -> [timestamps]
 const OWN_KEY_RATE_LIMIT = 20; // requests per minute, plain text
 const OWN_KEY_ATTACHMENT_RATE_LIMIT = 6; // requests per minute, file-bearing
 
-// Daily cap on platform-key requests for regular (non-admin) users. Resets
-// at UTC midnight — see increment_ai_agent_usage() in the migration that
-// added user_profiles.ai_agent_usage_count/_date. Chosen as a plain
+// Daily cap on platform-key USER MESSAGES for regular (non-admin) users (one
+// message = one agent turn, however many model round-trips it takes). Resets
+// at UTC midnight — see increment_ai_agent_usage_turn() in the 20261119120000
+// migration and the older increment_ai_agent_usage() (per-request fallback). Chosen as a plain
 // constant rather than a per-level scale: the old Level 10+ gate already
 // went away, so there's no remaining "tier" to scale a limit by, just a
 // single flat allowance shared by every non-admin user, logged in or not.
@@ -315,31 +324,20 @@ function getRegularUserProfileId(req) {
 }
 
 /**
- * Atomically checks-and-increments today's platform-key usage counter for
- * a regular user's profile, via the increment_ai_agent_usage() Postgres
- * function (a single UPDATE...RETURNING, so concurrent requests from the
- * same profile can't both read "under the limit" and both proceed — see
- * that function's own comment in the migration).
+ * Charges today's platform-key quota for a regular user's profile: once per
+ * user message (turnId), or once per request when no valid turnId was sent.
+ * Fails CLOSED (allowed: false) on any DB error.
  * @param {string} profileId
- * @returns {Promise<{allowed: boolean, usageCount: number}>} fails CLOSED
- *   (allowed: false) on any unexpected DB error, rather than letting an
- *   outage silently uncap usage.
+ * @param {unknown} turnId
+ * @returns {Promise<{allowed: boolean, usageCount: number, charged: boolean}>}
  */
-async function checkAndIncrementDailyUsage(profileId) {
-  try {
-    const { data, error } = await getSupabaseClient().rpc("increment_ai_agent_usage", {
-      p_profile_id: profileId,
-      p_daily_limit: AI_AGENT_DAILY_LIMIT,
-    });
-    if (error || !Array.isArray(data) || !data.length) {
-      console.error("[ai-agent/chat] increment_ai_agent_usage error:", error);
-      return { allowed: false, usageCount: 0 };
-    }
-    return { allowed: !!data[0].allowed, usageCount: Number(data[0].usage_count) || 0 };
-  } catch (err) {
-    console.error("[ai-agent/chat] increment_ai_agent_usage unexpected error:", err);
-    return { allowed: false, usageCount: 0 };
-  }
+function checkAndChargeDailyUsage(profileId, turnId) {
+  return chargeAgentTurn({
+    rpc: (name, args) => getSupabaseClient().rpc(name, args),
+    profileId,
+    turnId,
+    dailyLimit: AI_AGENT_DAILY_LIMIT,
+  });
 }
 
 // All tools ever offered, keyed by a REQUEST-level name — callers select a
@@ -401,7 +399,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { provider, model, effort, messages, useOwnKey, ownKey, systemPrompt, enableTools, toolNames } =
+  const { provider, model, effort, messages, useOwnKey, ownKey, systemPrompt, enableTools, toolNames, turnId } =
     req.body || {};
 
   if (!isSupportedProvider(provider)) {
@@ -486,7 +484,8 @@ export default async function handler(req, res) {
   // Verified admins bypass the quota entirely. Everyone else — logged in or
   // fully anonymous — is identified via their user_profiles JWT (minted at
   // /api/user-profile identify/sync-progress; see getRegularUserProfileId)
-  // and checked/incremented atomically against AI_AGENT_DAILY_LIMIT.
+  // and charged atomically against AI_AGENT_DAILY_LIMIT (once per user message).
+  let quotaInfo = null;
   try {
     requireAdmin(req);
   } catch (err) {
@@ -507,14 +506,15 @@ export default async function handler(req, res) {
       });
     }
 
-    const { allowed, usageCount } = await checkAndIncrementDailyUsage(profileId);
+    const { allowed, usageCount } = await checkAndChargeDailyUsage(profileId, turnId);
     if (!allowed) {
       return res.status(429).json({
-        error: `لقد استخدمت الحد اليومي للمساعد الذكي (${AI_AGENT_DAILY_LIMIT} طلبات). حاول مرة أخرى غدًا، أو استخدم مفتاح API الخاص بك بدلاً من ذلك.`,
+        error: `لقد استخدمت الحد اليومي للمساعد الذكي (${AI_AGENT_DAILY_LIMIT} رسائل). حاول مرة أخرى غدًا، أو استخدم مفتاح API الخاص بك بدلاً من ذلك.`,
         dailyLimit: AI_AGENT_DAILY_LIMIT,
         usageCount,
       });
     }
+    quotaInfo = { used: usageCount, limit: AI_AGENT_DAILY_LIMIT };
   }
 
   if (!hasPlatformKeys(provider)) {
@@ -539,7 +539,7 @@ export default async function handler(req, res) {
     // Meter the shared pool (feeds the "View Usage" menu). Awaited so the
     // serverless function isn't frozen mid-write; recordPlatformUsage never throws.
     await recordPlatformUsage(provider);
-    return res.status(200).json(result);
+    return res.status(200).json(quotaInfo ? { ...result, quota: quotaInfo } : result);
   } catch (err) {
     console.error(
       "[ai-agent/chat] platform-key provider error:",
