@@ -5,6 +5,7 @@
 
 import { degradeCompleteForExport } from "../../shared/complete-question.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { HTML5_ICON_SVG } from "../home/icons.js";
 
 // Question helpers
 import {
@@ -31,7 +32,7 @@ export async function buildQuizHtml(
     userAnswers = [],
     htmlOptions = {},
 ) {
-  ({ questions, userAnswers } = degradeCompleteForExport(questions, userAnswers));
+    ({ questions, userAnswers } = degradeCompleteForExport(questions, userAnswers));
     // Fix #settings-panel: buildQuizHtml() is shared by the standalone
     // "results" HTML export and the PDF exporter, and PDF reaches it
     // through download-quiz-modal.js's Settings Panel. The panel's
@@ -531,9 +532,10 @@ export async function exportToHtml(config, questions, userAnswers = []) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
     showNotification(
         "HTML file Downloaded",
         "You have it now",
-        "./assets/images/HTML_Icon.png",
+        HTML5_ICON_SVG,
     );
 }

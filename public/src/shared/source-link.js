@@ -1,9 +1,9 @@
 // Pure helpers for the «المصدر» row of every info modal (quiz / lesson / notebook).
 // When the source is a Google Drive / Docs link, the modals show the Drive icon.
-export const DRIVE_ICON_SRC = "/assets/images/google-drive-icon.webp";
-export const YOUTUBE_ICON_SRC = "/assets/images/youtube-icon.webp";
-export const PLATFORM_ICON_SRC = "/favicon.png";
+import { YOUTUBE_ICON_SVG, GOOGLE_DRIVE_ICON_SVG, svgDataUrl } from "../features/home/icons.js";
 
+const DRIVE_ICON_SRC = svgDataUrl(GOOGLE_DRIVE_ICON_SVG);
+const YOUTUBE_ICON_SRC = svgDataUrl(YOUTUBE_ICON_SVG);
 const DRIVE_HOSTS = ["drive.google.com", "docs.google.com", "drive.usercontent.google.com"];
 
 export function sourceIconSrc(value) {

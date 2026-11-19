@@ -5,7 +5,7 @@
 // The info/download logic lives in shared/notebook-export.js (pure, unit-tested).
 import { escapeHtml } from "./escape-html.js";
 import { createExamInfoSubmenu } from "./item-dropdown-menu.js";
-import { SPARKLE_ICON_SVG, DOWNLOAD_ICON_SVG, JSON_FILE_ICON_SVG } from "./icons.js";
+import { SPARKLE_ICON_SVG, DOWNLOAD_ICON_SVG, JSON_FILE_ICON_SVG, HTML5_ICON_SVG, PDF_ICON_SVG, ZIP_ICON_SVG, MATLAB_ICON_SVG } from "./icons.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 import { renderMarkdown } from "../../shared/markdown.js";
 import { showNotification } from "../../components/notifications/notifications.js";
@@ -85,7 +85,7 @@ function hydrateNotebookInfo(core, info, url) {
   }
   Promise.allSettled(tasks)
     .then(() => (info.createdBy
-      ? fetchCreatorById(info.createdBy).then((creator) => { info.creator = creator; }).catch(() => {})
+      ? fetchCreatorById(info.createdBy).then((creator) => { info.creator = creator; }).catch(() => { })
       : null))
     .finally(() => { info.creatorDone = true; rerender(); });
 }
@@ -178,12 +178,12 @@ export function showNotebookDownloadModal(row, triggerBtn = null) {
   const CPP_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 15l-2 -2 2-2M15 11l2 2-2 2"/></svg>';
   const allFormats = [
     { kind: "ipynb", label: "Jupyter Notebook", extension: ".ipynb", icon: JSON_FILE_ICON_SVG },
-    { kind: "m", label: "MATLAB", extension: ".m", icon: '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 17-5-5 5-5"/><path d="m16 7 5 5-5 5"/><path d="m14 4-4 16"/></svg>' },
+    { kind: "m", label: "MATLAB", extension: ".m", icon: MATLAB_ICON_SVG },
     { kind: "cpp", label: "C++", extension: ".cpp", icon: CPP_ICON },
     { kind: "json", label: "JSON (كل المحتوى)", extension: ".json", icon: JSON_FILE_ICON_SVG },
-    { kind: "html", label: "HTML", extension: ".html", icon: '<img src="/assets/images/HTML_Icon.png" alt="" aria-hidden="true">' },
-    { kind: "zip", label: "Notebook + Files", extension: ".zip", icon: '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>' },
-    { kind: "pdf", label: "PDF", extension: "طباعة / حفظ كـ PDF", icon: '<img src="/assets/images/PDF_Icon.png" alt="" aria-hidden="true">' },
+    { kind: "html", label: "HTML", extension: ".html", icon: HTML5_ICON_SVG },
+    { kind: "zip", label: "Notebook + Files", extension: ".zip", icon: ZIP_ICON_SVG },
+    { kind: "pdf", label: "PDF", extension: "طباعة / حفظ كـ PDF", icon: PDF_ICON_SVG },
   ];
   // The script format follows the notebook's runtime: .cpp for C++ notebooks, .m for MATLAB ones.
   const formats = allFormats.filter((f) => (f.kind === "m" ? !isCpp : f.kind === "cpp" ? isCpp : true));

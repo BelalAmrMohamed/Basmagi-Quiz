@@ -4,6 +4,7 @@
 // `docx` library used, included in this file.
 
 import { degradeCompleteForExport } from "../../shared/complete-question.js";
+import { WORD_ICON_SVG } from "../home/icons.js";
 import {
   _alert,
   showNotification,
@@ -1126,7 +1127,7 @@ export async function exportToWord(
     showNotification(
       "Word document downloaded.",
       "You have it now",
-      "./assets/images/word_icon.png",
+      WORD_ICON_SVG,
     );
 
     return { success: true, filename };

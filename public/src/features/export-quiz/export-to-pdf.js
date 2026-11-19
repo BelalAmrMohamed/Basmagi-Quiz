@@ -24,6 +24,7 @@
 import { degradeCompleteForExport } from "../../shared/complete-question.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { buildQuizHtml } from "./export-to-html.js";
+import { PDF_ICON_SVG } from "../home/icons.js";
 
 // =========================================================
 // PRINT-ONLY CSS OVERRIDES
@@ -379,7 +380,7 @@ export async function exportToPdf(
     showNotification(
       "جاهز للحفظ كـ PDF",
       'اختر "حفظ كـ PDF" من نافذة الطباعة',
-      "./assets/images/PDF_Icon.png",
+      PDF_ICON_SVG,
     );
     return { success: true };
   } catch (error) {

@@ -10,11 +10,16 @@
 import { routeFile, workspaceMime } from "../../shared/runtime-config.js";
 import { folderSyncSupported, hasSavedRoot } from "../../shared/folder-sync.js";
 import { buildNotebookBundle } from "../../shared/notebook-bundle.js";
-
-const ICON = "/assets/images/google-drive-icon.webp";
-
+import { GOOGLE_DRIVE_ICON_SVG, svgDataUrl } from "../home/icons.js";
+const DRIVE_ICON_SRC = svgDataUrl(GOOGLE_DRIVE_ICON_SVG);
+const driveIcon = (size) => {
+  const icon = Object.assign(new Image(), { src: DRIVE_ICON_SRC, alt: "", width: size, height: size });
+  icon.setAttribute("aria-hidden", "true");
+  return icon;
+};
 const T = {
-  en: { folder: "Connect folder", syncNow: "Sync folder", folderOff: "Disconnect folder", drive: "Import from Drive", backup: "Back up to Drive", driveOff: "Disconnect Drive",
+  en: {
+    folder: "Connect folder", syncNow: "Sync folder", folderOff: "Disconnect folder", drive: "Import from Drive", backup: "Back up to Drive", driveOff: "Disconnect Drive",
     saveFirst: "Save the notebook first to sync its files.", synced: (a, b) => `Folder synced (${a} to folder, ${b} to browser).`, importTitle: "Import from Google Drive", importBtn: "Import", cancel: "Cancel",
     toCells: "→ notebook cells", toWs: "→ workspace files", toBundle: "→ notebook bundle", unsupported: "not supported yet", bundleHere: "open /notebook/new to import bundles", ifContent: "The notebook already has content:", append: "Append", replace: "Replace",
     none: "No importable files selected.", err: "Something went wrong", delBrowser: (n) => `These files were removed from the folder:\n${n}\n\nDelete them from the browser too? (Cancel keeps them)`, delDisk: (n) => `These files were deleted in the browser:\n${n}\n\nDelete them from the folder too? (Cancel keeps them)`,
@@ -22,8 +27,10 @@ const T = {
     backedUpTitle: "Backed up to Google Drive", backedUpNew: (n, f) => `Created “${n}” in the “${f}” folder.`, backedUpUpd: (n, f) => `Updated “${n}” in the “${f}” folder.`, openFile: "Open file", openFolder: "Open folder",
     backedUpShort: (n, f) => `Backed up to Drive: “${n}” in “${f}”.`,
     importedTitle: (n) => `Imported ${n} file(s) from Google Drive`, importedFail: (n) => `Could not import: ${n}`, hint: "Your notebook backups on Google Drive:", noBackups: "No backups found yet. Use “Back up to Drive” first, or browse Drive.",
-    browse: "Browse other Drive files…", listFail: "Could not list your backups.", noAccess: "Google Drive did not allow reading this file with the connected account. Pick it again using the same Google account you connected.", dismiss: "Dismiss" },
-  ar: { folder: "ربط مجلد", syncNow: "مزامنة المجلد", folderOff: "فصل المجلد", drive: "استيراد من Drive", backup: "نسخ احتياطي إلى Drive", driveOff: "فصل Drive",
+    browse: "Browse other Drive files…", listFail: "Could not list your backups.", noAccess: "Google Drive did not allow reading this file with the connected account. Pick it again using the same Google account you connected.", dismiss: "Dismiss"
+  },
+  ar: {
+    folder: "ربط مجلد", syncNow: "مزامنة المجلد", folderOff: "فصل المجلد", drive: "استيراد من Drive", backup: "نسخ احتياطي إلى Drive", driveOff: "فصل Drive",
     saveFirst: "احفظ الدفتر أولاً لمزامنة ملفاته.", synced: (a, b) => `تمت المزامنة (${a} إلى المجلد، ${b} إلى المتصفح).`, importTitle: "الاستيراد من Google Drive", importBtn: "استيراد", cancel: "إلغاء",
     toCells: "← خلايا الدفتر", toWs: "← ملفات مساحة العمل", toBundle: "← حزمة دفتر", unsupported: "غير مدعوم حالياً", bundleHere: "افتح /notebook/new لاستيراد الحزم", ifContent: "الدفتر يحتوي على محتوى:", append: "إضافة", replace: "استبدال",
     none: "لا توجد ملفات قابلة للاستيراد.", err: "حدث خطأ", delBrowser: (n) => `هذه الملفات حُذفت من المجلد:\n${n}\n\nهل تحذفها من المتصفح أيضاً؟ (إلغاء = إبقاؤها)`, delDisk: (n) => `هذه الملفات حُذفت من المتصفح:\n${n}\n\nهل تحذفها من المجلد أيضاً؟ (إلغاء = إبقاؤها)`,
@@ -31,7 +38,8 @@ const T = {
     backedUpTitle: "تم النسخ الاحتياطي إلى Google Drive", backedUpNew: (n, f) => `تم إنشاء «${n}» داخل المجلد «${f}».`, backedUpUpd: (n, f) => `تم تحديث «${n}» داخل المجلد «${f}».`, openFile: "فتح الملف", openFolder: "فتح المجلد",
     backedUpShort: (n, f) => `نُسخ احتياطياً إلى Drive: «${n}» داخل «${f}».`,
     importedTitle: (n) => `تم استيراد ${n} ملف من Google Drive`, importedFail: (n) => `تعذّر استيراد: ${n}`, hint: "نسخ دفاترك الاحتياطية على Google Drive:", noBackups: "لا توجد نسخ احتياطية بعد. استخدم «نسخ احتياطي إلى Drive» أولاً أو تصفّح Drive.",
-    browse: "تصفّح ملفات أخرى من Drive…", listFail: "تعذّر عرض نسخك الاحتياطية.", noAccess: "لم يسمح Google Drive بقراءة هذا الملف بالحساب المتصل. اخترْه مرة أخرى بنفس حساب Google الذي ربطته.", dismiss: "إغلاق" },
+    browse: "تصفّح ملفات أخرى من Drive…", listFail: "تعذّر عرض نسخك الاحتياطية.", noAccess: "لم يسمح Google Drive بقراءة هذا الملف بالحساب المتصل. اخترْه مرة أخرى بنفس حساب Google الذي ربطته.", dismiss: "إغلاق"
+  },
 };
 
 const BACKUP_IDS = "basmagi_drive_backups"; // { workspaceKey: driveFileId } (file ids only)
@@ -60,7 +68,7 @@ export function mountFilesStrip(ctx) {
     card.replaceChildren();
     if (!m) { card.hidden = true; refresh(); return; }
     card.dataset.kind = m.kind || "info"; card.hidden = false;
-    const icon = Object.assign(new Image(), { src: ICON, alt: "", width: 22, height: 22 }); icon.setAttribute("aria-hidden", "true");
+    const icon = driveIcon(22);
     const body = document.createElement("div"); body.className = "nb-files-card-body";
     if (m.title) body.append(Object.assign(document.createElement("strong"), { textContent: m.title }));
     if (m.text) body.append(Object.assign(document.createElement("span"), { textContent: m.text }));
@@ -107,8 +115,8 @@ export function mountFilesStrip(ctx) {
     folderOff = mk(t.folderOff, async () => { await (await import("../../shared/folder-sync.js")).clearRoot(); folderBtn.textContent = t.folder; folderOff.hidden = true; say(""); });
     folderOff.hidden = true;
     el.append(folderBtn, folderOff);
-    hasSavedRoot().then((has) => { if (has) { folderBtn.textContent = t.syncNow; folderOff.hidden = false; void runSync({ request: false }).catch(() => {}); } });
-    ctx.bridge.subscribe(() => { clearTimeout(timer); timer = setTimeout(() => { if (!folderOff.hidden) void runSync({ request: false }).catch(() => {}); }, 1200); });
+    hasSavedRoot().then((has) => { if (has) { folderBtn.textContent = t.syncNow; folderOff.hidden = false; void runSync({ request: false }).catch(() => { }); } });
+    ctx.bridge.subscribe(() => { clearTimeout(timer); timer = setTimeout(() => { if (!folderOff.hidden) void runSync({ request: false }).catch(() => { }); }, 1200); });
   }
 
   // ── Google Drive ──
@@ -174,7 +182,7 @@ export function mountFilesStrip(ctx) {
     const dlg = document.createElement("dialog");
     dlg.className = "nb-files-dialog"; dlg.dir = el.dir;
     const head = document.createElement("div"); head.className = "nb-files-dialog-head";
-    head.append(Object.assign(new Image(), { src: ICON, alt: "", width: 22, height: 22 }), Object.assign(document.createElement("h3"), { textContent: t.importTitle }));
+    head.append(driveIcon(22), Object.assign(document.createElement("h3"), { textContent: t.importTitle }));
     const hint = Object.assign(document.createElement("p"), { className: "nb-files-hint", textContent: t.hint });
     const list = document.createElement("div"); list.className = "nb-files-list";
     const errLine = Object.assign(document.createElement("p"), { className: "nb-files-err", hidden: true });
@@ -264,7 +272,7 @@ export function mountFilesStrip(ctx) {
       b.type = "button"; b.setAttribute("role", "menuitem"); b.dataset.nbDrive = it.id;
       if (i === 0) b.dataset.nbDriveFirst = "";
       if (it.id === "disconnect") b.hidden = !connected; // only offered while connected
-      const img = Object.assign(new Image(), { src: ICON, alt: "", width: 18, height: 18 }); img.setAttribute("aria-hidden", "true");
+      const img = driveIcon(18);
       b.append(img, Object.assign(document.createElement("span"), { textContent: it.label }));
       b.addEventListener("click", async () => {
         b.closest("details")?.removeAttribute("open");

@@ -15,6 +15,11 @@
 
 import {
   JSON_FILE_ICON_SVG,
+  PPTX_FILE_ICON_SVG,
+  PDF_ICON_SVG,
+  WORD_ICON_SVG,
+  MD_ICON_SVG,
+  svgDataUrl,
 } from "../../features/home/icons.js";
 import { showNotification } from "../notifications/notifications.js";
 import { buildSourceActions } from "./export-card.js";
@@ -590,7 +595,7 @@ const DOWNLOAD_FORMAT_OPTIONS = [
     format: "md",
     label: "Markdown",
     extension: ".md",
-    iconUrl: "./assets/images/mardownIcon.png",
+    iconSvg: MD_ICON_SVG,
     canCopy: true,
   },
   {
@@ -604,21 +609,21 @@ const DOWNLOAD_FORMAT_OPTIONS = [
     format: "pdf",
     label: "PDF",
     extension: ".pdf",
-    iconUrl: "./assets/images/PDF_Icon.png",
+    iconSvg: PDF_ICON_SVG,
     canCopy: false,
   },
   {
     format: "pptx",
     label: "PowerPoint",
     extension: ".pptx",
-    iconUrl: "./assets/images/pptx_icon.png",
+    iconSvg: PPTX_FILE_ICON_SVG,
     canCopy: false,
   },
   {
     format: "docx",
     label: "Word",
     extension: ".docx",
-    iconUrl: "./assets/images/word_icon.png",
+    iconSvg: WORD_ICON_SVG,
     canCopy: false,
   },
 ];
@@ -797,13 +802,13 @@ export function showDownloadModal({
    * progress panel. Resolves once the export settles (success, failure,
    * or user cancellation) and always restores the grid afterwards.
    */
-  const runWithProgressPanel = async (opt, iconUrl, label, exportOptions) => {
+  const runWithProgressPanel = async (opt, label, exportOptions) => {
     const controller = new AbortController();
     activeController = controller;
 
     grid.style.display = "none";
     progressPanel.style.display = "flex";
-    progressIcon.src = iconUrl;
+    progressIcon.src = opt.iconSvg ? svgDataUrl(opt.iconSvg) : opt.iconUrl;
     progressLabel.textContent = label;
     progressCancelBtn.disabled = false;
     progressCancelBtn.textContent = "إلغاء";
@@ -871,7 +876,7 @@ export function showDownloadModal({
         }
 
         if (usesProgressPanel) {
-          await runWithProgressPanel(opt, opt.iconUrl, opt.label, exportOptions);
+          await runWithProgressPanel(opt, opt.label, exportOptions);
         } else if (opt.format === "json") {
           const fileContent = await buildJsonString();
           const blob = new Blob([fileContent], { type: "application/json" });
