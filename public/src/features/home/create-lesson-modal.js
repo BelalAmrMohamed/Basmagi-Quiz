@@ -1,7 +1,7 @@
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { showNotification } from "../../components/notifications/notifications.js";
-import { hasSameLevelCollision, currentFolderId } from "./user-quizzes-folders.js";
-import { renderUserQuizzesView } from "./user-quizzes-view.js";
+import { hasSameLevelCollision, currentFolderId } from "./user-content-folders.js";
+import { renderUserContentView } from "./user-content-view.js";
 import { wireModalDismiss, fadeOutAndRemove } from "./modal-utils.js";
 import { normalizeLessonJson } from "../lesson/lesson-json.js";
 
@@ -178,7 +178,7 @@ export function openInlineCreateLessonModal() {
       return;
     }
     close();
-    renderUserQuizzesView();
+    renderUserContentView();
     showNotification(
       "تم إنشاء الدرس",
       targetParentId

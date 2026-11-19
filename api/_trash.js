@@ -2,7 +2,7 @@
 // api/_trash.js
 // Shared helpers for the soft-delete/trash/restore/purge flow (shared,
 // Supabase-backed quizzes/folders/courses area only — NOT the localStorage
-// "/#my-quizzes" trash, which is entirely client-side).
+// "/my-content" trash, which is entirely client-side).
 //
 // Used by:
 //   - api/college-quiz.js (quiz soft-delete via handleDeleteQuiz)

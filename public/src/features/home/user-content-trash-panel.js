@@ -1,7 +1,7 @@
 // ============================================================================
-// public/src/features/home/user-quizzes-trash-panel.js
-// LOCAL TRASH PANEL — "سلة المهملات" dialog for the "امتحاناتك" section.
-// Reads/writes exclusively through user-quizzes-trash.js; owns only
+// public/src/features/home/user-content-trash-panel.js
+// LOCAL TRASH PANEL — "سلة المهملات" dialog for the "محتواي" section.
+// Reads/writes exclusively through user-content-trash.js; owns only
 // rendering + the confirm flows. See plan §4/§6 (this is the local mirror of
 // the admin trash panel in control.js) and §8 Step 8.
 // ============================================================================
@@ -13,9 +13,9 @@ import {
     purgeAllTrash,
     getTrashRetentionDays,
     setTrashRetentionDays,
-} from "./user-quizzes-trash.js";
-import { renderUserQuizzesView } from "./user-quizzes-view.js";
-import { refreshUserQuizzesCard } from "./course-count.js";
+} from "./user-content-trash.js";
+import { renderUserContentView } from "./user-content-view.js";
+import { refreshUserContentCard } from "./course-count.js";
 import { _confirm, _confirmTyped, showNotification } from "../../components/notifications/notifications.js";
 import { TRASH_ICON_SVG, RESTORE_ICON_SVG } from "./icons.js";
 
@@ -111,8 +111,8 @@ function handleRestore(entry, listEl) {
     }
     showNotification("تمت الاستعادة", `تم استعادة "${entry.label}" بنجاح.`, "success");
     renderEntries(listEl);
-    renderUserQuizzesView();
-    refreshUserQuizzesCard();
+    renderUserContentView();
+    refreshUserContentCard();
 }
 
 async function handlePurge(entry, listEl) {
@@ -172,11 +172,11 @@ function buildHtml() {
 
 /**
  * Opens the local trash panel dialog. Entry point wired from the
- * "امتحاناتك" card's dropdown (root-view.js), same pattern as
+ * "محتواي" card's dropdown (root-view.js), same pattern as
  * showUserQuizInfoModal()'s createAndShowDialog usage in
  * quiz-info-modal.js — reuses that same `.quiz-info-dialog` shell class so
  * no new dialog chrome/CSS is needed for the outer frame, only the
- * trash-specific rows inside it (see user-quizzes-trash-panel.css).
+ * trash-specific rows inside it (see user-content-trash-panel.css).
  */
 export function openLocalTrashPanel() {
     if (dialogEl) return; // already open

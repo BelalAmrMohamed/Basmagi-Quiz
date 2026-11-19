@@ -1,12 +1,12 @@
 // ============================================================================
 // public/src/features/home/quiz-schema.js
-// QUIZ SCHEMA HELPERS — reading fields across old/new user-quiz storage
+// QUIZ SCHEMA HELPERS — reading fields across old/new user-content storage
 // schemas, normalizing legacy question shapes, and building new entries.
 // ============================================================================
 
 import { inferQuestionType } from "../../shared/rate-answers.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
-import { hasSameLevelCollision } from "./user-quizzes-folders.js";
+import { hasSameLevelCollision } from "./user-content-folders.js";
 
 /** Read a field from either old or new schema */
 export function qz(quiz, field) {
@@ -116,7 +116,7 @@ export function formatQuestionTypesForDownload(questionTypes) {
  * Save a newly-created quiz into "user_quizzes" localStorage — the single
  * source of truth for "create a new user quiz and persist it" used by both
  * the manual paste-JSON modal (create-quiz-modal.js) and the AI Helper's
- * create_quiz tool call (user-quizzes-view.js). Callers are responsible for
+ * create_quiz tool call (user-content-view.js). Callers are responsible for
  * validating `parsed.questions` is non-empty before calling this.
  *
  * @param {{questions: Array, meta?: object, stats?: object}} parsed

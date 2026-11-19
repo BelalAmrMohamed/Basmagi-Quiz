@@ -8,7 +8,7 @@
 // Two distinct data sources this resolves against:
 //   - User-created quizzes/folders/courses: live entirely in the browser's
 //     localStorage (`user_quizzes`, one flat array, see
-//     user-quizzes-folders.js). Fully resolvable client-side — this module
+//     user-content-folders.js). Fully resolvable client-side — this module
 //     builds a real summary (question count/types for a quiz, child counts
 //     for a folder/course) from data already on hand.
 //   - Server-hosted main-page courses (see root-view.js): identified only by `.key`/`.name` from the static
@@ -29,7 +29,7 @@
 import { loadAIAgentModule } from "./ai-agent-lazy.js";
 import {
   resolveUserItemById,
-  readUserQuizzes,
+  readUserContent,
   buildUserRootAttachment,
 } from "./ai-agent-item-lookup.js";
 import { loadFullQuizData } from "../../features/home/quiz-data-loader.js";
@@ -147,12 +147,12 @@ export function buildPlatformNotebookAttachment(nb) {
 }
 
 export function buildUserRootAttachmentForAskAi() {
-  return buildUserRootAttachment(readUserQuizzes());
+  return buildUserRootAttachment(readUserContent());
 }
 
 /**
  * Opens the AI Agent modal (pageKey: "home", matching the home page's own
- * createAIAgentFab configuration — see user-quizzes-view.js) with the
+ * createAIAgentFab configuration — see user-content-view.js) with the
  * given platform-item attachment pre-attached, ready for the user to type
  * a prompt and send. Never auto-sends (see panel.addPendingAttachment's
  * own doc comment) — the user stays in control of when/whether to
@@ -164,7 +164,7 @@ export function buildUserRootAttachmentForAskAi() {
  * ai-agent-readonly-tools.js) — never the write-side actions
  * (create_quiz/edit_quiz/delete_quiz/create_folder/create_course/
  * move_item). Those depend on live folder-tree context
- * (buildFolderTreeContextPrompt) that's private to user-quizzes-view.js
+ * (buildFolderTreeContextPrompt) that's private to user-content-view.js
  * and not safely reconstructable from a card/tooltip click handler
  * without real risk of circular imports or stale/wrong tool wiring — see
  * this module's own header comment. The read-only tools have no such
@@ -209,7 +209,7 @@ export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
         const attachmentLabel = attachment.itemType === "notebook" ? "الدفتر" : "الدرس";
         const requestedId = String(toolCall.input?.lessonId || "");
         if (![attachment.id].some((id) => String(id || "") === requestedId)) {
-          const local = resolveUserItemById(requestedId, readUserQuizzes());
+          const local = resolveUserItemById(requestedId, readUserContent());
           if (!local || local.kind !== "lesson") throw new Error("الدرس المطلوب غير موجود في المرفق الحالي.");
           const localLabel = local.itemType === "notebook" ? "الدفتر" : "الدرس";
           return `بيانات ${localLabel} ${local.title} (المعرّف ${requestedId}):\n${JSON.stringify(local.payload || {})}`;
@@ -248,7 +248,7 @@ export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
         [attachment.id, attachment.dbId].some((id) => String(id || "") === requestedId)
         ? attachment
         : null;
-      const quiz = resolveUserItemById(requestedId, readUserQuizzes());
+      const quiz = resolveUserItemById(requestedId, readUserContent());
       if (!directAttachedQuiz && !attachedQuiz && (!quiz || quiz.kind !== "quiz")) {
         throw new Error("الامتحان المطلوب غير موجود في المرفق الحالي.");
       }

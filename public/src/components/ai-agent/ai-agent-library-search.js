@@ -23,7 +23,7 @@
 // =============================================================================
 
 import { getManifest } from "../../shared/quizManifest.js";
-import { listRecentUserItems, resolveUserItemById, readUserQuizzes } from "./ai-agent-item-lookup.js";
+import { listRecentUserItems, resolveUserItemById, readUserContent } from "./ai-agent-item-lookup.js";
 
 /**
  * Same substring/AND-across-terms matching search-manager.js's own
@@ -124,7 +124,7 @@ export async function searchLibrary(query, options = {}) {
  * @returns {Promise<object|null>}
  */
 export async function resolveLibraryItemById(id, kindHint) {
-    const local = resolveUserItemById(id, readUserQuizzes());
+    const local = resolveUserItemById(id, readUserContent());
     if (local) return local;
 
     const { categoryTree, examList } = await getManifest();

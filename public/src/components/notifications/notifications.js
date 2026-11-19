@@ -514,7 +514,7 @@ export function _prompt(message, defaultValue = "", options = {}) {
 
       Usage:
         const ok = await _confirmTyped({
-          message: "سيتم حذف كل امتحاناتك ومجلداتك نهائياً ...",
+          message: "سيتم حذف كل محتواك ومجلداتك نهائياً ...",
           confirmPhrase: "حذف الكل",
         });
         if (!ok) return;

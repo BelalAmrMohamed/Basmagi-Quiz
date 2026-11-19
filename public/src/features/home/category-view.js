@@ -18,7 +18,7 @@ import {
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
-import { refreshUserQuizzesCard } from "./course-count.js";
+import { refreshUserContentCard } from "./course-count.js";
 import { isRecentlyAdded } from "./date-utils.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { createExamCard, createLessonCard, createNotebookCard, createFolderCard } from "./item-card.js";
@@ -41,7 +41,7 @@ import {
   MOVE_TO_ICON_SVG,
   TRASH_ICON_SVG,
 } from "./icons.js";
-import { copyCategoryTreeToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
+import { copyCategoryTreeToUserContent, withCopyButtonLoadingState } from "./copy-to-my-content.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import {
   openAIAgentWithAttachment,
@@ -326,9 +326,9 @@ function openFolderMenu(btn, courseData) {
     copyToMine.onclick = async (e) => {
       e.stopPropagation();
       await withCopyButtonLoadingState(copyToMine, () =>
-        copyCategoryTreeToUserQuizzes(courseData, getCategoryTree(), "folder"),
+        copyCategoryTreeToUserContent(courseData, getCategoryTree(), "folder"),
       );
-      refreshUserQuizzesCard();
+      refreshUserContentCard();
       closeMenu();
     };
     menu.appendChild(copyToMine);

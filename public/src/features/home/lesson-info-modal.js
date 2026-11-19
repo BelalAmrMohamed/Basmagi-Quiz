@@ -1,7 +1,7 @@
 // ============================================================================
 // public/src/features/home/lesson-info-modal.js
 // LESSON INFO MODAL — the "معلومات الدرس" read-only dialog opened from a
-// workspace lesson card's ⋮ menu (see user-quiz-card.js).
+// workspace lesson card's ⋮ menu (see user-content-card.js).
 // ============================================================================
 // Deliberately NOT a reuse of quiz-info-modal.js / buildQuizInfoModalHtml():
 // that builder is organised around quiz-only facts (question count, question

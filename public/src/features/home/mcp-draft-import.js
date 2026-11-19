@@ -23,7 +23,7 @@ import { normalizeLessonDraft } from "../lesson/lesson-json.js";
 import { notebookFromPayload, buildPayload as buildNotebookPayload, validateState as validateNotebookState } from "../notebook/notebook-editor-model.js";
 import { buildUserQuizEntry } from "./quiz-schema.js";
 import { buildLocalNotebookEntry, dedupeTitle } from "./local-notebook.js";
-import { hasSameLevelCollision } from "./user-quizzes-folders.js";
+import { hasSameLevelCollision } from "./user-content-folders.js";
 import * as wsStore from "../../shared/workspace-store.js";
 import { showNotification as showToast } from "../../components/notifications/notifications.js";
 

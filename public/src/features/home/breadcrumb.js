@@ -1,7 +1,7 @@
 // ============================================================================
 // public/src/features/home/breadcrump.js
 // BREADCRUMB — the "الرجوع إلى ..." back-navigation bar shown once the user
-// has drilled into at least one category or the My Quizzes view.
+// has drilled into at least one category or the My Content view.
 // ============================================================================
 
 import { breadcrumb } from "./dom-refs.js";

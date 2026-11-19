@@ -12,8 +12,8 @@ export class SearchManager {
     this.allCourses = [];
     this.filteredCourses = [];
     this.categoryTree = null;
-    this.userQuizzes = [];
-    this.currentContext = null; // 'courses' or 'quizzes' or 'userQuizzes'
+    this.userContent = [];
+    this.currentContext = null; // 'courses' or 'quizzes' or 'userContent'
 
     this.searchConfig = {
       debounceDelay: 300,
@@ -133,7 +133,7 @@ export class SearchManager {
       const currentCategory = navStack[navStack.length - 1];
 
       if (currentCategory.name === "محتواي" || currentCategory.name === "امتحاناتك") {
-        this.currentContext = "userQuizzes";
+        this.currentContext = "userContent";
         if (this.elements.searchInput) {
           this.elements.searchInput.placeholder = "ابحث في محتواي...";
         }
@@ -289,8 +289,8 @@ export class SearchManager {
       this.searchCourses();
     } else if (this.currentContext === "quizzes") {
       this.searchQuizzes();
-    } else if (this.currentContext === "userQuizzes") {
-      this.searchUserQuizzes();
+    } else if (this.currentContext === "userContent") {
+      this.searchUserContent();
     }
   }
 
@@ -408,33 +408,33 @@ export class SearchManager {
   }
 
   // NEW: Search User Quizzes
-  searchUserQuizzes() {
-    if (!this.userQuizzes || this.userQuizzes.length === 0) {
-      if (this.onSearchCallback) this.onSearchCallback([], "userQuizzes");
+  searchUserContent() {
+    if (!this.userContent || this.userContent.length === 0) {
+      if (this.onSearchCallback) this.onSearchCallback([], "userContent");
       return;
     }
 
-    let results = this.userQuizzes;
+    let results = this.userContent;
 
     // Apply search query filter
     if (
       this.filters.searchQuery &&
       this.filters.searchQuery.length >= this.searchConfig.minSearchLength
     ) {
-      results = this.filterUserQuizzesBySearchQuery(results);
+      results = this.filterUserContentBySearchQuery(results);
       this.addToSearchHistory(this.filters.searchQuery);
     }
 
     this.updateUI(results);
 
     if (this.onSearchCallback) {
-      this.onSearchCallback(results, "userQuizzes");
+      this.onSearchCallback(results, "userContent");
     }
   }
 
-  setUserQuizzesContext(quizzes) {
-    this.userQuizzes = quizzes;
-    this.currentContext = "userQuizzes";
+  setUserContentContext(quizzes) {
+    this.userContent = quizzes;
+    this.currentContext = "userContent";
   }
 
   /**
@@ -525,7 +525,7 @@ export class SearchManager {
     });
   }
 
-  filterUserQuizzesBySearchQuery(quizzes) {
+  filterUserContentBySearchQuery(quizzes) {
     const query = this.filters.searchQuery.toLowerCase().trim();
     const terms = query.split(/\s+/);
 

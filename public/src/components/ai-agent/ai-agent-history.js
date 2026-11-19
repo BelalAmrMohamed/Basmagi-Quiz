@@ -20,6 +20,7 @@ import {
   displayTitleFor,
 } from "./ai-agent-history-idb.js";
 import { openAgentDropdown } from "./ai-agent-dropdown.js";
+import { attachHistoryTooltip, hideHistoryTooltip } from "./ai-agent-history-tooltip.js";
 import { _confirm } from "../notifications/notifications.js";
 
 const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
@@ -74,7 +75,7 @@ export function createHistoryPanel(options = {}) {
    * PHASE 5: swaps a history item's title text for an inline `<input>`,
    * committing via renameConversation() on Enter/blur and reverting (no
    * write) on Escape — mirrors the lightweight inline-rename pattern
-   * already used for folders (see renameItem in user-quizzes-folders.js)
+   * already used for folders (see renameItem in user-content-folders.js)
    * rather than a separate modal/prompt() for something this small.
    * @param {HTMLElement} titleEl
    * @param {import("./ai-agent-history-idb.js").Conversation} conv
@@ -135,6 +136,7 @@ export function createHistoryPanel(options = {}) {
    * @param {HTMLElement} titleEl
    */
   function openItemMenu(triggerBtn, conv, titleEl) {
+    hideHistoryTooltip();
     openAgentDropdown(triggerBtn, (menu, closeMenu) => {
       const pinOpt = document.createElement("button");
       pinOpt.type = "button";
@@ -185,6 +187,7 @@ export function createHistoryPanel(options = {}) {
   }
 
   async function refresh() {
+    hideHistoryTooltip();
     list.innerHTML = `<div class="ai-agent-history-loading">جارِ التحميل...</div>`;
     let conversations = [];
     try {
@@ -241,9 +244,17 @@ export function createHistoryPanel(options = {}) {
 
       textCol.appendChild(titleEl);
       textCol.appendChild(timeEl);
-      // Desktop tooltip: full title + relative time (the time row is hidden
-      // on hover-capable devices via CSS).
-      item.title = `${displayTitle}\n${timeEl.textContent}`;
+      // Desktop rich tooltip (full title, last-reply preview, message count,
+      // time). The time row is hidden on hover-capable devices via CSS because
+      // this card carries it; touch devices keep the row as is.
+      attachHistoryTooltip(item, () => ({
+        title: displayTitleFor(conv),
+        messages: conv.messages,
+        pinned: !!conv.pinned,
+        active: item.classList.contains("ai-agent-history-item--active"),
+        timestamp: conv.updatedAt || conv.createdAt,
+        relative: formatRelativeTime(conv.updatedAt || conv.createdAt || Date.now()),
+      }));
 
       const moreBtn = document.createElement("button");
       moreBtn.type = "button";
@@ -270,4 +281,4 @@ export function createHistoryPanel(options = {}) {
 
   panel.refresh = refresh;
   return panel;
-}
+}

@@ -18,6 +18,10 @@
 /* Hide every FAB while the window exists (open, maximized or minimized). */
 body.ai-agent-window-open .ai-agent-fab { display: none !important; }
 
+/* A maximized agent owns the viewport; keep the underlying page from scrolling. */
+html.ai-agent-window-maximized,
+body.ai-agent-window-maximized { overflow: hidden !important; }
+
 .aiw {
   position: fixed;
   display: flex;
@@ -486,10 +490,6 @@ html[data-motion="reduced"] .aiw.is-minimized.is-busy::after { animation: none; 
 .aiw.aiw-narrow .ai-agent-msg--tool-result:has(.ai-agent-created-item),
 .aiw.aiw-narrow .ai-agent-msg--tool-result:has(.ai-agent-flashcard-deck) {
   width: 100%;
-}
-
-.aiw.aiw-narrow .ai-agent-created-item {
-  border-radius: 16px;
 }
 
 .aiw.aiw-narrow .ai-agent-flashcard-deck {

@@ -296,7 +296,7 @@ async function handleSingleUpload(req, res, adminPayload) {
 // Each item's `folderSegments` is the ordered chain of ancestor
 // folder/course names ABOVE it (not including its own name if it's itself
 // a folder/course) — the same shape the client already computes from
-// File.webkitRelativePath for the local userQuizzes folder-tree import,
+// File.webkitRelativePath for the local userContent folder-tree import,
 // reused here for the remote path. `rootName` names the top-level
 // directory the whole batch was picked from, used to resolve an existing
 // course when the batch doesn't itself include a "course" item (i.e.

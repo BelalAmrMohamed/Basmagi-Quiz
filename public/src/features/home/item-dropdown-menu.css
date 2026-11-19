@@ -109,10 +109,10 @@
 }
 
 /*
- * Danger variant — used by the user-quiz Action Overlay's delete option.
+ * Danger variant — used by the user-content Action Overlay's delete option.
  * Same shape/layout as a regular .exam-action-btn, just colored to signal
  * a destructive action (mirrors the error tokens used elsewhere, e.g. the
- * old standalone .user-quiz-delete-btn icon this option replaced).
+ * old standalone .user-content-delete-btn icon this option replaced).
  */
 .exam-action-btn--danger {
     background: var(--color-error-light);

@@ -1,6 +1,6 @@
 /* ============================================================================
-   public/src/features/home/user-quizzes-trash-panel.css
-   "سلة المهملات" (local trash) panel for the "امتحاناتك" section.
+   public/src/features/home/user-content-trash-panel.css
+   "سلة المهملات" (local trash) panel for the "محتواي" section.
    Reuses the shared .quiz-info-dialog shell (quiz-info-modal.css) for the
    outer frame/header/close-button/animations — only the trash-specific
    toolbar + row list are styled here.

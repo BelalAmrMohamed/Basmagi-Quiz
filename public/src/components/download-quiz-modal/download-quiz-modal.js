@@ -3,7 +3,7 @@
 // DOWNLOAD QUIZ MODAL — the shared Download Quiz format-picker popup.
 // ============================================================================
 // can be used from more than the two original call sites (create-quiz page, and
-// the home page's "My Quizzes" / manifest-exam download buttons) without
+// the home page's "My Content" / manifest-exam download buttons) without
 // duplicating markup/styling. See quiz-info-modal/ for the sibling
 // component this mirrors the structure of.
 //

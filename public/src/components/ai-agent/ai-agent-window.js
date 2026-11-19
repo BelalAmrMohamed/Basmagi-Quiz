@@ -213,12 +213,16 @@ export function createAgentWindow(cfg) {
     if (state.maximized) {
       state.maximized = false;
       win.classList.remove("is-maximized");
+      document.documentElement.classList.remove("ai-agent-window-maximized");
+      document.body.classList.remove("ai-agent-window-maximized");
       if (state.savedRect) Object.assign(win.style, state.savedRect);
       setMaxButton(false);
     } else {
       state.maximized = true;
       state.savedRect = { left: win.style.left, top: win.style.top, width: win.style.width, height: win.style.height };
       win.classList.add("is-maximized");
+      document.documentElement.classList.add("ai-agent-window-maximized");
+      document.body.classList.add("ai-agent-window-maximized");
       setMaxButton(true);
     }
     cfg.onMaximizeChange?.(state.maximized);
@@ -255,6 +259,8 @@ export function createAgentWindow(cfg) {
     updateSnapPreview(null);
     state.snapPreview?.remove();
     win.remove();
+    document.documentElement.classList.remove("ai-agent-window-maximized");
+    document.body.classList.remove("ai-agent-window-maximized");
     document.body.classList.remove("ai-agent-window-open");
     cfg.onClose?.();
   }

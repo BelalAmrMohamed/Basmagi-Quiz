@@ -22,7 +22,7 @@ import { CREATE_QUIZ_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-age
 import { CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { isMultiSelectQuestion, isCompleteQuestion } from "../../shared/rate-answers.js";
 import { parseComplete, completeToFirstAnswers, completeToPlain } from "../../shared/complete-question.js";
-import { hasSameLevelCollision } from "../home/user-quizzes-folders.js";
+import { hasSameLevelCollision } from "../home/user-content-folders.js";
 import { renderCreateQuestionNavigator, initCreateQuestionNavigator } from "./question-navigator.js";
 import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar.js";
 import { applyMarkdownToolbarAction } from "../../shared/markdown-toolbar-actions.js";
@@ -851,7 +851,7 @@ function renderEntryItemsGrid() {
     }
   } catch (e) { /* ignore migration errors */ }
 
-  let userQuizzes = _readUserQuizzes();
+  let userContent = _readUserContent();
 
   // ── Helper: render a single tile ──────────────────────────────────────────
   function makeTile(item) {
@@ -933,7 +933,7 @@ function renderEntryItemsGrid() {
     });
 
   // ── Saved quizzes section ─────────────────────────────────────────────────
-  const savedItems = userQuizzes
+  const savedItems = userContent
     .filter((quiz) => {
       const t = quiz.meta?.type;
       return t !== "folder" && t !== "course" && t !== "draft" && t !== "lesson" && t !== "draft-lesson";
@@ -1203,7 +1203,7 @@ function finishFormInit() {
 // ============================================================================
 
 /** Safe read of user_quizzes from localStorage. Always returns an array. */
-function _readUserQuizzes() {
+function _readUserContent() {
   try {
     return JSON.parse(localStorage.getItem("user_quizzes") || "[]");
   } catch (e) {
@@ -1212,7 +1212,7 @@ function _readUserQuizzes() {
 }
 
 /** Safe write of user_quizzes to localStorage. */
-function _writeUserQuizzes(quizzes) {
+function _writeUserContent(quizzes) {
   localStorage.setItem("user_quizzes", JSON.stringify(quizzes));
 }
 
@@ -1240,7 +1240,7 @@ window.chooseEntryAction = function (action) {
 
 /** User picked a specific saved quiz OR draft tile from the entry screen. */
 window.chooseUserQuizToEdit = function (quizId) {
-  const quizzes = _readUserQuizzes();
+  const quizzes = _readUserContent();
   const quiz = readEditorDrafts().find((q) => q.id === quizId && q.meta?.type === "draft") || quizzes.find((q) => q.id === quizId);
   if (!quiz) return;
 
@@ -1260,8 +1260,8 @@ window.chooseUserQuizToEdit = function (quizId) {
 // ============================================================================
 // ENTRY SCREEN — per-tile "more" (⋮) menu: rename / delete
 // A lightweight, purpose-built implementation rather than reusing
-// user-quizzes-folders.js's renameItem()/deleteFolder() — those re-render
-// the home page's own views (renderRootCategories/renderUserQuizzesView),
+// user-content-folders.js's renameItem()/deleteFolder() — those re-render
+// the home page's own views (renderRootCategories/renderUserContentView),
 // which don't exist on this page. This follows the same storage contract
 // (user_quizzes in localStorage, item.meta.title) but re-renders the entry
 // grid instead.
@@ -1305,14 +1305,14 @@ window.renameEntryItem = async function (event, quizId) {
   event.stopPropagation();
   closeAllEntryItemMenus();
 
-  let userQuizzes = [];
+  let userContent = [];
   try {
-    userQuizzes = JSON.parse(localStorage.getItem("user_quizzes") || "[]");
+    userContent = JSON.parse(localStorage.getItem("user_quizzes") || "[]");
   } catch (e) {
-    userQuizzes = [];
+    userContent = [];
   }
 
-  const quiz = userQuizzes.find((q) => q.id === quizId);
+  const quiz = userContent.find((q) => q.id === quizId);
   if (!quiz) return;
 
   const currentTitle = quiz.meta?.title || quiz.title || "";
@@ -1322,7 +1322,7 @@ window.renameEntryItem = async function (event, quizId) {
 
   const parentId = quiz.meta?.parentId || null;
   if (
-    hasSameLevelCollision(userQuizzes, {
+    hasSameLevelCollision(userContent, {
       type: quiz.meta?.type || "quiz",
       title: trimmedTitle,
       parentId,
@@ -1342,7 +1342,7 @@ window.renameEntryItem = async function (event, quizId) {
   } else {
     quiz.title = trimmedTitle;
   }
-  localStorage.setItem("user_quizzes", JSON.stringify(userQuizzes));
+  localStorage.setItem("user_quizzes", JSON.stringify(userContent));
   renderEntryItemsGrid();
 };
 
@@ -1363,14 +1363,14 @@ window.deleteEntryItem = async function (event, quizId) {
 
   if (!(await _confirm("هل أنت متأكد من حذف هذا الامتحان؟"))) return;
 
-  let userQuizzes = [];
+  let userContent = [];
   try {
-    userQuizzes = JSON.parse(localStorage.getItem("user_quizzes") || "[]");
+    userContent = JSON.parse(localStorage.getItem("user_quizzes") || "[]");
   } catch (e) {
-    userQuizzes = [];
+    userContent = [];
   }
 
-  const newQuizzes = userQuizzes.filter((q) => q.id !== quizId);
+  const newQuizzes = userContent.filter((q) => q.id !== quizId);
   localStorage.setItem("user_quizzes", JSON.stringify(newQuizzes));
   renderEntryItemsGrid();
 };
@@ -4536,10 +4536,10 @@ function loadDraftFromLocalStorage() {
 
 function loadQuizFromLocalStorage(quizId) {
   try {
-    const userQuizzes = JSON.parse(
+    const userContent = JSON.parse(
       localStorage.getItem("user_quizzes") || "[]",
     );
-    const quiz = userQuizzes.find((q) => q.id === quizId);
+    const quiz = userContent.find((q) => q.id === quizId);
 
     if (quiz) {
       const headerTitle = document.querySelector(".header h1");
@@ -4878,10 +4878,10 @@ function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
  * @returns {string|null} the new quiz's id, or null on failure — a thrown
  *   error (storage failure) and a same-level name collision are both
  *   reported the same way to the caller (see saveLocally's `if (quizId)`
- *   branch), but a collision sets `saveToUserQuizzes.lastError` first so the
+ *   branch), but a collision sets `saveToUserContent.lastError` first so the
  *   caller can show a specific message instead of the generic fallback.
  */
-function saveToUserQuizzes(quizToSave) {
+function saveToUserContent(quizToSave) {
   try {
     const existingQuizzes = JSON.parse(
       localStorage.getItem("user_quizzes") || "[]",
@@ -4889,8 +4889,8 @@ function saveToUserQuizzes(quizToSave) {
     const title = quizToSave.title?.trim() || "Untitled";
 
     if (hasSameLevelCollision(existingQuizzes, { type: "quiz", title, parentId: null })) {
-      saveToUserQuizzes.lastError =
-        "يوجد امتحان بنفس الاسم في المستوى الرئيسي من امتحاناتك بالفعل.";
+      saveToUserContent.lastError =
+        "يوجد امتحان بنفس الاسم في المستوى الرئيسي من محتواي بالفعل.";
       return null;
     }
 
@@ -4907,9 +4907,9 @@ function saveToUserQuizzes(quizToSave) {
 
 /**
  * @returns {string|null} the quiz's id, or null on failure — same
- *   `lastError` convention as saveToUserQuizzes (see its doc comment).
+ *   `lastError` convention as saveToUserContent (see its doc comment).
  */
-function updateInUserQuizzes(quizId, quizToSave) {
+function updateInUserContent(quizId, quizToSave) {
   try {
     const existingQuizzes = JSON.parse(
       localStorage.getItem("user_quizzes") || "[]",
@@ -4927,8 +4927,8 @@ function updateInUserQuizzes(quizId, quizToSave) {
         excludeId: quizId,
       })
     ) {
-      updateInUserQuizzes.lastError =
-        "يوجد امتحان بنفس الاسم في هذا المستوى من امتحاناتك بالفعل.";
+      updateInUserContent.lastError =
+        "يوجد امتحان بنفس الاسم في هذا المستوى من محتواي بالفعل.";
       return null;
     }
 
@@ -5043,7 +5043,7 @@ window.exportQuiz = function () {
     .replace(/_+/g, "_")
     .replace(/^_|_$/g, "");
 
-  // Shared modal (also used on the homepage's "My Quizzes" download popup —
+  // Shared modal (also used on the homepage's "My Content" download popup —
   // see showDownloadModal() in
   // ../../components/download-quiz-modal/download-quiz-modal.js).
   // buildJsonPayloadString is passed through so the JSON export-quiz/copy still
@@ -5091,10 +5091,10 @@ window.saveLocally = function () {
   setTimeout(() => {
     let quizId;
     if (editingQuizId) {
-      quizId = updateInUserQuizzes(editingQuizId, quizData);
+      quizId = updateInUserContent(editingQuizId, quizData);
     } else {
       // New quiz (possibly from a draft) — save as a real published entry
-      quizId = saveToUserQuizzes(quizData);
+      quizId = saveToUserContent(quizData);
       // Promote: remove the draft entry that was tracking this work-in-progress
       if (currentDraftId) {
         removeEditorDraft(currentDraftId);
@@ -5107,7 +5107,7 @@ window.saveLocally = function () {
     if (quizId) {
       showNotification(
         "تم الحفظ!",
-        'يمكنك العثور عليه في "امتحاناتك"',
+        'يمكنك العثور عليه في "محتواي"',
         "success",
       );
       if (editingQuizId) {
@@ -5120,11 +5120,11 @@ window.saveLocally = function () {
     } else {
       showNotification(
         "خطأ",
-        saveToUserQuizzes.lastError || updateInUserQuizzes.lastError || "فشل حفظ الامتحان",
+        saveToUserContent.lastError || updateInUserContent.lastError || "فشل حفظ الامتحان",
         "error",
       );
-      saveToUserQuizzes.lastError = null;
-      updateInUserQuizzes.lastError = null;
+      saveToUserContent.lastError = null;
+      updateInUserContent.lastError = null;
     }
   }, 500);
 };
@@ -5166,7 +5166,7 @@ async function saveSharedQuizEdit() {
     }
 
     // buildQuizPayload's 2nd arg (quizId) isn't actually read inside the
-    // function — it's only relevant to saveToUserQuizzes' caller, which
+    // function — it's only relevant to saveToUserContent' caller, which
     // spreads it alongside the result. Passed here anyway for readability
     // at the call site; meta.createdAt/path/author_id all get overwritten
     // or ignored server-side in handleUpdateQuiz regardless (see its
@@ -5880,7 +5880,7 @@ function handleAiResetPageToolCall(toolCall) {
 
 /**
  * Single entry point passed as onToolCall to createAIAgentFab — dispatches
- * by tool name, same pattern as handleQuizToolCall in user-quizzes-view.js.
+ * by tool name, same pattern as handleQuizToolCall in user-content-view.js.
  * @param {{name: string, input: object}} toolCall
  * @returns {string} chat bubble text
  */

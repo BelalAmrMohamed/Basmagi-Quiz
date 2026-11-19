@@ -6,7 +6,7 @@
 // Mirrors public/src/features/home/quiz-schema.js's shape: a field-accessor
 // function (`ls`, sibling to that file's `qz`), a normalizer for the stored
 // content, a progress-entry builder, and the same-level collision check
-// reused from user-quizzes-folders.js.
+// reused from user-content-folders.js.
 //
 // ⚠️ Lessons are NEVER scored. Nothing in this file may write to Supabase
 // or touch passed_quizzes_count / current_level / the points system — the
@@ -16,7 +16,7 @@
 
 import { EMBED_REF_BY_TYPE } from "../../shared/content-rules.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
-import { hasSameLevelCollision } from "../home/user-quizzes-folders.js";
+import { hasSameLevelCollision } from "../home/user-content-folders.js";
 
 /**
  * Read a field off a lesson row. Sibling to quiz-schema.js's qz(), kept as
@@ -393,7 +393,7 @@ export function resolveRevealedSections(normalizedContent, progress) {
 }
 
 /**
- * Same-level naming rule for lessons on the local "امتحاناتك" side,
+ * Same-level naming rule for lessons on the local "محتواي" side,
  * mirroring quiz-schema.js's saveNewUserQuiz() guard. The server-side
  * equivalent is hasLessonNameCollision() in api/_itemActions.js.
  *

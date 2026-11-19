@@ -118,7 +118,9 @@ export function openAgentDropdown(triggerBtn, buildContent) {
     }
 
     const menu = document.createElement("div");
-    menu.className = "ai-agent-dropdown-menu";
+    // `--actions`: plain action-row menus (more menu, history item menu) get the
+    // compact icon-tile row design; the mention/slash menus build their own element.
+    menu.className = "ai-agent-dropdown-menu ai-agent-dropdown-menu--actions";
     menu.setAttribute("role", "menu");
     menu.style.visibility = "hidden";
 

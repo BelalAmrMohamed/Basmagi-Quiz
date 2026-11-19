@@ -9,7 +9,7 @@
 // fetch-by-dbId logic inline. showQuizInfoModal() (quiz-info-modal.js) and
 // the download popup's copy-to-text button each had their own smaller
 // re-implementation of the same "load the full quiz row" step. Centralizing
-// here so copy-to-my-quizzes (and any future consumer) doesn't grow a fourth
+// here so copy-to-my-content (and any future consumer) doesn't grow a fourth
 // copy.
 // ============================================================================
 //

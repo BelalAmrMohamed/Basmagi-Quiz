@@ -45,7 +45,7 @@ const _initReady = new Promise((resolve) => {
 async function init() {
   // 1. Redirect immediately if no local admin JWT exists
   if (!isAdminAuthenticated()) {
-    window.location.href = "/#my-quizzes";
+    window.location.href = "/my-content";
     return;
   }
 
@@ -53,7 +53,7 @@ async function init() {
   try {
     _supabaseClient = await syncAdminSession({
       onSignedOut: () => {
-        window.location.href = "/#my-quizzes";
+        window.location.href = "/my-content";
       },
     });
   } catch (err) {
@@ -64,7 +64,7 @@ async function init() {
   _token = getToken();
 
   if (!_token) {
-    window.location.href = "/#my-quizzes";
+    window.location.href = "/my-content";
     return;
   }
 
@@ -278,7 +278,7 @@ async function loadData() {
     if (!res.ok) {
       if (res.status === 401 || res.status === 403) {
         _alert("غير مصرح لك بالدخول إلى هذه الصفحة.");
-        window.location.href = "/#my-quizzes";
+        window.location.href = "/my-content";
         return;
       }
       throw new Error(data.error || "فشل تحميل البيانات");
@@ -679,7 +679,7 @@ function purgeTrashItem(item) {
 }
 
 // ── "إفراغ السلة" — double-confirm (button confirm + typed phrase), same
-// pattern as deleteAllUserQuizzes() on the home page for "حذف الكل". Uses
+// pattern as deleteAllUserContent() on the home page for "حذف الكل". Uses
 // control.html's own typed-confirm modal (rather than the shared
 // notifications.js _confirmTyped(), which depends on theme CSS variables
 // that this standalone dark-gold page doesn't define).
@@ -767,14 +767,14 @@ document.querySelectorAll(".trash-filter-tab").forEach((tab) => {
 // ── Logout ─────────────────────────────────────────────────────────────────────
 // fullSignOut() clears BOTH the local JWT AND calls supabaseClient.auth.signOut()
 // so the Supabase session in localStorage is also terminated.
-// Redirects to /#my-quizzes — the owner can decide to sign back in from there.
+// Redirects to /my-content — the owner can decide to sign back in from there.
 window.logout = async function () {
   try {
     await fullSignOut(_supabaseClient);
   } catch (err) {
     console.error("[control] Error during logout:", err);
   }
-  window.location.href = "/#my-quizzes";
+  window.location.href = "/my-content";
 };
 
 // ── Start ───────────────────────────────────────────────────────────────────────

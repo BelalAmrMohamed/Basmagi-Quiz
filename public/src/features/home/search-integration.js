@@ -19,9 +19,9 @@ import { addSubscribeButton } from "./subscribe-button.js";
 import { createCategoryCard, renderCategory } from "./category-view.js";
 import { createCourseCell, createComb, courseHref, courseSubtext } from "./course-cell.js";
 import { attachCourseActionsMenu } from "./root-view.js";
-import { createExamCard, createUserQuizCard } from "./item-card.js";
+import { createExamCard, createUserContentCard } from "./item-card.js";
 import { renderRootCategories } from "./root-view.js";
-import { renderUserQuizzesView } from "./user-quizzes-view.js";
+import { renderUserContentView } from "./user-content-view.js";
 
 export function initializeSearchManager() {
   try {
@@ -52,8 +52,8 @@ function handleSearchResults(results, context, isReset = false) {
   try {
     // When the search bar is closed, restore the full root view without filtering
     if (isReset) {
-      if (context === "userQuizzes") {
-        renderUserQuizzesView();
+      if (context === "userContent") {
+        renderUserContentView();
       } else {
         renderRootCategories();
       }
@@ -64,8 +64,8 @@ function handleSearchResults(results, context, isReset = false) {
       handleCourseSearchResults(results);
     } else if (context === "quizzes") {
       handleQuizSearchResults(results);
-    } else if (context === "userQuizzes") {
-      handleUserQuizSearchResults(results);
+    } else if (context === "userContent") {
+      handleUserContentSearchResults(results);
     }
   } catch (error) {
     console.error("Error handling search results:", error);
@@ -112,14 +112,14 @@ function handleQuizSearchResults(results) {
 /**
  * Handle user quiz search results
  */
-function handleUserQuizSearchResults(results) {
+function handleUserContentSearchResults(results) {
   try {
     if (!container) return;
 
     container.innerHTML = "";
 
     const actionsBar = document.createElement("div");
-    actionsBar.className = "user-quiz-search-actions";
+    actionsBar.className = "user-content-search-actions";
     container.appendChild(actionsBar);
 
     if (!results || results.length === 0) {
@@ -130,10 +130,10 @@ function handleUserQuizSearchResults(results) {
       });
       container.appendChild(emptyState);
     } else {
-      const allUserQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      const allUserContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
       results.forEach((quiz) => {
-        const originalIndex = allUserQuizzes.findIndex((q) => q.id === quiz.id);
-        const quizCard = createUserQuizCard(
+        const originalIndex = allUserContent.findIndex((q) => q.id === quiz.id);
+        const quizCard = createUserContentCard(
           quiz,
           originalIndex !== -1 ? originalIndex : 0,
         );

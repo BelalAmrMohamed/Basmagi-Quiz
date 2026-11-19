@@ -43,7 +43,7 @@ export function formatArabicDate(iso) {
 }
 
 export function parsePage(raw, file = "page") {
-  const m = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
   if (!m) throw new Error(`${file}: missing front matter`);
   const meta = JSON.parse(m[1]);
   for (const key of ["shell", "title", "description", "h1", "updated", "group", "order"]) {

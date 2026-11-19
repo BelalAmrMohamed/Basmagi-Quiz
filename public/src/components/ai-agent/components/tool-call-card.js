@@ -159,12 +159,12 @@ export function createToolCallCard(cfg) {
       resultSection.hidden = false;
       resultSection.innerHTML = `
         <span class="ai-agent-tool-card__section-title">النتيجة:</span>
-        <div class="ai-agent-tool-card__output">${escapeHtml(data.result)}</div>
+        <div dir="auto" class="ai-agent-tool-card__output">${escapeHtml(data.result)}</div>
       `;
     } else if (nextStatus === "error") {
       resultSection.hidden = false;
       const retryBadge = data.retrying
-        ? `<span class="ai-agent-tool-card__retry-badge">جاري محاولة التصحيح التلقائي (${data.retryNum || 1}/2)...</span>`
+        ? `<span class="ai-agent-tool-card__retry-badge">جاري محاولة التصحيح التلقائي...</span>`
         : "";
       resultSection.innerHTML = `
         <span class="ai-agent-tool-card__section-title">ملاحظات التنفيذ:</span>

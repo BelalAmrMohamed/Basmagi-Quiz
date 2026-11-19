@@ -56,7 +56,7 @@ import { showQuizInfoModal, showUserQuizInfoModal } from "../home/quiz-info-moda
 import { openAIAgentWithAttachment, buildPlatformQuizAttachment, buildPlatformLessonAttachment, buildPlatformNotebookAttachment, resolveUserItemAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { createFlashcardDeckResult } from "../../components/ai-agent/ai-agent-result-cards.js";
-import { resolveUserItemById, readUserQuizzes } from "../../components/ai-agent/ai-agent-item-lookup.js";
+import { resolveUserItemById, readUserContent } from "../../components/ai-agent/ai-agent-item-lookup.js";
 import { loadFullQuizData } from "../home/quiz-data-loader.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -667,7 +667,7 @@ async function embeddedQuizToolResult(requestedId) {
     const { password: _pw, passwordHash: _ph, ...meta } = data?.meta || entry.meta || {};
     return `بيانات الامتحان ${entry.title || requestedId} (المعرّف ${requestedId}):\n${JSON.stringify({ meta, stats: data?.stats || {}, questions: data?.questions || [] })}`;
   }
-  const local = resolveUserItemById(requestedId, readUserQuizzes());
+  const local = resolveUserItemById(requestedId, readUserContent());
   if (local?.kind === "quiz") return `بيانات الامتحان ${local.title} (المعرّف ${requestedId}):\n${JSON.stringify(local.payload || {})}`;
   throw new Error("الامتحان المطلوب غير مدمج في هذا الدرس.");
 }
@@ -675,7 +675,7 @@ async function embeddedQuizToolResult(requestedId) {
 async function embeddedLessonToolResult(requestedId) {
   const entry = lessonEmbeds.lessonLookup.get(requestedId);
   if (entry?.localRow) {
-    const local = resolveUserItemById(requestedId, readUserQuizzes());
+    const local = resolveUserItemById(requestedId, readUserContent());
     if (local?.kind === "lesson") return `بيانات الدرس ${local.title} (المعرّف ${requestedId}):\n${JSON.stringify(local.payload || {})}`;
   }
   if (!entry) throw new Error("الدرس المطلوب غير مدمج في هذا الدرس.");
@@ -719,7 +719,7 @@ function handleLessonAgentToolCall(toolCall) {
   try {
     const quiz = createLessonQuiz(toolCall.input || {});
     rerenderLessonQuiz?.();
-    return `تم إنشاء تدريب مؤقت بعنوان «${quiz.title}» داخل صفحة الدرس. لا يتم حفظه في امتحاناتك.`;
+    return `تم إنشاء تدريب مؤقت بعنوان «${quiz.title}» داخل صفحة الدرس. لا يتم حفظه في محتواي.`;
   } catch (cause) {
     const error = new Error(cause.message || "Invalid quiz");
     error.userMessage = cause.message || "تعذر إنشاء تدريب صالح من الدرس.";
@@ -1051,7 +1051,7 @@ export async function renderLessonView() {
     lessonEmbeds = { quizLookup, lessonLookup };
   } catch (error) {
     console.error("[lesson-view] Lesson content preparation failed:", error);
-    renderLessonLoadError("تعذّر تجهيز محتوى الدرس. جرّب إعادة المحاولة، وإذا استمر الخطأ افتح الدرس من قسم «امتحاناتك» مرة أخرى.");
+    renderLessonLoadError("تعذّر تجهيز محتوى الدرس. جرّب إعادة المحاولة، وإذا استمر الخطأ افتح الدرس من قسم «محتواي» مرة أخرى.");
     return;
   }
   const questionLabels = new Map();

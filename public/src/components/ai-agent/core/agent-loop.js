@@ -3,13 +3,18 @@
 // Agentic Multi-Step Loop Orchestrator:
 // - Manages multi-turn reasoning and tool invocation cycles.
 // - Routes tool execution errors back to the model as role="tool" error results
-//   with self-correction guidance, capped at maxToolRetries (2).
+//   with self-correction guidance. There is NO cap on how many times a tool may
+//   be used or retried in a turn: the model decides when it is done.
 // - Dispatches parallel tool calls and notifies UI listeners of status changes.
 // - Supports clean abort/cancellation at any point in the cycle.
 // =============================================================================
 
-export const DEFAULT_MAX_DEPTH = 8;
-export const DEFAULT_MAX_TOOL_RETRIES = 2;
+// Runaway-loop safety ceiling only (model round-trips in ONE user turn). It is
+// deliberately far above any real workflow; pass `maxDepth: Infinity` to lift it.
+export const DEFAULT_MAX_DEPTH = 50;
+// If the model keeps re-issuing calls that were all already executed, stop after
+// this many consecutive steps instead of looping forever.
+const MAX_CONSECUTIVE_DUPLICATE_STEPS = 3;
 
 function sanitizeToolOutput(val) {
   if (val == null) return "";
@@ -21,12 +26,29 @@ function sanitizeToolOutput(val) {
   }
 }
 
+// Key-order-independent JSON, so {a:1,b:2} and {b:2,a:1} are the same call.
+function stableStringify(val) {
+  if (val === null || typeof val !== "object") return JSON.stringify(val) ?? "null";
+  if (Array.isArray(val)) return `[${val.map(stableStringify).join(",")}]`;
+  return `{${Object.keys(val)
+    .sort()
+    .map((k) => `${JSON.stringify(k)}:${stableStringify(val[k])}`)
+    .join(",")}}`;
+}
+
+// A call is a duplicate ONLY if its name AND its complete input are identical.
+// (The old signature looked at just a title/name field, so e.g. every
+// search_library call, which has none, shared one signature and the second
+// search was silently skipped as a "duplicate".)
 function getToolCallSignature(toolCall) {
   const name = toolCall?.name || "";
-  const input = toolCall?.input || {};
-  const primary = input.title || input.name || input.itemName || input.targetTitle || input.currentTitle || "";
-  const secondary = input.destinationFolder || input.parentFolder || input.targetKind || "";
-  return `${name}::${String(primary).trim().toLowerCase()}::${String(secondary).trim().toLowerCase()}`;
+  let input = "";
+  try {
+    input = stableStringify(toolCall?.input || {});
+  } catch {
+    input = String(Math.random());
+  }
+  return `${name}::${input}`;
 }
 
 /**
@@ -52,8 +74,7 @@ function getToolCallSignature(toolCall) {
  * @param {(info: { label: string, kind: string, step?: string }) => void} [params.onStepChange]
  * @param {() => Promise<void>} [params.onHistoryPersist]
  * @param {Set<string>} [params.sessionExecutedTools]
- * @param {number} [params.maxDepth=8]
- * @param {number} [params.maxToolRetries=2]
+ * @param {number} [params.maxDepth=50] - runaway-loop safety ceiling only
  * @returns {Promise<{ success: boolean, aborted?: boolean, error?: string }>}
  */
 export async function runAgentLoop(params) {
@@ -78,12 +99,12 @@ export async function runAgentLoop(params) {
     onHistoryPersist,
     sessionExecutedTools = new Set(),
     maxDepth = DEFAULT_MAX_DEPTH,
-    maxToolRetries = DEFAULT_MAX_TOOL_RETRIES,
     toWireMessage,
   } = params;
 
-  const toolRetryCounts = new Map();
+  const toolErrorCounts = new Map(); // informational only: never blocks a retry
   const activeToolCards = new Map();
+  let consecutiveDuplicateSteps = 0;
 
   for (let depth = 0; depth < maxDepth; depth++) {
     if (signal?.aborted) {
@@ -92,9 +113,9 @@ export async function runAgentLoop(params) {
 
     // Update status
     if (typeof onStepChange === "function") {
-      const stepText = depth === 0 ? "" : `خطوة ${depth + 1}`;
+      const stepText = depth === 0 ? "" : `Step ${depth + 1}`;
       onStepChange({
-        label: depth === 0 ? "Thinking…" : "جاري التحليل والمتابعة…",
+        label: depth === 0 ? "Endeavoring…" : "Striving…",
         kind: "thinking",
         step: stepText,
       });
@@ -158,7 +179,7 @@ export async function runAgentLoop(params) {
         ...(data.thinking ? { thinking: data.thinking } : {}),
       });
       if (typeof onHistoryPersist === "function") {
-        await onHistoryPersist().catch(() => {});
+        await onHistoryPersist().catch(() => { });
       }
     }
 
@@ -183,7 +204,7 @@ export async function runAgentLoop(params) {
         ...(data.thinking ? { thinking: data.thinking } : {}),
       });
       if (typeof onHistoryPersist === "function") {
-        await onHistoryPersist().catch(() => {});
+        await onHistoryPersist().catch(() => { });
       }
     } else {
       // Attach toolCalls metadata to the last assistant message
@@ -238,7 +259,7 @@ export async function runAgentLoop(params) {
           toolCallId: tc.id,
           toolName: tc.name,
           input: tc.input || {},
-          content: "تم تنفيذ هذا الإجراء مسبقاً وتخطي التكرار بنجاح.",
+          content: "تم تنفيذ هذا الإجراء بنفس المعاملات مسبقاً في هذا الطلب، فلم يُكرَّر. تابع بقية المطلوب أو أجب المستخدم.",
         });
         continue;
       }
@@ -276,7 +297,7 @@ export async function runAgentLoop(params) {
         });
 
         if (typeof onHistoryPersist === "function") {
-          await onHistoryPersist().catch(() => {});
+          await onHistoryPersist().catch(() => { });
         }
       } catch (err) {
         if (signal?.aborted) {
@@ -287,10 +308,8 @@ export async function runAgentLoop(params) {
         console.error(`[agent-loop] Tool "${tc.name}" failed:`, err);
         anyErrorsOccurred = true;
 
-        const currentRetries = toolRetryCounts.get(tc.name) || 0;
-        const canRetry = currentRetries < maxToolRetries;
-        const nextRetryNum = currentRetries + 1;
-        toolRetryCounts.set(tc.name, nextRetryNum);
+        const nextRetryNum = (toolErrorCounts.get(tc.name) || 0) + 1;
+        toolErrorCounts.set(tc.name, nextRetryNum);
 
         // Remove from sessionExecutedTools so the model is allowed to retry with fixed args
         sessionExecutedTools.delete(sig);
@@ -299,15 +318,13 @@ export async function runAgentLoop(params) {
         if (card?.updateStatus) {
           card.updateStatus("error", {
             error: errorMsg,
-            retrying: canRetry,
+            retrying: true,
             retryNum: nextRetryNum,
           });
         }
 
         // Return error back to the model as a tool result so it can fix arguments
-        const agentFeedback = canRetry
-          ? `[خطأ في تنفيذ الأداة]: ${err?.agentMessage || err?.message || errorMsg}\nتوجيه للنموذج: قم بفحص المعاملات وتصحيحها وإعادة المحاولة.`
-          : `[فشل نهائي في الأداة]: ${err?.agentMessage || err?.message || errorMsg}\nتوجيه للنموذج: تم استنفاد محاولات إعادة المحاولة. وضح للمستخدم ما حدث وقدم حلاً بديلاً أو اسأله عن التفاصيل الناقصة.`;
+        const agentFeedback = `[خطأ في تنفيذ الأداة]: ${err?.agentMessage || err?.message || errorMsg}\nتوجيه للنموذج: قم بفحص المعاملات وتصحيحها وإعادة المحاولة، وإن تعذّر الحل فوضّح للمستخدم ما حدث واسأله عن التفاصيل الناقصة.`;
 
         history.push({
           role: "tool",
@@ -319,7 +336,7 @@ export async function runAgentLoop(params) {
         });
 
         if (typeof onHistoryPersist === "function") {
-          await onHistoryPersist().catch(() => {});
+          await onHistoryPersist().catch(() => { });
         }
       }
     }
@@ -328,10 +345,17 @@ export async function runAgentLoop(params) {
       return { success: false, aborted: true };
     }
 
-    // If every tool was a duplicate, stop the loop to avoid infinite cycling
+    // Duplicates no longer end the turn on their own (the model gets a "already
+    // done" tool result and can finish or continue). Only a model stuck
+    // re-issuing the same finished calls several steps in a row is stopped.
     if (executedToolsCount === 0 && toolCallsToRun.length > 0) {
-      console.warn("[agent-loop] All requested tools were duplicates. Halting agent loop.");
-      return { success: true };
+      consecutiveDuplicateSteps++;
+      if (consecutiveDuplicateSteps >= MAX_CONSECUTIVE_DUPLICATE_STEPS) {
+        console.warn("[agent-loop] Model kept repeating already-executed tools. Halting agent loop.");
+        return { success: true };
+      }
+    } else {
+      consecutiveDuplicateSteps = 0;
     }
 
     // Continue loop: the model will see the tool results on the next iteration

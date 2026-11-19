@@ -2,12 +2,12 @@
 // one factory, `createItemCard`, plus thin per-type builders and ⋮ menus.
 import { startQuiz } from "./quiz-navigation.js";
 import { isRecentlyAdded } from "./date-utils.js";
-import { formatArabicQuestionCount, refreshUserQuizzesCard } from "./course-count.js";
+import { formatArabicQuestionCount, refreshUserContentCard } from "./course-count.js";
 import { qz, formatQuestionTypesForDownload } from "./quiz-schema.js";
 import { ensureDownloadAllowed, ensureQuizDownloadAllowed } from "./download-password.js";
 import { showDownloadModal, withDownloadLoading } from "../../components/download-quiz-modal/download-quiz-modal.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
-import { copyQuizToUserQuizzes, copyLessonToUserQuizzes, copyNotebookToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
+import { copyQuizToUserContent, copyLessonToUserContent, copyNotebookToUserContent, withCopyButtonLoadingState } from "./copy-to-my-content.js";
 import { canManageItem, openSharedMoveToDialog, renameSharedItem, editSharedItemMetadata, deleteSharedItem } from "./admin-item-actions.js";
 import { showQuizInfoModal } from "./quiz-info-modal.js";
 import { showUserLessonInfoModal, collectLessonInfo } from "./lesson-info-modal.js";
@@ -29,11 +29,11 @@ import { RUNTIME_CONFIG } from "../../shared/runtime-config.js";
 import { downloadLesson } from "./lesson-download.js";
 import { withDownloadLoading as withExportLoading } from "../../components/download-quiz-modal/export-card.js";
 import { appendNotebookMenuEntries, fetchPlatformNotebookRow, showNotebookDownloadModal } from "./notebook-actions.js";
-import { getSelectedUserQuizzes } from "./app-state.js";
-import { updateBulkActionBar } from "./user-quizzes-view.js";
+import { getSelectedUserContent } from "./app-state.js";
+import { updateBulkActionBar } from "./user-content-view.js";
 import {
-  createUserQuizActions, createUserLessonActions, createUserNotebookActions,
-} from "./user-quiz-card.js";
+  createUserContentActions, createUserLessonActions, createUserNotebookActions,
+} from "./user-content-card.js";
 
 const KINDS = {
   quiz: { label: "امتحان", emoji: "📝", tip: "📝 امتحان", descTip: "📄 وصف الامتحان" },
@@ -78,10 +78,10 @@ export function createItemCard(o) {
   }
 
   if (o.selectId) {
-    const checkbox = el("input", "user-quiz-select-checkbox");
+    const checkbox = el("input", "user-content-select-checkbox");
     checkbox.type = "checkbox";
     checkbox.dataset.quizId = o.selectId;
-    const selected = getSelectedUserQuizzes();
+    const selected = getSelectedUserContent();
     checkbox.checked = selected.has(o.selectId);
     checkbox.onclick = (e) => {
       e.stopPropagation();
@@ -92,7 +92,7 @@ export function createItemCard(o) {
     card.append(checkbox);
     card.addEventListener("click", (e) => {
       if (e.target === checkbox) return;
-      if (document.querySelector(".user-quizzes-container")?.classList.contains("selection-mode-active")) {
+      if (document.querySelector(".user-content-container")?.classList.contains("selection-mode-active")) {
         e.stopPropagation();
         checkbox.click();
       }
@@ -169,11 +169,11 @@ export function createFolderCard(o) {
 
   let checkbox = null;
   if (o.selectId) {
-    checkbox = el("input", "user-quiz-select-checkbox");
+    checkbox = el("input", "user-content-select-checkbox");
     checkbox.type = "checkbox";
     checkbox.dataset.quizId = o.selectId;
     checkbox.setAttribute("aria-label", "تحديد");
-    const selected = getSelectedUserQuizzes();
+    const selected = getSelectedUserContent();
     checkbox.checked = selected.has(o.selectId);
     checkbox.onclick = (e) => {
       e.stopPropagation();
@@ -210,7 +210,7 @@ export function createFolderCard(o) {
   }
 
   card.addEventListener("click", (e) => {
-    if (checkbox && document.querySelector(".user-quizzes-container")?.classList.contains("selection-mode-active")) {
+    if (checkbox && document.querySelector(".user-content-container")?.classList.contains("selection-mode-active")) {
       e.stopPropagation();
       checkbox.click();
       return;
@@ -300,11 +300,11 @@ export function createNotebookCard(notebook) {
 
 // ── «محتواي» cards ──────────────────────────────────────────────────────────
 
-export function createUserQuizCard(quiz) {
+export function createUserContentCard(quiz) {
   const id = qz(quiz, "id") || quiz.id;
   const title = qz(quiz, "title") || id;
   const typeStr = qz(quiz, "type");
-  const a = createUserQuizActions(quiz);
+  const a = createUserContentActions(quiz);
   return createItemCard({
     kind: "quiz",
     selectId: id,
@@ -492,9 +492,9 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     copyToMineOpt.onclick = async (e) => {
       e.stopPropagation();
       await withCopyButtonLoadingState(copyToMineOpt, () =>
-        copyQuizToUserQuizzes(exam),
+        copyQuizToUserContent(exam),
       );
-      refreshUserQuizzesCard();
+      refreshUserContentCard();
       closeMenu();
     };
     menu.appendChild(copyToMineOpt);
@@ -668,7 +668,7 @@ function openLessonActionsMenu(lesson, trigger) {
   openItemDropdownMenu(trigger, (menu, closeMenu, reposition) => {
     addMenuAction(menu, closeMenu, {
       label: "نسخ إلى محتواي", icon: DUPLICATE_ICON_SVG,
-      onClick: () => { void copyLessonToUserQuizzes(lesson); },
+      onClick: () => { void copyLessonToUserContent(lesson); },
     });
     addMenuAction(menu, closeMenu, {
       label: "نسخ الرابط", icon: COPY_ICON_SVG,
@@ -741,7 +741,7 @@ function openNotebookActionsMenu(notebook, trigger) {
     copyMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ إلى محتواي</span>`;
     copyMine.addEventListener("click", async (event) => {
       event.stopPropagation();
-      await withCopyButtonLoadingState(copyMine, () => copyNotebookToUserQuizzes(notebook));
+      await withCopyButtonLoadingState(copyMine, () => copyNotebookToUserContent(notebook));
       closeMenu();
     });
     menu.appendChild(copyMine);

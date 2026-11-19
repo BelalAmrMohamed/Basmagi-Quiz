@@ -1,5 +1,5 @@
 // ============================================================================
-// public/src/features/home/copy-to-my-quizzes.js
+// public/src/features/home/copy-to-my-content.js
 // COPY TO MY CONTENT — "نسخ إلى محتواي": clones any manifest exam (static or
 // database-backed) into the visitor's own localStorage "user_quizzes" list,
 // exactly as if they'd re-imported its JSON via the create-quiz modal.
@@ -16,7 +16,7 @@ import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { buildUserQuizEntry } from "./quiz-schema.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
 import { showNotification } from "../../components/notifications/notifications.js";
-import { hasSameLevelCollision } from "./user-quizzes-folders.js";
+import { hasSameLevelCollision } from "./user-content-folders.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { normalizeLessonJson } from "../lesson/lesson-json.js";
 import { isLessonProtected, requestLessonPassword, unlockRemoteLesson } from "../lesson/lesson-access.js";
@@ -31,7 +31,7 @@ function inFlightKey(type, parentId, title) {
  * Shared loading-state wrapper for every "نسخ إلى محتواي" button (root-view.js,
  * category-view.js, item-card.js). Copying a whole course tree can take a
  * while (one loadFullQuizData() fetch per quiz, sequentially — see
- * copyCategoryTreeToUserQuizzes below), and the button previously only set
+ * copyCategoryTreeToUserContent below), and the button previously only set
  * `.disabled = true` with no visible change, so a slow copy looked like a
  * dead click. This swaps the button to a spinner + "جاري النسخ..." for the
  * duration of `task` and always restores the original label/enabled state
@@ -61,7 +61,7 @@ export async function withCopyButtonLoadingState(button, task) {
  * @param {object} exam - manifest exam entry (id, title, path, ...)
  * @returns {Promise<boolean>} true if a new copy was created
  */
-export async function copyQuizToUserQuizzes(exam) {
+export async function copyQuizToUserContent(exam) {
   const title = exam.title || exam.id || "";
 
   const key = inFlightKey("quiz", null, title);
@@ -71,9 +71,9 @@ export async function copyQuizToUserQuizzes(exam) {
   copiesInFlight.add(key);
 
   try {
-    const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+    const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
 
-    if (hasSameLevelCollision(userQuizzes, { type: "quiz", title, parentId: null })) {
+    if (hasSameLevelCollision(userContent, { type: "quiz", title, parentId: null })) {
       showNotification(
         "موجود بالفعل",
         "يوجد امتحان بنفس الاسم في المستوى الرئيسي من محتواي بالفعل",
@@ -119,16 +119,16 @@ export async function copyQuizToUserQuizzes(exam) {
     // "now" (copy time), never the original quiz's createdAt.
     entry.meta.createdAt = new Date().toLocaleString("en-US");
     // Schema consistency (see hasSameLevelCollision's doc comment in
-    // user-quizzes-folders.js): keep meta.id in sync with the top-level id
+    // user-content-folders.js): keep meta.id in sync with the top-level id
     // buildUserQuizEntry() already sets, so every `q.id || q.meta?.id`
     // fallback reader gets the same answer regardless of which function
     // created this row.
     entry.meta.id = entry.id;
     entry.meta.parentId = null;
 
-    const latestUserQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-    latestUserQuizzes.push(entry);
-    setInStorage("user_quizzes", JSON.stringify(latestUserQuizzes));
+    const latestUserContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
+    latestUserContent.push(entry);
+    setInStorage("user_quizzes", JSON.stringify(latestUserContent));
 
     showNotification(
       "تم النسخ",
@@ -142,7 +142,7 @@ export async function copyQuizToUserQuizzes(exam) {
 }
 
 /** Copies a published lesson into the local lessons area in «محتواي». */
-export async function copyLessonToUserQuizzes(lesson) {
+export async function copyLessonToUserContent(lesson) {
   const title = lesson?.title || lesson?.id || "درس";
   const key = inFlightKey("lesson", null, title);
   if (copiesInFlight.has(key)) return false;
@@ -215,14 +215,14 @@ export async function copyLessonToUserQuizzes(lesson) {
       throw new Error("تعذّر حفظ الدرس في محتواي. تحقق من مساحة التخزين.");
     }
     // Refresh the root card's count without rendering either home view:
-    // renderUserQuizzesView() pushes /#my-quizzes and would take the user
+    // renderUserContentView() pushes /my-content and would take the user
     // away from the lesson/course where they started the copy.
-    const { refreshUserQuizzesCard } = await import("./course-count.js");
-    refreshUserQuizzesCard();
+    const { refreshUserContentCard } = await import("./course-count.js");
+    refreshUserContentCard();
     showNotification("تم النسخ", `تم نسخ «${normalized.title}» إلى محتواي.`, "success");
     return true;
   } catch (error) {
-    console.error("[copy-to-my-quizzes] lesson copy failed:", error);
+    console.error("[copy-to-my-content] lesson copy failed:", error);
     showNotification("تعذّر النسخ", error?.message || "تعذّر نسخ الدرس. حاول مرة أخرى.", "error");
     return false;
   } finally {
@@ -238,7 +238,7 @@ export async function copyLessonToUserQuizzes(lesson) {
  *
  * @returns {Promise<boolean>} true if a new copy was created
  */
-export async function copyNotebookToUserQuizzes(notebook) {
+export async function copyNotebookToUserContent(notebook) {
   const key = inFlightKey("notebook", null, notebook?.title || notebook?.id || "notebook");
   if (copiesInFlight.has(key)) return false;
   copiesInFlight.add(key);
@@ -251,12 +251,12 @@ export async function copyNotebookToUserQuizzes(notebook) {
     const row = await fetchPlatformNotebookRow(notebook);
     const nb = rowToNotebook(row);
     await copyNotebookToLocal({ ...nb, sourceKey: `pub_${nb.id}` });
-    const { refreshUserQuizzesCard } = await import("./course-count.js");
-    refreshUserQuizzesCard();
+    const { refreshUserContentCard } = await import("./course-count.js");
+    refreshUserContentCard();
     showNotification("تم النسخ", `تم نسخ «${nb.title}» إلى محتواي.`, "success");
     return true;
   } catch (error) {
-    console.error("[copy-to-my-quizzes] notebook copy failed:", error);
+    console.error("[copy-to-my-content] notebook copy failed:", error);
     showNotification("تعذّر النسخ", "تعذّر نسخ الدفتر. تحقق من اتصالك ومن مساحة التخزين ثم حاول مرة أخرى.", "error");
     return false;
   } finally {
@@ -269,7 +269,7 @@ export async function copyNotebookToUserQuizzes(notebook) {
  * relationships. Unlike copying leaves individually, this keeps the same
  * hierarchy in the user's local collection.
  */
-export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, rootKind = "folder") {
+export async function copyCategoryTreeToUserContent(rootNode, categoryTree, rootKind = "folder") {
   const rootTitle = rootNode?.name || rootNode?.title || "بدون عنوان";
   const key = inFlightKey(rootKind === "course" ? "course" : "folder", null, rootTitle);
   if (copiesInFlight.has(key)) {
@@ -277,7 +277,7 @@ export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, root
   }
   copiesInFlight.add(key);
 
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const copiedIds = new Map();
   const newEntries = [];
   let rootBlocked = false;
@@ -295,7 +295,7 @@ export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, root
     );
 
     if (isQuiz) {
-      if (hasSameLevelCollision(userQuizzes, { type: "quiz", title, parentId })) {
+      if (hasSameLevelCollision(userContent, { type: "quiz", title, parentId })) {
         anySkipped = true;
         if (isRoot) rootBlocked = true;
         return null;
@@ -322,16 +322,16 @@ export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, root
       entry.meta.parentId = parentId;
       entry.meta.createdAt = new Date().toLocaleString("en-US");
       // Schema consistency (see hasSameLevelCollision's doc comment in
-      // user-quizzes-folders.js) — keep meta.id synced with the top-level
+      // user-content-folders.js) — keep meta.id synced with the top-level
       // id so every `q.id || q.meta?.id` fallback reader agrees.
       entry.meta.id = entry.id;
-      userQuizzes.push(entry);
+      userContent.push(entry);
       newEntries.push(entry);
       return entry.id;
     }
 
     const nodeType = forcedKind || (node?.kind === "course" ? "course" : "folder");
-    if (hasSameLevelCollision(userQuizzes, { type: nodeType, title, parentId })) {
+    if (hasSameLevelCollision(userContent, { type: nodeType, title, parentId })) {
       anySkipped = true;
       if (isRoot) rootBlocked = true;
       return null;
@@ -351,7 +351,7 @@ export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, root
       stats: { questionCount: 0, questionTypes: [] },
       questions: [],
     };
-    userQuizzes.push(folderEntry);
+    userContent.push(folderEntry);
     newEntries.push(folderEntry);
     copiedIds.set(nodeId, copyId);
 
@@ -370,10 +370,10 @@ export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, root
   try {
     await copyNode(rootNode, null, rootKind, false, true);
 
-    const latestUserQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+    const latestUserContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
     setInStorage(
       "user_quizzes",
-      JSON.stringify(latestUserQuizzes.concat(newEntries)),
+      JSON.stringify(latestUserContent.concat(newEntries)),
     );
 
     if (rootBlocked) {

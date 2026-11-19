@@ -229,7 +229,9 @@ export function buildQuizInfoModalHtml(config, questionCount = null, creatorProf
     createdAt: config.createdAt,
     updatedAt: config.syncedAt || config.updatedAt,
     source: config.source,
-    link: config.quizUrl,
+    // A quiz saved in محتواي lives only in this browser: a public link to it
+    // would be dead for anyone else, so only published quizzes show one.
+    link: config.local ? null : config.quizUrl,
     linkLabel: "رابط الامتحان",
     engagementCount: typeof config.attemptCount === "number" ? config.attemptCount : undefined,
     engagementLabel: "مرة تم حل هذا الامتحان",

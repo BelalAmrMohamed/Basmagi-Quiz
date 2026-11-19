@@ -7,32 +7,14 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
-### Code Cleanup
-Go through the codebase, update the naming of everything, many items are named `quiz` or their name contains `quiz`
-
-### User Content (/my-content)
-Items that are saved in user content shouldn't have a link, because they are local, they wouldn't work for any body else. Links are only for items that are already published, not for ones saved locally in the `/my-content` page.
-
 ### Sign in
 ![Screenshot](image.png).
 * This is extremely annoying, it's telling me my session has ended, but its still showing me that I'm signed in in the sidebar's dropdown and in the profile page, and I don't know why are sessions ending quickly.
 * Sometimes it tells me that, then when the page reloads automatically and I find that I'm still signed in, I try again, and it works this time.
 
-### AI Agent (الباشــمبصمج): Dictation
-Fix Dictation: The dictation doesn't work on Brave browser, even though other websites I built worked fine on Brave Browser when using the browser api for dictation.
-
 ## New Features
 
 ### Implement the Rich Input Component into the Notebook page's Makrdown cells.
-
-### New Question Type: Complete
-* Implement a new question type in the quiz page and the lesson page: Complete.
-* A standard complete type of question.
-
-Related Files:
-* `public\src\features\lesson\`: Lesson page files.
-* `public\src\features\quiz\`: Quiz page files.
-* `public\src\shared\rate-answers.js`: Essay questions grading engine.
 
 ### Update the `createEmptyState`
 * Update the `createEmptyState` to include a link to the `/how-to-create-content`
@@ -57,10 +39,11 @@ Related Files:
 #### Redesign
 Redesign the whole page:
 * Journey style page with different scroll effects for each different sections.
+* Natural Scrolling smoothness, don't make it too smooth like how typical AI-made scroll effects look. See standards, or search.
 * It should use its own CSS styling instead of importing from the main page or other pages.
 * It sill should be resposive to the themes of the platform, even if new themes get added.
-* It shouldn't use the shared animations, it should get its own animations.
-* It lacks images or visual elements.
+* It shouldn't use the shared animations, it should get its own animations (or no animations).
+* It lacks images or visual elements. Tell me what you need to add.
 
 #### Suggestions
 * Add a short testimonial or review.

@@ -230,7 +230,7 @@ body.sidebar-expanded {
   gap: 14px;
 }
 
-/* Main Scope Tabs (Admin: My Quizzes vs All Reports) */
+/* Main Scope Tabs (Admin: My Content vs All Reports) */
 .scope-tabs {
   display: flex;
   background: var(--color-background-secondary, #262626);

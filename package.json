@@ -17,6 +17,7 @@
     "zip": "node scripts/commit.js && git archive --format=zip --output=basmagi.zip HEAD && echo basmagi.zip is ready",
     "push": "node scripts/push-production.mjs",
     "push:all": "npm run zip && git push && npm run push",
+    "push:tags": "git push --tags",
     "revert": "git reset --soft HEAD~1",
     "patch": "git apply --ignore-whitespace ",
     "build:runtimes": "npm ci --prefix runtimes --cache node_modules/.cache/npm && npm run build --prefix runtimes",

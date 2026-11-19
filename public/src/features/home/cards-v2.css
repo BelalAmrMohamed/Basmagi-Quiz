@@ -15,8 +15,8 @@ html[data-theme="dark"] {
 }
 
 /* full-width rows inside a shelf */
-#contentArea .grid-container:not(.hive-root) > :is(.all-courses-banner, .empty-state, .error-state, .user-quiz-search-actions, [role="status"], [role="alert"]),
-#contentArea .user-quizzes-container > :is(.empty-state, .error-state, [role="status"]) {
+#contentArea .grid-container:not(.hive-root) > :is(.all-courses-banner, .empty-state, .error-state, .user-content-search-actions, [role="status"], [role="alert"]),
+#contentArea .user-content-container > :is(.empty-state, .error-state, [role="status"]) {
   grid-column: 1 / -1;
 }
 
@@ -46,7 +46,7 @@ html[data-theme="dark"] {
 }
 .item-card:has(:focus-visible) { --stroke: var(--hv-ink); }
 .item-card[aria-current="true"],
-.item-card:has(.user-quiz-select-checkbox:checked) { --face: var(--hv-cell-sel); --stroke: var(--c); --blur: 10px; --glow: color-mix(in srgb, var(--c) 40%, transparent); }
+.item-card:has(.user-content-select-checkbox:checked) { --face: var(--hv-cell-sel); --stroke: var(--c); --blur: 10px; --glow: color-mix(in srgb, var(--c) 40%, transparent); }
 .item-card.drag-over { --face: var(--hv-cell-sel); --stroke: var(--c); --blur: 12px; --glow: color-mix(in srgb, var(--c) 45%, transparent); }
 .item-card.mcp-new-item { --stroke: var(--c); --blur: 12px; --glow: color-mix(in srgb, var(--c) 65%, transparent); }
 .item-card.mcp-new-item > .shape { animation: ic-pulse 1.4s ease-in-out infinite; }
@@ -200,15 +200,15 @@ html[data-theme="dark"] {
 .item-card > .mcp-new-badge::before { content: "✦ "; font-size: .65rem; }
 
 /* ---------- selection checkbox (replaces ⋮ while selecting) ---------- */
-.user-quizzes-container .item-card .user-quiz-select-checkbox {
+.user-content-container .item-card .user-content-select-checkbox {
   left: auto; inset-inline-end: .5rem; top: .5rem;
   width: 1.3rem; height: 1.3rem; z-index: 5;
   border: 2px solid var(--hv-edge); border-radius: 6px;
   background-color: transparent; box-shadow: none;
 }
-.user-quizzes-container .item-card[data-card-kind="folder"] .user-quiz-select-checkbox { top: calc(var(--tab) + .1rem); }
-.user-quizzes-container .item-card .user-quiz-select-checkbox:hover { border-color: var(--c); transform: none; }
-.user-quizzes-container .item-card .user-quiz-select-checkbox:checked {
+.user-content-container .item-card[data-card-kind="folder"] .user-content-select-checkbox { top: calc(var(--tab) + .1rem); }
+.user-content-container .item-card .user-content-select-checkbox:hover { border-color: var(--c); transform: none; }
+.user-content-container .item-card .user-content-select-checkbox:checked {
   background-color: var(--c); border-color: var(--c); box-shadow: none; background-image: var(--cv-tick);
 }
 

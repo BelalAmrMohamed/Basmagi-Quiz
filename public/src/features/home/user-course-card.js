@@ -5,12 +5,12 @@
 // with dotted leaders. Styles: user-course-card.css.
 //
 // Behaviour is a 1:1 port of the course path of createFolderOrCourseCard()
-// (user-quizzes-folders.js). That module imports this one, so everything that
+// (user-content-folders.js). That module imports this one, so everything that
 // lives there is injected through `deps` instead of imported (no import cycle).
 //
 // deps = {
 //   showContextMenu, navigateToFolder, handleDragOver, handleDragLeave, handleDrop,
-//   getSelectedUserQuizzes, updateBulkActionBar, readUserQuizzes, getChildren
+//   getSelectedUserContent, updateBulkActionBar, readUserContent, getChildren
 // }
 // ============================================================================
 
@@ -63,7 +63,7 @@ function buildToc(children, all, getCounts) {
 export function createUserCourseCard(item, deps) {
   const {
     showContextMenu, navigateToFolder, handleDragOver, handleDragLeave, handleDrop,
-    getSelectedUserQuizzes, updateBulkActionBar, readUserQuizzes, getChildren,
+    getSelectedUserContent, updateBulkActionBar, readUserContent, getChildren,
   } = deps;
 
   const itemId = item.id || item.meta?.id;
@@ -76,7 +76,7 @@ export function createUserCourseCard(item, deps) {
   card.dataset.itemId = itemId || "";
 
   // ── Data ──────────────────────────────────────────────────────────────────
-  const all = readUserQuizzes();
+  const all = readUserContent();
   const { subfolderCount, quizCount, lessonCount, notebookCount } = getFolderContentsCount(all, itemId);
   const total = subfolderCount + quizCount + lessonCount + notebookCount;
   const summary = formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount, notebookCount);
@@ -86,8 +86,8 @@ export function createUserCourseCard(item, deps) {
   card.setAttribute("aria-label", `${title}, ${summary}`);
 
   // ── Selection checkbox (out-of-flow, same contract as the other cards) ────
-  const selected = getSelectedUserQuizzes();
-  const checkbox = el("input", "user-quiz-select-checkbox");
+  const selected = getSelectedUserContent();
+  const checkbox = el("input", "user-content-select-checkbox");
   checkbox.type = "checkbox";
   checkbox.setAttribute("data-quiz-id", itemId);
   checkbox.setAttribute("aria-label", "تحديد");
@@ -141,7 +141,7 @@ export function createUserCourseCard(item, deps) {
 
   // ── Interaction (same as the folder path) ─────────────────────────────────
   card.onclick = () => {
-    const list = document.querySelector(".user-quizzes-container");
+    const list = document.querySelector(".user-content-container");
     if (list?.classList.contains("selection-mode-active")) {
       checkbox.click();
       return;

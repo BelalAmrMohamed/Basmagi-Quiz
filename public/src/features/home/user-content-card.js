@@ -2,8 +2,8 @@
 // per-card action bundles consumed by item-card.js.
 
 import { qz } from "./quiz-schema.js";
-import { refreshUserQuizzesCard } from "./course-count.js";
-import { moveToTrash } from "./user-quizzes-trash.js";
+import { refreshUserContentCard } from "./course-count.js";
+import { moveToTrash } from "./user-content-trash.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import {
   isAdminAuthenticated,
@@ -20,7 +20,7 @@ import {
   openItemDropdownMenu,
 } from "./item-dropdown-menu.js";
 import { renderRootCategories } from "./root-view.js";
-import { renderUserQuizzesView } from "./user-quizzes-view.js";
+import { renderUserContentView } from "./user-content-view.js";
 import {
   openMoveToDialog,
   renameItem,
@@ -28,7 +28,7 @@ import {
   selectItem,
   moveItemOutOfFolder,
   currentFolderId,
-} from "./user-quizzes-folders.js";
+} from "./user-content-folders.js";
 import { userProfile } from "../../shared/userProfile.js";
 import { LOCK_ICON_SVG, DOWNLOAD_ICON_SVG, EDIT_ICON_SVG, RENAME_ICON_SVG, TRASH_ICON_SVG, MOVE_TO_ICON_SVG } from "./icons.js";
 import {
@@ -37,12 +37,12 @@ import {
   _alert,
 } from "../../components/notifications/notifications.js";
 // PHASE 2: "اسأل الباشـمبصمج" entry point — opens the AI Agent with this
-// quiz pre-attached. Deliberately NOT importing from user-quizzes-view.js
+// quiz pre-attached. Deliberately NOT importing from user-content-view.js
 // for the home-page system prompt/tools config (that file already imports
-// createUserQuizCard FROM this one — importing back would be circular);
+// createUserContentCard FROM this one — importing back would be circular);
 // this button opens the same "home" pageKey with a minimal, safe config
 // instead (no tools — the live folder-tree context those tools need is
-// built and owned by user-quizzes-view.js, not safely reconstructable
+// built and owned by user-content-view.js, not safely reconstructable
 // here), which is enough for the assistant to read/discuss the attached
 // quiz. See ai-agent-attach-launcher.js's own top comment for the fuller
 // rationale.
@@ -56,10 +56,10 @@ import { SPARKLE_ICON_SVG } from "./icons.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const createUserQuizActions = (quiz) => ({
+export const createUserContentActions = (quiz) => ({
   open: () => playUserQuiz(quiz),
   download: (btn) => showUserQuizDownloadPopup(quiz, btn),
-  more: (btn) => showUserQuizActionsOverlay(quiz, btn),
+  more: (btn) => showUserContentActionsOverlay(quiz, btn),
 });
 
 export const createUserLessonActions = (lesson) => ({
@@ -131,7 +131,7 @@ export function playUserNotebook(nb) {
 
 /**
  * Action Overlay for workspace lessons — the lesson twin of
- * showUserQuizActionsOverlay below, built from the same .item-dropdown-menu /
+ * showUserContentActionsOverlay below, built from the same .item-dropdown-menu /
  * .exam-action-btn classes so the two menus are visually identical.
  *
  * Every action reuses a type-generic helper rather than a lesson-specific
@@ -254,25 +254,25 @@ export function playUserQuiz(quiz) {
 
 /**
  * Delete a user-created quiz — soft delete into the local trash (see
- * user-quizzes-trash.js and plan §4) rather than discarding it outright. */
+ * user-content-trash.js and plan §4) rather than discarding it outright. */
 export async function deleteUserQuiz(quizId) {
   try {
     if (!(await _confirm("سيُنقل هذا الامتحان إلى سلة المهملات. هل تريد المتابعة؟"))) {
       return;
     }
 
-    const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-    const target = userQuizzes.find((q) => q.id === quizId);
+    const userContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
+    const target = userContent.find((q) => q.id === quizId);
     if (!target) return;
 
-    const filteredQuizzes = userQuizzes.filter((q) => q.id !== quizId);
+    const filteredQuizzes = userContent.filter((q) => q.id !== quizId);
     moveToTrash([target], qz(target, "title") || target.meta?.title || "امتحان بلا اسم");
     setInStorage("user_quizzes", JSON.stringify(filteredQuizzes));
 
     // Re-render the folder view
     renderRootCategories();
-    renderUserQuizzesView();
-    refreshUserQuizzesCard();
+    renderUserContentView();
+    refreshUserContentCard();
 
     showNotification("تم النقل إلى السلة", "تم نقل الامتحان إلى سلة المهملات بنجاح", "./favicon.png");
   } catch (error) {
@@ -289,7 +289,7 @@ export async function deleteUserQuiz(quizId) {
  * user quizzes aren't shareable (they live in localStorage, not on a
  * server), and Download already has its own dedicated button on the card.
  */
-export function showUserQuizActionsOverlay(quiz, triggerBtn) {
+export function showUserContentActionsOverlay(quiz, triggerBtn) {
   openItemDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
     // Admin upload — only rendered for authenticated admins. Shown inside
     // the dropdown on ALL screen sizes (desktop and mobile) now, styled
@@ -379,7 +379,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
     // quiz/folder/course pre-attached (see ai-agent-attach-launcher.js's
     // own doc comment for the full rationale on why this is a minimal,
     // tool-free "home" pageKey chat rather than reusing
-    // user-quizzes-view.js's own live tool config directly).
+    // user-content-view.js's own live tool config directly).
     const askAiOpt = document.createElement("button");
     askAiOpt.type = "button";
     askAiOpt.className = "exam-action-btn";
@@ -419,7 +419,7 @@ export function saveLocalItemMetadata(itemId, description, source) {
     throw new Error("تعذّر حفظ التغييرات في التخزين المحلي.");
   }
   renderRootCategories();
-  renderUserQuizzesView();
+  renderUserContentView();
   return true;
 }
 

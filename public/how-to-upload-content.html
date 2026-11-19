@@ -9,7 +9,7 @@
         (function () {
             try {
                 const theme = localStorage.getItem("quiz_theme_pref") || "light";
-                const animations = localStorage.getItem("quiz_animations_pref") === "enabled";
+                const animations = localStorage.getItem("quiz_animations_pref") !== "disabled";
                 const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
                 document.documentElement.setAttribute("data-theme", theme);
                 document.documentElement.setAttribute("data-animations", animations && !reduced ? "enabled" : "disabled");
@@ -17,16 +17,14 @@
             } catch (_) { }
         })();
     </script>
-    <meta name="description"
-        content="دليل المشرفين لرفع الامتحانات، إنشاء المواد الدراسية، والتحقق من النشر على منصة بصمجي مع فيديو توضيحي مقسم زمنياً." />
+    <meta name="description" content="دليل المشرفين لرفع الامتحانات، إنشاء المواد الدراسية، والتحقق من النشر على منصة بصمجي مع فيديو توضيحي مقسم زمنياً." />
     <meta name="keywords" content="بصمجي، كيفية رفع امتحان، منصة امتحانات" />
     <meta name="author" content="بلال عمرو محمد" />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#1a1a2e" />
     <meta property="og:type" content="article" />
     <meta property="og:title" content="كيفية رفع امتحان | منصة امتحانات بصمجي" />
-    <meta property="og:description"
-        content="دليل المشرفين لرفع الامتحانات، إنشاء المواد الدراسية، والتحقق من النشر على منصة بصمجي مع فيديو توضيحي مقسم زمنياً." />
+    <meta property="og:description" content="دليل المشرفين لرفع الامتحانات، إنشاء المواد الدراسية، والتحقق من النشر على منصة بصمجي مع فيديو توضيحي مقسم زمنياً." />
     <meta property="og:url" content="https://basmagi-quiz.vercel.app/how-to-upload-content" />
     <meta property="og:image" content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/thumbnail.png" />
     <meta property="og:image:width" content="1200" />
@@ -37,8 +35,7 @@
     <meta property="article:modified_time" content="2026-11-11" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="كيفية رفع امتحان | منصة امتحانات بصمجي" />
-    <meta name="twitter:description"
-        content="دليل المشرفين لرفع الامتحانات، إنشاء المواد الدراسية، والتحقق من النشر على منصة بصمجي مع فيديو توضيحي مقسم زمنياً." />
+    <meta name="twitter:description" content="دليل المشرفين لرفع الامتحانات، إنشاء المواد الدراسية، والتحقق من النشر على منصة بصمجي مع فيديو توضيحي مقسم زمنياً." />
     <meta name="twitter:image" content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/thumbnail.png" />
     <link rel="canonical" href="https://basmagi-quiz.vercel.app/how-to-upload-content" />
     <link rel="icon" href="/favicon.png" type="image/png" />
@@ -50,7 +47,9 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
         rel="stylesheet" />
-    <link rel="stylesheet" href="/dist/pages/how-to-upload-content.css">
+    <link rel="stylesheet" href="src/styles/themes.css" />
+    <link rel="stylesheet" href="src/components/side-menu/side-menu.css" />
+    <link rel="stylesheet" href="src/features/documents/documents.css" />
 
 </head>
 
@@ -193,8 +192,8 @@
         </div>
     </main>
 
-    <link rel="modulepreload" href="/dist/pages/how-to-upload-content.js">
-    <script type="module" src="/dist/pages/how-to-upload-content.js"></script>
+    <script type="module" src="src/features/documents/documents-shell.js"></script>
+    <script type="module" src="src/features/documents/doc-toc.js"></script>
     <script src="/src/shared/analytics-beacon.js" defer></script>
 </body>
 

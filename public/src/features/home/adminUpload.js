@@ -33,7 +33,7 @@ import { userProfile } from "../../shared/userProfile.js";
 import { generateQuizId } from "../../shared/quizId.js";
 import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.js";
 import { UPLOAD_ICON_SVG } from "./icons.js";
-import { buildCourseUploadPayload, buildFolderUploadPayload } from "./user-quizzes-folders.js";
+import { buildCourseUploadPayload, buildFolderUploadPayload } from "./user-content-folders.js";
 
 // ─── Track definitions ────────────────────────────────────────────────────────
 const TRACK_LABELS = {
@@ -327,8 +327,8 @@ let _overlay = null;
 // openFolderUploadModal — Track -> Target course/subfolder -> Review -> Upload.
 let _mode = "single";
 let _folderTree = null; // { rootName, items: [...] } set by openLocalFolderTreeUpload
-let _courseUploadItems = null; // { courseRows, userQuizzes } set by openCourseUploadModal
-let _folderUploadItems = null; // { folderRows, quizRows, userQuizzes } set by openFolderUploadModal
+let _courseUploadItems = null; // { courseRows, userContent } set by openCourseUploadModal
+let _folderUploadItems = null; // { folderRows, quizRows, userContent } set by openFolderUploadModal
 let _folderUploadTarget = null; // { courseName, subfolderPath: string[] } chosen in that wizard's own step 2
 
 // ─── Small DOM helpers ─────────────────────────────────────────────────────────
@@ -561,7 +561,7 @@ function getUniversityColleges() {
  * only. This wizard no longer offers "➕ إنشاء مادة جديدة" (create a new
  * subject/course) — creating a course here was the legacy path the
  * admin-facing courses/folders feature has since replaced with course
- * creation directly from userQuizzesView (see "المادة / الكورس" in
+ * creation directly from userContentView (see "المادة / الكورس" in
  * renderStep2's own doc comment below for the full reasoning). A subject
  * with no matching courses at all now shows a clear "no matching course"
  * state (see renderStep2) rather than silently defaulting into course
@@ -626,7 +626,7 @@ function sortNumericStr(a, b) { return parseInt(a, 10) - parseInt(b, 10); }
 /**
  * Populates the Step 2 subfolder dropdown with EXISTING subfolders only.
  * The "➕ إنشاء مجلد فرعي جديد" free-text option has been removed — folders
- * are now created directly from userQuizzesView (see the "المادة / الكورس"
+ * are now created directly from userContentView (see the "المادة / الكورس"
  * doc comment on populateSubjects for the parallel reasoning on subjects),
  * so this dropdown is a plain existing-folder picker, same as populateSubjects.
  */
@@ -937,7 +937,7 @@ function renderThreadTree(items, root, rootChain) {
 // Shows a flat, indented preview of the parsed folder tree (course →
 // folders → quizzes) so the admin can confirm what's about to be created
 // before it's written — a bulk, hard-to-undo action, same reasoning as the
-// local userQuizzes folder-tree import's confirmation summary.
+// local userContent folder-tree import's confirmation summary.
 function renderFolderReviewStep(step1Vals) {
   const { items, rootName } = _folderTree;
   const courseItem = items.find((i) => i.type === "course");
@@ -1007,7 +1007,7 @@ async function doFolderUpload({ educationType, college, year, term }) {
     if (hintEl) { hintEl.textContent = `❌ ${err.message}`; hintEl.style.color = "var(--color-error)"; }
     document.getElementById("adm-folder-btns").style.display = "flex";
     if (isSessionError(err)) {
-      setTimeout(() => { signOut(); window.location.href = "/#my-quizzes"; }, 2500);
+      setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
     }
     return;
   }
@@ -1044,7 +1044,7 @@ async function doFolderUpload({ educationType, college, year, term }) {
 // more than one course is selected (they all go to the same track/college/
 // year/term chosen in Step 1 — see admin-upload-update.md §4).
 function renderCourseUploadReviewStep(step1Vals) {
-  const { courseRows, userQuizzes } = _courseUploadItems;
+  const { courseRows, userContent } = _courseUploadItems;
 
   const disclaimer = courseRows.length > 1
     ? `<p class="adm-hint" style="background:var(--color-background-secondary);padding:10px 12px;border-radius:8px;">
@@ -1073,7 +1073,7 @@ function renderCourseUploadReviewStep(step1Vals) {
   // always matches what gets sent — see buildCourseUploadPayload).
   courseRows.forEach((course) => {
     const courseName = (course.meta?.title || "").trim();
-    const { items } = buildCourseUploadPayload(userQuizzes, [course]);
+    const { items } = buildCourseUploadPayload(userContent, [course]);
     const folderCount = items.filter((i) => i.type === "folder").length;
     const quizCount = items.filter((i) => i.type === "quiz").length;
     const lessonCount = items.filter((i) => i.type === "lesson").length;
@@ -1095,8 +1095,8 @@ function renderCourseUploadReviewStep(step1Vals) {
 
 // ─── Course Upload mode: Upload step (Step 3 of 3) ─────────────────────────
 async function doCourseUpload({ educationType, college, year, term }) {
-  const { courseRows, userQuizzes } = _courseUploadItems;
-  const { items } = buildCourseUploadPayload(userQuizzes, courseRows);
+  const { courseRows, userContent } = _courseUploadItems;
+  const { items } = buildCourseUploadPayload(userContent, courseRows);
 
   _overlay.innerHTML = `<div class="adm-card">
     ${hdr("رفع المواد إلى المنصة")}
@@ -1126,7 +1126,7 @@ async function doCourseUpload({ educationType, college, year, term }) {
     if (hintEl) { hintEl.textContent = `❌ ${err.message}`; hintEl.style.color = "var(--color-error)"; }
     document.getElementById("adm-course-btns").style.display = "flex";
     if (isSessionError(err)) {
-      setTimeout(() => { signOut(); window.location.href = "/#my-quizzes"; }, 2500);
+      setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
     }
     return;
   }
@@ -1250,9 +1250,9 @@ function renderFolderUploadTargetStep(step1Vals) {
 
 // ─── Folder Upload mode: Review step (Step 3 of 4) ─────────────────────────
 function renderFolderUploadReviewStep(step1Vals) {
-  const { folderRows, quizRows, lessonRows, notebookRows, userQuizzes } = _folderUploadItems;
+  const { folderRows, quizRows, lessonRows, notebookRows, userContent } = _folderUploadItems;
   const { courseName, subfolderPath } = _folderUploadTarget;
-  const { items } = buildFolderUploadPayload(userQuizzes, folderRows, quizRows, courseName, subfolderPath, lessonRows, notebookRows);
+  const { items } = buildFolderUploadPayload(userContent, folderRows, quizRows, courseName, subfolderPath, lessonRows, notebookRows);
 
   const folderCount = items.filter((i) => i.type === "folder").length;
   const quizCount = items.filter((i) => i.type === "quiz").length;
@@ -1286,9 +1286,9 @@ function renderFolderUploadReviewStep(step1Vals) {
 
 // ─── Folder Upload mode: Upload step (Step 4 of 4) ─────────────────────────
 async function doFolderUploadToExisting({ educationType, college, year, term }) {
-  const { folderRows, quizRows, lessonRows, notebookRows, userQuizzes } = _folderUploadItems;
+  const { folderRows, quizRows, lessonRows, notebookRows, userContent } = _folderUploadItems;
   const { courseName, subfolderPath } = _folderUploadTarget;
-  const { items } = buildFolderUploadPayload(userQuizzes, folderRows, quizRows, courseName, subfolderPath, lessonRows, notebookRows);
+  const { items } = buildFolderUploadPayload(userContent, folderRows, quizRows, courseName, subfolderPath, lessonRows, notebookRows);
 
   _overlay.innerHTML = `<div class="adm-card">
     ${hdr("رفع المجلد إلى المنصة")}
@@ -1318,7 +1318,7 @@ async function doFolderUploadToExisting({ educationType, college, year, term }) 
     if (hintEl) { hintEl.textContent = `❌ ${err.message}`; hintEl.style.color = "var(--color-error)"; }
     document.getElementById("adm-folder-target-btns").style.display = "flex";
     if (isSessionError(err)) {
-      setTimeout(() => { signOut(); window.location.href = "/#my-quizzes"; }, 2500);
+      setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
     }
     return;
   }
@@ -1444,7 +1444,7 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
           hintEl.style.color = "var(--color-error)";
         }
         showNotification(err.message, "error");
-        setTimeout(() => { signOut(); window.location.href = "/#my-quizzes"; }, 2500);
+        setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
         return;
       }
     }
@@ -1583,7 +1583,7 @@ async function _openWizard(quizzes) {
   if (_overlay) return; // Prevent multiple modal instances
   if (!isAdminAuthenticated()) {
     showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
-    setTimeout(() => { window.location.href = "/#my-quizzes"; }, 1500);
+    setTimeout(() => { window.location.href = "/my-content"; }, 1500);
     return;
   }
 
@@ -1593,13 +1593,13 @@ async function _openWizard(quizzes) {
   // meta.type "course"/"folder" ending up in here always means some
   // caller's selection wasn't filtered (the intended filtering happens
   // once, at the selection boundary — see classifyBulkSelection/
-  // routeBulkUpload in user-quizzes-view.js, which route courses and
+  // routeBulkUpload in user-content-view.js, which route courses and
   // folders to openCourseUploadModal/openFolderUploadModal instead of
   // ever handing them to this wizard).
   // Re-checking here means a future caller that forgets that filtering
   // step fails loudly instead of silently mislabeling a course as
   // "امتحان" in the Admin Info step — the exact bug this was reported
-  // as. Courses are created from userQuizzesView directly now (see the
+  // as. Courses are created from userContentView directly now (see the
   // "legacy" note on the old create-course-via-upload path), not
   // through this wizard, so there is no in-wizard way to fix this up —
   // the caller must not have included them to begin with.
@@ -1674,14 +1674,14 @@ async function openAdminUploadModal(quizzes) { await _openWizard(Array.isArray(q
  * and quizzes) to the platform's top level in one wizard flow.
  * Flow: Track -> Review (+ multi-course disclaimer) -> Upload.
  * @param {Array} courseRows - selected user_quizzes rows with meta.type === "course"
- * @param {Array} userQuizzes - full local user_quizzes collection, needed to
+ * @param {Array} userContent - full local user_quizzes collection, needed to
  *   walk each course's descendants
  */
-export async function openCourseUploadModal(courseRows, userQuizzes) {
+export async function openCourseUploadModal(courseRows, userContent) {
   if (_overlay) return;
   if (!isAdminAuthenticated()) {
     showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
-    setTimeout(() => { window.location.href = "/#my-quizzes"; }, 1500);
+    setTimeout(() => { window.location.href = "/my-content"; }, 1500);
     return;
   }
   if (!Array.isArray(courseRows) || courseRows.length === 0) {
@@ -1693,7 +1693,7 @@ export async function openCourseUploadModal(courseRows, userQuizzes) {
 
   try {
     _mode = "courseUpload";
-    _courseUploadItems = { courseRows, userQuizzes };
+    _courseUploadItems = { courseRows, userContent };
     _folderUploadItems = null;
     _folderUploadTarget = null;
     _folderTree = null;
@@ -1737,16 +1737,16 @@ export async function openCourseUploadModal(courseRows, userQuizzes) {
  * loose quizzes or lessons selected alongside them, into an EXISTING course already on
  * the platform.
  * Flow: Track -> Target course/subfolder -> Review -> Upload.
- * @param {{folders: Array, quizzes: Array, lessons?: Array, userQuizzes: Array}} selection
+ * @param {{folders: Array, quizzes: Array, lessons?: Array, userContent: Array}} selection
  *   - folders: selected user_quizzes rows with meta.type === "folder"
  *   - quizzes/lessons: selected plain items to upload alongside the folders
- *   - userQuizzes: full local user_quizzes collection
+ *   - userContent: full local user_quizzes collection
  */
-export async function openFolderUploadModal({ folders, quizzes, lessons, notebooks, userQuizzes }) {
+export async function openFolderUploadModal({ folders, quizzes, lessons, notebooks, userContent }) {
   if (_overlay) return;
   if (!isAdminAuthenticated()) {
     showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
-    setTimeout(() => { window.location.href = "/#my-quizzes"; }, 1500);
+    setTimeout(() => { window.location.href = "/my-content"; }, 1500);
     return;
   }
   const folderRows = folders || [];
@@ -1762,7 +1762,7 @@ export async function openFolderUploadModal({ folders, quizzes, lessons, noteboo
 
   try {
     _mode = "folderUpload";
-    _folderUploadItems = { folderRows, quizRows, lessonRows, notebookRows, userQuizzes };
+    _folderUploadItems = { folderRows, quizRows, lessonRows, notebookRows, userContent };
     _folderUploadTarget = null;
     _courseUploadItems = null;
     _folderTree = null;
@@ -1805,7 +1805,7 @@ export async function openFolderUploadModal({ folders, quizzes, lessons, noteboo
  * DB directly (rather than user_quizzes) — currently unused by any wired-up
  * caller (the "استيراد مجلد من جهازك" action imports into user_quizzes
  * instead; see uploadFolderForAdmins/importFolderTree in
- * user-quizzes-folders.js), but kept available for a future "upload this
+ * user-content-folders.js), but kept available for a future "upload this
  * picked directory straight to the platform" action without going through
  * user_quizzes first.
  *
@@ -1816,7 +1816,7 @@ export async function openLocalFolderTreeUpload(folderTree) {
   if (_overlay) return;
   if (!isAdminAuthenticated()) {
     showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
-    setTimeout(() => { window.location.href = "/#my-quizzes"; }, 1500);
+    setTimeout(() => { window.location.href = "/my-content"; }, 1500);
     return;
   }
   if (!folderTree || !Array.isArray(folderTree.items) || folderTree.items.length === 0) {
@@ -1877,7 +1877,7 @@ function closeModal() {
 // Renders as a standard .exam-action-btn — same shape/size/DOM structure as
 // the other options in the card's ⋮ dropdown (Edit/Delete/Download), so it
 // no longer needs its own bespoke CSS. Lives inside the dropdown menu on
-// ALL screen sizes (see showUserQuizActionsOverlay in user-quiz-card.js) —
+// ALL screen sizes (see showUserContentActionsOverlay in user-content-card.js) —
 // there is no separate top-left placement anymore.
 export function createUploadButton(quiz) {
   injectStyles();
@@ -1900,7 +1900,7 @@ export function createLessonUploadButton(lesson) {
   btn.innerHTML = `${UPLOAD_ICON_SVG}<span>رفع لقاعدة البيانات</span>`;
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
-    openFolderUploadModal({ folders: [], quizzes: [], lessons: [lesson], userQuizzes: [] });
+    openFolderUploadModal({ folders: [], quizzes: [], lessons: [lesson], userContent: [] });
   });
   return btn;
 }
@@ -1915,7 +1915,7 @@ export function createNotebookUploadButton(nb) {
   btn.innerHTML = `${UPLOAD_ICON_SVG}<span>رفع لقاعدة البيانات</span>`;
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
-    openFolderUploadModal({ folders: [], quizzes: [], lessons: [], notebooks: [nb], userQuizzes: [] });
+    openFolderUploadModal({ folders: [], quizzes: [], lessons: [], notebooks: [nb], userContent: [] });
   });
   return btn;
 }

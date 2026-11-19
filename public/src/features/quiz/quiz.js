@@ -1170,10 +1170,10 @@ async function init() {
       // entry and restore it into sessionStorage so the quiz can continue.
       if (!userQuizData && examId) {
         try {
-          const allUserQuizzes = JSON.parse(
+          const allUserContent = JSON.parse(
             localStorage.getItem("user_quizzes") || "[]",
           );
-          const recovered = allUserQuizzes.find((q) => q.id === examId);
+          const recovered = allUserContent.find((q) => q.id === examId);
           if (recovered) {
             userQuizData = JSON.stringify(recovered);
             // Restore so subsequent page interactions keep working normally.
@@ -1201,10 +1201,10 @@ async function init() {
       // Recover by ID before treating the quiz as malformed.
       if (userQuizQuestions.length === 0 && examId) {
         try {
-          const allUserQuizzes = JSON.parse(
+          const allUserContent = JSON.parse(
             localStorage.getItem("user_quizzes") || "[]",
           );
-          const recovered = allUserQuizzes.find(
+          const recovered = allUserContent.find(
             (q) => q.id === examId && Array.isArray(q.questions) && q.questions.length > 0,
           );
           if (recovered) {

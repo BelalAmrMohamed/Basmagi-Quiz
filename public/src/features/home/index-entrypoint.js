@@ -24,9 +24,9 @@ import { initPWA } from "../../shared/pwa-manager.js";
 import { syncAdminSessionWithSupabase } from "./session-sync.js";
 import { initApp, restoreViewFromURL } from "./navigation.js";
 import { renderRootCategories } from "./root-view.js";
-import { renderUserQuizzesView } from "./user-quizzes-view.js";
+import { renderUserContentView } from "./user-content-view.js";
 import { importMcpDraftFromUrl } from "./mcp-draft-import.js";
-import { setFolderState } from "./user-quizzes-folders.js";
+import { setFolderState } from "./user-content-folders.js";
 import { initCustomTooltips } from "../../components/tooltip/tooltip.js";
 import { startQuiz } from "./quiz-navigation.js";
 import { updateWelcomeMessage } from "./welcome-message.js";
@@ -43,11 +43,11 @@ import { showNotification } from "../../components/notifications/notifications.j
 // Original lines 4741-4742.
 window.startQuiz = startQuiz;
 window.renderRootCategories = renderRootCategories;
-window.renderUserQuizzesView = renderUserQuizzesView;
+window.renderUserContentView = renderUserContentView;
 window.navigateToMyContent = () => {
   setNavigationStack([]);
   setFolderState([], null);
-  renderUserQuizzesView();
+  renderUserContentView();
 };
 window.navigateToRootHome = () => {
   setNavigationStack([]);
