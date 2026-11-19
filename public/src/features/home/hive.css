@@ -99,7 +99,7 @@ body {
   z-index: -1;
   clip-path: var(--hv-hex);
   background: var(--hv-cell);
-  transition: background-color .25s;
+  transition: background-color .1s;
 }
 
 .hive-root .face::after {
@@ -110,7 +110,7 @@ body {
   clip-path: var(--hv-hex);
   background: var(--hv-sheen);
   opacity: 0;
-  transition: opacity .25s;
+  transition: opacity .1s, background-color .1s;
 }
 
 .hive-root .face i {
@@ -139,7 +139,7 @@ body {
   text-decoration: none;
   color: var(--hv-mute);
   font-size: .82em;
-  transition: color .25s;
+  transition: color .1s;
   display: block;
   max-width: 100%;
   min-width: 0;
