@@ -32,49 +32,55 @@ export function flashcardDeckModelSummary(value) {
   return `تم عرض ${count} بطاقة مراجعة تفاعلية بعنوان «${deck.title || "بطاقات الدرس"}» داخل المحادثة.`;
 }
 
+// Stroke icons (24x24, currentColor). Static strings: never built from model output.
+const svg = (body) =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
+const ITEM_KIND_ICONS = {
+  // clipboard with a check: an exam
+  quiz: svg('<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>'),
+  // open book: a lesson
+  lesson: svg('<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>'),
+  // folder
+  folder: svg('<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/>'),
+  // graduation cap: a course
+  course: svg('<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/><path d="M22 10v6"/>'),
+};
+const LINK_ARROW_ICON = svg('<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>');
+
+/**
+ * Compact one-row card: [icon] [title / label] [link].
+ * Rendered in a group below the response text (see appendResultCardsGroup in
+ * ai-agent-chat.js), never inline between the tool cards and the answer.
+ */
 export function renderPlatformItemCard(value) {
   const item = parseResult(value, ITEM_CARD_PREFIX);
   if (!item || !["quiz", "lesson", "folder", "course"].includes(item.kind)) return null;
 
-  const iconByKind = { quiz: "✦", lesson: "▤", folder: "▰", course: "◈" };
   const labelByKind = { quiz: "امتحان جديد", lesson: "درس جديد", folder: "مجلد جديد", course: "مادة جديدة" };
   const actionByKind = { quiz: "ابدأ الامتحان", lesson: "افتح الدرس", folder: "افتح المجلد", course: "افتح المادة" };
   const card = document.createElement("article");
   card.className = `ai-agent-created-item ai-agent-created-item--${item.kind}`;
   card.dir = "rtl";
 
-  const top = document.createElement("div");
-  top.className = "ai-agent-created-item-topline";
-  const badge = document.createElement("span");
-  badge.className = "ai-agent-created-item-badge";
-  badge.textContent = labelByKind[item.kind];
-  const check = document.createElement("span");
-  check.className = "ai-agent-created-item-check";
-  check.setAttribute("aria-label", "تم الحفظ بنجاح");
-  check.textContent = "✓";
-  top.append(badge, check);
-
-  const body = document.createElement("div");
-  body.className = "ai-agent-created-item-body";
   const icon = document.createElement("span");
   icon.className = "ai-agent-created-item-icon";
   icon.setAttribute("aria-hidden", "true");
-  icon.textContent = iconByKind[item.kind];
+  icon.innerHTML = ITEM_KIND_ICONS[item.kind];
+
   const copy = document.createElement("div");
   copy.className = "ai-agent-created-item-copy";
   const title = document.createElement("h3");
+  title.className = "ai-agent-created-item-title";
+  title.dir = "auto";
   title.textContent = item.title || "عنصر بدون عنوان";
-  const detail = document.createElement("p");
-  detail.textContent = item.detail || "أُضيف إلى مكتبتك وجاهز للاستخدام.";
-  copy.append(title, detail);
-  body.append(icon, copy);
+  title.title = title.textContent;
+  const label = document.createElement("span");
+  label.className = "ai-agent-created-item-label";
+  label.textContent = labelByKind[item.kind];
+  copy.append(title, label);
 
-  const footer = document.createElement("div");
-  footer.className = "ai-agent-created-item-footer";
-  const destination = document.createElement("span");
-  destination.className = "ai-agent-created-item-destination";
-  destination.textContent = item.destination || "مكتبتك التعليمية";
-  footer.appendChild(destination);
+  card.append(icon, copy);
+
   if (item.href) {
     // A button, not an <a href>: items the agent creates live only in this
     // browser (محتواي), so there must be no copyable/shareable link to them.
@@ -82,15 +88,13 @@ export function renderPlatformItemCard(value) {
     link.type = "button";
     link.className = "ai-agent-created-item-action";
     link.addEventListener("click", () => { window.location.href = item.href; });
-    link.textContent = actionByKind[item.kind];
-    const arrow = document.createElement("span");
-    arrow.setAttribute("aria-hidden", "true");
-    arrow.textContent = "←";
-    link.appendChild(arrow);
-    footer.appendChild(link);
+    const text = document.createElement("span");
+    text.textContent = actionByKind[item.kind];
+    link.appendChild(text);
+    link.insertAdjacentHTML("beforeend", LINK_ARROW_ICON);
+    card.appendChild(link);
   }
 
-  card.append(top, body, footer);
   return card;
 }
 

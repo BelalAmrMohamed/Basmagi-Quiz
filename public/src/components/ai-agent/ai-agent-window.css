@@ -492,10 +492,6 @@ html[data-motion="reduced"] .aiw.is-minimized.is-busy::after { animation: none; 
   width: 100%;
 }
 
-.aiw.aiw-narrow .ai-agent-created-item {
-  border-radius: 16px;
-}
-
 .aiw.aiw-narrow .ai-agent-flashcard-deck {
   padding: 12px;
   border-radius: 17px;

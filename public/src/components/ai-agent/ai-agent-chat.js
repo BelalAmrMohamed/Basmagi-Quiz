@@ -1713,6 +1713,28 @@ export function createChatPanel(options = {}) {
     "fetch_attached_lesson",
   ]);
 
+  /**
+   * Result cards (created quiz/lesson/folder/course, flashcard decks, creator
+   * card) are collected while a turn runs and appended here as ONE group below
+   * the response text, like a typical agent chat: the user reads the answer
+   * first and sees every card together at the bottom, instead of cards being
+   * scattered between tool-call rows and the final message.
+   * @param {HTMLElement[]} cards
+   * @param {{ scroll?: boolean }} [opts]
+   */
+  function appendResultCardsGroup(cards, { scroll = true } = {}) {
+    const list = (cards || []).filter(Boolean);
+    if (!list.length) return;
+    if (messagesEl.querySelector(".ai-agent-msg--empty")) {
+      messagesEl.innerHTML = "";
+    }
+    const group = document.createElement("div");
+    group.className = "ai-agent-msg-wrap ai-agent-msg-wrap--assistant ai-agent-result-cards";
+    list.forEach((card) => group.appendChild(card));
+    messagesEl.appendChild(group);
+    if (scroll) messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
   function appendToolResultMessage(text, toolName = "") {
     // Tool payloads are context for the assistant, not chat messages for
     // the user. Keep them in history so the assistant can answer, but never
@@ -2013,6 +2035,8 @@ export function createChatPanel(options = {}) {
     sessionExecutedTools.clear();
     // Tracks the current tool-call group wrapper for this turn (reset each agent step).
     let currentToolGroup = null;
+    // Result cards produced by this turn's tools; flushed below the response in `finally`.
+    const pendingResultCards = [];
 
     const { key: ownKey, hasKey: hasOwnKey } = getOwnKey();
     const provider = getSelectedProvider();
@@ -2108,11 +2132,7 @@ export function createChatPanel(options = {}) {
             const resultCard = renderResultCard(resultText);
             const creatorCard = resultCard ? null : renderCreatorCard(resultText);
             if (resultCard || creatorCard) {
-              const el = document.createElement("div");
-              el.className = "ai-agent-msg ai-agent-msg--assistant ai-agent-msg--tool-result";
-              el.appendChild(resultCard || creatorCard);
-              messagesEl.appendChild(el);
-              typingController.moveToBottom();
+              pendingResultCards.push(resultCard || creatorCard);
             }
           }
           return resultText;
@@ -2144,6 +2164,9 @@ export function createChatPanel(options = {}) {
       console.error("[ai-agent-chat] request failed:", err);
       appendError("تعذر الاتصال بالخادم. حاول مرة أخرى.");
     } finally {
+      // Cards go at the very bottom of this response (after the final text),
+      // also when the turn errored or was stopped after items were created.
+      appendResultCardsGroup(pendingResultCards);
       typingController.clear();
       currentAbortController = null;
       setGenerating(false);
@@ -2550,6 +2573,11 @@ export function createChatPanel(options = {}) {
     if (!history.length) {
       renderEmptyState();
     } else {
+      // Same placement as live turns: a response's result cards are shown as
+      // one group after its last message (i.e. right before the next user
+      // message, or at the end of the conversation).
+      const pendingCards = [];
+      const flushPendingCards = () => appendResultCardsGroup(pendingCards.splice(0), { scroll: false });
       history.forEach((m, i) => {
         if (m.role === "tool" || m.type === "tool-result") {
           let toolInput = m.input;
@@ -2586,20 +2614,19 @@ export function createChatPanel(options = {}) {
           const resultCard = renderResultCard(m.content);
           const creatorCard = resultCard ? null : renderCreatorCard(m.content);
           if (resultCard || creatorCard) {
-            const el = document.createElement("div");
-            el.className = "ai-agent-msg ai-agent-msg--assistant ai-agent-msg--tool-result";
-            el.appendChild(resultCard || creatorCard);
-            messagesEl.appendChild(el);
+            pendingCards.push(resultCard || creatorCard);
           }
         } else if (m.role === "assistant" && Array.isArray(m.toolCalls) && m.toolCalls.length && !m.content) {
           // Empty assistant message representing tool call trigger, rendered by tool card
         } else {
+          if (m.role === "user") flushPendingCards();
           const msgEl = appendMessage(m.role, m.content, m.attachments, i);
           if (m.thinking && m.role === "assistant") {
             msgEl.parentElement.insertBefore(buildThinkingBlock(m.thinking), msgEl);
           }
         }
       });
+      flushPendingCards();
     }
     // Tells the History tab / sidebar recents which entry is now active
     // (see getConversationId above) so they can re-render their

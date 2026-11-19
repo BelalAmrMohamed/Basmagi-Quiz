@@ -164,7 +164,7 @@ export function createToolCallCard(cfg) {
     } else if (nextStatus === "error") {
       resultSection.hidden = false;
       const retryBadge = data.retrying
-        ? `<span class="ai-agent-tool-card__retry-badge">جاري محاولة التصحيح التلقائي (${data.retryNum || 1}/2)...</span>`
+        ? `<span class="ai-agent-tool-card__retry-badge">جاري محاولة التصحيح التلقائي...</span>`
         : "";
       resultSection.innerHTML = `
         <span class="ai-agent-tool-card__section-title">ملاحظات التنفيذ:</span>

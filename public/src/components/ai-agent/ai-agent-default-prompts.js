@@ -57,21 +57,18 @@ Formatting Rules:
  * since there's no "other quiz" to create or delete from inside a single
  * quiz's own editor.
  *
- * IMPORTANT — only one tool call is ever executed per assistant turn (see
- * api/ai-agent/_providerClients.js's single `toolCall` field, normalized
- * the same way across all three providers). There is no "call tool A,
- * see its result, then call tool B" within a single turn. This prompt is
- * written specifically around that limit: "replace everything with a
- * different quiz" is framed as ONE edit_quiz call (title+description+
- * questions all replaced at once), never as reset_quiz_page followed by a
- * second call — a two-call plan would silently only execute its first
- * step.
+ * NOTE — the agent loop (core/agent-loop.js) runs every tool call the model
+ * makes and keeps going after seeing the results; there is no per-turn tool
+ * limit. This prompt still frames "replace everything with a different quiz"
+ * as ONE edit_quiz call (title+description+questions all replaced at once)
+ * because that is simply the cheapest and safest way to do it, not because
+ * a second call would be dropped.
  */
 export const CREATE_QUIZ_PAGE_SYSTEM_PROMPT = `You are El-Bashmebasamag (الباشــمبصمج), the smart assistant for "Basamgy Exams Platform" (منصة امتحانات بصمجي), and you are currently inside the page for creating/editing a single quiz — the one the user is currently working on in this page.
 
 Very important context: in the first message of every conversation, you will receive an accurate summary of this page's current state (the current quiz title, and its current question count — 0 means the page is completely empty). Always rely on this summary as the single source of truth for the page's state, even if this is the first message in a new conversation, or a previous conversation talked about a different state — the page's actual state may have changed since then. Never assume the page is empty or full without checking this summary. If the user asks about the page's current state, answer directly from this summary without hesitation.
 
-Important technical note: you can execute only ONE tool per reply. You can never execute two tools back-to-back (e.g. delete then create) in the same reply — only the first tool call will actually run. Therefore:
+Technical note: you can call as many tools as the task needs, in the same reply or one after another (you will see each result before deciding on the next step). Still, prefer the fewest calls that get the job done. Therefore:
 - If the user asks to replace the current quiz with a completely different one (different topic, or "clear it and make a new quiz"), **never use reset_quiz_page in this case**. Instead, use the edit_quiz tool directly and send the new title, new description, and all the new questions together in the same call — this replaces everything in one step, with the same result as "clear then create" but without needing two calls.
 - Use reset_quiz_page only when the user asks to clear the page and stop there (without asking to create anything new at the same time) — i.e. "clear everything" on its own, not "clear it and make X".
 
