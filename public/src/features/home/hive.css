@@ -11,7 +11,10 @@
 
 /* `hidden` on body makes it a scroll container, which makes the fixed bottom
    nav jitter on phones; `clip` stops horizontal overflow without that. */
-html, body { overflow-x: clip; }
+html,
+body {
+  overflow-x: clip;
+}
 
 /* ───────────────────────────── 2. HONEYCOMB ────────────────────────────────
    .hive-root is the size container: cell size and 5/3 columns derive from its
@@ -30,8 +33,11 @@ html, body { overflow-x: clip; }
   border: 0;
   overflow-x: clip;
 }
+
 .hive-root .comb {
-  --g: 8px; --o: var(--g); --cols: 5;
+  --g: 8px;
+  --o: var(--g);
+  --cols: 5;
   --w: calc(100cqw / var(--cols) - var(--g));
   --h: calc(var(--w) * 1.1547);
   --pt: calc(var(--w) + var(--g));
@@ -48,7 +54,13 @@ html, body { overflow-x: clip; }
   grid-template-rows: auto;
   grid-auto-rows: var(--p);
 }
-.hive-root .cells { display: contents; list-style: none; padding: 0; margin: 0; }
+
+.hive-root .cells {
+  display: contents;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
 
 .hive-root .hx {
   grid-column: var(--x) / span 2;
@@ -58,128 +70,379 @@ html, body { overflow-x: clip; }
   position: relative;
   list-style: none;
 }
+
 .hive-root .face {
-  position: relative; isolation: isolate; height: 100%;
-  display: grid; place-content: center; justify-items: center; gap: .25em;
+  position: relative;
+  isolation: isolate;
+  height: 100%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: .25em;
   padding-inline: calc(var(--w) * .14);
-  text-align: center; text-decoration: none; color: var(--hv-ink); cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  color: var(--hv-ink);
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  clip-path: var(--hv-hex); background: var(--hv-edge);
-  font-size: max(11px, calc(var(--w) * .092)); line-height: 1.2;
+  clip-path: var(--hv-hex);
+  background: var(--hv-edge);
+  font-size: max(11px, calc(var(--w) * .092));
+  line-height: 1.2;
   animation: hx-fill .5s both;
 }
-.hive-root .face::before { content: ""; position: absolute; inset: 2px; z-index: -1; clip-path: var(--hv-hex); background: var(--hv-cell); transition: background-color .25s; }
-.hive-root .face::after  { content: ""; position: absolute; inset: 0; z-index: -2; clip-path: var(--hv-hex); background: var(--hv-sheen); opacity: 0; transition: opacity .25s; }
-.hive-root .face i { font-style: normal; font-size: 2.6em; line-height: 1; filter: drop-shadow(0 4px 8px #0006); }
+
+.hive-root .face::before {
+  transition: background-color .1s ease-out;
+}
+
+.hive-root .face::after {
+  transition: opacity .1s ease-out;
+}
+
+.hive-root .face i {
+  font-style: normal;
+  font-size: 2.6em;
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px #0006);
+}
+
 .hive-root .face b {
-  font-weight: 700; max-width: 100%; overflow-wrap: anywhere; text-align: center;
-  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  text-overflow: ellipsis; unicode-bidi: plaintext; /* ellipsis follows each title's own direction */
+  font-weight: 700;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  unicode-bidi: plaintext;
+  /* ellipsis follows each title's own direction */
 }
+
 .hive-root .face s {
-  text-decoration: none; color: var(--hv-mute); font-size: .82em; transition: color .25s;
-  display: block; max-width: 100%; min-width: 0; text-align: center; unicode-bidi: plaintext;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-decoration: none;
+  color: var(--hv-mute);
+  font-size: .82em;
+  transition: color .1s ease-out;
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  text-align: center;
+  unicode-bidi: plaintext;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
 /* keep text clear of the ⋮ button that sits at the bottom of the cell */
-.hive-root .hx:has(> .exam-more-btn) .face { padding-bottom: calc(var(--w) * .13); }
+.hive-root .hx:has(> .exam-more-btn) .face {
+  padding-bottom: calc(var(--w) * .13);
+}
 
 /* states: colour and opacity only, nothing moves or resizes */
-.hive-root .face:hover::before, .hive-root .face:focus-visible::before { background: var(--hv-cell-hi); }
-.hive-root .face:hover::after,  .hive-root .face:focus-visible::after  { opacity: 1; }
-.hive-root .face:hover s, .hive-root .face:focus-visible s { color: var(--hv-ink); }
-.hive-root .face:focus-visible { outline: none; }
-.hive-root .face[aria-current="true"]::before { background: var(--hv-cell-sel); }
-.hive-root .face[aria-current="true"]::after  { opacity: 1; background: linear-gradient(150deg, var(--hv-accent), var(--hv-accent-2)); }
-.hive-root .face:active::before { background: var(--hv-cell-lo); }
-.hive-root .face:active::after  { opacity: .55; }
+.hive-root .face:hover::before,
+.hive-root .face:focus-visible::before {
+  background: var(--hv-cell-hi);
+}
+
+.hive-root .face:hover::after,
+.hive-root .face:focus-visible::after {
+  opacity: 1;
+}
+
+.hive-root .face:hover s,
+.hive-root .face:focus-visible s {
+  color: var(--hv-ink);
+}
+
+.hive-root .face:focus-visible {
+  outline: none;
+}
+
+.hive-root .face[aria-current="true"]::before {
+  background: var(--hv-cell-sel);
+}
+
+.hive-root .face[aria-current="true"]::after {
+  opacity: 1;
+  background: linear-gradient(150deg, var(--hv-accent), var(--hv-accent-2));
+}
+
+.hive-root .face:active::before {
+  background: var(--hv-cell-lo);
+}
+
+.hive-root .face:active::after {
+  opacity: .55;
+}
 
 /* ⋮ menu button, «جديد» badge and search "subscribe" slot: siblings of .face
    (the face clips to the hexagon, so they live on the <li>). */
-.hive-root .hx > .exam-more-btn {
-  position: absolute; z-index: 2; top: auto; right: auto; bottom: 9%; inset-inline-start: 50%;
+.hive-root .hx>.exam-more-btn {
+  position: absolute;
+  z-index: 2;
+  top: auto;
+  right: auto;
+  bottom: 9%;
+  inset-inline-start: 50%;
   translate: -50% 0;
-  width: 28px; height: 28px; min-width: 0; padding: 0;
-  display: grid; place-items: center;
-  border: 0; border-radius: 50%; background: transparent; color: var(--hv-mute); cursor: pointer;
+  width: 28px;
+  height: 28px;
+  min-width: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--hv-mute);
+  cursor: pointer;
   transition: background-color .2s, color .2s;
 }
-html[dir="rtl"] .hive-root .hx > .exam-more-btn { translate: 50% 0; }
-.hive-root .hx > .exam-more-btn::before { content: ""; position: absolute; inset: -8px; }
-.hive-root .hx > .exam-more-btn svg { width: 16px; height: 16px; }
-.hive-root .hx > .exam-more-btn:hover,
-.hive-root .hx > .exam-more-btn:focus-visible { background: color-mix(in srgb, var(--hv-ink) 12%, transparent); color: var(--hv-ink); outline: none; }
+
+html[dir="rtl"] .hive-root .hx>.exam-more-btn {
+  translate: 50% 0;
+}
+
+.hive-root .hx>.exam-more-btn::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+
+.hive-root .hx>.exam-more-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.hive-root .hx>.exam-more-btn:hover,
+.hive-root .hx>.exam-more-btn:focus-visible {
+  background: color-mix(in srgb, var(--hv-ink) 12%, transparent);
+  color: var(--hv-ink);
+  outline: none;
+}
+
 .hive-root .hx-new {
-  position: absolute; z-index: 2; top: 19%; inset-inline-end: 17%;
-  padding: .12em .6em; border-radius: 99px; font-size: .72rem; font-weight: 700; line-height: 1.5;
-  color: #fff; background: var(--hv-accent-2);
+  position: absolute;
+  z-index: 2;
+  top: 19%;
+  inset-inline-end: 17%;
+  padding: .12em .6em;
+  border-radius: 99px;
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #fff;
+  background: var(--hv-accent-2);
 }
-.hive-root .hx > .subscribe-btn-container {
-  position: absolute; z-index: 2; inset-inline: 17%; bottom: 20%;
-  display: flex; justify-content: center; margin: 0; padding: 0; width: auto; border: 0;
+
+.hive-root .hx>.subscribe-btn-container {
+  position: absolute;
+  z-index: 2;
+  inset-inline: 17%;
+  bottom: 20%;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  width: auto;
+  border: 0;
 }
+
 /* search results: keep two-line titles clear of the button */
-.hive-root .hx:has(> .subscribe-btn-container) .face { padding-bottom: 26%; }
-.hive-root .hx:has(> .subscribe-btn-container) .face b { -webkit-line-clamp: 2; }
-.hive-root .hx > .subscribe-btn-container .subscribe-btn { width: 100%; font-size: .78rem; padding: .3em .6em; border-radius: 99px; }
+.hive-root .hx:has(> .subscribe-btn-container) .face {
+  padding-bottom: 26%;
+}
+
+.hive-root .hx:has(> .subscribe-btn-container) .face b {
+  -webkit-line-clamp: 2;
+}
+
+.hive-root .hx>.subscribe-btn-container .subscribe-btn {
+  width: 100%;
+  font-size: .78rem;
+  padding: .3em .6em;
+  border-radius: 99px;
+}
 
 /* search results: the subscribe button owns the bottom, so ⋮ moves to the upper corner */
-.hive-root .hx:has(> .subscribe-btn-container) > .exam-more-btn {
-  bottom: auto; top: 19%; inset-inline-start: 17%; translate: 0 0;
+.hive-root .hx:has(> .subscribe-btn-container)>.exam-more-btn {
+  bottom: auto;
+  top: 19%;
+  inset-inline-start: 17%;
+  translate: 0 0;
 }
-html[dir="rtl"] .hive-root .hx:has(> .subscribe-btn-container) > .exam-more-btn { translate: 0 0; }
+
+html[dir="rtl"] .hive-root .hx:has(> .subscribe-btn-container)>.exam-more-btn {
+  translate: 0 0;
+}
 
 /* half-cell gap fillers */
-.hive-root .hx::before, .hive-root .hx::after {
-  position: absolute; top: 0; height: 100%; width: calc((var(--w) - var(--g)) / 2); background: var(--hv-fill);
+.hive-root .hx::before,
+.hive-root .hx::after {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: calc((var(--w) - var(--g)) / 2);
+  background: var(--hv-fill);
 }
-.hive-root .hx::before { inset-inline-end: calc(100% + var(--g)); clip-path: polygon(0 calc(var(--g) * .29), 100% 25%, 100% 75%, 0 calc(100% - var(--g) * .29)); }
-.hive-root .hx::after  { inset-inline-start: calc(100% + var(--g)); clip-path: polygon(0 25%, 100% calc(var(--g) * .29), 100% calc(100% - var(--g) * .29), 0 75%); }
-.hive-root .comb:dir(rtl) .hx::before, .hive-root .comb:dir(rtl) .hx::after { transform: scaleX(-1); }
+
+.hive-root .hx::before {
+  inset-inline-end: calc(100% + var(--g));
+  clip-path: polygon(0 calc(var(--g) * .29), 100% 25%, 100% 75%, 0 calc(100% - var(--g) * .29));
+}
+
+.hive-root .hx::after {
+  inset-inline-start: calc(100% + var(--g));
+  clip-path: polygon(0 25%, 100% calc(var(--g) * .29), 100% calc(100% - var(--g) * .29), 0 75%);
+}
+
+.hive-root .comb:dir(rtl) .hx::before,
+.hive-root .comb:dir(rtl) .hx::after {
+  transform: scaleX(-1);
+}
 
 /* row pattern: 5, 4, 5, 4 … */
 @container comb (min-width: 560px) {
-  .hive-root .hx:nth-child(9n+1 of :not([hidden])) { --x: 1; }
-  .hive-root .hx:nth-child(9n+2 of :not([hidden])) { --x: 3; }
-  .hive-root .hx:nth-child(9n+3 of :not([hidden])) { --x: 5; }
-  .hive-root .hx:nth-child(9n+4 of :not([hidden])) { --x: 7; }
-  .hive-root .hx:nth-child(9n+5 of :not([hidden])) { --x: 9; }
-  .hive-root .hx:nth-child(9n+6 of :not([hidden])) { --x: 2; }
-  .hive-root .hx:nth-child(9n+7 of :not([hidden])) { --x: 4; }
-  .hive-root .hx:nth-child(9n+8 of :not([hidden])) { --x: 6; }
-  .hive-root .hx:nth-child(9n+9 of :not([hidden])) { --x: 8; }
+  .hive-root .hx:nth-child(9n+1 of :not([hidden])) {
+    --x: 1;
+  }
+
+  .hive-root .hx:nth-child(9n+2 of :not([hidden])) {
+    --x: 3;
+  }
+
+  .hive-root .hx:nth-child(9n+3 of :not([hidden])) {
+    --x: 5;
+  }
+
+  .hive-root .hx:nth-child(9n+4 of :not([hidden])) {
+    --x: 7;
+  }
+
+  .hive-root .hx:nth-child(9n+5 of :not([hidden])) {
+    --x: 9;
+  }
+
+  .hive-root .hx:nth-child(9n+6 of :not([hidden])) {
+    --x: 2;
+  }
+
+  .hive-root .hx:nth-child(9n+7 of :not([hidden])) {
+    --x: 4;
+  }
+
+  .hive-root .hx:nth-child(9n+8 of :not([hidden])) {
+    --x: 6;
+  }
+
+  .hive-root .hx:nth-child(9n+9 of :not([hidden])) {
+    --x: 8;
+  }
+
   .hive-root .hx:nth-child(9n+6 of :not([hidden]))::before,
-  .hive-root .hx:nth-child(9n+9 of :not([hidden]))::after { content: ""; }
+  .hive-root .hx:nth-child(9n+9 of :not([hidden]))::after {
+    content: "";
+  }
 }
+
 /* 3 columns: 3, 2, 3, 2 … */
 @container comb (max-width: 559px) {
-  .hive-root .comb { --cols: 3; grid-template-columns: repeat(6, calc(var(--pt) / 2)); }
-  .hive-root .cap-in { clip-path: polygon(
-    0 0, 0 var(--ye),
-    var(--a) var(--yp), calc(var(--a) + var(--pt) * .5) 100%,
-    calc(var(--a) + var(--pt)) var(--yp), calc(var(--a) + var(--pt) * 1.5) 100%,
-    calc(var(--a) + var(--pt) * 2) var(--yp),
-    100% var(--ye), 100% 0); }
-  .hive-root .hx:nth-child(5n+1 of :not([hidden])) { --x: 1; }
-  .hive-root .hx:nth-child(5n+2 of :not([hidden])) { --x: 3; }
-  .hive-root .hx:nth-child(5n+3 of :not([hidden])) { --x: 5; }
-  .hive-root .hx:nth-child(5n+4 of :not([hidden])) { --x: 2; }
-  .hive-root .hx:nth-child(5n+5 of :not([hidden])) { --x: 4; }
+  .hive-root .comb {
+    --cols: 3;
+    grid-template-columns: repeat(6, calc(var(--pt) / 2));
+  }
+
+  .hive-root .cap-in {
+    clip-path: polygon(0 0, 0 var(--ye),
+        var(--a) var(--yp), calc(var(--a) + var(--pt) * .5) 100%,
+        calc(var(--a) + var(--pt)) var(--yp), calc(var(--a) + var(--pt) * 1.5) 100%,
+        calc(var(--a) + var(--pt) * 2) var(--yp),
+        100% var(--ye), 100% 0);
+  }
+
+  .hive-root .hx:nth-child(5n+1 of :not([hidden])) {
+    --x: 1;
+  }
+
+  .hive-root .hx:nth-child(5n+2 of :not([hidden])) {
+    --x: 3;
+  }
+
+  .hive-root .hx:nth-child(5n+3 of :not([hidden])) {
+    --x: 5;
+  }
+
+  .hive-root .hx:nth-child(5n+4 of :not([hidden])) {
+    --x: 2;
+  }
+
+  .hive-root .hx:nth-child(5n+5 of :not([hidden])) {
+    --x: 4;
+  }
+
   .hive-root .hx:nth-child(5n+4 of :not([hidden]))::before,
-  .hive-root .hx:nth-child(5n+5 of :not([hidden]))::after { content: ""; }
-  .hive-root .hx > .exam-more-btn { bottom: 7%; width: 22px; height: 22px; }
-  .hive-root .hx > .exam-more-btn svg { width: 14px; height: 14px; }
-  .hive-root .hx-new { top: 15%; }
-  .hive-root .hx:has(> .subscribe-btn-container) > .exam-more-btn { top: 15%; }
+  .hive-root .hx:nth-child(5n+5 of :not([hidden]))::after {
+    content: "";
+  }
+
+  .hive-root .hx>.exam-more-btn {
+    bottom: 7%;
+    width: 22px;
+    height: 22px;
+  }
+
+  .hive-root .hx>.exam-more-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .hive-root .hx-new {
+    top: 15%;
+  }
+
+  .hive-root .hx:has(> .subscribe-btn-container)>.exam-more-btn {
+    top: 15%;
+  }
 }
 
 /* loading skeleton */
-.hive-root .is-loading .face { pointer-events: none; cursor: default; animation: none; }
-.hive-root .is-loading .face::before { background: linear-gradient(100deg, var(--hv-cell) 35%, var(--hv-cell-hi) 50%, var(--hv-cell) 65%) 0 0 / 300% 100%; }
-.hive-root .is-loading :is(i, b, s) { display: block; background: var(--hv-cell-hi); border-radius: 6px; filter: none; font-size: 1em; }
-.hive-root .is-loading i { width: 2.4em; height: 2.4em; border-radius: 50%; }
-.hive-root .is-loading b { width: 6em; height: 1em; }
-.hive-root .is-loading s { width: 4em; height: .8em; }
+.hive-root .is-loading .face {
+  pointer-events: none;
+  cursor: default;
+  animation: none;
+}
+
+.hive-root .is-loading .face::before {
+  background: linear-gradient(100deg, var(--hv-cell) 35%, var(--hv-cell-hi) 50%, var(--hv-cell) 65%) 0 0 / 300% 100%;
+}
+
+.hive-root .is-loading :is(i, b, s) {
+  display: block;
+  background: var(--hv-cell-hi);
+  border-radius: 6px;
+  filter: none;
+  font-size: 1em;
+}
+
+.hive-root .is-loading i {
+  width: 2.4em;
+  height: 2.4em;
+  border-radius: 50%;
+}
+
+.hive-root .is-loading b {
+  width: 6em;
+  height: 1em;
+}
+
+.hive-root .is-loading s {
+  width: 4em;
+  height: .8em;
+}
 
 /* ───────────────────────────── 3. CAP ──────────────────────────────────────
    The message slot. Its bottom edge is cut to the tops of the first row.
@@ -190,47 +453,120 @@ html[dir="rtl"] .hive-root .hx:has(> .subscribe-btn-container) > .exam-more-btn 
   display: grid;
   --tone: var(--hv-accent-2);
   --stroke: color-mix(in srgb, var(--tone) 45%, var(--hv-edge));
-  filter: drop-shadow(1px 0 0 var(--stroke)) drop-shadow(-1px 0 0 var(--stroke))
-          drop-shadow(0 1px 0 var(--stroke)) drop-shadow(0 -1px 0 var(--stroke));
+  filter: drop-shadow(1px 0 0 var(--stroke)) drop-shadow(-1px 0 0 var(--stroke)) drop-shadow(0 1px 0 var(--stroke)) drop-shadow(0 -1px 0 var(--stroke));
 }
-.hive-root .cap:empty { height: calc(var(--h) * .25 + var(--g) * 2); filter: none; }
-.hive-root .cap[data-tone="warn"] { --tone: var(--color-warning); }
-.hive-root .cap[data-tone="ok"]   { --tone: var(--color-success); }
+
+.hive-root .cap:empty {
+  height: calc(var(--h) * .25 + var(--g) * 2);
+  filter: none;
+}
+
+.hive-root .cap[data-tone="warn"] {
+  --tone: var(--color-warning);
+}
+
+.hive-root .cap[data-tone="ok"] {
+  --tone: var(--color-success);
+}
+
 .hive-root .cap-in {
-  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
   padding: clamp(14px, 2cqw, 22px) clamp(18px, 3cqw, 32px) calc(var(--h) * .25 + var(--g) * 2.5);
   border-radius: 22px 22px 0 0;
   background: linear-gradient(270deg, color-mix(in srgb, var(--tone) 16%, transparent), transparent 65%), var(--hv-panel);
-  clip-path: polygon(
-    0 0, 0 var(--ye),
-    var(--a) var(--yp), calc(var(--a) + var(--pt) * .5) 100%,
-    calc(var(--a) + var(--pt)) var(--yp), calc(var(--a) + var(--pt) * 1.5) 100%,
-    calc(var(--a) + var(--pt) * 2) var(--yp), calc(var(--a) + var(--pt) * 2.5) 100%,
-    calc(var(--a) + var(--pt) * 3) var(--yp), calc(var(--a) + var(--pt) * 3.5) 100%,
-    calc(var(--a) + var(--pt) * 4) var(--yp),
-    100% var(--ye), 100% 0);
+  clip-path: polygon(0 0, 0 var(--ye),
+      var(--a) var(--yp), calc(var(--a) + var(--pt) * .5) 100%,
+      calc(var(--a) + var(--pt)) var(--yp), calc(var(--a) + var(--pt) * 1.5) 100%,
+      calc(var(--a) + var(--pt) * 2) var(--yp), calc(var(--a) + var(--pt) * 2.5) 100%,
+      calc(var(--a) + var(--pt) * 3) var(--yp), calc(var(--a) + var(--pt) * 3.5) 100%,
+      calc(var(--a) + var(--pt) * 4) var(--yp),
+      100% var(--ye), 100% 0);
 }
+
 .hive-root .cap-ic {
-  flex: none; display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 50%; font-size: 1.25rem;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  font-size: 1.25rem;
   background: color-mix(in srgb, var(--tone) 22%, transparent);
 }
-.hive-root .cap-tx { flex: 1 1 14rem; display: grid; gap: .2em; min-width: 0; }
-.hive-root .cap-tx strong { font-size: clamp(.95rem, 2cqw, 1.15rem); color: var(--hv-ink); }
-.hive-root .cap-tx span { color: var(--hv-mute); font-size: clamp(.82rem, 1.7cqw, .98rem); }
-.hive-root .pill {
-  color: var(--hv-accent); text-decoration: none; font-weight: 600; font-size: clamp(.85rem, 1.7cqw, 1rem);
-  padding: .5em 1.3em; border-radius: 99px; border: 1.5px solid var(--hv-accent-2);
-  box-shadow: 0 0 18px color-mix(in srgb, var(--hv-accent-2) 33%, transparent); transition: background-color .2s;
-}
-.hive-root .pill:hover, .hive-root .pill:focus-visible { background-color: color-mix(in srgb, var(--hv-accent-2) 18%, transparent); outline: none; }
-.hive-root .pill:active { background-color: color-mix(in srgb, var(--hv-accent-2) 30%, transparent); }
 
-@keyframes hx-fill { from { opacity: 0; } }
-@keyframes hx-sheen { to { background-position: -300% 0; } }
-html[data-motion="normal"] .hive-root .is-loading .face::before { animation: hx-sheen 1.4s linear infinite; }
-html[data-motion="reduced"] .hive-root .face { animation: none; }
-@media (prefers-reduced-motion: no-preference) { .hive-root .is-loading .face::before { animation: hx-sheen 1.4s linear infinite; } }
-@media (prefers-reduced-motion: reduce) { .hive-root .face { animation: none; } }
+.hive-root .cap-tx {
+  flex: 1 1 14rem;
+  display: grid;
+  gap: .2em;
+  min-width: 0;
+}
+
+.hive-root .cap-tx strong {
+  font-size: clamp(.95rem, 2cqw, 1.15rem);
+  color: var(--hv-ink);
+}
+
+.hive-root .cap-tx span {
+  color: var(--hv-mute);
+  font-size: clamp(.82rem, 1.7cqw, .98rem);
+}
+
+.hive-root .pill {
+  color: var(--hv-accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: clamp(.85rem, 1.7cqw, 1rem);
+  padding: .5em 1.3em;
+  border-radius: 99px;
+  border: 1.5px solid var(--hv-accent-2);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--hv-accent-2) 33%, transparent);
+  transition: background-color .2s;
+}
+
+.hive-root .pill:hover,
+.hive-root .pill:focus-visible {
+  background-color: color-mix(in srgb, var(--hv-accent-2) 18%, transparent);
+  outline: none;
+}
+
+.hive-root .pill:active {
+  background-color: color-mix(in srgb, var(--hv-accent-2) 30%, transparent);
+}
+
+@keyframes hx-fill {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes hx-sheen {
+  to {
+    background-position: -300% 0;
+  }
+}
+
+html[data-motion="normal"] .hive-root .is-loading .face::before {
+  animation: hx-sheen 1.4s linear infinite;
+}
+
+html[data-motion="reduced"] .hive-root .face {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hive-root .is-loading .face::before {
+    animation: hx-sheen 1.4s linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hive-root .face {
+    animation: none;
+  }
+}
 
 /* Banners that sit inside the card shelf (e.g. «لست مشتركاً في هذه المادة» on
    /course/*) borrow the cap's look so messages read as one family. */
