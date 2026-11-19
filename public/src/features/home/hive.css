@@ -93,11 +93,24 @@ body {
 }
 
 .hive-root .face::before {
-  transition: background-color .1s ease-out;
+  content: "";
+  position: absolute;
+  inset: 2px;
+  z-index: -1;
+  clip-path: var(--hv-hex);
+  background: var(--hv-cell);
+  transition: background-color .25s;
 }
 
 .hive-root .face::after {
-  transition: opacity .1s ease-out;
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  clip-path: var(--hv-hex);
+  background: var(--hv-sheen);
+  opacity: 0;
+  transition: opacity .25s;
 }
 
 .hive-root .face i {
@@ -126,7 +139,7 @@ body {
   text-decoration: none;
   color: var(--hv-mute);
   font-size: .82em;
-  transition: color .1s ease-out;
+  transition: color .25s;
   display: block;
   max-width: 100%;
   min-width: 0;

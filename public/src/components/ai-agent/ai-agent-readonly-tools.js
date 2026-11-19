@@ -156,4 +156,5 @@ export async function handleReadOnlyLibraryToolCall(toolCall) {
 }
 
 /** Tool names this module can handle — shared by every caller's toolNames array. */
-export const READONLY_LIBRARY_TOOL_NAMES = ["search_library", "parse_item_info", "get_user_activity"];
+// Defined in ai-agent-page-tools.js (dependency-free, so tests can import it).
+export { READONLY_LIBRARY_TOOL_NAMES } from "./ai-agent-page-tools.js";

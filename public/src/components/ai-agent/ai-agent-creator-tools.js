@@ -1,7 +1,8 @@
 // Read-only creator profile tools for the home chat. Keep these details in
 // sync with public/about.html; the card renderer consumes a small typed
 // payload and builds its DOM without injecting model-controlled HTML.
-export const CREATOR_TOOL_NAMES = ["get_creator_info", "display_creator_card"];
+// Defined in ai-agent-page-tools.js (dependency-free, so tests can import it).
+export { CREATOR_TOOL_NAMES } from "./ai-agent-page-tools.js";
 
 const CREATOR = {
   name: "بلال عمرو محمد",

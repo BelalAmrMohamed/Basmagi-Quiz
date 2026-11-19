@@ -79,7 +79,14 @@ export function createToolCallCard(cfg) {
   toggleBtn.setAttribute("aria-expanded", "false");
   toggleBtn.innerHTML = CHEVRON_SVG;
 
-  metaGroup.append(timerEl, toggleBtn);
+  // Undo (Phase 5): handlers register it via setUndo(); shown on success only.
+  let undoSpec = null;
+  const undoBtn = document.createElement("button");
+  undoBtn.type = "button";
+  undoBtn.className = "ai-agent-tool-card__undo";
+  undoBtn.hidden = true;
+
+  metaGroup.append(timerEl, undoBtn, toggleBtn);
   header.append(iconWrap, titleGroup, metaGroup);
 
   const body = document.createElement("div");
@@ -145,9 +152,73 @@ export function createToolCallCard(cfg) {
     card.classList.toggle("is-expanded", !isExpanded);
   });
 
+  function refreshUndoState() {
+    if (!undoSpec || undoSpec.done || undoSpec.busy) return;
+    let stale = false;
+    try {
+      stale = !!undoSpec.isStale();
+    } catch {
+      stale = false;
+    }
+    undoBtn.disabled = stale;
+    undoBtn.title = stale ? "تم تعديل العنصر بعد هذه العملية، لذا لا يمكن التراجع دون فقدان التعديلات الأحدث." : undoSpec.label;
+  }
+
+  function renderUndo() {
+    if (!undoSpec) return;
+    undoBtn.hidden = false;
+    undoBtn.textContent = "تراجع";
+    refreshUndoState();
+  }
+
+  undoBtn.addEventListener("click", async (e) => {
+    e.stopPropagation(); // don't toggle the card
+    if (!undoSpec || undoSpec.done || undoSpec.busy || undoBtn.disabled) return;
+    undoSpec.busy = true;
+    undoBtn.disabled = true;
+    try {
+      const res = await undoSpec.run();
+      if (res && res.ok === false) throw new Error(res.reason || "تعذر التراجع.");
+      undoSpec.done = true;
+      undoBtn.hidden = true;
+      card.dataset.reverted = "true";
+      const note = document.createElement("div");
+      note.className = "ai-agent-tool-card__reverted";
+      note.textContent = "تم التراجع عن هذه العملية.";
+      body.appendChild(note);
+      body.hidden = false;
+      card.classList.add("is-expanded");
+    } catch (err) {
+      undoSpec.busy = false;
+      undoBtn.disabled = false;
+      undoBtn.title = err?.message || "تعذر التراجع.";
+    } finally {
+      if (undoSpec) undoSpec.busy = false;
+    }
+  });
+  card.addEventListener("mouseenter", refreshUndoState);
+  card.addEventListener("focusin", refreshUndoState);
+
+  /**
+   * Registers an undo action for this call. The button appears once the card
+   * reaches "success" (handlers run before that status is set).
+   * @param {string} label
+   * @param {() => any} run
+   * @param {() => boolean} [isStale]
+   */
+  card.setUndo = function setUndo(label, run, isStale = () => false) {
+    undoSpec = { label, run, isStale, done: false, busy: false };
+    if (currentStatus === "success") renderUndo();
+  };
+
   card.updateStatus = function updateStatus(nextStatus, data = {}) {
     currentStatus = nextStatus;
     updateIcon();
+    if (nextStatus === "success") renderUndo();
+    else if (nextStatus === "error" || nextStatus === "aborted") {
+      undoSpec = null;
+      undoBtn.hidden = true;
+    }
 
     if (nextStatus === "running") {
       startTimer();
