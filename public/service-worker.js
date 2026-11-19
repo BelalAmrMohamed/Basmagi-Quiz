@@ -17,6 +17,14 @@ const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
 const OFFLINE_URL = "/offline";
 const PRECACHE = [OFFLINE_URL, "/favicon.png", "/favicon-48.png", "/"];
 
+// Notification action icons as inline SVG data URLs (a classic service worker cannot import icons.js,
+// and data URLs need no cached file). Same lucide check / x glyphs as the app icons.
+const svgIcon = (body) =>
+  "data:image/svg+xml;charset=utf-8," +
+  encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`);
+const ACTION_ICON_CHECK = svgIcon('<path d="M20 6 9 17l-5-5"/>');
+const ACTION_ICON_CLOSE = svgIcon('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>');
+
 function isAppAsset(url) {
   return url.origin === self.location.origin &&
     !url.pathname.startsWith("/api/") &&
@@ -162,8 +170,8 @@ self.addEventListener("push", (event) => {
     badge: "/favicon.png",
     data: data.url ? { url: data.url } : {},
     actions: [
-      { action: "explore", title: "عرض", icon: "/assets/images/checkmark.png" },
-      { action: "close", title: "إغلاق", icon: "/assets/images/close.png" },
+      { action: "explore", title: "عرض", icon: ACTION_ICON_CHECK },
+      { action: "close", title: "إغلاق", icon: ACTION_ICON_CLOSE },
     ],
   };
 

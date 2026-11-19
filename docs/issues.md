@@ -7,6 +7,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
+### MATLAB loading animation isn't working in high performance mode, and the lesson page's loading shimmer needs to be improved.
+
 ### Sign in
 ![Screenshot](image.png).
 * This is extremely annoying, it's telling me my session has ended, but its still showing me that I'm signed in in the sidebar's dropdown and in the profile page, and I don't know why are sessions ending quickly.

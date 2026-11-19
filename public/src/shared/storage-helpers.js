@@ -2,6 +2,8 @@
 // public/src/shared/storage-helpers.js
 // UTILITY FUNCTIONS - Enhanced with Security
 // ============================================================================
+import { showNotification } from "../components/notifications/notifications.js";
+import { WARNING_ICON_SVG } from "../features/home/icons.js";
 
 /**
  * Safe localStorage getter with error handling
@@ -29,7 +31,7 @@ export function setInStorage(key, value) {
       showNotification(
         "تحذير",
         "مساحة التخزين ممتلئة. قد تفقد بعض البيانات.",
-        "./assets/images/warning.png",
+        WARNING_ICON_SVG,
       );
     }
     return false;
