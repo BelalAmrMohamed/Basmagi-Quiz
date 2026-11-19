@@ -18,6 +18,10 @@
 /* Hide every FAB while the window exists (open, maximized or minimized). */
 body.ai-agent-window-open .ai-agent-fab { display: none !important; }
 
+/* A maximized agent owns the viewport; keep the underlying page from scrolling. */
+html.ai-agent-window-maximized,
+body.ai-agent-window-maximized { overflow: hidden !important; }
+
 .aiw {
   position: fixed;
   display: flex;

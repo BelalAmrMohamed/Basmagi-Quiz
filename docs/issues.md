@@ -9,14 +9,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ### AI Agent
 
-#### Issue 1: Main Page Scrollbars
-* When the AI Agent's window is maximized, it shows the main page's scrollbar on the right. Fix it. 
-* See:
-  * ![Screenshot](image-1.png)
-  * `public\src\components\ai-agent\ai-agent-window.css`
-  * `public\src\components\ai-agent\ai-agent-window.js`
-
-#### Issue 2: Cards Designs
+#### Issue 1: Cards Designs
 * The files/cards are poorly designed.
 * They are too big, their height is too much. It should just be: Icon, Title, Label, and link.
 * They should use actual SVG icons.
@@ -24,7 +17,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 * See `public\src\components\ai-agent\ai-agent-result-cards.js`
 
-#### Issue 3: Stupidly Designed Tool Limits
+#### Issue 2: Stupidly Designed Tool Limits
 * If the AI Agent tries to use a tool for more than 2 times, the chat stops: 
   * If it tries to create 2 quizzes: The second tool usage doesn't happen, because of a limit.
   * If it tries to search in the library twice, the second one doens't happen.
@@ -36,7 +29,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
   * `api\ai-agent\chat.js`
   * Other files in `api\ai-agent\` might be for the Telegram Bot. 
 
-#### Issue 4: Redesign the `.ai-agent-dropdown-menu`
+#### Issue 3: Redesign the `.ai-agent-dropdown-menu`
 * The current design of the `.ai-agent-dropdown-menu` was copied from other unrelated parts of the platform, which their design, doesn't match that of the AI Agent, I want something more elegant. And also design the tooltips on the history items, make them rich tooltips.
 * See `public\src\components\ai-agent\ai-agent.css` (.ai-agent-dropdown-menu)
 

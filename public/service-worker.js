@@ -12,7 +12,7 @@
 //    they are revalidated on every load (cheap 304), otherwise a rebuilt runtime is not seen for weeks.
 //  * bump CACHE_VERSION only when the SW logic itself changes (it also drops older caches).
 
-const CACHE_VERSION = "basmagi-v9.0.4";
+const CACHE_VERSION = "basmagi-v9.0.5";
 const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
 const OFFLINE_URL = "/offline";
 const PRECACHE = [OFFLINE_URL, "/favicon.png", "/favicon-48.png", "/"];
