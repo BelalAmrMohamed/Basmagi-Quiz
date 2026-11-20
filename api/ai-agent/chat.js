@@ -393,13 +393,59 @@ export const TOOLS_BY_NAME = {
 // existing callers that pass `enableTools: true` without `toolNames` (i.e.
 // every caller before this field existed) keep working unchanged.
 const DEFAULT_TOOL_NAMES = ["create_quiz", "edit_quiz", "delete_quiz"];
+export const maxDuration = 60;
+
+function beginEventStream(res) {
+  res.status(200);
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders?.();
+}
+
+function writeStreamEvent(res, event, data) {
+  res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
+function streamingOptions(req, res, requested) {
+  if (!requested) return undefined;
+  const controller = new AbortController();
+  let opened = false;
+  let finished = false;
+  res.on?.("close", () => {
+    if (!finished) controller.abort(new DOMException("Client disconnected", "AbortError"));
+  });
+  return {
+    signal: controller.signal,
+    onOpen() { if (!opened) { opened = true; beginEventStream(res); } },
+    onEvent(event) {
+      if (!opened) { opened = true; beginEventStream(res); }
+      writeStreamEvent(res, event.type, event.type === "toolCall" ? event.toolCall : { delta: event.delta });
+    },
+    finish(result) {
+      if (!opened) { opened = true; beginEventStream(res); }
+      writeStreamEvent(res, "done", result);
+      finished = true;
+      res.end();
+    },
+    fail(error) {
+      if (!opened) return false;
+      writeStreamEvent(res, "error", { error: error || "فشل الاتصال بمزوّد الذكاء الاصطناعي" });
+      finished = true;
+      res.end();
+      return true;
+    },
+    get opened() { return opened; },
+  };
+}
 
 export default async function handler(req, res) {
   applyCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { provider, model, effort, messages, useOwnKey, ownKey, systemPrompt, enableTools, toolNames, turnId } =
+  const { provider, model, effort, messages, useOwnKey, ownKey, systemPrompt, enableTools, toolNames, turnId, stream } =
     req.body || {};
 
   if (!isSupportedProvider(provider)) {
@@ -450,10 +496,16 @@ export default async function handler(req, res) {
       return res.status(429).json({ error: "طلبات كثيرة جدًا، حاول لاحقًا" });
     }
 
+    const streamState = streamingOptions(req, res, stream === true);
     try {
-      const result = await callProvider(provider, ownKey, messages, systemPrompt, tools, model, effort);
+      const result = await callProvider(provider, ownKey, messages, systemPrompt, tools, model, effort, streamState);
+      if (streamState) { streamState.finish(result); return res; }
       return res.status(200).json(result);
     } catch (err) {
+      if (streamState?.opened) {
+        if (err?.name !== "AbortError") streamState.fail(err.message);
+        return res;
+      }
       console.error(
         "[ai-agent/chat] own-key provider error:",
         err,
@@ -486,6 +538,7 @@ export default async function handler(req, res) {
   // /api/user-profile identify/sync-progress; see getRegularUserProfileId)
   // and charged atomically against AI_AGENT_DAILY_LIMIT (once per user message).
   let quotaInfo = null;
+  const streamState = streamingOptions(req, res, stream === true);
   try {
     requireAdmin(req);
   } catch (err) {
@@ -535,12 +588,17 @@ export default async function handler(req, res) {
   // what the client sent.
   try {
     const platformModel = DEFAULT_MODELS[provider] || "gemini-flash-lite-latest";
-    const result = await callProvider(provider, picked.key, messages, systemPrompt, tools, platformModel, effort);
+    const result = await callProvider(provider, picked.key, messages, systemPrompt, tools, platformModel, effort, streamState);
     // Meter the shared pool (feeds the "View Usage" menu). Awaited so the
     // serverless function isn't frozen mid-write; recordPlatformUsage never throws.
     await recordPlatformUsage(provider);
+    if (streamState) { streamState.finish(quotaInfo ? { ...result, quota: quotaInfo } : result); return res; }
     return res.status(200).json(quotaInfo ? { ...result, quota: quotaInfo } : result);
   } catch (err) {
+    if (streamState?.opened) {
+      if (err?.name !== "AbortError") streamState.fail("فشل الاتصال بمزوّد الذكاء الاصطناعي");
+      return res;
+    }
     console.error(
       "[ai-agent/chat] platform-key provider error:",
       err,

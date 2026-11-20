@@ -4,7 +4,7 @@
 // provider-agnostic here; each provider adapter in _providerClients.js
 // translates this into its own native tool/function-calling shape.
 // =============================================================================
-import { QUESTION_ITEM_SCHEMA, LESSON_BLOCK_SCHEMA } from "./_schemas.js";
+import { QUESTION_ITEM_SCHEMA, LESSON_BLOCK_SCHEMA, LESSON_SECTION_SCHEMA } from "./_schemas.js";
 
 // Mirrors the JSON shape parseQuizJson()/buildUserQuizEntry() (in
 // public/src/shared/quiz-json.js and public/src/features/home/quiz-schema.js)
@@ -300,19 +300,7 @@ export const CREATE_LESSON_TOOL = {
       folder: { type: "string", description: "Optional folder or course title to place the lesson inside." },
       sections: {
         type: "array",
-        items: {
-          type: "object",
-          properties: {
-            title: { type: "string" },
-            content: { type: "string" },
-            defaultHidden: { type: "boolean" },
-            blocks: {
-              type: "array",
-              items: LESSON_BLOCK_SCHEMA,
-            },
-          },
-          required: ["title", "blocks"],
-        },
+        items: LESSON_SECTION_SCHEMA,
       },
     },
     required: ["title", "sections"],
@@ -347,6 +335,17 @@ const NOTEBOOK_CHALLENGE_SCHEMA = {
     solution: { type: "string", description: "Optional model solution CODE the learner can reveal." },
   },
   required: ["expectedOutput"],
+};
+
+const NOTEBOOK_CELL_ITEM_SCHEMA = {
+  type: "object",
+  properties: {
+    type: { type: "string", enum: ["markdown", "code"] },
+    source: { type: "string", description: "Cell markdown or code source." },
+    stdin: { type: "string", description: "C++ only: input for cin." },
+    challenge: NOTEBOOK_CHALLENGE_SCHEMA,
+  },
+  required: ["type", "source"],
 };
 
 export const NOTEBOOK_ADD_CELL_TOOL = {
@@ -423,16 +422,7 @@ export const CREATE_NOTEBOOK_TOOL = {
       cells: {
         type: "array",
         description: "Ordered cells (1-200 cells).",
-        items: {
-          type: "object",
-          properties: {
-            type: { type: "string", enum: ["markdown", "code"] },
-            source: { type: "string", description: "Cell markdown or code source." },
-            stdin: { type: "string", description: "C++ only: input for cin." },
-            challenge: NOTEBOOK_CHALLENGE_SCHEMA,
-          },
-          required: ["type", "source"],
-        },
+        items: NOTEBOOK_CELL_ITEM_SCHEMA,
       },
     },
     required: ["title", "runtime", "cells"],
@@ -482,22 +472,22 @@ export const EDIT_ITEM_TOOL = {
                 find: { type: "string" },
                 replace: { type: "string" },
                 question: { type: "object" },
-                questions: { type: "array" },
+                questions: { type: "array", items: QUESTION_ITEM_SCHEMA },
                 cell: { type: "object" },
-                cells: { type: "array" },
+                cells: { type: "array", items: NOTEBOOK_CELL_ITEM_SCHEMA },
                 sectionItem: { type: "object" },
-                sections: { type: "array" },
+                sections: { type: "array", items: LESSON_SECTION_SCHEMA },
                 block: { type: "object" },
-                blocks: { type: "array" },
+                blocks: { type: "array", items: LESSON_BLOCK_SCHEMA },
               },
               required: ["op"],
             },
           },
         },
       },
-      questions: { type: "array", description: "Optional full questions replacement for a quiz." },
-      sections: { type: "array", description: "Optional full sections replacement for a lesson." },
-      cells: { type: "array", description: "Optional full cells replacement for a notebook." },
+      questions: { type: "array", items: QUESTION_ITEM_SCHEMA, description: "Optional full questions replacement for a quiz." },
+      sections: { type: "array", items: LESSON_SECTION_SCHEMA, description: "Optional full sections replacement for a lesson." },
+      cells: { type: "array", items: NOTEBOOK_CELL_ITEM_SCHEMA, description: "Optional full cells replacement for a notebook." },
     },
     required: ["targetTitle"],
   },

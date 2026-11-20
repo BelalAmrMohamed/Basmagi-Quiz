@@ -45,3 +45,27 @@ test("the authoring guide and the bot tool carry the shared key rules", async ()
   assert.ok(authoringRulesText().includes("ZERO-based"));
   assert.ok(authoringRulesText().includes("{{answer|alt1|alt2}}"));
 });
+
+function findSchemaProblems(node, path, out) {
+  if (!node || typeof node !== "object") return;
+  if (Array.isArray(node.type)) out.push(`${path}: union type`);
+  if (node.type === "array" && (!node.items || typeof node.items !== "object" || !node.items.type)) {
+    out.push(`${path}: array without typed items`);
+  }
+  for (const [key, value] of Object.entries(node.properties || {})) findSchemaProblems(value, `${path}.${key}`, out);
+  if (node.items) findSchemaProblems(node.items, `${path}[]`, out);
+}
+
+test("no web or bot tool schema has an array without items or a union type", () => {
+  const problems = [];
+  for (const [name, tool] of Object.entries(TOOLS_BY_NAME)) findSchemaProblems(tool.input_schema, name, problems);
+  for (const tool of BOT_TOOLS) findSchemaProblems(tool.parameters || tool.input_schema, `bot:${tool.name}`, problems);
+  assert.deepEqual(problems, []);
+});
+
+test("edit_item declares item schemas for its replacement arrays", () => {
+  const props = TOOLS_BY_NAME.edit_item.input_schema.properties;
+  assert.equal(props.questions.items, QUESTION_ITEM_SCHEMA);
+  assert.equal(props.sections.items.properties.blocks.items, LESSON_BLOCK_SCHEMA);
+  assert.ok(props.cells.items.properties.source);
+});
