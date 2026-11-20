@@ -32,7 +32,7 @@
 // =============================================================================
 
 import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
+import { makeClient, envGuard } from "./_supabase.js";
 import { requireAdmin, applyCors, handleAuthError } from "./_middleware.js";
 import {
   validateQuizPayload,
@@ -55,10 +55,7 @@ import { validateItemName, hasLessonNameCollision, hasNotebookNameCollision } fr
 import { validateNotebook } from "./_validateNotebook.js";
 import { notebookFromFile } from "../scripts/lib/notebook-convert.js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY,
-);
+const supabase = makeClient("service");
 
 const SCHOOL_TRACKS = ["University", "Primary", "Middle", "High"];
 const MAX_ITEMS_PER_BATCH = 500; // generous cap against accidental multi-GB folder picks
@@ -628,6 +625,7 @@ async function handleFolderUpload(req, res, adminPayload) {
 // ─── Dispatcher ───────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
+  if (req.method !== "OPTIONS" && envGuard(res)) return;
   applyCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).end();

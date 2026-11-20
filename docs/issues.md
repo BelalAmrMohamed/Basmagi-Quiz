@@ -7,6 +7,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
+### Per-video thumbnail and link
+
 ### AI Agent
 Newly created notebook, the chat didn't include the presented card at the bottom as I expected. ![chat screenshot](image-1.png).
 

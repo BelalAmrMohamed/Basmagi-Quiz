@@ -14,7 +14,7 @@
 
 import jwt from "jsonwebtoken";
 import { applyCors } from "./_middleware.js";
-import { createClient } from "@supabase/supabase-js";
+import { makeClient, envGuard } from "./_supabase.js";
 import { slugifyHandle, claimHandle } from "./_handle.js";
 
 /**
@@ -68,10 +68,8 @@ export default async function handler(req, res) {
     });
   }
 
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
-  );
+  if (envGuard(res)) return;
+  const supabase = makeClient("service");
 
   // Verify the Supabase access token and get the authenticated user.
   const {

@@ -160,6 +160,8 @@ export async function renderCourseImage(courseId, folderPath) {
       { label: "الامتحانات", val: String(meta.quizCount ?? 0), dim: !meta.quizCount },
       { label: "الدروس", val: String(meta.arabicCount ?? 0), dim: !meta.arabicCount },
       { label: "الدفاتر", val: String(meta.notebookCount ?? 0), dim: !meta.notebookCount },
+      { label: "الفيديوهات", val: String(meta.videoCount ?? 0), dim: !meta.videoCount },
+      { label: "قوائم التشغيل", val: String(meta.playlistCount ?? 0), dim: !meta.playlistCount },
     ]
     : [];
   const infoChips = [
@@ -326,10 +328,10 @@ export async function renderCourseImage(courseId, folderPath) {
                     width: `${INFO_TABLE_VALUE_COL_WIDTH}px`,
                     justifyContent: "flex-start",
                     alignItems: "center",
-                    padding: "12px 22px",
+                    padding: rows.length > 4 ? "7px 22px" : "12px 22px",
                     color: row.dim ? "#9ca3af" : "#111827",
                     fontWeight: "700",
-                    fontSize: "24px",
+                    fontSize: rows.length > 4 ? "21px" : "24px",
                     borderRight: "1px solid rgba(15,23,42,0.08)",
                     direction: "ltr",
                     whiteSpace: "nowrap",
@@ -384,10 +386,10 @@ export async function renderCourseImage(courseId, folderPath) {
                     width: `${INFO_TABLE_KEY_COL_WIDTH}px`,
                     justifyContent: "flex-end",
                     alignItems: "center",
-                    padding: "12px 22px",
+                    padding: rows.length > 4 ? "7px 22px" : "12px 22px",
                     color: "#6b7280",
                     fontWeight: "400",
-                    fontSize: "24px",
+                    fontSize: rows.length > 4 ? "21px" : "24px",
                     direction: "ltr",
                     whiteSpace: "nowrap",
                     textAlign: "right",
@@ -791,9 +793,10 @@ async function fetchCourseMeta(courseId, folderPath) {
       }
     }
 
-    const countFor = async (table, idColumn) => {
+    const countFor = async (table, idColumn, extraFilter) => {
       const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
       url.searchParams.set("select", "id");
+      if (extraFilter) url.searchParams.set(extraFilter[0], extraFilter[1]);
       url.searchParams.set(idColumn, `eq.${targetFolderId || courseId}`);
       const res = await fetch(url.toString(), {
         method: "HEAD",
@@ -822,12 +825,17 @@ async function fetchCourseMeta(courseId, folderPath) {
         countFor("quizzes", "folder_id"),
         countFor("lesson_public", "folder_id"),
         countFor("notebooks", "folder_id"),
+        countFor("youtube_public", "folder_id", ["kind", "eq.video"]),
+        countFor("youtube_public", "folder_id", ["kind", "eq.playlist"]),
       ])
       : Promise.all([
         countFor("folders", "course_id"),
         countFor("quizzes", "course_id"),
         countFor("lesson_public", "course_id"),
         countFor("notebooks", "course_id"),
+        // Published YouTube items placed directly in the course root.
+        countFor("youtube_public", "course_id", ["kind", "eq.video"]),
+        countFor("youtube_public", "course_id", ["kind", "eq.playlist"]),
       ]);
 
     // Best-effort extra stats (question count total, last-updated date) —
@@ -866,7 +874,7 @@ async function fetchCourseMeta(courseId, folderPath) {
       return { questionCount, lastUpdated };
     })();
 
-    const [[folderCount, quizCount, arabicCount, notebookCount], { questionCount, lastUpdated }] =
+    const [[folderCount, quizCount, arabicCount, notebookCount, videoCount, playlistCount], { questionCount, lastUpdated }] =
       await Promise.all([countsPromise, extraStatsPromise]);
 
     return {
@@ -898,6 +906,8 @@ async function fetchCourseMeta(courseId, folderPath) {
       quizCount,
       arabicCount,
       notebookCount,
+      videoCount,
+      playlistCount,
       questionCount,
       lastUpdated,
     };

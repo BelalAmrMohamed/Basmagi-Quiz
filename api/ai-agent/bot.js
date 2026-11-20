@@ -20,7 +20,7 @@
 //   5. Gemini function-calling loop with automatic tool dispatch
 // =============================================================================
 
-import { createClient } from "@supabase/supabase-js";
+import { makeClient } from "../_supabase.js";
 import { getNextKey } from "./_keyPool.js";
 import { processTelegramInbound } from "./_telegramFiles.js";
 import { BOT_TOOLS, executeBotTool } from "./_botTools.js";
@@ -85,10 +85,7 @@ const FALLBACK_GEMINI_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest
 let _supabase = null;
 function getSupabase() {
   if (!_supabase) {
-    _supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    _supabase = makeClient("service");
   }
   return _supabase;
 }

@@ -3,13 +3,14 @@
 // Resizable player window for saved «فيديو يوتيوب» items (playlists reuse it
 // in Phase B). Chrome follows the AI-agent window: mac-style controls (close,
 // minimize to the title bar, maximize), drag by the title bar, 8-way resize,
-// double-click title to maximize. It is a copy, not an import: the agent window
-// keeps its own storage keys and hides the AI buttons while open, which this
-// window must not do. Aero Snap is not part of this copy.
+// double-click title to maximize, Aero-style snapping with a live preview.
+// Written separately from the agent window on purpose (no shared code): the
+// two will keep diverging, and the agent window hides the AI buttons while open.
 // Plays through YouTube's privacy-enhanced embed; text is set with textContent.
 // =============================================================================
 
-import { canonicalWatchUrl, embedUrl, formatDurationSeconds, isValidVideoId } from "../../shared/youtube-rules.js";
+import { embedUrl, isValidVideoId } from "../../shared/youtube-rules.js";
+import { attachSplit } from "./youtube-split.js";
 
 const MIN_W = 360;
 const MIN_H = 320;
@@ -46,9 +47,44 @@ export function channelLinkEl(channelId, name) {
   return a;
 }
 
+// Aero-style snapping, written for this window only (not shared with the AI
+// agent window: the two are going to diverge).
+const AERO_EDGE = 12;     // px from a side/top edge that arms a snap zone
+const AERO_CORNER = 96;   // px from a top/bottom corner that makes it a quarter
+const SNAP_PREVIEW_MS = 220;
+const ICON_MIN = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6h7"/></svg>';
+const ICON_MAX = '<svg class="ic-max" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 9.5v-7h7v7z"/></svg><svg class="ic-restore" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 4V2.5h5.5V8H8M2.5 4H8v5.5H2.5z"/></svg>';
+const ICON_CLOSE = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg>';
+
+/** Which snap zone the pointer arms: halves, quarters, or "max" at the top edge. */
+export function aeroZone(x, y, iw, ih) {
+  const left = x <= AERO_EDGE;
+  const right = x >= iw - AERO_EDGE;
+  if (left || right) {
+    const side = left ? "left" : "right";
+    if (y <= AERO_CORNER) return `top-${side}`;
+    if (y >= ih - AERO_CORNER) return `bottom-${side}`;
+    return side;
+  }
+  return y <= AERO_EDGE ? "max" : null;
+}
+
+/** Target rectangle of a snap zone. */
+export function aeroRect(zone, iw, ih) {
+  if (zone === "max") return { l: 0, t: 0, w: iw, h: ih };
+  const hw = Math.floor(iw / 2);
+  const hh = Math.floor(ih / 2);
+  const l = zone.endsWith("right") ? iw - hw : 0;
+  if (zone === "left" || zone === "right") return { l, t: 0, w: hw, h: ih };
+  return { l, t: zone.startsWith("top") ? 0 : ih - hh, w: hw, h: hh };
+}
+
 /**
  * Opens the floating player window with `content` in its body. Only one window
  * is open at a time: opening another replaces it.
+ * Behaviour: drag by the title bar; snap to halves/quarters (maximize at the
+ * top edge) with a live preview; dragging a snapped or maximized window away
+ * restores its previous size; a second maximize click restores size+position.
  * @returns {{el: HTMLElement, close: () => void}}
  */
 export function openYoutubeWindow({ title, content, onClose } = {}) {
@@ -61,12 +97,12 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
   win.tabIndex = -1;
   win.innerHTML = `
     <div class="ytw-titlebar">
-      <div class="ytw-controls" dir="ltr">
-        <button type="button" class="ytw-btn ytw-btn--close" aria-label="إغلاق" title="إغلاق"></button>
-        <button type="button" class="ytw-btn ytw-btn--min" aria-label="تصغير" title="تصغير"></button>
-        <button type="button" class="ytw-btn ytw-btn--max" aria-label="تكبير" title="تكبير"></button>
-      </div>
       <div class="ytw-title"></div>
+      <div class="ytw-controls">
+        <button type="button" class="ytw-btn ytw-btn--min" aria-label="تصغير" title="تصغير">${ICON_MIN}</button>
+        <button type="button" class="ytw-btn ytw-btn--max" aria-label="تكبير" title="تكبير">${ICON_MAX}</button>
+        <button type="button" class="ytw-btn ytw-btn--close" aria-label="إغلاق" title="إغلاق">${ICON_CLOSE}</button>
+      </div>
     </div>
     <div class="ytw-body"></div>
     ${RESIZE_DIRS.map((d) => `<div class="ytw-resizer" data-dir="${d}"></div>`).join("")}
@@ -85,20 +121,56 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
     top: `${Math.max(8, (vh - h) / 2)}px`,
   });
 
-  const state = { maximized: false, minimized: false };
+  // savedRect: geometry to return to from maximize. snapRestore: size to
+  // return to when a snapped window is dragged away.
+  const state = { maximized: false, minimized: false, savedRect: null, snapRestore: null, zone: null, preview: null };
+  const rectOf = () => ({ left: win.offsetLeft, top: win.offsetTop, width: win.offsetWidth, height: win.offsetHeight });
+  const maxBtn = win.querySelector(".ytw-btn--max");
 
   const setMinimized = (on) => {
     state.minimized = on;
     win.classList.toggle("is-min", on);
   };
-  const setMaximized = (on) => {
-    if (on) setMinimized(false);
+  const setMaximized = (on, from) => {
+    if (on === state.maximized) return;
+    if (on) {
+      setMinimized(false);
+      state.savedRect = from || rectOf();
+    }
     state.maximized = on;
     win.classList.toggle("is-max", on);
-    win.querySelector(".ytw-btn--max").setAttribute("aria-label", on ? "استعادة" : "تكبير");
-    win.querySelector(".ytw-btn--max").title = on ? "استعادة" : "تكبير";
+    if (!on && state.savedRect) {
+      const r = state.savedRect;
+      Object.assign(win.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+      state.savedRect = null;
+    }
+    const label = on ? "استعادة" : "تكبير";
+    maxBtn.setAttribute("aria-label", label);
+    maxBtn.title = label;
   };
   const toggleMax = () => setMaximized(!state.maximized);
+
+  function updatePreview(zone) {
+    let pv = state.preview;
+    if (!zone) {
+      if (!pv) return;
+      pv.classList.remove("is-visible");
+      state.preview = null;
+      setTimeout(() => pv.remove(), SNAP_PREVIEW_MS);
+      return;
+    }
+    const r = aeroRect(zone, window.innerWidth, window.innerHeight);
+    if (!pv) {
+      pv = el("div", "ytw-snap-preview");
+      const wr = win.getBoundingClientRect();
+      Object.assign(pv.style, { left: `${wr.left}px`, top: `${wr.top}px`, width: `${wr.width}px`, height: `${wr.height}px` });
+      document.body.append(pv);
+      state.preview = pv;
+      pv.getBoundingClientRect(); // commit the start rect so the transition runs
+    }
+    pv.classList.add("is-visible");
+    Object.assign(pv.style, { left: `${r.l}px`, top: `${r.t}px`, width: `${r.w}px`, height: `${r.h}px` });
+  }
 
   let closed = false;
   const onKey = (e) => {
@@ -107,10 +179,18 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
     if (state.maximized) setMaximized(false);
     else close();
   };
+  const onViewport = () => {
+    if (state.maximized || state.minimized) return;
+    const r = rectOf();
+    win.style.left = `${clamp(r.left, -r.width + 100, window.innerWidth - 100)}px`;
+    win.style.top = `${clamp(r.top, 0, window.innerHeight - 40)}px`;
+  };
   const close = () => {
     if (closed) return;
     closed = true;
     document.removeEventListener("keydown", onKey, true);
+    window.removeEventListener("resize", onViewport);
+    updatePreview(null);
     win.remove();
     if (activeWindow === api) activeWindow = null;
     onClose?.();
@@ -122,41 +202,84 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
   win.querySelector(".ytw-btn--close").addEventListener("click", close);
   win.querySelector(".ytw-btn--min").addEventListener("click", () => {
     if (state.maximized) setMaximized(false);
+    state.snapRestore = null;
     setMinimized(!state.minimized);
   });
-  win.querySelector(".ytw-btn--max").addEventListener("click", toggleMax);
+  maxBtn.addEventListener("click", () => {
+    state.snapRestore = null;
+    if (state.minimized) setMinimized(false);
+    else toggleMax();
+  });
 
-  // Drag by the title bar (not from the mac controls), double-click to maximize.
+  // Drag by the title bar (not from the controls); double-click to maximize.
   const titlebar = win.querySelector(".ytw-titlebar");
   titlebar.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0 || state.maximized || e.target.closest(".ytw-controls")) return;
-    const rect = win.getBoundingClientRect();
+    if (e.button !== 0 || e.target.closest(".ytw-controls")) return;
     const startX = e.clientX;
     const startY = e.clientY;
+    const origin = rectOf(); // geometry before this drag: what "restore" returns to
+    const grabRatio = clamp((e.clientX - win.getBoundingClientRect().left) / (win.offsetWidth || 1), 0.1, 0.9);
+    let startLeft = win.offsetLeft;
+    let startTop = win.offsetTop;
+    let moved = false;
+    titlebar.setPointerCapture?.(e.pointerId);
+
     const onMove = (ev) => {
-      win.style.left = `${clamp(rect.left + ev.clientX - startX, 0, window.innerWidth - 80)}px`;
-      win.style.top = `${clamp(rect.top + ev.clientY - startY, 0, window.innerHeight - 40)}px`;
+      if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) <= 4) return;
+      if (!moved) {
+        moved = true;
+        if (state.maximized) {
+          // Drag away from maximized: back to the old size, pointer keeps its place on the bar.
+          const r = state.savedRect || origin;
+          setMaximized(false);
+          startLeft = Math.round(startX - r.width * grabRatio);
+          startTop = 0;
+        } else if (state.snapRestore) {
+          const r = state.snapRestore;
+          state.snapRestore = null;
+          Object.assign(win.style, { width: `${r.w}px`, height: `${r.h}px` });
+          startLeft = Math.round(startX - r.w * grabRatio);
+        }
+      }
+      win.style.left = `${clamp(startLeft + ev.clientX - startX, -win.offsetWidth + 100, window.innerWidth - 100)}px`;
+      win.style.top = `${clamp(startTop + ev.clientY - startY, 0, window.innerHeight - 40)}px`;
+      const zone = aeroZone(ev.clientX, ev.clientY, window.innerWidth, window.innerHeight);
+      if (zone !== state.zone) { state.zone = zone; updatePreview(zone); }
     };
-    const onUp = () => {
+    const onUp = (ev) => {
+      const zone = state.zone;
+      state.zone = null;
+      updatePreview(null);
       titlebar.removeEventListener("pointermove", onMove);
       titlebar.removeEventListener("pointerup", onUp);
       titlebar.removeEventListener("pointercancel", onUp);
+      if (!zone || ev.type !== "pointerup") return;
+      if (zone === "max") {
+        setMaximized(true, origin);
+      } else {
+        if (!state.snapRestore) state.snapRestore = { w: origin.width, h: origin.height };
+        const r = aeroRect(zone, window.innerWidth, window.innerHeight);
+        Object.assign(win.style, { left: `${r.l}px`, top: `${r.t}px`, width: `${r.w}px`, height: `${r.h}px` });
+      }
     };
-    titlebar.setPointerCapture?.(e.pointerId);
     titlebar.addEventListener("pointermove", onMove);
     titlebar.addEventListener("pointerup", onUp);
     titlebar.addEventListener("pointercancel", onUp);
   });
   titlebar.addEventListener("dblclick", (e) => {
-    if (!e.target.closest(".ytw-controls")) toggleMax();
+    if (e.target.closest(".ytw-controls")) return;
+    state.snapRestore = null;
+    toggleMax();
   });
 
   win.querySelectorAll(".ytw-resizer").forEach((handle) => {
     handle.addEventListener("pointerdown", (e) => {
-      if (e.button !== 0 || state.maximized || state.minimized) return;
+      const dir = handle.dataset.dir;
+      if (e.button !== 0 || state.maximized) return;
+      if (state.minimized && dir !== "e" && dir !== "w") return;
       e.preventDefault();
       e.stopPropagation();
-      const dir = handle.dataset.dir;
+      state.snapRestore = null;
       const r = win.getBoundingClientRect();
       const start = { x: e.clientX, y: e.clientY, l: r.left, t: r.top, w: r.width, h: r.height };
       const onMove = (ev) => {
@@ -182,6 +305,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
   });
 
   document.addEventListener("keydown", onKey, true);
+  window.addEventListener("resize", onViewport);
   document.body.append(win);
   win.focus({ preventScroll: true });
 
@@ -190,27 +314,50 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
   return api;
 }
 
-function buildInfo({ channelId, channelTitle, durationSeconds, publishedAt, description, videoId }) {
+export const DESCRIPTION_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 11h16M4 16h10"/></svg>';
+export const BACK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+export const CLOSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+/** A toolbar button: icon + label. */
+export function iconButton(className, iconSvg, label) {
+  const b = el("button", className);
+  b.type = "button";
+  b.innerHTML = iconSvg;
+  b.append(el("span", "", label));
+  return b;
+}
+
+/**
+ * The description side panel: header (icon, "الوصف", action button) + body.
+ * `action` is {label, icon, onClick}: "العودة للقائمة" in the playlist window,
+ * "إغلاق" in the video window. Returns the panel and a setter for its body.
+ */
+export function buildDescriptionPanel(action) {
+  const panel = el("div", "ytw-desc-panel");
+  const head = el("div", "ytw-side-head");
+  const heading = iconButton("ytw-side-title", DESCRIPTION_ICON, "الوصف");
+  heading.disabled = true;
+  const act = iconButton("ytw-btn-ghost", action.icon, action.label);
+  act.addEventListener("click", action.onClick);
+  head.append(heading, act);
+  const body = el("div", "ytw-desc-body");
+  panel.append(head, body);
+  return { panel, body, actionBtn: act };
+}
+
+/** Published date + description. The title is in the window bar; the channel,
+ *  duration and the YouTube link are shown by the embedded player itself. */
+export function buildInfo({ publishedAt, description }) {
   const wrap = el("div", "ytw-info");
-  const top = el("div", "ytw-info-top");
-  const channel = channelLinkEl(channelId, channelTitle);
-  if (channel) top.append(channel);
-  const facts = [formatDurationSeconds(durationSeconds), formatPublished(publishedAt)].filter(Boolean).join(" · ");
-  if (facts) top.append(el("span", "ytw-facts", facts));
-  if (isValidVideoId(videoId)) {
-    const link = el("a", "yt-link", "فتح على يوتيوب");
-    link.href = canonicalWatchUrl(videoId);
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    top.append(link);
-  }
-  wrap.append(top);
+  const date = formatPublished(publishedAt);
+  if (date) wrap.append(el("div", "ytw-facts", `تاريخ النشر: ${date}`));
   wrap.append(el("div", "ytw-desc", String(description || "").trim() || "لا يوجد وصف لهذا الفيديو."));
   return wrap;
 }
 
 function buildVideoPane(item, videoId) {
-  const pane = el("div", "ytw-pane");
+  const pane = el("div", "ytw-playlist");
+  const main = el("div", "ytw-split-main");
   if (isValidVideoId(videoId)) {
     const frame = el("div", "yt-embed ytw-video");
     const iframe = document.createElement("iframe");
@@ -220,18 +367,36 @@ function buildVideoPane(item, videoId) {
     iframe.allow = "accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
     iframe.allowFullscreen = true;
     frame.append(iframe);
-    pane.append(frame);
+    main.append(frame);
   } else {
-    pane.append(el("p", "yt-empty", "تعذّر تحديد الفيديو. قد يكون هذا العنصر تالفاً."));
+    main.append(el("p", "yt-empty", "تعذّر تحديد الفيديو. قد يكون هذا العنصر تالفاً."));
   }
-  pane.append(buildInfo({
-    channelId: item?.meta?.channelId,
-    channelTitle: item?.meta?.channelTitle,
-    durationSeconds: item?.stats?.durationSeconds ?? item?.video?.durationSeconds,
-    publishedAt: item?.meta?.publishedAt,
-    description: item?.meta?.description,
-    videoId,
-  }));
+
+  const side = el("aside", "ytw-split-list");
+  side.setAttribute("aria-label", "الوصف");
+  const split = attachSplit(pane, main, side);
+  const descBtn = iconButton("ytw-tool-btn", DESCRIPTION_ICON, "الوصف");
+  descBtn.setAttribute("aria-expanded", "false");
+  const toolbar = el("div", "ytw-toolbar");
+  toolbar.append(descBtn);
+  main.append(toolbar);
+
+  const { panel, body } = buildDescriptionPanel({
+    label: "إغلاق",
+    icon: CLOSE_ICON,
+    onClick: () => setOpen(false),
+  });
+  body.append(buildInfo({ publishedAt: item?.meta?.publishedAt, description: item?.meta?.description }));
+  side.append(panel);
+
+  function setOpen(on) {
+    if (on) split.show(); else split.hide();
+    descBtn.setAttribute("aria-expanded", String(on));
+    descBtn.classList.toggle("is-active", on);
+    if (!on) descBtn.focus({ preventScroll: true });
+  }
+  descBtn.addEventListener("click", () => setOpen(!split.isShown()));
+  pane.append(main);
   return pane;
 }
 

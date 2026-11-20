@@ -97,7 +97,7 @@ import { SEARCH_YOUTUBE_TOOL, LIST_YOUTUBE_TOOL, ADD_YOUTUBE_TOOL } from "./_too
 import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, CREATE_LESSON_TOOL, ADD_LESSON_SECTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL, GET_CREATOR_INFO_TOOL, DISPLAY_CREATOR_CARD_TOOL, CREATE_FLASHCARDS_TOOL, NOTEBOOK_ADD_CELL_TOOL, NOTEBOOK_EDIT_CELL_TOOL, NOTEBOOK_DELETE_CELL_TOOL, NOTEBOOK_RUN_CELL_TOOL, CREATE_NOTEBOOK_TOOL, EDIT_ITEM_TOOL, GET_AUTHORING_GUIDE_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
-import { createClient } from "@supabase/supabase-js";
+import { makeClient } from "../_supabase.js";
 
 // ── File attachments (Task 3) ──────────────────────────────────────────────
 // Deliberately handled inside this single endpoint rather than a new
@@ -296,10 +296,7 @@ const AI_AGENT_DAILY_LIMIT = 15;
 let cachedSupabaseClient = null;
 function getSupabaseClient() {
   if (!cachedSupabaseClient) {
-    cachedSupabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY,
-    );
+    cachedSupabaseClient = makeClient("service");
   }
   return cachedSupabaseClient;
 }

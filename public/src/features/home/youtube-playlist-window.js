@@ -7,13 +7,15 @@
 // =============================================================================
 
 import {
-  canonicalWatchUrl,
   embedUrl,
   formatDurationSeconds,
   isAllowedThumbnailUrl,
   isValidVideoId,
 } from "../../shared/youtube-rules.js";
-import { openYoutubeWindow } from "./youtube-player-window.js";
+import { openYoutubeWindow, buildInfo, buildDescriptionPanel, iconButton, DESCRIPTION_ICON, BACK_ICON } from "./youtube-player-window.js";
+import { attachSplit } from "./youtube-split.js";
+import { fetchVideoDetails } from "./youtube-library.js";
+import { mapDetailsForInfo } from "./youtube-window-utils.js";
 import { describePlaylistCount } from "./local-youtube-playlist.js";
 
 const IFRAME_ALLOW = "accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
@@ -41,7 +43,6 @@ export function openYoutubePlaylistWindow(entry) {
 }
 
 function buildPlaylistPane(entry, items) {
-  const channel = entry?.meta?.channelTitle || entry?.playlist?.channelTitle || "";
   const listTitle = entry?.meta?.title || entry?.playlist?.title || "";
 
   const pane = el("div", "ytw-playlist");
@@ -61,18 +62,45 @@ function buildPlaylistPane(entry, items) {
   prev.type = "button";
   next.type = "button";
   const counter = el("span", "ytw-counter");
+  const descBtn = iconButton("ytw-tool-btn", DESCRIPTION_ICON, "الوصف");
+  descBtn.setAttribute("aria-expanded", "false");
   const nav = el("div", "ytw-nav");
-  nav.append(prev, counter, next);
+  nav.append(prev, counter, next, descBtn);
 
   const current = el("div", "ytw-current");
   const currentTitle = el("h3", "ytw-current-title");
-  const currentMeta = el("div", "ytw-info-top");
-  current.append(currentTitle, currentMeta);
+  currentTitle.dir = "auto";
+  current.append(currentTitle);
+
+  // Published date + description load on demand and are cached in memory only
+  // (the stored snapshot stays small). `shown` guards against stale replies.
+  const detailsCache = new Map();
+  let shown = 0;
+  let descOpen = false;
+  const descBodyHolder = { body: null };
+  async function renderInfo(it) {
+    if (!descOpen || !descBodyHolder.body) return;
+    const target = descBodyHolder.body;
+    const token = ++shown;
+    const paint = (node) => {
+      if (token === shown) target.replaceChildren(node);
+    };
+    if (detailsCache.has(it.videoId)) return paint(buildInfo(detailsCache.get(it.videoId)));
+    paint(el("div", "ytw-facts", "جارٍ تحميل الوصف…"));
+    try {
+      const d = (await fetchVideoDetails([it.videoId])).get(it.videoId);
+      const info = mapDetailsForInfo(d);
+      detailsCache.set(it.videoId, info);
+      paint(buildInfo(info));
+    } catch {
+      paint(el("div", "ytw-facts", "تعذّر تحميل الوصف."));
+    }
+  }
 
   const listHead = el("div", "ytw-list-head");
   listHead.append(
     el("p", "ytw-list-title", listTitle),
-    el("p", "ytw-facts", [channel, describePlaylistCount(entry)].filter(Boolean).join(" · ")),
+    el("p", "ytw-facts", describePlaylistCount(entry)),
   );
 
   const list = el("ol", "ytw-list");
@@ -110,15 +138,7 @@ function buildPlaylistPane(entry, items) {
     iframe.title = it.title;
     currentTitle.textContent = it.title;
 
-    currentMeta.replaceChildren();
-    if (channel) currentMeta.append(el("span", "yt-channel", channel));
-    const duration = formatDurationSeconds(it.durationSeconds);
-    if (duration) currentMeta.append(el("span", "ytw-facts", duration));
-    const link = el("a", "yt-link", "فتح على يوتيوب");
-    link.href = canonicalWatchUrl(it.videoId);
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    currentMeta.append(link);
+    renderInfo(it);
 
     counter.textContent = `${index + 1} / ${items.length}`;
     prev.disabled = index === 0;
@@ -133,9 +153,29 @@ function buildPlaylistPane(entry, items) {
   prev.addEventListener("click", () => show(index - 1, true));
   next.addEventListener("click", () => show(index + 1, true));
 
+  const listView = el("div", "ytw-list-view");
+  listView.append(listHead, list);
+  const { panel: descPanel, body: descBody } = buildDescriptionPanel({
+    label: "العودة للقائمة",
+    icon: BACK_ICON,
+    onClick: () => setDescription(false),
+  });
+  descBodyHolder.body = descBody;
+
+  function setDescription(on) {
+    descOpen = on;
+    side.replaceChildren(on ? descPanel : listView);
+    descBtn.setAttribute("aria-expanded", String(on));
+    descBtn.classList.toggle("is-active", on);
+    if (on) renderInfo(items[index]);
+    else rows[index]?.scrollIntoView({ block: "nearest" });
+  }
+  descBtn.addEventListener("click", () => setDescription(!descOpen));
+
   main.append(frame, nav, current);
-  side.append(listHead, list);
-  pane.append(main, side);
+  side.append(listView);
+  pane.append(main);
+  attachSplit(pane, main, side).show();
   show(0);
   return pane;
 }

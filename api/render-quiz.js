@@ -22,15 +22,12 @@
 import { ogVersion, stampFromDate } from "./_og/version.js";
 import fs from "fs";
 import path from "path";
-import { createClient } from "@supabase/supabase-js";
+import { makeClient } from "./_supabase.js";
 
 // ── Supabase client ──────────────────────────────────────────────────────────
 // Uses the anon key — the quizzes table should allow public SELECT via RLS.
 // If your RLS policy blocks anon reads, swap to SUPABASE_SERVICE_KEY.
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY,
-);
+const supabase = makeClient("anon");
 
 // ── quiz.html template path ──────────────────────────────────────────────────
 // Vercel sets process.cwd() to the project root. The static outputDirectory is

@@ -10,6 +10,7 @@ import {
   hasAdminSessionHint,
 } from "../../shared/adminAuth.js";
 import { createUploadButton, createLessonUploadButton, createNotebookUploadButton } from "./adminUpload.js";
+import { createYoutubeUploadButton } from "./youtube-publish-modal.js";
 import { showUserQuizDownloadPopup } from "./download-modal.js";
 import { showUserQuizInfoModal, formatDateForInfo } from "./quiz-info-modal.js";
 import { normalizeSource } from "../../components/quiz-info-modal/info-model.js";
@@ -135,6 +136,11 @@ export function showUserYoutubeVideoActionsOverlay(video, triggerBtn) {
   const vid = video.id || video.meta?.id;
   const title = video.meta?.title || "فيديو بدون عنوان";
   openItemDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
+    if (isAdminAuthenticated() || hasAdminSessionHint()) {
+      const publishBtn = createYoutubeUploadButton(video);
+      publishBtn.addEventListener("click", () => closeMenu());
+      menu.appendChild(publishBtn);
+    }
     appendSelectOption(menu, closeMenu, vid);
     appendMoveGroup(menu, closeMenu, reposition, vid);
     const deleteOpt = document.createElement("button");
