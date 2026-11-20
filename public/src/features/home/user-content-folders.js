@@ -869,7 +869,11 @@ function buildItemMenuItems(targetType, targetId, targetTitle) {
   const isLesson = targetRow?.meta?.type === "lesson";
   const rename = { icon: RENAME_SVG, label: "تغيير العنوان", onClick: () => renameItem(targetId, targetTitle) };
 
-  if (targetType === "item") {
+  const isVideo = ["youtube_video", "youtube_playlist"].includes(targetRow?.meta?.type);
+  if (isVideo) {
+    // Videos: title and description come from YouTube (read-only). Edit actions
+    // do not apply, so the "تعديل" group is left out for them.
+  } else if (targetType === "item") {
     // "item" covers both quizzes and lessons — send each to its own editor.
     // Edit actions are grouped in one "تعديل" submenu to keep the menu short.
     contextMenuEl.appendChild(
@@ -902,7 +906,7 @@ function buildItemMenuItems(targetType, targetId, targetTitle) {
         },
       ]),
     );
-  } else {
+  } else if (!isVideo) {
     contextMenuEl.appendChild(createMenuItem(rename.icon, rename.label, rename.onClick));
   }
 

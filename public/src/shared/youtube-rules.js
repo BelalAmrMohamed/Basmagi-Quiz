@@ -193,3 +193,31 @@ export function normalizeVideoRef(videoId, meta = {}) {
   if (!isValidVideoId(videoId)) throw new Error("معرّف فيديو يوتيوب غير صالح.");
   return { youtubeId: videoId, url: canonicalWatchUrl(videoId), ...normalizeVideoMeta(meta) };
 }
+
+const CONTROL_CHARS_RE = /\p{Cc}/u;
+
+/**
+ * Search text rule (plan §2.1): any text except control characters, 1 to
+ * searchQueryMax characters after trimming (counted by code point). Returns the
+ * rule that failed so the UI can say why.
+ * @returns {{ok:true, query:string} | {ok:false, code:"empty"|"too-long"|"control-chars", message:string}}
+ */
+export function validateSearchQuery(input) {
+  const query = String(input ?? "").trim();
+  if (!query) return { ok: false, code: "empty", message: "اكتب كلمة أو أكثر للبحث." };
+  if ([...query].length > YOUTUBE_LIMITS.searchQueryMax) {
+    return {
+      ok: false,
+      code: "too-long",
+      message: `نص البحث طويل (الحد الأقصى ${YOUTUBE_LIMITS.searchQueryMax} حرف).`,
+    };
+  }
+  if (CONTROL_CHARS_RE.test(query)) {
+    return {
+      ok: false,
+      code: "control-chars",
+      message: "نص البحث يحتوي على محارف تحكم غير مسموحة (مثل الأسطر الجديدة).",
+    };
+  }
+  return { ok: true, query };
+}

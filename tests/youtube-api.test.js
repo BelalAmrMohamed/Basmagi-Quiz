@@ -38,7 +38,7 @@ test("rejects unknown actions and malformed IDs before calling Google", async ()
   const f = async () => { calls++; return new Response("{}"); };
   assert.equal((await call({ action: "nope" }, { fetchImpl: f })).statusCode, 400);
   assert.equal((await call({ action: "video", ids: "bad id" }, { fetchImpl: f })).statusCode, 400);
-  assert.equal((await call({ action: "search", q: "<script>" }, { fetchImpl: f })).statusCode, 400);
+  assert.equal((await call({ action: "search", q: "a\u0000b" }, { fetchImpl: f })).statusCode, 400);
   assert.equal(calls, 0);
 });
 

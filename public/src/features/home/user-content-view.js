@@ -53,7 +53,8 @@ import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
-import { createUserContentCard, createUserLessonCard, createUserNotebookCard, createUserYoutubeVideoCard } from "./item-card.js";
+import { handleYoutubeToolCall } from "./youtube-agent-tools.js";
+import { createUserContentCard, createUserLessonCard, createUserNotebookCard, createUserYoutubeVideoCard, createUserYoutubePlaylistCard } from "./item-card.js";
 import { takePendingHighlight } from "./mcp-draft-import.js";
 import { openInlineCreateQuizModal } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
@@ -535,7 +536,7 @@ function handleMoveItemToolCall(toolCall) {
 function buildFolderTreeContextPrompt(userContent) {
   // Videos are leaves: included as compact title+kind records, not as containers.
   const nodes = userContent.filter(
-    (q) => q.meta?.type === "folder" || q.meta?.type === "course" || q.meta?.type === "youtube_video",
+    (q) => q.meta?.type === "folder" || q.meta?.type === "course" || q.meta?.type === "youtube_video" || q.meta?.type === "youtube_playlist",
   );
   const lines = ["هيكل المجلدات والمواد الحالي للمستخدم:", "- محتواي الرئيسية (المستوى الرئيسي)"];
 
@@ -544,7 +545,13 @@ function buildFolderTreeContextPrompt(userContent) {
       .filter((n) => (n.meta?.parentId || null) === parentId)
       .forEach((n) => {
         const nid = n.id || n.meta?.id;
-        const kind = n.meta?.type === "course" ? "مادة" : n.meta?.type === "youtube_video" ? "فيديو" : "مجلد";
+        const kind = n.meta?.type === "course"
+          ? "مادة"
+          : n.meta?.type === "youtube_video"
+            ? "فيديو"
+            : n.meta?.type === "youtube_playlist"
+              ? "قائمة تشغيل"
+              : "مجلد";
         lines.push(`${"  ".repeat(depth)}- ${n.meta?.title || ""} (${kind})`);
         appendChildren(nid, depth + 1);
       });
@@ -590,6 +597,10 @@ async function handleQuizToolCall(toolCall, ctx) {
       return handleCreateCourseToolCall(toolCall);
     case "move_item":
       return handleMoveItemToolCall(toolCall);
+    case "search_youtube":
+    case "list_youtube":
+    case "add_youtube":
+      return handleYoutubeToolCall(toolCall);
     case "search_library":
     case "parse_item_info":
     case "get_user_activity":
@@ -1012,7 +1023,9 @@ export function renderUserContentView() {
               ? createUserNotebookCard(item)
               : item.meta?.type === "youtube_video"
                 ? createUserYoutubeVideoCard(item)
-                : createUserContentCard(item, index);
+                : item.meta?.type === "youtube_playlist"
+                  ? createUserYoutubePlaylistCard(item)
+                  : createUserContentCard(item, index);
           // Attach drag and context menu to quiz card
           quizCard.draggable = true;
           quizCard.addEventListener("dragstart", (e) => handleDragStart(e, item.id || item.meta?.id));

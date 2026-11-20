@@ -26,6 +26,7 @@ import {
   isValidPageToken,
   parseIsoDuration,
   isAllowedThumbnailUrl,
+  validateSearchQuery,
 } from "../../../scripts/lib/youtube-rules.js";
 
 const API_BASE = "https://www.googleapis.com/youtube/v3";
@@ -33,8 +34,6 @@ const RATE_LIMIT_PER_MINUTE = 30;
 const CACHE_TTL_MS = 5 * 60_000;
 const CACHE_MAX_ENTRIES = 500;
 const cache = new Map(); // key -> { at, value }
-
-const QUERY_RE = /^[\p{L}\p{N}\s"'\-_.,:&()+]{1,100}$/u;
 
 // Stable, user-facing errors. Never includes Google's raw message.
 const ERRORS = {
@@ -123,7 +122,8 @@ async function callYoutube(path, params) {
 
 async function actionSearch(query, pageToken) {
   const q = String(query || "").trim();
-  if (!QUERY_RE.test(q)) throw { code: "bad_request" };
+  const check = validateSearchQuery(q);
+  if (!check.ok) throw { code: "bad_request", reason: check.code, message: check.message };
   if (pageToken && !isValidPageToken(pageToken)) throw { code: "bad_request" };
 
   const cacheKey = `search:${q}:${pageToken || ""}`;
@@ -255,6 +255,9 @@ export default async function handler(req, res) {
     res.setHeader("Cache-Control", "private, no-store");
     return res.status(200).json(body);
   } catch (err) {
+    if (err?.code === "bad_request" && err.message) {
+      return res.status(400).json({ error: err.message, code: "bad_request", reason: err.reason });
+    }
     if (err && ERRORS[err.code]) return fail(res, err.code);
     console.error("[youtube] unexpected error:", err?.message || err);
     return fail(res, "upstream");

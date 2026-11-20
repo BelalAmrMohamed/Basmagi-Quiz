@@ -17,12 +17,18 @@ import {
   formatDurationSeconds,
   isAllowedThumbnailUrl,
   isValidVideoId,
+  validateSearchQuery,
 } from "../../shared/youtube-rules.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
-import { showNotification } from "../../components/notifications/notifications.js";
+import { _confirm, showNotification } from "../../components/notifications/notifications.js";
 import { currentFolderId } from "./user-content-folders.js";
 import { renderUserContentView } from "./user-content-view.js";
 import { buildLocalYoutubeVideoEntry, findSameLevelVideoDuplicate } from "./local-youtube-video.js";
+import { channelLinkEl, formatPublished, openYoutubeVideoPlayer } from "./youtube-player-window.js";
+import { findSameLevelPlaylistDuplicate } from "./local-youtube-playlist.js";
+import { removeHistory, sortHistoryNewestFirst, YOUTUBE_HISTORY_KEY } from "./local-youtube-history.js";
+import { findLibraryItem, metaFromDetails, readHistory, readUserItems, saveVideoRefs, saveWholePlaylist, ytApi } from "./youtube-library.js";
+import { openYoutubePlaylistWindow } from "./youtube-playlist-window.js";
 
 const SEARCH_DEBOUNCE_MS = 450;
 const MIN_QUERY_LENGTH = 2;
@@ -34,25 +40,6 @@ function el(tag, className, text) {
   if (className) node.className = className;
   if (text !== undefined && text !== null) node.textContent = text;
   return node;
-}
-
-async function ytApi(params) {
-  let res;
-  try {
-    res = await fetch(`/api/youtube?${new URLSearchParams(params).toString()}`, {
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-    });
-  } catch {
-    throw new Error("تعذّر الاتصال بالخادم. تحقق من الإنترنت ثم حاول مجدداً.");
-  }
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    if (data?.error) throw new Error(data.error);
-    throw new Error(`تعذّر الاتصال بخدمة يوتيوب (HTTP ${res.status}). تأكد من نشر دالة youtube على Supabase.`);
-  }
-  if (!data) throw new Error(`استجابة غير متوقعة من الخادم (HTTP ${res.status}).`);
-  return data;
 }
 
 /** True for pasted links (not for plain search words, and not for bare 11-char IDs). */
@@ -76,62 +63,12 @@ function thumb(url, className) {
   return wrap;
 }
 
-function readUserItems() {
-  try {
-    return JSON.parse(getFromStorage("user_quizzes", "[]")) || [];
-  } catch {
-    return [];
-  }
-}
+const HISTORY_EVENT_LABELS = { added: "أُضيف إلى «محتواي»", published: "نُشر" };
 
-function metaFromDetails(d) {
-  return {
-    title: d.title,
-    description: d.description,
-    channelTitle: d.channelTitle,
-    channelId: d.channelId,
-    publishedAt: d.publishedAt,
-    durationSeconds: d.durationSeconds ?? null,
-    thumbnailUrl: d.thumbnailUrl,
-  };
-}
-
-/**
- * Saves a list of video references into محتواي at the current folder level.
- * Duplicates (same YouTube ID at this level) and non-embeddable items are skipped
- * with a reason; nothing is written unless the whole batch can be stored.
- * @returns {{saved:number, skipped:string[]}}
- */
-function saveVideoRefs(refs) {
-  const items = readUserItems();
-  const parentId = currentFolderId || null;
-  const skipped = [];
-  let saved = 0;
-
-  for (const ref of refs) {
-    if (ref.blockedReason) {
-      skipped.push(`${ref.title || ref.videoId}: ${ref.blockedReason}`);
-      continue;
-    }
-    if (findSameLevelVideoDuplicate(items, ref.videoId, parentId)) {
-      skipped.push(`${ref.title || ref.videoId}: موجود بالفعل`);
-      continue;
-    }
-    items.push(
-      buildLocalYoutubeVideoEntry({
-        videoId: ref.videoId,
-        meta: ref.meta,
-        parentId,
-        playlistId: ref.playlistId || null,
-      }),
-    );
-    saved++;
-  }
-
-  if (saved > 0 && !setInStorage("user_quizzes", JSON.stringify(items))) {
-    throw new Error("تعذّر الحفظ محلياً. قد تكون مساحة التخزين ممتلئة — احذف عناصر غير مستخدمة ثم أعد المحاولة.");
-  }
-  return { saved, skipped };
+function formatWhen(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" });
 }
 
 // ── modal ───────────────────────────────────────────────────────────────────
@@ -161,11 +98,12 @@ export function openYoutubeVideoModal() {
   tabs.setAttribute("role", "tablist");
   const tabSearch = el("button", "yt-tab is-active", "بحث في يوتيوب");
   const tabUrl = el("button", "yt-tab", "لصق رابط");
-  for (const t of [tabSearch, tabUrl]) {
+  const tabHistory = el("button", "yt-tab", "السجل");
+  for (const t of [tabSearch, tabUrl, tabHistory]) {
     t.type = "button";
     t.setAttribute("role", "tab");
   }
-  tabs.append(tabSearch, tabUrl);
+  tabs.append(tabSearch, tabUrl, tabHistory);
 
   const status = el("div", "yt-modal__status");
   status.setAttribute("role", "status");
@@ -212,20 +150,25 @@ export function openYoutubeVideoModal() {
     playlist = null;
     tabSearch.classList.toggle("is-active", next === "search");
     tabUrl.classList.toggle("is-active", next === "url");
+    tabHistory.classList.toggle("is-active", next === "history");
     tabSearch.setAttribute("aria-selected", String(next === "search"));
     tabUrl.setAttribute("aria-selected", String(next === "url"));
+    tabHistory.setAttribute("aria-selected", String(next === "history"));
     setStatus("");
     render();
   };
   tabSearch.addEventListener("click", () => setTab("search"));
   tabUrl.addEventListener("click", () => setTab("url"));
+  tabHistory.addEventListener("click", () => setTab("history"));
 
   // ── views ────────────────────────────────────────────────────────────────
 
   function render() {
+    dialog.classList.toggle("yt-modal--wide", Boolean(preview));
     body.replaceChildren();
     if (preview) return renderPreview();
     if (playlist) return renderPlaylist();
+    if (mode === "history") return renderHistory();
     if (mode === "search") return renderSearch();
     return renderUrl();
   }
@@ -248,6 +191,14 @@ export function openYoutubeVideoModal() {
     body.append(results);
 
     const runSearch = async (query, pageToken) => {
+      if (!looksLikeYoutubeLink(query)) {
+        const check = validateSearchQuery(query);
+        if (!check.ok) {
+          searchSeq++;
+          setStatus(check.message, "error");
+          return;
+        }
+      }
       if (looksLikeYoutubeLink(query)) {
         const parsed = parseYoutubeInput(query);
         if (parsed.kind === "video") return openPreview(parsed.videoId);
@@ -363,6 +314,69 @@ export function openYoutubeVideoModal() {
     }
   }
 
+  function renderHistory() {
+    const log = sortHistoryNewestFirst(readHistory());
+    const head = el("div", "yt-playlist-head");
+    head.append(el("h3", "yt-preview-title", "سجل الاستيراد"));
+    head.append(el("p", "yt-preview-facts", "الفيديوهات والقوائم التي أضفتها إلى «محتواي»، ومتى أضفتها."));
+    body.append(head);
+
+    if (log.length === 0) {
+      body.append(el("p", "yt-empty", "لا توجد أحداث بعد. ستظهر هنا الفيديوهات والقوائم التي تضيفها."));
+      return;
+    }
+
+    const bar = el("div", "yt-actions yt-actions--start");
+    const clear = el("button", "yt-btn yt-btn--ghost", "مسح السجل كله");
+    clear.type = "button";
+    clear.addEventListener("click", async () => {
+      const ok = await _confirm("مسح سجل الاستيراد؟ لن تُحذف أي عناصر من «محتواي».");
+      if (!ok) return;
+      setInStorage(YOUTUBE_HISTORY_KEY, "[]");
+      render();
+    });
+    bar.append(clear);
+    body.append(bar);
+
+    const list = el("ul", "yt-list");
+    for (const ev of log) {
+      const li = el("li", "yt-row");
+      const libItem = findLibraryItem(ev.itemId);
+      const info = el("div", "yt-row__info");
+      info.append(el("span", "yt-row__title", ev.title));
+      const meta = [
+        HISTORY_EVENT_LABELS[ev.event],
+        ev.kind === "playlist" ? "قائمة تشغيل" : "فيديو",
+        formatWhen(ev.at),
+        libItem ? "" : "حُذف من «محتواي»",
+      ].filter(Boolean).join(" · ");
+      info.append(el("span", "yt-row__meta", meta));
+
+      const actions = el("div", "yt-actions");
+      if (libItem) {
+        const open = el("button", "yt-btn yt-btn--ghost", "فتح");
+        open.type = "button";
+        open.addEventListener("click", () => {
+          close();
+          if (libItem.meta?.type === "youtube_playlist") openYoutubePlaylistWindow(libItem);
+          else openYoutubeVideoPlayer(libItem);
+        });
+        actions.append(open);
+      }
+      const remove = el("button", "yt-btn yt-btn--ghost", "إزالة من السجل");
+      remove.type = "button";
+      remove.addEventListener("click", () => {
+        setInStorage(YOUTUBE_HISTORY_KEY, JSON.stringify(removeHistory(readHistory(), ev.id)));
+        render();
+      });
+      actions.append(remove);
+
+      li.append(info, actions);
+      list.append(li);
+    }
+    body.append(list);
+  }
+
   function renderUrl() {
     const row = el("div", "yt-search-row");
     const input = el("input", "yt-input");
@@ -430,11 +444,13 @@ export function openYoutubeVideoModal() {
 
     const info = el("div", "yt-preview-info");
     info.append(el("h3", "yt-preview-title", details.title));
-    const facts = [details.channelTitle, formatDurationSeconds(details.durationSeconds), formatPublished(details.publishedAt)]
+    const channel = channelLinkEl(details.channelId, details.channelTitle);
+    if (channel) info.append(channel);
+    const facts = [formatDurationSeconds(details.durationSeconds), formatPublished(details.publishedAt)]
       .filter(Boolean)
       .join(" · ");
     if (facts) info.append(el("p", "yt-preview-facts", facts));
-    if (details.description) info.append(el("p", "yt-preview-desc", details.description.slice(0, 400)));
+    if (details.description) info.append(el("p", "yt-preview-desc yt-preview-desc--full", details.description));
     const link = el("a", "yt-link", "فتح على يوتيوب");
     link.href = canonicalWatchUrl(videoId);
     link.target = "_blank";
@@ -450,7 +466,7 @@ export function openYoutubeVideoModal() {
     save.disabled = Boolean(blocked);
     save.addEventListener("click", () => {
       try {
-        const result = saveVideoRefs([{ videoId, meta: metaFromDetails(details), title: details.title }]);
+        const result = saveVideoRefs([{ videoId, meta: metaFromDetails(details), title: details.title }], currentFolderId || null);
         finish(result);
       } catch (err) {
         setStatus(err.message, "error");
@@ -501,11 +517,21 @@ export function openYoutubeVideoModal() {
 
     const head = el("div", "yt-playlist-head");
     head.append(el("h3", "yt-preview-title", playlist.info?.title || "قائمة تشغيل"));
+    if (playlist.info?.channelTitle) head.append(el("p", "yt-preview-facts", playlist.info.channelTitle));
     const loaded = playlist.items.length;
     const total = playlist.info?.itemCount || loaded;
     head.append(el("p", "yt-preview-facts",
       `تم تحميل ${loaded} من أصل ${total} فيديو${playlist.nextPageToken ? " — لم يكتمل التحميل بعد" : ""}`));
     body.append(head);
+
+    const whole = el("div", "yt-actions yt-actions--start");
+    const wholeBtn = el("button", "yt-btn yt-btn--primary", "إضافة القائمة كبطاقة واحدة");
+    wholeBtn.type = "button";
+    wholeBtn.id = "yt-save-whole-playlist";
+    wholeBtn.disabled = playlist.loading || playlist.items.length === 0;
+    wholeBtn.addEventListener("click", importWholePlaylist);
+    whole.append(wholeBtn);
+    body.append(whole);
 
     const bulk = el("div", "yt-actions yt-actions--start");
     const all = el("button", "yt-btn yt-btn--ghost", "تحديد الكل");
@@ -589,6 +615,37 @@ export function openYoutubeVideoModal() {
     }
   }
 
+  // Whole-playlist import (plan B2). The modal's page loop fills `playlist.items`,
+  // then the shared helper fetches durations and stores ONE playlist object.
+  async function importWholePlaylist() {
+    if (!playlist || playlist.loading) return;
+    const parentId = currentFolderId || null;
+    if (findSameLevelPlaylistDuplicate(readUserItems(), playlist.playlistId, parentId)) {
+      setStatus("قائمة التشغيل موجودة بالفعل في هذا المستوى.", "error");
+      return;
+    }
+    const btn = body.querySelector("#yt-save-whole-playlist");
+    if (btn) { btn.disabled = true; btn.textContent = "جاري الحفظ…"; }
+    playlist.loading = true;
+    try {
+      const total = playlist.info?.itemCount || 0;
+      while (playlist.nextPageToken && playlist.items.length < YOUTUBE_LIMITS.playlistItemsMax) {
+        setStatus(`جاري تحميل القائمة (${playlist.items.length} من أصل ${total})…`);
+        const data = await ytApi({ action: "playlist", id: playlist.playlistId, pageToken: playlist.nextPageToken });
+        playlist.items = [...playlist.items, ...data.items.map(toPlaylistRow)];
+        playlist.nextPageToken = data.nextPageToken;
+      }
+      setStatus("جاري جلب مدة الفيديوهات…");
+      await saveWholePlaylist({ playlistId: playlist.playlistId, info: playlist.info, rows: playlist.items, parentId });
+      finish({ saved: 1, skipped: [], playlist: true });
+    } catch (err) {
+      setStatus(err.message, "error");
+      if (btn) { btn.disabled = false; btn.textContent = "إضافة القائمة كبطاقة واحدة"; }
+    } finally {
+      if (playlist) playlist.loading = false;
+    }
+  }
+
   async function importSelectedPlaylistItems() {
     const existing = readUserItems();
     const chosen = playlist.items.filter((r) => r.checked && !r.unavailable && !isDuplicateHere(r, existing));
@@ -618,7 +675,7 @@ export function openYoutubeVideoModal() {
         return { videoId: r.videoId, title: d.title, meta: metaFromDetails(d), playlistId: playlist.playlistId };
       });
 
-      const result = saveVideoRefs(refs);
+      const result = saveVideoRefs(refs, currentFolderId || null);
       finish(result);
     } catch (err) {
       setStatus(err.message, "error");
@@ -626,11 +683,12 @@ export function openYoutubeVideoModal() {
     }
   }
 
-  function finish({ saved, skipped }) {
+  function finish({ saved, skipped, playlist: wholePlaylist = false }) {
     close();
     renderUserContentView();
     const lines = [];
-    if (saved) lines.push(`تم حفظ ${saved} ${saved === 1 ? "فيديو" : "فيديوهات"} في «محتواي».`);
+    if (saved && wholePlaylist) lines.push("تمت إضافة قائمة التشغيل كبطاقة واحدة إلى «محتواي».");
+    else if (saved) lines.push(`تم حفظ ${saved} ${saved === 1 ? "فيديو" : "فيديوهات"} في «محتواي».`);
     if (skipped.length) lines.push(`تم تخطي ${skipped.length}: ${skipped.slice(0, 2).join("، ")}${skipped.length > 2 ? "…" : ""}`);
     showNotification(saved ? "تم الحفظ" : "لم يُحفظ شيء", lines.join("\n") || "لا توجد عناصر جديدة للحفظ.", saved ? "success" : "warning");
   }
@@ -639,83 +697,4 @@ export function openYoutubeVideoModal() {
   render();
 }
 
-function formatPublished(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
-}
-
-// ── in-app player for saved videos ─────────────────────────────────────────
-
-let activePlayer = null;
-
-/**
- * Opens a saved personal video (meta.type "youtube_video") in an in-app player.
- * Plays through YouTube's privacy-enhanced embed; links to the canonical page.
- */
-export function openYoutubeVideoPlayer(item) {
-  if (activePlayer) return;
-  const videoId = item?.meta?.youtubeId || item?.video?.videoId;
-  const title = item?.meta?.title || "فيديو";
-  const returnFocus = document.activeElement;
-
-  const overlay = el("div", "yt-modal-overlay yt-modal-overlay--player");
-  const dialog = el("div", "yt-modal yt-modal--player");
-  dialog.setAttribute("role", "dialog");
-  dialog.setAttribute("aria-modal", "true");
-  dialog.setAttribute("aria-label", title);
-
-  const header = el("header", "yt-modal__header");
-  header.append(el("h2", "yt-modal__title", title));
-  const closeBtn = el("button", "yt-modal__close", "×");
-  closeBtn.type = "button";
-  closeBtn.setAttribute("aria-label", "إغلاق المشغّل");
-  header.append(closeBtn);
-  dialog.append(header);
-
-  if (isValidVideoId(videoId)) {
-    const frame = el("div", "yt-embed");
-    const iframe = document.createElement("iframe");
-    iframe.src = embedUrl(videoId);
-    iframe.title = title;
-    iframe.referrerPolicy = "strict-origin-when-cross-origin";
-    iframe.allow = "accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
-    iframe.allowFullscreen = true;
-    frame.append(iframe);
-    dialog.append(frame);
-
-    const info = el("div", "yt-preview-info");
-    const facts = [
-      item.meta?.channelTitle,
-      formatDurationSeconds(item.stats?.durationSeconds ?? item.video?.durationSeconds),
-      formatPublished(item.meta?.publishedAt),
-    ].filter(Boolean).join(" · ");
-    if (facts) info.append(el("p", "yt-preview-facts", facts));
-    if (item.meta?.description) info.append(el("p", "yt-preview-desc", item.meta.description.slice(0, 600)));
-    const link = el("a", "yt-link", "فتح على يوتيوب");
-    link.href = canonicalWatchUrl(videoId);
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    info.append(link);
-    dialog.append(info);
-  } else {
-    dialog.append(el("p", "yt-empty", "تعذّر تحديد الفيديو. قد يكون هذا العنصر تالفاً."));
-  }
-
-  overlay.append(dialog);
-  document.body.append(overlay);
-  activePlayer = overlay;
-
-  const close = () => {
-    document.removeEventListener("keydown", onKey, true);
-    overlay.remove();
-    activePlayer = null;
-    if (returnFocus && typeof returnFocus.focus === "function") returnFocus.focus();
-  };
-  const onKey = (e) => { if (e.key === "Escape") { e.preventDefault(); close(); } };
-  document.addEventListener("keydown", onKey, true);
-  closeBtn.addEventListener("click", close);
-  overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) close(); });
-  setTimeout(() => closeBtn.focus(), 0);
-}
+export { openYoutubeVideoPlayer };

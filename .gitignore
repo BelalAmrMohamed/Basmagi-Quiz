@@ -19,6 +19,7 @@ node_modules/
 .env*
 .env*.local
 .env.local
+!.env.example
 
 # Local Documents
 # docs/

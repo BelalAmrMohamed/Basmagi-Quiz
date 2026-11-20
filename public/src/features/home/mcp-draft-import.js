@@ -23,6 +23,8 @@ import { normalizeLessonDraft } from "../lesson/lesson-json.js";
 import { notebookFromPayload, buildPayload as buildNotebookPayload, validateState as validateNotebookState } from "../notebook/notebook-editor-model.js";
 import { buildUserQuizEntry } from "./quiz-schema.js";
 import { buildLocalNotebookEntry, dedupeTitle } from "./local-notebook.js";
+import { buildLocalYoutubeVideoEntry, findSameLevelVideoDuplicate } from "./local-youtube-video.js";
+import { buildLocalYoutubePlaylistEntry, findSameLevelPlaylistDuplicate } from "./local-youtube-playlist.js";
 import { hasSameLevelCollision } from "./user-content-folders.js";
 import * as wsStore from "../../shared/workspace-store.js";
 import { showNotification as showToast } from "../../components/notifications/notifications.js";
@@ -34,7 +36,7 @@ const DRAFT_RE = /^[2-9a-hj-km-np-z]{10}$/;
 const IMPORTED_KEY = "mcp_imported_drafts"; // { [code]: itemId } — makes re-opening a link idempotent
 const IMPORTED_MAX = 50;
 
-const KIND_LABEL = { quiz: "الامتحان", lesson: "الدرس", notebook: "الدفتر" };
+const KIND_LABEL = { quiz: "الامتحان", lesson: "الدرس", notebook: "الدفتر", youtube_video: "الفيديو", youtube_playlist: "قائمة التشغيل" };
 
 /** { id, title, kind } of the item that was just created from a link; consumed by the grid. */
 let pendingHighlight = null;
@@ -153,7 +155,30 @@ function buildNotebookRow(payload, items) {
   return { entry, title };
 }
 
-const BUILDERS = { quiz: buildQuizRow, lesson: buildLessonRow, notebook: buildNotebookRow };
+// YouTube drafts (MCP create_youtube_import_link) are saved at the «محتواي» root.
+function buildYoutubeVideoRow(payload, items) {
+  if (findSameLevelVideoDuplicate(items, payload.youtubeId, null)) {
+    throw new Error("هذا الفيديو موجود بالفعل في «محتواي».");
+  }
+  const entry = buildLocalYoutubeVideoEntry({ videoId: payload.youtubeId, meta: payload.meta, parentId: null });
+  return { entry, title: entry.meta.title };
+}
+
+function buildYoutubePlaylistRow(payload, items) {
+  if (findSameLevelPlaylistDuplicate(items, payload.playlist.id, null)) {
+    throw new Error("قائمة التشغيل موجودة بالفعل في «محتواي».");
+  }
+  const entry = buildLocalYoutubePlaylistEntry({ playlist: payload.playlist, items: payload.items, parentId: null });
+  return { entry, title: entry.meta.title };
+}
+
+const BUILDERS = {
+  quiz: buildQuizRow,
+  lesson: buildLessonRow,
+  notebook: buildNotebookRow,
+  youtube_video: buildYoutubeVideoRow,
+  youtube_playlist: buildYoutubePlaylistRow,
+};
 
 // ── Network ──────────────────────────────────────────────────────────────────
 

@@ -30,6 +30,9 @@ export const HOME_TOOL_NAMES = [
   "fetch_attached_quiz",
   "get_authoring_guide",
   ...READONLY_LIBRARY_TOOL_NAMES,
+  "search_youtube",
+  "list_youtube",
+  "add_youtube",
   ...CREATOR_TOOL_NAMES,
 ];
 

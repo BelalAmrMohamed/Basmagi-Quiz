@@ -43,6 +43,9 @@ import {
   sanitizeAssetName, sniffImageMime, signUploadToken, verifyUploadToken, safeFetchUrl, driveDirectUrl,
 } from "./draft-assets-lib.ts";
 
+import { parseYoutubeInput, YOUTUBE_LIMITS, isValidVideoId, parseIsoDuration } from "./youtube-rules.js";
+import { formatPublishedDetail, formatPublishedList, pickThumbnail, playlistImportPayload, videoImportPayload } from "./youtube-mcp-model.js";
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_KEY =
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
@@ -543,6 +546,51 @@ const TOOLS = [
       type: "object",
       properties: {
         section: { type: "string", enum: ["all", "profile", "links", "contact", "platform", "pages"], description: "Defaults to 'all'." },
+      },
+    },
+  },
+  {
+    name: "create_youtube_import_link",
+    annotations: { title: "Add a YouTube video or playlist to «محتواي» (short link)", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    description: "Create a short link (…/my-content?draft=CODE, valid 72h, no sign-in). When the user opens it, the YouTube video or playlist is saved into their «محتواي» in the browser. Accepts a YouTube watch, youtu.be, Shorts, or playlist URL, or a bare 11-character video ID. A playlist is saved as ONE card (up to 200 items). Titles, channels, and durations come from YouTube and are read-only.",
+    inputSchema: {
+      type: "object",
+      properties: { url: { type: "string", description: "YouTube video or playlist URL, or a bare 11-character video ID." } },
+      required: ["url"],
+    },
+  },
+  {
+    name: "search_youtube_published",
+    annotations: { title: "Search published YouTube videos and playlists", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    description: "Search the published YouTube videos and playlists on Basmagi by title. Returns titles, channels, and YouTube links.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Text to match against titles." },
+        kind: { type: "string", enum: ["video", "playlist"] },
+        limit: { type: "integer", description: "1-25, default 10." },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "get_youtube_published",
+    annotations: { title: "Get a published YouTube video or playlist", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    description: "Get one published YouTube video or playlist by its id, or by a YouTube URL. For a playlist, returns its ordered video list.",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "string", description: "Published item UUID." }, url: { type: "string", description: "YouTube video or playlist URL, or a bare video ID." } },
+    },
+  },
+  {
+    name: "list_recent_youtube_published",
+    annotations: { title: "List recently published YouTube videos and playlists", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    description: "List the most recently published YouTube videos and playlists on Basmagi.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        kind: { type: "string", enum: ["video", "playlist"] },
+        limit: { type: "integer", description: "1-25, default 10." },
       },
     },
   },
@@ -1521,6 +1569,133 @@ async function fetchNotebook(ref: string) {
   return data;
 }
 
+// ── YouTube: import links (all users) and published read tools ─────────────
+// The helpers below stay small: payload building and text live in the shared
+// youtube-mcp-model.js; this part only talks to YouTube and to Supabase.
+const YT_SITE = "https://basmagi-quiz.vercel.app";
+const PUBLISHED_COLS = "id, kind, youtube_id, playlist_id, title, channel_title, description, duration_seconds, item_count, total_count, partial, items";
+const PUBLISHED_COLS_LITE = "id, kind, youtube_id, playlist_id, title, channel_title, item_count, total_count, partial";
+
+async function ytGet(path: string, params: Record<string, string>): Promise<any> {
+  const key = Deno.env.get("YOUTUBE_DATA_API_KEY") || "";
+  if (!key) throw new Error("YOUTUBE_NOT_CONFIGURED");
+  const res = await fetch(`https://www.googleapis.com/youtube/v3/${path}?${new URLSearchParams({ ...params, key })}`);
+  if (!res.ok) throw new Error(`YOUTUBE_HTTP_${res.status}`);
+  return res.json();
+}
+
+/** Stores a YouTube draft (no fallback link: the payload must be saved). */
+async function saveYoutubeDraft(kind: "youtube_video" | "youtube_playlist", data: unknown): Promise<string> {
+  await supabase.from("import_drafts").delete().lt("expires_at", new Date().toISOString());
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const code = makeDraftCode();
+    const { error } = await supabase.from("import_drafts").insert({
+      code, kind, payload: data,
+      expires_at: new Date(Date.now() + DRAFT_TTL_HOURS * 3600_000).toISOString(),
+    });
+    if (!error) return `${YT_SITE}/my-content?draft=${code}`;
+    if (error.code !== "23505") throw error; // 23505 = code collision → retry
+  }
+  throw new Error("could not allocate a draft code");
+}
+
+function ytErrorText(err: any): string {
+  const msg = String(err?.message || err);
+  if (msg === "YOUTUBE_NOT_CONFIGURED") return "خدمة يوتيوب غير مُفعّلة على الخادم حالياً.";
+  if (msg.startsWith("YOUTUBE_HTTP_429")) return "تم تجاوز حصة يوتيوب اليومية. حاول لاحقاً.";
+  if (!msg.startsWith("YOUTUBE_HTTP_")) return msg; // validation messages from youtube-mcp-model.js are already user-facing
+  return "تعذّر الاتصال بيوتيوب. حاول مرة أخرى بعد قليل.";
+}
+
+async function handleCreateYoutubeImportLink(args: { url?: string }) {
+  const parsed = parseYoutubeInput(String(args?.url || ""));
+  if (parsed.kind === "invalid") return "الرابط غير صالح. أرسل رابط فيديو أو قائمة تشغيل من يوتيوب.";
+  try {
+    if (parsed.kind === "video") {
+      const data = await ytGet("videos", { part: "snippet,contentDetails,status", id: parsed.videoId });
+      const item = data.items?.[0];
+      if (!item) return "هذا الفيديو غير متاح (محذوف أو خاص أو غير موجود).";
+      const payload = videoImportPayload(item);
+      const url = await saveYoutubeDraft("youtube_video", payload);
+      return `رابط إضافة الفيديو «${payload.meta.title}» إلى «محتواي» (صالح 72 ساعة، بدون تسجيل دخول):\n${url}\n\nعند فتحه يُحفظ الفيديو مباشرة في «محتواي» داخل المتصفح.`;
+    }
+    const meta = await ytGet("playlists", { part: "snippet,contentDetails", id: parsed.playlistId });
+    const plist = meta.items?.[0];
+    if (!plist) return "لم يتم العثور على قائمة التشغيل.";
+    const rows: any[] = [];
+    let token = "";
+    do {
+      const page: any = await ytGet("playlistItems", {
+        part: "snippet,contentDetails", playlistId: parsed.playlistId, maxResults: "50",
+        ...(token ? { pageToken: token } : {}),
+      });
+      for (const it of page.items || []) {
+        const videoId = it.contentDetails?.videoId || "";
+        const title = it.snippet?.title || "";
+        const unavailable = !isValidVideoId(videoId) || title === "Deleted video" || title === "Private video";
+        rows.push({
+          videoId: unavailable ? "" : videoId,
+          title: unavailable ? "" : title,
+          thumbnailUrl: unavailable ? "" : pickThumbnail(it.snippet?.thumbnails),
+          unavailable,
+        });
+      }
+      token = page.nextPageToken || "";
+    } while (token && rows.length < YOUTUBE_LIMITS.playlistItemsMax);
+
+    const ids = rows.filter((r) => !r.unavailable).slice(0, YOUTUBE_LIMITS.playlistItemsMax).map((r) => r.videoId);
+    const durations = new Map<string, number | null>();
+    for (let i = 0; i < ids.length; i += YOUTUBE_LIMITS.detailBatchMax) {
+      const d: any = await ytGet("videos", { part: "contentDetails", id: ids.slice(i, i + YOUTUBE_LIMITS.detailBatchMax).join(",") });
+      for (const v of d.items || []) durations.set(v.id, parseIsoDuration(v.contentDetails?.duration));
+    }
+    const payload = playlistImportPayload({ playlist: plist, items: rows, durations });
+    const url = await saveYoutubeDraft("youtube_playlist", payload);
+    return `رابط إضافة قائمة التشغيل «${payload.playlist.title}» إلى «محتواي» (صالح 72 ساعة، بدون تسجيل دخول):\n${url}\n\nتُحفظ القائمة كبطاقة واحدة (حتى ${YOUTUBE_LIMITS.playlistItemsMax} فيديو) عند فتح الرابط.`;
+  } catch (err) {
+    return ytErrorText(err);
+  }
+}
+
+function clampLimit(limit: unknown): number {
+  const n = Number(limit);
+  return Number.isInteger(n) ? Math.min(Math.max(n, 1), 25) : 10;
+}
+
+async function handleSearchYoutubePublished(args: { query?: string; kind?: string; limit?: number }) {
+  // Strip characters that have meaning in PostgREST filters before matching.
+  const q = String(args?.query || "").replace(/[%,()*\\]/g, " ").trim().slice(0, 100);
+  if (!q) return "الرجاء كتابة كلمة للبحث (query).";
+  let req: any = supabase.from("youtube_public").select(PUBLISHED_COLS_LITE)
+    .eq("is_published", true).ilike("title", `%${q}%`).limit(clampLimit(args?.limit));
+  if (args?.kind === "video" || args?.kind === "playlist") req = req.eq("kind", args.kind);
+  const { data, error } = await req;
+  if (error) return "تعذّر البحث في المحتوى المنشور حالياً.";
+  return formatPublishedList(data || [], `نتائج البحث عن «${q}»`);
+}
+
+async function handleGetYoutubePublished(args: { id?: string; url?: string }) {
+  const ref = String(args?.url || args?.id || "").trim();
+  if (!ref) return "الرجاء تحديد المعرّف (id) أو الرابط (url).";
+  const parsed = parseYoutubeInput(ref);
+  let req: any = supabase.from("youtube_public").select(PUBLISHED_COLS).eq("is_published", true);
+  if (parsed.kind === "video") req = req.eq("kind", "video").eq("youtube_id", parsed.videoId);
+  else if (parsed.kind === "playlist") req = req.eq("kind", "playlist").eq("playlist_id", parsed.playlistId);
+  else req = req.eq("id", ref);
+  const { data, error } = await req.maybeSingle();
+  if (error || !data) return "لم يتم العثور على محتوى منشور بهذا المعرّف أو الرابط.";
+  return formatPublishedDetail(data);
+}
+
+async function handleListRecentYoutubePublished(args: { kind?: string; limit?: number }) {
+  let req: any = supabase.from("youtube_public").select(PUBLISHED_COLS_LITE)
+    .eq("is_published", true).order("created_at", { ascending: false }).limit(clampLimit(args?.limit));
+  if (args?.kind === "video" || args?.kind === "playlist") req = req.eq("kind", args.kind);
+  const { data, error } = await req;
+  if (error) return "تعذّر تحميل المحتوى المنشور حالياً.";
+  return formatPublishedList(data || [], "أحدث المحتوى المنشور من يوتيوب");
+}
+
 async function handleGetNotebook(args: { notebookId: string }) {
   if (!String(args?.notebookId || "").trim()) return "الرجاء تحديد معرف الدفتر (notebookId).";
   const d = await fetchNotebook(args.notebookId);
@@ -1895,6 +2070,10 @@ async function handleRpcRequest(reqBody: any) {
           case "create_quiz_import_link":   resultText = await handleCreateQuizImportLink(toolArgs);  break;
           case "create_lesson_import_link": resultText = await handleCreateLessonImportLink(toolArgs); break;
           case "create_notebook_import_link": resultText = await handleCreateNotebookImportLink(toolArgs); break;
+          case "create_youtube_import_link":    resultText = await handleCreateYoutubeImportLink(toolArgs); break;
+          case "search_youtube_published":      resultText = await handleSearchYoutubePublished(toolArgs);  break;
+          case "get_youtube_published":         resultText = await handleGetYoutubePublished(toolArgs);     break;
+          case "list_recent_youtube_published": resultText = await handleListRecentYoutubePublished(toolArgs); break;
           case "get_notebook":              resultText = await handleGetNotebook(toolArgs);         break;
           case "get_notebook_content":      resultText = await handleGetNotebookContent(toolArgs);  break;
           case "get_creator_info":          resultText = handleGetCreatorInfo(toolArgs);            break;

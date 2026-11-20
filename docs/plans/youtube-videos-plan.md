@@ -11,6 +11,13 @@
 3. `youtube-videos-phase-1-fix-2.patch`: `supabase/config.toml` gets `verify_jwt = false` for `youtube`.
 4. `youtube-videos-phase-1-fix-3.patch`: `env-shim.ts` guards `process.env` writes; the handler falls back to `Deno.env` for the key.
 5. `youtube-videos-plan-update.patch`: this document.
+6. `youtube-videos-phase-a.patch`: Phase A (UI fixes, §2.1–§2.5).
+7. `youtube-videos-phase-b.patch`: Phase B (playlist object, card, window, whole-playlist import).
+8. `youtube-videos-phase-c.patch`: Phase C (import log, history tab) and this status update.
+9. `youtube-videos-phase-d1.patch`: shared import module `youtube-library.js`; agent tools `search_youtube`, `list_youtube`, `add_youtube`.
+10. `youtube-videos-phase-e.patch`: MCP tools (`create_youtube_import_link`, `search_youtube_published`, `get_youtube_published`, `list_recent_youtube_published`); `import_drafts` kinds; `youtube_public` table; browser draft builders; shared `youtube-mcp-model.js`.
+11. `youtube-videos-phase-f.patch`: placement columns for `youtube_public`; admin API actions `publish-youtube`, `list-youtube-public`, `unpublish-youtube`.
+12. `fix-auth-env-guard.patch` (optional, independent): sign-in returns a readable 503 naming missing variables instead of crashing `vercel dev`. Not applied by the owner yet; see §9.1.
 
 ### 1.2 Done
 
@@ -32,12 +39,39 @@
 - Real search, preview, and playlist results with the live key. Not exercised since fix-3.
 - Anything in the browser beyond opening the modal.
 
+### 1.6 Status after Phases A–C
+
+- Phase A (UI), Phase B (playlists), and Phase C (import log) are implemented and covered by 37 automated tests across the YouTube suites.
+- Decided (D1): import log. Each entry records when a video or playlist was added to «محتواي». Entries are per device, capped at 500, and the same log holds "published" events once admin publishing exists. No watch history.
+- Decided (D2): per-video selection stays. Whole playlists are added as one card.
+- Phase C display: a «السجل» tab in the import modal, with open (if the item still exists), remove one entry, and clear all.
+- Built on the server and in the browser (not yet deployed or run end to end): MCP tools `create_youtube_import_link` (video or playlist, for all users, saves to «محتواي» through a 72-hour `/my-content?draft=` link), `search_youtube_published`, `get_youtube_published`, and `list_recent_youtube_published`. Migration `20261120120000_youtube_public_and_import_kinds.sql` adds the two draft kinds and the `youtube_public` table.
+- Placement decided (lesson-style). Admin API actions are built in Phase F. The upload wizard and the admin screen are not built yet (Phase I).
+
 ### 1.5 Operational notes
 
 - After handler changes, redeploy: `node scripts/build-edge-functions.mjs youtube`, then `supabase functions deploy youtube --no-verify-jwt`.
 - Other edge functions still carry the old env shim until they are rebuilt and redeployed. They run fine today, so this can wait for the next release.
 - `npm run dev:vercel` reads `vercel.json` at startup. Restart it after rewrite changes.
 - Vercel does not need `YOUTUBE_DATA_API_KEY`. Only the Supabase function uses it.
+
+### 1.7 Status after Phases D–F (2026-11-20)
+
+Built (code exists in the patches above; not deployed and not run end to end):
+
+- Phase D1: shared import logic in `youtube-library.js`; in-app AI agent tools `search_youtube`, `list_youtube`, `add_youtube`.
+- Phase E: MCP tools for all users (`create_youtube_import_link`, which returns a 72-hour `/my-content?draft=` link) and for published items (`search_youtube_published`, `get_youtube_published`, `list_recent_youtube_published`); `youtube_public` table; browser import of video and playlist drafts.
+- Phase F: admin API actions with lesson-style placement (course and optional folder), re-validated on the server.
+- Tests: 53 YouTube and sync tests pass in Node. The AI-agent suites need `npm install` (`jsonwebtoken` is missing here), so they were not run.
+
+Not verified: the MCP TypeScript (no Deno here), the two migrations (not applied), the `mcp` and admin deployments, the admin API against a real database, and the browser behaviour of Phases D1–F.
+
+Remaining (see §6 Phases G–J and §9):
+
+- Sign-in fails under `npm run dev:vercel` (§9.1). Root cause not confirmed. This blocks local testing of admin upload.
+- Window and card fixes found in review (§9.2).
+- Admin upload wizard: YouTube item type, publish from `/my-content`, admin screen (Phase I).
+- Deployment and end-to-end testing (Phase J).
 
 ## 2. Issues from first user testing
 
@@ -109,6 +143,9 @@
 - Playlist object: a snapshot of the ordered video list at import time (IDs, titles, durations, thumbnails). Refreshing it is a later item.
 - Playlist limit: 200 items per object. A larger playlist imports its first 200 items, and the object is labeled partial, showing the total count.
 - Search accepts any text except control characters, up to 100 characters.
+- No public `/video/:slug` page. Published videos and playlists open only in the player window (single video or playlist window). Decided 2026-11-20.
+- MCP adds personal items for every user through import links, the same way quiz, lesson, and notebook links work. Published items are read through the `youtube_public` table only.
+- Admin publishing writes `youtube_public`. The admin screen and the placement rule are still open.
 
 ## 6. Phased plan for the next conversation
 
@@ -142,6 +179,48 @@
 - **MCP and AI-agent tools (original §6, §7).** Must be extended for `youtube_playlist` (search, import, list) once Phase B is done.
 - **Docs (original §8).** `PROJECT_STRUCTURE.md` and user guides.
 
+### Phase G: window and card fixes (from §9.2)
+
+- **G1, compact card width.** Cards fill their grid track. Fix only after confirming the cause in the DOM (§9.2 a).
+- **G2, playlist thumbnail.** Give the playlist card's thumbnail a larger share of the card (default: 45% of the card width, 16:9 kept). The video card's size is unchanged unless G1 requires it.
+- **G3, window controls.** Use the AI-agent window's order (minimize, maximize, close) and its SVG glyphs. The AI window is the reference, per the owner.
+- **G4, minimized width.** In the minimized state, the east and west edges can be dragged to change the width. Height stays at the title bar's height.
+- **G5, playlist split.** A draggable divider between the video area and the list. Minimum widths: 320px for the video area, 180px for the list. The chosen split is remembered per device (localStorage). On phones the divider is hidden and the layout stacks, as now.
+- **G6, info for the current item.** Playlist window: show the current item's title, published date, and full description. These are loaded on demand with the existing `video` action (`fetchVideoDetails`) and cached in memory. Playlist snapshots do not store descriptions or publish dates, so storage does not grow.
+- **G7, remove clutter.** Remove the channel name, the duration, and the "فتح على يوتيوب" link from the video window and the playlist window (the YouTube iframe shows them). The playlist list header keeps the title and the item count.
+
+Files: `item-card.js` (compact branch), `youtube-video-modal.css`, `youtube-player-window.js` (frame and info block), `youtube-playlist-window.js` (split, current-item pane, list header).
+
+Tests: pure tests for divider clamping and the current-item details mapping; manual checklist for the rest.
+
+### Phase H: sign-in and local development (§9.1)
+
+- **H1, confirm the cause.** Run the checks in §9.1 in order and record which one fixes it.
+- **H2, make the fix permanent.** Depends on H1: a dev launcher that loads `.env.local` before starting `vercel dev`, or a documented `vercel env pull` step.
+- **H3, one service-key name.** Use `SUPABASE_SERVICE_KEY` everywhere, or read both names in one helper.
+- **H4, guard every client.** Every `createClient` in `api/` fails with a readable 503 that names the missing variables, instead of crashing the dev server.
+- **H5, keep the example.** Make `.env.example` trackable (the `.env*` ignore rule hides it).
+
+### Phase I: admin upload wizard for YouTube items
+
+- **I1, wizard type.** Add a YouTube item type (video or playlist) to the upload batch: counts, labels, and the review list in `adminUpload.js`.
+- **I2, placement.** The wizard path (college → year → term → subject, plus an optional subfolder) maps to `course_id` (the subject) and `folder_id` (the subfolder). The server rule is the same one lessons use.
+- **I3, publish from `/my-content`.** A "رفع إلى المنصة" action on YouTube items, like `createLessonUploadButton`, opens the same wizard.
+- **I4, metadata in the browser.** The admin's browser fetches metadata through `/api/youtube` (up to 200 playlist items). The server never needs the YouTube key.
+- **I5, admin screen.** List published YouTube items and unpublish them (`list-youtube-public`, `unpublish-youtube`).
+- **I6, publish history.** Record a "published" event in the import log (the event type is already reserved).
+
+Open for confirmation: deleting a course or folder currently deletes the published items placed in it (`ON DELETE CASCADE`, as lessons are assumed to behave). Confirm or change before Phase I.
+
+### Phase J: deployment and verification
+
+1. Apply the patches in the §1.1 order. Run `npm install`, then `npm run test:ai-agent`.
+2. Apply migrations `20261120120000_youtube_public_and_import_kinds.sql` and `20261120130000_youtube_public_placement.sql` (`supabase db push`).
+3. Deploy the `mcp` function (`supabase functions deploy mcp`). Check the TypeScript first with `deno check` (not run yet).
+4. Deploy the Vercel app so `api/admin.js` ships.
+5. MCP end to end: create a video import link, open it signed out, and confirm the item appears in `/my-content`. Then search published items.
+6. Admin end to end: publish a video and a playlist, check them in the admin list, unpublish one.
+
 ## 7. Completion criteria (updated)
 
 - Search accepts normal text. Rejected input explains why.
@@ -152,6 +231,13 @@
 - History is recorded as decided in D1.
 - The Phase 1 criteria from the original plan still hold for the personal flow.
 
+- Sign-in works under `npm run dev:vercel` on the owner's machine (§9.1).
+- The compact video card fills its shelf cell; the playlist thumbnail takes the agreed share (G1, G2).
+- Both windows use the AI-window control order and icons; the minimized window can be resized in width (G3, G4).
+- The playlist window has a draggable split and shows the current item's title, published date, and description (G5, G6).
+- Neither window shows the channel name, the duration, or the YouTube link (G7).
+- An admin can publish a video or playlist through the upload wizard into a subject and folder, and unpublish it (Phase I).
+
 ## 8. Entry points
 
 - `public/src/features/home/user-content-view.js`: card dispatch, mobile create dropdown.
@@ -161,3 +247,40 @@
 - `public/src/features/home/youtube-video-modal.js` and `.css`: import modal and player.
 - `public/src/components/ai-agent/ai-agent-window.js` and `.css`: window reference.
 - `supabase/functions/youtube/handler.js`: proxy. `scripts/build-edge-functions.mjs`: bundling. `vercel.json`: rewrite. `supabase/config.toml`: JWT setting.
+
+## 9. Review of 2026-11-20 (owner testing, after Phases A–F)
+
+### 9.1 Sign-in fails under `npm run dev:vercel`
+
+- **Symptom.** Signing in throws `supabaseUrl is required` in `api/auth.js` (the `createClient` call reads `process.env.SUPABASE_URL`). The dev server exits, followed by a `taskkill` error that is a side effect.
+- **Facts.** The owner's `.env.local` defines the names in the uploaded `_env.example`, including `SUPABASE_URL` and `SUPABASE_SERVICE_KEY`. The names match what `api/` reads. The repo has no dotenv loader. `dev:vercel` is plain `vercel dev --listen 8080`. The Supabase secrets list covers Supabase edge functions only; Vercel dev does not read it.
+- **Root cause: not confirmed.** Hypotheses, most likely first:
+  1. `vercel dev` (CLI 65.14.0) does not pass the root `.env.local` to function processes. `vercel env pull` writes its own file for dev.
+  2. The file is saved in an encoding or format the loader can't parse, for example UTF-16 or a byte-order mark, or values with spaces or quotes around them. Windows editors do this.
+  3. Something else resets the variable before the function runs. Not tested.
+- **Checks for the owner, in order.** (a) Save `.env.local` as UTF-8 without a byte-order mark, then restart `dev:vercel`. (b) Link the project and run `vercel env pull`, then check whether `SUPABASE_URL` appears in the generated file. (c) Apply `fix-auth-env-guard.patch`: the crash becomes a 503 naming the variable that is empty at runtime.
+- **Side note.** `VERCEL_OIDC_TOKEN` in the example is short-lived. A stale token can break the dev server. `vercel env pull` refreshes it.
+- **Status.** Open. Resolve in Phase H. It blocks local testing of the admin upload.
+
+### 9.2 Card and window issues
+
+Evidence: the uploaded screenshot (`1795172846221_image.png`) shows a compact video card about 147px wide, next to cards about 390px wide in the same shelf, and a playlist card whose thumbnail is about 140px wide.
+
+a) **Compact video card too narrow.** The shelf is `repeat(auto-fill, minmax(min(100%, 260px), 1fr))`, so every track should be the same width. The narrow card suggests the card sizes to its content (shrink-to-fit) rather than filling its track. Not confirmed. Check the computed `width` and `justify-self` of `.item-card[data-card-kind="video"]` inside `.user-content-container`. Fix in G1.
+
+b) **Playlist thumbnail too small.** The compact rule sets the thumbnail to 112px for both video and playlist cards. Fix in G2.
+
+c) **Window controls wrong.** The YouTube windows use close, minimize, maximize, with text glyphs (`×`, `–`, `+`) shown on hover. The AI window (`ai-agent-window.js`) uses minimize, maximize, close, with SVG glyphs on hover. Fix in G3.
+
+d) **Minimized width fixed.** `.ytw.is-min` hides the resizers, so the width stays at its last size. The AI window hides its resizers when minimized too, but the owner wants the YouTube windows to resize in width when minimized. Fix in G4.
+
+e) **Playlist split fixed.** The video area is `flex: 1 1 0` and the list is `flex: 0 0 300px`. There is no way to change the split. Fix in G5.
+
+f) **No info for the current item.** The current-item block shows the title, channel, duration, and a link. It has no description and no publish date, and the playlist snapshot stores neither. Fix in G6 (on-demand loading, no storage growth).
+
+g) **Clutter.** The channel name, duration, and YouTube link appear in both windows. Fix in G7. Kept: the title and the description. Still open: the published date (see the questions below).
+
+Open questions for the owner, to confirm before Phase G:
+- Keep the published date in the video window, and show it in the playlist window's info panel? (Default: yes in both.)
+- The playlist thumbnail share: 45% of the card width? (Default: yes.)
+- Remember the playlist split per device? (Default: yes.)

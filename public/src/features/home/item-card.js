@@ -31,10 +31,11 @@ import { withDownloadLoading as withExportLoading } from "../../components/downl
 import { appendNotebookMenuEntries, fetchPlatformNotebookRow, showNotebookDownloadModal } from "./notebook-actions.js";
 import { getSelectedUserContent } from "./app-state.js";
 import { isAllowedThumbnailUrl, formatDurationSeconds } from "../../shared/youtube-rules.js";
+import { describePlaylistCount } from "./local-youtube-playlist.js";
 import { updateBulkActionBar } from "./user-content-view.js";
 import {
   createUserContentActions, createUserLessonActions, createUserNotebookActions,
-  createUserYoutubeVideoActions,
+  createUserYoutubeVideoActions, createUserYoutubePlaylistActions,
 } from "./user-content-card.js";
 
 const KINDS = {
@@ -42,6 +43,7 @@ const KINDS = {
   lesson: { label: "درس", emoji: "📘", tip: "📘 درس تفاعلي", descTip: "📄 وصف الدرس" },
   notebook: { label: "دفتر", emoji: "💻", tip: "💻 دفتر تفاعلي", descTip: "📄 وصف الدفتر" },
   video: { label: "فيديو", emoji: "▶️", tip: "▶️ فيديو يوتيوب", descTip: "📄 وصف الفيديو" },
+  playlist: { label: "قائمة تشغيل", emoji: "📑", tip: "📑 قائمة تشغيل يوتيوب", descTip: "📄 وصف القائمة" },
 };
 
 function el(tag, className, text) {
@@ -54,20 +56,25 @@ function el(tag, className, text) {
 /**
  * Builds one item card.
  * @param {object} o
- * @param {"quiz"|"lesson"|"notebook"} o.kind
+ * @param {"quiz"|"lesson"|"notebook"|"video"} o.kind
  * @param {string} o.title @param {string} [o.description] @param {string} [o.chipDetail]
  * @param {boolean} [o.isNew]
  * @param {Array<{text:string, tag?:boolean}>} [o.meta]
- * @param {{label:string, onClick:()=>void}} o.primary
- * @param {{label?:string, locked?:boolean, onClick:(btn:HTMLElement)=>void}} o.download
+ * @param {{label:string, onClick:()=>void}} [o.primary] (not used by compact cards)
+ * @param {{label?:string, locked?:boolean, onClick:(btn:HTMLElement)=>void}} [o.download]
  * @param {(btn:HTMLElement)=>void} o.onMore
  * @param {string} [o.selectId] set for «محتواي» cards: adds the selection checkbox
+ * @param {boolean} [o.compact] compact row card (videos): no chip, no description and no
+ *   primary button. The whole card calls `onOpen`; the ⋮ menu stays for select, move and delete.
+ * @param {() => void} [o.onOpen] required when `compact` is set
  */
 export function createItemCard(o) {
   const k = KINDS[o.kind];
+  const compact = Boolean(o.compact);
   const card = el("div", "item-card");
   card.dataset.cardKind = o.kind;
-  card.setAttribute("role", "article");
+  card.setAttribute("role", compact ? "button" : "article");
+  if (compact) card.tabIndex = 0;
   card.setAttribute("aria-label", `${k.label}: ${o.title}`);
 
   card.append(el("span", "shape"));
@@ -121,13 +128,15 @@ export function createItemCard(o) {
   }
 
   const body = el("div", "ic-body");
-  body.append(el("span", `item-type-chip`, `${k.emoji} ${k.label}${o.chipDetail ? ` · ${o.chipDetail}` : ""}`));
-  body.firstChild.setAttribute("aria-hidden", "true");
+  if (!compact) {
+    body.append(el("span", `item-type-chip`, `${k.emoji} ${k.label}${o.chipDetail ? ` · ${o.chipDetail}` : ""}`));
+    body.firstChild.setAttribute("aria-hidden", "true");
+  }
   const h = el("h3", null, o.title);
   h.dataset.tooltipBadge = k.tip;
   h.dataset.tooltipText = o.title;
   body.append(h);
-  const description = String(o.description || "").trim();
+  const description = compact ? "" : String(o.description || "").trim();
   if (description) {
     const p = el("p", "ic-desc", description);
     p.dataset.tooltipBadge = k.descTip;
@@ -142,13 +151,28 @@ export function createItemCard(o) {
   }
   card.append(body);
 
-  const actions = el("div", "ic-actions");
   const more = el("button", "exam-more-btn");
   more.type = "button";
   more.innerHTML = MORE_DOTS_ICON_SVG;
   more.setAttribute("aria-label", `خيارات إضافية لـ ${o.title}`);
   more.onclick = (e) => { e.stopPropagation(); o.onMore(more, e); };
 
+  if (compact) {
+    card.append(more);
+    card.addEventListener("click", (e) => {
+      if (e.target.closest(".user-content-select-checkbox, .exam-more-btn")) return;
+      if (isSelectionModeActive()) return;
+      o.onOpen?.();
+    });
+    card.addEventListener("keydown", (e) => {
+      if (e.target !== card || (e.key !== "Enter" && e.key !== " ")) return;
+      e.preventDefault();
+      o.onOpen?.();
+    });
+    return card;
+  }
+
+  const actions = el("div", "ic-actions");
   const primary = el("button", "ic-btn ic-btn--primary", o.primary.label);
   primary.type = "button";
   primary.setAttribute("aria-label", `${o.primary.label} ${o.title}`);
@@ -166,6 +190,10 @@ export function createItemCard(o) {
   actions.append(...(dl ? [dl, primary] : [primary]));
   card.append(more, actions);
   return card;
+}
+
+function isSelectionModeActive() {
+  return Boolean(document.querySelector(".user-content-container")?.classList.contains("selection-mode-active"));
 }
 
 /**
@@ -374,12 +402,26 @@ export function createUserYoutubeVideoCard(video) {
   const duration = formatDurationSeconds(video.stats?.durationSeconds ?? video.video?.durationSeconds);
   return createItemCard({
     kind: "video",
+    compact: true,
+    onOpen: a.open,
     selectId: video.id || video.meta?.id,
     title: video.meta?.title || "فيديو بدون عنوان",
-    description: video.meta?.description,
     thumbnailUrl: video.meta?.thumbnailUrl,
     meta: [{ text: video.meta?.channelTitle || "" }, { text: duration }],
-    primary: { label: "شاهد الفيديو", onClick: a.open },
+    onMore: a.more,
+  });
+}
+
+export function createUserYoutubePlaylistCard(entry) {
+  const a = createUserYoutubePlaylistActions(entry);
+  return createItemCard({
+    kind: "playlist",
+    compact: true,
+    onOpen: a.open,
+    selectId: entry.id || entry.meta?.id,
+    title: entry.meta?.title || "قائمة بدون عنوان",
+    thumbnailUrl: entry.meta?.thumbnailUrl,
+    meta: [{ text: entry.meta?.channelTitle || "" }, { text: describePlaylistCount(entry) }],
     onMore: a.more,
   });
 }

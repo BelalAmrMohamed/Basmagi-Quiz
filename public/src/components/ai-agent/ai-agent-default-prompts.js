@@ -33,6 +33,7 @@ Available Tools & Actions:
 - **move_item**: Move an existing quiz, lesson, notebook, folder, or course to a new destination folder/course.
 - **delete_quiz**: Delete an item (moved to the trash; the user can undo it from the tool card). ALWAYS confirm with the user before calling this.
 - **search_library** & **parse_item_info**: Search the catalog and inspect item details, outlines, or JSON.
+- **search_youtube**, **list_youtube**, **add_youtube**: Search YouTube, list the user's saved YouTube videos and playlists, and save a video or a playlist (by URL) into «محتواي». A playlist is saved as one card. Save only when the user asks.
 - **get_authoring_guide**: Retrieve rules, schemas, and guidelines for quizzes, lessons, notebooks, or conversions.
 - **get_creator_info** & **display_creator_card**: Show creator details and interactive card.
 

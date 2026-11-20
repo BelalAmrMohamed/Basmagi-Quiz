@@ -20,6 +20,7 @@
 //
 // NOTE: The "change_code" / access-code actions were removed in v6.1.
 // =============================================================================
+import { publishedPlaylistFields, publishedVideoFields } from "../scripts/lib/youtube-mcp-model.js";
 import { applyCors, requireAdmin, handleAuthError } from "./_middleware.js";
 import { notifySearchEngines } from "./_seoNotify.js";
 import { toSlug, absUrl, quizUrl, lessonUrl, notebookUrl } from "./_urls.js";
@@ -1508,6 +1509,63 @@ async function validateLessonSlug(supabase, rawSlug, excludeId = null) {
 // courseId is required (a lesson can go directly under a course or under
 // any folder, never top-level-only — see canPlaceItemServer); folderId null
 // means "directly under the course."
+// ── Published YouTube videos and playlists (youtube_public) ─────────────────
+// Metadata is fetched by the admin's browser through /api/youtube, so this
+// server never needs the YouTube key. Every field is re-validated here.
+const YT_PUBLISHED_COLUMNS = "id, kind, youtube_id, playlist_id, title, channel_title, course_id, folder_id, item_count, total_count, partial, created_at";
+
+async function handlePublishYoutube(req, res, adminPayload, adminId, supabase) {
+  const body = req.body || {};
+  const { kind, courseId, folderId = null } = body;
+  if (kind !== "video" && kind !== "playlist") return res.status(400).json({ error: "نوع المحتوى غير صالح." });
+  if (!courseId) return res.status(400).json({ error: "المادة مطلوبة." });
+
+  const placement = canPlaceItemServer("youtube", folderId);
+  if (!placement.ok) return res.status(400).json({ error: placement.error });
+  const destinationCheck = await validateLessonPlacement(supabase, courseId, folderId);
+  if (!destinationCheck.ok) return res.status(404).json({ error: destinationCheck.error });
+
+  let fields;
+  try {
+    fields = kind === "video" ? publishedVideoFields(body) : publishedPlaylistFields(body);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+
+  const row = {
+    ...fields,
+    course_id: courseId,
+    folder_id: folderId || null,
+    created_by: adminId,
+    is_published: true,
+  };
+  const { data, error } = await supabase.from("youtube_public").insert(row).select(YT_PUBLISHED_COLUMNS).maybeSingle();
+  if (error) {
+    if (error.code === "23505") return res.status(409).json({ error: "هذا المحتوى منشور بالفعل." });
+    console.error("[publish-youtube]", error);
+    return res.status(500).json({ error: "تعذّر حفظ المحتوى المنشور." });
+  }
+  return res.status(200).json({ success: true, item: data });
+}
+
+async function handleListYoutubePublished(req, res, adminPayload, adminId, supabase) {
+  const { courseId = null } = req.body || {};
+  let q = supabase.from("youtube_public").select(YT_PUBLISHED_COLUMNS).order("created_at", { ascending: false }).limit(200);
+  if (courseId) q = q.eq("course_id", courseId);
+  const { data, error } = await q;
+  if (error) return res.status(500).json({ error: "تعذّر تحميل المحتوى المنشور." });
+  return res.status(200).json({ items: data || [] });
+}
+
+async function handleUnpublishYoutube(req, res, adminPayload, adminId, supabase) {
+  const { id } = req.body || {};
+  if (!UUID_SHAPE_RE.test(String(id || ""))) return res.status(400).json({ error: "معرّف غير صالح." });
+  const { error, count } = await supabase.from("youtube_public").delete({ count: "exact" }).eq("id", id);
+  if (error) return res.status(500).json({ error: "تعذّر إلغاء النشر." });
+  if (!count) return res.status(404).json({ error: "المحتوى غير موجود." });
+  return res.status(200).json({ success: true });
+}
+
 async function handleCreateLesson(req, res, adminPayload, adminId, supabase) {
   const { title, content, description = "", source = "", courseId, folderId = null, slug = null, readerPrefsDefault = null, passwordHash = "" } = req.body || {};
 
@@ -2085,6 +2143,9 @@ async function handleItemActions(req, res) {
   if (action === "create-notebook") return handleCreateNotebook(req, res, payload, adminId, supabase);
   if (action === "update-notebook") return handleUpdateNotebook(req, res, payload, adminId, supabase);
   if (action === "delete-notebook") return handleDeleteNotebook(req, res, payload, adminId, supabase);
+  if (action === "publish-youtube") return handlePublishYoutube(req, res, payload, adminId, supabase);
+  if (action === "list-youtube-public") return handleListYoutubePublished(req, res, payload, adminId, supabase);
+  if (action === "unpublish-youtube") return handleUnpublishYoutube(req, res, payload, adminId, supabase);
   if (STORAGE_ACTIONS.has(action)) return handleStorageAction(req, res, action, adminId, supabase);
 
   return res.status(400).json({ error: "Invalid action" });
