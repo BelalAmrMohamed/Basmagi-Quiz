@@ -39,7 +39,8 @@ export async function readChatResponse(response, { signal, onAssistantStream } =
   let text = "";
   let thinking = "";
   let result = null;
-  await readSse(response.body, { signal, onEvent: ({ event, data }) => {
+  try {
+    await readSse(response.body, { signal, onEvent: ({ event, data }) => {
     let payload = {};
     try { payload = JSON.parse(data); } catch { payload = { text: data }; }
     if (event === "text") text += payload.delta || "";
@@ -49,7 +50,14 @@ export async function readChatResponse(response, { signal, onAssistantStream } =
     if ((event === "text" || event === "thinking") && typeof onAssistantStream === "function") {
       onAssistantStream({ text, thinking });
     }
-  }});
+    }});
+  } catch (error) {
+    if (signal?.aborted || error?.name === "AbortError") {
+      return { text, ...(thinking ? { thinking } : {}), _streamAborted: true };
+    }
+    error.partial = { text, thinking };
+    throw error;
+  }
   if (result) return result;
   if (signal?.aborted) throw signal.reason || new DOMException("Aborted", "AbortError");
   if (!text && !thinking) throw new Error("انتهى تدفق الإجابة قبل اكتماله");
@@ -231,16 +239,24 @@ export async function runAgentLoop(params) {
       throw fetchErr;
     }
 
-    if (signal?.aborted) return { success: false, aborted: true };
-
     let data;
     try {
       data = await readChatResponse(response, { signal, onAssistantStream });
     } catch (streamErr) {
+      if (streamErr.partial?.text || streamErr.partial?.thinking) {
+        history.push({ role: "assistant", content: streamErr.partial.text || "", ...(streamErr.partial.thinking ? { thinking: streamErr.partial.thinking } : {}) });
+        if (typeof onHistoryPersist === "function") await onHistoryPersist().catch(() => { });
+      }
       if (signal?.aborted || streamErr?.name === "AbortError") return { success: false, aborted: true };
       return { success: false, error: streamErr.message || "تعذر إكمال الطلب" };
     }
-    if (signal?.aborted) return { success: false, aborted: true };
+    if (signal?.aborted || data._streamAborted) {
+      if (data.text || data.thinking) {
+        history.push({ role: "assistant", content: data.text || "", ...(data.thinking ? { thinking: data.thinking } : {}) });
+        if (typeof onHistoryPersist === "function") await onHistoryPersist().catch(() => { });
+      }
+      return { success: false, aborted: true };
+    }
 
     if (!response.ok) {
       const detailMsg = data.detail ? `${data.error || "خطأ"}: ${data.detail}` : data.error || "تعذر إكمال الطلب";

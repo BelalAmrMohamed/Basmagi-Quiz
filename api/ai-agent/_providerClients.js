@@ -118,8 +118,9 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, request
   if (model === "gemini-2.5-pro") {
     model = "gemini-3.1-pro-preview";
   }
-  const action = streamOptions.onEvent ? "streamGenerateContent?alt=sse" : "generateContent";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}&key=${apiKey}`.replace("generateContent&key=", "generateContent?key=");
+  const action = streamOptions.onEvent ? "streamGenerateContent" : "generateContent";
+  const query = streamOptions.onEvent ? "?alt=sse" : "?";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}${query}${query === "?" ? "" : "&"}key=${apiKey}`;
 
   const contents = buildGeminiContents(messages);
 
@@ -286,6 +287,7 @@ async function callDeepSeek(apiKey, messages, systemPrompt, tools, requestedMode
   if (streamOptions.onEvent) {
     streamOptions.onOpen?.();
     let text = "";
+    let thinking = "";
     const calls = new Map();
     await readSse(res.body, { signal: streamOptions.signal, onEvent: ({ data }) => {
       if (!data || data === "[DONE]") return;
@@ -434,6 +436,7 @@ async function callClaude(apiKey, messages, systemPrompt, tools, requestedModel,
   if (streamOptions.onEvent) {
     streamOptions.onOpen?.();
     let text = "";
+    let thinking = "";
     const calls = new Map();
     await readSse(res.body, { signal: streamOptions.signal, onEvent: ({ event, data }) => {
       if (!data) return;
@@ -443,7 +446,7 @@ async function callClaude(apiKey, messages, systemPrompt, tools, requestedModel,
       } else if (event === "content_block_delta") {
         const delta = payload.delta || {};
         if (delta.type === "text_delta" && delta.text) { text += delta.text; streamOptions.onEvent({ type: "text", delta: delta.text }); }
-        else if (delta.type === "thinking_delta" && delta.thinking) streamOptions.onEvent({ type: "thinking", delta: delta.thinking });
+        else if (delta.type === "thinking_delta" && delta.thinking) { thinking += delta.thinking; streamOptions.onEvent({ type: "thinking", delta: delta.thinking }); }
         else if (delta.type === "input_json_delta") calls.get(payload.index) && (calls.get(payload.index).json += delta.partial_json || "");
       } else if (event === "content_block_stop") {
         const call = calls.get(payload.index);
@@ -457,7 +460,7 @@ async function callClaude(apiKey, messages, systemPrompt, tools, requestedModel,
       }
     }});
     const toolCalls = [...calls.values()].filter((call) => call.name).map((call) => ({ id: call.id, name: call.name, input: call.input || {} }));
-    return { text, ...(toolCalls.length ? { toolCalls } : {}) };
+    return { text, ...(thinking ? { thinking } : {}), ...(toolCalls.length ? { toolCalls } : {}) };
   }
 
   const data = await res.json();

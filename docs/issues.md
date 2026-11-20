@@ -16,6 +16,13 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## New Features
 
+### YouTube Videos
+New Type of items (like Quizzes, Lessons, and Notebooks): YouTube Videos. Users should be able to add YouTube videos in their content (I.e., `/my-content`). Admins should be able to upload them. Connect the `YOUTUBE_DATA_API_KEY`, which I got from `console.cloud.google.com` after enabling 'YouTube Data API v3':
+* Allow users to import videos, and more features, too.
+* Admins should be able to upload videos.
+
+The necessary YouTube API is already set in `.env.local` and will be set in Vercel later.
+
 ### Implement the Rich Input Component into the Notebook page's Makrdown cells.
 
 ### Update the `createEmptyState`

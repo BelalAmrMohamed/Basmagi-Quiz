@@ -92,7 +92,7 @@ import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { recordPlatformUsage } from "./_usage.js";
 import { chargeAgentTurn } from "./_quota.js";
-import { callProvider, isSupportedProvider, DEFAULT_MODELS } from "./_providerClients.js";
+import { callProvider, openProviderStream, isSupportedProvider, DEFAULT_MODELS } from "./_providerClients.js";
 import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, CREATE_LESSON_TOOL, ADD_LESSON_SECTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL, GET_CREATOR_INFO_TOOL, DISPLAY_CREATOR_CARD_TOOL, CREATE_FLASHCARDS_TOOL, NOTEBOOK_ADD_CELL_TOOL, NOTEBOOK_EDIT_CELL_TOOL, NOTEBOOK_DELETE_CELL_TOOL, NOTEBOOK_RUN_CELL_TOOL, CREATE_NOTEBOOK_TOOL, EDIT_ITEM_TOOL, GET_AUTHORING_GUIDE_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
@@ -498,7 +498,8 @@ export default async function handler(req, res) {
 
     const streamState = streamingOptions(req, res, stream === true);
     try {
-      const result = await callProvider(provider, ownKey, messages, systemPrompt, tools, model, effort, streamState);
+      const invoke = streamState ? openProviderStream : callProvider;
+      const result = await invoke(provider, ownKey, messages, systemPrompt, tools, model, effort, streamState);
       if (streamState) { streamState.finish(result); return res; }
       return res.status(200).json(result);
     } catch (err) {
@@ -588,7 +589,8 @@ export default async function handler(req, res) {
   // what the client sent.
   try {
     const platformModel = DEFAULT_MODELS[provider] || "gemini-flash-lite-latest";
-    const result = await callProvider(provider, picked.key, messages, systemPrompt, tools, platformModel, effort, streamState);
+    const invoke = streamState ? openProviderStream : callProvider;
+    const result = await invoke(provider, picked.key, messages, systemPrompt, tools, platformModel, effort, streamState);
     // Meter the shared pool (feeds the "View Usage" menu). Awaited so the
     // serverless function isn't frozen mid-write; recordPlatformUsage never throws.
     await recordPlatformUsage(provider);
