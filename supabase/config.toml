@@ -430,3 +430,8 @@ verify_jwt = false
 
 [functions.ai-bot]
 verify_jwt = false
+
+[functions.youtube]
+# Handler authenticates nothing itself (public catalog search), and Vercel's /api/youtube
+# rewrite forwards requests without an Authorization header, so JWT checks must be off.
+verify_jwt = false

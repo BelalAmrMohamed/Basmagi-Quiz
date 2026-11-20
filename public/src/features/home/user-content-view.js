@@ -53,7 +53,7 @@ import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
-import { createUserContentCard, createUserLessonCard, createUserNotebookCard } from "./item-card.js";
+import { createUserContentCard, createUserLessonCard, createUserNotebookCard, createUserYoutubeVideoCard } from "./item-card.js";
 import { takePendingHighlight } from "./mcp-draft-import.js";
 import { openInlineCreateQuizModal } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
@@ -533,8 +533,9 @@ function handleMoveItemToolCall(toolCall) {
  * @returns {string}
  */
 function buildFolderTreeContextPrompt(userContent) {
+  // Videos are leaves: included as compact title+kind records, not as containers.
   const nodes = userContent.filter(
-    (q) => q.meta?.type === "folder" || q.meta?.type === "course",
+    (q) => q.meta?.type === "folder" || q.meta?.type === "course" || q.meta?.type === "youtube_video",
   );
   const lines = ["هيكل المجلدات والمواد الحالي للمستخدم:", "- محتواي الرئيسية (المستوى الرئيسي)"];
 
@@ -543,7 +544,7 @@ function buildFolderTreeContextPrompt(userContent) {
       .filter((n) => (n.meta?.parentId || null) === parentId)
       .forEach((n) => {
         const nid = n.id || n.meta?.id;
-        const kind = n.meta?.type === "course" ? "مادة" : "مجلد";
+        const kind = n.meta?.type === "course" ? "مادة" : n.meta?.type === "youtube_video" ? "فيديو" : "مجلد";
         lines.push(`${"  ".repeat(depth)}- ${n.meta?.title || ""} (${kind})`);
         appendChildren(nid, depth + 1);
       });
@@ -847,6 +848,20 @@ export function renderUserContentView() {
         };
         menu.appendChild(notebookOpt);
 
+        // "إضافة فيديو يوتيوب" — search/paste import into محتواي (youtube-video-modal.js).
+        const videoOpt = document.createElement("button");
+        videoOpt.type = "button";
+        videoOpt.className = "exam-action-btn";
+        videoOpt.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="m10 9 5 3-5 3z"/></svg><span>إضافة فيديو يوتيوب</span>`;
+        videoOpt.onclick = (e) => {
+          e.stopPropagation();
+          closeMenu();
+          import("./youtube-video-modal.js").then(({ openYoutubeVideoModal }) => {
+            openYoutubeVideoModal();
+          });
+        };
+        menu.appendChild(videoOpt);
+
         const folderOpt = document.createElement("button");
         folderOpt.type = "button";
         folderOpt.className = "exam-action-btn";
@@ -982,7 +997,7 @@ export function renderUserContentView() {
         title: currentFolderId
           ? "هذا المجلد فارغ"
           : "لم تقم بإنشاء أي محتوى بعد",
-        subtitle: "قم بإنشاء مادة ، أو مجلد ، أو امتحان ، أو درس ، أو دفتر",
+        subtitle: "قم بإنشاء مادة ، أو مجلد ، أو امتحان ، أو درس ، أو دفتر ، أو فيديو يوتيوب",
       });
       quizzesContainer.appendChild(emptyState);
     } else {
@@ -995,7 +1010,9 @@ export function renderUserContentView() {
             ? createUserLessonCard(item)
             : item.meta?.type === "notebook"
               ? createUserNotebookCard(item)
-              : createUserContentCard(item, index);
+              : item.meta?.type === "youtube_video"
+                ? createUserYoutubeVideoCard(item)
+                : createUserContentCard(item, index);
           // Attach drag and context menu to quiz card
           quizCard.draggable = true;
           quizCard.addEventListener("dragstart", (e) => handleDragStart(e, item.id || item.meta?.id));

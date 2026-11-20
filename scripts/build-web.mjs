@@ -60,6 +60,7 @@ const HOME_CSS = [
   "src/styles/advanced-liquid-metal-animations.css",
   "src/components/side-menu/side-menu.css",
   "src/features/home/item-dropdown-menu.css",
+  "src/features/home/youtube-video-modal.css",
   "src/components/tooltip/tooltip.css",
   "src/components/ai-agent/ai-agent.css",
   "src/styles/markdown.css",

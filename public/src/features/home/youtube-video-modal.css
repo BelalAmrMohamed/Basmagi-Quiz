@@ -1,0 +1,277 @@
+/* =============================================================================
+   youtube-video-modal.css — «فيديو يوتيوب» import modal, in-app player, and the
+   video card thumbnail. Deliberately separate from the create-* modal shells.
+   Light/dark via the app's existing theme variables with safe fallbacks.
+   ============================================================================= */
+
+.yt-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(8, 10, 18, 0.62);
+  backdrop-filter: blur(4px);
+  animation: yt-fade-in 160ms ease-out;
+}
+
+.yt-modal {
+  box-sizing: border-box;
+  width: min(720px, 100%);
+  max-height: min(88vh, 900px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--surface-elevated, #15171f);
+  color: var(--text-primary, #f2f3f7);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  direction: rtl;
+  font-family: inherit;
+}
+
+.yt-modal--player { width: min(960px, 100%); }
+
+.yt-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.yt-modal__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.yt-modal__close {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.yt-modal__close:focus-visible,
+.yt-btn:focus-visible,
+.yt-tab:focus-visible,
+.yt-link:focus-visible,
+.yt-input:focus-visible {
+  outline: 2px solid var(--accent, #7c9cff);
+  outline-offset: 2px;
+}
+
+.yt-modal__tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+.yt-tab {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+  padding: 8px 12px;
+  font: inherit;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.yt-tab.is-active {
+  opacity: 1;
+  border-bottom-color: var(--accent, #7c9cff);
+  font-weight: 700;
+}
+
+.yt-modal__status {
+  min-height: 1.2em;
+  font-size: 0.9rem;
+}
+
+.yt-modal__status[data-kind="error"] { color: #ff8b8b; }
+
+.yt-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.yt-search-row {
+  display: flex;
+  gap: 8px;
+}
+
+.yt-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.14));
+  background: var(--surface-base, #0d0f15);
+  color: inherit;
+  font: inherit;
+}
+
+.yt-btn {
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.14));
+  border-radius: 10px;
+  padding: 9px 14px;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.yt-btn--primary {
+  background: var(--accent, #7c9cff);
+  border-color: transparent;
+  color: #0b0d14;
+  font-weight: 700;
+}
+
+.yt-btn--ghost { opacity: 0.9; }
+
+.yt-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.yt-hint,
+.yt-empty,
+.yt-preview-facts,
+.yt-row__meta {
+  margin: 0;
+  font-size: 0.88rem;
+  opacity: 0.75;
+}
+
+.yt-results,
+.yt-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.yt-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--surface-base, rgba(255, 255, 255, 0.03));
+}
+
+.yt-row__thumb {
+  flex: 0 0 120px;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+  display: grid;
+  place-items: center;
+}
+
+.yt-row__thumb img,
+.ic-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.yt-thumb-fallback { font-size: 1.4rem; opacity: 0.6; }
+
+.yt-row__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.yt-row__title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yt-more { align-self: center; }
+
+.yt-embed {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+
+.yt-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.yt-preview-info { display: flex; flex-direction: column; gap: 6px; }
+
+.yt-preview-title { margin: 0; font-size: 1rem; font-weight: 700; }
+
+.yt-preview-desc {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  opacity: 0.85;
+  max-height: 8em;
+  overflow: hidden;
+}
+
+.yt-link { color: var(--accent, #7c9cff); text-decoration: underline; font-size: 0.9rem; }
+
+.yt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.yt-actions--start { justify-content: flex-start; }
+
+.yt-playlist-head { display: flex; flex-direction: column; gap: 4px; }
+
+/* Video card thumbnail (item-card.js renders .ic-thumb when thumbnailUrl is given). */
+.item-card .ic-thumb {
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+  margin-bottom: 8px;
+  display: grid;
+  place-items: center;
+}
+
+@keyframes yt-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+@media (max-width: 560px) {
+  .yt-row__thumb { flex-basis: 96px; }
+  .yt-search-row { flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yt-modal-overlay { animation: none; }
+}

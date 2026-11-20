@@ -14,6 +14,7 @@ import { showUserQuizDownloadPopup } from "./download-modal.js";
 import { showUserQuizInfoModal, formatDateForInfo } from "./quiz-info-modal.js";
 import { normalizeSource } from "../../components/quiz-info-modal/info-model.js";
 import { showUserLessonInfoModal, collectLessonInfo } from "./lesson-info-modal.js";
+import { openYoutubeVideoPlayer } from "./youtube-video-modal.js";
 import {
   createExamInfoSubmenu,
   createActionGroupSubmenu,
@@ -114,6 +115,44 @@ export function showUserNotebookActionsOverlay(nb, triggerBtn) {
       e.stopPropagation();
       closeMenu();
       deleteFolder(nbId);
+    };
+    menu.appendChild(deleteOpt);
+  });
+}
+
+export const createUserYoutubeVideoActions = (video) => ({
+  open: () => openYoutubeVideoPlayer(video),
+  more: (btn) => showUserYoutubeVideoActionsOverlay(video, btn),
+});
+
+export function showUserYoutubeVideoActionsOverlay(video, triggerBtn) {
+  const vid = video.id || video.meta?.id;
+  const title = video.meta?.title || "فيديو بدون عنوان";
+  openItemDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
+    appendSelectOption(menu, closeMenu, vid);
+    appendEditGroup(menu, closeMenu, reposition, [
+      { label: "تغيير العنوان", icon: RENAME_ICON_SVG, onClick: () => renameItem(vid, title) },
+      {
+        label: "الوصف والمصدر",
+        icon: EDIT_ICON_SVG,
+        onClick: () =>
+          openDescriptionSourceModal({
+            title,
+            description: video.meta?.description || "",
+            source: video.meta?.source || "",
+            onSave: ({ description, source }) => saveLocalItemMetadata(vid, description, source),
+          }),
+      },
+    ]);
+    appendMoveGroup(menu, closeMenu, reposition, vid);
+    const deleteOpt = document.createElement("button");
+    deleteOpt.type = "button";
+    deleteOpt.className = "exam-action-btn exam-action-btn--danger";
+    deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف الفيديو</span>`;
+    deleteOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      deleteFolder(vid);
     };
     menu.appendChild(deleteOpt);
   });

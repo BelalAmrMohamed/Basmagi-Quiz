@@ -30,15 +30,18 @@ import { downloadLesson } from "./lesson-download.js";
 import { withDownloadLoading as withExportLoading } from "../../components/download-quiz-modal/export-card.js";
 import { appendNotebookMenuEntries, fetchPlatformNotebookRow, showNotebookDownloadModal } from "./notebook-actions.js";
 import { getSelectedUserContent } from "./app-state.js";
+import { isAllowedThumbnailUrl, formatDurationSeconds } from "../../shared/youtube-rules.js";
 import { updateBulkActionBar } from "./user-content-view.js";
 import {
   createUserContentActions, createUserLessonActions, createUserNotebookActions,
+  createUserYoutubeVideoActions,
 } from "./user-content-card.js";
 
 const KINDS = {
   quiz: { label: "امتحان", emoji: "📝", tip: "📝 امتحان", descTip: "📄 وصف الامتحان" },
   lesson: { label: "درس", emoji: "📘", tip: "📘 درس تفاعلي", descTip: "📄 وصف الدرس" },
   notebook: { label: "دفتر", emoji: "💻", tip: "💻 دفتر تفاعلي", descTip: "📄 وصف الدفتر" },
+  video: { label: "فيديو", emoji: "▶️", tip: "▶️ فيديو يوتيوب", descTip: "📄 وصف الفيديو" },
 };
 
 function el(tag, className, text) {
@@ -105,6 +108,18 @@ export function createItemCard(o) {
     card.append(badge);
   }
 
+  if (o.thumbnailUrl && isAllowedThumbnailUrl(o.thumbnailUrl)) {
+    const thumbBox = el("div", "ic-thumb");
+    const img = el("img");
+    img.src = o.thumbnailUrl;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    thumbBox.append(img);
+    card.append(thumbBox);
+  }
+
   const body = el("div", "ic-body");
   body.append(el("span", `item-type-chip`, `${k.emoji} ${k.label}${o.chipDetail ? ` · ${o.chipDetail}` : ""}`));
   body.firstChild.setAttribute("aria-hidden", "true");
@@ -139,14 +154,16 @@ export function createItemCard(o) {
   primary.setAttribute("aria-label", `${o.primary.label} ${o.title}`);
   primary.onclick = (e) => { e.stopPropagation(); o.primary.onClick(); };
 
-  const dl = el("button", "ic-btn ic-btn--ghost" + (o.download.locked ? " is-password-protected" : ""));
-  dl.type = "button";
-  dl.innerHTML = `${o.download.locked ? LOCK_ICON_SVG : DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
-  dl.setAttribute("aria-label", `تحميل ${o.title}${o.download.locked ? " (محمي بكلمة مرور)" : ""}`);
-  if (o.download.locked) dl.title = "محمي بكلمة مرور";
-  dl.onclick = (e) => { e.stopPropagation(); o.download.onClick(dl); };
+  const dl = o.download ? el("button", "ic-btn ic-btn--ghost" + (o.download.locked ? " is-password-protected" : "")) : null;
+  if (dl) {
+    dl.type = "button";
+    dl.innerHTML = `${o.download.locked ? LOCK_ICON_SVG : DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
+    dl.setAttribute("aria-label", `تحميل ${o.title}${o.download.locked ? " (محمي بكلمة مرور)" : ""}`);
+    if (o.download.locked) dl.title = "محمي بكلمة مرور";
+    dl.onclick = (e) => { e.stopPropagation(); o.download.onClick(dl); };
+  }
 
-  actions.append(dl, primary);
+  actions.append(...(dl ? [dl, primary] : [primary]));
   card.append(more, actions);
   return card;
 }
@@ -348,6 +365,21 @@ export function createUserNotebookCard(nb) {
     meta: [{ text: `الخلايا: ${nb.stats?.cellCount ?? nb.notebook?.content?.cells?.length ?? 0}` }],
     primary: { label: "افتح الدفتر", onClick: a.open },
     download: { onClick: a.download },
+    onMore: a.more,
+  });
+}
+
+export function createUserYoutubeVideoCard(video) {
+  const a = createUserYoutubeVideoActions(video);
+  const duration = formatDurationSeconds(video.stats?.durationSeconds ?? video.video?.durationSeconds);
+  return createItemCard({
+    kind: "video",
+    selectId: video.id || video.meta?.id,
+    title: video.meta?.title || "فيديو بدون عنوان",
+    description: video.meta?.description,
+    thumbnailUrl: video.meta?.thumbnailUrl,
+    meta: [{ text: video.meta?.channelTitle || "" }, { text: duration }],
+    primary: { label: "شاهد الفيديو", onClick: a.open },
     onMore: a.more,
   });
 }
