@@ -272,6 +272,7 @@ html[dir="rtl"] .hive-root .hx>.exam-more-btn {
 
 .hive-root .hx:has(> .subscribe-btn-container) .face b {
   -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .hive-root .hx>.subscribe-btn-container .subscribe-btn {

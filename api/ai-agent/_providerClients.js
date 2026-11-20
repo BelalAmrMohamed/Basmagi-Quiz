@@ -1,4 +1,5 @@
 // =============================================================================
+import { readSse } from "../../public/src/components/ai-agent/core/sse.js";
 // api/ai-agent/_providerClients.js
 // Thin adapters that normalize { provider, apiKey, messages } into each
 // LLM provider's own request shape, and normalize their responses back to
@@ -112,12 +113,14 @@ export function buildGeminiContents(messages) {
   return contents;
 }
 
-async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, requestedModel, effort) {
+async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, requestedModel, effort, streamOptions = {}) {
   let model = resolveModel("google", requestedModel);
   if (model === "gemini-2.5-pro") {
     model = "gemini-3.1-pro-preview";
   }
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const action = streamOptions.onEvent ? "streamGenerateContent" : "generateContent";
+  const query = streamOptions.onEvent ? "?alt=sse" : "?";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}${query}${query === "?" ? "" : "&"}key=${apiKey}`;
 
   const contents = buildGeminiContents(messages);
 
@@ -153,6 +156,7 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, request
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    signal: streamOptions.signal,
   });
 
   if (!res.ok) {
@@ -160,6 +164,35 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, request
     const err = new Error(`Google AI Studio error (${res.status}): ${errBody}`);
     err.upstreamStatus = res.status;
     throw err;
+  }
+
+  if (streamOptions.onEvent) {
+    streamOptions.onOpen?.();
+    let text = "";
+    let thinking = "";
+    const toolCalls = [];
+    await readSse(res.body, { signal: streamOptions.signal, onEvent: ({ data }) => {
+      if (!data || data === "[DONE]") return;
+      const payload = JSON.parse(data);
+      for (const part of payload?.candidates?.[0]?.content?.parts || []) {
+        if (part.text && part.thought) {
+          thinking += part.text;
+          streamOptions.onEvent({ type: "thinking", delta: part.text });
+        } else if (part.text) {
+          text += part.text;
+          streamOptions.onEvent({ type: "text", delta: part.text });
+        }
+        if (part.functionCall) {
+          const call = { id: `call_${Date.now()}_${toolCalls.length}`, name: part.functionCall.name, input: part.functionCall.args || {}, thoughtSignature: part.thoughtSignature || part.thought_signature || undefined };
+          toolCalls.push(call);
+          streamOptions.onEvent({ type: "toolCall", toolCall: call });
+        }
+      }
+    }});
+    const result = { text };
+    if (thinking.trim()) result.thinking = thinking.trim();
+    if (toolCalls.length) result.toolCalls = toolCalls;
+    return result;
   }
 
   const data = await res.json();
@@ -187,7 +220,7 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, request
   return result;
 }
 
-async function callDeepSeek(apiKey, messages, systemPrompt, tools, requestedModel) {
+async function callDeepSeek(apiKey, messages, systemPrompt, tools, requestedModel, _effort, streamOptions = {}) {
   const chatMessages = messages.map((m) => {
     if (m.role === "tool") {
       return {
@@ -220,6 +253,7 @@ async function callDeepSeek(apiKey, messages, systemPrompt, tools, requestedMode
   const body = {
     model: resolveModel("deepseek", requestedModel),
     messages: chatMessages,
+    ...(streamOptions.onEvent ? { stream: true } : {}),
   };
 
   if (Array.isArray(tools) && tools.length) {
@@ -240,6 +274,7 @@ async function callDeepSeek(apiKey, messages, systemPrompt, tools, requestedMode
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify(body),
+    signal: streamOptions.signal,
   });
 
   if (!res.ok) {
@@ -247,6 +282,34 @@ async function callDeepSeek(apiKey, messages, systemPrompt, tools, requestedMode
     const err = new Error(`DeepSeek error (${res.status}): ${errBody}`);
     err.upstreamStatus = res.status;
     throw err;
+  }
+
+  if (streamOptions.onEvent) {
+    streamOptions.onOpen?.();
+    let text = "";
+    let thinking = "";
+    const calls = new Map();
+    await readSse(res.body, { signal: streamOptions.signal, onEvent: ({ data }) => {
+      if (!data || data === "[DONE]") return;
+      const payload = JSON.parse(data);
+      const delta = payload?.choices?.[0]?.delta || {};
+      if (delta.content) { text += delta.content; streamOptions.onEvent({ type: "text", delta: delta.content }); }
+      for (const frag of delta.tool_calls || []) {
+        const index = Number.isInteger(frag.index) ? frag.index : calls.size;
+        const call = calls.get(index) || { id: "", name: "", arguments: "" };
+        if (frag.id) call.id = frag.id;
+        if (frag.function?.name) call.name += frag.function.name;
+        if (frag.function?.arguments) call.arguments += frag.function.arguments;
+        calls.set(index, call);
+      }
+    }});
+    const toolCalls = [...calls.values()].filter((call) => call.name).map((call, index) => {
+      let input = {};
+      try { input = JSON.parse(call.arguments || "{}"); } catch { input = {}; }
+      return { id: call.id || `call_${Date.now()}_${index}`, name: call.name, input };
+    });
+    for (const toolCall of toolCalls) streamOptions.onEvent({ type: "toolCall", toolCall });
+    return { text, ...(toolCalls.length ? { toolCalls } : {}) };
   }
 
   const data = await res.json();
@@ -278,7 +341,7 @@ const CLAUDE_IMAGE_MIME_TYPES = new Set([
   "image/webp",
 ]);
 
-async function callClaude(apiKey, messages, systemPrompt, tools, requestedModel) {
+async function callClaude(apiKey, messages, systemPrompt, tools, requestedModel, _effort, streamOptions = {}) {
   const claudeMessages = [];
   for (let i = 0; i < messages.length; i++) {
     const m = messages[i];
@@ -341,6 +404,7 @@ async function callClaude(apiKey, messages, systemPrompt, tools, requestedModel)
     model: resolveModel("claude", requestedModel),
     max_tokens: 2048,
     messages: claudeMessages,
+    ...(streamOptions.onEvent ? { stream: true } : {}),
   };
 
   if (systemPrompt) {
@@ -359,6 +423,7 @@ async function callClaude(apiKey, messages, systemPrompt, tools, requestedModel)
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify(body),
+    signal: streamOptions.signal,
   });
 
   if (!res.ok) {
@@ -366,6 +431,36 @@ async function callClaude(apiKey, messages, systemPrompt, tools, requestedModel)
     const err = new Error(`Claude error (${res.status}): ${errBody}`);
     err.upstreamStatus = res.status;
     throw err;
+  }
+
+  if (streamOptions.onEvent) {
+    streamOptions.onOpen?.();
+    let text = "";
+    let thinking = "";
+    const calls = new Map();
+    await readSse(res.body, { signal: streamOptions.signal, onEvent: ({ event, data }) => {
+      if (!data) return;
+      const payload = JSON.parse(data);
+      if (event === "content_block_start" && payload.content_block?.type === "tool_use") {
+        calls.set(payload.index, { id: payload.content_block.id, name: payload.content_block.name, json: "" });
+      } else if (event === "content_block_delta") {
+        const delta = payload.delta || {};
+        if (delta.type === "text_delta" && delta.text) { text += delta.text; streamOptions.onEvent({ type: "text", delta: delta.text }); }
+        else if (delta.type === "thinking_delta" && delta.thinking) { thinking += delta.thinking; streamOptions.onEvent({ type: "thinking", delta: delta.thinking }); }
+        else if (delta.type === "input_json_delta") calls.get(payload.index) && (calls.get(payload.index).json += delta.partial_json || "");
+      } else if (event === "content_block_stop") {
+        const call = calls.get(payload.index);
+        if (call && !call.emitted) {
+          call.emitted = true;
+          let input = {};
+          try { input = JSON.parse(call.json || "{}"); } catch { input = {}; }
+          call.input = input;
+          streamOptions.onEvent({ type: "toolCall", toolCall: { id: call.id, name: call.name, input } });
+        }
+      }
+    }});
+    const toolCalls = [...calls.values()].filter((call) => call.name).map((call) => ({ id: call.id, name: call.name, input: call.input || {} }));
+    return { text, ...(thinking ? { thinking } : {}), ...(toolCalls.length ? { toolCalls } : {}) };
   }
 
   const data = await res.json();
@@ -398,10 +493,15 @@ const PROVIDERS = {
  * @param {string} [effort]
  * @returns {Promise<{ text: string, toolCalls?: Array<{id?: string, name: string, input: object}>, thinking?: string }>}
  */
-export async function callProvider(provider, apiKey, messages, systemPrompt, tools, model, effort) {
+export async function callProvider(provider, apiKey, messages, systemPrompt, tools, model, effort, streamOptions) {
   const fn = PROVIDERS[provider];
   if (!fn) throw new Error(`Unsupported provider: ${provider}`);
-  return fn(apiKey, messages, systemPrompt, tools, model, effort);
+  return fn(apiKey, messages, systemPrompt, tools, model, effort, streamOptions);
+}
+
+export function openProviderStream(provider, apiKey, messages, systemPrompt, tools, model, effort, options) {
+  if (!isSupportedProvider(provider)) throw new Error(`Unsupported provider: ${provider}`);
+  return callProvider(provider, apiKey, messages, systemPrompt, tools, model, effort, options);
 }
 
 export function isSupportedProvider(provider) {

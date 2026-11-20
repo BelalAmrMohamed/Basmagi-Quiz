@@ -39,6 +39,11 @@ import { renderCreatorCard, creatorCardModelSummary } from "./ai-agent-creator-t
 import { renderResultCard, resultCardModelSummary } from "./ai-agent-result-cards.js";
 import { createToolCallCard } from "./components/tool-call-card.js";
 import { runTurn } from "./core/turn-runner.js";
+import { toPersistedMessages, serializeWireMessage as buildWireMessage } from "./core/chat-messages.js";
+import { createExportHelpers, escapeHtml } from "./core/chat-export.js";
+import { createMessageRenderer } from "./core/chat-rendering.js";
+import { createChatSettings } from "./core/chat-settings.js";
+import { ATTACHMENT_FILE_ICON_SVG, ATTACHMENT_QUIZ_ICON_SVG, ATTACHMENT_COURSE_ICON_SVG, ATTACHMENT_FOLDER_ICON_SVG, ATTACHMENT_LESSON_ICON_SVG, ATTACHMENT_NOTEBOOK_ICON_SVG, ATTACHMENT_REMOVE_ICON_SVG, ATTACHMENT_KIND_LABEL_AR, expandPlatformAttachment, iconForAttachment, labelForAttachment } from "./core/chat-attachments.js";
 import { prependUndoNotes } from "./core/undo.js";
 import {
   decorateMessageTokens,
@@ -287,53 +292,7 @@ export function createChatPanel(options = {}) {
   // old <select>): reads/writes the same storage as Settings, and is only
   // unlocked when the request will actually use the choice (own API key),
   // otherwise it stays visible-but-disabled with an explanatory tooltip.
-  function refreshModelBarOptions() {
-    const provider = getSelectedProvider();
-    const models = getModelsForProvider(provider);
-    const { hasKey } = getOwnKey();
-    const isGoogle = provider === "google";
-    const current = getSelectedModel() || (models[0] && models[0].value) || "";
-    const effortLevels = isGoogle
-      ? EFFORT_LEVELS.map(({ value, label, hint }) => ({ id: value, label, hint }))
-      : null;
-    const selectedEffort = getSelectedEffort(provider);
-
-    rich.setModels({
-      items: models.map(({ value, label, description }) => ({
-        id: value,
-        label,
-        description,
-        locked: isGoogle && !hasKey && value !== "gemini-flash-lite-latest",
-      })),
-      value: current,
-      disabled: false,
-      effortLevels,
-      selectedEffort,
-      usage: { load: () => fetchPlatformUsage(), source: hasKey ? "own" : "platform", provider, formatReset },
-      onChange: (id) => {
-        setSelectedModel(getSelectedProvider(), id);
-        refreshModelBarOptions();
-      },
-      onLockedClick: (lockedItem) => {
-        appendError(
-          `نموذج "${lockedItem.label}" متاح فقط عند استخدام مفتاح API الخاص بك. انتقل إلى الإعدادات لإضافة مفتاحك.`
-        );
-        if (typeof options.onOpenSettings === "function") {
-          options.onOpenSettings();
-        } else {
-          const btn = [...document.querySelectorAll(".ai-agent-sidebar-btn")].find((b) =>
-            b.textContent.includes("الإعدادات")
-          );
-          btn?.click();
-        }
-      },
-      onEffortChange: (effId) => {
-        setSelectedEffort(getSelectedProvider(), effId);
-        refreshModelBarOptions();
-      },
-    });
-  }
-  refreshModelBarOptions();
+  const { refreshModelBarOptions } = createChatSettings({ rich, options, appendError });
   panel.modelBarEl = null;
 
   const messagesEl = document.createElement("div");
@@ -341,78 +300,11 @@ export function createChatPanel(options = {}) {
   panel.appendChild(messagesEl);
   attachMessageTooltips(messagesEl);
 
-  function extractQuizTitle(value) {
-    if (!value || typeof value !== "object") return "امتحان";
-    const keys = ["title", "name", "quizTitle", "quizName"];
-    for (const key of keys) {
-      if (typeof value[key] === "string" && value[key].trim()) return value[key].trim();
-    }
-    for (const child of Object.values(value)) {
-      if (child && typeof child === "object") {
-        const title = extractQuizTitle(child);
-        if (title !== "امتحان") return title;
-      }
-    }
-    return "امتحان";
-  }
-
-  function sanitizeToolOutput(content) {
-    if (typeof content !== "string") return String(content ?? "");
-    if (content.startsWith("[CREATOR_CARD]")) return creatorCardModelSummary(content);
-    const resultSummary = resultCardModelSummary(content);
-    if (resultSummary !== content) return resultSummary;
-    const trimmed = content.trim();
-    const looksLikeQuizPayload =
-      trimmed.startsWith("بيانات الامتحان") ||
-      trimmed.startsWith("{") && /questions|quiz|امتحان/i.test(trimmed) ||
-      trimmed.length > 800 && /questions|quiz|امتحان|أسئلة/i.test(trimmed);
-    if (!looksLikeQuizPayload) return content;
-
-    const firstBrace = trimmed.indexOf("{");
-    const lastBrace = trimmed.lastIndexOf("}");
-    const jsonCandidate = firstBrace >= 0 && lastBrace > firstBrace
-      ? trimmed.slice(firstBrace, lastBrace + 1)
-      : trimmed.replace(/^بيانات الامتحان\s*:?\s*/i, "");
-    try {
-      return `[تم الحصول على بيانات امتحان: ${extractQuizTitle(JSON.parse(jsonCandidate))}]`;
-    } catch {
-      const titleMatch = content.match(/(?:title|name|اسم الامتحان)\s*["'=:]+\s*([^,"'{}\n]+)/i);
-      return `[تم الحصول على بيانات امتحان: ${titleMatch?.[1]?.trim() || "امتحان"}]`;
-    }
-  }
-
-  function getExportMessages() {
-    return history.map((message) => ({
-      role: message.role,
-      type: message.type || undefined,
-      toolName: message.toolName || undefined,
-      content: message.type === "tool-result"
-        ? sanitizeToolOutput(message.content)
-        : String(message.content ?? ""),
-    }));
-  }
-
-  function getTranscript() {
-    return getExportMessages()
-      .map((message) => {
-        const label = message.type === "tool-result"
-          ? "🔧 النظام"
-          : message.role === "user" ? "أنت" : "الباشــمبصمج";
-        return `${label}: ${message.content}`;
-      })
-      .join("\n\n");
-  }
-
-  function getHtmlExport() {
-    const body = getExportMessages()
-      .map((message) => `<article><strong>${escapeHtml(message.type === "tool-result" ? "النظام" : message.role === "user" ? "أنت" : "الباشــمبصمج")}</strong><p>${escapeHtml(message.content).replace(/\n/g, "<br>")}</p></article>`)
-      .join("");
-    return `<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><title>محادثة الباشــمبصمج</title><style>body{font:16px/1.8 sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#1f2937}article{border-bottom:1px solid #ddd;padding:12px 0}strong{color:#2563eb}</style><body>${body}</body></html>`;
-  }
-
-  function getJsonExport() {
-    return JSON.stringify({ version: 1, messages: getExportMessages() }, null, 2);
-  }
+  const { extractQuizTitle, sanitizeToolOutput, getExportMessages, getTranscript, getHtmlExport, getJsonExport } = createExportHelpers({
+    getHistory: () => history,
+    creatorCardModelSummary,
+    resultCardModelSummary,
+  });
 
   function downloadExport(blob, extension) {
     const anchor = document.createElement("a");
@@ -421,12 +313,6 @@ export function createChatPanel(options = {}) {
     anchor.download = `ai-chat-${new Date().toISOString().slice(0, 10)}.${extension}`;
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 0);
-  }
-
-  function escapeHtml(value) {
-    return String(value).replace(/[&<>"']/g, (character) => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-    })[character]);
   }
 
   function printConversation() {
@@ -526,98 +412,7 @@ export function createChatPanel(options = {}) {
     messagesEl.appendChild(suggestionsEl);
   }
 
-  // PHASE 3 icons for the attachment tiles — a generic file glyph (used for
-  // any file attachment that isn't an image; images get a real thumbnail
-  // instead, built in buildAttachmentTile below) and one glyph per
-  // platform-item kind, reusing the same shapes the rest of the app already
-  // uses for quizzes/courses/folders (see user-content-card.js/
-  // user-content-folders.js's 📝/📚/📁-style conventions) so a tile reads
-  // as "the same kind of thing" wherever it shows up, not a new icon set
-  // invented just for this popover.
-  const ATTACHMENT_FILE_ICON_SVG =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z"/><path d="M14 2v6h6"/></svg>';
-  const ATTACHMENT_QUIZ_ICON_SVG =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>';
-  const ATTACHMENT_COURSE_ICON_SVG =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
-  const ATTACHMENT_FOLDER_ICON_SVG =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>';
-  const ATTACHMENT_LESSON_ICON_SVG =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>';
-  const ATTACHMENT_NOTEBOOK_ICON_SVG =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>';
-  const ATTACHMENT_REMOVE_ICON_SVG =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
-
-  /**
-   * Shared by both saveConversation() call sites in resendLastUserTurn()
-   * (after a normal turn, and after a tool-result) — maps in-memory
-   * `history` (which can carry base64 file data + platform-item objects
-   * in `attachments`) down to the lightweight persisted shape IndexedDB
-   * actually stores.
-   *
-   * @param {Array<object>} historyToPersist
-   */
-  function toPersistedMessages(historyToPersist) {
-    return historyToPersist.filter((m) => !m.hidden).map(({ role, content, attachments, type, toolName, toolCallId, toolCalls, isError, input, thinking }) => {
-      const first = attachments?.[0];
-      const firstLabel = first?.name || first?.title;
-      return {
-        role,
-        content,
-        ...(type ? { type } : {}),
-        ...(toolName ? { toolName } : {}),
-        ...(toolCallId ? { toolCallId } : {}),
-        ...(Array.isArray(toolCalls) && toolCalls.length ? { toolCalls } : {}),
-        ...(isError ? { isError: true } : {}),
-        ...(input ? { input } : {}),
-        ...(thinking ? { thinking } : {}),
-        ...(firstLabel ? { attachmentName: firstLabel } : {}),
-        ...(first?.kind ? { attachmentKind: first.kind } : {}),
-        ...(first?.itemType ? { attachmentItemType: first.itemType } : {}),
-        ...(first?.summary ? { attachmentSummary: first.summary } : {}),
-      };
-    });
-  }
-
-  /**
-   * PHASE 2b (adapted, see toWireMessage's own comment on why this runs
-   * client-side rather than server-side): turns one platform-item
-   * attachment into a labeled block of context text the model can reason
-   * about. Relies on `att.summary` — a plain-text blurb the launcher
-   * (ai-agent-attach-launcher.js) already built from the quiz/course/
-   * folder data it had on hand at attach time (this module deliberately
-   * doesn't import quiz-schema/storage helpers itself, to stay a
-   * self-contained "takes everything via options/attachments" component
-   * per its own header comment) — falls back to just the title if no
-   * summary was supplied (e.g. a server-hosted course whose quiz list
-   * isn't loaded client-side at attach time).
-   * @param {{kind: "quiz"|"lesson"|"course"|"folder", itemType?: string, title: string, summary?: string}} att
-   */
-  function expandPlatformAttachment(att) {
-    const kindLabelAr = att.itemType === "notebook"
-      ? "دفتر"
-      : { quiz: "امتحان", lesson: "درس", course: "مادة", folder: "مجلد" }[att.kind] || att.kind;
-    const body = att.payload
-      ? JSON.stringify(att.payload)
-      : att.summary || "(لا تفاصيل إضافية متاحة عن هذا العنصر)";
-    return `[مرفق ${kindLabelAr}: ${att.title}]\n${body}`;
-  }
-
-  function iconForAttachment(att) {
-    if (att.kind === "quiz") return ATTACHMENT_QUIZ_ICON_SVG;
-    if (att.itemType === "notebook") return ATTACHMENT_NOTEBOOK_ICON_SVG;
-    if (att.kind === "lesson") return ATTACHMENT_LESSON_ICON_SVG;
-    if (att.kind === "course") return ATTACHMENT_COURSE_ICON_SVG;
-    if (att.kind === "folder") return ATTACHMENT_FOLDER_ICON_SVG;
-    return ATTACHMENT_FILE_ICON_SVG;
-  }
-
-  function labelForAttachment(att) {
-    return att.kind === "file" ? att.name : att.title;
-  }
-
-  const ATTACHMENT_KIND_LABEL_AR = { quiz: "امتحان", lesson: "درس", notebook: "دفتر", course: "مادة", folder: "مجلد", file: "ملف" };
+  // Attachment icon and context helpers live in core/chat-attachments.js.
 
   /**
    * Standard fade-out-then-remove dismiss animation (opacity + translateY
@@ -1532,123 +1327,11 @@ export function createChatPanel(options = {}) {
     textarea.setSelectionRange(textarea.value.length, textarea.value.length);
   }
 
-  function appendMessage(role, content, attachmentsForDisplay, historyIndex) {
-    // Wrapper around the bubble itself — copy/edit controls live in this
-    // wrapper, BELOW the bubble, rather than inside/on top of it (an
-    // earlier version pinned them absolutely inside the bubble's own
-    // bottom-right corner, which visually sat "on" the message text; see
-    // the request that reverted this). The wrapper shares the bubble's
-    // own alignment (flex-start for user/right, flex-end for
-    // assistant/left, per .ai-agent-msg--user/--assistant) so the
-    // controls end up under the correct edge of the bubble, not
-    // full-width under the whole message column.
-    const wrap = document.createElement("div");
-    wrap.className = `ai-agent-msg-wrap ai-agent-msg-wrap--${role}`;
-
-    const el = document.createElement("div");
-    el.className = `ai-agent-msg ai-agent-msg--${role}`;
-
-    if (Array.isArray(attachmentsForDisplay) && attachmentsForDisplay.length) {
-      attachmentsForDisplay.forEach((att) => {
-        const label = att?.name || att?.title;
-        if (!label) return;
-        const chip = document.createElement("button");
-        chip.type = "button";
-        chip.className = "ai-agent-msg-attachment";
-        chip.innerHTML = iconForAttachment(att.kind ? att : { kind: "file" });
-        const nameSpan = document.createElement("span");
-        nameSpan.className = "ai-agent-msg-attachment-name";
-        nameSpan.textContent = label;
-        chip.appendChild(nameSpan);
-        // Same preview as a pending tile (see buildAttachmentTile) — a sent
-        // message's attachment carries the same {kind, title|name, summary,
-        // payload} shape, whether it's a fresh in-memory `history` entry or
-        // one reloaded from IndexedDB history (see toPersistedMessages/
-        // loadConversation, which both preserve at least kind+name/title).
-        chip.addEventListener("click", (e) => {
-          e.stopPropagation();
-          openAttachmentPreviewModal(att);
-        });
-        el.appendChild(chip);
-      });
-    }
-
-    if (content) {
-      // Both roles render through the same markdown pipeline now — a user
-      // prompt containing e.g. a fenced code block, a list, or **bold**
-      // should render just like an assistant reply does, not show up as
-      // raw markdown syntax. renderMarkdown() already handles per-line
-      // RTL/LTR direction internally (via scanDirections/_processElement),
-      // so this also keeps the "mixed Arabic/English line" behavior that
-      // _processByLine used to provide directly.
-      el.insertAdjacentHTML("beforeend", renderMarkdown(content));
-      decorateMessageTokens(el, {
-        getCommands: () => getPageActions(pageKey, options.actions),
-        getMentions: getQuickAccessMentionDefinitions,
-      });
-    }
-
-    wrap.appendChild(el);
-
-    // Controls row — copy (+ edit, for user messages) — sits BELOW the
-    // bubble as a sibling inside `wrap`, not layered inside/on top of the
-    // bubble itself. Only created when there's at least one control to
-    // show, so a bubble with neither (e.g. an assistant message that
-    // somehow has no copy-able content) doesn't reserve empty space for
-    // nothing.
-    let controls = null;
-    function ensureControls() {
-      if (!controls) {
-        controls = document.createElement("div");
-        controls.className = `ai-agent-msg-controls ai-agent-msg-controls--${role}`;
-        wrap.appendChild(controls);
-      }
-      return controls;
-    }
-
-    if (content) {
-      addCopyButton(ensureControls(), content);
-      if (role === "assistant") {
-        addSpeakButton(ensureControls(), content);
-      }
-    }
-    // Edit is only offered for user prompts with real text and a known
-    // position in `history` (loadConversation's re-render also supplies
-    // this — see below), and only when the caller actually wants
-    // branching (onBranchConversation supplied) — otherwise the button
-    // would be dead UI on pages that don't opt in.
-    if (role === "user" && content && typeof historyIndex === "number" && onBranchConversation) {
-      addEditButton(ensureControls(), el, historyIndex);
-    }
-
-    if (messagesEl.querySelector(".ai-agent-msg--empty")) {
-      messagesEl.innerHTML = "";
-    }
-    messagesEl.appendChild(wrap);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-    resetErrorDedup();
-    return el;
-  }
-
-  function buildThinkingBlock(text) {
-    const d = document.createElement("details");
-    d.className = "ai-agent-thinking";
-    const sum = document.createElement("summary");
-    sum.className = "ai-agent-thinking-summary";
-    sum.innerHTML = '<span>Thought process</span><svg class="ai-agent-thinking-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
-    const body = document.createElement("div");
-    body.className = "ai-agent-thinking-body";
-    body.innerHTML = renderMarkdown(text);
-    d.append(sum, body);
-    return d;
-  }
-
-  function appendThinkingBlock(text) {
-    const wrap = document.createElement("div");
-    wrap.className = "ai-agent-msg-wrap ai-agent-msg-wrap--assistant";
-    wrap.appendChild(buildThinkingBlock(text));
-    messagesEl.appendChild(wrap);
-  }
+  const { appendMessage, buildThinkingBlock, appendThinkingBlock } = createMessageRenderer({
+    document, messagesEl, renderMarkdown, decorateMessageTokens, getPageActions, getQuickAccessMentionDefinitions,
+    pageKey, options, openAttachmentPreviewModal, iconForAttachment, addCopyButton, addSpeakButton, addEditButton,
+    onBranchConversation, resetErrorDedup,
+  });
 
   // Tracks the most recently appended error bubble and its exact message,
   // so a repeat of the SAME error (e.g. mashing the dictation button on a
@@ -1996,45 +1679,7 @@ export function createChatPanel(options = {}) {
    *   a plain error instead once the cap is hit.
    */
   function serializeWireMessage(m) {
-    if (m.role === "tool" || m.type === "tool-result") {
-      return {
-        role: "tool",
-        toolCallId: m.toolCallId || `call_legacy_${m.toolName || "tool"}`,
-        toolName: m.toolName || "tool",
-        content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
-        isError: !!m.isError,
-      };
-    }
-    const fileAttachments = (m.attachments || [])
-      .filter((a) => a.kind === "file" || (!a.kind && a.base64))
-      .map(({ mimeType, base64, name }) => ({ mimeType, base64, name }));
-    const platformAttachments = (m.attachments || []).filter(
-      (a) => a.kind === "quiz" || a.kind === "lesson" || a.kind === "course" || a.kind === "folder",
-    );
-    const expandedContext = platformAttachments.length
-      ? platformAttachments.map(expandPlatformAttachment).join("\n\n")
-      : "";
-    let effectiveContent = expandedContext
-      ? [m.content, expandedContext].filter(Boolean).join("\n\n")
-      : (m.content || "");
-
-    if (m.isSlashCommand || (m.role === "user" && typeof effectiveContent === "string" && effectiveContent.trim().startsWith("/"))) {
-      const cmdName = m.slashCmdName || effectiveContent.trim().match(/^\/([^\s]+)/)?.[1] || "";
-      const directive = m.slashDirective || "نفّذ المطلوب واستدعِ الأداة فوراً دون طلب تأكيد";
-      effectiveContent = `${effectiveContent}\n\n[توجيه تنفيذي مباشر: هذا طلب صريح ومباشر عبر أمر Slash (/${cmdName}). ${directive}].`;
-    }
-
-    if (m.role === "user" && Array.isArray(m.undoNotes) && m.undoNotes.length) {
-      effectiveContent = prependUndoNotes(effectiveContent, m.undoNotes);
-    }
-
-    const out = {
-      role: m.role,
-      content: effectiveContent,
-    };
-    if (fileAttachments.length) out.attachments = fileAttachments;
-    if (Array.isArray(m.toolCalls) && m.toolCalls.length) out.toolCalls = m.toolCalls;
-    return out;
+    return buildWireMessage(m, { expandPlatformAttachment, prependUndoNotes });
   }
 
   async function resendLastUserTurn() {
@@ -2043,6 +1688,9 @@ export function createChatPanel(options = {}) {
     sessionExecutedTools.clear();
     // Tracks the current tool-call group wrapper for this turn (reset each agent step).
     let currentToolGroup = null;
+    let streamingMessage = null;
+    let streamingThinkingBody = null;
+    let lastStreamRender = 0;
 
     const { key: ownKey, hasKey: hasOwnKey } = getOwnKey();
     const provider = getSelectedProvider();
@@ -2084,14 +1732,55 @@ export function createChatPanel(options = {}) {
       },
       ui: {
         onThinking: (thinking) => {
-          appendThinkingBlock(thinking);
+          if (streamingThinkingBody) {
+            streamingThinkingBody.innerHTML = renderMarkdown(thinking);
+            streamingThinkingBody = null;
+          } else appendThinkingBlock(thinking);
         },
         onAssistantMessage: (text, thinking) => {
-          const msgEl = appendMessage("assistant", text);
+          let msgEl = streamingMessage;
+          if (msgEl) {
+            msgEl.innerHTML = renderMarkdown(text);
+            decorateMessageTokens(msgEl, {
+              getCommands: () => getPageActions(pageKey, options.actions),
+              getMentions: getQuickAccessMentionDefinitions,
+            });
+            if (text && !msgEl.parentElement.querySelector(".ai-agent-msg-controls")) {
+              const controls = document.createElement("div");
+              controls.className = "ai-agent-msg-controls ai-agent-msg-controls--assistant";
+              addCopyButton(controls, text);
+              addSpeakButton(controls, text);
+              msgEl.parentElement.appendChild(controls);
+            }
+            streamingMessage = null;
+          } else msgEl = appendMessage("assistant", text);
           if (thinking) {
             const w = msgEl.parentElement;
             w.insertBefore(buildThinkingBlock(thinking), msgEl);
           }
+          typingController.moveToBottom();
+        },
+        onAssistantStream: ({ text, thinking }) => {
+          if (thinking) {
+            if (!streamingThinkingBody) {
+              const wrap = document.createElement("div");
+              wrap.className = "ai-agent-msg-wrap ai-agent-msg-wrap--assistant";
+              const block = buildThinkingBlock(thinking);
+              streamingThinkingBody = block.querySelector(".ai-agent-thinking-body");
+              wrap.appendChild(block);
+              messagesEl.appendChild(wrap);
+            } else streamingThinkingBody.innerHTML = renderMarkdown(thinking);
+          }
+          if (!text) return;
+          if (!streamingMessage) streamingMessage = appendMessage("assistant", "");
+          const now = performance.now();
+          if (now - lastStreamRender < 50 && text) return;
+          lastStreamRender = now;
+          streamingMessage.innerHTML = renderMarkdown(text);
+          decorateMessageTokens(streamingMessage, {
+            getCommands: () => getPageActions(pageKey, options.actions),
+            getMentions: getQuickAccessMentionDefinitions,
+          });
           typingController.moveToBottom();
         },
         setStep: ({ label, kind, step }) => typingController.show({ label, kind, step }),

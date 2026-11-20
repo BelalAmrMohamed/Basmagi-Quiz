@@ -12,6 +12,7 @@
 // Runaway-loop safety ceiling only (model round-trips in ONE user turn). It is
 // deliberately far above any real workflow; pass `maxDepth: Infinity` to lift it.
 import { trimContext } from "./context-trim.js";
+import { readSse } from "./sse.js";
 
 export const DEFAULT_MAX_DEPTH = 50;
 // If the model keeps re-issuing calls that were all already executed, stop after
@@ -31,6 +32,37 @@ export const PARALLEL_SAFE_TOOLS = new Set([
   "fetch_attached_quiz",
   "fetch_attached_lesson",
 ]);
+
+export async function readChatResponse(response, { signal, onAssistantStream } = {}) {
+  const contentType = response.headers?.get?.("content-type") || "";
+  if (!contentType.toLowerCase().includes("text/event-stream")) return response.json().catch(() => ({}));
+  let text = "";
+  let thinking = "";
+  let result = null;
+  try {
+    await readSse(response.body, { signal, onEvent: ({ event, data }) => {
+    let payload = {};
+    try { payload = JSON.parse(data); } catch { payload = { text: data }; }
+    if (event === "text") text += payload.delta || "";
+    else if (event === "thinking") thinking += payload.delta || "";
+    else if (event === "done") result = payload;
+    else if (event === "error") throw new Error(payload.error || "تعذر إكمال الطلب");
+    if ((event === "text" || event === "thinking") && typeof onAssistantStream === "function") {
+      onAssistantStream({ text, thinking });
+    }
+    }});
+  } catch (error) {
+    if (signal?.aborted || error?.name === "AbortError") {
+      return { text, ...(thinking ? { thinking } : {}), _streamAborted: true };
+    }
+    error.partial = { text, thinking };
+    throw error;
+  }
+  if (result) return result;
+  if (signal?.aborted) throw signal.reason || new DOMException("Aborted", "AbortError");
+  if (!text && !thinking) throw new Error("انتهى تدفق الإجابة قبل اكتماله");
+  return { text, ...(thinking ? { thinking } : {}) };
+}
 
 // One id per USER message: every model round-trip of that message carries the
 // same id, so the server charges the daily quota once per message, not once per
@@ -110,6 +142,7 @@ function markAborted(queue, fromIndex) {
  * @param {(toolCall: object, signal: AbortSignal) => Promise<string>} params.executeToolCall
  * @param {(toolCall: object) => object} [params.onToolCallStart] - Returns tool card instance
  * @param {(text: string, thinking?: string) => void} [params.onAssistantMessage]
+ * @param {(partial: {text: string, thinking: string}) => void} [params.onAssistantStream]
  * @param {(thinking: string) => void} [params.onThinking]
  * @param {(info: { label: string, kind: string, step?: string }) => void} [params.onStepChange]
  * @param {() => Promise<void>} [params.onHistoryPersist]
@@ -138,6 +171,7 @@ export async function runAgentLoop(params) {
     executeToolCall,
     onToolCallStart,
     onAssistantMessage,
+    onAssistantStream,
     onThinking,
     onStepChange,
     onHistoryPersist,
@@ -195,6 +229,7 @@ export async function runAgentLoop(params) {
           enableTools,
           toolNames: toolNames || undefined,
           turnId,
+          stream: true,
         }),
       });
     } catch (fetchErr) {
@@ -204,10 +239,24 @@ export async function runAgentLoop(params) {
       throw fetchErr;
     }
 
-    if (signal?.aborted) return { success: false, aborted: true };
-
-    const data = await response.json().catch(() => ({}));
-    if (signal?.aborted) return { success: false, aborted: true };
+    let data;
+    try {
+      data = await readChatResponse(response, { signal, onAssistantStream });
+    } catch (streamErr) {
+      if (streamErr.partial?.text || streamErr.partial?.thinking) {
+        history.push({ role: "assistant", content: streamErr.partial.text || "", ...(streamErr.partial.thinking ? { thinking: streamErr.partial.thinking } : {}) });
+        if (typeof onHistoryPersist === "function") await onHistoryPersist().catch(() => { });
+      }
+      if (signal?.aborted || streamErr?.name === "AbortError") return { success: false, aborted: true };
+      return { success: false, error: streamErr.message || "تعذر إكمال الطلب" };
+    }
+    if (signal?.aborted || data._streamAborted) {
+      if (data.text || data.thinking) {
+        history.push({ role: "assistant", content: data.text || "", ...(data.thinking ? { thinking: data.thinking } : {}) });
+        if (typeof onHistoryPersist === "function") await onHistoryPersist().catch(() => { });
+      }
+      return { success: false, aborted: true };
+    }
 
     if (!response.ok) {
       const detailMsg = data.detail ? `${data.error || "خطأ"}: ${data.detail}` : data.error || "تعذر إكمال الطلب";

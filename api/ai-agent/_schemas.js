@@ -57,3 +57,15 @@ export const LESSON_BLOCK_SCHEMA = {
     explanation: { type: "string", description: "Explain the correct answer; used in the reader's answer feedback." },
   },
 };
+
+/** One complete lesson section. */
+export const LESSON_SECTION_SCHEMA = {
+  type: "object",
+  properties: {
+    title: { type: "string" },
+    content: { type: "string" },
+    defaultHidden: { type: "boolean" },
+    blocks: { type: "array", items: LESSON_BLOCK_SCHEMA },
+  },
+  required: ["title", "blocks"],
+};
