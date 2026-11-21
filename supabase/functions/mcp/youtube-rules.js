@@ -119,7 +119,11 @@ export function isAllowedThumbnailUrl(url) {
   if (typeof url !== "string" || !url) return false;
   try {
     const u = new URL(url);
-    return u.protocol === "https:" && (u.hostname === "i.ytimg.com" || u.hostname.endsWith(".ytimg.com"));
+    return u.protocol === "https:" && (
+      u.hostname === "i.ytimg.com" || u.hostname.endsWith(".ytimg.com") ||
+      // channel avatars (channels.list snippet.thumbnails)
+      u.hostname === "yt3.ggpht.com" || u.hostname === "yt3.googleusercontent.com"
+    );
   } catch {
     return false;
   }
@@ -181,8 +185,9 @@ export function normalizeVideoMeta(raw = {}) {
   }
 
   const thumbnailUrl = isAllowedThumbnailUrl(raw.thumbnailUrl) ? raw.thumbnailUrl : "";
+  const channelThumbnailUrl = isAllowedThumbnailUrl(raw.channelThumbnailUrl) ? raw.channelThumbnailUrl : "";
 
-  return { title, description, channelTitle, channelId, publishedAt, durationSeconds, thumbnailUrl };
+  return { title, description, channelTitle, channelId, publishedAt, durationSeconds, thumbnailUrl, channelThumbnailUrl };
 }
 
 /**

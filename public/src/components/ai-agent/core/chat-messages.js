@@ -29,7 +29,7 @@ export function serializeWireMessage(m, { expandPlatformAttachment, prependUndoN
   }
   const fileAttachments = (m.attachments || []).filter((a) => a.kind === "file" || (!a.kind && a.base64))
     .map(({ mimeType, base64, name }) => ({ mimeType, base64, name }));
-  const platformAttachments = (m.attachments || []).filter((a) => ["quiz", "lesson", "course", "folder"].includes(a.kind));
+  const platformAttachments = (m.attachments || []).filter((a) => ["quiz", "lesson", "course", "folder", "youtube"].includes(a.kind));
   const expandedContext = platformAttachments.map(expandPlatformAttachment).join("\n\n");
   let effectiveContent = expandedContext ? [m.content, expandedContext].filter(Boolean).join("\n\n") : (m.content || "");
   if (m.isSlashCommand || (m.role === "user" && typeof effectiveContent === "string" && effectiveContent.trim().startsWith("/"))) {

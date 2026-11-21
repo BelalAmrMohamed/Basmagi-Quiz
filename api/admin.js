@@ -1531,7 +1531,7 @@ async function validateLessonSlug(supabase, rawSlug, excludeId = null) {
 // ── Published YouTube videos and playlists (youtube_public) ─────────────────
 // Metadata is fetched by the admin's browser through /api/youtube, so this
 // server never needs the YouTube key. Every field is re-validated here.
-const YT_PUBLISHED_COLUMNS = "id, kind, youtube_id, playlist_id, title, channel_title, course_id, folder_id, item_count, total_count, partial, created_at";
+const YT_PUBLISHED_COLUMNS = "id, kind, youtube_id, playlist_id, title, channel_title, channel_thumbnail_url, course_id, folder_id, item_count, total_count, partial, created_at";
 
 async function handlePublishYoutube(req, res, adminPayload, adminId, supabase) {
   const body = req.body || {};

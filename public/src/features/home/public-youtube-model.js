@@ -15,6 +15,7 @@ export function toVideoEntry(item) {
       title: item.title,
       youtubeId: item.youtubeId,
       channelTitle: item.channelTitle,
+      channelThumbnailUrl: item.channelThumbnailUrl,
       description: item.description,
       publishedAt: item.publishedAt,
     },
@@ -24,7 +25,7 @@ export function toVideoEntry(item) {
 
 export function toPlaylistEntry(item, items) {
   return {
-    meta: { type: "youtube_playlist", title: item.title, playlistId: item.playlistId, channelTitle: item.channelTitle },
+    meta: { type: "youtube_playlist", title: item.title, playlistId: item.playlistId, channelTitle: item.channelTitle, channelThumbnailUrl: item.channelThumbnailUrl },
     playlist: { id: item.playlistId, title: item.title, channelTitle: item.channelTitle, itemCount: item.itemCount, partial: item.partial, items },
   };
 }

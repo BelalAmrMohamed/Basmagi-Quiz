@@ -78,6 +78,7 @@ export function metaFromDetails(d) {
     description: d.description,
     channelTitle: d.channelTitle,
     channelId: d.channelId,
+    channelThumbnailUrl: d.channelThumbnailUrl,
     publishedAt: d.publishedAt,
     durationSeconds: d.durationSeconds ?? null,
     thumbnailUrl: d.thumbnailUrl,

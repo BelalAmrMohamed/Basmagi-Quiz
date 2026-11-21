@@ -66,9 +66,10 @@ function setCached(key, value) {
   cache.set(key, { at: Date.now(), value });
 }
 
-function pickThumbnail(thumbnails = {}) {
-  const url =
-    thumbnails.high?.url || thumbnails.medium?.url || thumbnails.default?.url || "";
+function pickThumbnail(thumbnails = {}, preferSmall = false) {
+  const url = preferSmall
+    ? thumbnails.default?.url || thumbnails.medium?.url || thumbnails.high?.url || ""
+    : thumbnails.high?.url || thumbnails.medium?.url || thumbnails.default?.url || "";
   return isAllowedThumbnailUrl(url) ? url : "";
 }
 
@@ -82,6 +83,39 @@ function normalizeSnippet(id, snippet = {}) {
     publishedAt: snippet.publishedAt || "",
     thumbnailUrl: pickThumbnail(snippet.thumbnails),
   };
+}
+
+/**
+ * Channel avatars for a set of channel ids: ONE channels.list call (<= 50 ids, 1 quota unit),
+ * cached like the other responses. Returns Map(channelId -> avatar URL). Never throws: a failure
+ * only means cards fall back to the placeholder glyph.
+ */
+async function fetchChannelAvatars(channelIds) {
+  const ids = [...new Set(channelIds.filter((id) => /^UC[A-Za-z0-9_-]{22}$/.test(id || "")))].slice(0, YOUTUBE_LIMITS.detailBatchMax);
+  const out = new Map();
+  const missing = [];
+  for (const id of ids) {
+    const hit = getCached(`channel:${id}`);
+    if (hit !== null && hit !== undefined) out.set(id, hit.url || "");
+    else missing.push(id);
+  }
+  if (missing.length) {
+    try {
+      const data = await callYoutube("channels", {
+        part: "snippet",
+        id: missing.join(","),
+        fields: "items(id,snippet/thumbnails)",
+      });
+      for (const it of data.items || []) {
+        const url = pickThumbnail(it?.snippet?.thumbnails, true);
+        out.set(it.id, url);
+        setCached(`channel:${it.id}`, { url });
+      }
+    } catch (error) {
+      console.warn("[youtube] channel avatars unavailable:", error?.code || error?.message);
+    }
+  }
+  return out;
 }
 
 /** Calls the Data API. Returns parsed JSON or throws { code } for a stable error. */
@@ -183,6 +217,12 @@ async function actionVideo(idsParam) {
     }
   }
 
+  // One batched channels.list for every channel that lacks an avatar (cached videos included).
+  const avatars = await fetchChannelAvatars(items.filter((v) => !v.channelThumbnailUrl).map((v) => v.channelId));
+  for (const v of items) {
+    if (!v.channelThumbnailUrl) v.channelThumbnailUrl = avatars.get(v.channelId) || "";
+  }
+
   // Preserve request order; report IDs the API did not return (deleted/private/invalid).
   const byId = new Map(items.map((v) => [v.videoId, v]));
   const ordered = ids.map((id) => byId.get(id)).filter(Boolean);
@@ -197,7 +237,7 @@ async function actionPlaylist(playlistId, pageToken) {
   const meta = await callYoutube("playlists", {
     part: "snippet,contentDetails",
     id: playlistId,
-    fields: "items(id,snippet(title,channelTitle),contentDetails/itemCount)",
+    fields: "items(id,snippet(title,channelId,channelTitle),contentDetails/itemCount)",
   });
   const playlist = meta.items?.[0];
   if (!playlist) throw { code: "not_found" };
@@ -210,6 +250,7 @@ async function actionPlaylist(playlistId, pageToken) {
     fields: "items(snippet(title,thumbnails,position),contentDetails/videoId,contentDetails/videoPublishedAt),nextPageToken",
   });
 
+  const ownerAvatar = (await fetchChannelAvatars([playlist.snippet?.channelId])).get(playlist.snippet?.channelId) || "";
   const items = (data.items || []).map((it) => {
     const videoId = it.contentDetails?.videoId || "";
     const title = it.snippet?.title || "";
@@ -229,6 +270,7 @@ async function actionPlaylist(playlistId, pageToken) {
       id: playlistId,
       title: String(playlist.snippet?.title || "").slice(0, YOUTUBE_LIMITS.titleMax),
       channelTitle: String(playlist.snippet?.channelTitle || "").slice(0, YOUTUBE_LIMITS.channelMax),
+      channelThumbnailUrl: ownerAvatar,
       itemCount: Number(playlist.contentDetails?.itemCount) || 0,
     },
     items,

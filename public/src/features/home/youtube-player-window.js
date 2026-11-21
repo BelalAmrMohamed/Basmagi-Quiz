@@ -11,6 +11,15 @@
 
 import { embedUrl, isValidVideoId } from "../../shared/youtube-rules.js";
 import { attachSplit } from "./youtube-split.js";
+import { YOUTUBE_ICON_SVG } from "./icons.js";
+import {
+  animateTo, clampToViewport, cornerFromPoint, cornerRect, lockPageScroll,
+  otherMinimizedRects, readCorner, resolveOverlap, writeCorner,
+} from "../../shared/floating-window.js";
+
+const MIN_CORNER_KEY = "bq-youtube-window-minimized-corner";
+const PILL_H = 48;
+const pillWidth = () => Math.min(300, window.innerWidth - 32);
 
 const MIN_W = 360;
 const MIN_H = 320;
@@ -97,6 +106,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
   win.tabIndex = -1;
   win.innerHTML = `
     <div class="ytw-titlebar">
+      <span class="ytw-logo" aria-hidden="true">${YOUTUBE_ICON_SVG}</span>
       <div class="ytw-title"></div>
       <div class="ytw-controls">
         <button type="button" class="ytw-btn ytw-btn--min" aria-label="تصغير" title="تصغير">${ICON_MIN}</button>
@@ -123,13 +133,53 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
 
   // savedRect: geometry to return to from maximize. snapRestore: size to
   // return to when a snapped window is dragged away.
-  const state = { maximized: false, minimized: false, savedRect: null, snapRestore: null, zone: null, preview: null };
+  const state = { maximized: false, minimized: false, savedRect: null, minRestore: null, snapRestore: null, zone: null, preview: null, unlock: null };
   const rectOf = () => ({ left: win.offsetLeft, top: win.offsetTop, width: win.offsetWidth, height: win.offsetHeight });
   const maxBtn = win.querySelector(".ytw-btn--max");
 
+  const minBtn = win.querySelector(".ytw-btn--min");
+
+  // Page scroll is locked while maximized (reference-counted: two windows are safe).
+  const syncScrollLock = () => {
+    if (state.maximized && !state.unlock) state.unlock = lockPageScroll();
+    else if (!state.maximized && state.unlock) { state.unlock(); state.unlock = null; }
+  };
+
+  /** Where the minimized pill sits: the remembered corner, stacked clear of other pills. */
+  const pillTarget = (corner) => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const base = cornerRect(corner, pillWidth(), PILL_H, vw, vh);
+    const rect = { ...base, width: pillWidth(), height: PILL_H };
+    return resolveOverlap(rect, otherMinimizedRects(win), corner, vh);
+  };
+  const placePill = (corner, animate) => {
+    const to = pillTarget(corner);
+    win.dataset.corner = corner;
+    if (animate) animateTo(win, to);
+    else Object.assign(win.style, { left: `${to.left}px`, top: `${to.top}px` });
+  };
   const setMinimized = (on) => {
-    state.minimized = on;
-    win.classList.toggle("is-min", on);
+    if (on === state.minimized) return;
+    if (on) {
+      state.minRestore = rectOf();
+      state.minimized = true;
+      win.classList.add("is-min");
+      placePill(readCorner(MIN_CORNER_KEY, "bottom-right"), true);
+    } else {
+      state.minimized = false;
+      win.classList.remove("is-min");
+      delete win.dataset.corner;
+      const r = state.minRestore;
+      state.minRestore = null;
+      if (r) {
+        const c = clampToViewport(r.left, r.top, r.width, r.height, window.innerWidth, window.innerHeight);
+        animateTo(win, { left: c.left, top: c.top, width: r.width, height: r.height });
+      }
+    }
+    const label = on ? "استعادة" : "تصغير";
+    minBtn.setAttribute("aria-label", label);
+    minBtn.title = label;
   };
   const setMaximized = (on, from) => {
     if (on === state.maximized) return;
@@ -139,6 +189,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
     }
     state.maximized = on;
     win.classList.toggle("is-max", on);
+    syncScrollLock();
     if (!on && state.savedRect) {
       const r = state.savedRect;
       Object.assign(win.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
@@ -180,7 +231,8 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
     else close();
   };
   const onViewport = () => {
-    if (state.maximized || state.minimized) return;
+    if (state.minimized) { placePill(readCorner(MIN_CORNER_KEY, "bottom-right"), false); return; }
+    if (state.maximized) return;
     const r = rectOf();
     win.style.left = `${clamp(r.left, -r.width + 100, window.innerWidth - 100)}px`;
     win.style.top = `${clamp(r.top, 0, window.innerHeight - 40)}px`;
@@ -190,7 +242,10 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
     closed = true;
     document.removeEventListener("keydown", onKey, true);
     window.removeEventListener("resize", onViewport);
+    window.visualViewport?.removeEventListener("resize", onViewport);
     updatePreview(null);
+    state.unlock?.();
+    state.unlock = null;
     win.remove();
     if (activeWindow === api) activeWindow = null;
     onClose?.();
@@ -200,7 +255,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
   };
 
   win.querySelector(".ytw-btn--close").addEventListener("click", close);
-  win.querySelector(".ytw-btn--min").addEventListener("click", () => {
+  minBtn.addEventListener("click", () => {
     if (state.maximized) setMaximized(false);
     state.snapRestore = null;
     setMinimized(!state.minimized);
@@ -215,6 +270,35 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
   const titlebar = win.querySelector(".ytw-titlebar");
   titlebar.addEventListener("pointerdown", (e) => {
     if (e.button !== 0 || e.target.closest(".ytw-controls")) return;
+    if (state.minimized) {
+      // Minimized pill: drag to another corner (it glides there); a plain click restores.
+      e.preventDefault();
+      const sx = e.clientX, sy = e.clientY;
+      const r0 = win.getBoundingClientRect();
+      let dragged = false;
+      titlebar.setPointerCapture?.(e.pointerId);
+      const onPillMove = (ev) => {
+        if (!dragged && Math.hypot(ev.clientX - sx, ev.clientY - sy) <= 4) return;
+        if (!dragged) { dragged = true; win.classList.add("is-dragging"); }
+        const c = clampToViewport(r0.left + ev.clientX - sx, r0.top + ev.clientY - sy, r0.width, r0.height, window.innerWidth, window.innerHeight);
+        win.style.left = `${c.left}px`;
+        win.style.top = `${c.top}px`;
+      };
+      const onPillUp = (ev) => {
+        titlebar.removeEventListener("pointermove", onPillMove);
+        titlebar.removeEventListener("pointerup", onPillUp);
+        titlebar.removeEventListener("pointercancel", onPillUp);
+        win.classList.remove("is-dragging");
+        if (!dragged) { if (ev.type === "pointerup") setMinimized(false); return; }
+        const corner = cornerFromPoint(ev.clientX, ev.clientY, window.innerWidth, window.innerHeight);
+        writeCorner(MIN_CORNER_KEY, corner);
+        placePill(corner, true);
+      };
+      titlebar.addEventListener("pointermove", onPillMove);
+      titlebar.addEventListener("pointerup", onPillUp);
+      titlebar.addEventListener("pointercancel", onPillUp);
+      return;
+    }
     const startX = e.clientX;
     const startY = e.clientY;
     const origin = rectOf(); // geometry before this drag: what "restore" returns to
@@ -259,7 +343,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
       } else {
         if (!state.snapRestore) state.snapRestore = { w: origin.width, h: origin.height };
         const r = aeroRect(zone, window.innerWidth, window.innerHeight);
-        Object.assign(win.style, { left: `${r.l}px`, top: `${r.t}px`, width: `${r.w}px`, height: `${r.h}px` });
+        animateTo(win, { left: r.l, top: r.t, width: r.w, height: r.h }); // glide, not teleport
       }
     };
     titlebar.addEventListener("pointermove", onMove);
@@ -267,7 +351,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
     titlebar.addEventListener("pointercancel", onUp);
   });
   titlebar.addEventListener("dblclick", (e) => {
-    if (e.target.closest(".ytw-controls")) return;
+    if (e.target.closest(".ytw-controls") || state.minimized) return;
     state.snapRestore = null;
     toggleMax();
   });
@@ -306,6 +390,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
 
   document.addEventListener("keydown", onKey, true);
   window.addEventListener("resize", onViewport);
+  window.visualViewport?.addEventListener("resize", onViewport); // on-screen keyboard / rotation
   document.body.append(win);
   win.focus({ preventScroll: true });
 

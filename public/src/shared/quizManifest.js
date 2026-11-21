@@ -93,7 +93,7 @@ function saveManifestCache({ quizzes, lessons, notebooks, youtube, courses, fold
       // Lessons were added to the catalog in v2. An older snapshot cannot
       // provide an honest course-level lesson-progress total, so let it miss
       // the cache and fetch a current catalog instead.
-      v: 5, // v4 had no YouTube items; v3 snapshots contained quiz password hashes — never restore them
+      v: 6, // v5 had no channel avatars; v4 had no YouTube items; v3 snapshots contained quiz password hashes — never restore them
       project: SUPABASE_URL,
       savedAt: new Date().toISOString(),
       quizzes: slimQuizzes,
@@ -277,7 +277,7 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
       // (those are fetched when a playlist is opened).
       supabase
         .from("youtube_public")
-        .select("id, course_id, folder_id, kind, youtube_id, playlist_id, title, channel_title, description, thumbnail_url, published_at, duration_seconds, item_count, total_count, partial, created_at")
+        .select("id, course_id, folder_id, kind, youtube_id, playlist_id, title, channel_title, channel_thumbnail_url, description, thumbnail_url, published_at, duration_seconds, item_count, total_count, partial, created_at")
         .eq("is_published", true)
         .order("created_at", { ascending: true }),
     ]),
@@ -469,6 +469,7 @@ async function buildSubjects(quizzes, lessons, courses, folders, notebooks = [],
       playlistId: row.playlist_id || null,
       title: row.title || "",
       channelTitle: row.channel_title || "",
+      channelThumbnailUrl: row.channel_thumbnail_url || "",
       description: row.description || "",
       thumbnailUrl: row.thumbnail_url || "",
       publishedAt: row.published_at || null,

@@ -27,6 +27,7 @@
 // =============================================================================
 
 import { loadAIAgentModule } from "./ai-agent-lazy.js";
+import { buildYoutubeAttachment, isYoutubeAttachment } from "./core/youtube-attachment.js";
 import {
   resolveUserItemById,
   readUserContent,
@@ -134,22 +135,7 @@ export function buildPlatformLessonAttachment(lesson) {
 
 /** A published YouTube video / playlist: basic context only (no transcript yet). */
 export function buildPlatformYoutubeAttachment(item) {
-  const isPlaylist = item?.itemType === "youtube_playlist" || item?.kind === "playlist";
-  return {
-    kind: "lesson",
-    itemType: isPlaylist ? "youtube_playlist" : "youtube_video",
-    id: item?.id,
-    title: item?.title || (isPlaylist ? "قائمة تشغيل" : "فيديو"),
-    source: "platform",
-    summary: item?.description || "",
-    payload: {
-      title: item?.title || "",
-      description: item?.description || "",
-      channel: item?.channelTitle || "",
-      publishedAt: item?.publishedAt || null,
-      ...(isPlaylist ? { videoCount: item?.itemCount || 0 } : { youtubeId: item?.youtubeId || null }),
-    },
-  };
+  return buildYoutubeAttachment(item, "platform");
 }
 
 /** A published (platform) notebook row from notebook_public, attached like a lesson. */
@@ -221,7 +207,7 @@ export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
     // shared handlers (same ones the home-page panel uses).
     toolNames: [
       // YouTube items carry everything the assistant knows inline (no fetch tool).
-      ...(String(attachment.itemType || "").startsWith("youtube_")
+      ...(isYoutubeAttachment(attachment)
         ? []
         : [attachment.kind === "lesson" ? "fetch_attached_lesson" : "fetch_attached_quiz"]),
       ...READONLY_LIBRARY_TOOL_NAMES,

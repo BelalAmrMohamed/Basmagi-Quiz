@@ -20,6 +20,7 @@ import { hasSameLevelCollision } from "./user-content-folders.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { normalizeLessonJson } from "../lesson/lesson-json.js";
 import { isLessonProtected, requestLessonPassword, unlockRemoteLesson } from "../lesson/lesson-access.js";
+import { planYoutubeCopy, playlistRowIds, describeCopyCounts } from "./copy-youtube-tree.js";
 
 const copiesInFlight = new Set();
 
@@ -282,6 +283,12 @@ export async function copyCategoryTreeToUserContent(rootNode, categoryTree, root
   const newEntries = [];
   let rootBlocked = false;
   let anySkipped = false;
+  let quizCount = 0;
+  // Published YouTube items found per copied folder; resolved after the walk so
+  // every playlist's `items` comes from ONE query (see below).
+  const youtubeJobs = [];
+  const lessonJobs = [];
+  const notebookJobs = [];
 
   async function copyNode(node, parentId = null, forcedKind = null, isQuizNode = false, isRoot = false) {
     const sourceNode = node?.key && categoryTree?.[node.key]
@@ -327,6 +334,7 @@ export async function copyCategoryTreeToUserContent(rootNode, categoryTree, root
       entry.meta.id = entry.id;
       userContent.push(entry);
       newEntries.push(entry);
+      quizCount += 1;
       return entry.id;
     }
 
@@ -364,17 +372,133 @@ export async function copyCategoryTreeToUserContent(rootNode, categoryTree, root
     for (const exam of exams) {
       await copyNode({ ...exam, dbId: exam.dbId }, copyId, null, true);
     }
+    // Lessons and notebooks also live in their own arrays on the node.
+    if (Array.isArray(sourceNode?.lessons) && sourceNode.lessons.length) lessonJobs.push({ items: sourceNode.lessons, parentId: copyId });
+    if (Array.isArray(sourceNode?.notebooks) && sourceNode.notebooks.length) notebookJobs.push({ items: sourceNode.notebooks, parentId: copyId });
+    // YouTube items live in their own array on the node, not in subcategories/exams.
+    if (Array.isArray(sourceNode?.youtube) && sourceNode.youtube.length) {
+      youtubeJobs.push({ items: sourceNode.youtube, parentId: copyId });
+    }
     return copyId;
   }
 
   try {
     await copyNode(rootNode, null, rootKind, false, true);
 
+    let videoCount = 0;
+    let playlistCount = 0;
+    let youtubeFailed = 0;
+    if (youtubeJobs.length && !rootBlocked) {
+      const playlistItemsById = new Map();
+      const ids = playlistRowIds(youtubeJobs.flatMap((job) => job.items));
+      if (ids.length) {
+        try {
+          const supabase = await ensureSharedSupabaseClient();
+          const { data, error } = await supabase.from("youtube_public").select("id, items").in("id", ids);
+          if (error) throw error;
+          for (const row of data || []) playlistItemsById.set(row.id, Array.isArray(row.items) ? row.items : []);
+        } catch (error) {
+          // Videos still copy; playlists without items are counted as failed below.
+          console.error("Copy tree — could not load playlist items:", error);
+        }
+      }
+      for (const job of youtubeJobs) {
+        const plan = planYoutubeCopy({ items: job.items, parentId: job.parentId, existing: userContent, playlistItemsById });
+        for (const entry of plan.entries) {
+          userContent.push(entry);
+          newEntries.push(entry);
+        }
+        videoCount += plan.videos;
+        playlistCount += plan.playlists;
+        youtubeFailed += plan.failed;
+        if (plan.skipped) anySkipped = true;
+      }
+    }
+
+    let lessonCount = 0;
+    let lessonFailed = 0;
+    if (lessonJobs.length && !rootBlocked) {
+      const loadedById = new Map();
+      const allLessons = lessonJobs.flatMap((job) => job.items).filter((l) => !l.passwordProtected);
+      const ids = [...new Set(allLessons.map((l) => l.id).filter(Boolean))];
+      if (ids.length) {
+        try {
+          const supabase = await ensureSharedSupabaseClient();
+          const { data, error } = await supabase
+            .from("lesson_public")
+            .select("id, slug, title, description, source, content, reader_prefs_default")
+            .in("id", ids);
+          if (error) throw error;
+          for (const row of data || []) loadedById.set(row.id, row);
+        } catch (error) {
+          console.error("Copy tree — could not load lessons:", error);
+        }
+      }
+      for (const job of lessonJobs) {
+        for (const lesson of job.items) {
+          const title = lesson.title || "درس";
+          if (hasSameLevelCollision(userContent, { type: "lesson", title, parentId: job.parentId })) { anySkipped = true; continue; }
+          const loaded = loadedById.get(lesson.id);
+          if (lesson.passwordProtected || !loaded?.content) { lessonFailed += 1; continue; } // protected lessons need their own password prompt
+          try {
+            const normalized = normalizeLessonJson({
+              title: loaded.title || title,
+              description: loaded.description ?? lesson.description ?? "",
+              source: loaded.source ?? lesson.source ?? "",
+              content: loaded.content,
+            });
+            const id = crypto.randomUUID();
+            const entry = {
+              id,
+              meta: {
+                id, type: "lesson", title: normalized.title, description: normalized.description, source: normalized.source,
+                parentId: job.parentId, createdAt: new Date().toLocaleString("en-US"), updatedAt: new Date().toISOString(),
+                readerPrefs: loaded.reader_prefs_default || {}, passwordProtected: false, copiedFrom: lesson.id || null,
+              },
+              stats: { questionCount: normalized.questionCount, sectionCount: normalized.sections.length },
+              lesson: { sections: normalized.sections },
+              questions: [],
+            };
+            userContent.push(entry);
+            newEntries.push(entry);
+            lessonCount += 1;
+          } catch (error) {
+            console.warn("Copy tree — lesson skipped:", lesson.id, error?.message);
+            lessonFailed += 1;
+          }
+        }
+      }
+    }
+
     const latestUserContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
     setInStorage(
       "user_quizzes",
       JSON.stringify(latestUserContent.concat(newEntries)),
     );
+
+    // Notebooks go in after the folders are saved: copyNotebookToLocal writes
+    // localStorage itself (and also copies the workspace files).
+    let notebookCount = 0;
+    let notebookFailed = 0;
+    if (notebookJobs.length && !rootBlocked) {
+      const [{ fetchPlatformNotebookRow }, { rowToNotebook }, { copyNotebookToLocal }] = await Promise.all([
+        import("./notebook-actions.js"),
+        import("../../shared/notebook-export.js"),
+        import("../notebook/notebook-copy.js"),
+      ]);
+      for (const job of notebookJobs) {
+        for (const notebook of job.items) {
+          try {
+            const nb = rowToNotebook(await fetchPlatformNotebookRow(notebook));
+            await copyNotebookToLocal({ ...nb, sourceKey: `pub_${nb.id}`, parentId: job.parentId });
+            notebookCount += 1;
+          } catch (error) {
+            console.warn("Copy tree — notebook skipped:", notebook?.id, error?.message);
+            notebookFailed += 1;
+          }
+        }
+      }
+    }
 
     if (rootBlocked) {
       showNotification(
@@ -384,15 +508,30 @@ export async function copyCategoryTreeToUserContent(rootNode, categoryTree, root
       );
       return false;
     }
-    if (anySkipped) {
+    if (videoCount || playlistCount || lessonCount || notebookCount) {
+      const { refreshUserContentCard } = await import("./course-count.js");
+      refreshUserContentCard();
+    }
+    const counts = describeCopyCounts({ quizzes: quizCount, lessons: lessonCount, notebooks: notebookCount, videos: videoCount, playlists: playlistCount });
+    const countsLine = counts ? ` (${counts})` : "";
+    const otherFailed = youtubeFailed + lessonFailed + notebookFailed;
+    if (otherFailed) {
       showNotification(
         "تم النسخ جزئياً",
-        "تم نسخ الشجرة، لكن بعض العناصر تم تخطيها لوجود عنصر بنفس الاسم والنوع في نفس المستوى بالفعل.",
+        `تم نسخ الشجرة${countsLine}، لكن تعذّر نسخ ${otherFailed} عنصر (دروس محمية بكلمة مرور أو تعذّر التحميل). انسخها منفردة.`,
         "warning",
       );
       return true;
     }
-    showNotification("تم النسخ", "تم نسخ الشجرة كاملة مع الحفاظ على ترتيب المجلدات.", "success");
+    if (anySkipped) {
+      showNotification(
+        "تم النسخ جزئياً",
+        `تم نسخ الشجرة${countsLine}، لكن بعض العناصر تم تخطيها لوجود عنصر مطابق في نفس المستوى بالفعل.`,
+        "warning",
+      );
+      return true;
+    }
+    showNotification("تم النسخ", `تم نسخ الشجرة كاملة مع الحفاظ على ترتيب المجلدات${countsLine}.`, "success");
     return true;
   } finally {
     copiesInFlight.delete(key);

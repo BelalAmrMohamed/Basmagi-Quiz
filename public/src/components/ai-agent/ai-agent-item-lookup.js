@@ -23,6 +23,9 @@ import { qz } from "../../features/home/quiz-schema.js";
 import { getFolderContentsCount } from "../../features/home/user-content-folders.js";
 import { normalizeLessonContent } from "../../features/lesson/lesson-schema.js";
 import { summarizeNotebook, notebookAttachmentPayload } from "../../shared/notebook-export.js";
+import { buildYoutubeAttachment } from "./core/youtube-attachment.js";
+
+const isYoutubeType = (type) => type === "youtube_video" || type === "youtube_playlist";
 
 /**
  * Reads the flat user_quizzes array from localStorage. Failure-safe (bad
@@ -110,9 +113,11 @@ function buildItemTree(userContent, parentId) {
       const id = item.meta?.id || item.id;
       const kind = item.meta?.type === "course" || item.meta?.type === "folder" || item.meta?.type === "lesson"
         ? item.meta.type
+        : isYoutubeType(item.meta?.type) ? "youtube"
         : item.meta?.type === "notebook" ? "lesson" : "quiz"; // notebooks travel as reading material
       const node = { kind, id, title: qz(item, "title") || item.meta?.title || "بدون عنوان" };
-      if (kind === "quiz") node.questionCount = qz(item, "count");
+      if (kind === "youtube") node.itemType = item.meta.type;
+      else if (kind === "quiz") node.questionCount = qz(item, "count");
       else if (kind === "lesson") node.sectionCount = item.stats?.sectionCount ?? (item.meta?.type === "notebook" ? item.stats?.cellCount ?? 0 : 0);
       else node.children = buildItemTree(userContent, id);
       return node;
@@ -135,6 +140,7 @@ export function resolveUserItemById(id, userContent = readUserContent()) {
 
   const title = qz(item, "title") || item.meta?.title || "بدون عنوان";
   const metaType = item.meta?.type;
+  if (isYoutubeType(metaType)) return buildYoutubeAttachment({ ...item, id }, "local");
   if (metaType === "lesson") {
     return {
       kind: "lesson",
@@ -210,7 +216,7 @@ export function listRecentUserItems(query = "", limit = 8) {
       const title = qz(item, "title") || item.meta?.title || "بدون عنوان";
       if (q && !title.toLowerCase().includes(q)) return null;
       const metaType = item.meta?.type;
-      const kind = metaType === "folder" || metaType === "course" || metaType === "lesson" ? metaType : metaType === "notebook" ? "lesson" : "quiz";
+      const kind = metaType === "folder" || metaType === "course" || metaType === "lesson" ? metaType : isYoutubeType(metaType) ? "youtube" : metaType === "notebook" ? "lesson" : "quiz";
       return {
         kind,
         id,
@@ -239,11 +245,11 @@ export function buildUserRootAttachment(userContent = readUserContent()) {
   const tree = buildItemTree(userContent, null);
   const quizCount = tree.reduce((count, item) => {
     if (item.kind === "quiz") return count + 1;
-    if (item.kind === "lesson") return count; // a lesson is not a quiz
+    if (item.kind === "lesson" || item.kind === "youtube") return count; // neither is a quiz
     return count + countTreeQuizzes(item.children || []);
   }, 0);
   const folderCount = tree.reduce((count, item) => {
-    if (item.kind === "quiz" || item.kind === "lesson") return count; // leaves
+    if (item.kind === "quiz" || item.kind === "lesson" || item.kind === "youtube") return count; // leaves
     return count + 1 + countTreeFolders(item.children || []);
   }, 0);
   return {
@@ -259,14 +265,14 @@ export function buildUserRootAttachment(userContent = readUserContent()) {
 function countTreeQuizzes(nodes) {
   return nodes.reduce((count, node) => {
     if (node.kind === "quiz") return count + 1;
-    if (node.kind === "lesson") return count;
+    if (node.kind === "lesson" || node.kind === "youtube") return count;
     return count + countTreeQuizzes(node.children || []);
   }, 0);
 }
 
 function countTreeFolders(nodes) {
   return nodes.reduce((count, node) => {
-    if (node.kind === "quiz" || node.kind === "lesson") return count;
+    if (node.kind === "quiz" || node.kind === "lesson" || node.kind === "youtube") return count;
     return count + 1 + countTreeFolders(node.children || []);
   }, 0);
 }

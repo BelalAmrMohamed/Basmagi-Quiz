@@ -181,6 +181,7 @@ export function createMentionMenu(options) {
         if (kind === "course") return icons.course;
         if (kind === "folder") return icons.folder;
         if (kind === "lesson") return icons.lesson || icons.quiz;
+        if (kind === "youtube") return icons.youtube || icons.quiz;
         return icons.quiz;
     }
 

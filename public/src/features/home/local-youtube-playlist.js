@@ -44,6 +44,7 @@ export function buildLocalYoutubePlaylistEntry({
   const title = String(playlist.title || "").trim().slice(0, YOUTUBE_LIMITS.titleMax);
   if (!title) throw new Error("عنوان قائمة التشغيل مطلوب.");
   const channelTitle = String(playlist.channelTitle || "").trim().slice(0, YOUTUBE_LIMITS.channelMax);
+  const channelThumbnailUrl = isAllowedThumbnailUrl(playlist.channelThumbnailUrl) ? playlist.channelThumbnailUrl : "";
 
   const rawList = Array.isArray(items) ? items : [];
   const considered = rawList.slice(0, PLAYLIST_ITEMS_MAX);
@@ -68,6 +69,7 @@ export function buildLocalYoutubePlaylistEntry({
       source: canonicalPlaylistUrl(playlist.id),
       playlistId: playlist.id,
       channelTitle,
+      channelThumbnailUrl,
       thumbnailUrl: kept.find((k) => k.thumbnailUrl)?.thumbnailUrl || "",
       passwordProtected: false,
     },

@@ -9,13 +9,15 @@
  * Recursively count all subfolders, quizzes, lessons and notebooks inside a folder or course.
  * @param {object[]} userContent
  * @param {string} folderId
- * @returns {{ subfolderCount: number, quizCount: number, lessonCount: number, notebookCount: number }}
+ * @returns {{ subfolderCount: number, quizCount: number, lessonCount: number, notebookCount: number, videoCount: number, playlistCount: number }}
  */
 export function getFolderContentsCount(userContent, folderId) {
   let subfolderCount = 0;
   let quizCount = 0;
   let lessonCount = 0;
   let notebookCount = 0;
+  let videoCount = 0;
+  let playlistCount = 0;
   const seen = new Set();
 
   function walk(currentId) {
@@ -37,6 +39,10 @@ export function getFolderContentsCount(userContent, folderId) {
         lessonCount++;
       } else if (type === "notebook") {
         notebookCount++;
+      } else if (type === "youtube_video") {
+        videoCount++;
+      } else if (type === "youtube_playlist") {
+        playlistCount++;
       } else {
         quizCount++;
       }
@@ -44,7 +50,7 @@ export function getFolderContentsCount(userContent, folderId) {
   }
 
   walk(folderId);
-  return { subfolderCount, quizCount, lessonCount, notebookCount };
+  return { subfolderCount, quizCount, lessonCount, notebookCount, videoCount, playlistCount };
 }
 
 function arabicCount(n, one, two, few, many) {
@@ -58,12 +64,14 @@ function arabicCount(n, one, two, few, many) {
  * Format the folder / quiz / lesson / notebook counts in natural Arabic with proper plural rules.
  * @returns {string} "فارغ" only when every count is zero
  */
-export function formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount = 0, notebookCount = 0) {
-  if (!subfolderCount && !quizCount && !lessonCount && !notebookCount) return "فارغ";
+export function formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount = 0, notebookCount = 0, videoCount = 0, playlistCount = 0) {
+  if (!subfolderCount && !quizCount && !lessonCount && !notebookCount && !videoCount && !playlistCount) return "فارغ";
   const parts = [];
   if (subfolderCount > 0) parts.push(arabicCount(subfolderCount, "مجلد واحد", "مجلدان", "مجلدات", "مجلد"));
   if (quizCount > 0) parts.push(arabicCount(quizCount, "امتحان واحد", "امتحانان", "امتحانات", "امتحان"));
   if (lessonCount > 0) parts.push(arabicCount(lessonCount, "درس واحد", "درسان", "دروس", "درس"));
   if (notebookCount > 0) parts.push(arabicCount(notebookCount, "دفتر واحد", "دفتران", "دفاتر", "دفتر"));
+  if (videoCount > 0) parts.push(arabicCount(videoCount, "فيديو واحد", "فيديوهان", "فيديوهات", "فيديو"));
+  if (playlistCount > 0) parts.push(arabicCount(playlistCount, "قائمة تشغيل", "قائمتا تشغيل", "قوائم تشغيل", "قائمة تشغيل"));
   return parts.join(" · ");
 }

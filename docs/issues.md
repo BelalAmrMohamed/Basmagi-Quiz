@@ -7,8 +7,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
-### YouTube Update
-#### Recommendations (not requested; propose, do not build without a go-ahead)
+### YouTube Update: Recommendations (not requested; propose, do not build without a go-ahead)
 
 2. **Admin «نقل» for several items** and the bulk bar for published items. Today move and delete are per item. The bulk bar exists only for «محتواي».
 3. **Rename and edit description for a published item** (admin): `rename-item` and `update-item-metadata` could accept the `youtube` type like `move-item` now does. Titles from YouTube are sometimes bad for a course page.

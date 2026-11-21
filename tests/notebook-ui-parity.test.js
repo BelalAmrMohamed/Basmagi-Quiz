@@ -79,7 +79,7 @@ test("folder counts include notebooks (no more «فارغ» for notebook-only fo
     { id: "q", meta: { parentId: "s" } },
   ];
   const c = getFolderContentsCount(rows, "f");
-  assert.deepEqual(c, { subfolderCount: 1, quizCount: 1, lessonCount: 1, notebookCount: 2 });
+  assert.deepEqual(c, { subfolderCount: 1, quizCount: 1, lessonCount: 1, notebookCount: 2, videoCount: 0, playlistCount: 0 });
   assert.equal(formatFolderAndQuizCount(0, 0, 0, 2), "دفتران");
   assert.equal(formatFolderAndQuizCount(0, 0, 0, 0), "فارغ");
   assert.equal(formatFolderAndQuizCount(1, 3, 0, 1), "مجلد واحد · 3 امتحانات · دفتر واحد");
