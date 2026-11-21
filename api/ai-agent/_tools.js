@@ -508,3 +508,47 @@ export const GET_AUTHORING_GUIDE_TOOL = {
     },
   },
 };
+
+// YouTube tools (the in-app AI agent only: personal content lives in the browser,
+// so the server never sees it). Handled client-side by youtube-agent-tools.js.
+export const SEARCH_YOUTUBE_TOOL = {
+  name: "search_youtube",
+  description:
+    "Search YouTube for videos and return up to 10 results with title, channel, and watch URL. Read-only. " +
+    "Use it when the user wants to find a video; save one with add_youtube only when the user asks to save it.",
+  input_schema: {
+    type: "object",
+    properties: {
+      query: { type: "string", description: "Search text, up to 100 characters." },
+    },
+    required: ["query"],
+  },
+};
+
+export const LIST_YOUTUBE_TOOL = {
+  name: "list_youtube",
+  description:
+    "List the YouTube videos and playlists saved in the user's library («محتواي»), optionally filtered by kind or by title text. Read-only.",
+  input_schema: {
+    type: "object",
+    properties: {
+      kind: { type: "string", enum: ["video", "playlist", "all"], description: "Default \"all\"." },
+      query: { type: "string", description: "Optional text to match against titles." },
+    },
+  },
+};
+
+export const ADD_YOUTUBE_TOOL = {
+  name: "add_youtube",
+  description:
+    "Save a YouTube video or playlist into the user's library («محتواي») in the current folder. Give a YouTube URL or a bare video ID. " +
+    "A playlist URL is saved as ONE card (up to 200 items), not one card per video. A watch URL that also has a list parameter is saved as the single video. " +
+    "Titles, channels, and thumbnails come from YouTube and are read-only. Only call this when the user asks to save something.",
+  input_schema: {
+    type: "object",
+    properties: {
+      url: { type: "string", description: "A YouTube watch, youtu.be, Shorts, or playlist URL, or a bare 11-character video ID." },
+    },
+    required: ["url"],
+  },
+};

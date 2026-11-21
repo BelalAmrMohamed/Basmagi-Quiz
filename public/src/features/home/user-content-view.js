@@ -53,7 +53,8 @@ import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
-import { createUserContentCard, createUserLessonCard, createUserNotebookCard } from "./item-card.js";
+import { handleYoutubeToolCall } from "./youtube-agent-tools.js";
+import { createUserContentCard, createUserLessonCard, createUserNotebookCard, createUserYoutubeVideoCard, createUserYoutubePlaylistCard } from "./item-card.js";
 import { takePendingHighlight } from "./mcp-draft-import.js";
 import { openInlineCreateQuizModal } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent-lazy.js";
@@ -533,8 +534,9 @@ function handleMoveItemToolCall(toolCall) {
  * @returns {string}
  */
 function buildFolderTreeContextPrompt(userContent) {
+  // Videos are leaves: included as compact title+kind records, not as containers.
   const nodes = userContent.filter(
-    (q) => q.meta?.type === "folder" || q.meta?.type === "course",
+    (q) => q.meta?.type === "folder" || q.meta?.type === "course" || q.meta?.type === "youtube_video" || q.meta?.type === "youtube_playlist",
   );
   const lines = ["هيكل المجلدات والمواد الحالي للمستخدم:", "- محتواي الرئيسية (المستوى الرئيسي)"];
 
@@ -543,7 +545,13 @@ function buildFolderTreeContextPrompt(userContent) {
       .filter((n) => (n.meta?.parentId || null) === parentId)
       .forEach((n) => {
         const nid = n.id || n.meta?.id;
-        const kind = n.meta?.type === "course" ? "مادة" : "مجلد";
+        const kind = n.meta?.type === "course"
+          ? "مادة"
+          : n.meta?.type === "youtube_video"
+            ? "فيديو"
+            : n.meta?.type === "youtube_playlist"
+              ? "قائمة تشغيل"
+              : "مجلد";
         lines.push(`${"  ".repeat(depth)}- ${n.meta?.title || ""} (${kind})`);
         appendChildren(nid, depth + 1);
       });
@@ -589,6 +597,10 @@ async function handleQuizToolCall(toolCall, ctx) {
       return handleCreateCourseToolCall(toolCall);
     case "move_item":
       return handleMoveItemToolCall(toolCall);
+    case "search_youtube":
+    case "list_youtube":
+    case "add_youtube":
+      return handleYoutubeToolCall(toolCall);
     case "search_library":
     case "parse_item_info":
     case "get_user_activity":
@@ -847,6 +859,20 @@ export function renderUserContentView() {
         };
         menu.appendChild(notebookOpt);
 
+        // "إضافة فيديو يوتيوب" — search/paste import into محتواي (youtube-video-modal.js).
+        const videoOpt = document.createElement("button");
+        videoOpt.type = "button";
+        videoOpt.className = "exam-action-btn";
+        videoOpt.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="m10 9 5 3-5 3z"/></svg><span>إضافة فيديو يوتيوب</span>`;
+        videoOpt.onclick = (e) => {
+          e.stopPropagation();
+          closeMenu();
+          import("./youtube-video-modal.js").then(({ openYoutubeVideoModal }) => {
+            openYoutubeVideoModal();
+          });
+        };
+        menu.appendChild(videoOpt);
+
         const folderOpt = document.createElement("button");
         folderOpt.type = "button";
         folderOpt.className = "exam-action-btn";
@@ -982,7 +1008,7 @@ export function renderUserContentView() {
         title: currentFolderId
           ? "هذا المجلد فارغ"
           : "لم تقم بإنشاء أي محتوى بعد",
-        subtitle: "قم بإنشاء مادة ، أو مجلد ، أو امتحان ، أو درس ، أو دفتر",
+        subtitle: "قم بإنشاء مادة ، أو مجلد ، أو امتحان ، أو درس ، أو دفتر ، أو فيديو يوتيوب",
       });
       quizzesContainer.appendChild(emptyState);
     } else {
@@ -995,7 +1021,11 @@ export function renderUserContentView() {
             ? createUserLessonCard(item)
             : item.meta?.type === "notebook"
               ? createUserNotebookCard(item)
-              : createUserContentCard(item, index);
+              : item.meta?.type === "youtube_video"
+                ? createUserYoutubeVideoCard(item)
+                : item.meta?.type === "youtube_playlist"
+                  ? createUserYoutubePlaylistCard(item)
+                  : createUserContentCard(item, index);
           // Attach drag and context menu to quiz card
           quizCard.draggable = true;
           quizCard.addEventListener("dragstart", (e) => handleDragStart(e, item.id || item.meta?.id));
@@ -1128,28 +1158,30 @@ function classifyBulkSelection(rows) {
   const quizzes = [];
   const lessons = [];
   const notebooks = [];
+  const youtube = [];
   for (const row of rows) {
     if (row?.meta?.type === "course") courses.push(row);
     else if (row?.meta?.type === "folder") folders.push(row);
     else if (row?.meta?.type === "lesson") lessons.push(row);
     else if (row?.meta?.type === "notebook") notebooks.push(row);
+    else if (row?.meta?.type === "youtube_video" || row?.meta?.type === "youtube_playlist") youtube.push(row);
     else quizzes.push(row);
   }
 
   let mode;
-  if (courses.length === 0 && folders.length === 0 && quizzes.length === 0 && lessons.length === 0 && notebooks.length === 0) {
+  if (courses.length === 0 && folders.length === 0 && quizzes.length === 0 && lessons.length === 0 && notebooks.length === 0 && youtube.length === 0) {
     mode = "empty";
-  } else if (courses.length > 0 && (folders.length > 0 || quizzes.length > 0 || lessons.length > 0 || notebooks.length > 0)) {
+  } else if (courses.length > 0 && (folders.length > 0 || quizzes.length > 0 || lessons.length > 0 || notebooks.length > 0 || youtube.length > 0)) {
     mode = "mixed";
   } else if (courses.length > 0) {
     mode = "course";
-  } else if (folders.length > 0 || lessons.length > 0 || notebooks.length > 0) {
+  } else if (folders.length > 0 || lessons.length > 0 || notebooks.length > 0 || youtube.length > 0) {
     mode = "folder";
   } else {
     mode = "quiz";
   }
 
-  return { mode, courses, folders, quizzes, lessons, notebooks };
+  return { mode, courses, folders, quizzes, lessons, notebooks, youtube };
 }
 
 /**
@@ -1161,14 +1193,14 @@ function classifyBulkSelection(rows) {
  * @param {Array} selected - raw user_quizzes rows matching the selection
  */
 function routeBulkUpload(selected) {
-  const { mode, courses, folders, quizzes, lessons, notebooks } = classifyBulkSelection(selected);
+  const { mode, courses, folders, quizzes, lessons, notebooks, youtube } = classifyBulkSelection(selected);
 
   if (mode === "empty") return;
 
   if (mode === "mixed") {
     showNotification(
       "لا يمكن رفع هذا التحديد معاً",
-      `المواد ترفع وحدها مع محتوياتها الكاملة. تم تحديد ${courses.length} مادة مع ${folders.length + quizzes.length + lessons.length + notebooks.length} عنصر آخر — ألغِ تحديد المواد أو حددها بمفردها.`,
+      `المواد ترفع وحدها مع محتوياتها الكاملة. تم تحديد ${courses.length} مادة مع ${folders.length + quizzes.length + lessons.length + notebooks.length + youtube.length} عنصر آخر — ألغِ تحديد المواد أو حددها بمفردها.`,
       "warning",
     );
     return;
@@ -1189,6 +1221,7 @@ function routeBulkUpload(selected) {
   };
   const standaloneLessons = lessons.filter(notStandalone);
   const standaloneNotebooks = notebooks.filter(notStandalone);
+  const standaloneYoutube = youtube.filter(notStandalone);
 
   if (mode === "course") {
     import("./adminUpload.js").then((mod) => {
@@ -1199,7 +1232,7 @@ function routeBulkUpload(selected) {
 
   if (mode === "folder") {
     import("./adminUpload.js").then((mod) => {
-      mod.openFolderUploadModal({ folders, quizzes, lessons: standaloneLessons, notebooks: standaloneNotebooks, userContent });
+      mod.openFolderUploadModal({ folders, quizzes, lessons: standaloneLessons, notebooks: standaloneNotebooks, youtube: standaloneYoutube, userContent });
     });
     return;
   }

@@ -34,17 +34,14 @@
 // POST /api/college-quiz (action: "resolve") (Admin only)
 // =============================================================================
 
-import { createClient } from "@supabase/supabase-js";
+import { makeClient, envGuard } from "./_supabase.js";
 import { requireAdmin, requireUserProfile, applyCors, handleAuthError } from "./_middleware.js";
 import { resolveAdminId, isAuthorizedForItem, getTrashRetentionDays, computeExpiresAt } from "./_trash.js";
 import { isRateLimited } from "./_rateLimit.js";
 import { notifySearchEngines } from "./_seoNotify.js";
 import { quizUrl } from "./_urls.js";
 
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY,
-);
+const supabase = makeClient("service");
 
 const reportSubmitLog = new Map();
 const REPORT_SUBMIT_RATE_LIMIT = 10; // requests per minute for public submission
@@ -911,6 +908,7 @@ function isReportsGet(req) {
 }
 
 export default async function handler(req, res) {
+  if (req.method !== "OPTIONS" && envGuard(res)) return;
     applyCors(req, res);
     if (req.method === "OPTIONS") return res.status(200).end();
 

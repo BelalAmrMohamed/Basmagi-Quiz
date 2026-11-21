@@ -25,6 +25,8 @@ const MAX_CONSECUTIVE_DUPLICATE_STEPS = 3;
 // Pass `parallelSafeTools: new Set()` to run everything strictly in sequence.
 export const PARALLEL_SAFE_TOOLS = new Set([
   "search_library",
+  "search_youtube",
+  "list_youtube",
   "parse_item_info",
   "get_user_activity",
   "get_creator_info",

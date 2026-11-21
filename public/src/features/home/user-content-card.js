@@ -9,11 +9,13 @@ import {
   isAdminAuthenticated,
   hasAdminSessionHint,
 } from "../../shared/adminAuth.js";
-import { createUploadButton, createLessonUploadButton, createNotebookUploadButton } from "./adminUpload.js";
+import { createUploadButton, createLessonUploadButton, createNotebookUploadButton, createYoutubeUploadButton } from "./adminUpload.js";
 import { showUserQuizDownloadPopup } from "./download-modal.js";
 import { showUserQuizInfoModal, formatDateForInfo } from "./quiz-info-modal.js";
 import { normalizeSource } from "../../components/quiz-info-modal/info-model.js";
 import { showUserLessonInfoModal, collectLessonInfo } from "./lesson-info-modal.js";
+import { openYoutubeVideoPlayer } from "./youtube-video-modal.js";
+import { openYoutubePlaylistWindow } from "./youtube-playlist-window.js";
 import {
   createExamInfoSubmenu,
   createActionGroupSubmenu,
@@ -114,6 +116,40 @@ export function showUserNotebookActionsOverlay(nb, triggerBtn) {
       e.stopPropagation();
       closeMenu();
       deleteFolder(nbId);
+    };
+    menu.appendChild(deleteOpt);
+  });
+}
+
+export const createUserYoutubeVideoActions = (video) => ({
+  open: () => openYoutubeVideoPlayer(video),
+  more: (btn) => showUserYoutubeVideoActionsOverlay(video, btn),
+});
+
+export const createUserYoutubePlaylistActions = (entry) => ({
+  open: () => openYoutubePlaylistWindow(entry),
+  more: (btn) => showUserYoutubeVideoActionsOverlay(entry, btn),
+});
+
+export function showUserYoutubeVideoActionsOverlay(video, triggerBtn) {
+  const vid = video.id || video.meta?.id;
+  const title = video.meta?.title || "فيديو بدون عنوان";
+  openItemDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
+    if (isAdminAuthenticated() || hasAdminSessionHint()) {
+      const publishBtn = createYoutubeUploadButton(video);
+      publishBtn.addEventListener("click", () => closeMenu());
+      menu.appendChild(publishBtn);
+    }
+    appendSelectOption(menu, closeMenu, vid);
+    appendMoveGroup(menu, closeMenu, reposition, vid);
+    const deleteOpt = document.createElement("button");
+    deleteOpt.type = "button";
+    deleteOpt.className = "exam-action-btn exam-action-btn--danger";
+    deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>${video.meta?.type === "youtube_playlist" ? "حذف القائمة" : "حذف الفيديو"}</span>`;
+    deleteOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      deleteFolder(vid);
     };
     menu.appendChild(deleteOpt);
   });

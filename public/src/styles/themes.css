@@ -100,6 +100,25 @@ html {
 html[data-theme="light"] {
   color-scheme: light;
 
+  /* YouTube cards, windows and publish flow (features/home/youtube-*.css).
+     Built on the theme tokens so every theme follows; the media/badge values
+     sit on top of thumbnails and video, so they stay dark in every theme. */
+  --yt-scrim: rgba(8, 10, 18, 0.62);
+  --yt-media-bg: #000;
+  --yt-badge-bg: rgba(0, 0, 0, 0.78);
+  --yt-badge-fg: #fff;
+  --yt-hover-scrim: rgba(0, 0, 0, 0.36);
+  --yt-on-primary: #fff;
+  --yt-window-bg: var(--color-surface);
+  --yt-titlebar-bg: var(--color-background-secondary);
+  --yt-panel-bg: var(--color-background-secondary);
+  --yt-ring: color-mix(in srgb, var(--color-primary) 60%, transparent);
+  --yt-ctrl-close: var(--color-error);
+  --yt-ctrl-min: var(--color-warning);
+  --yt-ctrl-max: var(--color-success);
+  --yt-snap-bg: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  --yt-snap-border: color-mix(in srgb, var(--color-primary) 75%, var(--color-surface));
+
   --quiz-card-bg: rgba(255, 255, 255, 0.3);
   --quiz-card-border: #000;
   --quiz-input-bg: #fefefe;

@@ -27,6 +27,7 @@ import { inferQuestionType } from "../../shared/rate-answers.js";
 import { apiUrl } from "../../shared/api-base.js";
 import { prepareNotebookAssets, rollbackAssets } from "../../shared/notebook-publish-assets.js";
 import { formatItemCounts } from "./upload-counts.js";
+import { ICON, setStatus } from "./admin-icons.js";
 import { getToken, isAdminAuthenticated, signOut } from "../../shared/adminAuth.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { userProfile } from "../../shared/userProfile.js";
@@ -389,7 +390,7 @@ function stepsHTML(cur) {
     const n = i + 1, cls = n < cur ? "done" : n === cur ? "active" : "";
     return `${i > 0 ? `<div class="adm-step-line ${n <= cur ? "done" : ""}"></div>` : ""}
       <div class="adm-step ${cls}">
-        <div class="adm-step-circle">${n < cur ? "✓" : n}</div>
+        <div class="adm-step-circle">${n < cur ? ICON.check : n}</div>
         <span class="adm-step-lbl">${lbl}</span>
       </div>`;
   }).join("")}</div>`;
@@ -397,8 +398,8 @@ function stepsHTML(cur) {
 
 function hdr(title) {
   return `<div class="adm-header">
-    <h2>☁️ ${title}</h2>
-    <button class="adm-close" onclick="window.__admClose()">✕</button>
+    <h2>${ICON.cloud}<span>${title}</span></h2>
+    <button class="adm-close" onclick="window.__admClose()" aria-label="إغلاق">${ICON.x}</button>
   </div>`;
 }
 
@@ -797,7 +798,7 @@ function renderStep3({ educationType, college, year, term, subject, subfolder })
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-s3-back">→ رجوع</button>
         <button class="adm-btn adm-btn-primary" id="adm-s3-upload">
-          ${isBatch ? `رفع ${_quizzes.length} امتحانات ☁️` : "رفع الامتحان ☁️"}
+          ${isBatch ? `${ICON.cloud}<span>رفع ${_quizzes.length} امتحانات</span>` : `${ICON.cloud}<span>رفع الامتحان</span>`}
         </button>
       </div>
     </div>
@@ -848,7 +849,7 @@ function renderThreadTree(items, root, rootChain) {
   }
 
   function countDescendants(chainKey) {
-    let folders = 0, quizzes = 0, lessons = 0, notebooks = 0;
+    let folders = 0, quizzes = 0, lessons = 0, notebooks = 0, videos = 0, playlists = 0;
     function walk(key) {
       for (const item of items) {
         if ((item.folderSegments || []).join("/") !== key) continue;
@@ -859,13 +860,17 @@ function renderThreadTree(items, root, rootChain) {
           lessons++;
         } else if (item.type === "notebook") {
           notebooks++;
+        } else if (item.type === "youtube_video") {
+          videos++;
+        } else if (item.type === "youtube_playlist") {
+          playlists++;
         } else {
           quizzes++;
         }
       }
     }
     walk(chainKey);
-    return { folders, quizzes, lessons, notebooks };
+    return { folders, quizzes, lessons, notebooks, videos, playlists };
   }
 
   // Renders one sibling group (all items whose folderSegments join to
@@ -884,21 +889,25 @@ function renderThreadTree(items, root, rootChain) {
       const li = document.createElement("li");
       if (item.type === "folder") {
         const childKey = [...(item.folderSegments || []), item.name].join("/");
-        const { folders, quizzes, lessons, notebooks } = countDescendants(childKey);
+        const { folders, quizzes, lessons, notebooks, videos, playlists } = countDescendants(childKey);
         const badgeParts = [];
         if (folders) badgeParts.push(`${folders} مجلد`);
         if (quizzes) badgeParts.push(`${quizzes} امتحان`);
         if (lessons) badgeParts.push(`${lessons} درس`);
         if (notebooks) badgeParts.push(`${notebooks} دفتر`);
-        li.appendChild(makeRow("📁", item.name, badgeParts.join(" · "), true));
+        if (videos) badgeParts.push(`${videos} فيديو`);
+        if (playlists) badgeParts.push(`${playlists} قائمة`);
+        li.appendChild(makeRow(ICON.folder, item.name, badgeParts.join(" · "), true));
         appendGroup(li, childKey, depth + 1);
       } else {
         const isLesson = item.type === "lesson";
         const isNotebook = item.type === "notebook";
-        const label = isNotebook
+        const isYoutubePlaylist = item.type === "youtube_playlist";
+        const isYoutube = isYoutubePlaylist || item.type === "youtube_video";
+        const label = isYoutube ? item.name || "يوتيوب" : isNotebook
           ? item.notebook?.title || item.name || "دفتر"
           : isLesson ? item.lesson?.title || item.name || "درس" : item.quiz?.meta?.title || item.name || "امتحان";
-        li.appendChild(makeRow(isNotebook ? "💻" : isLesson ? "📖" : "📝", label, "", true));
+        li.appendChild(makeRow(isYoutubePlaylist ? ICON.playlist : isYoutube ? ICON.video : isNotebook ? ICON.notebook : isLesson ? ICON.lesson : ICON.quiz, label, "", true));
       }
       sublist.appendChild(li);
     }
@@ -945,6 +954,8 @@ function renderFolderReviewStep(step1Vals) {
   const quizCount = items.filter((i) => i.type === "quiz").length;
   const lessonCount = items.filter((i) => i.type === "lesson").length;
   const notebookCount = items.filter((i) => i.type === "notebook").length;
+  const videoCount = items.filter((i) => i.type === "youtube_video").length;
+  const playlistCount = items.filter((i) => i.type === "youtube_playlist").length;
   const rootLabel = courseItem ? courseItem.name : rootName;
   const rootChain = courseItem ? [rootLabel] : [];
   const nonRootItems = courseItem ? items.filter((i) => i !== courseItem) : items;
@@ -953,18 +964,18 @@ function renderFolderReviewStep(step1Vals) {
     ${hdr("رفع مجلد إلى قاعدة البيانات")}
     ${stepsHTML(2)}
     <div class="adm-body">
-      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد/مادة ورفع ${formatItemCounts({ quizzes: quizCount, lessons: lessonCount, notebooks: notebookCount })}</p>
+      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد/مادة ورفع ${formatItemCounts({ quizzes: quizCount, lessons: lessonCount, notebooks: notebookCount, videos: videoCount, playlists: playlistCount })}</p>
       <div id="adm-tree-holder" style="max-height:320px;overflow-y:auto;"></div>
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-folder-back">→ رجوع</button>
-        <button class="adm-btn adm-btn-primary" id="adm-folder-next">رفع ☁️</button>
+        <button class="adm-btn adm-btn-primary" id="adm-folder-next">${ICON.cloud}<span>رفع</span></button>
       </div>
     </div>
   </div>`;
 
   document.getElementById("adm-tree-holder").appendChild(
     renderThreadTree(nonRootItems, {
-      icon: courseItem ? "📚" : "📁",
+      icon: courseItem ? ICON.course : ICON.folder,
       label: rootLabel,
       badge: courseItem ? "" : "مادة موجودة",
     }, rootChain),
@@ -1004,7 +1015,7 @@ async function doFolderUpload({ educationType, college, year, term }) {
     });
   } catch (err) {
     const hintEl = document.getElementById("adm-folder-hint");
-    if (hintEl) { hintEl.textContent = `❌ ${err.message}`; hintEl.style.color = "var(--color-error)"; }
+    if (hintEl) { setStatus(hintEl, "error", err.message); hintEl.style.color = "var(--color-error)"; }
     document.getElementById("adm-folder-btns").style.display = "flex";
     if (isSessionError(err)) {
       setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
@@ -1014,25 +1025,25 @@ async function doFolderUpload({ educationType, college, year, term }) {
 
   const hintEl = document.getElementById("adm-folder-hint");
   const resultEl = document.getElementById("adm-folder-result");
-  const { foldersCreated, quizzesUploaded, lessonsUploaded = 0, notebooksUploaded = 0, failed } = result;
+  const { foldersCreated, quizzesUploaded, lessonsUploaded = 0, notebooksUploaded = 0, youtubeUploaded = 0, failed } = result;
 
   if (hintEl) {
     if (failed.length === 0) {
-      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد/مادة ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} بنجاح!`;
+      setStatus(hintEl, "success", `تم إنشاء ${foldersCreated} مجلد/مادة ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} بنجاح`);
       hintEl.style.color = "var(--color-success)";
-      showNotification("تم الرفع بنجاح ✅", "success");
+      showNotification("تم الرفع بنجاح", "", "success");
       invalidateManifestCache();
     } else {
-      hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} • فشل ${failed.length}`;
-      hintEl.style.color = quizzesUploaded + lessonsUploaded + notebooksUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded + lessonsUploaded + notebooksUploaded > 0) showNotification(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} (فشل ${failed.length})`, "warning");
+      hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} • فشل ${failed.length}`;
+      hintEl.style.color = quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
+      if (quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0) showNotification(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} (فشل ${failed.length})`, "warning");
       invalidateManifestCache();
     }
   }
 
   if (resultEl && failed.length > 0) {
     resultEl.innerHTML = `<ul class="adm-batch-list">${failed
-      .map((f) => `<li class="adm-batch-item">❌ ${f.name}: ${f.reason}</li>`)
+      .map((f) => `<li class="adm-batch-item">${ICON.x} ${f.name}: ${f.reason}</li>`)
       .join("")}</ul>`;
   }
 
@@ -1062,7 +1073,7 @@ function renderCourseUploadReviewStep(step1Vals) {
       <div id="adm-tree-holder" style="max-height:320px;overflow-y:auto;"></div>
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-course-back">→ رجوع</button>
-        <button class="adm-btn adm-btn-primary" id="adm-course-next">رفع ☁️</button>
+        <button class="adm-btn adm-btn-primary" id="adm-course-next">${ICON.cloud}<span>رفع</span></button>
       </div>
     </div>
   </div>`;
@@ -1078,13 +1089,17 @@ function renderCourseUploadReviewStep(step1Vals) {
     const quizCount = items.filter((i) => i.type === "quiz").length;
     const lessonCount = items.filter((i) => i.type === "lesson").length;
     const notebookCount = items.filter((i) => i.type === "notebook").length;
+    const videoCount = items.filter((i) => i.type === "youtube_video").length;
+    const playlistCount = items.filter((i) => i.type === "youtube_playlist").length;
     const badgeParts = [];
     if (folderCount) badgeParts.push(`${folderCount} مجلد`);
     if (quizCount) badgeParts.push(`${quizCount} امتحان`);
     if (lessonCount) badgeParts.push(`${lessonCount} درس`);
     if (notebookCount) badgeParts.push(`${notebookCount} دفتر`);
+    if (videoCount) badgeParts.push(`${videoCount} فيديو`);
+    if (playlistCount) badgeParts.push(`${playlistCount} قائمة`);
     treeHolder.appendChild(
-      renderThreadTree(items, { icon: "📚", label: courseName, badge: badgeParts.join(" · ") }, [courseName]),
+      renderThreadTree(items, { icon: ICON.course, label: courseName, badge: badgeParts.join(" · ") }, [courseName]),
     );
   });
 
@@ -1123,7 +1138,7 @@ async function doCourseUpload({ educationType, college, year, term }) {
     });
   } catch (err) {
     const hintEl = document.getElementById("adm-course-hint");
-    if (hintEl) { hintEl.textContent = `❌ ${err.message}`; hintEl.style.color = "var(--color-error)"; }
+    if (hintEl) { setStatus(hintEl, "error", err.message); hintEl.style.color = "var(--color-error)"; }
     document.getElementById("adm-course-btns").style.display = "flex";
     if (isSessionError(err)) {
       setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
@@ -1133,25 +1148,25 @@ async function doCourseUpload({ educationType, college, year, term }) {
 
   const hintEl = document.getElementById("adm-course-hint");
   const resultEl = document.getElementById("adm-course-result");
-  const { coursesCount, foldersCreated, quizzesUploaded, lessonsUploaded = 0, notebooksUploaded = 0, failed } = result;
+  const { coursesCount, foldersCreated, quizzesUploaded, lessonsUploaded = 0, notebooksUploaded = 0, youtubeUploaded = 0, failed } = result;
 
   if (hintEl) {
     if (failed.length === 0) {
-      hintEl.textContent = `✅ تم إنشاء ${coursesCount} مادة و${foldersCreated} مجلد ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} بنجاح!`;
+      setStatus(hintEl, "success", `تم إنشاء ${coursesCount} مادة و${foldersCreated} مجلد ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} بنجاح`);
       hintEl.style.color = "var(--color-success)";
-      showNotification("تم الرفع بنجاح ✅", "success");
+      showNotification("تم الرفع بنجاح", "", "success");
       invalidateManifestCache();
     } else {
-      hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} • فشل ${failed.length}`;
-      hintEl.style.color = quizzesUploaded + lessonsUploaded + notebooksUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded + lessonsUploaded + notebooksUploaded > 0) showNotification(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} (فشل ${failed.length})`, "warning");
+      hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} • فشل ${failed.length}`;
+      hintEl.style.color = quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
+      if (quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0) showNotification(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} (فشل ${failed.length})`, "warning");
       invalidateManifestCache();
     }
   }
 
   if (resultEl && failed.length > 0) {
     resultEl.innerHTML = `<ul class="adm-batch-list">${failed
-      .map((f) => `<li class="adm-batch-item">❌ ${f.name}: ${f.reason}</li>`)
+      .map((f) => `<li class="adm-batch-item">${ICON.x} ${f.name}: ${f.reason}</li>`)
       .join("")}</ul>`;
   }
 
@@ -1250,14 +1265,16 @@ function renderFolderUploadTargetStep(step1Vals) {
 
 // ─── Folder Upload mode: Review step (Step 3 of 4) ─────────────────────────
 function renderFolderUploadReviewStep(step1Vals) {
-  const { folderRows, quizRows, lessonRows, notebookRows, userContent } = _folderUploadItems;
+  const { folderRows, quizRows, lessonRows, notebookRows, youtubeRows = [], userContent } = _folderUploadItems;
   const { courseName, subfolderPath } = _folderUploadTarget;
-  const { items } = buildFolderUploadPayload(userContent, folderRows, quizRows, courseName, subfolderPath, lessonRows, notebookRows);
+  const { items } = buildFolderUploadPayload(userContent, folderRows, quizRows, courseName, subfolderPath, lessonRows, notebookRows, youtubeRows);
 
   const folderCount = items.filter((i) => i.type === "folder").length;
   const quizCount = items.filter((i) => i.type === "quiz").length;
   const lessonCount = items.filter((i) => i.type === "lesson").length;
   const notebookCount = items.filter((i) => i.type === "notebook").length;
+  const videoCount = items.filter((i) => i.type === "youtube_video").length;
+  const playlistCount = items.filter((i) => i.type === "youtube_playlist").length;
   const destinationLabel = subfolderPath.length > 0
     ? `${courseName} ← ${subfolderPath.join(" ← ")}`
     : courseName;
@@ -1266,17 +1283,17 @@ function renderFolderUploadReviewStep(step1Vals) {
     ${hdr("رفع المجلد إلى المنصة")}
     ${stepsHTML(3)}
     <div class="adm-body">
-      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد ورفع ${formatItemCounts({ quizzes: quizCount, lessons: lessonCount, notebooks: notebookCount })} داخل "${destinationLabel}"</p>
+      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد ورفع ${formatItemCounts({ quizzes: quizCount, lessons: lessonCount, notebooks: notebookCount, videos: videoCount, playlists: playlistCount })} داخل "${destinationLabel}"</p>
       <div id="adm-tree-holder" style="max-height:320px;overflow-y:auto;"></div>
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-folder-target-back">→ رجوع</button>
-        <button class="adm-btn adm-btn-primary" id="adm-folder-target-next">رفع ☁️</button>
+        <button class="adm-btn adm-btn-primary" id="adm-folder-target-next">${ICON.cloud}<span>رفع</span></button>
       </div>
     </div>
   </div>`;
 
   document.getElementById("adm-tree-holder").appendChild(
-    renderThreadTree(items, { icon: "📚", label: destinationLabel, badge: "مادة موجودة" }, [courseName, ...subfolderPath]),
+    renderThreadTree(items, { icon: ICON.course, label: destinationLabel, badge: "مادة موجودة" }, [courseName, ...subfolderPath]),
   );
 
   window.__admClose = closeModal;
@@ -1286,9 +1303,9 @@ function renderFolderUploadReviewStep(step1Vals) {
 
 // ─── Folder Upload mode: Upload step (Step 4 of 4) ─────────────────────────
 async function doFolderUploadToExisting({ educationType, college, year, term }) {
-  const { folderRows, quizRows, lessonRows, notebookRows, userContent } = _folderUploadItems;
+  const { folderRows, quizRows, lessonRows, notebookRows, youtubeRows = [], userContent } = _folderUploadItems;
   const { courseName, subfolderPath } = _folderUploadTarget;
-  const { items } = buildFolderUploadPayload(userContent, folderRows, quizRows, courseName, subfolderPath, lessonRows, notebookRows);
+  const { items } = buildFolderUploadPayload(userContent, folderRows, quizRows, courseName, subfolderPath, lessonRows, notebookRows, youtubeRows);
 
   _overlay.innerHTML = `<div class="adm-card">
     ${hdr("رفع المجلد إلى المنصة")}
@@ -1315,7 +1332,7 @@ async function doFolderUploadToExisting({ educationType, college, year, term }) 
     });
   } catch (err) {
     const hintEl = document.getElementById("adm-folder-target-hint");
-    if (hintEl) { hintEl.textContent = `❌ ${err.message}`; hintEl.style.color = "var(--color-error)"; }
+    if (hintEl) { setStatus(hintEl, "error", err.message); hintEl.style.color = "var(--color-error)"; }
     document.getElementById("adm-folder-target-btns").style.display = "flex";
     if (isSessionError(err)) {
       setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
@@ -1325,25 +1342,25 @@ async function doFolderUploadToExisting({ educationType, college, year, term }) 
 
   const hintEl = document.getElementById("adm-folder-target-hint");
   const resultEl = document.getElementById("adm-folder-target-result");
-  const { foldersCreated, quizzesUploaded, lessonsUploaded = 0, notebooksUploaded = 0, failed } = result;
+  const { foldersCreated, quizzesUploaded, lessonsUploaded = 0, notebooksUploaded = 0, youtubeUploaded = 0, failed } = result;
 
   if (hintEl) {
     if (failed.length === 0) {
-      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} بنجاح!`;
+      setStatus(hintEl, "success", `تم إنشاء ${foldersCreated} مجلد ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} بنجاح`);
       hintEl.style.color = "var(--color-success)";
-      showNotification("تم الرفع بنجاح ✅", "success");
+      showNotification("تم الرفع بنجاح", "", "success");
       invalidateManifestCache();
     } else {
-      hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} • فشل ${failed.length}`;
-      hintEl.style.color = quizzesUploaded + lessonsUploaded + notebooksUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded + lessonsUploaded + notebooksUploaded > 0) showNotification(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded })} (فشل ${failed.length})`, "warning");
+      hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} • فشل ${failed.length}`;
+      hintEl.style.color = quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
+      if (quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0) showNotification(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} (فشل ${failed.length})`, "warning");
       invalidateManifestCache();
     }
   }
 
   if (resultEl && failed.length > 0) {
     resultEl.innerHTML = `<ul class="adm-batch-list">${failed
-      .map((f) => `<li class="adm-batch-item">❌ ${f.name}: ${f.reason}</li>`)
+      .map((f) => `<li class="adm-batch-item">${ICON.x} ${f.name}: ${f.reason}</li>`)
       .join("")}</ul>`;
   }
 
@@ -1396,10 +1413,10 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
       if (!msgEl) { msgEl = document.createElement("span"); msgEl.className = "adm-progress-msg"; li.appendChild(msgEl); }
       msgEl.textContent = "جارٍ الرفع…";
     } else if (state === "done") {
-      iconEl.textContent = "✅";
+      iconEl.innerHTML = ICON.check; iconEl.style.color = "var(--color-success)";
       if (msgEl) msgEl.remove();
     } else if (state === "error") {
-      iconEl.textContent = "❌";
+      iconEl.innerHTML = ICON.x; iconEl.style.color = "var(--color-error)";
       if (!msgEl) { msgEl = document.createElement("span"); msgEl.className = "adm-progress-msg"; li.appendChild(msgEl); }
       msgEl.textContent = msg || "فشل";
     } else if (state === "skipped") {
@@ -1440,7 +1457,7 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
         }
         const hintEl = document.getElementById("adm-s4-hint");
         if (hintEl) {
-          hintEl.textContent = `⚠️ تم إلغاء الرفع: انتهت الجلسة. تم رفع ${successCount} فقط من أصل ${items.length}.`;
+          setStatus(hintEl, "warning", `تم إلغاء الرفع: انتهت الجلسة. تم رفع ${successCount} فقط من أصل ${items.length}.`);
           hintEl.style.color = "var(--color-error)";
         }
         showNotification(err.message, "error");
@@ -1453,9 +1470,9 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
   const hintEl = document.getElementById("adm-s4-hint");
   if (hintEl) {
     if (errorCount === 0) {
-      hintEl.textContent = `✅ تم رفع ${successCount} امتحان بنجاح!`;
+      setStatus(hintEl, "success", `تم رفع ${successCount} امتحان بنجاح`);
       hintEl.style.color = "var(--color-success)";
-      showNotification(`تم الرفع بنجاح ✅ (${successCount} امتحان)`, "success");
+      showNotification(`تم الرفع بنجاح (${successCount} امتحان)`, "", "success");
     } else {
       hintEl.textContent = `تم رفع ${successCount} • فشل ${errorCount}`;
       hintEl.style.color = successCount > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
@@ -1505,7 +1522,7 @@ function renderConfirmationLinks(container, links) {
     btn.className = "adm-path-chip adm-copy-btn";
     btn.style.cssText = "border:none;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;font-size:.85rem;";
     btn.dataset.url = quizLinkHref(links[0].quizId);
-    btn.innerHTML = `<span>نسخ رابط الامتحان: ${links[0].title}</span><span style="font-size:1.1rem;" title="نسخ الرابط">📋</span>`;
+    btn.innerHTML = `<span>نسخ رابط الامتحان: ${links[0].title}</span><span style="font-size:1.1rem;" title="نسخ الرابط">${ICON.copy}</span>`;
     btn.addEventListener("click", () => copyLinkToClipboard(btn.dataset.url));
     container.appendChild(btn);
     return;
@@ -1526,7 +1543,7 @@ function renderConfirmationLinks(container, links) {
     li.className = "adm-batch-item adm-copy-btn";
     li.style.cssText = "cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .2s;";
     li.dataset.url = quizLinkHref(l.quizId);
-    li.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:start;unicode-bidi:plaintext;">${l.title}</span><span style="font-size:1.1rem;color:var(--color-primary);" title="نسخ الرابط">📋</span>`;
+    li.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:start;unicode-bidi:plaintext;">${l.title}</span><span style="font-size:1.1rem;color:var(--color-primary);" title="نسخ الرابط">${ICON.copy}</span>`;
     li.addEventListener("click", () => copyLinkToClipboard(li.dataset.url));
     li.addEventListener("mouseover", () => { li.style.background = "var(--color-primary-light)"; });
     li.addEventListener("mouseout", () => { li.style.background = "var(--color-background-secondary)"; });
@@ -1742,7 +1759,7 @@ export async function openCourseUploadModal(courseRows, userContent) {
  *   - quizzes/lessons: selected plain items to upload alongside the folders
  *   - userContent: full local user_quizzes collection
  */
-export async function openFolderUploadModal({ folders, quizzes, lessons, notebooks, userContent }) {
+export async function openFolderUploadModal({ folders, quizzes, lessons, notebooks, youtube, userContent }) {
   if (_overlay) return;
   if (!isAdminAuthenticated()) {
     showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
@@ -1753,7 +1770,8 @@ export async function openFolderUploadModal({ folders, quizzes, lessons, noteboo
   const quizRows = quizzes || [];
   const lessonRows = lessons || [];
   const notebookRows = notebooks || [];
-  if (folderRows.length === 0 && quizRows.length === 0 && lessonRows.length === 0 && notebookRows.length === 0) {
+  const youtubeRows = youtube || [];
+  if (folderRows.length === 0 && quizRows.length === 0 && lessonRows.length === 0 && notebookRows.length === 0 && youtubeRows.length === 0) {
     showNotification("لا توجد عناصر لرفعها", "warning");
     return;
   }
@@ -1762,7 +1780,7 @@ export async function openFolderUploadModal({ folders, quizzes, lessons, noteboo
 
   try {
     _mode = "folderUpload";
-    _folderUploadItems = { folderRows, quizRows, lessonRows, notebookRows, userContent };
+    _folderUploadItems = { folderRows, quizRows, lessonRows, notebookRows, youtubeRows, userContent };
     _folderUploadTarget = null;
     _courseUploadItems = null;
     _folderTree = null;
@@ -1916,6 +1934,20 @@ export function createNotebookUploadButton(nb) {
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     openFolderUploadModal({ folders: [], quizzes: [], lessons: [], notebooks: [nb], userContent: [] });
+  });
+  return btn;
+}
+
+/** Publish one locally saved YouTube video / playlist through the same wizard. */
+export function createYoutubeUploadButton(entry) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "exam-action-btn";
+  btn.setAttribute("aria-label", `رفع "${entry?.meta?.title || "فيديو"}" إلى المنصة`);
+  btn.innerHTML = `${ICON.cloud}<span>رفع إلى المنصة</span>`;
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openFolderUploadModal({ folders: [], quizzes: [], lessons: [], notebooks: [], youtube: [entry], userContent: [] });
   });
   return btn;
 }

@@ -511,8 +511,8 @@ async function handleDebugCatalog(req, res) {
 
 async function supabaseCatalogTableProbe(table, columns) {
     try {
-        const { createClient } = await import("@supabase/supabase-js");
-        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+        const { makeClient } = await import("./_supabase.js");
+        const supabase = makeClient("anon");
         const { data, error, count } = await supabase.from(table).select(columns, { count: "exact" }).limit(1);
         return {
             ok: !error,

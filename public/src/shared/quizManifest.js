@@ -73,7 +73,7 @@ function withTimeout(promise, ms, label) {
 // ── Local snapshot persistence ────────────────────────────────────────────────
 
 /** Stores the last-good catalog (slimmed: quiz metadata only, no quiz bodies). */
-function saveManifestCache({ quizzes, lessons, notebooks, courses, folders }) {
+function saveManifestCache({ quizzes, lessons, notebooks, youtube, courses, folders }) {
   try {
     if (typeof localStorage === "undefined") return;
     const slimQuizzes = (quizzes || []).map((q) => ({
@@ -93,12 +93,13 @@ function saveManifestCache({ quizzes, lessons, notebooks, courses, folders }) {
       // Lessons were added to the catalog in v2. An older snapshot cannot
       // provide an honest course-level lesson-progress total, so let it miss
       // the cache and fetch a current catalog instead.
-      v: 4, // v3 snapshots contained quiz password hashes — never restore them
+      v: 5, // v4 had no YouTube items; v3 snapshots contained quiz password hashes — never restore them
       project: SUPABASE_URL,
       savedAt: new Date().toISOString(),
       quizzes: slimQuizzes,
       lessons,
       notebooks: notebooks || [],
+      youtube: youtube || [],
       courses,
       folders,
     });
@@ -124,7 +125,7 @@ function tryRestoreManifestCache() {
     const raw = localStorage.getItem(MANIFEST_CACHE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (data && data.v !== 4) {
+    if (data && data.v !== 5) {
       // Older snapshots (v3) hold quiz password hashes: wipe them from disk.
       try { localStorage.removeItem(MANIFEST_CACHE_KEY); } catch (_) { }
       return null;
@@ -171,8 +172,8 @@ export async function getManifest() {
   // live and the snapshot fallback paths can feed it.
   let foldersRaw;
   try {
-    const { quizzes, lessons, notebooks, courses, folders } = await fetchDbManifest(liveTimeout);
-    saveManifestCache({ quizzes, lessons, notebooks, courses, folders });
+    const { quizzes, lessons, notebooks, youtube, courses, folders } = await fetchDbManifest(liveTimeout);
+    saveManifestCache({ quizzes, lessons, notebooks, youtube, courses, folders });
     // buildSubjects() returns { subjects: [...] } (see its docstring/return
     // statement below) — unwrap here so `subjects` is the plain array
     // buildCompatStructures() expects (@param {Subject[]} subjects).
@@ -182,7 +183,7 @@ export async function getManifest() {
     // never surfaced during the Supabase outage itself (the throw/timeout
     // path was hit first every time).
     foldersRaw = folders;
-    ({ subjects } = await buildSubjects(quizzes, lessons, courses, folders, notebooks));
+    ({ subjects } = await buildSubjects(quizzes, lessons, courses, folders, notebooks, youtube));
   } catch (err) {
     if (!snapshot) throw err;
     console.warn(
@@ -196,6 +197,7 @@ export async function getManifest() {
       snapshot.courses,
       snapshot.folders,
       snapshot.notebooks,
+      snapshot.youtube,
     ));
     fromCache = true;
   }
@@ -231,7 +233,7 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
   const supabase = await ensureSharedSupabaseClient();
   if (!supabase) throw new Error("Supabase client unavailable");
 
-  const [{ data: quizzes, error: quizzesError }, { data: lessons, error: lessonsError }, { data: courses, error: coursesError }, { data: folders, error: foldersError }, { data: notebooks, error: notebooksError }] = await withTimeout(
+  const [{ data: quizzes, error: quizzesError }, { data: lessons, error: lessonsError }, { data: courses, error: coursesError }, { data: folders, error: foldersError }, { data: notebooks, error: notebooksError }, { data: youtube, error: youtubeError }] = await withTimeout(
     Promise.all([
       // Catalog rendering only needs metadata/stats. Selecting `data`
       // downloads every question body for every quiz, making first loads
@@ -271,6 +273,13 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
         .select("id, course_id, folder_id, title, slug, description, source, runtime, cell_count, sort_order, created_by, created_at, updated_at")
         .order("sort_order", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: true }),
+      // Published YouTube items: references only, never the playlist `items`
+      // (those are fetched when a playlist is opened).
+      supabase
+        .from("youtube_public")
+        .select("id, course_id, folder_id, kind, youtube_id, playlist_id, title, channel_title, description, thumbnail_url, published_at, duration_seconds, item_count, total_count, partial, created_at")
+        .eq("is_published", true)
+        .order("created_at", { ascending: true }),
     ]),
     timeoutMs,
     "quiz manifest",
@@ -284,7 +293,10 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
   // applied (or if it errors) the catalog must keep working without notebooks.
   if (notebooksError) console.warn("[quizManifest] notebooks unavailable:", notebooksError.message);
 
-  return { quizzes, lessons, notebooks: notebooksError ? [] : notebooks || [], courses, folders };
+  // Same rule for YouTube items (migration 20261120120000 / ...130000).
+  if (youtubeError) console.warn("[quizManifest] youtube_public unavailable:", youtubeError.message);
+
+  return { quizzes, lessons, notebooks: notebooksError ? [] : notebooks || [], youtube: youtubeError ? [] : youtube || [], courses, folders };
 }
 
 /**
@@ -293,7 +305,7 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
  * and slimmed snapshot rows from saveManifestCache() (meta/stats hoisted to
  * the row top level) — see the `row.data ?? row` normalization below.
  */
-async function buildSubjects(quizzes, lessons, courses, folders, notebooks = []) {
+async function buildSubjects(quizzes, lessons, courses, folders, notebooks = [], youtube = []) {
   const courseById = new Map((courses || []).map((course) => [course.id, course]));
   const folderById = new Map((folders || []).map((folder) => [folder.id, folder]));
 
@@ -332,6 +344,7 @@ async function buildSubjects(quizzes, lessons, courses, folders, notebooks = [])
       quizzes: [],
       lessons: [],
       notebooks: [],
+      youtube: [],
       folderPaths: [],
     };
     if (course.education_type === "University" && course.college) subject.faculty = course.college;
@@ -431,6 +444,42 @@ async function buildSubjects(quizzes, lessons, courses, folders, notebooks = [])
       passwordProtected: Boolean(row.password_protected),
       courseId: row.course_id || null,
       folderId: row.folder_id || null,
+      education_type: course.education_type || null,
+    });
+  }
+
+  for (const row of youtube || []) {
+    const course = courseById.get(row.course_id);
+    if (!course) {
+      console.warn(`[quizManifest] YouTube item ${row.id} has no valid course_id`);
+      continue;
+    }
+    let folderSegments;
+    try {
+      folderSegments = getFolderSegments(row.folder_id, row.course_id);
+    } catch (error) {
+      console.warn(`[quizManifest] ${error.message}`);
+      continue;
+    }
+    ensureSubject(course).youtube.push({
+      itemType: row.kind === "playlist" ? "youtube_playlist" : "youtube_video",
+      id: row.id,
+      kind: row.kind,
+      youtubeId: row.youtube_id || null,
+      playlistId: row.playlist_id || null,
+      title: row.title || "",
+      channelTitle: row.channel_title || "",
+      description: row.description || "",
+      thumbnailUrl: row.thumbnail_url || "",
+      publishedAt: row.published_at || null,
+      durationSeconds: row.duration_seconds ?? null,
+      itemCount: Number(row.item_count) || 0,
+      totalCount: Number(row.total_count) || 0,
+      partial: Boolean(row.partial),
+      createdAt: row.created_at || null,
+      courseId: row.course_id || null,
+      folderId: row.folder_id || null,
+      folderSegments,
       education_type: course.education_type || null,
     });
   }
@@ -572,6 +621,7 @@ function buildCompatStructures(subjects, folders) {
         exams: [],
         lessons: [],
         notebooks: [],
+        youtube: [],
         source: subject.source,
         ...(subject.created_by && { created_by: subject.created_by }),
         ...(subject.created_at && { created_at: subject.created_at }),
@@ -656,7 +706,7 @@ function buildCompatStructures(subjects, folders) {
             const folderInfo = folderInfoByPath.get(subKey);
             categoryTree[subKey] = {
               key: subKey, name: segment, path: [...currentPathArr], parent: currentParentKey,
-              subcategories: [], exams: [], lessons: [], notebooks: [], education_type: subject.education_type,
+              subcategories: [], exams: [], lessons: [], notebooks: [], youtube: [], education_type: subject.education_type,
               ...(folderInfo && { id: folderInfo.id }),
               ...(folderInfo?.course_id && { course_id: folderInfo.course_id }),
               ...(folderInfo?.parent_folder_id && { parent_folder_id: folderInfo.parent_folder_id }),
@@ -709,6 +759,7 @@ function buildCompatStructures(subjects, folders) {
           exams: [],
           lessons: [],
           notebooks: [],
+          youtube: [],
           education_type: categoryTree[courseName].education_type,
         };
         categoryTree[parentKey].subcategories.push(subKey);
@@ -739,6 +790,21 @@ function buildCompatStructures(subjects, folders) {
         parentKey = subKey;
       }
       (categoryTree[parentKey].notebooks ||= []).push({ ...notebook, category: parentKey });
+    }
+  }
+
+  // Published YouTube items: placed like notebooks, after every folder node exists.
+  for (const subject of subjects) {
+    const rootKey = subject.name;
+    if (!categoryTree[rootKey]) continue;
+    for (const item of subject.youtube ?? []) {
+      let parentKey = rootKey;
+      for (const segment of Array.isArray(item.folderSegments) ? item.folderSegments : []) {
+        const subKey = `${parentKey}/${segment}`;
+        if (!categoryTree[subKey]) break;
+        parentKey = subKey;
+      }
+      (categoryTree[parentKey].youtube ||= []).push({ ...item, category: parentKey });
     }
   }
 

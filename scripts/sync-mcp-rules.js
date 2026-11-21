@@ -28,3 +28,16 @@ for (const dir of ["supabase/functions/mcp", "scripts/lib"]) {
 // notebook-convert.js: pure converters used by api/ (upload) and scripts/ (seed).
 copyFileSync(join(root, "public/src/shared/notebook-convert.js"), join(root, "scripts/lib/notebook-convert.js"));
 console.log("Synced notebook-convert.js -> scripts/lib/notebook-convert.js");
+
+// youtube-rules.js: pure YouTube rules used by api/youtube.js and the browser import flow.
+copyFileSync(join(root, "public/src/shared/youtube-rules.js"), join(root, "scripts/lib/youtube-rules.js"));
+console.log("Synced youtube-rules.js -> scripts/lib/youtube-rules.js");
+
+// The MCP edge function (Deno) imports the YouTube rules and the MCP model;
+// the admin API (api/admin.js) imports the model from scripts/lib.
+for (const name of ["youtube-rules.js", "youtube-mcp-model.js"]) {
+  copyFileSync(join(root, "public/src/shared", name), join(root, "supabase/functions/mcp", name));
+  console.log(`Synced ${name} -> supabase/functions/mcp`);
+}
+copyFileSync(join(root, "public/src/shared/youtube-mcp-model.js"), join(root, "scripts/lib/youtube-mcp-model.js"));
+console.log("Synced youtube-mcp-model.js -> scripts/lib");

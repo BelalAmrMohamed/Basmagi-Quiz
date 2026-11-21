@@ -799,6 +799,7 @@ const TRASH_CAN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height
 // redrawn at this menu's 15x15 scale.
 const CREATE_LESSON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M9 10h6"/><path d="M12 7v6"/></svg>`;
 // Matches the sidebar's "إنشاء دفاتر" code icon, scaled to 15x15.
+const CREATE_YOUTUBE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="m10 9 5 3-5 3z"/></svg>`;
 const CREATE_NOTEBOOK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>`;
 // Trigger icon for the "إنشاء" submenu row.
 const CREATE_PLUS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>`;
@@ -868,7 +869,11 @@ function buildItemMenuItems(targetType, targetId, targetTitle) {
   const isLesson = targetRow?.meta?.type === "lesson";
   const rename = { icon: RENAME_SVG, label: "تغيير العنوان", onClick: () => renameItem(targetId, targetTitle) };
 
-  if (targetType === "item") {
+  const isVideo = ["youtube_video", "youtube_playlist"].includes(targetRow?.meta?.type);
+  if (isVideo) {
+    // Videos: title and description come from YouTube (read-only). Edit actions
+    // do not apply, so the "تعديل" group is left out for them.
+  } else if (targetType === "item") {
     // "item" covers both quizzes and lessons — send each to its own editor.
     // Edit actions are grouped in one "تعديل" submenu to keep the menu short.
     contextMenuEl.appendChild(
@@ -901,7 +906,7 @@ function buildItemMenuItems(targetType, targetId, targetTitle) {
         },
       ]),
     );
-  } else {
+  } else if (!isVideo) {
     contextMenuEl.appendChild(createMenuItem(rename.icon, rename.label, rename.onClick));
   }
 
@@ -991,6 +996,15 @@ function buildGlobalMenuItems() {
         onClick: async () => {
           const { openInlineCreateNotebookModal } = await import("./create-notebook-modal.js");
           openInlineCreateNotebookModal();
+        },
+      },
+      {
+        // Search YouTube or paste a video/playlist URL into محتواي (youtube-video-modal.js).
+        icon: CREATE_YOUTUBE_SVG,
+        label: "إنشاء فيديو يوتيوب",
+        onClick: async () => {
+          const { openYoutubeVideoModal } = await import("./youtube-video-modal.js");
+          openYoutubeVideoModal();
         },
       },
       {
@@ -1549,6 +1563,24 @@ function notebookToPayload(nb, name) {
   };
 }
 
+/** The publish body for a saved YouTube entry (shape api/upload-quiz.js and api/admin.js expect). */
+export function youtubeToPayload(entry) {
+  if (entry?.meta?.type === "youtube_playlist") {
+    const p = entry.playlist || {};
+    const id = p.id || entry.meta.playlistId;
+    return {
+      playlistId: id,
+      playlist: { id, title: p.title || entry.meta.title, channelTitle: p.channelTitle || entry.meta.channelTitle, itemCount: p.itemCount },
+      items: Array.isArray(p.items) ? p.items : [],
+      partial: Boolean(p.partial),
+    };
+  }
+  return {
+    youtubeId: entry?.meta?.youtubeId || entry?.video?.videoId,
+    meta: { ...entry?.meta, durationSeconds: entry?.stats?.durationSeconds ?? entry?.video?.durationSeconds ?? null },
+  };
+}
+
 function appendSubtree(userContent, node, ancestorNames, rootName, items) {
   const children = walkChildren(userContent, node.id || node.meta?.id);
   for (const child of children) {
@@ -1562,6 +1594,16 @@ function appendSubtree(userContent, node, ancestorNames, rootName, items) {
         folderSegments: [...ancestorNames],
         rootName,
         lesson: lessonToPayload(child),
+      });
+      continue;
+    }
+    if (child.meta?.type === "youtube_video" || child.meta?.type === "youtube_playlist") {
+      items.push({
+        type: child.meta.type,
+        name: childName || "يوتيوب",
+        folderSegments: [...ancestorNames],
+        rootName,
+        youtube: youtubeToPayload(child),
       });
       continue;
     }
@@ -1633,7 +1675,7 @@ export function buildCourseUploadPayload(userContent, courseItems) {
  *   names under the course to nest everything one level deeper into
  * @returns {{ items: Array, rootName: string }}
  */
-export function buildFolderUploadPayload(userContent, folderItems, additionalQuizzes, targetCourseName, targetSubfolderPath = [], additionalLessons = [], additionalNotebooks = []) {
+export function buildFolderUploadPayload(userContent, folderItems, additionalQuizzes, targetCourseName, targetSubfolderPath = [], additionalLessons = [], additionalNotebooks = [], additionalYoutube = []) {
   const items = [];
   const baseChain = [targetCourseName, ...targetSubfolderPath];
 
@@ -1677,6 +1719,16 @@ export function buildFolderUploadPayload(userContent, folderItems, additionalQui
       rootName: targetCourseName,
       localId: nb.id || nb.meta?.id,
       notebook: notebookToPayload(nb, name),
+    });
+  }
+
+  for (const yt of additionalYoutube || []) {
+    items.push({
+      type: yt.meta?.type === "youtube_playlist" ? "youtube_playlist" : "youtube_video",
+      name: (yt.meta?.title || "").trim() || "يوتيوب",
+      folderSegments: [...baseChain],
+      rootName: targetCourseName,
+      youtube: youtubeToPayload(yt),
     });
   }
 

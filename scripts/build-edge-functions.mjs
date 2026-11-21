@@ -26,6 +26,7 @@ const TARGETS = {
   "ai-chat": "api/ai-agent/chat.js",
   "ai-usage": "api/ai-agent/usage.js",
   "ai-bot": "api/ai-agent/bot.js", // Telegram webhook (re-register with setWebhook after deploy)
+  "youtube": "supabase/functions/youtube/handler.js", // /api/youtube: YouTube Data API proxy (key stays server-side)
 };
 
 const builtins = new Set(builtinModules.flatMap((m) => [m, `node:${m}`]));

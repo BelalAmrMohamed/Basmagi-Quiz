@@ -30,15 +30,20 @@ import { downloadLesson } from "./lesson-download.js";
 import { withDownloadLoading as withExportLoading } from "../../components/download-quiz-modal/export-card.js";
 import { appendNotebookMenuEntries, fetchPlatformNotebookRow, showNotebookDownloadModal } from "./notebook-actions.js";
 import { getSelectedUserContent } from "./app-state.js";
+import { isAllowedThumbnailUrl, formatDurationSeconds } from "../../shared/youtube-rules.js";
+import { describePlaylistCount } from "./local-youtube-playlist.js";
 import { updateBulkActionBar } from "./user-content-view.js";
 import {
   createUserContentActions, createUserLessonActions, createUserNotebookActions,
+  createUserYoutubeVideoActions, createUserYoutubePlaylistActions,
 } from "./user-content-card.js";
 
 const KINDS = {
   quiz: { label: "امتحان", emoji: "📝", tip: "📝 امتحان", descTip: "📄 وصف الامتحان" },
   lesson: { label: "درس", emoji: "📘", tip: "📘 درس تفاعلي", descTip: "📄 وصف الدرس" },
   notebook: { label: "دفتر", emoji: "💻", tip: "💻 دفتر تفاعلي", descTip: "📄 وصف الدفتر" },
+  video: { label: "فيديو", emoji: "▶️", tip: "▶️ فيديو يوتيوب", descTip: "📄 وصف الفيديو" },
+  playlist: { label: "قائمة تشغيل", emoji: "📑", tip: "📑 قائمة تشغيل يوتيوب", descTip: "📄 وصف القائمة" },
 };
 
 function el(tag, className, text) {
@@ -48,23 +53,92 @@ function el(tag, className, text) {
   return node;
 }
 
+
+const PLAY_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" fill="currentColor"/></svg>';
+const PLAYLIST_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h12M3 11h12M3 16h7"/><path d="M17 12.5v7l5-3.5z" fill="currentColor"/></svg>';
+const CHANNEL_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>';
+const RTL_CHAR = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+const LTR_CHAR = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF]/;
+
+/** Direction of a title from its first strong character (falls back to the page direction). */
+export function titleDirection(text) {
+  for (const ch of String(text || "")) {
+    if (RTL_CHAR.test(ch)) return "rtl";
+    if (LTR_CHAR.test(ch)) return "ltr";
+  }
+  return "auto";
+}
+
+/** Thumbnail (16:9) with the duration / video-count badge and the hover glyph. */
+function buildYoutubeMedia(o) {
+  const isPlaylist = o.kind === "playlist";
+  const media = el("div", "ytc-media");
+  if (isPlaylist) media.append(el("span", "ytc-layers"));
+  if (o.thumbnailUrl && isAllowedThumbnailUrl(o.thumbnailUrl)) {
+    const img = el("img");
+    img.src = o.thumbnailUrl;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    media.append(img);
+  } else {
+    media.append(el("span", "ytc-fallback"));
+  }
+  const hover = el("span", "ytc-hover");
+  hover.setAttribute("aria-hidden", "true");
+  hover.innerHTML = `<span class="ytc-hover-icon">${isPlaylist ? PLAYLIST_ICON : PLAY_ICON}</span>`;
+  media.append(hover);
+  const badgeText = o.youtube.badge;
+  if (badgeText) {
+    const badge = el("span", "ytc-badge");
+    if (isPlaylist) badge.innerHTML = PLAYLIST_ICON;
+    badge.append(el("span", "", badgeText));
+    media.append(badge);
+  }
+  return media;
+}
+
+/** One compact row: title (direction from the title itself) and the channel icon. */
+function buildYoutubeRow(o) {
+  const row = el("div", "ytc-row");
+  row.dir = titleDirection(o.title);
+  const h = el("h3", "ytc-title", o.title);
+  h.dataset.tooltipText = o.title;
+  const channel = String(o.youtube.channel || "").trim();
+  const icon = el("span", "ytc-channel");
+  icon.setAttribute("role", "img");
+  icon.setAttribute("aria-label", channel ? `القناة: ${channel}` : "القناة");
+  if (channel) icon.title = channel;
+  const first = [...channel][0];
+  if (first && /[\p{L}\p{N}]/u.test(first)) icon.textContent = first.toUpperCase();
+  else icon.innerHTML = CHANNEL_ICON;
+  row.append(h, icon);
+  return row;
+}
+
 /**
  * Builds one item card.
  * @param {object} o
- * @param {"quiz"|"lesson"|"notebook"} o.kind
+ * @param {"quiz"|"lesson"|"notebook"|"video"} o.kind
  * @param {string} o.title @param {string} [o.description] @param {string} [o.chipDetail]
  * @param {boolean} [o.isNew]
  * @param {Array<{text:string, tag?:boolean}>} [o.meta]
- * @param {{label:string, onClick:()=>void}} o.primary
- * @param {{label?:string, locked?:boolean, onClick:(btn:HTMLElement)=>void}} o.download
+ * @param {{label:string, onClick:()=>void}} [o.primary] (not used by compact cards)
+ * @param {{label?:string, locked?:boolean, onClick:(btn:HTMLElement)=>void}} [o.download]
  * @param {(btn:HTMLElement)=>void} o.onMore
  * @param {string} [o.selectId] set for «محتواي» cards: adds the selection checkbox
+ * @param {boolean} [o.compact] compact row card (videos): no chip, no description and no
+ *   primary button. The whole card calls `onOpen`; the ⋮ menu stays for select, move and delete.
+ * @param {() => void} [o.onOpen] required when `compact` is set
  */
 export function createItemCard(o) {
   const k = KINDS[o.kind];
+  const compact = Boolean(o.compact);
   const card = el("div", "item-card");
   card.dataset.cardKind = o.kind;
-  card.setAttribute("role", "article");
+  card.setAttribute("role", compact ? "button" : "article");
+  if (compact) card.tabIndex = 0;
   card.setAttribute("aria-label", `${k.label}: ${o.title}`);
 
   card.append(el("span", "shape"));
@@ -105,50 +179,90 @@ export function createItemCard(o) {
     card.append(badge);
   }
 
-  const body = el("div", "ic-body");
-  body.append(el("span", `item-type-chip`, `${k.emoji} ${k.label}${o.chipDetail ? ` · ${o.chipDetail}` : ""}`));
-  body.firstChild.setAttribute("aria-hidden", "true");
-  const h = el("h3", null, o.title);
-  h.dataset.tooltipBadge = k.tip;
-  h.dataset.tooltipText = o.title;
-  body.append(h);
-  const description = String(o.description || "").trim();
-  if (description) {
-    const p = el("p", "ic-desc", description);
-    p.dataset.tooltipBadge = k.descTip;
-    p.dataset.tooltipText = description;
-    body.append(p);
-  }
-  const meta = (o.meta || []).filter((m) => m.text);
-  if (meta.length) {
-    const row = el("div", "ic-meta");
-    meta.forEach((m) => row.append(el("span", m.tag ? "ic-tag" : null, m.text)));
-    body.append(row);
-  }
-  card.append(body);
+  if (o.youtube) {
+    card.classList.add("ytc");
+    card.append(buildYoutubeMedia(o), buildYoutubeRow(o));
+  } else {
+    if (o.thumbnailUrl && isAllowedThumbnailUrl(o.thumbnailUrl)) {
+      const thumbBox = el("div", "ic-thumb");
+      const img = el("img");
+      img.src = o.thumbnailUrl;
+      img.alt = "";
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.referrerPolicy = "no-referrer";
+      thumbBox.append(img);
+      card.append(thumbBox);
+    }
 
-  const actions = el("div", "ic-actions");
+    const body = el("div", "ic-body");
+    if (!compact) {
+      body.append(el("span", `item-type-chip`, `${k.emoji} ${k.label}${o.chipDetail ? ` · ${o.chipDetail}` : ""}`));
+      body.firstChild.setAttribute("aria-hidden", "true");
+    }
+    const h = el("h3", null, o.title);
+    h.dataset.tooltipBadge = k.tip;
+    h.dataset.tooltipText = o.title;
+    body.append(h);
+    const description = compact ? "" : String(o.description || "").trim();
+    if (description) {
+      const p = el("p", "ic-desc", description);
+      p.dataset.tooltipBadge = k.descTip;
+      p.dataset.tooltipText = description;
+      body.append(p);
+    }
+    const meta = (o.meta || []).filter((m) => m.text);
+    if (meta.length) {
+      const row = el("div", "ic-meta");
+      meta.forEach((m) => row.append(el("span", m.tag ? "ic-tag" : null, m.text)));
+      body.append(row);
+    }
+    card.append(body);
+  }
+
   const more = el("button", "exam-more-btn");
   more.type = "button";
   more.innerHTML = MORE_DOTS_ICON_SVG;
   more.setAttribute("aria-label", `خيارات إضافية لـ ${o.title}`);
   more.onclick = (e) => { e.stopPropagation(); o.onMore(more, e); };
 
+  if (compact) {
+    if (o.onMore) card.append(more);
+    card.addEventListener("click", (e) => {
+      if (e.target.closest(".user-content-select-checkbox, .exam-more-btn")) return;
+      if (isSelectionModeActive()) return;
+      o.onOpen?.();
+    });
+    card.addEventListener("keydown", (e) => {
+      if (e.target !== card || (e.key !== "Enter" && e.key !== " ")) return;
+      e.preventDefault();
+      o.onOpen?.();
+    });
+    return card;
+  }
+
+  const actions = el("div", "ic-actions");
   const primary = el("button", "ic-btn ic-btn--primary", o.primary.label);
   primary.type = "button";
   primary.setAttribute("aria-label", `${o.primary.label} ${o.title}`);
   primary.onclick = (e) => { e.stopPropagation(); o.primary.onClick(); };
 
-  const dl = el("button", "ic-btn ic-btn--ghost" + (o.download.locked ? " is-password-protected" : ""));
-  dl.type = "button";
-  dl.innerHTML = `${o.download.locked ? LOCK_ICON_SVG : DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
-  dl.setAttribute("aria-label", `تحميل ${o.title}${o.download.locked ? " (محمي بكلمة مرور)" : ""}`);
-  if (o.download.locked) dl.title = "محمي بكلمة مرور";
-  dl.onclick = (e) => { e.stopPropagation(); o.download.onClick(dl); };
+  const dl = o.download ? el("button", "ic-btn ic-btn--ghost" + (o.download.locked ? " is-password-protected" : "")) : null;
+  if (dl) {
+    dl.type = "button";
+    dl.innerHTML = `${o.download.locked ? LOCK_ICON_SVG : DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
+    dl.setAttribute("aria-label", `تحميل ${o.title}${o.download.locked ? " (محمي بكلمة مرور)" : ""}`);
+    if (o.download.locked) dl.title = "محمي بكلمة مرور";
+    dl.onclick = (e) => { e.stopPropagation(); o.download.onClick(dl); };
+  }
 
-  actions.append(dl, primary);
+  actions.append(...(dl ? [dl, primary] : [primary]));
   card.append(more, actions);
   return card;
+}
+
+function isSelectionModeActive() {
+  return Boolean(document.querySelector(".user-content-container")?.classList.contains("selection-mode-active"));
 }
 
 /**
@@ -348,6 +462,35 @@ export function createUserNotebookCard(nb) {
     meta: [{ text: `الخلايا: ${nb.stats?.cellCount ?? nb.notebook?.content?.cells?.length ?? 0}` }],
     primary: { label: "افتح الدفتر", onClick: a.open },
     download: { onClick: a.download },
+    onMore: a.more,
+  });
+}
+
+export function createUserYoutubeVideoCard(video) {
+  const a = createUserYoutubeVideoActions(video);
+  const duration = formatDurationSeconds(video.stats?.durationSeconds ?? video.video?.durationSeconds);
+  return createItemCard({
+    kind: "video",
+    compact: true,
+    onOpen: a.open,
+    selectId: video.id || video.meta?.id,
+    title: video.meta?.title || "فيديو بدون عنوان",
+    thumbnailUrl: video.meta?.thumbnailUrl,
+    youtube: { badge: duration, channel: video.meta?.channelTitle },
+    onMore: a.more,
+  });
+}
+
+export function createUserYoutubePlaylistCard(entry) {
+  const a = createUserYoutubePlaylistActions(entry);
+  return createItemCard({
+    kind: "playlist",
+    compact: true,
+    onOpen: a.open,
+    selectId: entry.id || entry.meta?.id,
+    title: entry.meta?.title || "قائمة بدون عنوان",
+    thumbnailUrl: entry.meta?.thumbnailUrl,
+    youtube: { badge: describePlaylistCount(entry), channel: entry.meta?.channelTitle },
     onMore: a.more,
   });
 }

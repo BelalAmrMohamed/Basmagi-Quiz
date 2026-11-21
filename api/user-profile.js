@@ -43,7 +43,7 @@
 // =============================================================================
 
 import jwt from "jsonwebtoken";
-import { createClient } from "@supabase/supabase-js";
+import { makeClient, envGuard } from "./_supabase.js";
 import { applyCors, requireUserProfile, handleAuthError } from "./_middleware.js";
 import { computeLevel } from "./user-profile/_levelMath.js";
 
@@ -191,10 +191,8 @@ export default async function handler(req, res) {
 
     const action = req.query?.action;
 
-    const supabase = createClient(
-        process.env.SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_KEY,
-    );
+    if (envGuard(res)) return;
+    const supabase = makeClient("service");
 
     if (action === "identify") return handleIdentify(req, res, supabase);
     if (action === "sync-progress") return handleSyncProgress(req, res, supabase);

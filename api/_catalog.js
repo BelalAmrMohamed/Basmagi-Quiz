@@ -16,13 +16,10 @@
 // Underscore prefix -> not a route.
 // =============================================================================
 
-import { createClient } from "@supabase/supabase-js";
+import { makeClient } from "./_supabase.js";
 import { toSlug, courseUrl, quizUrl, lessonUrl, notebookUrl, profileUrl, buildFolderPaths, findCollidingSlugs, absUrl } from "./_urls.js";
 
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY,
-);
+const supabase = makeClient("anon");
 
 // Bounded pagination for the `quizzes` table specifically — it's the table
 // most likely to grow large (a course/folder count stays roughly proportional

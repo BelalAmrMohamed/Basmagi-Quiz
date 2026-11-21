@@ -185,6 +185,10 @@
       "destination": "/api/college-quiz"
     },
     {
+      "source": "/api/youtube",
+      "destination": "https://esdfdzhtavraczrhxnmp.supabase.co/functions/v1/youtube"
+    },
+    {
       "source": "/api/mcp",
       "destination": "https://esdfdzhtavraczrhxnmp.supabase.co/functions/v1/mcp"
     },

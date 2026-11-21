@@ -24,19 +24,16 @@ import fs from "fs";
 import fsp from "fs/promises";
 import path from "path";
 import { createHash } from "crypto";
-import { createClient } from "@supabase/supabase-js";
+import { makeClient } from "./_supabase.js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY,
-);
+const supabase = makeClient("anon");
 
 // Service-role client — used ONLY to read the admin's email server-side so we
 // can tell a developer (email in DEVELOPERS_EMAILS, same rule as api/admin.js) from
 // a regular admin. The email is compared and discarded; it is never written
 // into the page. Absent key/env => everyone is simply an admin.
 const supabaseService = process.env.SUPABASE_SERVICE_KEY
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
+  ? makeClient("service")
   : null;
 const DEVELOPERS_EMAILS = (process.env.DEVELOPERS_EMAILS || "")
   .split(",")

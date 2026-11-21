@@ -13,7 +13,7 @@
 //   AI_AGENT_GOOGLE_WEEKLY_LIMIT / AI_AGENT_DEEPSEEK_WEEKLY_LIMIT / AI_AGENT_CLAUDE_WEEKLY_LIMIT
 // Default when unset: poolSize * DEFAULT_PER_KEY_WEEKLY_LIMIT.
 // =============================================================================
-import { createClient } from "@supabase/supabase-js";
+import { makeClient } from "../_supabase.js";
 import { hasPlatformKeys } from "./_keyPool.js";
 
 const DEFAULT_PER_KEY_WEEKLY_LIMIT = 3500; // ~500 req/day per free-tier key; override via env
@@ -27,7 +27,7 @@ export const USAGE_GROUPS = [
 
 let client = null;
 function db() {
-  if (!client) client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+  if (!client) client = makeClient("service");
   return client;
 }
 

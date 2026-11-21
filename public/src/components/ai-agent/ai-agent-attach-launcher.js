@@ -132,6 +132,26 @@ export function buildPlatformLessonAttachment(lesson) {
   };
 }
 
+/** A published YouTube video / playlist: basic context only (no transcript yet). */
+export function buildPlatformYoutubeAttachment(item) {
+  const isPlaylist = item?.itemType === "youtube_playlist" || item?.kind === "playlist";
+  return {
+    kind: "lesson",
+    itemType: isPlaylist ? "youtube_playlist" : "youtube_video",
+    id: item?.id,
+    title: item?.title || (isPlaylist ? "قائمة تشغيل" : "فيديو"),
+    source: "platform",
+    summary: item?.description || "",
+    payload: {
+      title: item?.title || "",
+      description: item?.description || "",
+      channel: item?.channelTitle || "",
+      publishedAt: item?.publishedAt || null,
+      ...(isPlaylist ? { videoCount: item?.itemCount || 0 } : { youtubeId: item?.youtubeId || null }),
+    },
+  };
+}
+
 /** A published (platform) notebook row from notebook_public, attached like a lesson. */
 export function buildPlatformNotebookAttachment(nb) {
   const row = { id: nb?.id, meta: { title: nb?.title, description: nb?.description, source: nb?.source }, notebook: { runtime: nb?.runtime, content: nb?.content } };
@@ -199,7 +219,13 @@ export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
     // into this launcher, so it needs to actually be able to answer them,
     // not just fetch_attached_quiz. See ai-agent-readonly-tools.js for the
     // shared handlers (same ones the home-page panel uses).
-    toolNames: [attachment.kind === "lesson" ? "fetch_attached_lesson" : "fetch_attached_quiz", ...READONLY_LIBRARY_TOOL_NAMES],
+    toolNames: [
+      // YouTube items carry everything the assistant knows inline (no fetch tool).
+      ...(String(attachment.itemType || "").startsWith("youtube_")
+        ? []
+        : [attachment.kind === "lesson" ? "fetch_attached_lesson" : "fetch_attached_quiz"]),
+      ...READONLY_LIBRARY_TOOL_NAMES,
+    ],
     onToolCall: async (toolCall) => {
       if (READONLY_LIBRARY_TOOL_NAMES.includes(toolCall?.name)) {
         return handleReadOnlyLibraryToolCall(toolCall);

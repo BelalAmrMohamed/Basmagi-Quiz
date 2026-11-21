@@ -20,10 +20,12 @@
 //
 // NOTE: The "change_code" / access-code actions were removed in v6.1.
 // =============================================================================
+import { publishedPlaylistFields, publishedVideoFields } from "../scripts/lib/youtube-mcp-model.js";
 import { applyCors, requireAdmin, handleAuthError } from "./_middleware.js";
 import { notifySearchEngines } from "./_seoNotify.js";
 import { toSlug, absUrl, quizUrl, lessonUrl, notebookUrl } from "./_urls.js";
-import { createClient } from "@supabase/supabase-js";
+import { makeClient, envGuard } from "./_supabase.js";
+import { resolveFolderPath } from "./_folderPath.js";
 import { slugifyHandle, validateHandleFormat, claimHandle } from "./_handle.js";
 import {
   resolveAdminId,
@@ -59,14 +61,8 @@ const MAX_BIO_LENGTH = 280;
 // Public GET/read paths stay on the anon key so RLS keeps governing what's
 // readable (same as render-profile.js). Service-role client is used only
 // for the authenticated write path in handleStatsSync.
-const supabaseAnon = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY,
-);
-const supabaseService = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY,
-);
+const supabaseAnon = makeClient("anon");
+const supabaseService = makeClient("service");
 
 function getOwnerEmails() {
   return (process.env.DEVELOPERS_EMAILS || "")
@@ -261,10 +257,8 @@ async function handleControl(req, res) {
     return res.status(403).json({ error: "You do not have owner privileges" });
   }
 
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY,
-  );
+  if (envGuard(res)) return;
+  const supabase = makeClient("service");
 
   if (req.method === "GET") return handleControlGet(req, res, payload, supabase);
   if (req.method === "POST") return handleControlPost(req, res, payload, supabase);
@@ -304,6 +298,9 @@ const ITEM_ACTIONS = new Set([
   "create-notebook",
   "update-notebook",
   "delete-notebook",
+  "publish-youtube",
+  "list-youtube-public",
+  "unpublish-youtube",
   ...STORAGE_ACTIONS,
 ]);
 
@@ -334,6 +331,16 @@ async function fetchItemForAuth(supabase, itemType, itemId) {
     // Same inheritance as lessons: the education_type comes from the course.
     const { data } = await supabase
       .from("notebooks")
+      .select("*, courses:course_id(education_type)")
+      .eq("id", itemId)
+      .maybeSingle();
+    return data
+      ? { row: data, creatorId: data.created_by, educationType: data.courses?.education_type || null }
+      : null;
+  }
+  if (itemType === "youtube") {
+    const { data } = await supabase
+      .from("youtube_public")
       .select("*, courses:course_id(education_type)")
       .eq("id", itemId)
       .maybeSingle();
@@ -874,6 +881,19 @@ async function handleDeleteTree(req, res, adminPayload, adminId, supabase, itemT
   const notebookIds = notebooks.map((n) => n.id);
   const folderIds = folders.map((f) => f.id);
 
+  // Published YouTube items inside the subtree are deleted with it (owner
+  // decision). The FKs also cascade; this makes it explicit and countable.
+  // They are not restorable from the trash: re-publish them if needed.
+  let youtubeDeleted = 0;
+  {
+    const base = supabase.from("youtube_public").delete({ count: "exact" });
+    const { error, count } = itemType === "course"
+      ? await base.eq("course_id", id)
+      : await base.in("folder_id", [...new Set([id, ...folderIds])]);
+    if (error) console.error(`[admin:delete-${itemType}] youtube cascade delete failed:`, error.message);
+    else youtubeDeleted = count || 0;
+  }
+
   if (quizIds.length) {
     const { error } = await supabase.from("quizzes").delete().in("id", quizIds);
     if (error) console.error(`[admin:delete-${itemType}] quiz cascade delete failed:`, error.message);
@@ -914,7 +934,7 @@ async function handleDeleteTree(req, res, adminPayload, adminId, supabase, itemT
   return res.status(200).json({
     success: true,
     trashed: true,
-    cascaded: { folders: folders.length, quizzes: quizzes.length, lessons: lessons.length, notebooks: notebooks.length },
+    cascaded: { folders: folders.length, quizzes: quizzes.length, lessons: lessons.length, notebooks: notebooks.length, youtube: youtubeDeleted },
   });
 }
 
@@ -929,7 +949,7 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
   if (!itemType || !itemId || !targetCourseId) {
     return res.status(400).json({ error: "بيانات النقل غير مكتملة." });
   }
-  if (itemType !== "quiz" && itemType !== "folder" && itemType !== "lesson" && itemType !== "notebook") {
+  if (itemType !== "quiz" && itemType !== "folder" && itemType !== "lesson" && itemType !== "notebook" && itemType !== "youtube") {
     return res.status(400).json({ error: "لا يمكن نقل هذا النوع من العناصر." });
   }
 
@@ -1011,7 +1031,7 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
     }
   }
 
-  const table = itemType === "quiz" ? "quizzes" : itemType === "lesson" ? "lessons" : itemType === "notebook" ? "notebooks" : "folders";
+  const table = itemType === "quiz" ? "quizzes" : itemType === "lesson" ? "lessons" : itemType === "notebook" ? "notebooks" : itemType === "youtube" ? "youtube_public" : "folders";
   const updates =
     itemType === "folder"
       ? { course_id: targetCourseId, parent_folder_id: targetFolderId }
@@ -1028,7 +1048,7 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
     // itemType === "folder" in practice — kept keyed on the error code
     // rather than itemType so it stays correct if that ever changes.
     if (error.code === "23505") {
-      return res.status(400).json({ error: "يوجد عنصر آخر بهذا الاسم في المكان الوجهة." });
+      return res.status(400).json({ error: itemType === "youtube" ? "هذا المحتوى موجود بالفعل في المكان الوجهة." : "يوجد عنصر آخر بهذا الاسم في المكان الوجهة." });
     }
     console.error("[admin:move-item] failed:", error.message);
     return res.status(500).json({ error: "فشل نقل العنصر." });
@@ -1508,6 +1528,74 @@ async function validateLessonSlug(supabase, rawSlug, excludeId = null) {
 // courseId is required (a lesson can go directly under a course or under
 // any folder, never top-level-only — see canPlaceItemServer); folderId null
 // means "directly under the course."
+// ── Published YouTube videos and playlists (youtube_public) ─────────────────
+// Metadata is fetched by the admin's browser through /api/youtube, so this
+// server never needs the YouTube key. Every field is re-validated here.
+const YT_PUBLISHED_COLUMNS = "id, kind, youtube_id, playlist_id, title, channel_title, course_id, folder_id, item_count, total_count, partial, created_at";
+
+async function handlePublishYoutube(req, res, adminPayload, adminId, supabase) {
+  const body = req.body || {};
+  const { kind, courseId } = body;
+  let folderId = body.folderId || null;
+  if (!folderId && Array.isArray(body.folderPath) && body.folderPath.length && courseId) {
+    const resolved = await resolveFolderPath(supabase, courseId, body.folderPath);
+    if (!resolved.ok) return res.status(400).json({ error: resolved.error });
+    folderId = resolved.folderId;
+  }
+  if (kind !== "video" && kind !== "playlist") return res.status(400).json({ error: "نوع المحتوى غير صالح." });
+  if (!courseId) return res.status(400).json({ error: "المادة مطلوبة." });
+
+  const placement = canPlaceItemServer("youtube", folderId);
+  if (!placement.ok) return res.status(400).json({ error: placement.error });
+  const destinationCheck = await validateLessonPlacement(supabase, courseId, folderId);
+  if (!destinationCheck.ok) return res.status(404).json({ error: destinationCheck.error });
+
+  let fields;
+  try {
+    fields = kind === "video" ? publishedVideoFields(body) : publishedPlaylistFields(body);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+
+  const row = {
+    ...fields,
+    course_id: courseId,
+    folder_id: folderId || null,
+    created_by: adminId,
+    is_published: true,
+  };
+  const { data, error } = await supabase.from("youtube_public").insert(row).select(YT_PUBLISHED_COLUMNS).maybeSingle();
+  if (error) {
+    if (error.code === "23505") return res.status(409).json({ error: "هذا المحتوى منشور بالفعل." });
+    console.error("[publish-youtube]", error);
+    return res.status(500).json({ error: "تعذّر حفظ المحتوى المنشور." });
+  }
+  return res.status(200).json({ success: true, item: data });
+}
+
+async function handleListYoutubePublished(req, res, adminPayload, adminId, supabase) {
+  const { courseId = null } = req.body || {};
+  let q = supabase.from("youtube_public").select(YT_PUBLISHED_COLUMNS).order("created_at", { ascending: false }).limit(200);
+  if (courseId) q = q.eq("course_id", courseId);
+  const { data, error } = await q;
+  if (error) return res.status(500).json({ error: "تعذّر تحميل المحتوى المنشور." });
+  return res.status(200).json({ items: data || [] });
+}
+
+async function handleUnpublishYoutube(req, res, adminPayload, adminId, supabase) {
+  const { id } = req.body || {};
+  if (!UUID_SHAPE_RE.test(String(id || ""))) return res.status(400).json({ error: "معرّف غير صالح." });
+  const fetched = await fetchItemForAuth(supabase, "youtube", id);
+  if (!fetched) return res.status(404).json({ error: "المحتوى غير موجود." });
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لحذف هذا العنصر." });
+  }
+  const { error, count } = await supabase.from("youtube_public").delete({ count: "exact" }).eq("id", id);
+  if (error) return res.status(500).json({ error: "تعذّر إلغاء النشر." });
+  if (!count) return res.status(404).json({ error: "المحتوى غير موجود." });
+  return res.status(200).json({ success: true });
+}
+
 async function handleCreateLesson(req, res, adminPayload, adminId, supabase) {
   const { title, content, description = "", source = "", courseId, folderId = null, slug = null, readerPrefsDefault = null, passwordHash = "" } = req.body || {};
 
@@ -2060,7 +2148,8 @@ async function handleItemActions(req, res) {
     return res.status(500).json({ error: "Internal server error" });
   }
 
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+  if (envGuard(res)) return;
+  const supabase = makeClient("service");
   const adminId = await resolveAdminId(supabase, payload);
   const { action } = req.body || {};
 
@@ -2085,6 +2174,9 @@ async function handleItemActions(req, res) {
   if (action === "create-notebook") return handleCreateNotebook(req, res, payload, adminId, supabase);
   if (action === "update-notebook") return handleUpdateNotebook(req, res, payload, adminId, supabase);
   if (action === "delete-notebook") return handleDeleteNotebook(req, res, payload, adminId, supabase);
+  if (action === "publish-youtube") return handlePublishYoutube(req, res, payload, adminId, supabase);
+  if (action === "list-youtube-public") return handleListYoutubePublished(req, res, payload, adminId, supabase);
+  if (action === "unpublish-youtube") return handleUnpublishYoutube(req, res, payload, adminId, supabase);
   if (STORAGE_ACTIONS.has(action)) return handleStorageAction(req, res, action, adminId, supabase);
 
   return res.status(400).json({ error: "Invalid action" });
