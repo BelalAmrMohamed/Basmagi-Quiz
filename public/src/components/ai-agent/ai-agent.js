@@ -54,6 +54,7 @@ import { createHistoryPanel } from "./ai-agent-history.js";
 import { openAgentDropdown } from "./ai-agent-dropdown.js";
 import { createAgentWindow } from "./ai-agent-window.js";
 import { enterAgentUrl, leaveAgentUrl, consumeMaximizedOpen } from "./ai-agent-route.js";
+import { resolvePanelOptions } from "./ai-agent-panel-options.js";
 import { openTelegramBotModal, TELEGRAM_PLANE_ICON_SVG } from "../telegram-bot-card/telegram-bot-card.js";
 
 const CLOSE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
@@ -707,6 +708,9 @@ export function openAIAgentModal(options, fab) {
   ensureAIAgentStyles();
 
   const cachedChat = getChatPanelForPageKey(options.pageKey);
+  // The page's own options win over a panel first built by the attach launcher.
+  const refreshed = resolvePanelOptions(!!cachedChat, options);
+  if (refreshed) cachedChat.updateOptions?.(refreshed);
   if (cachedChat && !cachedChat.isGenerating?.()) {
     cachedChat.clearTyping?.();
   }

@@ -599,8 +599,16 @@ async function handleQuizToolCall(toolCall, ctx) {
       return handleMoveItemToolCall(toolCall);
     case "search_youtube":
     case "list_youtube":
-    case "add_youtube":
       return handleYoutubeToolCall(toolCall);
+    case "add_youtube": {
+      const result = await handleYoutubeToolCall(toolCall);
+      // Same refresh the create_* tools do, so the item and the folder/course counters appear at once.
+      try {
+        renderRootCategories();
+        renderUserContentView();
+      } catch { /* not on a home view */ }
+      return result;
+    }
     case "search_library":
     case "parse_item_info":
     case "get_user_activity":

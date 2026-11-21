@@ -13,13 +13,13 @@ import { embedUrl, isValidVideoId } from "../../shared/youtube-rules.js";
 import { attachSplit } from "./youtube-split.js";
 import { YOUTUBE_ICON_SVG } from "./icons.js";
 import {
-  animateTo, clampToViewport, cornerFromPoint, cornerRect, lockPageScroll,
-  otherMinimizedRects, readCorner, resolveOverlap, writeCorner,
+  animateTo, clampToViewport, cornerFromPoint, lockPageScroll, motionDelay,
+  readCorner, writeCorner,
+  registerMinimized, unregisterMinimized, setMinimizedCorner, setMinimizedDragging,
 } from "../../shared/floating-window.js";
 
 const MIN_CORNER_KEY = "bq-youtube-window-minimized-corner";
-const PILL_H = 48;
-const pillWidth = () => Math.min(300, window.innerWidth - 32);
+let pillSeq = 0; // unique registry id per window
 
 const MIN_W = 360;
 const MIN_H = 320;
@@ -145,30 +145,22 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
     else if (!state.maximized && state.unlock) { state.unlock(); state.unlock = null; }
   };
 
-  /** Where the minimized pill sits: the remembered corner, stacked clear of other pills. */
-  const pillTarget = (corner) => {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const base = cornerRect(corner, pillWidth(), PILL_H, vw, vh);
-    const rect = { ...base, width: pillWidth(), height: PILL_H };
-    return resolveOverlap(rect, otherMinimizedRects(win), corner, vh);
-  };
-  const placePill = (corner, animate) => {
-    const to = pillTarget(corner);
-    win.dataset.corner = corner;
-    if (animate) animateTo(win, to);
-    else Object.assign(win.style, { left: `${to.left}px`, top: `${to.top}px` });
-  };
+  // The pill's slot comes from the shared registry (stacked clear of every other minimized
+  // window, re-laid out whenever any of them moves, restores or closes).
+  const pillId = `youtube-${++pillSeq}`;
   const setMinimized = (on) => {
     if (on === state.minimized) return;
     if (on) {
       state.minRestore = rectOf();
       state.minimized = true;
       win.classList.add("is-min");
-      placePill(readCorner(MIN_CORNER_KEY, "bottom-right"), true);
+      const corner = readCorner(MIN_CORNER_KEY, "bottom-right");
+      win.dataset.corner = corner;
+      registerMinimized(pillId, win, corner);
     } else {
       state.minimized = false;
       win.classList.remove("is-min");
+      unregisterMinimized(pillId);
       delete win.dataset.corner;
       const r = state.minRestore;
       state.minRestore = null;
@@ -207,7 +199,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
       if (!pv) return;
       pv.classList.remove("is-visible");
       state.preview = null;
-      setTimeout(() => pv.remove(), SNAP_PREVIEW_MS);
+      setTimeout(() => pv.remove(), motionDelay(SNAP_PREVIEW_MS));
       return;
     }
     const r = aeroRect(zone, window.innerWidth, window.innerHeight);
@@ -231,7 +223,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
     else close();
   };
   const onViewport = () => {
-    if (state.minimized) { placePill(readCorner(MIN_CORNER_KEY, "bottom-right"), false); return; }
+    if (state.minimized) return; // the registry re-lays out pills on resize / keyboard
     if (state.maximized) return;
     const r = rectOf();
     win.style.left = `${clamp(r.left, -r.width + 100, window.innerWidth - 100)}px`;
@@ -240,6 +232,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
   const close = () => {
     if (closed) return;
     closed = true;
+    unregisterMinimized(pillId);
     document.removeEventListener("keydown", onKey, true);
     window.removeEventListener("resize", onViewport);
     window.visualViewport?.removeEventListener("resize", onViewport);
@@ -279,7 +272,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
       titlebar.setPointerCapture?.(e.pointerId);
       const onPillMove = (ev) => {
         if (!dragged && Math.hypot(ev.clientX - sx, ev.clientY - sy) <= 4) return;
-        if (!dragged) { dragged = true; win.classList.add("is-dragging"); }
+        if (!dragged) { dragged = true; win.classList.add("is-dragging"); setMinimizedDragging(pillId, true); }
         const c = clampToViewport(r0.left + ev.clientX - sx, r0.top + ev.clientY - sy, r0.width, r0.height, window.innerWidth, window.innerHeight);
         win.style.left = `${c.left}px`;
         win.style.top = `${c.top}px`;
@@ -292,7 +285,8 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
         if (!dragged) { if (ev.type === "pointerup") setMinimized(false); return; }
         const corner = cornerFromPoint(ev.clientX, ev.clientY, window.innerWidth, window.innerHeight);
         writeCorner(MIN_CORNER_KEY, corner);
-        placePill(corner, true);
+        win.dataset.corner = corner;
+        setMinimizedCorner(pillId, corner); // glides via the stylesheet transition
       };
       titlebar.addEventListener("pointermove", onPillMove);
       titlebar.addEventListener("pointerup", onPillUp);

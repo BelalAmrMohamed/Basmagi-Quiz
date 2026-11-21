@@ -4031,6 +4031,15 @@ body.sidebar-expanded .ai-agent-fab {
   --item-accent: #3d95f0;
 }
 
+.ai-agent-created-item--notebook {
+  --item-accent: #e8833a;
+}
+
+.ai-agent-created-item--youtube_video,
+.ai-agent-created-item--youtube_playlist {
+  --item-accent: var(--color-error);
+}
+
 .ai-agent-created-item-icon {
   display: grid;
   flex: 0 0 auto;

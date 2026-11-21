@@ -441,16 +441,21 @@ export async function runAgentLoop(params) {
         sessionExecutedTools.delete(p.sig);
 
         const errorMsg = err?.userMessage || err?.agentMessage || err?.message || "فشل تنفيذ الأداة.";
+        // An error that changing arguments cannot fix (nonRetryable) must not show the
+        // auto-correct badge nor invite the model to retry.
+        const canRetry = !err?.nonRetryable;
         if (card?.updateStatus) {
           card.updateStatus("error", {
             error: errorMsg,
-            retrying: true,
+            retrying: canRetry,
             retryNum: nextRetryNum,
           });
         }
 
         // Return error back to the model as a tool result so it can fix arguments
-        const agentFeedback = `[خطأ في تنفيذ الأداة]: ${err?.agentMessage || err?.message || errorMsg}\nتوجيه للنموذج: قم بفحص المعاملات وتصحيحها وإعادة المحاولة، وإن تعذّر الحل فوضّح للمستخدم ما حدث واسأله عن التفاصيل الناقصة.`;
+        const agentFeedback = canRetry
+          ? `[خطأ في تنفيذ الأداة]: ${err?.agentMessage || err?.message || errorMsg}\nتوجيه للنموذج: قم بفحص المعاملات وتصحيحها وإعادة المحاولة، وإن تعذّر الحل فوضّح للمستخدم ما حدث واسأله عن التفاصيل الناقصة.`
+          : `[خطأ في تنفيذ الأداة]: ${err?.agentMessage || err?.message || errorMsg}\nتوجيه للنموذج: هذا الخطأ لا يُحل بتغيير المعاملات، فلا تعد المحاولة ولا تصفه بأنه عطل تقني مؤقت. اذكر للمستخدم بوضوح ما الذي فشل ولماذا.`;
 
         history.push({
           role: "tool",

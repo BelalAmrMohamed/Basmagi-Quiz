@@ -21,60 +21,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 11. **Tests worth adding:** copy-tree with YouTube (§1.5), the embed/link builders (§2), the window snap math, the attachment kind mapping (§1.3), and the admin `move-item` with the `youtube` type (extend `admin-action-routing`).
 12. **Code health:** the two copies of `youtube-mcp-model.js` (`public/src/shared/` and `scripts/lib/`) can drift. Add a test that fails when they differ, or generate one from the other in the build.
 
-### AI Agent
-Newly created notebook, the chat didn't include the presented card at the bottom as I expected. ![chat screenshot](image-1.png).
-
-Prompt Cleaning: 
-* The system prompts for AI need to be updated for the new tools.
-* I tested this prompt: `أنشئ مجلدًا جديدًا لمادة 'الذكاء الاصطناعي'، واصنع بداخله درسًا تأسيسيًا وامتحانًا تدريبيًا عليه.`
-  * It created a course using the `create-course` tool.
-  * Then it tried to create a lesson using `create-lesson` with this JSON Block but failed, because lessons require a title:
-  ```
-  {
-    "sections": [
-      {
-        "title": "مفهوم الذكاء الاصطناعي وأقسامه",
-        "blocks": [
-          {
-            "body": "الذكاء الاصطناعي (Artificial Intelligence) هو فرع من علوم الكمبيوتر يهدف إلى إنشاء أنظمة قادرة على أداء مهام تتطلب عادةً ذكاءً بشرياً مثل التعلم، الاستدلال، واتخاذ القرار.",
-            "type": "markdown"
-          },
-          {
-            "type": "markdown",
-            "body": "ينقسم الذكاء الاصطناعي بشكل أساسي إلى عدة مجالات رئيسية تشمل:\n1. **تعلم الآلة (Machine Learning):** تمكين الأنظمة من التعلم وتحسين الأداء من خلال البيانات دون برمجة صريحة.\n2. **التعلم العميق (Deep Learning):** فرع من تعلم الآلة يستخدم الشبكات العصبية الاصطناعية لنمذجة أنماط معقدة.\n3. **معالجة اللغات الطبيعية (NLP):** تمكين الآلات من فهم وتوليد اللغة البشرية.\n4. **رؤية الكمبيوتر (Computer Vision):** تمكين الحواسيب من فهم وتفسير الصور والفيديوهات."
-          }
-        ]
-      },
-      {
-        "title": "تعلم الآلة (Machine Learning)",
-        "blocks": [
-          {
-            "type": "markdown",
-            "body": "يُعرف تعلم الآلة بأنه قدرة النظم الحاسوبية على التعلم الذاتي من البيانات. وتنقسم خوارزمياته إلى نوعين رئيسيين:\n- **التعلم المُشرف (Supervised Learning):** يتم تدريب النموذج باستخدام بيانات موسومة (مدخلات ومخرجات معلومة).\n- **التعلم غير المُشرف (Unsupervised Learning):** يتم البحث عن أنماط خفية في بيانات غير موسومة."
-          },
-          {
-            "options": [
-              "التعلم المُشرف (Supervised Learning)",
-              "التعلم غير المُشرف (Unsupervised Learning)",
-              "التعلم التعزيزي (Reinforcement Learning)",
-              "التعلم العميق فقط"
-            ],
-            "prompt": "أي من أنواع تعلم الآلة يعتمد على بيانات تدريب موسومة (تحتوي على الإجابات الصحيحة)؟",
-            "type": "question",
-            "explanation": "التعلم المُشرف (Supervised Learning) يستخدم بيانات معرّفة أو موسومة تحتوي على المدخلات والمخرجات الصحيحة لتدريب النموذج.",
-            "correctIndex": 0,
-            "questionKind": "mcq"
-          }
-        ]
-      }
-    ],
-    "folder": "الذكاء الاصطناعي",
-    "description": "مدخل تأسيسي لمفاهيم الذكاء الاصطناعي وتعلم الآلة"
-  }
-  ``` 
-  * Then it tried to create a quiz using `create-quiz`, it didn't provide "title", "description", or "folder", yet the quiz was created.
-  * The system prompts related to these toold need to be updated. 
-
 ### MATLAB loading animation isn't working in high performance mode, and the lesson page's loading shimmer needs to be improved.
 
 ### Sign in

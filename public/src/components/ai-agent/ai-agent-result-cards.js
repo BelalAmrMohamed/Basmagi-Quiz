@@ -1,3 +1,5 @@
+import { ATTACHMENT_KIND_LABEL_AR, ATTACHMENT_NOTEBOOK_ICON_SVG, ATTACHMENT_YOUTUBE_ICON_SVG } from "./core/chat-attachments.js";
+
 const ITEM_CARD_PREFIX = "[PLATFORM_ITEM_CARD]";
 const FLASHCARD_DECK_PREFIX = "[FLASHCARD_DECK]";
 
@@ -21,7 +23,11 @@ function parseResult(value, prefix) {
 export function platformItemCardModelSummary(value) {
   const item = parseResult(value, ITEM_CARD_PREFIX);
   if (!item) return value;
-  const names = { quiz: "الامتحان", lesson: "الدرس", folder: "المجلد", course: "المادة" };
+  const names = { quiz: "الامتحان", lesson: "الدرس", notebook: "الدفتر", folder: "المجلد", course: "المادة" };
+  if (item.kind === "youtube_video" || item.kind === "youtube_playlist") {
+    const noun = item.kind === "youtube_video" ? "الفيديو" : "قائمة التشغيل";
+    return `تمت إضافة ${noun} «${item.title || "بدون عنوان"}» إلى مكتبة المستخدم، وظهرت بطاقة تفتحه في المحادثة.`;
+  }
   return `تم إنشاء ${names[item.kind] || "العنصر"} «${item.title || "بدون عنوان"}» وإضافته إلى مكتبة المستخدم.`;
 }
 
@@ -40,12 +46,39 @@ const ITEM_KIND_ICONS = {
   quiz: svg('<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>'),
   // open book: a lesson
   lesson: svg('<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>'),
+  // notebook / YouTube: the same icons the attachment chips use
+  notebook: ATTACHMENT_NOTEBOOK_ICON_SVG,
+  youtube_video: ATTACHMENT_YOUTUBE_ICON_SVG,
+  youtube_playlist: ATTACHMENT_YOUTUBE_ICON_SVG,
   // folder
   folder: svg('<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/>'),
   // graduation cap: a course
   course: svg('<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/><path d="M22 10v6"/>'),
 };
 const LINK_ARROW_ICON = svg('<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>');
+
+const CARD_KINDS = ["quiz", "lesson", "notebook", "folder", "course", "youtube_video", "youtube_playlist"];
+
+async function openYoutubeItem(item) {
+  try {
+    const { findLibraryItem } = await import("../../features/home/youtube-library.js");
+    const entry = findLibraryItem(item.id);
+    if (!entry) {
+      const { showNotification } = await import("../notifications/notifications.js");
+      showNotification("غير موجود", "لم يعد هذا العنصر في «محتواي».", "warning", 6);
+      return;
+    }
+    if (item.kind === "youtube_playlist") {
+      const { openYoutubePlaylistWindow } = await import("../../features/home/youtube-playlist-window.js");
+      openYoutubePlaylistWindow(entry);
+    } else {
+      const { openYoutubeVideoPlayer } = await import("../../features/home/youtube-player-window.js");
+      openYoutubeVideoPlayer(entry);
+    }
+  } catch (err) {
+    console.error("[ai-agent] failed to open YouTube item", err);
+  }
+}
 
 /**
  * Compact one-row card: [icon] [title / label] [link].
@@ -54,10 +87,17 @@ const LINK_ARROW_ICON = svg('<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>');
  */
 export function renderPlatformItemCard(value) {
   const item = parseResult(value, ITEM_CARD_PREFIX);
-  if (!item || !["quiz", "lesson", "folder", "course"].includes(item.kind)) return null;
+  if (!item || !CARD_KINDS.includes(item.kind)) return null;
 
-  const labelByKind = { quiz: "امتحان جديد", lesson: "درس جديد", folder: "مجلد جديد", course: "مادة جديدة" };
-  const actionByKind = { quiz: "ابدأ الامتحان", lesson: "افتح الدرس", folder: "افتح المجلد", course: "افتح المادة" };
+  const labelByKind = {
+    quiz: "امتحان جديد", lesson: "درس جديد", notebook: "دفتر جديد", folder: "مجلد جديد", course: "مادة جديدة",
+    youtube_video: ATTACHMENT_KIND_LABEL_AR.youtube_video, youtube_playlist: ATTACHMENT_KIND_LABEL_AR.youtube_playlist,
+  };
+  const actionByKind = {
+    quiz: "ابدأ الامتحان", lesson: "افتح الدرس", notebook: "افتح الدفتر", folder: "افتح المجلد", course: "افتح المادة",
+    youtube_video: "شغّل الفيديو", youtube_playlist: "افتح القائمة",
+  };
+  const isYoutube = item.kind === "youtube_video" || item.kind === "youtube_playlist";
   const card = document.createElement("article");
   card.className = `ai-agent-created-item ai-agent-created-item--${item.kind}`;
   card.dir = "rtl";
@@ -81,7 +121,18 @@ export function renderPlatformItemCard(value) {
 
   card.append(icon, copy);
 
-  if (item.href) {
+  if (isYoutube && item.id) {
+    // YouTube items open in their floating window (no route), loaded on demand.
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "ai-agent-created-item-action";
+    open.addEventListener("click", () => { void openYoutubeItem(item); });
+    const text = document.createElement("span");
+    text.textContent = actionByKind[item.kind];
+    open.appendChild(text);
+    open.insertAdjacentHTML("beforeend", LINK_ARROW_ICON);
+    card.appendChild(open);
+  } else if (item.href) {
     // A button, not an <a href>: items the agent creates live only in this
     // browser (محتواي), so there must be no copyable/shareable link to them.
     const link = document.createElement("button");

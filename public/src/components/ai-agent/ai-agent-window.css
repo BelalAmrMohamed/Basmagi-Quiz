@@ -510,3 +510,32 @@ html[data-motion="reduced"] .aiw.is-minimized.is-busy::after { animation: none; 
 .aiw.is-snapping { transition: left 0.22s ease-out, top 0.22s ease-out, width 0.22s ease-out, height 0.22s ease-out !important; }
 html[data-motion="reduced"] .aiw.is-snapping { transition: none !important; }
 @media (prefers-reduced-motion: reduce) { .aiw.is-snapping { transition: none !important; } }
+
+/* High-Performance Mode (<html data-motion="reduced">) and prefers-reduced-motion:
+   no animation or transition anywhere on the AI window: open/close, minimize/restore,
+   maximize, aero snap + preview, corner glide, pill, and every hover/opacity effect. */
+html[data-motion="reduced"] .aiw,
+html[data-motion="reduced"] .aiw *,
+html[data-motion="reduced"] .aiw *::before,
+html[data-motion="reduced"] .aiw *::after,
+html[data-motion="reduced"] .aiw::before,
+html[data-motion="reduced"] .aiw::after,
+html[data-motion="reduced"] .aiw-snap-preview {
+  animation: none !important;
+  transition: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aiw, .aiw *, .aiw *::before, .aiw *::after, .aiw::before, .aiw::after, .aiw-snap-preview {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Minimized pill slot comes from shared/floating-window.js (all pills laid out together):
+   it wins over the per-corner classes above, which remain only as a pre-layout fallback. */
+html .aiw.is-minimized.fw-placed:not(.is-dragging) {
+  left: var(--fw-left) !important;
+  top: var(--fw-top) !important;
+  right: auto !important;
+  bottom: auto !important;
+}
