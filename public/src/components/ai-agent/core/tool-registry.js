@@ -16,6 +16,7 @@ import { normalizeLessonJson } from "../../../features/lesson/lesson-json.js";
 import { applyDraftPatch } from "./item-patch-engine.js";
 import { fingerprint } from "./undo.js";
 import { authoringRulesText } from "../../../shared/ai-agent-authoring.js";
+import { createItemCardResult } from "../ai-agent-result-cards.js";
 
 export const TOOL_METADATA = {
   create_quiz: { label: "إنشاء امتحان", badge: "Quiz", icon: "quiz" },
@@ -126,7 +127,13 @@ export async function handleCreateNotebookToolCall(toolCall) {
     // Ignore render error if outside home view
   }
 
-  return `✅ تم إنشاء الدفتر بنجاح: "${title}" (${runtime.toUpperCase()} · ${cells.length} خلية). أصبح موجوداً في «محتواي».`;
+  return createItemCardResult({
+    kind: "notebook",
+    id: entry.id,
+    title,
+    detail: `${runtime.toUpperCase()} · ${cells.length} خلية`,
+    href: `/notebook/${encodeURIComponent(entry.id)}?type=user`,
+  });
 }
 
 /**

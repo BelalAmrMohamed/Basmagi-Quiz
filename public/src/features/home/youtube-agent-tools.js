@@ -20,6 +20,7 @@ import {
 } from "./youtube-library.js";
 import { YOUTUBE_PLAYLIST_TYPE, describePlaylistCount } from "./local-youtube-playlist.js";
 import { YOUTUBE_VIDEO_TYPE } from "./local-youtube-video.js";
+import { createItemCardResult } from "../../components/ai-agent/ai-agent-result-cards.js";
 
 const SEARCH_LIMIT = 10;
 const LIST_LIMIT = 50;
@@ -98,10 +99,21 @@ async function addYoutube({ url }) {
     if (result.saved === 0) {
       return `لم يُحفظ شيء: ${result.skipped.join("، ") || "الفيديو موجود بالفعل في هذا المستوى."}`;
     }
-    return `تمت إضافة الفيديو «${details.title}» إلى «محتواي».`;
+    const created = result.created?.[0];
+    return createItemCardResult({
+      kind: "youtube_video",
+      id: created?.id,
+      title: details.title,
+      detail: details.channelTitle || "",
+    });
   }
 
   const { info, rows } = await loadPlaylistRows(parsed.playlistId);
   const entry = await saveWholePlaylist({ playlistId: parsed.playlistId, info, rows, parentId });
-  return `تمت إضافة قائمة التشغيل «${entry.meta.title}» كبطاقة واحدة (${describePlaylistCount(entry)}).`;
+  return createItemCardResult({
+    kind: "youtube_playlist",
+    id: entry.id,
+    title: entry.meta.title,
+    detail: describePlaylistCount(entry),
+  });
 }

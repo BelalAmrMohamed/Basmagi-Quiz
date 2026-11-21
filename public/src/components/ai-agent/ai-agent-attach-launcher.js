@@ -28,6 +28,8 @@
 
 import { loadAIAgentModule } from "./ai-agent-lazy.js";
 import { buildYoutubeAttachment, isYoutubeAttachment } from "./core/youtube-attachment.js";
+import { createUnsupportedToolError } from "./ai-agent-panel-options.js";
+import { HOME_PAGE_SUGGESTED_PROMPTS } from "./ai-agent-suggested-prompts.js";
 import {
   resolveUserItemById,
   readUserContent,
@@ -193,6 +195,10 @@ export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
 
   const options = {
     pageKey: "home",
+    // Transient options: if the real «محتواي» panel already exists (or opens
+    // later) its own options win — see ai-agent-panel-options.js.
+    launcher: true,
+    suggestedPrompts: HOME_PAGE_SUGGESTED_PROMPTS,
     enableFileUpload: true,
     enableTools: true,
     // This panel shares pageKey "home" with the main home-page panel, so
@@ -216,8 +222,9 @@ export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
       if (READONLY_LIBRARY_TOOL_NAMES.includes(toolCall?.name)) {
         return handleReadOnlyLibraryToolCall(toolCall);
       }
+      if (isYoutubeAttachment(attachment)) throw createUnsupportedToolError(toolCall?.name);
       if (attachment.kind === "lesson") {
-        if (toolCall?.name !== "fetch_attached_lesson") throw new Error("Unknown attachment tool");
+        if (toolCall?.name !== "fetch_attached_lesson") throw createUnsupportedToolError(toolCall?.name);
         const attachmentLabel = attachment.itemType === "notebook" ? "الدفتر" : "الدرس";
         const requestedId = String(toolCall.input?.lessonId || "");
         if (![attachment.id].some((id) => String(id || "") === requestedId)) {
@@ -239,7 +246,7 @@ export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
         return `معلومات ${attachmentLabel} ${attachment.title} (المعرّف ${requestedId}): لا يتوفر محتوى العنصر في المرفق الحالي.`;
       }
       if (toolCall?.name !== "fetch_attached_quiz") {
-        throw new Error("Unknown attachment tool");
+        throw createUnsupportedToolError(toolCall?.name);
       }
       const requestedId = String(toolCall.input?.quizId || "");
       const findAttachedQuiz = (node) => {
@@ -283,18 +290,10 @@ export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
   // synchronously before returning, so it's available immediately via
   // getChatPanelForPageKey — no need to await/poll for it.
   //
-  // NOTE (pre-existing, not introduced by this file): getOrCreateChatPanel
-  // (ai-agent.js) only uses `options` the very FIRST time pageKey "home"
-  // is created; a later openAIAgentModal call for the same pageKey reuses
-  // that cached panel as-is, ignoring its own toolNames/onToolCall/
-  // contextSummary/contextPrompt/defaultSystemPrompt. So if this launcher
-  // is opened before the home page's own FAB ever is, the "home" panel
-  // gets built with THIS options object (fetch_attached_quiz + the
-  // read-only tools, no create/edit/delete/folder tools) and stays that
-  // way for the rest of the page's lifetime — the home FAB's write-side
-  // tools won't work until a reload rebuilds the cache. This ordering
-  // hazard predates and is unrelated to the read-only-tools fix below;
-  // flagged here rather than silently worked around.
+  // The "home" panel is cached and built from whoever opens it first. The
+  // `launcher: true` flag above makes these options transient: the page's
+  // own FAB options replace them on its next open (ai-agent.js ->
+  // resolvePanelOptions), and they never downgrade an existing panel.
   const panel = getChatPanelForPageKey("home");
   if (panel && typeof panel.addPendingAttachment === "function") {
     panel.setAttachmentToolHandler?.(options.onToolCall);

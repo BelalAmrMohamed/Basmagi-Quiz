@@ -173,7 +173,8 @@ function base64ByteLength(base64) {
  *   that the History tab calls when the user picks a past conversation.
  */
 export function createChatPanel(options = {}) {
-  const {
+  // `let`: panel.updateOptions() refreshes these when the cached panel is reopened by its real page.
+  let {
     contextPrompt = "",
     placeholder = "اسأل أي سؤال عن الامتحان...",
     pageKey = "default",
@@ -2126,6 +2127,23 @@ export function createChatPanel(options = {}) {
     if (pendingAttachments.length >= MAX_PENDING_ATTACHMENTS) return;
     pendingAttachments.push(attachment);
     renderAttachmentChips();
+  };
+
+  /**
+   * Refreshes page-level options on a cached panel (see ai-agent-panel-options.js).
+   * Restores the suggestion chips when the chat is still empty.
+   * @param {object} next - only keys from LIVE_PANEL_OPTION_KEYS are applied
+   */
+  panel.updateOptions = function updateOptions(next) {
+    if (!next) return;
+    if ("contextPrompt" in next) contextPrompt = next.contextPrompt;
+    if ("contextSummary" in next) contextSummary = next.contextSummary;
+    if ("defaultSystemPrompt" in next) defaultSystemPrompt = next.defaultSystemPrompt;
+    if ("enableTools" in next) enableTools = next.enableTools;
+    if ("toolNames" in next) toolNames = next.toolNames;
+    if ("onToolCall" in next) onToolCall = next.onToolCall;
+    if ("suggestedPrompts" in next) suggestedPrompts = next.suggestedPrompts;
+    if ("suggestedPrompts" in next && !isGenerating && history.length === 0) renderSuggestions();
   };
 
   panel.setAttachmentToolHandler = function setAttachmentToolHandler(handler) {

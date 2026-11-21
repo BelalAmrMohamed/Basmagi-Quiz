@@ -127,7 +127,7 @@ export function saveVideoRefs(refs, parentId = null) {
     itemId: e.id,
     parentId: e.meta.parentId,
   })));
-  return { saved, skipped };
+  return { saved, skipped, created };
 }
 
 function writeUserItems(items) {

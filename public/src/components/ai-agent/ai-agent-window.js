@@ -19,7 +19,10 @@
 // `ai-agent-window-open`, which hides every AI FAB (see ai-agent-window.css).
 // =============================================================================
 
-import { cornerFromPoint, cornerRect, animateTo } from "../../shared/floating-window.js";
+import {
+  cornerFromPoint, animateTo, motionDelay,
+  registerMinimized, unregisterMinimized, setMinimizedCorner, setMinimizedDragging,
+} from "../../shared/floating-window.js";
 
 const GEO_KEY = "bq-ai-agent-window-geom";
 const CORNER_KEY = "bq-ai-agent-minimized-corner";
@@ -36,6 +39,8 @@ function readCorner() {
 function writeCorner(corner) {
   try { localStorage.setItem(CORNER_KEY, corner); } catch {}
 }
+// Registry id of this window's pill (shared/floating-window.js lays out all minimized windows together).
+const PILL_ID = "ai-agent";
 const SNAP = 14;
 const AERO_EDGE = 14;
 const AERO_CORNER = 110;
@@ -172,7 +177,7 @@ export function createAgentWindow(cfg) {
       if (!pv) return;
       pv.classList.remove("is-visible");
       state.snapPreview = null;
-      setTimeout(() => pv.remove(), 220);
+      setTimeout(() => pv.remove(), motionDelay(220));
       return;
     }
     const r = aeroRect(zone);
@@ -244,8 +249,11 @@ export function createAgentWindow(cfg) {
     state.minimized = !state.minimized;
     win.classList.toggle("is-minimized", state.minimized);
     if (state.minimized) {
-      applyCorner(readCorner());
+      const corner = readCorner();
+      applyCorner(corner);
+      registerMinimized(PILL_ID, win, corner);
     } else {
+      unregisterMinimized(PILL_ID);
       CORNERS.forEach((c) => win.classList.remove(`corner-${c}`));
       if (state.savedRect) Object.assign(win.style, state.savedRect);
     }
@@ -257,6 +265,7 @@ export function createAgentWindow(cfg) {
   function close() {
     if (state.closed) return;
     state.closed = true;
+    unregisterMinimized(PILL_ID);
     ro.disconnect();
     window.removeEventListener("resize", onWindowResize);
     updateSnapPreview(null);
@@ -322,6 +331,7 @@ export function createAgentWindow(cfg) {
         if (!hasDragged && Math.hypot(dx, dy) > 4) {
           hasDragged = true;
           win.classList.add("is-dragging");
+          setMinimizedDragging(PILL_ID, true); // other pills settle while this one is in the air
         }
         if (hasDragged) {
           const nextLeft = Math.max(8, Math.min(window.innerWidth - rect.width - 8, initialLeft + dx));
@@ -348,24 +358,14 @@ export function createAgentWindow(cfg) {
 
         if (hasDragged) {
           state.lastMinToggle = Date.now();
-          const vw = window.innerWidth;
-          const vh = window.innerHeight;
-          const targetCorner = cornerFromPoint(ev.clientX, ev.clientY, vw, vh);
-          const small = vw <= 600;
-          const to = cornerRect(targetCorner, rect.width, rect.height, vw, vh, {
-            margin: small ? 8 : 16,
-            bottomInset: small ? 66 : 0, // bottom nav (--bottom-nav-height 54 + 12)
-          });
-          // Glide from where the pointer let go to the corner, then hand back to the corner CSS classes.
+          const targetCorner = cornerFromPoint(ev.clientX, ev.clientY, window.innerWidth, window.innerHeight);
+          // The registry computes the stacked slot; the stylesheet's transition glides the pill
+          // there from where the pointer let go (nothing animates in High-Performance Mode).
           win.classList.remove("is-dragging");
-          animateTo(win, to, {
-            important: true,
-            onDone: () => {
-              applyCorner(targetCorner);
-              writeCorner(targetCorner);
-              clearInline();
-            },
-          });
+          applyCorner(targetCorner);
+          writeCorner(targetCorner);
+          setMinimizedCorner(PILL_ID, targetCorner);
+          clearInline();
         } else {
           win.classList.remove("is-dragging");
           clearInline();

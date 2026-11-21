@@ -28,6 +28,7 @@ export const HOME_TOOL_NAMES = [
   "create_course",
   "move_item",
   "fetch_attached_quiz",
+  "fetch_attached_lesson",
   "get_authoring_guide",
   ...READONLY_LIBRARY_TOOL_NAMES,
   "search_youtube",
