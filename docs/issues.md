@@ -8,17 +8,19 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Patches 
 
 ### YouTube Update
-* Per-video thumbnail and link: My Recommendation (You can implement something different)
-* The select checkbox on YouTube cards isn't obvious, it should be a correct green checkmark.
-* The YouTube card includes a placeholder/fake chennel icon on them, they should include the actual channel logo if possible.
-* When I press `اسأل الباشــمبصمج` on a YouTube card, and the AI Agent opens, it shows the item as a `lesson` type in `ai-agent-modal-shell ai-agent-attachment-preview-card`, not a video type. 
-* YouTube Window:
-  * It doesn't show a YouTube Logo on the `ytw-titlebar`. Use `YOUTUBE_ICON_SVG` from `public\src\features\home\icons.js`.
-  * When maximized, it doesn't hide the main page's scrollbar that is on the right.
-  * YouTube Playlists Window: I can't hide the `ytw-list-view` to give the video the full area, it's always there, I can just resize it. Allow me to hide it and give the video full area, with the option to bring it back of course.
-  * Minimization is bad, it doesn't behave like the Window of the AI Agent:
-    * See `public\src\components\ai-agent\ai-agent-window.js` and `ai-agent-window.css` for the correct minimized behavior. Note: The AI Agent's window sticks to one of the 4 corners of the screen, which is correct, but when I drag it with my mouse close to one of the corners, it teleports to that corner instead of smootly going there (animation/transition), so fix that in the AI Agent, and bring it in the YouTube Window.
-* I tried copying a folder that included a video (i.e., `نسخ إلى محتواي`), the folder got copied, but it didn't include the video.
+#### Recommendations (not requested; propose, do not build without a go-ahead)
+
+2. **Admin «نقل» for several items** and the bulk bar for published items. Today move and delete are per item. The bulk bar exists only for «محتواي».
+3. **Rename and edit description for a published item** (admin): `rename-item` and `update-item-metadata` could accept the `youtube` type like `move-item` now does. Titles from YouTube are sometimes bad for a course page.
+4. **Refresh metadata.** Titles, descriptions and thumbnails change on YouTube, and videos become private or deleted. An admin action (and maybe a scheduled job) to re-fetch and flag unavailable items, plus a graceful "unavailable video" state in the player window instead of a blank iframe.
+5. **Watch progress.** Remember the playback position and mark watched videos per device (a thin localStorage layer), show a progress bar on the card thumbnail, and a "continue" state for playlists. The history helper `local-youtube-history.js` is a base.
+6. **Playlist window quality of life:** next/previous and autoplay, a "currently playing" highlight in the list, search inside long lists (up to 200 items), and remembering the last played item.
+7. **Player window:** playback speed and picture-in-picture are already in the YouTube iframe UI, but keyboard shortcuts for the window itself (Esc to minimize, F to maximize) and a visible focus trap/return-focus on close would help accessibility.
+8. **Accessibility pass** on cards and windows: roles, `aria-label`s in Arabic, focus order, and contrast of the badge on bright thumbnails.
+9. **Upload wizard polish:** show a thumbnail and a type icon for each YouTube row in the review tree, warn about a duplicate before upload (the server already answers 23505), and show per-item results for YouTube in the final step. And make all loading animations excluded from the High Performance Mode, see `themes.css` to see how to do that.
+10. **Quota and performance:** cache `channels.list` and `videos.list` results, batch ids, and lazy-load card images. Consider moving published playlist `items` out of the catalog fetch (already lazy) and paginating long lists.
+11. **Tests worth adding:** copy-tree with YouTube (§1.5), the embed/link builders (§2), the window snap math, the attachment kind mapping (§1.3), and the admin `move-item` with the `youtube` type (extend `admin-action-routing`).
+12. **Code health:** the two copies of `youtube-mcp-model.js` (`public/src/shared/` and `scripts/lib/`) can drift. Add a test that fails when they differ, or generate one from the other in the build.
 
 ### AI Agent
 Newly created notebook, the chat didn't include the presented card at the bottom as I expected. ![chat screenshot](image-1.png).
