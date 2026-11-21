@@ -368,16 +368,27 @@
   direction: rtl; font-family: inherit; animation: yt-fade-in 160ms ease-out;
 }
 .ytw.is-max { left: 0 !important; top: 0 !important; width: 100vw !important; height: 100dvh !important; border-radius: 0; }
-.ytw.is-min { height: auto !important; min-height: 0; }
-.ytw.is-min .ytw-body, .ytw.is-min .ytw-resizer:not([data-dir="e"]):not([data-dir="w"]) { display: none; }
-.ytw.is-min .ytw-resizer[data-dir="e"], .ytw.is-min .ytw-resizer[data-dir="w"] { top: 4px; bottom: 4px; }
+/* Minimized: a pill that snaps to a screen corner (like the AI window). Position is set inline by JS. */
+.ytw.is-min {
+  width: min(300px, calc(100vw - 32px)) !important; height: 48px !important; min-width: 0; min-height: 0; max-height: 48px;
+  border-radius: 12px; box-shadow: 0 10px 28px rgba(0, 0, 0, .32); overflow: hidden; animation: none;
+}
+.ytw.is-min.is-dragging { opacity: .92; box-shadow: 0 16px 44px rgba(0, 0, 0, .45); cursor: grabbing; }
+.ytw.is-min .ytw-body, .ytw.is-min .ytw-resizer, .ytw.is-min .ytw-btn--max { display: none; }
+.ytw.is-min .ytw-titlebar { cursor: pointer; height: 100%; padding: 0 12px; }
+.ytw.is-min.is-dragging .ytw-titlebar { cursor: grabbing; }
+.ytw.is-snapping { transition: left .22s ease-out, top .22s ease-out, width .22s ease-out, height .22s ease-out; }
+.ytw-logo { flex: 0 0 auto; display: inline-flex; width: 20px; height: 20px; color: var(--yt-red, #e11d1d); }
+.ytw-logo svg { width: 100%; height: 100%; display: block; }
+html.fw-scroll-locked, html.fw-scroll-locked body { overflow: hidden !important; }
+html.fw-scroll-locked body { padding-inline-end: var(--fw-sbw, 0px); }
 .ytw-titlebar {
   direction: ltr; /* title first, controls at the end (min, max, close) like the AI window */
   flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 9px 12px;
   background: var(--yt-titlebar-bg); border-bottom: 1px solid var(--color-border);
   border-radius: var(--radius-lg, 14px) var(--radius-lg, 14px) 0 0; cursor: grab; user-select: none; touch-action: none;
 }
-.ytw.is-min .ytw-titlebar { border-bottom-color: transparent; border-radius: var(--radius-lg, 14px); }
+.ytw.is-min .ytw-titlebar { border-bottom-color: transparent; border-radius: 12px; }
 .ytw.is-max .ytw-titlebar { border-radius: 0; cursor: default; }
 .ytw-titlebar:active { cursor: grabbing; }
 .ytw-title { flex: 1 1 auto; min-width: 0; text-align: left; font-size: .9rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -488,10 +499,35 @@
   .ytw-divider { display: none; }
   .ytw-split-list { flex: 1 1 auto; max-width: none; min-width: 0; min-height: 140px; }
 }
-html[data-motion="reduced"] .ytw-snap-preview, html[data-motion="reduced"] .item-card.ytc, html[data-motion="reduced"] .ytc-hover, html[data-motion="reduced"] .ytc-hover-icon { transition: none; }
-@media (prefers-reduced-motion: reduce) { .ytw-snap-preview, .item-card.ytc, .ytc-hover, .ytc-hover-icon { transition: none; } }
+html[data-motion="reduced"] .ytw.is-snapping, html[data-motion="reduced"] .ytw-snap-preview, html[data-motion="reduced"] .item-card.ytc, html[data-motion="reduced"] .ytc-hover, html[data-motion="reduced"] .ytc-hover-icon { transition: none; }
+@media (prefers-reduced-motion: reduce) { .ytw.is-snapping, .ytw-snap-preview, .item-card.ytc, .ytc-hover, .ytc-hover-icon { transition: none; } }
 
 /* ── Icons in the admin upload wizard (admin-icons.js) ───────────────────── */
 .adm-ic { width: 1.1em; height: 1.1em; flex: 0 0 auto; vertical-align: -0.2em; }
 .adm-status-ic { display: inline-flex; margin-inline-end: 6px; vertical-align: middle; }
 .adm-status-ic .adm-ic { width: 16px; height: 16px; }
+
+/* ── YouTube card selection: green check badge (empty ring in selection mode, filled green when selected) ── */
+.user-content-container .item-card.ytc .user-content-select-checkbox {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid #fff;
+  background-color: rgba(0, 0, 0, .45);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .35), 0 2px 6px rgba(0, 0, 0, .35);
+}
+.user-content-container .item-card.ytc .user-content-select-checkbox:hover { transform: scale(1.1); border-color: var(--color-success, #16a34a); }
+.user-content-container .item-card.ytc .user-content-select-checkbox:checked {
+  display: block;
+  background-color: var(--color-success, #16a34a);
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--color-success, #16a34a), 0 3px 10px rgba(0, 0, 0, .4);
+  background-size: 70%;
+}
+.user-content-container .item-card.ytc .user-content-select-checkbox:focus-visible {
+  outline: 3px solid var(--color-focus-ring, var(--color-primary)); outline-offset: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.35);
+}
+.item-card.ytc:has(.user-content-select-checkbox:checked) { border-color: var(--color-success, #16a34a); box-shadow: 0 0 0 2px var(--color-success, #16a34a), var(--shadow-md); }
+html[data-motion="reduced"] .user-content-container .item-card.ytc .user-content-select-checkbox { transition: none; }
+
+/* Channel avatar on YouTube cards: the image covers the placeholder glyph; on load error JS removes it. */
+.ytc-channel { position: relative; overflow: hidden; }
+.ytc-channel-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: var(--color-surface); }

@@ -506,3 +506,7 @@ html[data-motion="reduced"] .aiw.is-minimized.is-busy::after { animation: none; 
   min-height: 170px;
 }
 
+/* Smooth snapping (shared/floating-window.js animateTo): glide instead of teleport. */
+.aiw.is-snapping { transition: left 0.22s ease-out, top 0.22s ease-out, width 0.22s ease-out, height 0.22s ease-out !important; }
+html[data-motion="reduced"] .aiw.is-snapping { transition: none !important; }
+@media (prefers-reduced-motion: reduce) { .aiw.is-snapping { transition: none !important; } }

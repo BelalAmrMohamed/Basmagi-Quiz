@@ -31,6 +31,28 @@ export function writeSplit(width, storage = globalThis.localStorage) {
   }
 }
 
+export const LIST_HIDDEN_KEY = "bq-youtube-playlist-list-hidden";
+
+/** Remembered "list hidden" choice (per device). With no saved choice, narrow screens start collapsed. */
+export function readListHidden(storage = globalThis.localStorage, narrow = false) {
+  try {
+    const v = storage?.getItem(LIST_HIDDEN_KEY);
+    if (v === "1") return true;
+    if (v === "0") return false;
+  } catch {
+    /* blocked storage: fall through to the default */
+  }
+  return Boolean(narrow);
+}
+
+export function writeListHidden(hidden, storage = globalThis.localStorage) {
+  try {
+    storage?.setItem(LIST_HIDDEN_KEY, hidden ? "1" : "0");
+  } catch {
+    /* not remembered */
+  }
+}
+
 /** Maps a `video` API detail row to what the info panel shows. */
 export function mapDetailsForInfo(d) {
   return {

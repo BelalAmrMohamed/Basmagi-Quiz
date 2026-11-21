@@ -113,6 +113,17 @@ function buildYoutubeRow(o) {
   const first = [...channel][0];
   if (first && /[\p{L}\p{N}]/u.test(first)) icon.textContent = first.toUpperCase();
   else icon.innerHTML = CHANNEL_ICON;
+  // Real channel avatar when we have one; the glyph above stays as the fallback (missing, blocked or failed load).
+  if (isAllowedThumbnailUrl(o.youtube.channelThumbnailUrl)) {
+    const img = el("img", "ytc-channel-img");
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    img.addEventListener("error", () => img.remove(), { once: true });
+    img.src = o.youtube.channelThumbnailUrl;
+    icon.append(img);
+  }
   row.append(h, icon);
   return row;
 }
@@ -155,6 +166,7 @@ export function createItemCard(o) {
     const checkbox = el("input", "user-content-select-checkbox");
     checkbox.type = "checkbox";
     checkbox.dataset.quizId = o.selectId;
+    checkbox.setAttribute("aria-label", "تحديد");
     const selected = getSelectedUserContent();
     checkbox.checked = selected.has(o.selectId);
     checkbox.onclick = (e) => {
@@ -476,7 +488,7 @@ export function createUserYoutubeVideoCard(video) {
     selectId: video.id || video.meta?.id,
     title: video.meta?.title || "فيديو بدون عنوان",
     thumbnailUrl: video.meta?.thumbnailUrl,
-    youtube: { badge: duration, channel: video.meta?.channelTitle },
+    youtube: { badge: duration, channel: video.meta?.channelTitle, channelThumbnailUrl: video.meta?.channelThumbnailUrl },
     onMore: a.more,
   });
 }
@@ -490,7 +502,7 @@ export function createUserYoutubePlaylistCard(entry) {
     selectId: entry.id || entry.meta?.id,
     title: entry.meta?.title || "قائمة بدون عنوان",
     thumbnailUrl: entry.meta?.thumbnailUrl,
-    youtube: { badge: describePlaylistCount(entry), channel: entry.meta?.channelTitle },
+    youtube: { badge: describePlaylistCount(entry), channel: entry.meta?.channelTitle, channelThumbnailUrl: entry.meta?.channelThumbnailUrl },
     onMore: a.more,
   });
 }

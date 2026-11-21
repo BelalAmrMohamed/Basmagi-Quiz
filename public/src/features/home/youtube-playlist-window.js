@@ -15,9 +15,10 @@ import {
 import { openYoutubeWindow, buildInfo, buildDescriptionPanel, iconButton, DESCRIPTION_ICON, BACK_ICON } from "./youtube-player-window.js";
 import { attachSplit } from "./youtube-split.js";
 import { fetchVideoDetails } from "./youtube-library.js";
-import { mapDetailsForInfo } from "./youtube-window-utils.js";
+import { mapDetailsForInfo, readListHidden, writeListHidden } from "./youtube-window-utils.js";
 import { describePlaylistCount } from "./local-youtube-playlist.js";
 
+const LIST_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>';
 const IFRAME_ALLOW = "accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
 
 function el(tag, className, text) {
@@ -64,8 +65,11 @@ function buildPlaylistPane(entry, items) {
   const counter = el("span", "ytw-counter");
   const descBtn = iconButton("ytw-tool-btn", DESCRIPTION_ICON, "الوصف");
   descBtn.setAttribute("aria-expanded", "false");
+  const listBtn = iconButton("ytw-tool-btn ytw-list-toggle", LIST_ICON, "إخفاء القائمة");
+  listBtn.setAttribute("aria-keyshortcuts", "L");
+  listBtn.setAttribute("aria-expanded", "true");
   const nav = el("div", "ytw-nav");
-  nav.append(prev, counter, next, descBtn);
+  nav.append(prev, counter, next, listBtn, descBtn);
 
   const current = el("div", "ytw-current");
   const currentTitle = el("h3", "ytw-current-title");
@@ -165,6 +169,8 @@ function buildPlaylistPane(entry, items) {
   function setDescription(on) {
     descOpen = on;
     side.replaceChildren(on ? descPanel : listView);
+    if (on) split.show();            // the description needs the side pane, even while the list is hidden
+    else if (listHidden) split.hide();
     descBtn.setAttribute("aria-expanded", String(on));
     descBtn.classList.toggle("is-active", on);
     if (on) renderInfo(items[index]);
@@ -175,7 +181,30 @@ function buildPlaylistPane(entry, items) {
   main.append(frame, nav, current);
   side.append(listView);
   pane.append(main);
-  attachSplit(pane, main, side).show();
+
+  // Hide / show the list without touching the iframe (playback keeps running): only the side pane
+  // and divider leave the layout; the video column simply takes the full width.
+  let listHidden = readListHidden(undefined, window.innerWidth <= 640);
+  function setListHidden(hide, persist = true) {
+    listHidden = hide;
+    if (hide && !descOpen) split.hide();
+    else if (!hide) split.show();
+    const label = hide ? "إظهار القائمة" : "إخفاء القائمة";
+    listBtn.setAttribute("aria-expanded", String(!hide));
+    listBtn.classList.toggle("is-active", hide);
+    listBtn.querySelector("span").textContent = label;
+    listBtn.title = label;
+    if (persist) writeListHidden(hide);
+    if (!hide) rows[index]?.scrollIntoView({ block: "nearest" });
+  }
+  listBtn.addEventListener("click", () => setListHidden(!listHidden));
+  pane.addEventListener("keydown", (e) => {
+    if (e.key.toLowerCase() !== "l" || e.ctrlKey || e.metaKey || e.altKey || e.target.closest("input, textarea")) return;
+    e.preventDefault();
+    setListHidden(!listHidden);
+  });
+  const split = attachSplit(pane, main, side);
+  setListHidden(listHidden, false);
   show(0);
   return pane;
 }

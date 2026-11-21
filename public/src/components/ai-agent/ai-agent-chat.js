@@ -43,7 +43,7 @@ import { toPersistedMessages, serializeWireMessage as buildWireMessage } from ".
 import { createExportHelpers, escapeHtml } from "./core/chat-export.js";
 import { createMessageRenderer } from "./core/chat-rendering.js";
 import { createChatSettings } from "./core/chat-settings.js";
-import { ATTACHMENT_FILE_ICON_SVG, ATTACHMENT_QUIZ_ICON_SVG, ATTACHMENT_COURSE_ICON_SVG, ATTACHMENT_FOLDER_ICON_SVG, ATTACHMENT_LESSON_ICON_SVG, ATTACHMENT_NOTEBOOK_ICON_SVG, ATTACHMENT_REMOVE_ICON_SVG, ATTACHMENT_KIND_LABEL_AR, expandPlatformAttachment, iconForAttachment, labelForAttachment } from "./core/chat-attachments.js";
+import { ATTACHMENT_FILE_ICON_SVG, ATTACHMENT_QUIZ_ICON_SVG, ATTACHMENT_COURSE_ICON_SVG, ATTACHMENT_FOLDER_ICON_SVG, ATTACHMENT_LESSON_ICON_SVG, ATTACHMENT_NOTEBOOK_ICON_SVG, ATTACHMENT_YOUTUBE_ICON_SVG, ATTACHMENT_REMOVE_ICON_SVG, ATTACHMENT_KIND_LABEL_AR, expandPlatformAttachment, iconForAttachment, labelForAttachment } from "./core/chat-attachments.js";
 import { prependUndoNotes } from "./core/undo.js";
 import {
   decorateMessageTokens,
@@ -226,7 +226,7 @@ export function createChatPanel(options = {}) {
    * MAX_TOTAL_FILE_ATTACHMENT_BYTES (see handlePickedFile), platform-item
    * entries aren't subject to any byte budget since they never carry
    * binary data.
-   * @type {Array<{kind: "file", mimeType: string, base64: string, name: string} | {kind: "quiz"|"lesson"|"course"|"folder", id: string, title: string, source: "platform"|"local"}>}
+   * @type {Array<{kind: "file", mimeType: string, base64: string, name: string} | {kind: "quiz"|"lesson"|"course"|"folder"|"youtube", itemType?: string, id: string, title: string, source: "platform"|"local"}>}
    */
   let pendingAttachments = [];
 
@@ -2016,6 +2016,7 @@ export function createChatPanel(options = {}) {
       lesson: ATTACHMENT_LESSON_ICON_SVG,
       course: ATTACHMENT_COURSE_ICON_SVG,
       folder: ATTACHMENT_FOLDER_ICON_SVG,
+      youtube: ATTACHMENT_YOUTUBE_ICON_SVG,
     },
     positionMenu: positionAgentDropdown,
   });

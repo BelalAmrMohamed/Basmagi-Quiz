@@ -71,12 +71,14 @@ function pruneOrphanedRows(userContent) {
  * actually visible in the "محتواي" view.
  *
  * @param {Array} userContent - raw entries from the "user_quizzes" key
- * @returns {{quizCount: number, lessonCount: number, notebookCount: number, folderCount: number, courseCount: number, total: number}}
+ * @returns {{quizCount: number, lessonCount: number, notebookCount: number, videoCount: number, playlistCount: number, folderCount: number, courseCount: number, total: number}}
  */
 export function getUserContentBreakdown(userContent) {
   let quizCount = 0;
   let lessonCount = 0;
   let notebookCount = 0;
+  let videoCount = 0;
+  let playlistCount = 0;
   let folderCount = 0;
   let courseCount = 0;
   for (const row of pruneOrphanedRows(userContent)) {
@@ -84,15 +86,19 @@ export function getUserContentBreakdown(userContent) {
     else if (row?.meta?.type === "folder") folderCount += 1;
     else if (row?.meta?.type === "lesson") lessonCount += 1;
     else if (row?.meta?.type === "notebook") notebookCount += 1;
+    else if (row?.meta?.type === "youtube_video") videoCount += 1;
+    else if (row?.meta?.type === "youtube_playlist") playlistCount += 1;
     else quizCount += 1;
   }
   return {
     quizCount,
     lessonCount,
     notebookCount,
+    videoCount,
+    playlistCount,
     folderCount,
     courseCount,
-    total: quizCount + lessonCount + notebookCount + folderCount + courseCount,
+    total: quizCount + lessonCount + notebookCount + videoCount + playlistCount + folderCount + courseCount,
   };
 }
 
@@ -108,6 +114,8 @@ export function formatUserContentBreakdown({
   quizCount,
   lessonCount = 0,
   notebookCount = 0,
+  videoCount = 0,
+  playlistCount = 0,
   folderCount = 0,
   courseCount = 0,
   total,
@@ -123,6 +131,8 @@ export function formatUserContentBreakdown({
     quizCount ? countLabel(quizCount, "امتحان واحد", "امتحانان", "امتحانات", "امتحان") : "",
     lessonCount ? countLabel(lessonCount, "درس واحد", "درسان", "دروس", "درس") : "",
     notebookCount ? countLabel(notebookCount, "دفتر واحد", "دفتران", "دفاتر", "دفتر") : "",
+    videoCount ? countLabel(videoCount, "فيديو واحد", "فيديوهان", "فيديوهات", "فيديو") : "",
+    playlistCount ? countLabel(playlistCount, "قائمة تشغيل", "قائمتا تشغيل", "قوائم تشغيل", "قائمة تشغيل") : "",
   ].filter(Boolean);
   if ((includeCourses || parts.length === 0) && courseCount) {
     parts.push(countLabel(courseCount, "مادة واحدة", "مادتان", "مواد", "مادة"));

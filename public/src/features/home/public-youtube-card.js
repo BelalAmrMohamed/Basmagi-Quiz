@@ -37,6 +37,7 @@ export function createPublishedYoutubeCard(item) {
     youtube: {
       badge: isPlaylist ? publishedCountLabel(item) : formatDurationSeconds(item.durationSeconds),
       channel: item.channelTitle,
+      channelThumbnailUrl: item.channelThumbnailUrl,
     },
     onMore: (btn) => openPublishedYoutubeMenu(item, btn),
     onOpen: () => (isPlaylist ? openPlaylist(item) : openYoutubeVideoPlayer(toVideoEntry(item))),

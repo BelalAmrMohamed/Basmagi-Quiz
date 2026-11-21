@@ -47,6 +47,7 @@ export function buildLocalYoutubeVideoEntry({
       youtubeId: videoId,
       channelTitle: clean.channelTitle,
       channelId: clean.channelId,
+      channelThumbnailUrl: clean.channelThumbnailUrl,
       publishedAt: clean.publishedAt,
       thumbnailUrl: clean.thumbnailUrl,
       playlistId: playlistId || null,

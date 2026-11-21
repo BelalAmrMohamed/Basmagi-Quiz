@@ -13,6 +13,7 @@ import { canManageItem, openSharedMoveToDialog, deleteSharedItem } from "./admin
 import { DUPLICATE_ICON_SVG, SPARKLE_ICON_SVG, TRASH_ICON_SVG, MOVE_TO_ICON_SVG } from "./icons.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { youtubeLinkActions } from "./youtube-link-actions.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { openAIAgentWithAttachment, buildPlatformYoutubeAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 
@@ -38,7 +39,7 @@ export async function copyYoutubeToUserContent(item) {
       const { data, error } = await supabase.from("youtube_public").select("items").eq("id", item.id).maybeSingle();
       if (error) throw error;
       entry = buildLocalYoutubePlaylistEntry({
-        playlist: { id: item.playlistId, title: item.title, channelTitle: item.channelTitle, itemCount: item.totalCount || item.itemCount },
+        playlist: { id: item.playlistId, title: item.title, channelTitle: item.channelTitle, channelThumbnailUrl: item.channelThumbnailUrl, itemCount: item.totalCount || item.itemCount },
         items: Array.isArray(data?.items) ? data.items : [],
       });
     } else {
@@ -48,6 +49,7 @@ export async function copyYoutubeToUserContent(item) {
           title: item.title,
           description: item.description,
           channelTitle: item.channelTitle,
+          channelThumbnailUrl: item.channelThumbnailUrl,
           publishedAt: item.publishedAt,
           thumbnailUrl: item.thumbnailUrl,
           durationSeconds: item.durationSeconds,
@@ -94,6 +96,7 @@ export function openPublishedYoutubeMenu(item, trigger) {
       label: "اسأل الباشــمبصمج", icon: SPARKLE_ICON_SVG,
       onClick: () => { void openAIAgentWithAttachment(buildPlatformYoutubeAttachment(item), { defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT }); },
     });
+    for (const action of youtubeLinkActions(item)) addAction(menu, closeMenu, action);
     if (canManageItem(item)) {
       menu.appendChild(createActionGroupSubmenu([
         { label: `نقل ${noun}`, icon: MOVE_TO_ICON_SVG, onClick: () => openSharedMoveToDialog(item) },

@@ -77,9 +77,9 @@ export function createUserCourseCard(item, deps) {
 
   // ── Data ──────────────────────────────────────────────────────────────────
   const all = readUserContent();
-  const { subfolderCount, quizCount, lessonCount, notebookCount } = getFolderContentsCount(all, itemId);
-  const total = subfolderCount + quizCount + lessonCount + notebookCount;
-  const summary = formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount, notebookCount);
+  const { subfolderCount, quizCount, lessonCount, notebookCount, videoCount, playlistCount } = getFolderContentsCount(all, itemId);
+  const total = subfolderCount + quizCount + lessonCount + notebookCount + videoCount + playlistCount;
+  const summary = formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount, notebookCount, videoCount, playlistCount);
   let children = [];
   try { children = getChildren(all, itemId) || []; } catch { children = []; }
   if (total === 0) card.classList.add("is-empty");

@@ -1,0 +1,861 @@
+diff --git a/public/src/components/ai-agent/ai-agent-attach-launcher.js b/public/src/components/ai-agent/ai-agent-attach-launcher.js
+--- a/public/src/components/ai-agent/ai-agent-attach-launcher.js
++++ b/public/src/components/ai-agent/ai-agent-attach-launcher.js
+@@ -27,6 +27,7 @@
+ // =============================================================================
+ 
+ import { loadAIAgentModule } from "./ai-agent-lazy.js";
++import { buildYoutubeAttachment, isYoutubeAttachment } from "./core/youtube-attachment.js";
+ import {
+   resolveUserItemById,
+   readUserContent,
+@@ -134,22 +135,7 @@
+ 
+ /** A published YouTube video / playlist: basic context only (no transcript yet). */
+ export function buildPlatformYoutubeAttachment(item) {
+-  const isPlaylist = item?.itemType === "youtube_playlist" || item?.kind === "playlist";
+-  return {
+-    kind: "lesson",
+-    itemType: isPlaylist ? "youtube_playlist" : "youtube_video",
+-    id: item?.id,
+-    title: item?.title || (isPlaylist ? "قائمة تشغيل" : "فيديو"),
+-    source: "platform",
+-    summary: item?.description || "",
+-    payload: {
+-      title: item?.title || "",
+-      description: item?.description || "",
+-      channel: item?.channelTitle || "",
+-      publishedAt: item?.publishedAt || null,
+-      ...(isPlaylist ? { videoCount: item?.itemCount || 0 } : { youtubeId: item?.youtubeId || null }),
+-    },
+-  };
++  return buildYoutubeAttachment(item, "platform");
+ }
+ 
+ /** A published (platform) notebook row from notebook_public, attached like a lesson. */
+@@ -221,7 +207,7 @@
+     // shared handlers (same ones the home-page panel uses).
+     toolNames: [
+       // YouTube items carry everything the assistant knows inline (no fetch tool).
+-      ...(String(attachment.itemType || "").startsWith("youtube_")
++      ...(isYoutubeAttachment(attachment)
+         ? []
+         : [attachment.kind === "lesson" ? "fetch_attached_lesson" : "fetch_attached_quiz"]),
+       ...READONLY_LIBRARY_TOOL_NAMES,
+diff --git a/public/src/components/ai-agent/ai-agent-chat.js b/public/src/components/ai-agent/ai-agent-chat.js
+--- a/public/src/components/ai-agent/ai-agent-chat.js
++++ b/public/src/components/ai-agent/ai-agent-chat.js
+@@ -43,7 +43,7 @@
+ import { createExportHelpers, escapeHtml } from "./core/chat-export.js";
+ import { createMessageRenderer } from "./core/chat-rendering.js";
+ import { createChatSettings } from "./core/chat-settings.js";
+-import { ATTACHMENT_FILE_ICON_SVG, ATTACHMENT_QUIZ_ICON_SVG, ATTACHMENT_COURSE_ICON_SVG, ATTACHMENT_FOLDER_ICON_SVG, ATTACHMENT_LESSON_ICON_SVG, ATTACHMENT_NOTEBOOK_ICON_SVG, ATTACHMENT_REMOVE_ICON_SVG, ATTACHMENT_KIND_LABEL_AR, expandPlatformAttachment, iconForAttachment, labelForAttachment } from "./core/chat-attachments.js";
++import { ATTACHMENT_FILE_ICON_SVG, ATTACHMENT_QUIZ_ICON_SVG, ATTACHMENT_COURSE_ICON_SVG, ATTACHMENT_FOLDER_ICON_SVG, ATTACHMENT_LESSON_ICON_SVG, ATTACHMENT_NOTEBOOK_ICON_SVG, ATTACHMENT_YOUTUBE_ICON_SVG, ATTACHMENT_REMOVE_ICON_SVG, ATTACHMENT_KIND_LABEL_AR, expandPlatformAttachment, iconForAttachment, labelForAttachment } from "./core/chat-attachments.js";
+ import { prependUndoNotes } from "./core/undo.js";
+ import {
+   decorateMessageTokens,
+@@ -226,7 +226,7 @@
+    * MAX_TOTAL_FILE_ATTACHMENT_BYTES (see handlePickedFile), platform-item
+    * entries aren't subject to any byte budget since they never carry
+    * binary data.
+-   * @type {Array<{kind: "file", mimeType: string, base64: string, name: string} | {kind: "quiz"|"lesson"|"course"|"folder", id: string, title: string, source: "platform"|"local"}>}
++   * @type {Array<{kind: "file", mimeType: string, base64: string, name: string} | {kind: "quiz"|"lesson"|"course"|"folder"|"youtube", itemType?: string, id: string, title: string, source: "platform"|"local"}>}
+    */
+   let pendingAttachments = [];
+ 
+@@ -2016,6 +2016,7 @@
+       lesson: ATTACHMENT_LESSON_ICON_SVG,
+       course: ATTACHMENT_COURSE_ICON_SVG,
+       folder: ATTACHMENT_FOLDER_ICON_SVG,
++      youtube: ATTACHMENT_YOUTUBE_ICON_SVG,
+     },
+     positionMenu: positionAgentDropdown,
+   });
+diff --git a/public/src/components/ai-agent/ai-agent-item-lookup.js b/public/src/components/ai-agent/ai-agent-item-lookup.js
+--- a/public/src/components/ai-agent/ai-agent-item-lookup.js
++++ b/public/src/components/ai-agent/ai-agent-item-lookup.js
+@@ -23,6 +23,9 @@
+ import { getFolderContentsCount } from "../../features/home/user-content-folders.js";
+ import { normalizeLessonContent } from "../../features/lesson/lesson-schema.js";
+ import { summarizeNotebook, notebookAttachmentPayload } from "../../shared/notebook-export.js";
++import { buildYoutubeAttachment } from "./core/youtube-attachment.js";
++
++const isYoutubeType = (type) => type === "youtube_video" || type === "youtube_playlist";
+ 
+ /**
+  * Reads the flat user_quizzes array from localStorage. Failure-safe (bad
+@@ -110,9 +113,11 @@
+       const id = item.meta?.id || item.id;
+       const kind = item.meta?.type === "course" || item.meta?.type === "folder" || item.meta?.type === "lesson"
+         ? item.meta.type
++        : isYoutubeType(item.meta?.type) ? "youtube"
+         : item.meta?.type === "notebook" ? "lesson" : "quiz"; // notebooks travel as reading material
+       const node = { kind, id, title: qz(item, "title") || item.meta?.title || "بدون عنوان" };
+-      if (kind === "quiz") node.questionCount = qz(item, "count");
++      if (kind === "youtube") node.itemType = item.meta.type;
++      else if (kind === "quiz") node.questionCount = qz(item, "count");
+       else if (kind === "lesson") node.sectionCount = item.stats?.sectionCount ?? (item.meta?.type === "notebook" ? item.stats?.cellCount ?? 0 : 0);
+       else node.children = buildItemTree(userContent, id);
+       return node;
+@@ -135,6 +140,7 @@
+ 
+   const title = qz(item, "title") || item.meta?.title || "بدون عنوان";
+   const metaType = item.meta?.type;
++  if (isYoutubeType(metaType)) return buildYoutubeAttachment({ ...item, id }, "local");
+   if (metaType === "lesson") {
+     return {
+       kind: "lesson",
+@@ -210,7 +216,7 @@
+       const title = qz(item, "title") || item.meta?.title || "بدون عنوان";
+       if (q && !title.toLowerCase().includes(q)) return null;
+       const metaType = item.meta?.type;
+-      const kind = metaType === "folder" || metaType === "course" || metaType === "lesson" ? metaType : metaType === "notebook" ? "lesson" : "quiz";
++      const kind = metaType === "folder" || metaType === "course" || metaType === "lesson" ? metaType : isYoutubeType(metaType) ? "youtube" : metaType === "notebook" ? "lesson" : "quiz";
+       return {
+         kind,
+         id,
+@@ -239,11 +245,11 @@
+   const tree = buildItemTree(userContent, null);
+   const quizCount = tree.reduce((count, item) => {
+     if (item.kind === "quiz") return count + 1;
+-    if (item.kind === "lesson") return count; // a lesson is not a quiz
++    if (item.kind === "lesson" || item.kind === "youtube") return count; // neither is a quiz
+     return count + countTreeQuizzes(item.children || []);
+   }, 0);
+   const folderCount = tree.reduce((count, item) => {
+-    if (item.kind === "quiz" || item.kind === "lesson") return count; // leaves
++    if (item.kind === "quiz" || item.kind === "lesson" || item.kind === "youtube") return count; // leaves
+     return count + 1 + countTreeFolders(item.children || []);
+   }, 0);
+   return {
+@@ -259,14 +265,14 @@
+ function countTreeQuizzes(nodes) {
+   return nodes.reduce((count, node) => {
+     if (node.kind === "quiz") return count + 1;
+-    if (node.kind === "lesson") return count;
++    if (node.kind === "lesson" || node.kind === "youtube") return count;
+     return count + countTreeQuizzes(node.children || []);
+   }, 0);
+ }
+ 
+ function countTreeFolders(nodes) {
+   return nodes.reduce((count, node) => {
+-    if (node.kind === "quiz" || node.kind === "lesson") return count;
++    if (node.kind === "quiz" || node.kind === "lesson" || node.kind === "youtube") return count;
+     return count + 1 + countTreeFolders(node.children || []);
+   }, 0);
+ }
+\ No newline at end of file
+diff --git a/public/src/components/ai-agent/ai-agent-mention-menu.js b/public/src/components/ai-agent/ai-agent-mention-menu.js
+--- a/public/src/components/ai-agent/ai-agent-mention-menu.js
++++ b/public/src/components/ai-agent/ai-agent-mention-menu.js
+@@ -181,6 +181,7 @@
+         if (kind === "course") return icons.course;
+         if (kind === "folder") return icons.folder;
+         if (kind === "lesson") return icons.lesson || icons.quiz;
++        if (kind === "youtube") return icons.youtube || icons.quiz;
+         return icons.quiz;
+     }
+ 
+diff --git a/public/src/components/ai-agent/core/chat-attachments.js b/public/src/components/ai-agent/core/chat-attachments.js
+--- a/public/src/components/ai-agent/core/chat-attachments.js
++++ b/public/src/components/ai-agent/core/chat-attachments.js
+@@ -18,6 +18,8 @@
+   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>';
+ export const ATTACHMENT_NOTEBOOK_ICON_SVG =
+   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>';
++export const ATTACHMENT_YOUTUBE_ICON_SVG =
++  '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>';
+ export const ATTACHMENT_REMOVE_ICON_SVG =
+   '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+ 
+@@ -50,6 +52,8 @@
+ }
+ 
+ export function iconForAttachment(att) {
++  // Also catches chats saved before the dedicated kind existed (kind "lesson" + itemType youtube_*).
++  if (att.kind === "youtube" || String(att.itemType || "").startsWith("youtube_")) return ATTACHMENT_YOUTUBE_ICON_SVG;
+   if (att.kind === "quiz") return ATTACHMENT_QUIZ_ICON_SVG;
+   if (att.itemType === "notebook") return ATTACHMENT_NOTEBOOK_ICON_SVG;
+   if (att.kind === "lesson") return ATTACHMENT_LESSON_ICON_SVG;
+@@ -62,5 +66,9 @@
+   return att.kind === "file" ? att.name : att.title;
+ }
+ 
+-export const ATTACHMENT_KIND_LABEL_AR = { quiz: "امتحان", lesson: "درس", notebook: "دفتر", course: "مادة", folder: "مجلد", file: "ملف" };
++// The preview badge looks up `itemType` first, so youtube_video / youtube_playlist win over the generic kind.
++export const ATTACHMENT_KIND_LABEL_AR = {
++  quiz: "امتحان", lesson: "درس", notebook: "دفتر", course: "مادة", folder: "مجلد", file: "ملف",
++  youtube: "فيديو", youtube_video: "فيديو", youtube_playlist: "قائمة تشغيل",
++};
+ 
+diff --git a/public/src/components/ai-agent/core/chat-messages.js b/public/src/components/ai-agent/core/chat-messages.js
+--- a/public/src/components/ai-agent/core/chat-messages.js
++++ b/public/src/components/ai-agent/core/chat-messages.js
+@@ -29,7 +29,7 @@
+   }
+   const fileAttachments = (m.attachments || []).filter((a) => a.kind === "file" || (!a.kind && a.base64))
+     .map(({ mimeType, base64, name }) => ({ mimeType, base64, name }));
+-  const platformAttachments = (m.attachments || []).filter((a) => ["quiz", "lesson", "course", "folder"].includes(a.kind));
++  const platformAttachments = (m.attachments || []).filter((a) => ["quiz", "lesson", "course", "folder", "youtube"].includes(a.kind));
+   const expandedContext = platformAttachments.map(expandPlatformAttachment).join("\n\n");
+   let effectiveContent = expandedContext ? [m.content, expandedContext].filter(Boolean).join("\n\n") : (m.content || "");
+   if (m.isSlashCommand || (m.role === "user" && typeof effectiveContent === "string" && effectiveContent.trim().startsWith("/"))) {
+diff --git a/public/src/components/ai-agent/core/youtube-attachment.js b/public/src/components/ai-agent/core/youtube-attachment.js
+new file mode 100644
+--- /dev/null
++++ b/public/src/components/ai-agent/core/youtube-attachment.js
+@@ -0,0 +1,114 @@
++// =============================================================================
++// public/src/components/ai-agent/core/youtube-attachment.js
++// PURE (no DOM / network / storage): builds the AI-agent attachment for a
++// YouTube video or playlist — from a published manifest item OR from a local
++// «محتواي» row. One builder, so the platform cards, «محتواي» cards and the
++// `/` `@` menu all attach the same shape: { kind: "youtube", itemType, … }.
++// =============================================================================
++
++import { canonicalPlaylistUrl, canonicalWatchUrl } from "../../../shared/youtube-rules.js";
++
++export const YOUTUBE_ATTACHMENT_KIND = "youtube";
++const DESCRIPTION_MAX = 2000;
++const SUMMARY_DESCRIPTION_MAX = 400;
++const PLAYLIST_TITLES_MAX = 60;
++
++/** True for the real kind and for older persisted chats that stored kind "lesson" + itemType youtube_*. */
++export function isYoutubeAttachment(att) {
++  return att?.kind === YOUTUBE_ATTACHMENT_KIND || String(att?.itemType || "").startsWith("youtube_");
++}
++
++/** 3725 → "1:02:05", 125 → "2:05"; null for anything that is not a non-negative integer. */
++export function formatDuration(seconds) {
++  if (!Number.isInteger(seconds) || seconds < 0) return null;
++  const h = Math.floor(seconds / 3600);
++  const m = Math.floor((seconds % 3600) / 60);
++  const s = seconds % 60;
++  const mm = h ? String(m).padStart(2, "0") : String(m);
++  return `${h ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
++}
++
++function safeUrl(isPlaylist, id) {
++  try {
++    return id ? (isPlaylist ? canonicalPlaylistUrl(id) : canonicalWatchUrl(id)) : "";
++  } catch {
++    return "";
++  }
++}
++
++/** Normalizes a published manifest item or a local user_quizzes row. */
++function normalize(source) {
++  if (source?.meta?.type === "youtube_video" || source?.meta?.type === "youtube_playlist") {
++    const m = source.meta;
++    const isPlaylist = m.type === "youtube_playlist";
++    return {
++      isPlaylist,
++      id: m.id || source.id,
++      title: m.title,
++      description: m.description,
++      channel: m.channelTitle,
++      publishedAt: m.publishedAt,
++      youtubeId: isPlaylist ? null : m.youtubeId,
++      playlistId: isPlaylist ? m.playlistId : null,
++      durationSeconds: isPlaylist ? null : source.stats?.durationSeconds ?? source.video?.durationSeconds ?? null,
++      videoCount: isPlaylist ? source.playlist?.itemCount ?? source.stats?.itemCount ?? 0 : 0,
++      videoTitles: isPlaylist ? (source.playlist?.items || []).map((i) => i?.title).filter(Boolean) : [],
++    };
++  }
++  const isPlaylist = source?.itemType === "youtube_playlist" || source?.kind === "playlist";
++  return {
++    isPlaylist,
++    id: source?.id,
++    title: source?.title,
++    description: source?.description,
++    channel: source?.channelTitle,
++    publishedAt: source?.publishedAt,
++    youtubeId: isPlaylist ? null : source?.youtubeId,
++    playlistId: isPlaylist ? source?.playlistId : null,
++    durationSeconds: isPlaylist ? null : source?.durationSeconds ?? null,
++    videoCount: isPlaylist ? source?.totalCount || source?.itemCount || 0 : 0,
++    videoTitles: [],
++  };
++}
++
++/**
++ * @param {object} source - manifest item (`itemType`/`kind`, `youtubeId`, …) or a local row (`meta.type`)
++ * @param {"platform"|"local"} [origin]
++ */
++export function buildYoutubeAttachment(source, origin = "platform") {
++  const n = normalize(source);
++  const title = String(n.title || "").trim() || (n.isPlaylist ? "قائمة تشغيل" : "فيديو");
++  const description = String(n.description || "").slice(0, DESCRIPTION_MAX);
++  const duration = formatDuration(n.durationSeconds);
++  const published = n.publishedAt ? String(n.publishedAt).slice(0, 10) : "";
++
++  const summaryParts = [];
++  if (n.channel) summaryParts.push(`القناة: ${n.channel}`);
++  if (duration) summaryParts.push(`المدة: ${duration}`);
++  if (n.isPlaylist && n.videoCount) summaryParts.push(`عدد الفيديوهات: ${n.videoCount}`);
++  if (published) summaryParts.push(`تاريخ النشر: ${published}`);
++  if (description) summaryParts.push(`الوصف: ${description.slice(0, SUMMARY_DESCRIPTION_MAX)}`);
++
++  return {
++    kind: YOUTUBE_ATTACHMENT_KIND,
++    itemType: n.isPlaylist ? "youtube_playlist" : "youtube_video",
++    id: n.id,
++    title,
++    source: origin,
++    summary: summaryParts.join(" — "),
++    payload: {
++      title,
++      description,
++      channel: n.channel || "",
++      publishedAt: n.publishedAt || null,
++      url: safeUrl(n.isPlaylist, n.isPlaylist ? n.playlistId : n.youtubeId),
++      ...(n.isPlaylist
++        ? {
++            playlistId: n.playlistId || null,
++            videoCount: n.videoCount || 0,
++            ...(n.videoTitles.length ? { videoTitles: n.videoTitles.slice(0, PLAYLIST_TITLES_MAX) } : {}),
++          }
++        : { youtubeId: n.youtubeId || null, durationSeconds: n.durationSeconds ?? null, ...(duration ? { duration } : {}) }),
++    },
++  };
++}
+diff --git a/public/src/features/home/copy-to-my-content.js b/public/src/features/home/copy-to-my-content.js
+--- a/public/src/features/home/copy-to-my-content.js
++++ b/public/src/features/home/copy-to-my-content.js
+@@ -20,6 +20,7 @@
+ import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+ import { normalizeLessonJson } from "../lesson/lesson-json.js";
+ import { isLessonProtected, requestLessonPassword, unlockRemoteLesson } from "../lesson/lesson-access.js";
++import { planYoutubeCopy, playlistRowIds, describeCopyCounts } from "./copy-youtube-tree.js";
+ 
+ const copiesInFlight = new Set();
+ 
+@@ -282,6 +283,10 @@
+   const newEntries = [];
+   let rootBlocked = false;
+   let anySkipped = false;
++  let quizCount = 0;
++  // Published YouTube items found per copied folder; resolved after the walk so
++  // every playlist's `items` comes from ONE query (see below).
++  const youtubeJobs = [];
+ 
+   async function copyNode(node, parentId = null, forcedKind = null, isQuizNode = false, isRoot = false) {
+     const sourceNode = node?.key && categoryTree?.[node.key]
+@@ -327,6 +332,7 @@
+       entry.meta.id = entry.id;
+       userContent.push(entry);
+       newEntries.push(entry);
++      quizCount += 1;
+       return entry.id;
+     }
+ 
+@@ -364,12 +370,46 @@
+     for (const exam of exams) {
+       await copyNode({ ...exam, dbId: exam.dbId }, copyId, null, true);
+     }
++    // YouTube items live in their own array on the node, not in subcategories/exams.
++    if (Array.isArray(sourceNode?.youtube) && sourceNode.youtube.length) {
++      youtubeJobs.push({ items: sourceNode.youtube, parentId: copyId });
++    }
+     return copyId;
+   }
+ 
+   try {
+     await copyNode(rootNode, null, rootKind, false, true);
+ 
++    let videoCount = 0;
++    let playlistCount = 0;
++    let youtubeFailed = 0;
++    if (youtubeJobs.length && !rootBlocked) {
++      const playlistItemsById = new Map();
++      const ids = playlistRowIds(youtubeJobs.flatMap((job) => job.items));
++      if (ids.length) {
++        try {
++          const supabase = await ensureSharedSupabaseClient();
++          const { data, error } = await supabase.from("youtube_public").select("id, items").in("id", ids);
++          if (error) throw error;
++          for (const row of data || []) playlistItemsById.set(row.id, Array.isArray(row.items) ? row.items : []);
++        } catch (error) {
++          // Videos still copy; playlists without items are counted as failed below.
++          console.error("Copy tree — could not load playlist items:", error);
++        }
++      }
++      for (const job of youtubeJobs) {
++        const plan = planYoutubeCopy({ items: job.items, parentId: job.parentId, existing: userContent, playlistItemsById });
++        for (const entry of plan.entries) {
++          userContent.push(entry);
++          newEntries.push(entry);
++        }
++        videoCount += plan.videos;
++        playlistCount += plan.playlists;
++        youtubeFailed += plan.failed;
++        if (plan.skipped) anySkipped = true;
++      }
++    }
++
+     const latestUserContent = JSON.parse(getFromStorage("user_quizzes", "[]"));
+     setInStorage(
+       "user_quizzes",
+@@ -384,15 +424,29 @@
+       );
+       return false;
+     }
++    if (videoCount || playlistCount) {
++      const { refreshUserContentCard } = await import("./course-count.js");
++      refreshUserContentCard();
++    }
++    const counts = describeCopyCounts({ quizzes: quizCount, videos: videoCount, playlists: playlistCount });
++    const countsLine = counts ? ` (${counts})` : "";
++    if (youtubeFailed) {
++      showNotification(
++        "تم النسخ جزئياً",
++        `تم نسخ الشجرة${countsLine}، لكن تعذّر نسخ ${youtubeFailed} من عناصر يوتيوب.`,
++        "warning",
++      );
++      return true;
++    }
+     if (anySkipped) {
+       showNotification(
+         "تم النسخ جزئياً",
+-        "تم نسخ الشجرة، لكن بعض العناصر تم تخطيها لوجود عنصر بنفس الاسم والنوع في نفس المستوى بالفعل.",
++        `تم نسخ الشجرة${countsLine}، لكن بعض العناصر تم تخطيها لوجود عنصر مطابق في نفس المستوى بالفعل.`,
+         "warning",
+       );
+       return true;
+     }
+-    showNotification("تم النسخ", "تم نسخ الشجرة كاملة مع الحفاظ على ترتيب المجلدات.", "success");
++    showNotification("تم النسخ", `تم نسخ الشجرة كاملة مع الحفاظ على ترتيب المجلدات${countsLine}.`, "success");
+     return true;
+   } finally {
+     copiesInFlight.delete(key);
+diff --git a/public/src/features/home/copy-youtube-tree.js b/public/src/features/home/copy-youtube-tree.js
+new file mode 100644
+--- /dev/null
++++ b/public/src/features/home/copy-youtube-tree.js
+@@ -0,0 +1,92 @@
++// =============================================================================
++// public/src/features/home/copy-youtube-tree.js
++// PURE helpers (no DOM / network / storage) for copying the published YouTube
++// items of a folder or course into «محتواي». Used by copyCategoryTreeToUserContent
++// (copy-to-my-content.js), which owns the single batched `youtube_public` query
++// for playlist `items`.
++// =============================================================================
++
++import { buildLocalYoutubeVideoEntry, findSameLevelVideoDuplicate } from "./local-youtube-video.js";
++import { buildLocalYoutubePlaylistEntry, findSameLevelPlaylistDuplicate } from "./local-youtube-playlist.js";
++
++/** True when a manifest YouTube item is a playlist. */
++export function isPlaylistItem(item) {
++  return item?.kind === "playlist" || item?.itemType === "youtube_playlist";
++}
++
++/**
++ * Builds the local entries for the YouTube items of ONE copied folder.
++ * Duplicates are decided by YouTube id at the same level (never by title) and
++ * count as `skipped`; anything that cannot be built counts as `failed`.
++ *
++ * @param {object} args
++ * @param {object[]} args.items - manifest items (`categoryTree[key].youtube`)
++ * @param {string|null} args.parentId - the NEW local folder/course id
++ * @param {object[]} args.existing - current local rows (already includes rows copied earlier in this run)
++ * @param {Map<string, object[]>} [args.playlistItemsById] - `youtube_public.items` by row id
++ * @returns {{ entries: object[], videos: number, playlists: number, skipped: number, failed: number }}
++ */
++export function planYoutubeCopy({ items, parentId, existing, playlistItemsById = new Map() }) {
++  const out = { entries: [], videos: 0, playlists: 0, skipped: 0, failed: 0 };
++  const pool = [...(existing || [])];
++  for (const item of items || []) {
++    try {
++      let entry;
++      if (isPlaylistItem(item)) {
++        if (findSameLevelPlaylistDuplicate(pool, item.playlistId, parentId)) {
++          out.skipped += 1;
++          continue;
++        }
++        entry = buildLocalYoutubePlaylistEntry({
++          playlist: {
++            id: item.playlistId,
++            title: item.title,
++            channelTitle: item.channelTitle,
++            itemCount: item.totalCount || item.itemCount,
++          },
++          items: playlistItemsById.get(item.id) || [],
++          parentId,
++        });
++        out.playlists += 1;
++      } else {
++        if (findSameLevelVideoDuplicate(pool, item.youtubeId, parentId)) {
++          out.skipped += 1;
++          continue;
++        }
++        entry = buildLocalYoutubeVideoEntry({
++          videoId: item.youtubeId,
++          parentId,
++          meta: {
++            title: item.title,
++            description: item.description,
++            channelTitle: item.channelTitle,
++            publishedAt: item.publishedAt,
++            thumbnailUrl: item.thumbnailUrl,
++            durationSeconds: item.durationSeconds,
++          },
++        });
++        out.videos += 1;
++      }
++      pool.push(entry);
++      out.entries.push(entry);
++    } catch (error) {
++      console.warn("[copy-youtube-tree] item skipped:", item?.id, error?.message);
++      out.failed += 1;
++    }
++  }
++  return out;
++}
++
++/** Row ids of every playlist in a list of manifest items, for the one batched query. */
++export function playlistRowIds(items) {
++  return [...new Set((items || []).filter(isPlaylistItem).map((i) => i.id).filter(Boolean))];
++}
++
++/** "2 اختبار · 1 فيديو · 1 قائمة تشغيل" — zero counts are omitted. */
++export function describeCopyCounts({ quizzes = 0, videos = 0, playlists = 0 }) {
++  const parts = [];
++  if (quizzes) parts.push(`${quizzes} اختبار`);
++  if (videos) parts.push(`${videos} فيديو`);
++  if (playlists) parts.push(`${playlists} قائمة تشغيل`);
++  return parts.join(" · ");
++}
+diff --git a/public/src/features/home/course-count.js b/public/src/features/home/course-count.js
+--- a/public/src/features/home/course-count.js
++++ b/public/src/features/home/course-count.js
+@@ -71,12 +71,14 @@
+  * actually visible in the "محتواي" view.
+  *
+  * @param {Array} userContent - raw entries from the "user_quizzes" key
+- * @returns {{quizCount: number, lessonCount: number, notebookCount: number, folderCount: number, courseCount: number, total: number}}
++ * @returns {{quizCount: number, lessonCount: number, notebookCount: number, videoCount: number, playlistCount: number, folderCount: number, courseCount: number, total: number}}
+  */
+ export function getUserContentBreakdown(userContent) {
+   let quizCount = 0;
+   let lessonCount = 0;
+   let notebookCount = 0;
++  let videoCount = 0;
++  let playlistCount = 0;
+   let folderCount = 0;
+   let courseCount = 0;
+   for (const row of pruneOrphanedRows(userContent)) {
+@@ -84,15 +86,19 @@
+     else if (row?.meta?.type === "folder") folderCount += 1;
+     else if (row?.meta?.type === "lesson") lessonCount += 1;
+     else if (row?.meta?.type === "notebook") notebookCount += 1;
++    else if (row?.meta?.type === "youtube_video") videoCount += 1;
++    else if (row?.meta?.type === "youtube_playlist") playlistCount += 1;
+     else quizCount += 1;
+   }
+   return {
+     quizCount,
+     lessonCount,
+     notebookCount,
++    videoCount,
++    playlistCount,
+     folderCount,
+     courseCount,
+-    total: quizCount + lessonCount + notebookCount + folderCount + courseCount,
++    total: quizCount + lessonCount + notebookCount + videoCount + playlistCount + folderCount + courseCount,
+   };
+ }
+ 
+@@ -108,6 +114,8 @@
+   quizCount,
+   lessonCount = 0,
+   notebookCount = 0,
++  videoCount = 0,
++  playlistCount = 0,
+   folderCount = 0,
+   courseCount = 0,
+   total,
+@@ -123,6 +131,8 @@
+     quizCount ? countLabel(quizCount, "امتحان واحد", "امتحانان", "امتحانات", "امتحان") : "",
+     lessonCount ? countLabel(lessonCount, "درس واحد", "درسان", "دروس", "درس") : "",
+     notebookCount ? countLabel(notebookCount, "دفتر واحد", "دفتران", "دفاتر", "دفتر") : "",
++    videoCount ? countLabel(videoCount, "فيديو واحد", "فيديوهان", "فيديوهات", "فيديو") : "",
++    playlistCount ? countLabel(playlistCount, "قائمة تشغيل", "قائمتا تشغيل", "قوائم تشغيل", "قائمة تشغيل") : "",
+   ].filter(Boolean);
+   if ((includeCourses || parts.length === 0) && courseCount) {
+     parts.push(countLabel(courseCount, "مادة واحدة", "مادتان", "مواد", "مادة"));
+diff --git a/public/src/features/home/folder-counts.js b/public/src/features/home/folder-counts.js
+--- a/public/src/features/home/folder-counts.js
++++ b/public/src/features/home/folder-counts.js
+@@ -9,13 +9,15 @@
+  * Recursively count all subfolders, quizzes, lessons and notebooks inside a folder or course.
+  * @param {object[]} userContent
+  * @param {string} folderId
+- * @returns {{ subfolderCount: number, quizCount: number, lessonCount: number, notebookCount: number }}
++ * @returns {{ subfolderCount: number, quizCount: number, lessonCount: number, notebookCount: number, videoCount: number, playlistCount: number }}
+  */
+ export function getFolderContentsCount(userContent, folderId) {
+   let subfolderCount = 0;
+   let quizCount = 0;
+   let lessonCount = 0;
+   let notebookCount = 0;
++  let videoCount = 0;
++  let playlistCount = 0;
+   const seen = new Set();
+ 
+   function walk(currentId) {
+@@ -37,6 +39,10 @@
+         lessonCount++;
+       } else if (type === "notebook") {
+         notebookCount++;
++      } else if (type === "youtube_video") {
++        videoCount++;
++      } else if (type === "youtube_playlist") {
++        playlistCount++;
+       } else {
+         quizCount++;
+       }
+@@ -44,7 +50,7 @@
+   }
+ 
+   walk(folderId);
+-  return { subfolderCount, quizCount, lessonCount, notebookCount };
++  return { subfolderCount, quizCount, lessonCount, notebookCount, videoCount, playlistCount };
+ }
+ 
+ function arabicCount(n, one, two, few, many) {
+@@ -58,12 +64,14 @@
+  * Format the folder / quiz / lesson / notebook counts in natural Arabic with proper plural rules.
+  * @returns {string} "فارغ" only when every count is zero
+  */
+-export function formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount = 0, notebookCount = 0) {
+-  if (!subfolderCount && !quizCount && !lessonCount && !notebookCount) return "فارغ";
++export function formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount = 0, notebookCount = 0, videoCount = 0, playlistCount = 0) {
++  if (!subfolderCount && !quizCount && !lessonCount && !notebookCount && !videoCount && !playlistCount) return "فارغ";
+   const parts = [];
+   if (subfolderCount > 0) parts.push(arabicCount(subfolderCount, "مجلد واحد", "مجلدان", "مجلدات", "مجلد"));
+   if (quizCount > 0) parts.push(arabicCount(quizCount, "امتحان واحد", "امتحانان", "امتحانات", "امتحان"));
+   if (lessonCount > 0) parts.push(arabicCount(lessonCount, "درس واحد", "درسان", "دروس", "درس"));
+   if (notebookCount > 0) parts.push(arabicCount(notebookCount, "دفتر واحد", "دفتران", "دفاتر", "دفتر"));
++  if (videoCount > 0) parts.push(arabicCount(videoCount, "فيديو واحد", "فيديوهان", "فيديوهات", "فيديو"));
++  if (playlistCount > 0) parts.push(arabicCount(playlistCount, "قائمة تشغيل", "قائمتا تشغيل", "قوائم تشغيل", "قائمة تشغيل"));
+   return parts.join(" · ");
+ }
+diff --git a/public/src/features/home/user-content-card.js b/public/src/features/home/user-content-card.js
+--- a/public/src/features/home/user-content-card.js
++++ b/public/src/features/home/user-content-card.js
+@@ -142,6 +142,22 @@
+     }
+     appendSelectOption(menu, closeMenu, vid);
+     appendMoveGroup(menu, closeMenu, reposition, vid);
++
++    // Same attachment builder as the published cards (kind "youtube", not "lesson").
++    const askAiOpt = document.createElement("button");
++    askAiOpt.type = "button";
++    askAiOpt.className = "exam-action-btn";
++    askAiOpt.innerHTML = `${SPARKLE_ICON_SVG}<span>اسأل الباشـمبصمج</span>`;
++    askAiOpt.onclick = (e) => {
++      e.stopPropagation();
++      closeMenu();
++      const attachment = resolveUserItemAttachment(vid);
++      if (attachment) {
++        openAIAgentWithAttachment(attachment, { defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT });
++      }
++    };
++    menu.appendChild(askAiOpt);
++
+     const deleteOpt = document.createElement("button");
+     deleteOpt.type = "button";
+     deleteOpt.className = "exam-action-btn exam-action-btn--danger";
+diff --git a/public/src/features/home/user-content-folders.js b/public/src/features/home/user-content-folders.js
+--- a/public/src/features/home/user-content-folders.js
++++ b/public/src/features/home/user-content-folders.js
+@@ -1766,12 +1766,12 @@
+   }
+   const itemId = item.id || item.meta?.id;
+   const title = item.meta?.title || "";
+-  const { subfolderCount, quizCount, lessonCount, notebookCount } = getFolderContentsCount(readUserContent(), itemId);
++  const { subfolderCount, quizCount, lessonCount, notebookCount, videoCount, playlistCount } = getFolderContentsCount(readUserContent(), itemId);
+   const type = item.meta?.type || "folder";
+ 
+   const card = createFolderCard({
+     title,
+-    subtext: formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount, notebookCount),
++    subtext: formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount, notebookCount, videoCount, playlistCount),
+     selectId: itemId,
+     onOpen: () => navigateToFolder(itemId, title),
+     onMore: (_btn, e) => showContextMenu(e, type, itemId, title),
+diff --git a/public/src/features/home/user-course-card.js b/public/src/features/home/user-course-card.js
+--- a/public/src/features/home/user-course-card.js
++++ b/public/src/features/home/user-course-card.js
+@@ -77,9 +77,9 @@
+ 
+   // ── Data ──────────────────────────────────────────────────────────────────
+   const all = readUserContent();
+-  const { subfolderCount, quizCount, lessonCount, notebookCount } = getFolderContentsCount(all, itemId);
+-  const total = subfolderCount + quizCount + lessonCount + notebookCount;
+-  const summary = formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount, notebookCount);
++  const { subfolderCount, quizCount, lessonCount, notebookCount, videoCount, playlistCount } = getFolderContentsCount(all, itemId);
++  const total = subfolderCount + quizCount + lessonCount + notebookCount + videoCount + playlistCount;
++  const summary = formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount, notebookCount, videoCount, playlistCount);
+   let children = [];
+   try { children = getChildren(all, itemId) || []; } catch { children = []; }
+   if (total === 0) card.classList.add("is-empty");
+diff --git a/tests/copy-youtube-tree.test.js b/tests/copy-youtube-tree.test.js
+new file mode 100644
+--- /dev/null
++++ b/tests/copy-youtube-tree.test.js
+@@ -0,0 +1,76 @@
++import test from "node:test";
++import assert from "node:assert/strict";
++import { getFolderContentsCount, formatFolderAndQuizCount } from "../public/src/features/home/folder-counts.js";
++import {
++  planYoutubeCopy,
++  playlistRowIds,
++  describeCopyCounts,
++} from "../public/src/features/home/copy-youtube-tree.js";
++
++// course-count.js pulls in storage helpers that touch localStorage at import time.
++globalThis.localStorage ??= { getItem: () => null, setItem() {}, removeItem() {} };
++globalThis.document ??= { getElementById: () => null, querySelector: () => null, addEventListener() {} };
++const { getUserContentBreakdown, formatUserContentBreakdown } = await import("../public/src/features/home/course-count.js");
++
++const VID = "dQw4w9WgXcQ";
++const VID2 = "9bZkp7q19f0";
++const PL = "PLabcdefghijklmnopqrstuvwxyz012345";
++
++const video = (over = {}) => ({ id: "row-v", kind: "video", youtubeId: VID, title: "Video", ...over });
++const playlist = (over = {}) => ({ id: "row-p", kind: "playlist", playlistId: PL, title: "List", totalCount: 1, ...over });
++const plItems = new Map([["row-p", [{ videoId: VID2, title: "One", durationSeconds: 60 }]]]);
++
++test("a folder holding a video and a playlist copies both under the new parent", () => {
++  const plan = planYoutubeCopy({ items: [video(), playlist()], parentId: "new-folder", existing: [], playlistItemsById: plItems });
++  assert.equal(plan.videos, 1);
++  assert.equal(plan.playlists, 1);
++  assert.deepEqual(plan.entries.map((e) => e.meta.type), ["youtube_video", "youtube_playlist"]);
++  assert.ok(plan.entries.every((e) => e.meta.parentId === "new-folder"));
++});
++
++test("same YouTube id at the same level is skipped, not failed", () => {
++  const plan = planYoutubeCopy({ items: [video(), video({ id: "row-v2", title: "Other title" })], parentId: "f", existing: [] });
++  assert.equal(plan.videos, 1);
++  assert.equal(plan.skipped, 1);
++  assert.equal(plan.failed, 0);
++});
++
++test("a playlist without loaded items fails but videos still copy", () => {
++  const plan = planYoutubeCopy({ items: [playlist(), video()], parentId: "f", existing: [] });
++  assert.equal(plan.failed, 1);
++  assert.equal(plan.videos, 1);
++});
++
++test("playlistRowIds is unique and ignores videos", () => {
++  assert.deepEqual(playlistRowIds([video(), playlist(), playlist()]), ["row-p"]);
++});
++
++test("describeCopyCounts omits zero counts", () => {
++  assert.equal(describeCopyCounts({ quizzes: 2, videos: 0, playlists: 1 }), "2 اختبار · 1 قائمة تشغيل");
++});
++
++test("«محتواي» counters keep YouTube rows out of the exam count", () => {
++  const rows = [
++    { id: "q1", meta: {} },
++    { id: "v1", meta: { type: "youtube_video" } },
++    { id: "p1", meta: { type: "youtube_playlist" } },
++  ];
++  const b = getUserContentBreakdown(rows);
++  assert.equal(b.quizCount, 1);
++  assert.equal(b.videoCount, 1);
++  assert.equal(b.playlistCount, 1);
++  assert.equal(b.total, 3);
++  assert.equal(formatUserContentBreakdown(b), "امتحان واحد · فيديو واحد · قائمة تشغيل");
++});
++
++test("folder counts keep YouTube rows out of the exam count", () => {
++  const rows = [
++    { id: "f", meta: { type: "folder" } },
++    { id: "q", meta: { parentId: "f" } },
++    { id: "v", meta: { parentId: "f", type: "youtube_video" } },
++    { id: "p", meta: { parentId: "f", type: "youtube_playlist" } },
++  ];
++  const c = getFolderContentsCount(rows, "f");
++  assert.deepEqual([c.quizCount, c.videoCount, c.playlistCount], [1, 1, 1]);
++  assert.equal(formatFolderAndQuizCount(0, 1, 0, 0, 1, 1), "امتحان واحد · فيديو واحد · قائمة تشغيل");
++});
+diff --git a/tests/notebook-ui-parity.test.js b/tests/notebook-ui-parity.test.js
+--- a/tests/notebook-ui-parity.test.js
++++ b/tests/notebook-ui-parity.test.js
+@@ -79,7 +79,7 @@
+     { id: "q", meta: { parentId: "s" } },
+   ];
+   const c = getFolderContentsCount(rows, "f");
+-  assert.deepEqual(c, { subfolderCount: 1, quizCount: 1, lessonCount: 1, notebookCount: 2 });
++  assert.deepEqual(c, { subfolderCount: 1, quizCount: 1, lessonCount: 1, notebookCount: 2, videoCount: 0, playlistCount: 0 });
+   assert.equal(formatFolderAndQuizCount(0, 0, 0, 2), "دفتران");
+   assert.equal(formatFolderAndQuizCount(0, 0, 0, 0), "فارغ");
+   assert.equal(formatFolderAndQuizCount(1, 3, 0, 1), "مجلد واحد · 3 امتحانات · دفتر واحد");
+diff --git a/tests/youtube-attachment.test.js b/tests/youtube-attachment.test.js
+new file mode 100644
+--- /dev/null
++++ b/tests/youtube-attachment.test.js
+@@ -0,0 +1,60 @@
++import test from "node:test";
++import assert from "node:assert/strict";
++import {
++  buildYoutubeAttachment,
++  formatDuration,
++  isYoutubeAttachment,
++} from "../public/src/components/ai-agent/core/youtube-attachment.js";
++import {
++  ATTACHMENT_KIND_LABEL_AR,
++  ATTACHMENT_YOUTUBE_ICON_SVG,
++  iconForAttachment,
++} from "../public/src/components/ai-agent/core/chat-attachments.js";
++
++const VID = "dQw4w9WgXcQ";
++const PL = "PLabcdefghijklmnopqrstuvwxyz012345";
++
++test("published video attaches as kind youtube, not lesson", () => {
++  const att = buildYoutubeAttachment({
++    itemType: "youtube_video", id: "row-1", youtubeId: VID, title: "Intro", channelTitle: "Chan",
++    description: "desc", publishedAt: "2024-05-01T10:00:00Z", durationSeconds: 3725,
++  });
++  assert.equal(att.kind, "youtube");
++  assert.equal(att.itemType, "youtube_video");
++  assert.equal(att.source, "platform");
++  assert.equal(att.payload.url, `https://www.youtube.com/watch?v=${VID}`);
++  assert.equal(att.payload.duration, "1:02:05");
++  assert.match(att.summary, /القناة: Chan/);
++  assert.match(att.summary, /2024-05-01/);
++});
++
++test("local playlist row carries its video titles", () => {
++  const att = buildYoutubeAttachment({
++    id: "user_youtube_playlist_1",
++    meta: { type: "youtube_playlist", title: "List", playlistId: PL, channelTitle: "Chan" },
++    playlist: { itemCount: 2, items: [{ title: "One" }, { title: "Two" }] },
++  }, "local");
++  assert.equal(att.itemType, "youtube_playlist");
++  assert.equal(att.source, "local");
++  assert.equal(att.payload.videoCount, 2);
++  assert.deepEqual(att.payload.videoTitles, ["One", "Two"]);
++});
++
++test("icon and labels: YouTube glyph, «فيديو» / «قائمة تشغيل»", () => {
++  const att = buildYoutubeAttachment({ itemType: "youtube_playlist", id: "p", playlistId: PL, title: "x" });
++  assert.equal(iconForAttachment(att), ATTACHMENT_YOUTUBE_ICON_SVG);
++  assert.equal(ATTACHMENT_KIND_LABEL_AR[att.itemType], "قائمة تشغيل");
++  assert.equal(ATTACHMENT_KIND_LABEL_AR.youtube_video, "فيديو");
++});
++
++test("chats saved with the old kind lesson + youtube itemType still get the YouTube icon", () => {
++  const old = { kind: "lesson", itemType: "youtube_video", title: "x" };
++  assert.ok(isYoutubeAttachment(old));
++  assert.equal(iconForAttachment(old), ATTACHMENT_YOUTUBE_ICON_SVG);
++});
++
++test("formatDuration", () => {
++  assert.equal(formatDuration(125), "2:05");
++  assert.equal(formatDuration(null), null);
++  assert.equal(formatDuration(-1), null);
++});

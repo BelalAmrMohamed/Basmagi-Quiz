@@ -18,6 +18,8 @@ export const ATTACHMENT_LESSON_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>';
 export const ATTACHMENT_NOTEBOOK_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>';
+export const ATTACHMENT_YOUTUBE_ICON_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>';
 export const ATTACHMENT_REMOVE_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
 
@@ -50,6 +52,8 @@ export function expandPlatformAttachment(att) {
 }
 
 export function iconForAttachment(att) {
+  // Also catches chats saved before the dedicated kind existed (kind "lesson" + itemType youtube_*).
+  if (att.kind === "youtube" || String(att.itemType || "").startsWith("youtube_")) return ATTACHMENT_YOUTUBE_ICON_SVG;
   if (att.kind === "quiz") return ATTACHMENT_QUIZ_ICON_SVG;
   if (att.itemType === "notebook") return ATTACHMENT_NOTEBOOK_ICON_SVG;
   if (att.kind === "lesson") return ATTACHMENT_LESSON_ICON_SVG;
@@ -62,5 +66,9 @@ export function labelForAttachment(att) {
   return att.kind === "file" ? att.name : att.title;
 }
 
-export const ATTACHMENT_KIND_LABEL_AR = { quiz: "امتحان", lesson: "درس", notebook: "دفتر", course: "مادة", folder: "مجلد", file: "ملف" };
+// The preview badge looks up `itemType` first, so youtube_video / youtube_playlist win over the generic kind.
+export const ATTACHMENT_KIND_LABEL_AR = {
+  quiz: "امتحان", lesson: "درس", notebook: "دفتر", course: "مادة", folder: "مجلد", file: "ملف",
+  youtube: "فيديو", youtube_video: "فيديو", youtube_playlist: "قائمة تشغيل",
+};
 

@@ -1570,7 +1570,7 @@ export function youtubeToPayload(entry) {
     const id = p.id || entry.meta.playlistId;
     return {
       playlistId: id,
-      playlist: { id, title: p.title || entry.meta.title, channelTitle: p.channelTitle || entry.meta.channelTitle, itemCount: p.itemCount },
+      playlist: { id, title: p.title || entry.meta.title, channelTitle: p.channelTitle || entry.meta.channelTitle, channelThumbnailUrl: p.channelThumbnailUrl || entry.meta.channelThumbnailUrl || "", itemCount: p.itemCount },
       items: Array.isArray(p.items) ? p.items : [],
       partial: Boolean(p.partial),
     };
@@ -1766,12 +1766,12 @@ export function createFolderOrCourseCard(item) {
   }
   const itemId = item.id || item.meta?.id;
   const title = item.meta?.title || "";
-  const { subfolderCount, quizCount, lessonCount, notebookCount } = getFolderContentsCount(readUserContent(), itemId);
+  const { subfolderCount, quizCount, lessonCount, notebookCount, videoCount, playlistCount } = getFolderContentsCount(readUserContent(), itemId);
   const type = item.meta?.type || "folder";
 
   const card = createFolderCard({
     title,
-    subtext: formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount, notebookCount),
+    subtext: formatFolderAndQuizCount(subfolderCount, quizCount, lessonCount, notebookCount, videoCount, playlistCount),
     selectId: itemId,
     onOpen: () => navigateToFolder(itemId, title),
     onMore: (_btn, e) => showContextMenu(e, type, itemId, title),

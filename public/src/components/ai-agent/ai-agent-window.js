@@ -19,6 +19,8 @@
 // `ai-agent-window-open`, which hides every AI FAB (see ai-agent-window.css).
 // =============================================================================
 
+import { cornerFromPoint, cornerRect, animateTo } from "../../shared/floating-window.js";
+
 const GEO_KEY = "bq-ai-agent-window-geom";
 const CORNER_KEY = "bq-ai-agent-minimized-corner";
 const CORNERS = ["bottom-left", "bottom-right", "top-left", "top-right"];
@@ -191,7 +193,8 @@ export function createAgentWindow(cfg) {
   function applyAeroSnap(zone) {
     const r = aeroRect(zone);
     if (!state.snapRestore) state.snapRestore = { w: win.offsetWidth, h: win.offsetHeight };
-    Object.assign(win.style, { left: `${r.l}px`, top: `${r.t}px`, width: `${r.w}px`, height: `${r.h}px` });
+    // Glide to the zone (instant with reduced motion) instead of teleporting.
+    animateTo(win, { left: r.l, top: r.t, width: r.w, height: r.h }, { onDone: () => requestAnimationFrame(measure) });
   }
 
   function snapRect(l, t, w, h) {
@@ -336,22 +339,36 @@ export function createAgentWindow(cfg) {
         titlebar.removeEventListener("pointerup", onMinUp);
         titlebar.removeEventListener("pointercancel", onMinUp);
 
-        win.classList.remove("is-dragging");
-        win.style.removeProperty("left");
-        win.style.removeProperty("top");
-        win.style.removeProperty("right");
-        win.style.removeProperty("bottom");
+        const clearInline = () => {
+          win.style.removeProperty("left");
+          win.style.removeProperty("top");
+          win.style.removeProperty("right");
+          win.style.removeProperty("bottom");
+        };
 
         if (hasDragged) {
           state.lastMinToggle = Date.now();
           const vw = window.innerWidth;
           const vh = window.innerHeight;
-          const isTop = ev.clientY < vh / 2;
-          const isLeft = ev.clientX < vw / 2;
-          const targetCorner = `${isTop ? "top" : "bottom"}-${isLeft ? "left" : "right"}`;
-          applyCorner(targetCorner);
-          writeCorner(targetCorner);
+          const targetCorner = cornerFromPoint(ev.clientX, ev.clientY, vw, vh);
+          const small = vw <= 600;
+          const to = cornerRect(targetCorner, rect.width, rect.height, vw, vh, {
+            margin: small ? 8 : 16,
+            bottomInset: small ? 66 : 0, // bottom nav (--bottom-nav-height 54 + 12)
+          });
+          // Glide from where the pointer let go to the corner, then hand back to the corner CSS classes.
+          win.classList.remove("is-dragging");
+          animateTo(win, to, {
+            important: true,
+            onDone: () => {
+              applyCorner(targetCorner);
+              writeCorner(targetCorner);
+              clearInline();
+            },
+          });
         } else {
+          win.classList.remove("is-dragging");
+          clearInline();
           toggleMinimize();
         }
       };

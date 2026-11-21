@@ -1,6 +1,7 @@
 // Workspace («محتواي») item helpers: play/delete handlers, ⋮ menus and the
 // per-card action bundles consumed by item-card.js.
 
+import { youtubeLinkActions } from "./youtube-link-actions.js";
 import { qz } from "./quiz-schema.js";
 import { refreshUserContentCard } from "./course-count.js";
 import { moveToTrash } from "./user-content-trash.js";
@@ -142,6 +143,31 @@ export function showUserYoutubeVideoActionsOverlay(video, triggerBtn) {
     }
     appendSelectOption(menu, closeMenu, vid);
     appendMoveGroup(menu, closeMenu, reposition, vid);
+
+    // Same attachment builder as the published cards (kind "youtube", not "lesson").
+    const askAiOpt = document.createElement("button");
+    askAiOpt.type = "button";
+    askAiOpt.className = "exam-action-btn";
+    askAiOpt.innerHTML = `${SPARKLE_ICON_SVG}<span>اسأل الباشـمبصمج</span>`;
+    askAiOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      const attachment = resolveUserItemAttachment(vid);
+      if (attachment) {
+        openAIAgentWithAttachment(attachment, { defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT });
+      }
+    };
+    menu.appendChild(askAiOpt);
+
+    for (const action of youtubeLinkActions(video)) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "exam-action-btn";
+      b.innerHTML = `${action.icon}<span>${action.label}</span>`;
+      b.onclick = (e) => { e.stopPropagation(); closeMenu(); action.onClick(); };
+      menu.appendChild(b);
+    }
+
     const deleteOpt = document.createElement("button");
     deleteOpt.type = "button";
     deleteOpt.className = "exam-action-btn exam-action-btn--danger";
