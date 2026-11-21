@@ -338,6 +338,16 @@ async function fetchItemForAuth(supabase, itemType, itemId) {
       ? { row: data, creatorId: data.created_by, educationType: data.courses?.education_type || null }
       : null;
   }
+  if (itemType === "youtube") {
+    const { data } = await supabase
+      .from("youtube_public")
+      .select("*, courses:course_id(education_type)")
+      .eq("id", itemId)
+      .maybeSingle();
+    return data
+      ? { row: data, creatorId: data.created_by, educationType: data.courses?.education_type || null }
+      : null;
+  }
   if (itemType === "folder") {
     const { data } = await supabase
       .from("folders")
@@ -939,7 +949,7 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
   if (!itemType || !itemId || !targetCourseId) {
     return res.status(400).json({ error: "بيانات النقل غير مكتملة." });
   }
-  if (itemType !== "quiz" && itemType !== "folder" && itemType !== "lesson" && itemType !== "notebook") {
+  if (itemType !== "quiz" && itemType !== "folder" && itemType !== "lesson" && itemType !== "notebook" && itemType !== "youtube") {
     return res.status(400).json({ error: "لا يمكن نقل هذا النوع من العناصر." });
   }
 
@@ -1021,7 +1031,7 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
     }
   }
 
-  const table = itemType === "quiz" ? "quizzes" : itemType === "lesson" ? "lessons" : itemType === "notebook" ? "notebooks" : "folders";
+  const table = itemType === "quiz" ? "quizzes" : itemType === "lesson" ? "lessons" : itemType === "notebook" ? "notebooks" : itemType === "youtube" ? "youtube_public" : "folders";
   const updates =
     itemType === "folder"
       ? { course_id: targetCourseId, parent_folder_id: targetFolderId }
@@ -1038,7 +1048,7 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
     // itemType === "folder" in practice — kept keyed on the error code
     // rather than itemType so it stays correct if that ever changes.
     if (error.code === "23505") {
-      return res.status(400).json({ error: "يوجد عنصر آخر بهذا الاسم في المكان الوجهة." });
+      return res.status(400).json({ error: itemType === "youtube" ? "هذا المحتوى موجود بالفعل في المكان الوجهة." : "يوجد عنصر آخر بهذا الاسم في المكان الوجهة." });
     }
     console.error("[admin:move-item] failed:", error.message);
     return res.status(500).json({ error: "فشل نقل العنصر." });
@@ -1575,6 +1585,11 @@ async function handleListYoutubePublished(req, res, adminPayload, adminId, supab
 async function handleUnpublishYoutube(req, res, adminPayload, adminId, supabase) {
   const { id } = req.body || {};
   if (!UUID_SHAPE_RE.test(String(id || ""))) return res.status(400).json({ error: "معرّف غير صالح." });
+  const fetched = await fetchItemForAuth(supabase, "youtube", id);
+  if (!fetched) return res.status(404).json({ error: "المحتوى غير موجود." });
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لحذف هذا العنصر." });
+  }
   const { error, count } = await supabase.from("youtube_public").delete({ count: "exact" }).eq("id", id);
   if (error) return res.status(500).json({ error: "تعذّر إلغاء النشر." });
   if (!count) return res.status(404).json({ error: "المحتوى غير موجود." });

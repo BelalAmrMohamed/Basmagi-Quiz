@@ -38,7 +38,11 @@ export const ATTACHMENT_REMOVE_ICON_SVG =
 export function expandPlatformAttachment(att) {
   const kindLabelAr = att.itemType === "notebook"
     ? "دفتر"
-    : { quiz: "امتحان", lesson: "درس", course: "مادة", folder: "مجلد" }[att.kind] || att.kind;
+    : att.itemType === "youtube_playlist"
+      ? "قائمة تشغيل يوتيوب"
+      : att.itemType === "youtube_video"
+        ? "فيديو يوتيوب"
+        : { quiz: "امتحان", lesson: "درس", course: "مادة", folder: "مجلد" }[att.kind] || att.kind;
   const body = att.payload
     ? JSON.stringify(att.payload)
     : att.summary || "(لا تفاصيل إضافية متاحة عن هذا العنصر)";

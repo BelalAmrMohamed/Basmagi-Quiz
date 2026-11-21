@@ -12,6 +12,7 @@ import { openYoutubeVideoPlayer } from "./youtube-player-window.js";
 import { openYoutubePlaylistWindow } from "./youtube-playlist-window.js";
 import { formatDurationSeconds } from "../../shared/youtube-rules.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+import { openPublishedYoutubeMenu } from "./public-youtube-actions.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 
 async function openPlaylist(item) {
@@ -37,6 +38,7 @@ export function createPublishedYoutubeCard(item) {
       badge: isPlaylist ? publishedCountLabel(item) : formatDurationSeconds(item.durationSeconds),
       channel: item.channelTitle,
     },
+    onMore: (btn) => openPublishedYoutubeMenu(item, btn),
     onOpen: () => (isPlaylist ? openPlaylist(item) : openYoutubeVideoPlayer(toVideoEntry(item))),
   });
 }

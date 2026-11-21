@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## YouTube videos and playlists
 - «فيديو يوتيوب» and «قائمة تشغيل» items in «محتواي»: search or paste a link, import preview, full-width 16:9 cards (duration / video-count badge, hover glyph, stacked bars for playlists), resizable player and playlist windows (snap, minimize, maximize, split with a description pane), per-device split width, local history.
 - MCP: import links for videos and playlists, plus search over published items.
-- Admin: «رفع إلى المنصة» in the item menu opens a four-step publish flow (path, subject, folder, review). A second tab lists and unpublishes. Deleting a course or folder also deletes its published YouTube items (not restorable from the trash).
+- Admin: YouTube videos and playlists are published through the normal upload wizard («رفع المجلد إلى المنصة» / «رفع إلى المنصة»), alone or inside a folder or course; the separate YouTube publish modal is gone. The wizard now uses icons instead of emoji. Deleting a course or folder also deletes its published YouTube items (not restorable from the trash).
 - Course and folder OG thumbnails now include the الفيديوهات and قوائم التشغيل counts.
 - Local dev: `npm run dev:vercel` loads `.env.local` itself (`dev:vercel:raw` is the old command). Missing Supabase variables now answer 503 naming the variable instead of crashing.
 - Fix: the three YouTube admin actions are routed in `api/admin.js` (they fell through to the profile sync and answered "Nothing to sync").
@@ -572,3 +572,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Round 3
 - Admins now get "رفع لقاعدة البيانات" on local notebook cards (⋮ menu) and notebooks can be bulk-uploaded with other items.
 - Markdown cells in RTL notebooks use one direction for the whole cell (headings, lists, tables align with the paragraphs); math/code stay LTR, display math centered.
+- Fix: uploading a folder or course that contains YouTube items no longer fails with "questions array must not be empty" (`api/upload-quiz.js` publishes them to `youtube_public`).
+- Published YouTube cards have a ⋮ menu: «نسخ إلى محتواي», «اسأل الباشــمبصمج» (title, description, channel, publish date), and for admins «إدارة» → نقل / حذف (`move-item` accepts the new `youtube` type).

@@ -7,7 +7,18 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
-### Per-video thumbnail and link
+### YouTube Update
+* Per-video thumbnail and link: My Recommendation (You can implement something different)
+* The select checkbox on YouTube cards isn't obvious, it should be a correct green checkmark.
+* The YouTube card includes a placeholder/fake chennel icon on them, they should include the actual channel logo if possible.
+* When I press `اسأل الباشــمبصمج` on a YouTube card, and the AI Agent opens, it shows the item as a `lesson` type in `ai-agent-modal-shell ai-agent-attachment-preview-card`, not a video type. 
+* YouTube Window:
+  * It doesn't show a YouTube Logo on the `ytw-titlebar`. Use `YOUTUBE_ICON_SVG` from `public\src\features\home\icons.js`.
+  * When maximized, it doesn't hide the main page's scrollbar that is on the right.
+  * YouTube Playlists Window: I can't hide the `ytw-list-view` to give the video the full area, it's always there, I can just resize it. Allow me to hide it and give the video full area, with the option to bring it back of course.
+  * Minimization is bad, it doesn't behave like the Window of the AI Agent:
+    * See `public\src\components\ai-agent\ai-agent-window.js` and `ai-agent-window.css` for the correct minimized behavior. Note: The AI Agent's window sticks to one of the 4 corners of the screen, which is correct, but when I drag it with my mouse close to one of the corners, it teleports to that corner instead of smootly going there (animation/transition), so fix that in the AI Agent, and bring it in the YouTube Window.
+* I tried copying a folder that included a video (i.e., `نسخ إلى محتواي`), the folder got copied, but it didn't include the video.
 
 ### AI Agent
 Newly created notebook, the chat didn't include the presented card at the bottom as I expected. ![chat screenshot](image-1.png).

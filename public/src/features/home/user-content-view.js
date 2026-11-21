@@ -1158,28 +1158,30 @@ function classifyBulkSelection(rows) {
   const quizzes = [];
   const lessons = [];
   const notebooks = [];
+  const youtube = [];
   for (const row of rows) {
     if (row?.meta?.type === "course") courses.push(row);
     else if (row?.meta?.type === "folder") folders.push(row);
     else if (row?.meta?.type === "lesson") lessons.push(row);
     else if (row?.meta?.type === "notebook") notebooks.push(row);
+    else if (row?.meta?.type === "youtube_video" || row?.meta?.type === "youtube_playlist") youtube.push(row);
     else quizzes.push(row);
   }
 
   let mode;
-  if (courses.length === 0 && folders.length === 0 && quizzes.length === 0 && lessons.length === 0 && notebooks.length === 0) {
+  if (courses.length === 0 && folders.length === 0 && quizzes.length === 0 && lessons.length === 0 && notebooks.length === 0 && youtube.length === 0) {
     mode = "empty";
-  } else if (courses.length > 0 && (folders.length > 0 || quizzes.length > 0 || lessons.length > 0 || notebooks.length > 0)) {
+  } else if (courses.length > 0 && (folders.length > 0 || quizzes.length > 0 || lessons.length > 0 || notebooks.length > 0 || youtube.length > 0)) {
     mode = "mixed";
   } else if (courses.length > 0) {
     mode = "course";
-  } else if (folders.length > 0 || lessons.length > 0 || notebooks.length > 0) {
+  } else if (folders.length > 0 || lessons.length > 0 || notebooks.length > 0 || youtube.length > 0) {
     mode = "folder";
   } else {
     mode = "quiz";
   }
 
-  return { mode, courses, folders, quizzes, lessons, notebooks };
+  return { mode, courses, folders, quizzes, lessons, notebooks, youtube };
 }
 
 /**
@@ -1191,14 +1193,14 @@ function classifyBulkSelection(rows) {
  * @param {Array} selected - raw user_quizzes rows matching the selection
  */
 function routeBulkUpload(selected) {
-  const { mode, courses, folders, quizzes, lessons, notebooks } = classifyBulkSelection(selected);
+  const { mode, courses, folders, quizzes, lessons, notebooks, youtube } = classifyBulkSelection(selected);
 
   if (mode === "empty") return;
 
   if (mode === "mixed") {
     showNotification(
       "لا يمكن رفع هذا التحديد معاً",
-      `المواد ترفع وحدها مع محتوياتها الكاملة. تم تحديد ${courses.length} مادة مع ${folders.length + quizzes.length + lessons.length + notebooks.length} عنصر آخر — ألغِ تحديد المواد أو حددها بمفردها.`,
+      `المواد ترفع وحدها مع محتوياتها الكاملة. تم تحديد ${courses.length} مادة مع ${folders.length + quizzes.length + lessons.length + notebooks.length + youtube.length} عنصر آخر — ألغِ تحديد المواد أو حددها بمفردها.`,
       "warning",
     );
     return;
@@ -1219,6 +1221,7 @@ function routeBulkUpload(selected) {
   };
   const standaloneLessons = lessons.filter(notStandalone);
   const standaloneNotebooks = notebooks.filter(notStandalone);
+  const standaloneYoutube = youtube.filter(notStandalone);
 
   if (mode === "course") {
     import("./adminUpload.js").then((mod) => {
@@ -1229,7 +1232,7 @@ function routeBulkUpload(selected) {
 
   if (mode === "folder") {
     import("./adminUpload.js").then((mod) => {
-      mod.openFolderUploadModal({ folders, quizzes, lessons: standaloneLessons, notebooks: standaloneNotebooks, userContent });
+      mod.openFolderUploadModal({ folders, quizzes, lessons: standaloneLessons, notebooks: standaloneNotebooks, youtube: standaloneYoutube, userContent });
     });
     return;
   }

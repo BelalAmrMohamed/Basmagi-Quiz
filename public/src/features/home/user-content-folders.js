@@ -1563,6 +1563,24 @@ function notebookToPayload(nb, name) {
   };
 }
 
+/** The publish body for a saved YouTube entry (shape api/upload-quiz.js and api/admin.js expect). */
+export function youtubeToPayload(entry) {
+  if (entry?.meta?.type === "youtube_playlist") {
+    const p = entry.playlist || {};
+    const id = p.id || entry.meta.playlistId;
+    return {
+      playlistId: id,
+      playlist: { id, title: p.title || entry.meta.title, channelTitle: p.channelTitle || entry.meta.channelTitle, itemCount: p.itemCount },
+      items: Array.isArray(p.items) ? p.items : [],
+      partial: Boolean(p.partial),
+    };
+  }
+  return {
+    youtubeId: entry?.meta?.youtubeId || entry?.video?.videoId,
+    meta: { ...entry?.meta, durationSeconds: entry?.stats?.durationSeconds ?? entry?.video?.durationSeconds ?? null },
+  };
+}
+
 function appendSubtree(userContent, node, ancestorNames, rootName, items) {
   const children = walkChildren(userContent, node.id || node.meta?.id);
   for (const child of children) {
@@ -1576,6 +1594,16 @@ function appendSubtree(userContent, node, ancestorNames, rootName, items) {
         folderSegments: [...ancestorNames],
         rootName,
         lesson: lessonToPayload(child),
+      });
+      continue;
+    }
+    if (child.meta?.type === "youtube_video" || child.meta?.type === "youtube_playlist") {
+      items.push({
+        type: child.meta.type,
+        name: childName || "يوتيوب",
+        folderSegments: [...ancestorNames],
+        rootName,
+        youtube: youtubeToPayload(child),
       });
       continue;
     }
@@ -1647,7 +1675,7 @@ export function buildCourseUploadPayload(userContent, courseItems) {
  *   names under the course to nest everything one level deeper into
  * @returns {{ items: Array, rootName: string }}
  */
-export function buildFolderUploadPayload(userContent, folderItems, additionalQuizzes, targetCourseName, targetSubfolderPath = [], additionalLessons = [], additionalNotebooks = []) {
+export function buildFolderUploadPayload(userContent, folderItems, additionalQuizzes, targetCourseName, targetSubfolderPath = [], additionalLessons = [], additionalNotebooks = [], additionalYoutube = []) {
   const items = [];
   const baseChain = [targetCourseName, ...targetSubfolderPath];
 
@@ -1691,6 +1719,16 @@ export function buildFolderUploadPayload(userContent, folderItems, additionalQui
       rootName: targetCourseName,
       localId: nb.id || nb.meta?.id,
       notebook: notebookToPayload(nb, name),
+    });
+  }
+
+  for (const yt of additionalYoutube || []) {
+    items.push({
+      type: yt.meta?.type === "youtube_playlist" ? "youtube_playlist" : "youtube_video",
+      name: (yt.meta?.title || "").trim() || "يوتيوب",
+      folderSegments: [...baseChain],
+      rootName: targetCourseName,
+      youtube: youtubeToPayload(yt),
     });
   }
 

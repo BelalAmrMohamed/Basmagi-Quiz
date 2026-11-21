@@ -9,8 +9,7 @@ import {
   isAdminAuthenticated,
   hasAdminSessionHint,
 } from "../../shared/adminAuth.js";
-import { createUploadButton, createLessonUploadButton, createNotebookUploadButton } from "./adminUpload.js";
-import { createYoutubeUploadButton } from "./youtube-publish-modal.js";
+import { createUploadButton, createLessonUploadButton, createNotebookUploadButton, createYoutubeUploadButton } from "./adminUpload.js";
 import { showUserQuizDownloadPopup } from "./download-modal.js";
 import { showUserQuizInfoModal, formatDateForInfo } from "./quiz-info-modal.js";
 import { normalizeSource } from "../../components/quiz-info-modal/info-model.js";

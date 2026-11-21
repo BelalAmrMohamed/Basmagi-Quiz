@@ -49,6 +49,7 @@ import {
 } from "../scripts/lib/quizPath.js";
 import { resolveCourse, resolveFolderPath, validateBatchCourseRules } from "./_courseFolders.js";
 import { notifySearchEngines } from "./_seoNotify.js";
+import { publishedVideoFields, publishedPlaylistFields } from "../scripts/lib/youtube-mcp-model.js";
 import { quizUrl, lessonUrl, notebookUrl } from "./_urls.js";
 import { validateLessonContent, validateLessonDescription, validateLessonSource, validateLessonPasswordHash } from "./_validateLesson.js";
 import { validateItemName, hasLessonNameCollision, hasNotebookNameCollision } from "./_itemActions.js";
@@ -284,6 +285,8 @@ async function handleSingleUpload(req, res, adminPayload) {
 //   { type: "folder", name, folderSegments: ["CourseName"], rootName },
 //   { type: "quiz", folderSegments: ["CourseName","Unit1"], rootName, quiz },
 //   { type: "lesson", folderSegments: ["CourseName","Unit1"], rootName, lesson },
+//   { type: "youtube_video" | "youtube_playlist", folderSegments: [...], rootName, youtube },
+//       youtube is the publish body: { youtubeId, meta } or { playlistId, playlist, items, partial }
 //   { type: "notebook", folderSegments: [...], rootName, notebook },
 //       notebook is EITHER a JSON record { title, description?, source?, runtime, content }
 //       OR an imported file { fileName: "x.ipynb"|"x.m", text } converted
@@ -404,7 +407,7 @@ async function handleFolderUpload(req, res, adminPayload) {
     return id;
   }
 
-  const results = { coursesCount: courseIdByName.size, foldersCreated: 0, quizzesUploaded: 0, lessonsUploaded: 0, notebooksUploaded: 0, failed: [] };
+  const results = { coursesCount: courseIdByName.size, foldersCreated: 0, quizzesUploaded: 0, lessonsUploaded: 0, notebooksUploaded: 0, youtubeUploaded: 0, failed: [] };
   const uploadedQuizUrls = []; // batched for one notifySearchEngines call after the loop (plan §7.2 rule of thumb)
   const uploadedLessonUrls = [];
   const uploadedNotebookUrls = [];
@@ -468,6 +471,30 @@ async function handleFolderUpload(req, res, adminPayload) {
         }
         results.lessonsUploaded++;
         uploadedLessonUrls.push(lessonUrl(insertedLesson.slug || insertedLesson.id));
+        continue;
+      }
+
+      if (item.type === "youtube_video" || item.type === "youtube_playlist") {
+        const isPlaylist = item.type === "youtube_playlist";
+        let fields;
+        try {
+          fields = isPlaylist ? publishedPlaylistFields(item.youtube || {}) : publishedVideoFields(item.youtube || {});
+        } catch (err) {
+          results.failed.push({ name: item.name || "يوتيوب", reason: err.message });
+          continue;
+        }
+        const folderId = await resolveFolderChain(targetCourseId, itemCourseName, item.folderSegments || []);
+        const { error: insertYoutubeErr } = await supabase
+          .from("youtube_public")
+          .insert({ ...fields, course_id: targetCourseId, folder_id: folderId || null, created_by: adminId, is_published: true });
+        if (insertYoutubeErr) {
+          results.failed.push({
+            name: fields.title,
+            reason: insertYoutubeErr.code === "23505" ? "هذا المحتوى منشور بالفعل" : insertYoutubeErr.message,
+          });
+          continue;
+        }
+        results.youtubeUploaded++;
         continue;
       }
 
@@ -614,8 +641,8 @@ async function handleFolderUpload(req, res, adminPayload) {
     notifySearchEngines({ add: uploadedNotebookUrls, reason: "upload-quiz:folder-notebooks" });
   }
 
-  const isSuccess = results.quizzesUploaded > 0 || results.lessonsUploaded > 0 || results.notebooksUploaded > 0 || results.foldersCreated > 0 || courseIdByName.size > 0;
-  return res.status(results.failed.length > 0 && results.quizzesUploaded === 0 && results.lessonsUploaded === 0 && results.notebooksUploaded === 0 && results.foldersCreated === 0 ? 207 : 201).json({
+  const isSuccess = results.quizzesUploaded > 0 || results.lessonsUploaded > 0 || results.notebooksUploaded > 0 || results.youtubeUploaded > 0 || results.foldersCreated > 0 || courseIdByName.size > 0;
+  return res.status(results.failed.length > 0 && results.quizzesUploaded === 0 && results.lessonsUploaded === 0 && results.notebooksUploaded === 0 && results.youtubeUploaded === 0 && results.foldersCreated === 0 ? 207 : 201).json({
     success: isSuccess,
     courseIds: Array.from(courseIdByName.values()),
     ...results,

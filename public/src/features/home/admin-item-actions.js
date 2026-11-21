@@ -57,6 +57,7 @@ function resolveItemType(item) {
   if (!item) return null;
   if (item.itemType === "lesson") return "lesson";
   if (item.itemType === "notebook") return "notebook";
+  if (item.itemType === "youtube_video" || item.itemType === "youtube_playlist") return "youtube";
   if (item.dbId) return "quiz";
   // Category-tree folder nodes carry a string `parent` path key; course nodes
   // have parent: null. A folder node is also identifiable by its DB
@@ -306,6 +307,7 @@ export async function deleteSharedItem(item) {
     quiz: `سيُنقل "${label}" إلى سلة المهملات ويمكن استعادته لاحقاً.`,
     lesson: `سيُنقل الدرس "${label}" إلى سلة المهملات ويمكن استعادته لاحقاً.`,
     notebook: `سيُنقل الدفتر "${label}" إلى سلة المهملات ويمكن استعادته لاحقاً.`,
+    youtube: `سيُحذف "${label}" من المنصة نهائياً (لا يؤثر على الفيديو في يوتيوب).`,
     folder: `سيُنقل المجلد "${label}" وكل ما يحتويه إلى سلة المهملات ويمكن استعادتها لاحقاً.`,
     course: `سيُنقل المادة "${label}" وكل مجلداتها وامتحاناتها إلى سلة المهملات ويمكن استعادتها لاحقاً.`,
   };
@@ -318,6 +320,10 @@ export async function deleteSharedItem(item) {
     const { deleteQuizFromDatabase } = await import("./delete-quiz.js");
     const ok = await deleteQuizFromDatabase(item);
     if (!ok) return false;
+  } else if (itemType === "youtube") {
+    const res = await postAdminAction("unpublish-youtube", { id: itemId });
+    if (!res) return false;
+    showNotification("تم الحذف", `تم حذف "${label}" من المنصة.`, "success");
   } else if (itemType === "notebook") {
     const res = await postAdminAction("delete-notebook", { id: itemId });
     if (!res) return false;
@@ -457,7 +463,7 @@ export async function openSharedMoveToDialog(item) {
   }
 
   const destinationCourseId = itemType === "folder" ? item.course_id : item.courseId;
-  if (["folder", "quiz", "lesson", "notebook"].includes(itemType) && !destinationCourseId) {
+  if (["folder", "quiz", "lesson", "notebook", "youtube"].includes(itemType) && !destinationCourseId) {
     showNotification(
       "تعذّر النقل",
       "لم يتم العثور على المادة التي ينتمي إليها هذا العنصر. حدّث الصفحة وحاول مرة أخرى.",
@@ -466,7 +472,7 @@ export async function openSharedMoveToDialog(item) {
     return;
   }
 
-  const destinationNodes = ["folder", "quiz", "lesson", "notebook"].includes(itemType)
+  const destinationNodes = ["folder", "quiz", "lesson", "notebook", "youtube"].includes(itemType)
     ? nodes.filter((node) =>
       node.prefix === "course"
         ? node.raw.id === destinationCourseId
@@ -482,7 +488,7 @@ export async function openSharedMoveToDialog(item) {
   // quiz/lesson carry camelCase folderId/courseId (see the type-shape
   // comment above); folder rows carry the DB's own snake_case columns.
   const currentId =
-    itemType === "quiz" || itemType === "lesson" || itemType === "notebook"
+    itemType === "quiz" || itemType === "lesson" || itemType === "notebook" || itemType === "youtube"
       ? item.folderId
         ? `folder:${item.folderId}`
         : item.courseId
@@ -514,7 +520,7 @@ export async function openSharedMoveToDialog(item) {
     },
 
     getDisabledReason(nodeId) {
-      if (itemType === "quiz") return null; // any course/folder is a valid quiz destination
+      if (itemType === "quiz" || itemType === "youtube") return null; // any course/folder is a valid quiz destination
 
       // Folder moves: exclude the folder itself and its own subtree (cycle).
       const selfId = `folder:${itemId}`;
