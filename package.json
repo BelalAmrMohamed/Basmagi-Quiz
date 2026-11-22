@@ -12,7 +12,7 @@
     "og:snapshot": "node scripts/og-snapshot.mjs",
     "sync:mcp": "node scripts/sync-mcp-rules.js",
     "dev:vercel": "node scripts/dev-vercel.mjs",
-    "dev:vercel:raw": "vercel dev --listen 8080",
+    "vercel": "vercel dev --listen 8080",
     "map": "node scripts/map.js",
     "commit": "node scripts/commit.js",
     "release": "node scripts/release.js",

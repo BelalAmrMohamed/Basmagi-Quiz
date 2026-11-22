@@ -22,9 +22,13 @@ import {
 const MIN_CORNER_KEY = "bq-youtube-window-minimized-corner";
 let pillSeq = 0; // unique registry id per window
 const isPhoneLayout = () => Boolean(globalThis.matchMedia?.("(max-width: 640px)").matches);
+const PHONE_NAV_GAP = 74; // bottom nav (54) + breathing room: a new phone window never starts under it
 
 const MIN_W = 360;
 const MIN_H = 320;
+// On a phone the window may be as narrow as the screen itself.
+const minW = () => Math.min(MIN_W, window.innerWidth);
+const minH = () => Math.min(MIN_H, Math.max(200, window.innerHeight - 16));
 const CHANNEL_ID_RE = /^UC[A-Za-z0-9_-]{22}$/;
 const RESIZE_DIRS = ["n", "s", "e", "w", "ne", "nw", "se", "sw"];
 
@@ -127,17 +131,24 @@ export function openYoutubeWindow({ title, content, onClose, key } = {}) {
   win.querySelector(".ytw-title").textContent = title || "";
   if (content) win.querySelector(".ytw-body").append(content);
 
-  const cascade = (openWindows.size % 6) * 28; // keep a new window from covering the previous one exactly
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const w = Math.max(MIN_W, Math.min(980, vw - 32));
-  const h = Math.max(MIN_H, Math.min(680, vh - 64));
-  Object.assign(win.style, {
-    width: `${w}px`,
-    height: `${h}px`,
-    left: `${Math.max(8, (vw - w) / 2 + cascade)}px`,
-    top: `${Math.max(8, (vh - h) / 2 + cascade)}px`,
-  });
+  if (isPhoneLayout()) {
+    // Phone: edge to edge (the video fills the screen width), still a normal window you can drag and resize.
+    const cascade = (openWindows.size % 4) * 20;
+    const h = Math.max(minH(), Math.min(680, vh - PHONE_NAV_GAP - 8));
+    Object.assign(win.style, { width: `${vw}px`, height: `${h}px`, left: "0px", top: `${8 + cascade}px` });
+  } else {
+    const cascade = (openWindows.size % 6) * 28; // keep a new window from covering the previous one exactly
+    const w = Math.max(MIN_W, Math.min(980, vw - 32));
+    const h = Math.max(MIN_H, Math.min(680, vh - 64));
+    Object.assign(win.style, {
+      width: `${w}px`,
+      height: `${h}px`,
+      left: `${Math.max(8, (vw - w) / 2 + cascade)}px`,
+      top: `${Math.max(8, (vh - h) / 2 + cascade)}px`,
+    });
+  }
 
   // savedRect: geometry to return to from maximize. snapRestore: size to
   // return to when a snapped window is dragged away.
@@ -273,7 +284,6 @@ export function openYoutubeWindow({ title, content, onClose, key } = {}) {
   const titlebar = win.querySelector(".ytw-titlebar");
   titlebar.addEventListener("pointerdown", (e) => {
     if (e.button !== 0 || e.target.closest(".ytw-controls")) return;
-    if (!state.minimized && isPhoneLayout()) return; // phones: a fixed sheet, moved by the minimize pill only
     if (state.minimized) {
       // Minimized pill: drag to another corner (it glides there); a plain click restores.
       e.preventDefault();
@@ -375,10 +385,10 @@ export function openYoutubeWindow({ title, content, onClose, key } = {}) {
         const dx = ev.clientX - start.x;
         const dy = ev.clientY - start.y;
         let l = start.l, t = start.t, nw = start.w, nh = start.h;
-        if (dir.includes("e")) nw = Math.max(MIN_W, start.w + dx);
-        if (dir.includes("s")) nh = Math.max(MIN_H, start.h + dy);
-        if (dir.includes("w")) { nw = Math.max(MIN_W, start.w - dx); l = start.l + (start.w - nw); }
-        if (dir.includes("n")) { nh = Math.max(MIN_H, start.h - dy); t = start.t + (start.h - nh); }
+        if (dir.includes("e")) nw = Math.max(minW(), start.w + dx);
+        if (dir.includes("s")) nh = Math.max(minH(), start.h + dy);
+        if (dir.includes("w")) { nw = Math.max(minW(), start.w - dx); l = start.l + (start.w - nw); }
+        if (dir.includes("n")) { nh = Math.max(minH(), start.h - dy); t = start.t + (start.h - nh); }
         Object.assign(win.style, { left: `${l}px`, top: `${t}px`, width: `${nw}px`, height: `${nh}px` });
       };
       const onUp = () => {

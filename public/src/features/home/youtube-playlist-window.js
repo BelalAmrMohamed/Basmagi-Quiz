@@ -65,7 +65,7 @@ function buildPlaylistPane(entry, items) {
   const counter = el("span", "ytw-counter");
   const descBtn = iconButton("ytw-tool-btn", DESCRIPTION_ICON, "الوصف");
   descBtn.setAttribute("aria-expanded", "false");
-  const listBtn = iconButton("ytw-tool-btn ytw-list-toggle", LIST_ICON, "إخفاء القائمة");
+  const listBtn = iconButton("ytw-tool-btn ytw-list-toggle", LIST_ICON, "القائمة");
   listBtn.setAttribute("aria-keyshortcuts", "L");
   listBtn.setAttribute("aria-expanded", "true");
   const nav = el("div", "ytw-nav");

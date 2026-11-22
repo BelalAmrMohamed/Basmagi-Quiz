@@ -521,7 +521,9 @@ html[data-motion="reduced"] .aiw-snap-preview {
 
 /* Minimized pill slot comes from shared/floating-window.js (all pills laid out together):
    it wins over the per-corner classes above, which remain only as a pre-layout fallback. */
-html .aiw.is-minimized.fw-placed:not(.is-dragging) {
+/* Specificity is raised on purpose: the bottom-left corner fallbacks above are (0,6,0) with !important
+   and used to beat this rule, pinning that pill to the bottom slot on top of the other pills. */
+html body .aiw.is-minimized.fw-placed.fw-placed.fw-placed:not(.is-dragging) {
   left: var(--fw-left) !important;
   top: var(--fw-top) !important;
   right: auto !important;

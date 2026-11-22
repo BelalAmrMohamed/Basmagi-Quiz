@@ -298,6 +298,18 @@ export function setMinimizedCorner(id, corner) {
   relayoutMinimized();
 }
 
+/**
+ * Re-stacks the given pills in exactly this order (first id = nearest its corner). Dock-all uses it so
+ * the stack always follows the windows' opening order, whatever order the pills happened to register in.
+ */
+export function setMinimizedOrder(ids) {
+  for (const id of ids) {
+    const p = pills.get(id);
+    if (p) p.order = ++pillSeq;
+  }
+  relayoutMinimized();
+}
+
 /** While a pill is being dragged it leaves the layout, so the others settle immediately. */
 export function setMinimizedDragging(id, dragging) {
   const p = pills.get(id);
@@ -401,12 +413,20 @@ export function dockAction(states) {
 
 /** Minimizes every open floating window, or restores them all when they are all minimized. */
 export function dockAllFloating() {
-  const list = dockOrder([...floating].map(([id, w]) => ({ id, w, openedSeq: w.openedSeq }))).map((x) => x.w);
+  const ordered = dockOrder([...floating].map(([id, w]) => ({ id, w, openedSeq: w.openedSeq })));
+  const list = ordered.map((x) => x.w);
   const action = dockAction(list.map((w) => Boolean(w.isMinimized?.())));
   if (action === "minimize") dockSnapshot = floatStack.ids(); // remember who was in front
   for (const w of list) {
     if (action === "minimize" && !w.isMinimized?.()) w.minimize?.();
     else if (action === "restore" && w.isMinimized?.()) w.restore?.();
+  }
+  if (action === "minimize") {
+    // One contiguous stack in opening order, then re-measure once everything has settled: a window's own
+    // minimize code (corner classes, inline geometry) must never leave a pill off its slot or a gap in the stack.
+    setMinimizedOrder(ordered.map((x) => x.id));
+    requestAnimationFrame(relayoutMinimized);
+    setTimeout(relayoutMinimized, 320);
   }
   if (action === "restore" && dockSnapshot) {
     // Bring the windows back in the front-to-back order they had before docking.
