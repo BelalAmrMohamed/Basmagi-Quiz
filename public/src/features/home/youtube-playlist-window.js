@@ -189,7 +189,7 @@ function buildPlaylistPane(entry, items) {
     listHidden = hide;
     if (hide && !descOpen) split.hide();
     else if (!hide) split.show();
-    const label = hide ? "إظهار القائمة" : "إخفاء القائمة";
+    const label = "القائمة";
     listBtn.setAttribute("aria-expanded", String(!hide));
     listBtn.classList.toggle("is-active", hide);
     listBtn.querySelector("span").textContent = label;
