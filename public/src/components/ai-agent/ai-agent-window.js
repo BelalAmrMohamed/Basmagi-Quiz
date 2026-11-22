@@ -365,8 +365,8 @@ export function createAgentWindow(cfg) {
           win.classList.remove("is-dragging");
           applyCorner(targetCorner);
           writeCorner(targetCorner);
+          clearInline(); // first drop the drag's inline position, then let the registry place the pill
           setMinimizedCorner(PILL_ID, targetCorner);
-          clearInline();
         } else {
           win.classList.remove("is-dragging");
           clearInline();

@@ -248,12 +248,21 @@ function pillViewport() {
   };
 }
 
+const POS_PROPS = ["left", "top", "right", "bottom"];
+
+/** Takes the inline geometry this registry wrote off a pill (it must not fight a drag or a restore). */
+function clearPillInline(el) {
+  for (const prop of POS_PROPS) el.style.removeProperty(prop);
+}
+
 /** Re-lays out every registered, non-dragged pill. Returns the computed positions by id. */
 export function relayoutMinimized() {
   const { vw, vh } = pillViewport();
   const metrics = pillMetrics(vw, { safe: readSafeInsets(), navHeight: readNavHeight() });
   const items = [];
   for (const [id, p] of pills) {
+    // A pill whose element left the page (or is not displayed) must not keep a hole in the stack.
+    if (!p.el.isConnected || p.el.getClientRects().length === 0) continue;
     if (p.dragging) continue;
     items.push({ id, corner: p.corner, width: metrics.width, height: metrics.height, order: p.order });
   }
@@ -264,6 +273,12 @@ export function relayoutMinimized() {
     el.style.setProperty("--fw-left", `${pos.left}px`);
     el.style.setProperty("--fw-top", `${pos.top}px`);
     el.classList.add("fw-placed");
+    // Inline !important also beats every stylesheet rule (the AI window's per-corner fallbacks are
+    // !important and pinned its pill to the bottom slot, on top of the others).
+    el.style.setProperty("left", `${pos.left}px`, "important");
+    el.style.setProperty("top", `${pos.top}px`, "important");
+    el.style.setProperty("right", "auto", "important");
+    el.style.setProperty("bottom", "auto", "important");
   }
   return result;
 }
@@ -315,6 +330,7 @@ export function setMinimizedDragging(id, dragging) {
   const p = pills.get(id);
   if (!p) return;
   p.dragging = Boolean(dragging);
+  if (p.dragging) clearPillInline(p.el); // the window's own drag code takes over the geometry
   relayoutMinimized();
 }
 
@@ -324,6 +340,7 @@ export function unregisterMinimized(id) {
   if (!p) return;
   pills.delete(id);
   p.el.classList.remove("fw-placed");
+  clearPillInline(p.el);
   p.el.style.removeProperty("--fw-left");
   p.el.style.removeProperty("--fw-top");
   if (pills.size === 0) syncViewportListeners();
