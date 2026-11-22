@@ -283,23 +283,20 @@
   transition: background 0.14s ease, color 0.14s ease;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .ai-agent-dropdown-menu--actions .ai-agent-dropdown-item {
-    animation: aiAgentDropdownItemIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  }
-
-  .ai-agent-dropdown-menu--actions .ai-agent-dropdown-item:nth-child(2) {
-    animation-delay: 25ms;
-  }
-
-  .ai-agent-dropdown-menu--actions .ai-agent-dropdown-item:nth-child(3) {
-    animation-delay: 50ms;
-  }
-
-  .ai-agent-dropdown-menu--actions .ai-agent-dropdown-item:nth-child(n + 4) {
-    animation-delay: 75ms;
-  }
+/* Item entrance stagger: off in High-Performance Mode (html[data-motion="reduced"]). */
+html:not([data-motion="reduced"]) .ai-agent-dropdown-menu--actions .ai-agent-dropdown-item {
+  animation: aiAgentDropdownItemIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
+html:not([data-motion="reduced"]) .ai-agent-dropdown-menu--actions .ai-agent-dropdown-item:nth-child(2) {
+  animation-delay: 25ms;
+}
+html:not([data-motion="reduced"]) .ai-agent-dropdown-menu--actions .ai-agent-dropdown-item:nth-child(3) {
+  animation-delay: 50ms;
+}
+html:not([data-motion="reduced"]) .ai-agent-dropdown-menu--actions .ai-agent-dropdown-item:nth-child(n + 4) {
+  animation-delay: 75ms;
+}
+
 
 .ai-agent-dropdown-menu--actions .ai-agent-dropdown-item > svg {
   box-sizing: content-box;
@@ -2090,181 +2087,221 @@
   color: var(--color-primary);
 }
 
-/* ── Settings tab ──
-   Structural chrome (labels, notes, buttons) stays RTL to match the app's
-   UI language — this panel doesn't render arbitrary user/AI content, so a
-   blanket direction here is safe (unlike .ai-agent-chat-messages above). */
-.ai-agent-settings-panel {
-  padding: 16px;
-  direction: ltr;
+/* ── Settings view (inside the agent window) ─────────────────────────────────
+   Built by createSettingsPanel() (ai-agent-settings.js) and mounted as an in-window
+   layer (openWindowLayer, ai-agent-window.js). Theme tokens only, logical properties,
+   RTL by default. Transitions are limited to colour changes and switched off with
+   html[data-motion="reduced"]. */
+.ai-set {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  overflow-y: auto;
-}
-
-.ai-agent-settings-note {
-  font-size: 0.8rem;
-  color: var(--color-text-tertiary);
-  background: var(--color-background-secondary);
-  border: 1px dashed var(--color-border);
-  border-radius: 10px;
-  padding: 10px 12px;
-  line-height: 1.6;
-}
-
-.ai-agent-field-label {
-  font-size: 0.85rem;
-  font-weight: 700;
+  flex: 1;
+  min-height: 0;
   color: var(--color-text-primary);
-  direction: rtl;
-}
-
-.ai-agent-provider-select,
-.ai-agent-key-input {
-  width: 100%;
-  border: 1.5px solid var(--color-border);
-  border-radius: 10px;
-  padding: 9px 12px;
   font-family: inherit;
-  font-size: 0.88rem;
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  direction: ltr;
-  text-align: left;
 }
+.ai-set [hidden] { display: none !important; }
 
-.ai-agent-provider-select {
-  direction: rtl;
-  text-align: right;
-}
-
-.ai-agent-key-input:focus,
-.ai-agent-provider-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.ai-agent-settings-actions {
+.ai-set-header {
   display: flex;
+  align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+  min-height: 52px;
+  padding: 0 10px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
-
-/* Self-contained button styles for the settings tab. Previously this panel
-   reused .exam-action-btn (from features/home/item-dropdown-menu.css), which
-   left these buttons unstyled on pages that didn't load that stylesheet.
-   Defined here instead so the widget looks correct on any page it's mounted
-   on, matching this file's own stated goal above. */
-.ai-agent-btn {
+.ai-set-back {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  flex: 1;
-  padding: 9px 14px;
-  border: 1.5px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  font-family: inherit;
+  gap: 4px;
+  height: 36px;
+  padding: 0 12px 0 14px;
+  border: 0;
+  border-radius: var(--radius-full, 9999px);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
+.ai-set-back:hover { background: var(--color-hover-overlay); color: var(--color-text-primary); }
+.ai-set-title { margin: 0; font-size: 1.05rem; font-weight: 800; line-height: 1.2; }
 
-.ai-agent-btn:hover {
-
-  box-shadow: var(--shadow-md);
+.ai-set-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 16px calc(28px + env(safe-area-inset-bottom, 0px));
 }
-
-.ai-agent-btn:active {
-  transform: translateY(0);
+.ai-set-content {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 640px;
+  margin-inline: auto;
 }
+.aiw-narrow .ai-set-scroll { padding-inline: 12px; }
 
-/* The save/clear key buttons are hidden via the `hidden` attribute (see
-   updateKeyActionsVisibility() in ai-agent-settings.js) — without this,
-   the panel's own `display: inline-flex` rule above would override the
-   browser's default `[hidden] { display: none }` UA rule (same
-   specificity problem `.ai-agent-send-btn[hidden]` solves elsewhere in
-   this file). */
-.ai-agent-btn[hidden] {
-  display: none;
-}
+.ai-set-group { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ai-set-group-head { display: flex; flex-direction: column; gap: 3px; padding-inline: 2px; }
+.ai-set-group-title { margin: 0; font-size: 0.98rem; font-weight: 800; }
+.ai-set-group-desc { margin: 0; font-size: 0.82rem; line-height: 1.7; color: var(--color-text-secondary); }
 
-.ai-agent-btn--primary {
-  background: var(--gradient-accent);
-  border-color: transparent;
-  color: #fff;
-}
-
-.ai-agent-btn--danger {
-  background: var(--color-error-light);
-  border-color: var(--color-error);
-  color: var(--color-error);
-}
-
-.ai-agent-settings-status {
-  font-size: 0.8rem;
-  min-height: 1.1em;
-}
-
-.ai-agent-settings-status--saved {
-  color: var(--color-success);
-}
-
-.ai-agent-settings-status--cleared {
-  color: var(--color-text-tertiary);
-}
-
-/* Live indicator of which key a message will actually use — see
-   refreshKeySourceIndicator() in ai-agent-settings.js. */
-.ai-agent-key-source {
-  font-size: 0.78rem;
-  line-height: 1.6;
-  padding: 8px 12px;
-  border-radius: 10px;
+.ai-set-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
-  background: var(--color-background-secondary);
-  color: var(--color-text-secondary);
+  border-radius: 14px;
 }
+.ai-set-card--flush { padding: 12px; }
 
-.ai-agent-key-source--own {
-  border-color: var(--color-success);
-  color: var(--color-success);
-  background: var(--color-success-light, rgba(34, 197, 94, 0.12));
-}
-
-.ai-agent-key-source--platform {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+/* Which key a message will use right now — the one coloured element of the view. */
+.ai-set-source {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border-inline-start: 3px solid var(--color-primary);
   background: var(--color-primary-light);
 }
-
-.ai-agent-key-source--none {
-  border-color: var(--color-error);
-  color: var(--color-error);
-  background: var(--color-error-light);
+.ai-set-source[data-source="own"] {
+  border-inline-start-color: var(--color-success);
+  background: var(--color-success-light);
 }
+.ai-set-source-dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+.ai-set-source[data-source="own"] .ai-set-source-dot { background: var(--color-success); }
+.ai-set-source-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ai-set-source-title { font-size: 0.88rem; font-weight: 800; }
+.ai-set-source-text { font-size: 0.8rem; line-height: 1.65; color: var(--color-text-secondary); }
 
-.ai-agent-system-prompt-input {
+.ai-set-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.ai-set-label { padding: 0; font-size: 0.85rem; font-weight: 700; color: var(--color-text-primary); }
+.ai-set-field { display: flex; flex-direction: column; gap: 8px; }
+.ai-set-field-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+.ai-set-segments { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ai-set-segment {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-background);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.ai-set-segment:hover { border-color: var(--color-border-light); }
+.ai-set-segment input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.ai-set-segment-name { font-size: 0.9rem; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-set-segment-sub { font-size: 0.72rem; color: var(--color-text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-set-segment:has(input:checked) { border-color: var(--color-primary); background: var(--color-selected-bg); }
+.ai-set-segment:has(input:checked) .ai-set-segment-name { color: var(--color-primary-text, var(--color-primary)); }
+.ai-set-segment:has(input:focus-visible) { box-shadow: 0 0 0 3px var(--color-focus-ring); }
+
+.ai-set-input-wrap { position: relative; direction: ltr; }
+.ai-set-input {
   width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
   border: 1.5px solid var(--color-border);
   border-radius: 10px;
-  padding: 9px 12px;
-  font-family: inherit;
-  font-size: 0.82rem;
-  line-height: 1.6;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 0.88rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ai-set-input-wrap .ai-set-input { padding-right: 46px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.84rem; }
+.ai-set-input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-focus-ring); }
+.ai-set-textarea { min-height: 160px; resize: vertical; line-height: 1.75; font-size: 0.85rem; }
+.ai-set-icon-btn {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-top: -17px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.ai-set-icon-btn:hover { background: var(--color-hover-overlay); color: var(--color-text-primary); }
+
+.ai-set-hint { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 0.78rem; line-height: 1.6; color: var(--color-text-tertiary); }
+.ai-set-hint svg { flex-shrink: 0; }
+
+.ai-set-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ai-set-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
   background: var(--color-surface);
   color: var(--color-text-primary);
-  resize: vertical;
-  min-height: 100px;
-  box-sizing: border-box;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
+.ai-set-btn:hover:not(:disabled) { background: var(--color-hover-overlay); }
+.ai-set-btn--primary { background: var(--color-primary-dark); border-color: transparent; color: var(--color-on-primary, #fff); }
+.ai-set-btn--primary:hover:not(:disabled) { background: var(--color-primary-dark); filter: brightness(1.15); }
+.ai-set-btn--danger { background: var(--color-error-light); border-color: var(--color-error); color: var(--color-error); }
+.ai-set-btn--danger:hover:not(:disabled) { background: var(--color-error-light); filter: brightness(0.96); }
+.ai-set-btn--quiet { border-color: transparent; background: transparent; color: var(--color-text-secondary); }
+.ai-set-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.ai-agent-system-prompt-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
+.ai-set-status { min-height: 1.2em; font-size: 0.8rem; color: var(--color-text-secondary); }
+.ai-set-status:empty { display: none; }
+.ai-set-status--saved { color: var(--color-success); }
+.ai-set-status--cleared { color: var(--color-text-tertiary); }
+.ai-set-status--error { color: var(--color-error); }
+
+.ai-set-badge {
+  padding: 2px 10px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
 }
+.ai-set-badge--on { background: var(--color-primary-light); border-color: transparent; color: var(--color-primary-text, var(--color-primary)); }
+.ai-set-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 1.2em; font-size: 0.76rem; color: var(--color-text-tertiary); }
+.ai-set-dirty { padding: 1px 8px; border-radius: var(--radius-full, 9999px); background: var(--color-warning-light); color: var(--color-text-primary); font-weight: 700; }
+
+.ai-set :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.ai-set .ai-set-input:focus-visible, .ai-set .ai-set-segment input:focus-visible { outline: none; }
+html[data-motion="reduced"] .ai-set *, html[data-motion="reduced"] .ai-set *::before { transition: none !important; }
 
 /* ── Floating action button ──
    Bottom-right, fixed. Sits above the bottom mobile nav bar (see
@@ -2301,7 +2338,11 @@
   cursor: progress;
 }
 
-.ai-agent-fab[aria-busy="true"] .ai-agent-fab-logo {
+@keyframes ai-agent-fab-pulse {
+  50% { opacity: 0.35; }
+}
+
+.ai-agent-fab-logo {
   opacity: 0.6;
 }
 
@@ -2325,15 +2366,6 @@ html[data-motion="reduced"] .ai-agent-fab[aria-busy="true"]::after {
   animation: ai-agent-fab-pulse 1.2s ease-in-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ai-agent-fab[aria-busy="true"]::after {
-    animation: ai-agent-fab-pulse 1.2s ease-in-out infinite;
-  }
-
-  @keyframes ai-agent-fab-pulse {
-    50% { opacity: 0.35; }
-  }
-}
 
 .ai-agent-fab-logo {
   width: 60%;
@@ -2424,25 +2456,6 @@ body.sidebar-expanded .ai-agent-fab {
   max-height: none;
 }
 
-/* ── Settings-as-its-own-modal (Phase 6a) ──
-   openSettingsModal() (ai-agent.js) mounts createSettingsPanel()'s panel
-   directly as the settings modal's only body content, not nested inside
-   .ai-agent-widget/.ai-agent-row like the chat panel is. It still needs
-   to fill the remaining fixed-card height below the header and scroll
-   internally, same as every other panel does. Fixed height instead of
-   Phase 7's chat sizing — settings' content is short and doesn't need
-   the wider/taller chat-with-sidebar dimensions. */
-.ai-agent-settings-modal-card {
-  height: min(560px, 80vh);
-  max-width: fit-content;
-}
-
-.ai-agent-settings-modal-card .ai-agent-panel {
-  flex: 1;
-  min-height: 0;
-  max-height: none;
-}
-
 @media (max-width: 768px) {
   .ai-agent-modal-card {
     width: 100%;
@@ -2453,33 +2466,6 @@ body.sidebar-expanded .ai-agent-fab {
     border-radius: 0;
     border: none;
     box-shadow: none;
-  }
-}
-
-/* The settings modal reuses .ai-agent-modal-card as a second class, so it
-   would otherwise also go full-screen under the phone rule further below
-   — that's fine for the base card, but this fixed height is more
-   specific (two classes) and always wins regardless of viewport unless
-   explicitly reset. Settings' content is short, so it keeps its own
-   shorter sheet-style height rather than stretching to fill an entire
-   phone screen the way the full chat experience does. */
-@media (max-width: 640px) {
-  .ai-agent-settings-modal-card {
-    height: min(560px, 80vh);
-    height: min(560px, 80dvh);
-    max-height: none;
-    border-radius: 20px;
-    box-shadow: var(--shadow-xl);
-  }
-
-  /* Same reasoning as the card override above — restore the normal
-     dimmed/blurred backdrop + centering padding for the settings modal
-     specifically, since it stays a small centered sheet rather than
-     going full-screen like the chat modal. */
-  .ai-agent-settings-modal-overlay {
-    padding-bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px));
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
   }
 }
 
@@ -3471,98 +3457,204 @@ body.sidebar-expanded .ai-agent-fab {
   overflow-y: auto;
 }
 
-/* ── Attachment preview modal (openAttachmentPreviewModal, ai-agent-chat.js) ──
-   Opened by clicking either a pending .ai-agent-attachment-tile or a sent
-   .ai-agent-msg-attachment chip — shows the full title (untruncated,
-   unlike the tile's ellipsized name) plus whatever context is available
-   (summary for platform items, mime/size for plain files). Layers on top
-   of this file's own .ai-agent-overlay/.ai-agent-modal-shell (see the
-   "Self-contained modal shell" block near the top) for the same overlay/
-   card chrome every other modal in this widget uses; these rules only add
-   what's specific to this modal's own content. */
-.ai-agent-attachment-preview-overlay {
-  z-index: var(--z-modal-top, 11000);
+/* ── Attachment preview (inside the agent window) ────────────────────────────
+   Built by openAttachmentPreview() (ai-agent-attachment-preview.js) and mounted as an
+   in-window layer (openWindowLayer, ai-agent-window.js): it covers the chat area only.
+   Theme tokens only (light / dark / dark-slate), logical properties, RTL. The kind accent
+   tints the icon tile and the kind chip. */
+.ai-att {
+  --ai-att-accent: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  color: var(--color-text-primary);
+  font-family: inherit;
 }
+.ai-att[data-kind="quiz"] { --ai-att-accent: var(--color-primary); }
+.ai-att[data-kind="lesson"] { --ai-att-accent: var(--color-success); }
+.ai-att[data-kind="notebook"] { --ai-att-accent: var(--color-warning); }
+.ai-att[data-kind="youtube_video"], .ai-att[data-kind="youtube_playlist"] { --ai-att-accent: var(--color-error); }
+.ai-att[data-kind="course"], .ai-att[data-kind="folder"] { --ai-att-accent: var(--color-accent); }
 
-.ai-agent-attachment-preview-card {
-  position: relative;
-  max-width: 380px;
+.ai-att-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: 52px;
+  padding: 0 12px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
-
-.ai-agent-attachment-preview-close {
-  position: absolute;
-  top: 12px;
-  left: 12px;
+.ai-att-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 14px;
+  border-radius: var(--radius-full, 9999px);
+  background: color-mix(in srgb, var(--ai-att-accent) 14%, var(--color-surface));
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.ai-att-chip-icon { display: inline-flex; color: var(--ai-att-accent); }
+.ai-att-chip-icon svg { width: 18px; height: 18px; }
+.ai-att-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 50%;
-  background: var(--color-background-secondary);
-  color: var(--color-text-secondary, currentColor);
-  cursor: pointer;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  transition: background 0.15s ease, color 0.15s ease;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
+.ai-att-close:hover { background: var(--color-hover-overlay); color: var(--color-text-primary); }
 
-.ai-agent-attachment-preview-close:hover {
-  background: var(--color-danger, #dc2626);
-  color: #fff;
+.ai-att-stage {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 20px 16px;
 }
+.aiw-narrow .ai-att-stage { padding: 14px 12px; }
 
-.ai-agent-attachment-preview-image {
+/* Image: contain-fit on a quiet backdrop, the caption bar below carries the details. */
+.ai-att[data-kind="image"] .ai-att-stage { overflow: hidden; background: var(--color-background-secondary); padding: 16px; }
+.ai-att-figure { display: flex; flex: 1; align-items: center; justify-content: center; min-width: 0; min-height: 0; margin: 0; }
+.ai-att-image {
   display: block;
-  width: 100%;
-  max-height: 240px;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
   object-fit: contain;
-  border-radius: 12px;
-  margin-bottom: 16px;
-  background: var(--color-background-secondary);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  background: var(--color-surface);
 }
+.ai-att-caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  flex-shrink: 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+.ai-att-caption-name { flex: 1 1 200px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.92rem; font-weight: 800; }
+.ai-att-caption-meta { font-size: 0.8rem; color: var(--color-text-secondary); }
 
-.ai-agent-attachment-preview-icon {
+/* Platform item / plain file: one card. margin:auto centres it and still lets it scroll. */
+.ai-att-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: min(520px, 100%);
+  box-sizing: border-box;
+  margin: auto;
+  padding: 28px 22px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  text-align: center;
+}
+.aiw-narrow .ai-att-card { padding: 22px 16px 18px; }
+.ai-att-tile {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
-  margin: 0 auto 14px;
-  border-radius: 14px;
-  background: var(--color-background-secondary);
-  color: var(--color-text-secondary, currentColor);
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--ai-att-accent) 14%, var(--color-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ai-att-accent) 28%, transparent);
+  color: var(--ai-att-accent);
 }
+.ai-att-tile svg { width: 36px; height: 36px; }
+.ai-att-title { margin: 0; max-width: 100%; font-size: 1.2rem; font-weight: 800; line-height: 1.55; overflow-wrap: anywhere; }
 
-.ai-agent-attachment-preview-icon svg {
-  width: 28px;
-  height: 28px;
-}
-
-.ai-agent-attachment-preview-kind {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--color-text-tertiary);
-  margin-bottom: 6px;
-}
-
-.ai-agent-attachment-preview-title {
-  margin: 0 0 10px;
-  font-size: 1.15rem;
-  line-height: 1.4;
-  word-break: break-word;
-}
-
-.ai-agent-attachment-preview-context {
+.ai-att-facts {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: var(--color-text-secondary);
-  white-space: pre-wrap;
-  word-break: break-word;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  text-align: start;
 }
+.ai-att-fact { display: grid; grid-template-columns: minmax(84px, 32%) minmax(0, 1fr); gap: 12px; padding: 10px 14px; }
+.ai-att-fact + .ai-att-fact { border-top: 1px solid var(--color-border); }
+.ai-att-fact dt { font-size: 0.8rem; color: var(--color-text-secondary); }
+.ai-att-fact dd { margin: 0; font-size: 0.88rem; font-weight: 700; overflow-wrap: anywhere; }
+
+.ai-att-text { width: 100%; text-align: start; }
+.ai-att-text-title { margin: 0 0 6px; font-size: 0.8rem; font-weight: 700; color: var(--color-text-secondary); }
+.ai-att-text-body {
+  margin: 0;
+  max-height: 11em;
+  overflow: auto;
+  padding: 12px 14px;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  font-size: 0.88rem;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ai-att-videos { margin: 0; padding: 10px 14px 10px 14px; padding-inline-start: 34px; background: var(--color-background); border: 1px solid var(--color-border); border-radius: 12px; font-size: 0.85rem; line-height: 1.8; }
+.ai-att-more { margin: 6px 0 0; font-size: 0.8rem; color: var(--color-text-secondary); }
+
+.ai-att-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+.ai-att-status { margin: 0; font-size: 0.8rem; color: var(--color-error); }
+.ai-att-status:empty { display: none; }
+.ai-att-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.aiw-narrow .ai-att-actions .ai-att-btn { flex: 1; }
+.ai-att-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+.ai-att-btn:hover:not(:disabled) { background: var(--color-hover-overlay); }
+.ai-att-btn--primary { background: var(--color-primary-dark); border-color: transparent; color: var(--color-on-primary, #fff); }
+.ai-att-btn--primary:hover:not(:disabled) { background: var(--color-primary-dark); filter: brightness(1.15); }
+.ai-att-btn:disabled { opacity: 0.5; cursor: progress; }
+
+.ai-att :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+html[data-motion="reduced"] .ai-att *, html[data-motion="reduced"] .ai-att *::before { transition: none !important; }
 
 /* ── Modular Actions (Slash Commands) Menu ───────────────────────────────── */
 .ai-agent-slash-menu {
@@ -4389,18 +4481,6 @@ body.sidebar-expanded .ai-agent-fab {
   outline-offset: 2px;
 }
 
-.ai-agent-telegram-settings-section {
-  margin-top: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.ai-agent-telegram-settings-section h4 {
-  margin: 0;
-  font-size: 0.95rem;
-}
-
 /* =============================================================================
    Chat restyle (claude.ai-like): neutral user bubble, plain assistant text,
    collapsible thinking block, minimal typing indicator, calm error notice.
@@ -4947,4 +5027,42 @@ body.sidebar-expanded .ai-agent-fab {
 /* Cards inside a group drop their own vertical margin (the gap handles spacing) */
 .ai-agent-tool-group .ai-agent-tool-card {
   margin: 0;
+}
+
+/* Grouped suggestions: one tab per capability, a few prompts under the selected tab. */
+.ai-agent-suggestion-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-agent-suggestion-tab {
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+
+.ai-agent-suggestion-tab:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text-primary);
+}
+
+.ai-agent-suggestion-tab.is-active {
+  /* --color-primary-text is the indigo "text ON the page surface" token: on a primary fill it is the same
+     colour. The fill is the darker primary shade with the dedicated on-primary text colour (>= 7.9:1 in all themes). */
+  border-color: var(--color-primary);
+  background: var(--color-primary-dark);
+  color: var(--color-on-primary, #fff);
+}
+
+.ai-agent-suggestion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }

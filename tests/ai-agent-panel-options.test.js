@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { resolvePanelOptions, createUnsupportedToolError } from "../public/src/components/ai-agent/ai-agent-panel-options.js";
 import { runAgentLoop } from "../public/src/components/ai-agent/core/agent-loop.js";
 import { HOME_TOOL_NAMES } from "../public/src/components/ai-agent/ai-agent-page-tools.js";
+import { normalizeSuggestions, HOME_PAGE_SUGGESTED_PROMPTS } from "../public/src/components/ai-agent/ai-agent-suggested-prompts.js";
 import { installFakeChat, apiUrl } from "./helpers/fake-chat.js";
 
 // Mimics ai-agent.js: one cached panel per pageKey, built from the first opener,
@@ -68,4 +69,13 @@ test("unsupported-tool error is non-retryable and the loop does not auto-correct
     const tool = history.find((m) => m.role === "tool");
     assert.match(tool.content, /لا تعد المحاولة/);
   } finally { fake.restore(); }
+});
+
+test("home suggestions are grouped, include YouTube prompts that use real tools, and flat lists still work", () => {
+  const groups = normalizeSuggestions(HOME_PAGE_SUGGESTED_PROMPTS);
+  assert.ok(groups.length >= 4 && groups.every((g) => g.label && g.prompts.length >= 1));
+  const yt = groups.find((g) => g.label === "يوتيوب");
+  assert.ok(yt.prompts.length >= 3 && yt.prompts.some((p) => /Simplex/.test(p)));
+  assert.deepEqual(normalizeSuggestions(["a", " ", "b"]), [{ label: "", prompts: ["a", "b"] }]);
+  assert.deepEqual(normalizeSuggestions(undefined), []);
 });

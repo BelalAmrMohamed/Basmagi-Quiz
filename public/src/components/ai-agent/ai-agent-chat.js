@@ -37,13 +37,15 @@ import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js
 import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
 import { renderCreatorCard, creatorCardModelSummary } from "./ai-agent-creator-tools.js";
 import { renderResultCard, resultCardModelSummary } from "./ai-agent-result-cards.js";
+import { normalizeSuggestions, refreshEmptyState } from "./ai-agent-suggested-prompts.js";
 import { createToolCallCard } from "./components/tool-call-card.js";
+import { openAttachmentPreview } from "./ai-agent-attachment-preview.js";
 import { runTurn } from "./core/turn-runner.js";
 import { toPersistedMessages, serializeWireMessage as buildWireMessage } from "./core/chat-messages.js";
 import { createExportHelpers, escapeHtml } from "./core/chat-export.js";
 import { createMessageRenderer } from "./core/chat-rendering.js";
 import { createChatSettings } from "./core/chat-settings.js";
-import { ATTACHMENT_FILE_ICON_SVG, ATTACHMENT_QUIZ_ICON_SVG, ATTACHMENT_COURSE_ICON_SVG, ATTACHMENT_FOLDER_ICON_SVG, ATTACHMENT_LESSON_ICON_SVG, ATTACHMENT_NOTEBOOK_ICON_SVG, ATTACHMENT_YOUTUBE_ICON_SVG, ATTACHMENT_REMOVE_ICON_SVG, ATTACHMENT_KIND_LABEL_AR, expandPlatformAttachment, iconForAttachment, labelForAttachment } from "./core/chat-attachments.js";
+import { ATTACHMENT_FILE_ICON_SVG, ATTACHMENT_QUIZ_ICON_SVG, ATTACHMENT_COURSE_ICON_SVG, ATTACHMENT_FOLDER_ICON_SVG, ATTACHMENT_LESSON_ICON_SVG, ATTACHMENT_NOTEBOOK_ICON_SVG, ATTACHMENT_YOUTUBE_ICON_SVG, ATTACHMENT_REMOVE_ICON_SVG, expandPlatformAttachment, iconForAttachment, labelForAttachment } from "./core/chat-attachments.js";
 import { prependUndoNotes } from "./core/undo.js";
 import {
   decorateMessageTokens,
@@ -392,22 +394,56 @@ export function createChatPanel(options = {}) {
 
   function renderSuggestions() {
     removeSuggestions();
-    if (!Array.isArray(suggestedPrompts) || !suggestedPrompts.length) return;
+    const groups = normalizeSuggestions(suggestedPrompts);
+    if (!groups.length) return;
 
     suggestionsEl = document.createElement("div");
     suggestionsEl.className = "ai-agent-suggestions";
-    suggestedPrompts.forEach((prompt) => {
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "ai-agent-suggestion-chip";
-      chip.textContent = prompt;
-      chip.addEventListener("click", () => {
-        if (sendBtn.disabled) return;
-        textarea.value = prompt;
-        sendMessage();
+    const list = document.createElement("div");
+    list.className = "ai-agent-suggestion-list";
+    const showGroup = (group) => {
+      list.replaceChildren();
+      group.prompts.forEach((prompt) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "ai-agent-suggestion-chip";
+        chip.textContent = prompt;
+        chip.addEventListener("click", () => {
+          if (sendBtn.disabled) return;
+          textarea.value = prompt;
+          sendMessage();
+        });
+        list.appendChild(chip);
       });
-      suggestionsEl.appendChild(chip);
-    });
+    };
+    const labeled = groups.filter((g) => g.label);
+    if (groups.length > 1 && labeled.length === groups.length) {
+      // Tabs: one per capability; the chips below belong to the selected tab.
+      const tabs = document.createElement("div");
+      tabs.className = "ai-agent-suggestion-tabs";
+      tabs.setAttribute("role", "tablist");
+      const select = (index) => {
+        [...tabs.children].forEach((t, i) => {
+          t.classList.toggle("is-active", i === index);
+          t.setAttribute("aria-selected", i === index ? "true" : "false");
+        });
+        showGroup(groups[index]);
+      };
+      groups.forEach((group, i) => {
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = "ai-agent-suggestion-tab";
+        tab.setAttribute("role", "tab");
+        tab.textContent = group.label;
+        tab.addEventListener("click", () => select(i));
+        tabs.appendChild(tab);
+      });
+      suggestionsEl.append(tabs, list);
+      select(0);
+    } else {
+      showGroup({ prompts: groups.flatMap((g) => g.prompts) }); // flat list: plain chips
+      suggestionsEl.appendChild(list);
+    }
     // Insert suggestions at the end of messagesEl so they scroll naturally
     // with the chat messages and never collide with the floating input row.
     messagesEl.appendChild(suggestionsEl);
@@ -416,134 +452,15 @@ export function createChatPanel(options = {}) {
   // Attachment icon and context helpers live in core/chat-attachments.js.
 
   /**
-   * Standard fade-out-then-remove dismiss animation (opacity + translateY
-   * transition before removing the node). Local copy — this used to be
-   * imported from features/home/modal-utils.js, but that's the only thing
-   * this component needed from that module, so it's inlined here rather
-   * than keeping an import into features/home for one small utility (see
-   * ai-agent.js's own header comment on this component's self-containment
-   * goal).
-   * @param {HTMLElement} overlay
-   * @param {HTMLElement} [modalCard]
-   */
-  function fadeOutAndRemove(overlay, modalCard) {
-    overlay.style.opacity = "0";
-    overlay.style.transition = "opacity 0.2s";
-    if (modalCard) {
-      modalCard.style.transform = "translateY(10px)";
-      modalCard.style.transition = "transform 0.2s";
-    }
-    setTimeout(() => overlay.remove(), 200);
-  }
-
-  /**
-   * Shows a full preview of one attachment (file or platform-item) on
-   * click, matching the "click a chip to see more" pattern of default
-   * chat UIs (Gemini/Claude's own attachment previews) — this app's own
-   * tiles/chips only ever showed a truncated name before this, with no
-   * way to see the rest of a long title or any of the attached context.
-   * Reuses this widget's own .ai-agent-overlay/.ai-agent-modal-shell base
-   * (ai-agent.css — see that file's own header comment) — this component's
-   * own self-contained modal chrome, not a shared external class, so no
-   * new modal chrome invented just for this.
-   * @param {object} att - a pendingAttachments entry OR a persisted/
-   *   in-history attachments[] entry; both share the same
-   *   {kind, title|name, summary?, payload?, mimeType?, base64?} shape.
+   * Shows a preview of one attachment (image, platform item or plain file) when its tile or
+   * chip is clicked. It opens INSIDE the agent window as a layer over the chat area, never
+   * over the whole page — see ai-agent-attachment-preview.js. The name is kept because
+   * core/chat-rendering.js receives it as a callback.
+   * @param {object} att - a pendingAttachments entry OR a persisted/in-history attachments[]
+   *   entry; both share the same {kind, title|name, summary?, payload?, mimeType?, base64?} shape.
    */
   function openAttachmentPreviewModal(att) {
-    const overlay = document.createElement("div");
-    overlay.className = "ai-agent-overlay ai-agent-attachment-preview-overlay";
-    overlay.setAttribute("role", "dialog");
-    overlay.setAttribute("aria-modal", "true");
-
-    const card = document.createElement("div");
-    card.className = "ai-agent-modal-shell ai-agent-attachment-preview-card";
-
-    const closeBtn = document.createElement("button");
-    closeBtn.type = "button";
-    closeBtn.className = "ai-agent-attachment-preview-close";
-    closeBtn.setAttribute("aria-label", "إغلاق");
-    closeBtn.innerHTML = ATTACHMENT_REMOVE_ICON_SVG;
-    card.appendChild(closeBtn);
-
-    const isImage = att.kind === "file" && att.mimeType?.startsWith("image/") && att.base64;
-    if (isImage) {
-      const img = document.createElement("img");
-      img.className = "ai-agent-attachment-preview-image";
-      img.src = `data:${att.mimeType};base64,${att.base64}`;
-      img.alt = "";
-      card.appendChild(img);
-    } else {
-      const iconWrap = document.createElement("div");
-      iconWrap.className = "ai-agent-attachment-preview-icon";
-      iconWrap.innerHTML = iconForAttachment(att.kind ? att : { kind: "file" });
-      card.appendChild(iconWrap);
-    }
-
-    const kindBadge = document.createElement("div");
-    kindBadge.className = "ai-agent-attachment-preview-kind";
-    kindBadge.textContent = ATTACHMENT_KIND_LABEL_AR[att.itemType] || ATTACHMENT_KIND_LABEL_AR[att.kind] || att.kind || "مرفق";
-    card.appendChild(kindBadge);
-
-    const titleEl = document.createElement("h2");
-    titleEl.className = "ai-agent-attachment-preview-title";
-    titleEl.dir = "auto";
-    titleEl.textContent = labelForAttachment(att) || "بدون عنوان";
-    card.appendChild(titleEl);
-
-    // Related context: prefer a human-written summary (already built at
-    // attach time by ai-agent-library-search.js / ai-agent-item-lookup.js
-    // for platform items), fall back to file metadata for plain files —
-    // there's no summary for those, but size/type is still useful context.
-    let contextText = att.summary || "";
-    if (!contextText && att.kind === "file") {
-      const sizeLabel = typeof att.base64 === "string"
-        ? `${Math.max(1, Math.round((att.base64.length * 0.75) / 1024))} KB`
-        : null;
-      contextText = [att.mimeType, sizeLabel].filter(Boolean).join(" — ");
-    }
-    if (contextText) {
-      const contextEl = document.createElement("p");
-      contextEl.className = "ai-agent-attachment-preview-context";
-      contextEl.dir = "auto";
-      contextEl.textContent = contextText;
-      card.appendChild(contextEl);
-    }
-
-    overlay.appendChild(card);
-    document.body.appendChild(overlay);
-
-    // Capture-phase (the `true` 3rd arg), not the same bubble-phase
-    // approach ai-agent.js's own settings modal uses (onSettingsKeydown +
-    // stopImmediatePropagation): that pattern only works if the *earlier*-
-    // registered listener is the one calling stopImmediatePropagation, but
-    // here it's the OPPOSITE — the underlying AI Agent panel's Escape
-    // listener (ai-agent.js's onKeydown) is already attached from when the
-    // panel opened, long before this preview ever exists, so a later
-    // bubble-phase listener here can't stop it from having already run
-    // closeModal() on the same Escape press (stopImmediatePropagation only
-    // blocks listeners registered AFTER the one calling it). Capture phase
-    // runs top-down before any bubble-phase listener fires at all, so this
-    // reliably intercepts Escape first regardless of when the panel's own
-    // listener was registered.
-    let closed = false;
-    const close = () => {
-      if (closed) return;
-      closed = true;
-      document.removeEventListener("keydown", onPreviewKeydown, true);
-      fadeOutAndRemove(overlay, card);
-    };
-    const onPreviewKeydown = (e) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        close();
-      }
-    };
-    document.addEventListener("keydown", onPreviewKeydown, true);
-    overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) close();
-    });
-    closeBtn.addEventListener("click", close);
+    openAttachmentPreview(panel, att);
   }
 
   /**
@@ -2238,6 +2155,7 @@ export function createChatPanel(options = {}) {
     messagesEl.innerHTML = "";
     if (!history.length) {
       renderEmptyState();
+      renderSuggestions(); // same wipe as refreshAvailability: chips go back after the empty state
     } else {
       // Same placement as live turns: a response's result cards are shown as
       // one group after its last message (i.e. right before the next user
@@ -2380,7 +2298,8 @@ export function createChatPanel(options = {}) {
   panel.refreshAvailability = function refreshAvailability() {
     updateAvailabilityGate();
     refreshModelBarOptions();
-    if (history.length === 0) renderEmptyState();
+    // The empty state wipes the messages area, so the chips are rebuilt right after it.
+    refreshEmptyState({ historyLength: history.length, renderEmptyState, renderSuggestions });
   };
 
   panel.clearTyping = function clearTyping() {

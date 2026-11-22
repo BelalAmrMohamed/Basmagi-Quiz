@@ -29,6 +29,8 @@
 import { loadAIAgentModule } from "./ai-agent-lazy.js";
 import { buildYoutubeAttachment, isYoutubeAttachment } from "./core/youtube-attachment.js";
 import { createUnsupportedToolError } from "./ai-agent-panel-options.js";
+import { HOME_TOOL_NAMES } from "./ai-agent-page-tools.js";
+import { ATTACHMENT_TOOLS } from "./core/turn-runner.js";
 import { HOME_PAGE_SUGGESTED_PROMPTS } from "./ai-agent-suggested-prompts.js";
 import {
   resolveUserItemById,
@@ -37,10 +39,6 @@ import {
 } from "./ai-agent-item-lookup.js";
 import { loadFullQuizData } from "../../features/home/quiz-data-loader.js";
 import { unlockRemoteLesson } from "../../features/lesson/lesson-access.js";
-import {
-  handleReadOnlyLibraryToolCall,
-  READONLY_LIBRARY_TOOL_NAMES,
-} from "./ai-agent-readonly-tools.js";
 
 /**
  * Resolves a user-created quiz/folder/course id (from `user_quizzes`) into
@@ -193,6 +191,12 @@ export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
   // The agent UI is downloaded on first use (see ai-agent-lazy.js).
   const { openAIAgentModal, getChatPanelForPageKey } = await loadAIAgentModule();
 
+  // Same tool handlers as the «محتواي» agent; started now so the folder-tree context is ready by the first send.
+  let homeTools = null;
+  const homeToolsPromise = import("../../features/home/user-content-view.js")
+    .then((m) => { homeTools = m; return m; })
+    .catch((err) => { console.error("[ai-agent] could not load the home tools", err); return null; });
+
   const options = {
     pageKey: "home",
     // Transient options: if the real «محتواي» panel already exists (or opens
@@ -211,16 +215,16 @@ export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
     // into this launcher, so it needs to actually be able to answer them,
     // not just fetch_attached_quiz. See ai-agent-readonly-tools.js for the
     // shared handlers (same ones the home-page panel uses).
-    toolNames: [
-      // YouTube items carry everything the assistant knows inline (no fetch tool).
-      ...(isYoutubeAttachment(attachment)
-        ? []
-        : [attachment.kind === "lesson" ? "fetch_attached_lesson" : "fetch_attached_quiz"]),
-      ...READONLY_LIBRARY_TOOL_NAMES,
-    ],
-    onToolCall: async (toolCall) => {
-      if (READONLY_LIBRARY_TOOL_NAMES.includes(toolCall?.name)) {
-        return handleReadOnlyLibraryToolCall(toolCall);
+    // The cached "home" panel is built from whichever launcher opens first and is reused by every
+    // later one, so it must NOT be limited to this attachment: it gets the full «محتواي» tool set.
+    toolNames: HOME_TOOL_NAMES,
+    contextPrompt: () => homeTools?.getHomeFolderTreePrompt?.() || "",
+    onToolCall: async (toolCall, ctx) => {
+      // Everything except the per-attachment readers goes to the «محتواي» handler (loaded on demand).
+      if (!ATTACHMENT_TOOLS.includes(toolCall?.name)) {
+        const home = homeTools || await homeToolsPromise;
+        if (!home?.handleHomeToolCall) throw createUnsupportedToolError(toolCall?.name);
+        return home.handleHomeToolCall(toolCall, ctx);
       }
       if (isYoutubeAttachment(attachment)) throw createUnsupportedToolError(toolCall?.name);
       if (attachment.kind === "lesson") {

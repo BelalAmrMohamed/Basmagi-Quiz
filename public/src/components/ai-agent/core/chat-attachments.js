@@ -48,7 +48,10 @@ export function expandPlatformAttachment(att) {
   const body = att.payload
     ? JSON.stringify(att.payload)
     : att.summary || "(لا تفاصيل إضافية متاحة عن هذا العنصر)";
-  return `[مرفق ${kindLabelAr}: ${att.title}]\n${body}`;
+  const hint = att.itemType === "youtube_video" && att.payload?.youtubeId
+    ? `\n(للإجابة عن محتوى الفيديو الفعلي استدعِ الأداة summarize_youtube مع video="${att.payload.youtubeId}"؛ الوصف أعلاه لا يغني عن نص الفيديو.)`
+    : "";
+  return `[مرفق ${kindLabelAr}: ${att.title}]\n${body}${hint}`;
 }
 
 export function iconForAttachment(att) {

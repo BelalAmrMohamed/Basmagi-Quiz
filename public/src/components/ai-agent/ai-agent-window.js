@@ -22,6 +22,7 @@
 import {
   cornerFromPoint, animateTo, motionDelay,
   registerMinimized, unregisterMinimized, setMinimizedCorner, setMinimizedDragging,
+  registerFloating, floatingTopZ, raiseFloating, touchFloatingOpened,
 } from "../../shared/floating-window.js";
 
 const GEO_KEY = "bq-ai-agent-window-geom";
@@ -44,7 +45,7 @@ const PILL_ID = "ai-agent";
 const SNAP = 14;
 const AERO_EDGE = 14;
 const AERO_CORNER = 110;
-const Z_INDEX = 6000; // modal tier: above side-menu (4000)/bottom-nav, below dropdown menus (7000)
+// Window z-order is shared with the YouTube windows (shared/floating-window.js: base 6000, below dropdown menus at 7000).
 const COMPACT_MAX = 900;
 const NARROW_MAX = 540;
 const PHONE_MAX = 640;
@@ -59,6 +60,95 @@ const T = {
   openMenu: "فتح القائمة",
   working: "يعمل…",
 };
+
+// ── In-window layers ─────────────────────────────────────────────────────────
+// A "layer" is a full-area view that covers the CONTENT of the agent window (settings,
+// attachment preview) while the title bar stays live: drag, minimize, maximize, snap and
+// resize keep working. The chat panel underneath is never touched or re-created, so a
+// running generation keeps running. Everything under the layer is made `inert` (no focus,
+// no clicks, skipped by screen readers) and restored when the layer closes.
+// Esc closes the top layer first (before it would restore/close the window); focus goes
+// back to the element that opened it.
+const layerStacks = new WeakMap(); // host element -> [{ close }]
+
+function layerHostFor(anchor) {
+  const winEl = anchor?.closest?.(".aiw");
+  if (winEl) return winEl.querySelector(".aiw-body");
+  return anchor?.closest?.(".ai-agent-widget") || null; // inline embed without a window
+}
+
+/** Closes the top layer of a host; true when one was closed. */
+export function closeTopWindowLayer(host) {
+  const stack = layerStacks.get(host);
+  const top = stack?.[stack.length - 1];
+  if (!top) return false;
+  top.close("escape");
+  return true;
+}
+
+/**
+ * @param {HTMLElement} anchor  any element inside the agent window (finds the window body)
+ * @param {object} opts
+ * @param {HTMLElement} opts.content        the view to show
+ * @param {string} opts.label               accessible name of the layer
+ * @param {"slide"|"pop"} [opts.variant]    slide = navigation to a deeper view, pop = quick preview
+ * @param {string} [opts.className]
+ * @param {HTMLElement|string} [opts.initialFocus]  element or selector inside content
+ * @param {HTMLElement} [opts.returnFocus]  defaults to the element focused when opened
+ * @param {(reason?: string) => void} [opts.onClose]
+ * @returns {{ el: HTMLElement, close: () => void, isOpen: () => boolean } | null}
+ */
+export function openWindowLayer(anchor, opts = {}) {
+  const host = layerHostFor(anchor);
+  if (!host || !opts.content) return null;
+  if (getComputedStyle(host).position === "static") host.style.position = "relative";
+  const stack = layerStacks.get(host) || [];
+  layerStacks.set(host, stack);
+  const returnFocus = opts.returnFocus || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+
+  const el = document.createElement("div");
+  el.className = `aiw-layer aiw-layer--${opts.variant === "pop" ? "pop" : "slide"}${opts.className ? ` ${opts.className}` : ""}`;
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-label", opts.label || "");
+  el.tabIndex = -1;
+  el.dir = "rtl";
+  el.appendChild(opts.content);
+
+  const inerted = [];
+  for (const child of host.children) {
+    if (child.inert) continue;
+    child.inert = true;
+    inerted.push(child);
+  }
+  host.appendChild(el);
+
+  let closed = false;
+  const record = { close };
+  stack.push(record);
+  function close(reason) {
+    if (closed) return;
+    closed = true;
+    const i = stack.indexOf(record);
+    if (i >= 0) stack.splice(i, 1);
+    inerted.forEach((child) => { if (child.isConnected) child.inert = false; });
+    el.classList.remove("is-open");
+    el.classList.add("is-closing");
+    setTimeout(() => el.remove(), motionDelay(200));
+    if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+    opts.onClose?.(reason);
+  }
+  el.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || e.defaultPrevented || stack[stack.length - 1] !== record) return;
+    e.preventDefault();
+    e.stopPropagation();
+    close("escape");
+  });
+
+  requestAnimationFrame(() => el.classList.add("is-open"));
+  const target = typeof opts.initialFocus === "string" ? el.querySelector(opts.initialFocus) : opts.initialFocus;
+  (target || el).focus({ preventScroll: true });
+  return { el, close: () => close("api"), isOpen: () => !closed };
+}
 
 function readGeom() {
   try { return JSON.parse(sessionStorage.getItem(GEO_KEY) || "null"); } catch { return null; }
@@ -83,7 +173,6 @@ export function createAgentWindow(cfg) {
   win.setAttribute("role", "dialog");
   win.setAttribute("aria-label", cfg.title);
   win.tabIndex = -1;
-  win.style.zIndex = String(Z_INDEX);
 
   win.innerHTML = `
     <div class="aiw-titlebar">
@@ -184,7 +273,7 @@ export function createAgentWindow(cfg) {
     if (!pv) {
       pv = document.createElement("div");
       pv.className = "aiw-snap-preview";
-      pv.style.zIndex = String(Z_INDEX + 1);
+      pv.style.zIndex = String(floatingTopZ() + 1);
       const wr = win.getBoundingClientRect();
       Object.assign(pv.style, { left: `${wr.left}px`, top: `${wr.top}px`, width: `${wr.width}px`, height: `${wr.height}px` });
       document.body.appendChild(pv);
@@ -266,6 +355,7 @@ export function createAgentWindow(cfg) {
     if (state.closed) return;
     state.closed = true;
     unregisterMinimized(PILL_ID);
+    win.dispatchEvent(new Event("aiw:closed"));
     ro.disconnect();
     window.removeEventListener("resize", onWindowResize);
     updateSnapPreview(null);
@@ -364,8 +454,8 @@ export function createAgentWindow(cfg) {
           win.classList.remove("is-dragging");
           applyCorner(targetCorner);
           writeCorner(targetCorner);
+          clearInline(); // first drop the drag's inline position, then let the registry place the pill
           setMinimizedCorner(PILL_ID, targetCorner);
-          clearInline();
         } else {
           win.classList.remove("is-dragging");
           clearInline();
@@ -486,6 +576,8 @@ export function createAgentWindow(cfg) {
   // it restores a maximized window, or closes the window.
   win.addEventListener("keydown", (e) => {
     if (e.key !== "Escape" || e.defaultPrevented || state.minimized) return;
+    // An open in-window layer (settings, attachment preview) goes first.
+    if (closeTopWindowLayer(win.querySelector(".aiw-body"))) { e.preventDefault(); return; }
     if (state.maximized && window.innerWidth > PHONE_MAX) toggleMaximize();
     else close();
   });
@@ -494,6 +586,12 @@ export function createAgentWindow(cfg) {
   applyInitialGeometry();
   applyCorner(readCorner());
   document.body.appendChild(win);
+  const unregisterFloating = registerFloating(PILL_ID, win, {
+    minimize: () => { if (!state.minimized) toggleMinimize(); },
+    restore: () => { if (state.minimized) toggleMinimize(); },
+    isMinimized: () => state.minimized,
+  });
+  win.addEventListener("aiw:closed", unregisterFloating, { once: true });
   document.body.classList.add("ai-agent-window-open");
   if (window.innerWidth <= PHONE_MAX) toggleMaximize(); // phones: full screen, still restorable
   requestAnimationFrame(measure);
@@ -511,6 +609,8 @@ export function createAgentWindow(cfg) {
     /** Restores from minimized (no-op otherwise) and focuses. */
     reveal() {
       if (state.minimized) toggleMinimize();
+      touchFloatingOpened(PILL_ID); // opened again: counts as the newest window for dock-all
+      raiseFloating(PILL_ID);
       win.focus({ preventScroll: true });
     },
   };

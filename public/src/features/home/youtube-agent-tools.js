@@ -19,8 +19,12 @@ import {
   ytApi,
 } from "./youtube-library.js";
 import { YOUTUBE_PLAYLIST_TYPE, describePlaylistCount } from "./local-youtube-playlist.js";
-import { YOUTUBE_VIDEO_TYPE } from "./local-youtube-video.js";
+import { YOUTUBE_VIDEO_TYPE, findSameLevelVideoDuplicate } from "./local-youtube-video.js";
 import { createItemCardResult } from "../../components/ai-agent/ai-agent-result-cards.js";
+import { buildSummarizeResult } from "../../shared/youtube-transcript.js";
+import { findSavedYoutubeItem } from "./youtube-saved-lookup.js";
+
+export { findSavedYoutubeItem };
 
 const SEARCH_LIMIT = 10;
 const LIST_LIMIT = 50;
@@ -38,12 +42,40 @@ export async function handleYoutubeToolCall(toolCall) {
       case "search_youtube": return await searchYoutube(input);
       case "list_youtube": return listYoutube(input);
       case "add_youtube": return await addYoutube(input);
+      case "summarize_youtube": return await summarizeYoutube(input);
       default: throw userError(`Unknown YouTube tool: ${toolCall?.name}`, "أداة غير معروفة.");
     }
   } catch (err) {
     if (!err.userMessage) err.userMessage = err.message;
     throw err;
   }
+}
+
+async function summarizeYoutube({ video, part, language }) {
+  const parsed = parseYoutubeInput(String(video || ""));
+  let videoId = parsed.kind === "video" ? parsed.videoId : null;
+  if (parsed.kind === "playlist") {
+    throw userError("playlist given", "هذه قائمة تشغيل. اختر فيديو واحدًا منها لأقرأ محتواه.");
+  }
+  if (!videoId) {
+    const saved = findSavedYoutubeItem(readUserItems(), video);
+    if (saved?.meta?.type === YOUTUBE_PLAYLIST_TYPE) throw userError("playlist given", "هذه قائمة تشغيل. اختر فيديو واحدًا منها لأقرأ محتواه.");
+    videoId = saved?.meta?.youtubeId || null;
+  }
+  if (!videoId) throw userError("video not found", "لم أجد هذا الفيديو. أرسل رابطه أو اسمه كما هو محفوظ في «محتواي».");
+
+  const details = (await fetchVideoDetails([videoId])).get(videoId);
+  if (!details) throw userError("video unavailable", "هذا الفيديو غير متاح (محذوف أو خاص أو غير موجود).");
+
+  // The transcript is best effort: any failure (including a server that predates this action)
+  // falls back to the title + description, and the result says so.
+  let transcript;
+  try {
+    transcript = await ytApi({ action: "transcript", id: videoId, ...(language ? { lang: language } : {}) });
+  } catch {
+    transcript = { available: false, reason: "service" };
+  }
+  return buildSummarizeResult(details, transcript, { part });
 }
 
 async function searchYoutube({ query }) {
@@ -97,6 +129,17 @@ async function addYoutube({ url }) {
       parentId,
     );
     if (result.saved === 0) {
+      // Already saved at this level: show the existing item (clickable) instead of a dead-end text.
+      const dup = findSameLevelVideoDuplicate(readUserItems(), parsed.videoId, parentId);
+      if (dup) {
+        return createItemCardResult({
+          kind: "youtube_video",
+          id: dup.id,
+          title: dup.meta?.title || details.title,
+          detail: details.channelTitle || "",
+          existing: true,
+        });
+      }
       return `لم يُحفظ شيء: ${result.skipped.join("، ") || "الفيديو موجود بالفعل في هذا المستوى."}`;
     }
     const created = result.created?.[0];

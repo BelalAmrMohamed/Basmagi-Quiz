@@ -145,19 +145,18 @@ export function lockPageScroll() {
 }
 
 /**
- * Pure rule: window motion is off when High-Performance Mode is on
- * (theme-controller.js sets <html data-motion="reduced">; it also defaults to on
- * with the OS reduced-motion preference) or the OS asks for reduced motion.
+ * Pure rule: window motion is off when the platform's own switch is on:
+ * <html data-motion="reduced"> (High-Performance Mode). theme-controller.js is the only
+ * place that looks at the OS preference: it uses it as that switch's default, so the
+ * user stays in control. Nothing else reads the OS media query (tests/motion-switch.test.js).
  */
-export function isMotionDisabled({ dataMotion, osReduced } = {}) {
-  return dataMotion === "reduced" || Boolean(osReduced);
+export function isMotionDisabled({ dataMotion } = {}) {
+  return dataMotion === "reduced";
 }
 
-/** True when High-Performance Mode or prefers-reduced-motion is active (read live, never cached). */
+/** True when High-Performance Mode is on (read live, never cached). */
 export function prefersReducedMotion() {
-  let osReduced = false;
-  try { osReduced = Boolean(globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches); } catch { /* no matchMedia */ }
-  return isMotionDisabled({ dataMotion: globalThis.document?.documentElement?.dataset?.motion, osReduced });
+  return isMotionDisabled({ dataMotion: globalThis.document?.documentElement?.dataset?.motion });
 }
 
 /** A delay for cleanup timers that only exist to let an animation finish: 0 when motion is off. */
@@ -249,12 +248,21 @@ function pillViewport() {
   };
 }
 
+const POS_PROPS = ["left", "top", "right", "bottom"];
+
+/** Takes the inline geometry this registry wrote off a pill (it must not fight a drag or a restore). */
+function clearPillInline(el) {
+  for (const prop of POS_PROPS) el.style.removeProperty(prop);
+}
+
 /** Re-lays out every registered, non-dragged pill. Returns the computed positions by id. */
 export function relayoutMinimized() {
   const { vw, vh } = pillViewport();
   const metrics = pillMetrics(vw, { safe: readSafeInsets(), navHeight: readNavHeight() });
   const items = [];
   for (const [id, p] of pills) {
+    // A pill whose element left the page (or is not displayed) must not keep a hole in the stack.
+    if (!p.el.isConnected || p.el.getClientRects().length === 0) continue;
     if (p.dragging) continue;
     items.push({ id, corner: p.corner, width: metrics.width, height: metrics.height, order: p.order });
   }
@@ -265,6 +273,12 @@ export function relayoutMinimized() {
     el.style.setProperty("--fw-left", `${pos.left}px`);
     el.style.setProperty("--fw-top", `${pos.top}px`);
     el.classList.add("fw-placed");
+    // Inline !important also beats every stylesheet rule (the AI window's per-corner fallbacks are
+    // !important and pinned its pill to the bottom slot, on top of the others).
+    el.style.setProperty("left", `${pos.left}px`, "important");
+    el.style.setProperty("top", `${pos.top}px`, "important");
+    el.style.setProperty("right", "auto", "important");
+    el.style.setProperty("bottom", "auto", "important");
   }
   return result;
 }
@@ -299,11 +313,24 @@ export function setMinimizedCorner(id, corner) {
   relayoutMinimized();
 }
 
+/**
+ * Re-stacks the given pills in exactly this order (first id = nearest its corner). Dock-all uses it so
+ * the stack always follows the windows' opening order, whatever order the pills happened to register in.
+ */
+export function setMinimizedOrder(ids) {
+  for (const id of ids) {
+    const p = pills.get(id);
+    if (p) p.order = ++pillSeq;
+  }
+  relayoutMinimized();
+}
+
 /** While a pill is being dragged it leaves the layout, so the others settle immediately. */
 export function setMinimizedDragging(id, dragging) {
   const p = pills.get(id);
   if (!p) return;
   p.dragging = Boolean(dragging);
+  if (p.dragging) clearPillInline(p.el); // the window's own drag code takes over the geometry
   relayoutMinimized();
 }
 
@@ -313,8 +340,122 @@ export function unregisterMinimized(id) {
   if (!p) return;
   pills.delete(id);
   p.el.classList.remove("fw-placed");
+  clearPillInline(p.el);
   p.el.style.removeProperty("--fw-left");
   p.el.style.removeProperty("--fw-top");
   if (pills.size === 0) syncViewportListeners();
   relayoutMinimized();
+}
+
+// ── Shared front-to-back order for ALL floating windows (AI agent + YouTube) ──
+// Clicking a window (or opening it) raises it above the others, whatever kind it is.
+
+export const FLOAT_Z_BASE = 6000; // modal tier: above side menu/bottom nav, below dropdown menus (7000)
+export const FLOAT_Z_MAX = 6900;
+
+/** Pure back-to-front order. `raise` moves an id to the front; z values are dense from `base`. */
+export function createFloatingStack(base = FLOAT_Z_BASE, max = FLOAT_Z_MAX) {
+  let order = []; // back -> front
+  return {
+    raise(id) { order = order.filter((x) => x !== id); order.push(id); },
+    remove(id) { order = order.filter((x) => x !== id); },
+    zOf(id) { const i = order.indexOf(id); return i < 0 ? base : Math.min(base + i, max); },
+    topZ() { return Math.min(base + Math.max(order.length - 1, 0), max); },
+    ids() { return [...order]; },
+  };
+}
+
+const floating = new Map(); // id -> { el, openedSeq, minimize, restore, isMinimized }
+const floatStack = createFloatingStack();
+let openedCounter = 0;
+let dockSnapshot = null; // front-to-back ids captured when dock-all minimized everything
+
+function applyFloatZ() {
+  for (const [id, w] of floating) w.el.style.zIndex = String(floatStack.zOf(id));
+}
+
+/** Highest z-index currently used by a floating window (for previews/overlays that must sit above). */
+export function floatingTopZ() {
+  return floatStack.topZ();
+}
+
+/** Brings a registered window above all others. */
+export function raiseFloating(id) {
+  if (!floating.has(id)) return;
+  floatStack.raise(id);
+  applyFloatZ();
+}
+
+/**
+ * Registers a floating window: it opens on top, and a pointerdown anywhere on it raises it.
+ * `ctl` = { minimize(), restore(), isMinimized() } powers the dock-all shortcut.
+ * @returns {() => void} unregister
+ */
+export function registerFloating(id, el, ctl = {}) {
+  floating.set(id, { el, ...ctl, openedSeq: ++openedCounter });
+  const onDown = () => raiseFloating(id);
+  el.addEventListener("pointerdown", onDown, true);
+  floatStack.raise(id);
+  applyFloatZ();
+  if (floating.size === 1) document.addEventListener("keydown", onDockKey);
+  return () => {
+    el.removeEventListener("pointerdown", onDown, true);
+    floating.delete(id);
+    floatStack.remove(id);
+    applyFloatZ();
+    if (floating.size === 0) document.removeEventListener("keydown", onDockKey);
+  };
+}
+
+/** Counts a window as "opened again" (e.g. the AI window revealed from its pill): it docks after older ones. */
+export function touchFloatingOpened(id) {
+  const w = floating.get(id);
+  if (w) w.openedSeq = ++openedCounter;
+}
+
+/**
+ * Pure: the order dock-all minimizes windows in. Oldest-opened first, so after docking the
+ * pills read in opening order (first opened = nearest the corner), never "AI window first".
+ * @param {Array<{id:string, openedSeq:number}>} items
+ */
+export function dockOrder(items) {
+  return [...items].sort((a, b) => (a.openedSeq - b.openedSeq) || String(a.id).localeCompare(String(b.id)));
+}
+
+/** Pure: what dock-all should do. Any open window => dock them all; all docked => restore them all. */
+export function dockAction(states) {
+  if (!states.length) return "none";
+  return states.some((minimized) => !minimized) ? "minimize" : "restore";
+}
+
+/** Minimizes every open floating window, or restores them all when they are all minimized. */
+export function dockAllFloating() {
+  const ordered = dockOrder([...floating].map(([id, w]) => ({ id, w, openedSeq: w.openedSeq })));
+  const list = ordered.map((x) => x.w);
+  const action = dockAction(list.map((w) => Boolean(w.isMinimized?.())));
+  if (action === "minimize") dockSnapshot = floatStack.ids(); // remember who was in front
+  for (const w of list) {
+    if (action === "minimize" && !w.isMinimized?.()) w.minimize?.();
+    else if (action === "restore" && w.isMinimized?.()) w.restore?.();
+  }
+  if (action === "minimize") {
+    // One contiguous stack in opening order, then re-measure once everything has settled: a window's own
+    // minimize code (corner classes, inline geometry) must never leave a pill off its slot or a gap in the stack.
+    setMinimizedOrder(ordered.map((x) => x.id));
+    requestAnimationFrame(relayoutMinimized);
+    setTimeout(relayoutMinimized, 320);
+  }
+  if (action === "restore" && dockSnapshot) {
+    // Bring the windows back in the front-to-back order they had before docking.
+    for (const id of dockSnapshot) raiseFloating(id);
+    dockSnapshot = null;
+  }
+}
+
+/** Alt+Shift+D: dock / undock every floating window. */
+function onDockKey(e) {
+  if (e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey && e.code === "KeyD") {
+    e.preventDefault();
+    dockAllFloating();
+  }
 }

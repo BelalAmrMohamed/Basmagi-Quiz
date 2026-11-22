@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   cornerFromPoint, cornerRect, resolveOverlap, clampToViewport, readCorner,
   layoutMinimized, pillMetrics, effectiveViewportHeight, isMotionDisabled,
+  createFloatingStack, dockAction, dockOrder, FLOAT_Z_BASE,
 } from "../public/src/shared/floating-window.js";
 
 test("cornerFromPoint picks the nearest corner", () => {
@@ -108,9 +109,50 @@ test("effectiveViewportHeight lifts pills above the on-screen keyboard", () => {
   assert.equal(kb.a.top, 500 - 48 - 66);
 });
 
-test("isMotionDisabled: High-Performance Mode (data-motion) or OS reduced motion", () => {
+test("isMotionDisabled follows only html[data-motion] (the user's High-Performance switch)", () => {
   assert.equal(isMotionDisabled({ dataMotion: "reduced" }), true);
-  assert.equal(isMotionDisabled({ dataMotion: "normal", osReduced: true }), true);
-  assert.equal(isMotionDisabled({ dataMotion: "normal", osReduced: false }), false);
+  assert.equal(isMotionDisabled({ dataMotion: "normal", osReduced: true }), false);
   assert.equal(isMotionDisabled(), false);
+});
+
+// ── Shared z-order: the window you click goes on top, AI or YouTube ─────────
+test("floating stack: the clicked window becomes the front, whatever its kind", () => {
+  const s = createFloatingStack();
+  s.raise("ai-agent"); s.raise("youtube-1"); s.raise("youtube-2");
+  assert.deepEqual(s.ids(), ["ai-agent", "youtube-1", "youtube-2"]);
+  s.raise("ai-agent"); // click the AI window
+  assert.equal(s.zOf("ai-agent"), FLOAT_Z_BASE + 2);
+  assert.ok(s.zOf("ai-agent") > s.zOf("youtube-1") && s.zOf("youtube-1") < s.zOf("youtube-2"));
+  s.raise("youtube-1"); // then a YouTube window
+  assert.deepEqual(s.ids(), ["youtube-2", "ai-agent", "youtube-1"]);
+  assert.equal(s.topZ(), s.zOf("youtube-1"));
+});
+
+test("floating stack: closing a window closes the gap and z stays inside the band", () => {
+  const s = createFloatingStack(6000, 6003);
+  ["a", "b", "c"].forEach((id) => s.raise(id));
+  s.remove("b");
+  assert.equal(s.zOf("c"), 6001);
+  for (let i = 0; i < 10; i++) s.raise(`w${i}`);
+  assert.ok(s.topZ() <= 6003);
+});
+
+test("dockAction: dock when any window is open, restore when all are docked", () => {
+  assert.equal(dockAction([]), "none");
+  assert.equal(dockAction([true, false]), "minimize");
+  assert.equal(dockAction([true, true]), "restore");
+});
+
+test("dockOrder: oldest-opened first, so pills read in opening order", () => {
+  const items = [
+    { id: "ai-agent", openedSeq: 3 },
+    { id: "yt-1", openedSeq: 1 },
+    { id: "yt-2", openedSeq: 2 },
+  ];
+  assert.deepEqual(dockOrder(items).map((i) => i.id), ["yt-1", "yt-2", "ai-agent"]);
+  assert.equal(items[0].id, "ai-agent"); // input untouched
+});
+
+test("dockOrder: ties fall back to id for a stable result", () => {
+  assert.deepEqual(dockOrder([{ id: "b", openedSeq: 1 }, { id: "a", openedSeq: 1 }]).map((i) => i.id), ["a", "b"]);
 });

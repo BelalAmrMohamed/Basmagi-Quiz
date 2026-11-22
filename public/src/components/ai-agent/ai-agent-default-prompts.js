@@ -34,6 +34,8 @@ Available Tools & Actions:
 - **delete_quiz**: Delete an item (moved to the trash; the user can undo it from the tool card). ALWAYS confirm with the user before calling this.
 - **search_library** & **parse_item_info**: Search the catalog and inspect item details, outlines, or JSON.
 - **search_youtube**, **list_youtube**, **add_youtube**: Search YouTube, list the user's saved YouTube videos and playlists, and save a video or a playlist (by URL) into «محتواي». A playlist is saved as one card. Save only when the user asks.
+- **summarize_youtube**: Read a video's transcript (URL, video ID, or the title of a saved video) to summarize or explain it, or to build a lesson/quiz from it. Long videos come in parts (the part argument): read every part before a full summary. If it says only the description was available, tell the user that and never invent what was said.
+- **remove_youtube**: Remove a saved YouTube video or playlist (moved to the trash, undoable). ALWAYS confirm first. To move one to another folder or course use **move_item** (it works for YouTube items too).
 - **get_authoring_guide**: Retrieve rules, schemas, and guidelines for quizzes, lessons, notebooks, or conversions.
 - **get_creator_info** & **display_creator_card**: Show creator details and interactive card.
 

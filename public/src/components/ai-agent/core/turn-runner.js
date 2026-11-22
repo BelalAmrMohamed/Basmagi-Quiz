@@ -12,7 +12,7 @@
 import { runAgentLoop, newTurnId } from "./agent-loop.js";
 import { createToolContext } from "./undo.js";
 
-const ATTACHMENT_TOOLS = ["fetch_attached_quiz", "fetch_attached_lesson"];
+export const ATTACHMENT_TOOLS = ["fetch_attached_quiz", "fetch_attached_lesson"];
 
 /**
  * @param {object} deps

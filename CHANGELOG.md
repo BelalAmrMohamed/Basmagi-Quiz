@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Agent settings and attachment preview inside the window; summarize_youtube transcript fix
+- Settings are a view INSIDE the agent window (back button, Esc, focus returns to the gear), redesigned in grouped sections: provider + own API key, system prompt, phone/Telegram access. Model and reasoning effort are no longer settings (they live in the chat's model bar; the storage keys are unchanged). The attachment preview opens inside the window too, with image, platform-item (quiz, lesson, notebook, YouTube, course, folder) and file layouts and an "open" action. Both use the new `openWindowLayer()` (`ai-agent-window.js`); the chat panel underneath is untouched, so a running reply keeps running.
+- Fix: `summarize_youtube` always answered «الوصف فقط». The transcript is now read through the InnerTube player as the ANDROID, then IOS client (caption URLs without a web `pot` token), then the watch page; each caption URL is tried as json3, XML, srv3 and vtt. Failures are logged as one JSON line per call (`supabase functions logs youtube`) and `GET /api/youtube?action=transcript&id=VIDEO&debug=1` returns the per-step `debug` object (statuses, counts, byte lengths only).
+- Deploy: `npm run build:edge`, then `supabase functions deploy youtube` (the Vercel app too, for the front-end). Check: `curl -s "https://<project-ref>.supabase.co/functions/v1/youtube?action=transcript&id=<VIDEO_ID_WITH_CAPTIONS>&debug=1"` (add the `apikey` header if the function enforces JWT). If `debug.steps` shows the `player` steps as `LOGIN_REQUIRED` or 403/429 from every source, YouTube is blocking the datacenter IP; the next step is an external transcript provider behind an env secret (not built).
+
 ## YouTube videos and playlists
 - «فيديو يوتيوب» and «قائمة تشغيل» items in «محتواي»: search or paste a link, import preview, full-width 16:9 cards (duration / video-count badge, hover glyph, stacked bars for playlists), resizable player and playlist windows (snap, minimize, maximize, split with a description pane), per-device split width, local history.
 - MCP: import links for videos and playlists, plus search over published items.

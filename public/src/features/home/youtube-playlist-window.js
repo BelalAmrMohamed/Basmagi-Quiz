@@ -40,7 +40,7 @@ export function openYoutubePlaylistWindow(entry) {
     content = el("div", "ytw-pane");
     content.append(el("p", "yt-empty", "لا توجد فيديوهات في هذه القائمة."));
   }
-  openYoutubeWindow({ title, content });
+  openYoutubeWindow({ title, content, key: `playlist:${entry?.id || title}` });
 }
 
 function buildPlaylistPane(entry, items) {
@@ -65,7 +65,7 @@ function buildPlaylistPane(entry, items) {
   const counter = el("span", "ytw-counter");
   const descBtn = iconButton("ytw-tool-btn", DESCRIPTION_ICON, "الوصف");
   descBtn.setAttribute("aria-expanded", "false");
-  const listBtn = iconButton("ytw-tool-btn ytw-list-toggle", LIST_ICON, "إخفاء القائمة");
+  const listBtn = iconButton("ytw-tool-btn ytw-list-toggle", LIST_ICON, "القائمة");
   listBtn.setAttribute("aria-keyshortcuts", "L");
   listBtn.setAttribute("aria-expanded", "true");
   const nav = el("div", "ytw-nav");
@@ -189,7 +189,7 @@ function buildPlaylistPane(entry, items) {
     listHidden = hide;
     if (hide && !descOpen) split.hide();
     else if (!hide) split.show();
-    const label = hide ? "إظهار القائمة" : "إخفاء القائمة";
+    const label = "القائمة";
     listBtn.setAttribute("aria-expanded", String(!hide));
     listBtn.classList.toggle("is-active", hide);
     listBtn.querySelector("span").textContent = label;

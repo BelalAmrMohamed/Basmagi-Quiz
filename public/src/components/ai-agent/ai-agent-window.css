@@ -269,11 +269,6 @@ html[data-motion="reduced"] .aiw-working i,
 html[data-motion="reduced"] .aiw.is-minimized.is-busy,
 html[data-motion="reduced"] .aiw.is-minimized.is-busy::after { animation: none; }
 
-@media (prefers-reduced-motion: reduce) {
-  .aiw, .aiw.is-minimized { transition: none; }
-  .aiw-snap-preview { transition: opacity .01s; }
-  .aiw-working i, .aiw.is-minimized.is-busy, .aiw.is-minimized.is-busy::after { animation: none; }
-}
 
 /* =============================================================================
    Chat input glue: the existing buttons (+ more, mic, send, dictation wave)
@@ -509,9 +504,8 @@ html[data-motion="reduced"] .aiw.is-minimized.is-busy::after { animation: none; 
 /* Smooth snapping (shared/floating-window.js animateTo): glide instead of teleport. */
 .aiw.is-snapping { transition: left 0.22s ease-out, top 0.22s ease-out, width 0.22s ease-out, height 0.22s ease-out !important; }
 html[data-motion="reduced"] .aiw.is-snapping { transition: none !important; }
-@media (prefers-reduced-motion: reduce) { .aiw.is-snapping { transition: none !important; } }
 
-/* High-Performance Mode (<html data-motion="reduced">) and prefers-reduced-motion:
+/* High-Performance Mode (<html data-motion="reduced">, the platform's own switch; it already follows the OS preference by default):
    no animation or transition anywhere on the AI window: open/close, minimize/restore,
    maximize, aero snap + preview, corner glide, pill, and every hover/opacity effect. */
 html[data-motion="reduced"] .aiw,
@@ -524,18 +518,40 @@ html[data-motion="reduced"] .aiw-snap-preview {
   animation: none !important;
   transition: none !important;
 }
-@media (prefers-reduced-motion: reduce) {
-  .aiw, .aiw *, .aiw *::before, .aiw *::after, .aiw::before, .aiw::after, .aiw-snap-preview {
-    animation: none !important;
-    transition: none !important;
-  }
-}
 
 /* Minimized pill slot comes from shared/floating-window.js (all pills laid out together):
    it wins over the per-corner classes above, which remain only as a pre-layout fallback. */
-html .aiw.is-minimized.fw-placed:not(.is-dragging) {
+/* Specificity is raised on purpose: the bottom-left corner fallbacks above are (0,6,0) with !important
+   and used to beat this rule, pinning that pill to the bottom slot on top of the other pills. */
+html body .aiw.is-minimized.fw-placed.fw-placed.fw-placed:not(.is-dragging) {
   left: var(--fw-left) !important;
   top: var(--fw-top) !important;
   right: auto !important;
   bottom: auto !important;
 }
+
+/* ── In-window layers (settings, attachment preview) ──────────────────────────
+   Cover the window CONTENT only (the title bar and resize handles stay live), see
+   openWindowLayer() in ai-agent-window.js. The body becomes its own stacking context
+   so the layer sits above every chat popover/drawer but below the resize handles. */
+.aiw-body { isolation: isolate; }
+.aiw-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
+  background: var(--color-background, var(--color-surface, #fff));
+  color: var(--color-text-primary);
+  outline: none;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.aiw-layer--slide { transform: translateX(-28px); } /* RTL: a deeper view arrives from the left */
+.aiw-layer--pop { transform: scale(0.985); }
+.aiw-layer.is-open { opacity: 1; transform: none; }
+.aiw-layer.is-closing { pointer-events: none; }
+html[data-motion="reduced"] .aiw-layer { transition: none; }
+
