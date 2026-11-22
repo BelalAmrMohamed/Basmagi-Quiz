@@ -22,6 +22,7 @@
 import {
   cornerFromPoint, animateTo, motionDelay,
   registerMinimized, unregisterMinimized, setMinimizedCorner, setMinimizedDragging,
+  registerFloating, floatingTopZ, raiseFloating, touchFloatingOpened,
 } from "../../shared/floating-window.js";
 
 const GEO_KEY = "bq-ai-agent-window-geom";
@@ -44,7 +45,7 @@ const PILL_ID = "ai-agent";
 const SNAP = 14;
 const AERO_EDGE = 14;
 const AERO_CORNER = 110;
-const Z_INDEX = 6000; // modal tier: above side-menu (4000)/bottom-nav, below dropdown menus (7000)
+// Window z-order is shared with the YouTube windows (shared/floating-window.js: base 6000, below dropdown menus at 7000).
 const COMPACT_MAX = 900;
 const NARROW_MAX = 540;
 const PHONE_MAX = 640;
@@ -83,7 +84,6 @@ export function createAgentWindow(cfg) {
   win.setAttribute("role", "dialog");
   win.setAttribute("aria-label", cfg.title);
   win.tabIndex = -1;
-  win.style.zIndex = String(Z_INDEX);
 
   win.innerHTML = `
     <div class="aiw-titlebar">
@@ -184,7 +184,7 @@ export function createAgentWindow(cfg) {
     if (!pv) {
       pv = document.createElement("div");
       pv.className = "aiw-snap-preview";
-      pv.style.zIndex = String(Z_INDEX + 1);
+      pv.style.zIndex = String(floatingTopZ() + 1);
       const wr = win.getBoundingClientRect();
       Object.assign(pv.style, { left: `${wr.left}px`, top: `${wr.top}px`, width: `${wr.width}px`, height: `${wr.height}px` });
       document.body.appendChild(pv);
@@ -266,6 +266,7 @@ export function createAgentWindow(cfg) {
     if (state.closed) return;
     state.closed = true;
     unregisterMinimized(PILL_ID);
+    win.dispatchEvent(new Event("aiw:closed"));
     ro.disconnect();
     window.removeEventListener("resize", onWindowResize);
     updateSnapPreview(null);
@@ -494,6 +495,12 @@ export function createAgentWindow(cfg) {
   applyInitialGeometry();
   applyCorner(readCorner());
   document.body.appendChild(win);
+  const unregisterFloating = registerFloating(PILL_ID, win, {
+    minimize: () => { if (!state.minimized) toggleMinimize(); },
+    restore: () => { if (state.minimized) toggleMinimize(); },
+    isMinimized: () => state.minimized,
+  });
+  win.addEventListener("aiw:closed", unregisterFloating, { once: true });
   document.body.classList.add("ai-agent-window-open");
   if (window.innerWidth <= PHONE_MAX) toggleMaximize(); // phones: full screen, still restorable
   requestAnimationFrame(measure);
@@ -511,6 +518,8 @@ export function createAgentWindow(cfg) {
     /** Restores from minimized (no-op otherwise) and focuses. */
     reveal() {
       if (state.minimized) toggleMinimize();
+      touchFloatingOpened(PILL_ID); // opened again: counts as the newest window for dock-all
+      raiseFloating(PILL_ID);
       win.focus({ preventScroll: true });
     },
   };

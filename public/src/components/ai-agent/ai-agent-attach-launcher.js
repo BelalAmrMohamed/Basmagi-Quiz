@@ -214,7 +214,7 @@ export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
     toolNames: [
       // YouTube items carry everything the assistant knows inline (no fetch tool).
       ...(isYoutubeAttachment(attachment)
-        ? []
+        ? (attachment.itemType === "youtube_video" ? ["summarize_youtube"] : [])
         : [attachment.kind === "lesson" ? "fetch_attached_lesson" : "fetch_attached_quiz"]),
       ...READONLY_LIBRARY_TOOL_NAMES,
     ],
@@ -222,7 +222,14 @@ export async function openAIAgentWithAttachment(attachment, pageOptions = {}) {
       if (READONLY_LIBRARY_TOOL_NAMES.includes(toolCall?.name)) {
         return handleReadOnlyLibraryToolCall(toolCall);
       }
-      if (isYoutubeAttachment(attachment)) throw createUnsupportedToolError(toolCall?.name);
+      if (isYoutubeAttachment(attachment)) {
+        // A video attachment can read its own transcript (loaded on demand: it pulls in the library code).
+        if (toolCall?.name === "summarize_youtube" && attachment.itemType === "youtube_video") {
+          const { handleYoutubeToolCall } = await import("../../features/home/youtube-agent-tools.js");
+          return handleYoutubeToolCall(toolCall);
+        }
+        throw createUnsupportedToolError(toolCall?.name);
+      }
       if (attachment.kind === "lesson") {
         if (toolCall?.name !== "fetch_attached_lesson") throw createUnsupportedToolError(toolCall?.name);
         const attachmentLabel = attachment.itemType === "notebook" ? "الدفتر" : "الدرس";

@@ -6,16 +6,60 @@
 // in-place editing, folder organization, interactive notebooks, and lessons.
 // =============================================================================
 
+/**
+ * A panel's `suggestedPrompts` is either a flat list of strings or a list of groups
+ * `{ label, prompts: string[] }` (shown as tabs, a few prompts under each). This turns both
+ * into groups; a flat list becomes ONE unlabeled group (rendered as plain chips, as before).
+ * @param {Array<string|{label?:string, prompts:string[]}>} input
+ * @returns {Array<{label:string, prompts:string[]}>}
+ */
+export function normalizeSuggestions(input) {
+  if (!Array.isArray(input)) return [];
+  const loose = input.filter((x) => typeof x === "string" && x.trim());
+  const groups = input
+    .filter((x) => x && typeof x === "object" && Array.isArray(x.prompts))
+    .map((g) => ({ label: String(g.label || "").trim(), prompts: g.prompts.filter((p) => typeof p === "string" && p.trim()) }))
+    .filter((g) => g.prompts.length);
+  return loose.length ? [{ label: "", prompts: loose }, ...groups] : groups;
+}
+
+// «محتواي» home: one tab per capability so the range of tools is visible at a glance.
 export const HOME_PAGE_SUGGESTED_PROMPTS = [
-  "أنشئ مجلدًا جديدًا لمادة 'الذكاء الاصطناعي'، واصنع بداخله درسًا تأسيسيًا وامتحانًا تدريبيًا عليه.",
-  "ابحث في المكتبة عن موضوع 'التفاضل والتكامل' وافحصه، ثم أنشئ لي منه امتحانًا شاملاً مع شروحات نموذجية.",
-  "افحص آخر امتحان أو درس أنشأته، وراجع جودة الأسئلة وحسّن المشتتات وأضف شروحات علمية مباشرة.",
-  "أنشئ دفتر أكواد تفاعلي بلغة C++ يشرح الخوارزميات مع خلايا برمجية جاهزة للتنفيذ وتحديات ذكية.",
-  "حوّل محتوى آخر درس عندي إلى امتحان اختيار من متعدد ومجموعة بطاقات استذكار سريعة (Flashcards).",
-  "نظّم محتواي: أنشئ مادة باسم 'العلوم الطبية' وانقل كل الامتحانات والدروس المرتبطة إليها.",
-  "ابحث عن فيديو يوتيوب يشرح الـ Operation Research للـ Simplex Method وضيفه عندي",
-  "ابحث على يوتيوب عن أفضل قائمة تشغيل تشرح هياكل البيانات (Data Structures) وأضفها إلى محتواي.",
-  "اعرض لي فيديوهات وقوائم يوتيوب المحفوظة عندي، ثم أنشئ امتحانًا تدريبيًا على أحدها.",
+  {
+    label: "امتحانات",
+    prompts: [
+      "ابحث في المكتبة عن موضوع 'التفاضل والتكامل' وافحصه، ثم أنشئ لي منه امتحانًا شاملاً مع شروحات نموذجية.",
+      "افحص آخر امتحان أو درس أنشأته، وراجع جودة الأسئلة وحسّن المشتتات وأضف شروحات علمية مباشرة.",
+    ],
+  },
+  {
+    label: "دروس وبطاقات",
+    prompts: [
+      "أنشئ مجلدًا جديدًا لمادة 'الذكاء الاصطناعي'، واصنع بداخله درسًا تأسيسيًا وامتحانًا تدريبيًا عليه.",
+      "حوّل محتوى آخر درس عندي إلى امتحان اختيار من متعدد ومجموعة بطاقات استذكار سريعة (Flashcards).",
+    ],
+  },
+  {
+    label: "دفاتر أكواد",
+    prompts: [
+      "أنشئ دفتر أكواد تفاعلي بلغة C++ يشرح الخوارزميات مع خلايا برمجية جاهزة للتنفيذ وتحديات ذكية.",
+    ],
+  },
+  {
+    label: "يوتيوب",
+    prompts: [
+      "ابحث عن فيديو يوتيوب يشرح الـ Operation Research للـ Simplex Method وضيفه عندي",
+      "ابحث على يوتيوب عن أفضل قائمة تشغيل تشرح هياكل البيانات (Data Structures) وأضفها إلى محتواي.",
+      "لخّص لي أحدث فيديو يوتيوب محفوظ عندي في نقاط بالطوابع الزمنية، ثم حوّله إلى درس.",
+      "اعرض لي فيديوهات وقوائم يوتيوب المحفوظة عندي، ثم أنشئ امتحانًا تدريبيًا على أحدها.",
+    ],
+  },
+  {
+    label: "تنظيم",
+    prompts: [
+      "نظّم محتواي: أنشئ مادة باسم 'العلوم الطبية' وانقل كل الامتحانات والدروس المرتبطة إليها.",
+    ],
+  },
 ];
 
 // Create-quiz page ("إنشاء امتحان") — scoped to the single in-progress

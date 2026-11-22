@@ -33,6 +33,8 @@ export const TOOL_METADATA = {
   search_youtube: { label: "بحث في يوتيوب", badge: "YouTube", icon: "search" },
   list_youtube: { label: "محتوى يوتيوب", badge: "YouTube", icon: "search" },
   add_youtube: { label: "حفظ من يوتيوب", badge: "YouTube", icon: "folder" },
+  summarize_youtube: { label: "قراءة فيديو يوتيوب", badge: "YouTube", icon: "info" },
+  remove_youtube: { label: "حذف من يوتيوب", badge: "YouTube", icon: "trash" },
   parse_item_info: { label: "فحص العنصر", badge: "Inspect", icon: "info" },
   get_user_activity: { label: "سجل النشاط", badge: "Activity", icon: "activity" },
   get_authoring_guide: { label: "دليل الإنشاء", badge: "Guide", icon: "guide" },

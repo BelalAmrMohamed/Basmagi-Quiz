@@ -269,11 +269,6 @@ html[data-motion="reduced"] .aiw-working i,
 html[data-motion="reduced"] .aiw.is-minimized.is-busy,
 html[data-motion="reduced"] .aiw.is-minimized.is-busy::after { animation: none; }
 
-@media (prefers-reduced-motion: reduce) {
-  .aiw, .aiw.is-minimized { transition: none; }
-  .aiw-snap-preview { transition: opacity .01s; }
-  .aiw-working i, .aiw.is-minimized.is-busy, .aiw.is-minimized.is-busy::after { animation: none; }
-}
 
 /* =============================================================================
    Chat input glue: the existing buttons (+ more, mic, send, dictation wave)
@@ -509,9 +504,8 @@ html[data-motion="reduced"] .aiw.is-minimized.is-busy::after { animation: none; 
 /* Smooth snapping (shared/floating-window.js animateTo): glide instead of teleport. */
 .aiw.is-snapping { transition: left 0.22s ease-out, top 0.22s ease-out, width 0.22s ease-out, height 0.22s ease-out !important; }
 html[data-motion="reduced"] .aiw.is-snapping { transition: none !important; }
-@media (prefers-reduced-motion: reduce) { .aiw.is-snapping { transition: none !important; } }
 
-/* High-Performance Mode (<html data-motion="reduced">) and prefers-reduced-motion:
+/* High-Performance Mode (<html data-motion="reduced">, the platform's own switch; it already follows the OS preference by default):
    no animation or transition anywhere on the AI window: open/close, minimize/restore,
    maximize, aero snap + preview, corner glide, pill, and every hover/opacity effect. */
 html[data-motion="reduced"] .aiw,
@@ -523,12 +517,6 @@ html[data-motion="reduced"] .aiw::after,
 html[data-motion="reduced"] .aiw-snap-preview {
   animation: none !important;
   transition: none !important;
-}
-@media (prefers-reduced-motion: reduce) {
-  .aiw, .aiw *, .aiw *::before, .aiw *::after, .aiw::before, .aiw::after, .aiw-snap-preview {
-    animation: none !important;
-    transition: none !important;
-  }
 }
 
 /* Minimized pill slot comes from shared/floating-window.js (all pills laid out together):

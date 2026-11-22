@@ -34,6 +34,8 @@ export const HOME_TOOL_NAMES = [
   "search_youtube",
   "list_youtube",
   "add_youtube",
+  "summarize_youtube",
+  "remove_youtube",
   ...CREATOR_TOOL_NAMES,
 ];
 

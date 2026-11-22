@@ -40,7 +40,7 @@ export function openYoutubePlaylistWindow(entry) {
     content = el("div", "ytw-pane");
     content.append(el("p", "yt-empty", "لا توجد فيديوهات في هذه القائمة."));
   }
-  openYoutubeWindow({ title, content });
+  openYoutubeWindow({ title, content, key: `playlist:${entry?.id || title}` });
 }
 
 function buildPlaylistPane(entry, items) {

@@ -37,6 +37,7 @@ import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js
 import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
 import { renderCreatorCard, creatorCardModelSummary } from "./ai-agent-creator-tools.js";
 import { renderResultCard, resultCardModelSummary } from "./ai-agent-result-cards.js";
+import { normalizeSuggestions } from "./ai-agent-suggested-prompts.js";
 import { createToolCallCard } from "./components/tool-call-card.js";
 import { runTurn } from "./core/turn-runner.js";
 import { toPersistedMessages, serializeWireMessage as buildWireMessage } from "./core/chat-messages.js";
@@ -392,22 +393,56 @@ export function createChatPanel(options = {}) {
 
   function renderSuggestions() {
     removeSuggestions();
-    if (!Array.isArray(suggestedPrompts) || !suggestedPrompts.length) return;
+    const groups = normalizeSuggestions(suggestedPrompts);
+    if (!groups.length) return;
 
     suggestionsEl = document.createElement("div");
     suggestionsEl.className = "ai-agent-suggestions";
-    suggestedPrompts.forEach((prompt) => {
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "ai-agent-suggestion-chip";
-      chip.textContent = prompt;
-      chip.addEventListener("click", () => {
-        if (sendBtn.disabled) return;
-        textarea.value = prompt;
-        sendMessage();
+    const list = document.createElement("div");
+    list.className = "ai-agent-suggestion-list";
+    const showGroup = (group) => {
+      list.replaceChildren();
+      group.prompts.forEach((prompt) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "ai-agent-suggestion-chip";
+        chip.textContent = prompt;
+        chip.addEventListener("click", () => {
+          if (sendBtn.disabled) return;
+          textarea.value = prompt;
+          sendMessage();
+        });
+        list.appendChild(chip);
       });
-      suggestionsEl.appendChild(chip);
-    });
+    };
+    const labeled = groups.filter((g) => g.label);
+    if (groups.length > 1 && labeled.length === groups.length) {
+      // Tabs: one per capability; the chips below belong to the selected tab.
+      const tabs = document.createElement("div");
+      tabs.className = "ai-agent-suggestion-tabs";
+      tabs.setAttribute("role", "tablist");
+      const select = (index) => {
+        [...tabs.children].forEach((t, i) => {
+          t.classList.toggle("is-active", i === index);
+          t.setAttribute("aria-selected", i === index ? "true" : "false");
+        });
+        showGroup(groups[index]);
+      };
+      groups.forEach((group, i) => {
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = "ai-agent-suggestion-tab";
+        tab.setAttribute("role", "tab");
+        tab.textContent = group.label;
+        tab.addEventListener("click", () => select(i));
+        tabs.appendChild(tab);
+      });
+      suggestionsEl.append(tabs, list);
+      select(0);
+    } else {
+      showGroup({ prompts: groups.flatMap((g) => g.prompts) }); // flat list: plain chips
+      suggestionsEl.appendChild(list);
+    }
     // Insert suggestions at the end of messagesEl so they scroll naturally
     // with the chat messages and never collide with the floating input row.
     messagesEl.appendChild(suggestionsEl);

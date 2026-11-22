@@ -538,6 +538,38 @@ export const LIST_YOUTUBE_TOOL = {
   },
 };
 
+export const SUMMARIZE_YOUTUBE_TOOL = {
+  name: "summarize_youtube",
+  description:
+    "Read a YouTube video's actual content so you can summarize it, explain it, or build a lesson/quiz from it. Give a YouTube URL, a bare video ID, or the title of a video saved in the user's library. " +
+    "It returns the video's transcript with timestamps (human captions when available, otherwise auto-generated), in parts for long videos: pass `part` (1, 2, …) to read the next part, and read all parts before writing a full summary. " +
+    "If the video has no transcript it returns the title and description only and says so — then tell the user the summary is based on the description, and never invent what was said. " +
+    "Read-only. To keep the result, offer create_lesson (or create_quiz) afterwards; do not save anything unless the user asks.",
+  input_schema: {
+    type: "object",
+    properties: {
+      video: { type: "string", description: "A YouTube watch, youtu.be, or Shorts URL, a bare 11-character video ID, or the exact title of a saved video." },
+      part: { type: "integer", description: "Which part of a long transcript to read. Default 1." },
+      language: { type: "string", description: "Preferred caption language code, e.g. \"ar\" or \"en\". Optional." },
+    },
+    required: ["video"],
+  },
+};
+
+export const REMOVE_YOUTUBE_TOOL = {
+  name: "remove_youtube",
+  description:
+    "Remove a saved YouTube video or playlist from the user's library («محتواي»). It moves to the trash and the user can undo it from the tool card. " +
+    "Identify it by its exact title (as shown by list_youtube) or its YouTube URL/ID. ALWAYS confirm with the user before calling this. Use move_item (not this) to move it to another folder.",
+  input_schema: {
+    type: "object",
+    properties: {
+      item: { type: "string", description: "Exact title, YouTube URL, video ID or playlist ID of the saved item." },
+    },
+    required: ["item"],
+  },
+};
+
 export const ADD_YOUTUBE_TOOL = {
   name: "add_youtube",
   description:

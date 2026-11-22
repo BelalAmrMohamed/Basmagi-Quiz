@@ -25,6 +25,9 @@ export function platformItemCardModelSummary(value) {
   if (!item) return value;
   const names = { quiz: "الامتحان", lesson: "الدرس", notebook: "الدفتر", folder: "المجلد", course: "المادة" };
   if (item.kind === "youtube_video" || item.kind === "youtube_playlist") {
+    if (item.existing) {
+      return `${item.kind === "youtube_video" ? "الفيديو" : "قائمة التشغيل"} «${item.title || "بدون عنوان"}» موجود بالفعل في مكتبة المستخدم (لم يُضف نسخة جديدة)، وظهرت بطاقة تفتحه في المحادثة.`;
+    }
     const noun = item.kind === "youtube_video" ? "الفيديو" : "قائمة التشغيل";
     return `تمت إضافة ${noun} «${item.title || "بدون عنوان"}» إلى مكتبة المستخدم، وظهرت بطاقة تفتحه في المحادثة.`;
   }
@@ -116,7 +119,7 @@ export function renderPlatformItemCard(value) {
   title.title = title.textContent;
   const label = document.createElement("span");
   label.className = "ai-agent-created-item-label";
-  label.textContent = labelByKind[item.kind];
+  label.textContent = item.existing ? "موجود مسبقًا" : labelByKind[item.kind];
   copy.append(title, label);
 
   card.append(icon, copy);

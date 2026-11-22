@@ -53,7 +53,7 @@ import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
-import { handleYoutubeToolCall } from "./youtube-agent-tools.js";
+import { handleYoutubeToolCall, findSavedYoutubeItem } from "./youtube-agent-tools.js";
 import { createUserContentCard, createUserLessonCard, createUserNotebookCard, createUserYoutubeVideoCard, createUserYoutubePlaylistCard } from "./item-card.js";
 import { takePendingHighlight } from "./mcp-draft-import.js";
 import { openInlineCreateQuizModal } from "./create-quiz-modal.js";
@@ -410,6 +410,42 @@ function handleDeleteQuizToolCall(toolCall, ctx) {
   return `🗑️ تم نقل الامتحان إلى سلة المهملات (يمكن استعادته): ${title}`;
 }
 
+function handleRemoveYoutubeToolCall(toolCall, ctx) {
+  const query = String(toolCall?.input?.item || "").trim();
+  if (!query) {
+    const err = new Error("remove_youtube called without an item");
+    err.userMessage = "حدّد اسم الفيديو أو القائمة المراد حذفها.";
+    throw err;
+  }
+  const rows = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const match = findSavedYoutubeItem(rows, query);
+  if (!match) {
+    const err = new Error(`remove_youtube: nothing matches "${query}"`);
+    err.userMessage = `لم أجد فيديو أو قائمة يوتيوب محفوظة باسم «${query}». اطلب list_youtube لرؤية المحفوظ.`;
+    err.nonRetryable = true;
+    throw err;
+  }
+  const title = match.meta?.title || query;
+  const isPlaylist = match.meta?.type === "youtube_playlist";
+  const batchId = moveToTrash([match], title);
+  setInStorage("user_quizzes", JSON.stringify(rows.filter((r) => r !== match)));
+  ctx?.registerUndo?.({
+    label: `استعادة «${title}»`,
+    isStale: () => !hasTrashBatch(batchId),
+    run: () => {
+      const res = restoreTrashBatch(batchId);
+      if (!res?.ok) return { ok: false, reason: res?.reason || "تعذرت الاستعادة." };
+      renderRootCategories();
+      renderUserContentView();
+      showNotification("تم التراجع", `تمت استعادة «${title}»`, "success");
+    },
+  });
+  showNotification("تم الحذف", `تم نقل «${title}» إلى سلة المهملات`, "success");
+  renderRootCategories();
+  renderUserContentView();
+  return `🗑️ تم نقل ${isPlaylist ? "قائمة التشغيل" : "الفيديو"} إلى سلة المهملات (يمكن استعادته): ${title}`;
+}
+
 /**
  * «محتواي» (root) is how the folder-tree context prompt and
  * move_item's destinationFolder both refer to the top level — resolve that
@@ -599,6 +635,10 @@ async function handleQuizToolCall(toolCall, ctx) {
       return handleMoveItemToolCall(toolCall);
     case "search_youtube":
     case "list_youtube":
+      return handleYoutubeToolCall(toolCall);
+    case "remove_youtube":
+      return handleRemoveYoutubeToolCall(toolCall, ctx);
+    case "summarize_youtube":
       return handleYoutubeToolCall(toolCall);
     case "add_youtube": {
       const result = await handleYoutubeToolCall(toolCall);

@@ -272,9 +272,6 @@
   .yt-search-row { flex-direction: column; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .yt-modal-overlay { animation: none; }
-}
 
 
 /* ── Video & playlist cards (item-card.js → .ytc) ─────────────────────────── */
@@ -492,15 +489,16 @@ html.fw-scroll-locked body { padding-inline-end: var(--fw-sbw, 0px); }
 .ytw-resizer[data-dir="sw"] { bottom: -4px; left: -4px; cursor: nesw-resize; }
 .ytw.is-max .ytw-resizer { display: none; }
 @media (max-width: 640px) {
-  .ytw { inset: 0 !important; width: auto !important; height: auto !important; border-radius: 0; border: 0; }
-  .ytw-titlebar, .ytw-body { border-radius: 0; }
-  .ytw-resizer, .ytw-btn--min, .ytw-btn--max { display: none; }
+  /* Phone: a fixed sheet above the bottom nav (min/max stay available); maximize = edge to edge. */
+  .ytw:not(.is-max):not(.is-min) { inset: 8px 8px calc(var(--bottom-nav-height, 54px) + 20px) 8px !important; width: auto !important; height: auto !important; }
+  .ytw.is-max { inset: 0 !important; width: auto !important; height: auto !important; border-radius: 0; border: 0; }
+  .ytw.is-max .ytw-titlebar, .ytw.is-max .ytw-body { border-radius: 0; }
+  .ytw-resizer { display: none; }
   .ytw-playlist { flex-direction: column; }
   .ytw-divider { display: none; }
   .ytw-split-list { flex: 1 1 auto; max-width: none; min-width: 0; min-height: 140px; }
 }
 html[data-motion="reduced"] .ytw.is-snapping, html[data-motion="reduced"] .ytw-snap-preview, html[data-motion="reduced"] .item-card.ytc, html[data-motion="reduced"] .ytc-hover, html[data-motion="reduced"] .ytc-hover-icon { transition: none; }
-@media (prefers-reduced-motion: reduce) { .ytw.is-snapping, .ytw-snap-preview, .item-card.ytc, .ytc-hover, .ytc-hover-icon { transition: none; } }
 
 /* ── Icons in the admin upload wizard (admin-icons.js) ───────────────────── */
 .adm-ic { width: 1.1em; height: 1.1em; flex: 0 0 auto; vertical-align: -0.2em; }
@@ -532,7 +530,7 @@ html[data-motion="reduced"] .user-content-container .item-card.ytc .user-content
 .ytc-channel { position: relative; overflow: hidden; }
 .ytc-channel-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: var(--color-surface); }
 
-/* High-Performance Mode (<html data-motion="reduced">) and prefers-reduced-motion:
+/* High-Performance Mode (<html data-motion="reduced">, the platform's own switch; it already follows the OS preference by default):
    no animation or transition on the YouTube windows (open/close, minimize/restore,
    maximize, aero snap + preview, corner glide, pill, chrome hover/opacity effects). */
 html[data-motion="reduced"] .ytw,
@@ -546,12 +544,6 @@ html[data-motion="reduced"] .yt-modal-overlay {
   animation: none !important;
   transition: none !important;
 }
-@media (prefers-reduced-motion: reduce) {
-  .ytw, .ytw *, .ytw *::before, .ytw *::after, .ytw::before, .ytw::after, .ytw-snap-preview, .yt-modal-overlay {
-    animation: none !important;
-    transition: none !important;
-  }
-}
 
 /* Minimized pill slot comes from shared/floating-window.js (all pills laid out together). */
 html .ytw.is-min.fw-placed:not(.is-dragging) {
@@ -563,4 +555,20 @@ html .ytw.is-min.fw-placed:not(.is-dragging) {
 }
 @media (max-width: 600px) {
   .ytw.is-min { width: min(300px, calc(100vw - 16px)) !important; }
+}
+
+/* ── Phones / touch: always-visible, finger-sized window controls ────────── */
+@media (pointer: coarse), (max-width: 640px) {
+  .ytw-controls { gap: 14px; }
+  .ytw-btn { width: 18px; height: 18px; position: relative; }
+  .ytw-btn::after { content: ""; position: absolute; inset: -10px; }
+  .ytw-btn svg { opacity: 1; }
+}
+@media (max-width: 640px) {
+  /* Playlist: stack video, controls and list in normal flow so nothing overlaps. */
+  .ytw-playlist { overflow-y: auto; }
+  .ytw-playlist .ytw-split-main { flex: 0 0 auto; }
+  .ytw-playlist .ytw-video { flex: 0 0 auto; aspect-ratio: 16 / 9; min-height: 0; height: auto; }
+  .ytw-playlist .ytw-split-list { flex: 0 0 auto; overflow: visible; min-height: 0; }
+  .ytw-playlist .ytw-list { flex: 0 0 auto; overflow: visible; max-height: none; }
 }

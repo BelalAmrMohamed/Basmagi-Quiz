@@ -16,17 +16,19 @@ import {
   animateTo, clampToViewport, cornerFromPoint, lockPageScroll, motionDelay,
   readCorner, writeCorner,
   registerMinimized, unregisterMinimized, setMinimizedCorner, setMinimizedDragging,
+  registerFloating, raiseFloating, floatingTopZ, touchFloatingOpened,
 } from "../../shared/floating-window.js";
 
 const MIN_CORNER_KEY = "bq-youtube-window-minimized-corner";
 let pillSeq = 0; // unique registry id per window
+const isPhoneLayout = () => Boolean(globalThis.matchMedia?.("(max-width: 640px)").matches);
 
 const MIN_W = 360;
 const MIN_H = 320;
 const CHANNEL_ID_RE = /^UC[A-Za-z0-9_-]{22}$/;
 const RESIZE_DIRS = ["n", "s", "e", "w", "ne", "nw", "se", "sw"];
 
-let activeWindow = null;
+const openWindows = new Map(); // dedup key -> api (several windows can be open at once)
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -89,15 +91,20 @@ export function aeroRect(zone, iw, ih) {
 }
 
 /**
- * Opens the floating player window with `content` in its body. Only one window
- * is open at a time: opening another replaces it.
+ * Opens a floating player window with `content` in its body. Several can be open at once
+ * (each new one is cascaded); opening the same `key` again just restores and raises the
+ * existing window. Clicking any window raises it above all others, AI window included.
  * Behaviour: drag by the title bar; snap to halves/quarters (maximize at the
  * top edge) with a live preview; dragging a snapped or maximized window away
  * restores its previous size; a second maximize click restores size+position.
  * @returns {{el: HTMLElement, close: () => void}}
  */
-export function openYoutubeWindow({ title, content, onClose } = {}) {
-  activeWindow?.close();
+export function openYoutubeWindow({ title, content, onClose, key } = {}) {
+  const existing = key ? openWindows.get(key) : null;
+  if (existing) {
+    existing.reveal();
+    return existing;
+  }
   const returnFocus = document.activeElement;
 
   const win = el("div", "ytw");
@@ -120,6 +127,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
   win.querySelector(".ytw-title").textContent = title || "";
   if (content) win.querySelector(".ytw-body").append(content);
 
+  const cascade = (openWindows.size % 6) * 28; // keep a new window from covering the previous one exactly
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const w = Math.max(MIN_W, Math.min(980, vw - 32));
@@ -127,8 +135,8 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
   Object.assign(win.style, {
     width: `${w}px`,
     height: `${h}px`,
-    left: `${Math.max(8, (vw - w) / 2)}px`,
-    top: `${Math.max(8, (vh - h) / 2)}px`,
+    left: `${Math.max(8, (vw - w) / 2 + cascade)}px`,
+    top: `${Math.max(8, (vh - h) / 2 + cascade)}px`,
   });
 
   // savedRect: geometry to return to from maximize. snapRestore: size to
@@ -205,6 +213,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
     const r = aeroRect(zone, window.innerWidth, window.innerHeight);
     if (!pv) {
       pv = el("div", "ytw-snap-preview");
+      pv.style.zIndex = String(floatingTopZ() + 1);
       const wr = win.getBoundingClientRect();
       Object.assign(pv.style, { left: `${wr.left}px`, top: `${wr.top}px`, width: `${wr.width}px`, height: `${wr.height}px` });
       document.body.append(pv);
@@ -232,6 +241,8 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
   const close = () => {
     if (closed) return;
     closed = true;
+    unregisterFloating();
+    if (key && openWindows.get(key) === api) openWindows.delete(key);
     unregisterMinimized(pillId);
     document.removeEventListener("keydown", onKey, true);
     window.removeEventListener("resize", onViewport);
@@ -240,7 +251,6 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
     state.unlock?.();
     state.unlock = null;
     win.remove();
-    if (activeWindow === api) activeWindow = null;
     onClose?.();
     if (returnFocus && typeof returnFocus.focus === "function" && document.contains(returnFocus)) {
       returnFocus.focus();
@@ -263,6 +273,7 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
   const titlebar = win.querySelector(".ytw-titlebar");
   titlebar.addEventListener("pointerdown", (e) => {
     if (e.button !== 0 || e.target.closest(".ytw-controls")) return;
+    if (!state.minimized && isPhoneLayout()) return; // phones: a fixed sheet, moved by the minimize pill only
     if (state.minimized) {
       // Minimized pill: drag to another corner (it glides there); a plain click restores.
       e.preventDefault();
@@ -388,8 +399,24 @@ export function openYoutubeWindow({ title, content, onClose } = {}) {
   document.body.append(win);
   win.focus({ preventScroll: true });
 
-  const api = { el: win, close };
-  activeWindow = api;
+  // Shared front-to-back order with the AI window; also powers the dock-all shortcut (Alt+Shift+D).
+  const unregisterFloating = registerFloating(pillId, win, {
+    minimize: () => { if (state.maximized) setMaximized(false); setMinimized(true); },
+    restore: () => setMinimized(false),
+    isMinimized: () => state.minimized,
+  });
+  const api = {
+    el: win,
+    close,
+    /** Restores from minimized, raises above every other floating window and focuses. */
+    reveal() {
+      if (state.minimized) setMinimized(false);
+      touchFloatingOpened(pillId);
+      raiseFloating(pillId);
+      win.focus({ preventScroll: true });
+    },
+  };
+  if (key) openWindows.set(key, api);
   return api;
 }
 
@@ -486,5 +513,5 @@ function buildVideoPane(item, videoId) {
 export function openYoutubeVideoPlayer(item) {
   const videoId = item?.meta?.youtubeId || item?.video?.videoId;
   const title = item?.meta?.title || "فيديو";
-  openYoutubeWindow({ title, content: buildVideoPane(item, videoId) });
+  openYoutubeWindow({ title, content: buildVideoPane(item, videoId), key: `video:${item?.id || videoId}` });
 }
