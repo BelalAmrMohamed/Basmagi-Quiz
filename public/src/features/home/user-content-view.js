@@ -668,6 +668,13 @@ async function handleQuizToolCall(toolCall, ctx) {
   }
 }
 
+// Shared with the "Ask AI" launcher (components/ai-agent/ai-agent-attach-launcher.js): a panel it
+// opens from a card offers the SAME tools as the «محتواي» agent, so its calls come back here.
+export { handleQuizToolCall as handleHomeToolCall };
+export function getHomeFolderTreePrompt() {
+  return buildFolderTreeContextPrompt(JSON.parse(getFromStorage("user_quizzes", "[]")));
+}
+
 /**
  * Render user-created quizzes VIEW (Folder Content)
  */

@@ -1,9 +1,15 @@
 // =============================================================================
 // public/src/components/ai-agent/ai-agent-settings.js
-// Settings tab: lets users pick a provider and (optionally) store their own
-// API key. Keys are stored client-side ONLY (localStorage via the shared
-// storage-helpers), never sent anywhere except as part of a single request
-// body to /api/ai-agent/chat, which does not persist them server-side.
+// Settings of الباشــمبصمج: provider, the user's own API key, the custom system
+// prompt and the phone/Telegram access card. Keys are stored client-side ONLY
+// (localStorage via the shared storage-helpers), never sent anywhere except as part
+// of a single request body to /api/ai-agent/chat, which does not persist them.
+//
+// The VIEW (createSettingsPanel) is shown INSIDE the agent window, not in a modal:
+// ai-agent.js mounts it with openWindowLayer() (ai-agent-window.js). Model and
+// reasoning-effort are NOT settings anymore — they live in the chat's model bar
+// (core/chat-settings.js), which still reads them through the storage helpers
+// exported below (getSelectedModel / getSelectedEffort / …).
 // =============================================================================
 
 import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js";
@@ -44,9 +50,9 @@ export const EFFORT_LEVELS = [
 ];
 
 const PROVIDERS = [
-  { value: "google", label: "Google AI Studio (Gemini)" },
-  { value: "deepseek", label: "DeepSeek" },
-  { value: "claude", label: "Claude" },
+  { value: "google", label: "Gemini", sub: "Google AI Studio", keyHint: "AIza…" },
+  { value: "deepseek", label: "DeepSeek", sub: "DeepSeek", keyHint: "sk-…" },
+  { value: "claude", label: "Claude", sub: "Anthropic", keyHint: "sk-ant-…" },
 ];
 
 export function getSelectedProvider() {
@@ -142,6 +148,11 @@ export function resetSystemPrompt(pageKey) {
   setInStorage(`${SYSTEM_PROMPT_STORAGE_PREFIX}${pageKey}`, "");
 }
 
+/** True when the user saved their own prompt for this page (an empty override means "default"). */
+export function hasCustomSystemPrompt(pageKey) {
+  return !!getFromStorage(`${SYSTEM_PROMPT_STORAGE_PREFIX}${pageKey}`, "");
+}
+
 /**
  * Whether the AI Helper can actually be used right now. Platform-key access
  * is open to everyone (admins uncapped, everyone else subject to a daily
@@ -161,330 +172,293 @@ export function isAiHelperAvailable() {
   return true;
 }
 
-/**
- * @param {object} [options]
- * @param {string} [options.pageKey] - "home" | "result"; used to key the
- *   per-page system-prompt storage.
- * @param {string} [options.defaultSystemPrompt] - the page's default prompt,
- *   shown when no override has been saved.
- * @returns {HTMLElement} the settings panel root element
- */
-// Suffixed onto every field id this function generates below, so two
-// panel instances on the same page (unlikely today — see call site — but
-// cheap to guard against) never collide on duplicate ids/label `for`
-// targets.
+// ── Settings view ─────────────────────────────────────────────────────────────
+const ICON_BACK = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+const ICON_EYE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const ICON_EYE_OFF = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.24A10.9 10.9 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2"/><path d="M6.6 6.6A17.4 17.4 0 0 0 2 12s3.6 7 10 7a10.6 10.6 0 0 0 5.4-1.5"/><path d="m2 2 20 20"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+const ICON_LOCK = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+
+// Unsaved system-prompt edits survive closing and reopening the view (in memory only).
+const promptDrafts = new Map(); // pageKey -> text
+
+// Suffixed onto every generated id so two views on one page never collide.
 let settingsPanelInstanceCounter = 0;
 
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text != null) node.textContent = text;
+  return node;
+}
+
+function group(id, title, description) {
+  const section = el("section", "ai-set-group");
+  section.setAttribute("aria-labelledby", id);
+  const head = el("div", "ai-set-group-head");
+  const h = el("h3", "ai-set-group-title", title);
+  h.id = id;
+  head.appendChild(h);
+  if (description) head.appendChild(el("p", "ai-set-group-desc", description));
+  section.appendChild(head);
+  return section;
+}
+
+/**
+ * @param {object} [options]
+ * @param {string} [options.pageKey] - "home" | "result" | …; keys the per-page system prompt.
+ * @param {string} [options.defaultSystemPrompt] - the page's default prompt (shown until the user saves their own).
+ * @param {() => void} [options.onKeyChanged] - fired after the provider or the saved key changes
+ *   (the chat refreshes its availability gate and model bar).
+ * @param {() => void} [options.onBack] - the back button.
+ * @returns {HTMLElement} the settings view root (header with a back button + scrollable sections)
+ */
 export function createSettingsPanel(options = {}) {
-  const { pageKey = "default", defaultSystemPrompt = "", onKeyChanged = null } = options;
-  const instanceId = `ai-agent-settings-${settingsPanelInstanceCounter++}`;
-  const panel = document.createElement("div");
-  panel.className = "ai-agent-panel ai-agent-settings-panel";
+  const { pageKey = "default", defaultSystemPrompt = "", onKeyChanged = null, onBack = null } = options;
+  const id = `ai-set-${settingsPanelInstanceCounter++}`;
+  const notify = () => { if (typeof onKeyChanged === "function") onKeyChanged(); };
 
-  const note = document.createElement("div");
-  note.className = "ai-agent-settings-note";
-  note.textContent =
-    "لن يتم تخزين مفتاحك على خوادمنا — يُحفظ فقط على متصفحك.";
-  panel.appendChild(note);
+  const root = el("div", "ai-set");
+  root.dir = "rtl";
 
-  // ── Provider select ──
-  const providerLabel = document.createElement("label");
-  providerLabel.className = "ai-agent-field-label";
-  providerLabel.textContent = "مزوّد الذكاء الاصطناعي";
-  providerLabel.htmlFor = `${instanceId}-provider`;
-  panel.appendChild(providerLabel);
+  // ── Header ──
+  const header = el("div", "ai-set-header");
+  const backBtn = el("button", "ai-set-back");
+  backBtn.type = "button";
+  backBtn.setAttribute("aria-label", "رجوع إلى المحادثة");
+  backBtn.innerHTML = `${ICON_BACK}<span>رجوع</span>`;
+  backBtn.addEventListener("click", () => { if (typeof onBack === "function") onBack(); });
+  const title = el("h2", "ai-set-title", "الإعدادات");
+  title.id = `${id}-title`;
+  header.append(backBtn, title);
+  root.appendChild(header);
 
-  const providerSelect = document.createElement("select");
-  providerSelect.id = `${instanceId}-provider`;
-  providerSelect.className = "ai-agent-provider-select";
-  PROVIDERS.forEach(({ value, label }) => {
-    const opt = document.createElement("option");
-    opt.value = value;
-    opt.textContent = label;
-    providerSelect.appendChild(opt);
+  const scroll = el("div", "ai-set-scroll");
+  const content = el("div", "ai-set-content");
+  scroll.appendChild(content);
+  root.appendChild(scroll);
+
+  // ══ 1) Provider + own key ══
+  const connect = group(`${id}-g-connect`, "المزوّد ومفتاح API", "اختر مزوّد الذكاء الاصطناعي، وأضف مفتاحك الخاص إن أردت استخدامًا بلا حد يومي من المنصة.");
+  const connectCard = el("div", "ai-set-card");
+
+  const sourceBox = el("div", "ai-set-source");
+  const sourceDot = el("span", "ai-set-source-dot");
+  sourceDot.setAttribute("aria-hidden", "true");
+  const sourceCopy = el("div", "ai-set-source-copy");
+  const sourceTitle = el("strong", "ai-set-source-title");
+  const sourceText = el("span", "ai-set-source-text");
+  sourceCopy.append(sourceTitle, sourceText);
+  sourceBox.append(sourceDot, sourceCopy);
+  connectCard.appendChild(sourceBox);
+
+  const providerSet = el("fieldset", "ai-set-fieldset");
+  providerSet.appendChild(el("legend", "ai-set-label", "المزوّد"));
+  const providerRow = el("div", "ai-set-segments");
+  PROVIDERS.forEach(({ value, label, sub }) => {
+    const choice = el("label", "ai-set-segment");
+    const radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = `${id}-provider`;
+    radio.value = value;
+    radio.checked = value === getSelectedProvider();
+    choice.append(radio, el("span", "ai-set-segment-name", label), el("span", "ai-set-segment-sub", sub));
+    providerRow.appendChild(choice);
   });
-  providerSelect.value = getSelectedProvider();
-  panel.appendChild(providerSelect);
+  providerSet.appendChild(providerRow);
+  connectCard.appendChild(providerSet);
 
-  // ── Model select ──
-  // Scoped per-provider (not per-page) — a user's model preference for
-  // "Google" should follow them from the home page's chat to the result
-  // page's chat, same as the provider and own-key choices already do.
-  const modelLabel = document.createElement("label");
-  modelLabel.className = "ai-agent-field-label";
-  modelLabel.textContent = "النموذج (Model)";
-  modelLabel.htmlFor = `${instanceId}-model`;
-  panel.appendChild(modelLabel);
-
-  const modelSelect = document.createElement("select");
-  modelSelect.id = `${instanceId}-model`;
-  modelSelect.className = "ai-agent-provider-select";
-  panel.appendChild(modelSelect);
-
-  function refreshModelSelectAvailability() {
-    const { hasKey } = getOwnKey();
-    const provider = providerSelect.value;
-    if (!hasKey && provider === "google") {
-      modelSelect.value = "gemini-flash-lite-latest";
-    }
-    modelSelect.disabled = !hasKey;
-    modelSelect.title = hasKey
-      ? ""
-      : "اختيار النموذج متاح فقط عند استخدام مفتاح API الخاص بك. المستخدمون العاديون يستخدمون Gemini Flash-Lite.";
-  }
-
-  function loadModelsForCurrentProvider() {
-    const provider = providerSelect.value;
-    const { hasKey } = getOwnKey();
-    modelSelect.innerHTML = "";
-    const models = getModelsForProvider(provider);
-    models.forEach(({ value, label }) => {
-      const opt = document.createElement("option");
-      opt.value = value;
-      opt.textContent = (!hasKey && value !== "gemini-flash-lite-latest") ? `🔒 ${label}` : label;
-      modelSelect.appendChild(opt);
-    });
-    modelSelect.value = getSelectedModel() || (models[0] && models[0].value) || "";
-    refreshModelSelectAvailability();
-  }
-  loadModelsForCurrentProvider();
-
-  modelSelect.addEventListener("change", () => {
-    setSelectedModel(providerSelect.value, modelSelect.value);
-    if (typeof onKeyChanged === "function") onKeyChanged();
-  });
-
-  // ── Effort select (Thinking / Reasoning depth) ──
-  const effortGroup = document.createElement("div");
-  effortGroup.className = "ai-agent-settings-field-group";
-
-  const effortLabel = document.createElement("label");
-  effortLabel.className = "ai-agent-field-label";
-  effortLabel.textContent = "مستوى التفكير / الجهد (Reasoning Effort)";
-  effortLabel.htmlFor = `${instanceId}-effort`;
-  effortGroup.appendChild(effortLabel);
-
-  const effortSelect = document.createElement("select");
-  effortSelect.id = `${instanceId}-effort`;
-  effortSelect.className = "ai-agent-provider-select";
-  EFFORT_LEVELS.forEach(({ value, label }) => {
-    const opt = document.createElement("option");
-    opt.value = value;
-    opt.textContent = label;
-    effortSelect.appendChild(opt);
-  });
-  effortSelect.value = getSelectedEffort(providerSelect.value);
-  effortSelect.addEventListener("change", () => {
-    setSelectedEffort(providerSelect.value, effortSelect.value);
-    if (typeof onKeyChanged === "function") onKeyChanged();
-  });
-  effortGroup.appendChild(effortSelect);
-  panel.appendChild(effortGroup);
-
-  function refreshEffortAvailability() {
-    // Show effort selection for Google provider (and reasoning models)
-    const isGoogle = providerSelect.value === "google";
-    effortGroup.style.display = isGoogle ? "block" : "none";
-    effortSelect.value = getSelectedEffort(providerSelect.value);
-  }
-  refreshEffortAvailability();
-
-  // ── Own key input ──
-  // NOTE: the response-language select that used to live here was removed
-  // per product decision — response language is now left entirely to the
-  // model to infer (from the conversation itself, or an explicit ask in
-  // the user's own prompt) rather than a separate setting.
-  const keyLabel = document.createElement("label");
-  keyLabel.className = "ai-agent-field-label";
-  keyLabel.textContent = "مفتاح API الخاص بك (اختياري)";
-  keyLabel.htmlFor = `${instanceId}-key`;
-  panel.appendChild(keyLabel);
-
+  const keyField = el("div", "ai-set-field");
+  const keyLabel = el("label", "ai-set-label", "مفتاح API الخاص بك (اختياري)");
+  keyLabel.htmlFor = `${id}-key`;
+  const keyWrap = el("div", "ai-set-input-wrap");
   const keyInput = document.createElement("input");
-  keyInput.id = `${instanceId}-key`;
+  keyInput.id = `${id}-key`;
   keyInput.type = "password";
-  keyInput.className = "ai-agent-key-input";
-  keyInput.placeholder = "sk-...";
+  keyInput.className = "ai-set-input";
+  keyInput.dir = "ltr";
   keyInput.autocomplete = "off";
-  panel.appendChild(keyInput);
-
-  function loadKeyForCurrentProvider() {
-    const { key } = getOwnKey();
-    keyInput.value = key;
-  }
-  loadKeyForCurrentProvider();
-
-  providerSelect.addEventListener("change", () => {
-    setSelectedProvider(providerSelect.value);
-    loadKeyForCurrentProvider();
-    loadModelsForCurrentProvider();
-    refreshEffortAvailability();
-    status.textContent = "";
-    refreshKeySourceIndicator();
-    updateKeyActionsVisibility();
-    if (typeof onKeyChanged === "function") onKeyChanged();
+  keyInput.spellcheck = false;
+  keyInput.setAttribute("autocapitalize", "off");
+  keyInput.setAttribute("aria-describedby", `${id}-key-hint ${id}-key-status`);
+  const eyeBtn = el("button", "ai-set-icon-btn");
+  eyeBtn.type = "button";
+  eyeBtn.setAttribute("aria-label", "إظهار المفتاح");
+  eyeBtn.setAttribute("aria-pressed", "false");
+  eyeBtn.innerHTML = ICON_EYE;
+  eyeBtn.addEventListener("click", () => {
+    const show = keyInput.type === "password";
+    keyInput.type = show ? "text" : "password";
+    eyeBtn.setAttribute("aria-pressed", String(show));
+    eyeBtn.setAttribute("aria-label", show ? "إخفاء المفتاح" : "إظهار المفتاح");
+    eyeBtn.innerHTML = show ? ICON_EYE_OFF : ICON_EYE;
   });
+  keyWrap.append(keyInput, eyeBtn);
+  const keyHint = el("p", "ai-set-hint");
+  keyHint.id = `${id}-key-hint`;
+  keyHint.innerHTML = `${ICON_LOCK}<span>يُحفظ المفتاح على متصفحك فقط ولا نخزّنه على خوادمنا.</span>`;
+  keyField.append(keyLabel, keyWrap, keyHint);
+  connectCard.appendChild(keyField);
 
-  // ── Save / clear actions ──
-  const actions = document.createElement("div");
-  actions.className = "ai-agent-settings-actions";
-
-  const saveBtn = document.createElement("button");
+  const keyActions = el("div", "ai-set-actions");
+  const saveBtn = el("button", "ai-set-btn ai-set-btn--primary", "حفظ المفتاح");
   saveBtn.type = "button";
-  saveBtn.className = "ai-agent-btn ai-agent-btn--primary";
-  saveBtn.style.width = "auto";
-  saveBtn.innerHTML = "<span>حفظ المفتاح</span>";
-
-  const clearBtn = document.createElement("button");
+  const clearBtn = el("button", "ai-set-btn ai-set-btn--danger", "مسح المفتاح");
   clearBtn.type = "button";
-  clearBtn.className = "ai-agent-btn ai-agent-btn--danger";
-  clearBtn.style.width = "auto";
-  clearBtn.innerHTML = "<span>مسح المفتاح</span>";
+  keyActions.append(saveBtn, clearBtn);
+  connectCard.appendChild(keyActions);
+  const keyStatus = el("div", "ai-set-status");
+  keyStatus.id = `${id}-key-status`;
+  keyStatus.setAttribute("role", "status");
+  connectCard.appendChild(keyStatus);
 
-  actions.appendChild(saveBtn);
-  actions.appendChild(clearBtn);
-  panel.appendChild(actions);
+  connect.appendChild(connectCard);
+  content.appendChild(connect);
 
-  const status = document.createElement("div");
-  status.className = "ai-agent-settings-status";
-  panel.appendChild(status);
-
-  // Save / Clear are only surfaced when they're actually actionable:
-  //   - nothing saved and nothing typed → both hidden (nothing to do)
-  //   - nothing saved but the user is typing → Save appears alone
-  //   - a saved value sits in the field untouched → Clear appears alone
-  //   - an existing saved value was edited → both appear (Save persists
-  //     the new value, Clear drops the stored one)
-  function updateKeyActionsVisibility() {
-    const { key: savedKey, hasKey: hasSavedKey } = getOwnKey();
-    const typed = keyInput.value.trim();
-    if (!hasSavedKey && typed === "") {
-      saveBtn.hidden = true;
-      clearBtn.hidden = true;
-      return;
-    }
-    saveBtn.hidden = !(typed !== "" && (typed !== savedKey || !hasSavedKey));
-    clearBtn.hidden = !hasSavedKey;
+  function setStatus(node, text, kind = "") {
+    node.className = `ai-set-status${kind ? ` ai-set-status--${kind}` : ""}`;
+    node.textContent = text;
   }
-  updateKeyActionsVisibility();
+  const currentProvider = () => providerRow.querySelector("input:checked")?.value || getSelectedProvider();
 
-  keyInput.addEventListener("input", () => {
-    updateKeyActionsVisibility();
-    // Any keystroke invalidates whichever status message is showing.
-    status.textContent = "";
-  });
-
-  // ── Key-source indicator ──
-  // Mirrors the exact precedence ai-agent-chat.js::sendMessage uses (own
-  // key first if saved, otherwise the platform pool — open to everyone,
-  // admins uncapped, everyone else subject to a daily quota enforced
-  // server-side) so what's shown here always matches what a message will
-  // actually use — without making a network call just to render this panel.
-  const keySourceIndicator = document.createElement("div");
-  keySourceIndicator.className = "ai-agent-key-source";
-  panel.appendChild(keySourceIndicator);
-
-  function refreshKeySourceIndicator() {
+  // Mirrors the precedence ai-agent-chat.js::sendMessage uses (own key first, otherwise the
+  // platform pool: admins uncapped, everyone else under a server-enforced daily quota).
+  function refreshSource() {
     const { hasKey } = getOwnKey();
-    if (hasKey) {
-      keySourceIndicator.className = "ai-agent-key-source ai-agent-key-source--own";
-      keySourceIndicator.textContent = "🔑 يتم استخدام مفتاحك الخاص حاليًا";
-      return;
-    }
-    const isAdmin = isAdminAuthenticated();
-    keySourceIndicator.className = "ai-agent-key-source ai-agent-key-source--platform";
-    keySourceIndicator.textContent = isAdmin
-      ? "🌐 يتم استخدام مفتاح المنصة — بلا حد استخدام يومي (حساب مشرف)."
-      : "🌐 يتم استخدام مفتاح المنصة — يوجد حد استخدام يومي (لا يوجد مفتاح خاص محفوظ). احفظ مفتاحك الخاص أعلاه لاستخدام غير محدود.";
+    const isAdmin = !hasKey && isAdminAuthenticated();
+    sourceBox.dataset.source = hasKey ? "own" : "platform";
+    sourceTitle.textContent = hasKey ? "تستخدم مفتاحك الخاص" : "تستخدم مفتاح المنصة";
+    sourceText.textContent = hasKey
+      ? "الطلبات تُحسب على حسابك لدى المزوّد، دون حد يومي من المنصة."
+      : isAdmin
+        ? "بلا حد استخدام يومي (حساب مشرف)."
+        : "يوجد حد استخدام يومي. احفظ مفتاحك الخاص لاستخدام غير محدود.";
   }
-  refreshKeySourceIndicator();
 
+  // Save / clear only appear when they can do something:
+  //   nothing saved, nothing typed → both hidden · typing → Save · saved and untouched → Clear ·
+  //   saved value edited → both.
+  function refreshKeyActions() {
+    const { key: savedKey, hasKey } = getOwnKey();
+    const typed = keyInput.value.trim();
+    saveBtn.hidden = !(typed !== "" && (typed !== savedKey || !hasKey));
+    clearBtn.hidden = !hasKey;
+    keyActions.hidden = saveBtn.hidden && clearBtn.hidden;
+  }
+
+  function loadKeyForProvider() {
+    keyInput.value = getOwnKey().key;
+    keyInput.placeholder = PROVIDERS.find((p) => p.value === currentProvider())?.keyHint || "";
+  }
+
+  providerRow.addEventListener("change", () => {
+    setSelectedProvider(currentProvider());
+    loadKeyForProvider();
+    setStatus(keyStatus, "");
+    refreshSource();
+    refreshKeyActions();
+    notify(); // the model bar lists the new provider's models
+  });
+
+  keyInput.addEventListener("input", () => { setStatus(keyStatus, ""); refreshKeyActions(); });
+  keyInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !saveBtn.hidden) { e.preventDefault(); saveBtn.click(); }
+  });
   saveBtn.addEventListener("click", () => {
-    const provider = providerSelect.value;
     const key = keyInput.value.trim();
-    if (!key) {
-      status.className = "ai-agent-settings-status";
-      status.textContent = "أدخل مفتاحًا صالحًا أولاً";
-      return;
-    }
-    setOwnKey(provider, key);
-    status.className = "ai-agent-settings-status ai-agent-settings-status--saved";
-    status.textContent = "تم الحفظ ✓";
-    refreshKeySourceIndicator();
-    refreshModelSelectAvailability();
-    updateKeyActionsVisibility();
-    if (typeof onKeyChanged === "function") onKeyChanged();
+    if (!key) { setStatus(keyStatus, "أدخل مفتاحًا صالحًا أولًا", "error"); return; }
+    setOwnKey(currentProvider(), key);
+    setStatus(keyStatus, "تم حفظ المفتاح ✓", "saved");
+    refreshSource();
+    refreshKeyActions();
+    notify();
   });
-
   clearBtn.addEventListener("click", () => {
-    const provider = providerSelect.value;
-    clearOwnKey(provider);
+    clearOwnKey(currentProvider());
     keyInput.value = "";
-    status.className = "ai-agent-settings-status ai-agent-settings-status--cleared";
-    status.textContent = "تم المسح";
-    refreshKeySourceIndicator();
-    refreshModelSelectAvailability();
-    updateKeyActionsVisibility();
-    if (typeof onKeyChanged === "function") onKeyChanged();
+    setStatus(keyStatus, "تم مسح المفتاح", "cleared");
+    refreshSource();
+    refreshKeyActions();
+    notify();
   });
+  loadKeyForProvider();
+  refreshSource();
+  refreshKeyActions();
 
-  // ── System prompt (editable, page-scoped) ──
-  const promptLabel = document.createElement("label");
-  promptLabel.className = "ai-agent-field-label";
-  promptLabel.textContent = "تعليمات النظام (System Prompt)";
-  promptLabel.htmlFor = `${instanceId}-system-prompt`;
-  panel.appendChild(promptLabel);
+  // ══ 2) System prompt ══
+  const promptGroup = group(`${id}-g-prompt`, "تعليمات المساعد", "تحدّد شخصية المساعد وأسلوب ردوده في هذه الصفحة. يمكنك تعديلها أو العودة إلى الافتراضية.");
+  const promptCard = el("div", "ai-set-card");
+  const promptTop = el("div", "ai-set-field-top");
+  const promptLabel = el("label", "ai-set-label", "التعليمات (System Prompt)");
+  promptLabel.htmlFor = `${id}-prompt`;
+  const promptBadge = el("span", "ai-set-badge");
+  promptTop.append(promptLabel, promptBadge);
 
-  const promptTextarea = document.createElement("textarea");
-  promptTextarea.id = `${instanceId}-system-prompt`;
-  promptTextarea.className = "ai-agent-system-prompt-input";
-  promptTextarea.rows = 6;
-  promptTextarea.value = getSystemPrompt(pageKey, defaultSystemPrompt);
-  panel.appendChild(promptTextarea);
+  const promptArea = document.createElement("textarea");
+  promptArea.id = `${id}-prompt`;
+  promptArea.className = "ai-set-input ai-set-textarea";
+  promptArea.rows = 8;
+  promptArea.dir = "auto";
+  promptArea.setAttribute("aria-describedby", `${id}-prompt-meta ${id}-prompt-status`);
+  const savedPrompt = () => getSystemPrompt(pageKey, defaultSystemPrompt);
+  promptArea.value = promptDrafts.has(pageKey) ? promptDrafts.get(pageKey) : savedPrompt();
 
-  const promptActions = document.createElement("div");
-  promptActions.className = "ai-agent-settings-actions";
+  const promptMeta = el("div", "ai-set-meta");
+  promptMeta.id = `${id}-prompt-meta`;
+  const promptCount = el("span", "ai-set-count");
+  const promptDirty = el("span", "ai-set-dirty", "تعديلات غير محفوظة");
+  promptMeta.append(promptCount, promptDirty);
 
-  const savePromptBtn = document.createElement("button");
+  const promptActions = el("div", "ai-set-actions");
+  const savePromptBtn = el("button", "ai-set-btn ai-set-btn--primary", "حفظ التعليمات");
   savePromptBtn.type = "button";
-  savePromptBtn.className = "ai-agent-btn ai-agent-btn--primary";
-  savePromptBtn.style.width = "auto";
-  savePromptBtn.innerHTML = "<span>حفظ التعليمات</span>";
-
-  const resetPromptBtn = document.createElement("button");
+  const resetPromptBtn = el("button", "ai-set-btn ai-set-btn--quiet", "استعادة الافتراضية");
   resetPromptBtn.type = "button";
-  resetPromptBtn.className = "ai-agent-btn ai-agent-btn--danger";
-  resetPromptBtn.style.width = "auto";
-  resetPromptBtn.innerHTML = "<span>إعادة تعيين للافتراضي</span>";
+  promptActions.append(savePromptBtn, resetPromptBtn);
+  const promptStatus = el("div", "ai-set-status");
+  promptStatus.id = `${id}-prompt-status`;
+  promptStatus.setAttribute("role", "status");
 
-  promptActions.appendChild(savePromptBtn);
-  promptActions.appendChild(resetPromptBtn);
-  panel.appendChild(promptActions);
-
-  const promptStatus = document.createElement("div");
-  promptStatus.className = "ai-agent-settings-status";
-  panel.appendChild(promptStatus);
-
-  // ── Access from phone and external apps ──
-  const tgSection = document.createElement("div");
-  tgSection.className = "ai-agent-telegram-settings-section";
-  const tgHeading = document.createElement("h4");
-  tgHeading.textContent = "الوصول من الهاتف والتطبيقات الخارجية";
-  tgSection.append(tgHeading, createTelegramBotCard({ variant: "compact", showFeatures: false }));
-  panel.appendChild(tgSection);
-
+  function refreshPromptState() {
+    const dirty = promptArea.value.trim() !== savedPrompt().trim();
+    promptCount.textContent = `${promptArea.value.length.toLocaleString("ar-EG")} حرف`;
+    promptDirty.hidden = !dirty;
+    savePromptBtn.disabled = !dirty;
+    const custom = hasCustomSystemPrompt(pageKey);
+    promptBadge.textContent = custom ? "مخصّصة" : "افتراضية";
+    promptBadge.classList.toggle("ai-set-badge--on", custom);
+    resetPromptBtn.disabled = !custom && promptArea.value.trim() === (defaultSystemPrompt || "").trim();
+    if (dirty) promptDrafts.set(pageKey, promptArea.value); else promptDrafts.delete(pageKey);
+  }
+  promptArea.addEventListener("input", () => { setStatus(promptStatus, ""); refreshPromptState(); });
   savePromptBtn.addEventListener("click", () => {
-    setSystemPrompt(pageKey, promptTextarea.value.trim());
-    promptStatus.className = "ai-agent-settings-status ai-agent-settings-status--saved";
-    promptStatus.textContent = "تم الحفظ ✓";
+    const value = promptArea.value.trim();
+    // Saving the default text unchanged is the same as having no override.
+    if (!value || value === (defaultSystemPrompt || "").trim()) resetSystemPrompt(pageKey);
+    else setSystemPrompt(pageKey, value);
+    promptDrafts.delete(pageKey);
+    refreshPromptState();
+    setStatus(promptStatus, "تم حفظ التعليمات ✓", "saved");
   });
-
   resetPromptBtn.addEventListener("click", () => {
     resetSystemPrompt(pageKey);
-    promptTextarea.value = defaultSystemPrompt || "";
-    promptStatus.className = "ai-agent-settings-status ai-agent-settings-status--cleared";
-    promptStatus.textContent = "تمت الإعادة للافتراضي";
+    promptDrafts.delete(pageKey);
+    promptArea.value = defaultSystemPrompt || "";
+    refreshPromptState();
+    setStatus(promptStatus, "عادت التعليمات إلى الافتراضية", "cleared");
   });
+  refreshPromptState();
 
-  return panel;
+  promptCard.append(promptTop, promptArea, promptMeta, promptActions, promptStatus);
+  promptGroup.appendChild(promptCard);
+  content.appendChild(promptGroup);
+
+  // ══ 3) Phone / external apps ══
+  const phoneGroup = group(`${id}-g-phone`, "الوصول من الهاتف والتطبيقات الخارجية");
+  const phoneCard = el("div", "ai-set-card ai-set-card--flush");
+  phoneCard.appendChild(createTelegramBotCard({ variant: "compact", showFeatures: false }));
+  phoneGroup.appendChild(phoneCard);
+  content.appendChild(phoneGroup);
+
+  root.focusTarget = backBtn;
+  return root;
 }

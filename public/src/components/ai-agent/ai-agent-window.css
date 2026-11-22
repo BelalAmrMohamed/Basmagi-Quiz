@@ -529,3 +529,29 @@ html body .aiw.is-minimized.fw-placed.fw-placed.fw-placed:not(.is-dragging) {
   right: auto !important;
   bottom: auto !important;
 }
+
+/* ── In-window layers (settings, attachment preview) ──────────────────────────
+   Cover the window CONTENT only (the title bar and resize handles stay live), see
+   openWindowLayer() in ai-agent-window.js. The body becomes its own stacking context
+   so the layer sits above every chat popover/drawer but below the resize handles. */
+.aiw-body { isolation: isolate; }
+.aiw-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
+  background: var(--color-background, var(--color-surface, #fff));
+  color: var(--color-text-primary);
+  outline: none;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.aiw-layer--slide { transform: translateX(-28px); } /* RTL: a deeper view arrives from the left */
+.aiw-layer--pop { transform: scale(0.985); }
+.aiw-layer.is-open { opacity: 1; transform: none; }
+.aiw-layer.is-closing { pointer-events: none; }
+html[data-motion="reduced"] .aiw-layer { transition: none; }
+

@@ -12,6 +12,7 @@
 // GET /api/youtube?action=video&ids=ID1,ID2,…            (≤ 50 IDs)
 // GET /api/youtube?action=playlist&id=PLAYLIST&pageToken=…
 // GET /api/youtube?action=transcript&id=VIDEO&lang=ar   (best effort; { available:false, reason } when none)
+//     add &debug=1 to get a `debug` object (which step failed: statuses, counts, byte lengths) in the response
 //
 // Responses are normalized (see scripts/lib/youtube-rules.js). Google errors are
 // mapped to stable codes so the UI never shows raw API messages or the key.
@@ -282,9 +283,12 @@ async function actionPlaylist(playlistId, pageToken) {
 
 const TRANSCRIPT_TTL_MS = 30 * 60_000;
 
-async function actionTranscript(id, lang) {
+async function actionTranscript(id, lang, debug = false) {
   if (!isValidVideoId(id)) throw { code: "bad_request" };
   const language = /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(String(lang || "")) ? String(lang) : "";
+  // debug=1 always runs live (never served from / written to the cache) and adds a `debug`
+  // object: per-step statuses, counts and byte lengths — no cookies, URLs or tokens.
+  if (debug) return fetchTranscript(id, { lang: language, debug: true });
   const cacheKey = `transcript:${id}:${language}`;
   const hit = cache.get(cacheKey);
   if (hit && Date.now() - hit.at < TRANSCRIPT_TTL_MS) return hit.value;
@@ -302,13 +306,13 @@ export default async function handler(req, res) {
   const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket?.remoteAddress || "unknown";
   if (isRateLimited(`youtube:${ip}`, RATE_LIMIT_PER_MINUTE)) return fail(res, "rate_limited");
 
-  const { action, q, ids, id, pageToken, lang } = req.query || {};
+  const { action, q, ids, id, pageToken, lang, debug } = req.query || {};
   try {
     let body;
     if (action === "search") body = await actionSearch(q, pageToken);
     else if (action === "video") body = await actionVideo(ids);
     else if (action === "playlist") body = await actionPlaylist(id, pageToken);
-    else if (action === "transcript") body = await actionTranscript(id, lang);
+    else if (action === "transcript") body = await actionTranscript(id, lang, debug === "1");
     else return fail(res, "bad_request");
 
     res.setHeader("Cache-Control", "private, no-store");

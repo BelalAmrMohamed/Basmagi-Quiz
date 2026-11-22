@@ -42,22 +42,19 @@
 //     own header comment) — not a short 5-item "recents" list anymore.
 //   - Mobile (<901px): the sidebar is an off-canvas side drawer opened by
 //     the same collapse control used by the desktop sidebar.
-// Settings (previously its own tab) now opens as a second, stacked modal
-// from a gear button in the sidebar (see openSettingsModal below) —
-// createSettingsPanel()'s own internals are unchanged, just mounted
-// inside a lightweight modal wrapper instead of a tab panel.
+// Settings (previously its own tab, then a stacked modal) now opens from the gear
+// button in the sidebar as a view INSIDE the agent window (see openSettingsView below).
 // =============================================================================
 
 import { createChatPanel } from "./ai-agent-chat.js";
 import { createSettingsPanel } from "./ai-agent-settings.js";
 import { createHistoryPanel } from "./ai-agent-history.js";
 import { openAgentDropdown } from "./ai-agent-dropdown.js";
-import { createAgentWindow } from "./ai-agent-window.js";
+import { createAgentWindow, openWindowLayer } from "./ai-agent-window.js";
 import { enterAgentUrl, leaveAgentUrl, consumeMaximizedOpen } from "./ai-agent-route.js";
 import { resolvePanelOptions } from "./ai-agent-panel-options.js";
 import { openTelegramBotModal, TELEGRAM_PLANE_ICON_SVG } from "../telegram-bot-card/telegram-bot-card.js";
 
-const CLOSE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
 const SPARKLE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>`;
 const NEW_CHAT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="M12 7v6" /><path d="M9 10h6" /></svg>`;
 const COPY_CONVO_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>`;
@@ -448,25 +445,20 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   sidebar.appendChild(sidebarNewChatBtn);
   sidebar.appendChild(sidebarCopyBtn);
 
-  // PHASE 6: settings (gear) button — settings is no longer a tab; this
-  // opens it as its own small stacked modal (see openSettingsModal below)
-  // on top of the AI Agent modal, reusing createSettingsPanel()'s
-  // internals unchanged.
+  // Settings (gear) button: opens the settings view inside the agent window
+  // (see openSettingsView below); focus returns here when it closes.
   const sidebarSettingsBtn = document.createElement("button");
   sidebarSettingsBtn.type = "button";
   sidebarSettingsBtn.className = "ai-agent-sidebar-btn";
   sidebarSettingsBtn.innerHTML = `${SETTINGS_ICON_SVG}<span>الإعدادات</span>`;
   sidebarSettingsBtn.addEventListener("click", () => {
-    openSettingsModal(options, () => {
-      // Settings can change the saved API key/model — refresh the chat
-      // panel's own availability gate/model options the same way the old
-      // Settings tab's onKeyChanged used to (see createSettingsPanel call
-      // below), so closing the settings modal reflects the change
-      // immediately rather than needing a fresh page load.
+    openSettingsView(sidebarSettingsBtn, options, () => {
+      // Settings can change the provider or the saved API key — refresh the chat
+      // panel's availability gate and model bar right away.
       if (typeof chatPanelSlot.current.refreshAvailability === "function") {
         chatPanelSlot.current.refreshAvailability();
       }
-    });
+    }, sidebarSettingsBtn);
   });
   sidebar.appendChild(sidebarSettingsBtn);
 
@@ -607,58 +599,37 @@ function setChatPanelForPageKey(key, chatPanel) {
   chatPanelsByPageKey.set(key || "default", chatPanel);
 }
 
-function openSettingsModal(options, onClose) {
-  const overlay = document.createElement("div");
-  overlay.className = "ai-agent-overlay ai-agent-modal-overlay ai-agent-settings-modal-overlay";
-  overlay.setAttribute("role", "dialog");
-  overlay.setAttribute("aria-modal", "true");
-  overlay.setAttribute("aria-labelledby", "aiAgentSettingsModalTitle");
+// Settings open INSIDE the agent window as a layer over the chat area (see
+// openWindowLayer in ai-agent-window.js): the title bar keeps working, the chat panel
+// underneath is untouched (a running generation continues), Esc / the back button
+// close it and focus returns to `returnFocus` (the gear button when it was the opener).
+let activeSettingsLayer = null;
 
-  const card = document.createElement("div");
-  card.className = "ai-agent-modal-shell ai-agent-modal-card ai-agent-settings-modal-card";
-
-  const header = document.createElement("div");
-  header.className = "ai-agent-modal-header";
-  header.innerHTML = `
-    <h2 id="aiAgentSettingsModalTitle">الإعدادات</h2>
-    <button type="button" class="ai-agent-close-btn ai-agent-settings-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
-  `;
-
-  function closeSettingsModal() {
-    overlay.remove();
-    document.removeEventListener("keydown", onSettingsKeydown, true);
-    if (typeof onClose === "function") onClose();
-  }
-
-  const onSettingsKeydown = (e) => {
-    if (e.key === "Escape") {
-      e.stopPropagation();
-      closeSettingsModal();
-    }
-  };
-  document.addEventListener("keydown", onSettingsKeydown, true);
-
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) closeSettingsModal();
-  });
-
-  const settingsPanel = createSettingsPanel({
+function openSettingsView(anchor, options, onChange, returnFocus) {
+  if (activeSettingsLayer?.isOpen()) return activeSettingsLayer;
+  let layer = null;
+  const panel = createSettingsPanel({
     pageKey: options.pageKey,
     defaultSystemPrompt: options.defaultSystemPrompt,
-    // createSettingsPanel's own onKeyChanged fires on every key/model/
-    // prompt/language change (see ai-agent-settings.js), not just on
-    // close — kept as-is so live edits inside this stacked modal still
-    // reach the caller immediately, same as they did as a tab.
-    onKeyChanged: onClose,
+    // Fires when the provider or the saved key changes, so the chat's availability gate and
+    // model bar follow immediately (they live outside the view).
+    onKeyChanged: onChange,
+    onBack: () => layer?.close(),
   });
-  settingsPanel.classList.add("active");
-
-  card.appendChild(header);
-  card.appendChild(settingsPanel);
-  overlay.appendChild(card);
-  document.body.appendChild(overlay);
-
-  overlay.querySelector(".ai-agent-settings-modal-close").onclick = closeSettingsModal;
+  layer = openWindowLayer(anchor || activeWindow?.el, {
+    content: panel,
+    label: "الإعدادات",
+    variant: "slide",
+    className: "aiw-layer--settings",
+    initialFocus: panel.focusTarget,
+    returnFocus,
+    onClose: () => {
+      activeSettingsLayer = null;
+      if (typeof onChange === "function") onChange();
+    },
+  });
+  activeSettingsLayer = layer;
+  return layer;
 }
 
 // ── Window (replaces the old modal) ──────────────────────────────────────────
@@ -721,7 +692,7 @@ export function openAIAgentModal(options, fab) {
   const branchHandlerRef = getBranchHandlerRef(options.pageKey);
   const chatPanel = getOrCreateChatPanel(options);
   branchHandlerRef.onOpenSettings = () => {
-    openSettingsModal(options, () => {
+    openSettingsView(activeWindow?.el, options, () => {
       chatPanel.refreshAvailability?.();
     });
   };

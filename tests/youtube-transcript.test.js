@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { extractCaptionTracks, pickTrack, parseJson3, mergeSegments, fetchTranscript } from "../supabase/functions/youtube/transcript.js";
+import { extractCaptionTracks, extractPlayerCaptionTracks, parseXmlTranscript, parseVtt, parseCaptionBody, pickTrack, parseJson3, mergeSegments, fetchTranscript } from "../supabase/functions/youtube/transcript.js";
 import { buildSummarizeResult, splitTranscriptParts, formatTimestamp } from "../public/src/shared/youtube-transcript.js";
 import { findSavedYoutubeItem } from "../public/src/features/home/youtube-saved-lookup.js";
 import { expandPlatformAttachment } from "../public/src/components/ai-agent/core/chat-attachments.js";
@@ -59,6 +59,61 @@ test("fetchTranscript: success, no captions, blocked and foreign-host protection
   const evil = `"captionTracks":[{"baseUrl":"https://evil.example/x","languageCode":"ar"}]`;
   assert.equal((await fetchTranscript("abcdefghijk", { fetchImpl: okFetch({ "watch?v=": evil }) })).reason, "upstream");
   assert.equal((await fetchTranscript("abcdefghijk", { fetchImpl: async () => { throw new Error("net"); } })).reason, "upstream");
+});
+
+test("parsers: classic XML (double-encoded), srv3, VTT and body sniffing", () => {
+  const xml = '<?xml version="1.0"?><transcript><text start="1.2" dur="2">it&amp;#39;s &amp;quot;ok&amp;quot;</text><text start="9" dur="1">two</text></transcript>';
+  assert.deepEqual(parseXmlTranscript(xml), [{ s: 1, t: "it's \"ok\"" }, { s: 9, t: "two" }]);
+  const srv3 = '<timedtext><body><p t="1500" d="1000"><s>hello</s><s> world</s></p><p t="4000" d="500">مرحبا</p></body></timedtext>';
+  assert.deepEqual(parseXmlTranscript(srv3), [{ s: 1, t: "hello world" }, { s: 4, t: "مرحبا" }]);
+  const vtt = "WEBVTT\n\n00:00:01.000 --> 00:00:03.000\nline one\n\n00:00:03.000 --> 00:00:05.000\nline one\nline two\n\n01:00:00.000 --> 01:00:02.000\n<c>late</c>";
+  assert.deepEqual(parseVtt(vtt), [{ s: 1, t: "line one" }, { s: 3, t: "line two" }, { s: 3600, t: "late" }]);
+  assert.equal(parseCaptionBody("").length, 0);
+  assert.equal(parseCaptionBody("not captions").length, 0);
+  assert.equal(parseCaptionBody(JSON.stringify({ events: [{ tStartMs: 0, segs: [{ utf8: "a" }] }] })).length, 1);
+  assert.equal(extractPlayerCaptionTracks({ captions: { playerCaptionsTracklistRenderer: { captionTracks: [{ baseUrl: "x" }, {}] } } }).length, 1);
+  assert.deepEqual(extractPlayerCaptionTracks({}), []);
+});
+
+test("fetchTranscript: the web track is empty (pot) but the InnerTube ANDROID client succeeds", async () => {
+  const calls = [];
+  const androidTrack = { baseUrl: "https://www.youtube.com/api/timedtext?v=abcdefghijk&lang=ar&c=ANDROID", languageCode: "ar" };
+  const fetchImpl = async (url, init = {}) => {
+    calls.push({ url: String(url), method: init.method || "GET" });
+    const ok = (text) => ({ ok: true, status: 200, text: async () => text });
+    if (String(url).includes("youtubei/v1/player")) {
+      const client = JSON.parse(init.body).context.client.clientName;
+      return client === "ANDROID" ? ok(JSON.stringify({ playabilityStatus: { status: "OK" }, captions: { playerCaptionsTracklistRenderer: { captionTracks: [androidTrack] } } })) : ok("{}");
+    }
+    if (String(url).includes("c=ANDROID")) return ok(String(url).includes("fmt=json3") ? "" : '<transcript><text start="0" dur="1">مرحبا</text></transcript>'); // json3 empty, XML works
+    if (String(url).includes("watch?v=")) return ok(page + ' "INNERTUBE_API_KEY":"AIzaFAKE-key_1"');
+    return ok(""); // the web track: empty body
+  };
+  const res = await fetchTranscript("abcdefghijk", { fetchImpl, debug: true });
+  assert.equal(res.available, true);
+  assert.deepEqual(res.lines, [{ s: 0, t: "مرحبا" }]);
+  assert.equal(res.debug.via, "player:ANDROID");
+  const player = calls.find((c) => c.url.includes("youtubei/v1/player"));
+  assert.equal(player.method, "POST");
+  assert.ok(player.url.includes("key=AIzaFAKE-key_1"));
+  const steps = res.debug.steps;
+  assert.equal(steps[0].step, "watch");
+  assert.equal(steps[0].captionTracks, 3);
+  assert.ok(steps.some((s) => s.step === "captions" && s.fmt === "json3" && s.bytes === 0));
+  // diagnostics carry names/counts only, never URLs or signatures
+  assert.doesNotMatch(JSON.stringify(steps), /https?:|AIzaFAKE|signature=/);
+  // without debug the result keeps its plain shape
+  assert.equal("debug" in (await fetchTranscript("abcdefghijk", { fetchImpl })), false);
+});
+
+test("fetchTranscript: every source empty or bot-checked -> blocked, with the failing step in debug", async () => {
+  const fetchImpl = async (url) => {
+    if (String(url).includes("youtubei/v1/player")) return { ok: true, status: 200, text: async () => JSON.stringify({ playabilityStatus: { status: "LOGIN_REQUIRED", reason: "Sign in to confirm you’re not a bot" } }) };
+    return { ok: true, status: 200, text: async () => "<html></html>" };
+  };
+  const res = await fetchTranscript("abcdefghijk", { fetchImpl, debug: true });
+  assert.deepEqual([res.available, res.reason], [false, "blocked"]);
+  assert.deepEqual(res.debug.steps.filter((s) => s.step === "player").map((s) => s.playability), ["LOGIN_REQUIRED", "LOGIN_REQUIRED"]);
 });
 
 test("splitTranscriptParts never cuts a line and stamps times", () => {

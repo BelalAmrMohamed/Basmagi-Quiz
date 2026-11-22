@@ -61,6 +61,95 @@ const T = {
   working: "يعمل…",
 };
 
+// ── In-window layers ─────────────────────────────────────────────────────────
+// A "layer" is a full-area view that covers the CONTENT of the agent window (settings,
+// attachment preview) while the title bar stays live: drag, minimize, maximize, snap and
+// resize keep working. The chat panel underneath is never touched or re-created, so a
+// running generation keeps running. Everything under the layer is made `inert` (no focus,
+// no clicks, skipped by screen readers) and restored when the layer closes.
+// Esc closes the top layer first (before it would restore/close the window); focus goes
+// back to the element that opened it.
+const layerStacks = new WeakMap(); // host element -> [{ close }]
+
+function layerHostFor(anchor) {
+  const winEl = anchor?.closest?.(".aiw");
+  if (winEl) return winEl.querySelector(".aiw-body");
+  return anchor?.closest?.(".ai-agent-widget") || null; // inline embed without a window
+}
+
+/** Closes the top layer of a host; true when one was closed. */
+export function closeTopWindowLayer(host) {
+  const stack = layerStacks.get(host);
+  const top = stack?.[stack.length - 1];
+  if (!top) return false;
+  top.close("escape");
+  return true;
+}
+
+/**
+ * @param {HTMLElement} anchor  any element inside the agent window (finds the window body)
+ * @param {object} opts
+ * @param {HTMLElement} opts.content        the view to show
+ * @param {string} opts.label               accessible name of the layer
+ * @param {"slide"|"pop"} [opts.variant]    slide = navigation to a deeper view, pop = quick preview
+ * @param {string} [opts.className]
+ * @param {HTMLElement|string} [opts.initialFocus]  element or selector inside content
+ * @param {HTMLElement} [opts.returnFocus]  defaults to the element focused when opened
+ * @param {(reason?: string) => void} [opts.onClose]
+ * @returns {{ el: HTMLElement, close: () => void, isOpen: () => boolean } | null}
+ */
+export function openWindowLayer(anchor, opts = {}) {
+  const host = layerHostFor(anchor);
+  if (!host || !opts.content) return null;
+  if (getComputedStyle(host).position === "static") host.style.position = "relative";
+  const stack = layerStacks.get(host) || [];
+  layerStacks.set(host, stack);
+  const returnFocus = opts.returnFocus || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+
+  const el = document.createElement("div");
+  el.className = `aiw-layer aiw-layer--${opts.variant === "pop" ? "pop" : "slide"}${opts.className ? ` ${opts.className}` : ""}`;
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-label", opts.label || "");
+  el.tabIndex = -1;
+  el.dir = "rtl";
+  el.appendChild(opts.content);
+
+  const inerted = [];
+  for (const child of host.children) {
+    if (child.inert) continue;
+    child.inert = true;
+    inerted.push(child);
+  }
+  host.appendChild(el);
+
+  let closed = false;
+  const record = { close };
+  stack.push(record);
+  function close(reason) {
+    if (closed) return;
+    closed = true;
+    const i = stack.indexOf(record);
+    if (i >= 0) stack.splice(i, 1);
+    inerted.forEach((child) => { if (child.isConnected) child.inert = false; });
+    el.classList.remove("is-open");
+    el.classList.add("is-closing");
+    setTimeout(() => el.remove(), motionDelay(200));
+    if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+    opts.onClose?.(reason);
+  }
+  el.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || e.defaultPrevented || stack[stack.length - 1] !== record) return;
+    e.preventDefault();
+    e.stopPropagation();
+    close("escape");
+  });
+
+  requestAnimationFrame(() => el.classList.add("is-open"));
+  const target = typeof opts.initialFocus === "string" ? el.querySelector(opts.initialFocus) : opts.initialFocus;
+  (target || el).focus({ preventScroll: true });
+  return { el, close: () => close("api"), isOpen: () => !closed };
+}
+
 function readGeom() {
   try { return JSON.parse(sessionStorage.getItem(GEO_KEY) || "null"); } catch { return null; }
 }
@@ -487,6 +576,8 @@ export function createAgentWindow(cfg) {
   // it restores a maximized window, or closes the window.
   win.addEventListener("keydown", (e) => {
     if (e.key !== "Escape" || e.defaultPrevented || state.minimized) return;
+    // An open in-window layer (settings, attachment preview) goes first.
+    if (closeTopWindowLayer(win.querySelector(".aiw-body"))) { e.preventDefault(); return; }
     if (state.maximized && window.innerWidth > PHONE_MAX) toggleMaximize();
     else close();
   });
