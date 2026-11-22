@@ -2298,7 +2298,7 @@ html:not([data-motion="reduced"]) .ai-agent-dropdown-menu--actions .ai-agent-dro
   cursor: progress;
 }
 
-.ai-agent-fab[aria-busy="true"] @keyframes ai-agent-fab-pulse {
+@keyframes ai-agent-fab-pulse {
   50% { opacity: 0.35; }
 }
 
@@ -4966,9 +4966,11 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-suggestion-tab.is-active {
+  /* --color-primary-text is the indigo "text ON the page surface" token: on a primary fill it is the same
+     colour. The fill is the darker primary shade with the dedicated on-primary text colour (>= 7.9:1 in all themes). */
   border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: var(--color-primary-text, #fff);
+  background: var(--color-primary-dark);
+  color: var(--color-on-primary, #fff);
 }
 
 .ai-agent-suggestion-list {

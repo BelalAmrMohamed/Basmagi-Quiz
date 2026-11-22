@@ -37,7 +37,7 @@ import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js
 import { getPageActions, createSlashMenu } from "./ai-agent-actions.js";
 import { renderCreatorCard, creatorCardModelSummary } from "./ai-agent-creator-tools.js";
 import { renderResultCard, resultCardModelSummary } from "./ai-agent-result-cards.js";
-import { normalizeSuggestions } from "./ai-agent-suggested-prompts.js";
+import { normalizeSuggestions, refreshEmptyState } from "./ai-agent-suggested-prompts.js";
 import { createToolCallCard } from "./components/tool-call-card.js";
 import { runTurn } from "./core/turn-runner.js";
 import { toPersistedMessages, serializeWireMessage as buildWireMessage } from "./core/chat-messages.js";
@@ -2273,6 +2273,7 @@ export function createChatPanel(options = {}) {
     messagesEl.innerHTML = "";
     if (!history.length) {
       renderEmptyState();
+      renderSuggestions(); // same wipe as refreshAvailability: chips go back after the empty state
     } else {
       // Same placement as live turns: a response's result cards are shown as
       // one group after its last message (i.e. right before the next user
@@ -2415,7 +2416,8 @@ export function createChatPanel(options = {}) {
   panel.refreshAvailability = function refreshAvailability() {
     updateAvailabilityGate();
     refreshModelBarOptions();
-    if (history.length === 0) renderEmptyState();
+    // The empty state wipes the messages area, so the chips are rebuilt right after it.
+    refreshEmptyState({ historyLength: history.length, renderEmptyState, renderSuggestions });
   };
 
   panel.clearTyping = function clearTyping() {

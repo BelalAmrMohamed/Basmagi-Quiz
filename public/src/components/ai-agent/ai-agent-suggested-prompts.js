@@ -129,3 +129,16 @@ export function buildResultSuggestedPrompts(summary) {
     "لخّص لي أهم الأفكار المتقدمة وتطبيقاتها العملية في سوق العمل المرتبطة بهذا الموضوع.",
   ];
 }
+
+/**
+ * Re-shows the empty state after the history was found empty (e.g. closing Settings).
+ * renderEmptyState() REPLACES the messages area, so the suggestion chips must be rebuilt
+ * AFTER it, never before; calling them in this order is the whole contract.
+ * @returns {boolean} true when the empty state was re-rendered
+ */
+export function refreshEmptyState({ historyLength, renderEmptyState, renderSuggestions }) {
+  if (historyLength > 0) return false;
+  renderEmptyState();
+  renderSuggestions();
+  return true;
+}
