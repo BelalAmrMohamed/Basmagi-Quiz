@@ -67,6 +67,9 @@ Redesign the whole page:
 
 #### Important Update
 * See [update plan.](plans/documentation-pages.md)
+* I've already created a new video for the MCP Server: `https://youtu.be/ysckQBfLFFw`. And the old, outdated video will be deleted, because it's useless now.
+* The plan is outdated actually, created content now gets saved in user content (i.e., <متحواي>) directly.
+* Skip the screenshots all of them, the video is enough.
 
 ### Connect Canva
 Think of a new way to download quizzes and lessons, maybe through canva.
