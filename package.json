@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "seo:check": "node scripts/seo-check.mjs",
+    "sidebar:build": "node scripts/build-sidebar.mjs",
+    "sidebar:check": "node scripts/build-sidebar.mjs --check",
+    "sidebar:test": "node --test tests/sidebar-drift.test.js",
     "docs:build": "node scripts/build-docs.mjs",
     "docs:check": "node scripts/build-docs.mjs --check",
     "docs:chapters": "node scripts/build-docs.mjs --chapters how-to-connect-mcp",
