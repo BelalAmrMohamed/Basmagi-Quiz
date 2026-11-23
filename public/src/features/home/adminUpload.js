@@ -30,7 +30,7 @@ import { formatItemCounts } from "./upload-counts.js";
 import { ICON, setStatus } from "./admin-icons.js";
 import { getToken, isAdminAuthenticated, signOut } from "../../shared/adminAuth.js";
 import { showNotification } from "../../components/notifications/notifications.js";
-import { guideAction } from "../../shared/guide-links.js";
+import { guideAction, GUIDE_TOAST_SECONDS } from "../../shared/guide-links.js";
 import { userProfile } from "../../shared/userProfile.js";
 import { generateQuizId } from "../../shared/quizId.js";
 import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.js";
@@ -404,7 +404,7 @@ function stepsHTML(cur) {
  * (what to check after an upload). Shown only on failure; success toasts stay link-free.
  */
 function uploadFailToast(title, message, type = "error") {
-  showNotification(title, message, type, 10, { action: guideAction("uploadVerify") });
+  showNotification(title, message, type, GUIDE_TOAST_SECONDS, { action: guideAction("uploadVerify") });
 }
 
 const DOC_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';

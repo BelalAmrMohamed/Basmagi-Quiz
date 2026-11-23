@@ -1,0 +1,165 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 181a4a1..480d1c3 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+   - expired draft link (404) -> `/how-to-connect-mcp#s8` (FAQ);
+   - failed MCP import / draft (server error, wrong kind, storage full) -> `/how-to-connect-mcp#faq-item-missing`, the new id on the "opened the link, can't find the item" FAQ entry; `doc-steps.js` opens a `<details>` targeted by the URL hash;
+   - failed or partly failed upload in the admin wizard -> `/how-to-upload-content#s4` (verifying the upload). Session-expiry failures and network errors carry no link.
++- Toasts with a guide link stay 25 s (`GUIDE_TOAST_SECONDS`) instead of the 5-10 s defaults, so they can be read in full.
+ - `tests/guide-links.test.js` checks that every link target exists in the generated guide pages.
+ 
+ ## Docs discoverability
+diff --git a/public/src/features/create-lesson/create-lesson.js b/public/src/features/create-lesson/create-lesson.js
+index 5fabb05..08d75d9 100644
+--- a/public/src/features/create-lesson/create-lesson.js
++++ b/public/src/features/create-lesson/create-lesson.js
+@@ -62,7 +62,7 @@ import { CREATE_LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/
+ import { downloadLesson } from "../home/lesson-download.js";
+ import { mountSourceField } from "../../shared/rich-input/source-field.js";
+ import { fetchImportDraft } from "../../shared/import-draft.js";
+-import { guideOptions } from "../../shared/guide-links.js";
++import { guideOptions, GUIDE_TOAST_SECONDS } from "../../shared/guide-links.js";
+ 
+ 
+ // Matches the canonical published-lesson id shape used across the lesson
+@@ -557,7 +557,7 @@ async function loadDraftJsonSafely() {
+     try {
+         return await fetchImportDraft("lesson");
+     } catch (err) {
+-        showNotification("تعذّر فتح الرابط", err.message, "error", 10, guideOptions(err));
++        showNotification("تعذّر فتح الرابط", err.message, "error", GUIDE_TOAST_SECONDS, guideOptions(err));
+         return null;
+     }
+ }
+diff --git a/public/src/features/create-quiz/create-quiz.js b/public/src/features/create-quiz/create-quiz.js
+index ab4bcce..78c658e 100644
+--- a/public/src/features/create-quiz/create-quiz.js
++++ b/public/src/features/create-quiz/create-quiz.js
+@@ -29,7 +29,7 @@ import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar
+ import { applyMarkdownToolbarAction } from "../../shared/markdown-toolbar-actions.js";
+ import { mountSourceField } from "../../shared/rich-input/source-field.js";
+ import { fetchImportDraft } from "../../shared/import-draft.js";
+-import { guideOptions } from "../../shared/guide-links.js";
++import { guideOptions, GUIDE_TOAST_SECONDS } from "../../shared/guide-links.js";
+ import { reserveStorage, releaseStorage } from "../../shared/storage-guard.js";
+ import { checkQuiz, cleanSource, stripLegacySource } from "../../shared/content-rules.js";
+ 
+@@ -576,7 +576,7 @@ async function loadDraftJsonSafely() {
+   try {
+     return await fetchImportDraft("quiz");
+   } catch (err) {
+-    showNotification("تعذّر فتح الرابط", err.message, "error", 10, guideOptions(err));
++    showNotification("تعذّر فتح الرابط", err.message, "error", GUIDE_TOAST_SECONDS, guideOptions(err));
+     return null;
+   }
+ }
+diff --git a/public/src/features/home/adminUpload.js b/public/src/features/home/adminUpload.js
+index 751b222..d85bb7f 100644
+--- a/public/src/features/home/adminUpload.js
++++ b/public/src/features/home/adminUpload.js
+@@ -30,7 +30,7 @@ import { formatItemCounts } from "./upload-counts.js";
+ import { ICON, setStatus } from "./admin-icons.js";
+ import { getToken, isAdminAuthenticated, signOut } from "../../shared/adminAuth.js";
+ import { showNotification } from "../../components/notifications/notifications.js";
+-import { guideAction } from "../../shared/guide-links.js";
++import { guideAction, GUIDE_TOAST_SECONDS } from "../../shared/guide-links.js";
+ import { userProfile } from "../../shared/userProfile.js";
+ import { generateQuizId } from "../../shared/quizId.js";
+ import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.js";
+@@ -404,7 +404,7 @@ function stepsHTML(cur) {
+  * (what to check after an upload). Shown only on failure; success toasts stay link-free.
+  */
+ function uploadFailToast(title, message, type = "error") {
+-  showNotification(title, message, type, 10, { action: guideAction("uploadVerify") });
++  showNotification(title, message, type, GUIDE_TOAST_SECONDS, { action: guideAction("uploadVerify") });
+ }
+ 
+ const DOC_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+diff --git a/public/src/features/home/mcp-draft-import.js b/public/src/features/home/mcp-draft-import.js
+index 1994ae9..5ffdbaa 100644
+--- a/public/src/features/home/mcp-draft-import.js
++++ b/public/src/features/home/mcp-draft-import.js
+@@ -28,7 +28,7 @@ import { buildLocalYoutubePlaylistEntry, findSameLevelPlaylistDuplicate } from "
+ import { hasSameLevelCollision } from "./user-content-folders.js";
+ import * as wsStore from "../../shared/workspace-store.js";
+ import { showNotification as showToast } from "../../components/notifications/notifications.js";
+-import { withGuide, guideOptions } from "../../shared/guide-links.js";
++import { withGuide, guideOptions, GUIDE_TOAST_SECONDS } from "../../shared/guide-links.js";
+ 
+ const GUIDE_HINT_KEY = "bq-mcp-guide-hint-shown";
+ 
+@@ -278,7 +278,7 @@ export async function importMcpDraftFromUrl() {
+     // Link to the FAQ only for failures it explains: expired link (#s8) or "opened it, can't find the item".
+     // A network failure carries no guide key, so it shows no link. Anything else the builders reject
+     // (empty draft, bad payload) is a content problem a guide cannot fix.
+-    showNotification("تعذّر إضافة المحتوى", err?.message || "حدث خطأ غير متوقع.", "error", 10, guideOptions(err));
++    showNotification("تعذّر إضافة المحتوى", err?.message || "حدث خطأ غير متوقع.", "error", GUIDE_TOAST_SECONDS, guideOptions(err));
+     return null;
+   }
+ }
+diff --git a/public/src/features/notebook/notebook-editor.js b/public/src/features/notebook/notebook-editor.js
+index beb18c7..9897343 100644
+--- a/public/src/features/notebook/notebook-editor.js
++++ b/public/src/features/notebook/notebook-editor.js
+@@ -7,7 +7,7 @@
+ import { getToken, isAdminAuthenticated } from "../../shared/adminAuth.js";
+ import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+ import { fetchImportDraft, getDraftAssets, consumeImportDraft } from "../../shared/import-draft.js";
+-import { guideOptions } from "../../shared/guide-links.js";
++import { guideOptions, GUIDE_TOAST_SECONDS } from "../../shared/guide-links.js";
+ import { escapeHtml } from "../home/escape-html.js";
+ import { showNotification } from "../../components/notifications/notifications.js";
+ import { normalizeNotebookLang } from "../../shared/notebook-lang.js";
+@@ -340,7 +340,7 @@ export async function startEditor(edit = null) {
+       state = M.notebookFromPayload(r.body.notebook); editId = edit;
+       $("cnbPlacementRow").hidden = true;
+     }
+-  } catch (err) { showNotification(t("loadFail"), err.message, "error", 10, guideOptions(err, "en")); }
++  } catch (err) { showNotification(t("loadFail"), err.message, "error", GUIDE_TOAST_SECONDS, guideOptions(err, "en")); }
+   writeMeta(); applyChrome();
+   $("cnbRuntime").disabled = !!editId;
+   applyChrome();
+diff --git a/public/src/shared/guide-links.js b/public/src/shared/guide-links.js
+index 49c68f4..7b9f66d 100644
+--- a/public/src/shared/guide-links.js
++++ b/public/src/shared/guide-links.js
+@@ -8,6 +8,9 @@
+ //
+ // The hrefs must match ids in docs-src/pages/*.html (tests/guide-links.test.js checks it).
+ 
++/** Seconds a toast with a guide link stays up: long enough to read the message and decide to click. */
++export const GUIDE_TOAST_SECONDS = 25;
++
+ export const GUIDE_LINKS = {
+   draftExpired: {
+     href: "/how-to-connect-mcp#s8",
+diff --git a/tests/guide-links.test.js b/tests/guide-links.test.js
+index 88c5882..ea8414b 100644
+--- a/tests/guide-links.test.js
++++ b/tests/guide-links.test.js
+@@ -4,7 +4,7 @@ import test from "node:test";
+ import assert from "node:assert/strict";
+ import fs from "node:fs";
+ import path from "node:path";
+-import { GUIDE_LINKS, guideAction, guideOptions, withGuide } from "../public/src/shared/guide-links.js";
++import { GUIDE_LINKS, GUIDE_TOAST_SECONDS, guideAction, guideOptions, withGuide } from "../public/src/shared/guide-links.js";
+ 
+ const ROOT = new URL("../", import.meta.url).pathname;
+ const read = (rel) => fs.readFileSync(path.join(ROOT, rel), "utf8");
+@@ -49,6 +49,15 @@ test("fetchImportDraft: expired → #s8, wrong kind / server error → missing-i
+   assert.equal(await guideOf(), undefined);
+ });
+ 
++test("guide-link toasts stay long enough to read, and no call site hardcodes a shorter time", () => {
++  assert.ok(GUIDE_TOAST_SECONDS >= 20);
++  for (const f of ["features/home/mcp-draft-import.js", "features/create-quiz/create-quiz.js", "features/create-lesson/create-lesson.js", "features/notebook/notebook-editor.js", "features/home/adminUpload.js"]) {
++    const src = read(`public/src/${f}`);
++    assert.doesNotMatch(src, /"(error|warning)", \d+, (guideOptions|\{ action)/, `${f} hardcodes a toast time`);
++    assert.match(src, /GUIDE_TOAST_SECONDS/, `${f} does not use GUIDE_TOAST_SECONDS`);
++  }
++});
++
+ test("success toasts carry no guide link; upload failures do", () => {
+   const upload = read("public/src/features/home/adminUpload.js");
+   assert.doesNotMatch(upload, /showNotification\("تم الرفع بنجاح", "", "success", [^)]*guide/);

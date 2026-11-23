@@ -29,7 +29,7 @@ import { setupGlobalMarkdownToolbar } from "../../shared/global-markdown-toolbar
 import { applyMarkdownToolbarAction } from "../../shared/markdown-toolbar-actions.js";
 import { mountSourceField } from "../../shared/rich-input/source-field.js";
 import { fetchImportDraft } from "../../shared/import-draft.js";
-import { guideOptions } from "../../shared/guide-links.js";
+import { guideOptions, GUIDE_TOAST_SECONDS } from "../../shared/guide-links.js";
 import { reserveStorage, releaseStorage } from "../../shared/storage-guard.js";
 import { checkQuiz, cleanSource, stripLegacySource } from "../../shared/content-rules.js";
 
@@ -576,7 +576,7 @@ async function loadDraftJsonSafely() {
   try {
     return await fetchImportDraft("quiz");
   } catch (err) {
-    showNotification("تعذّر فتح الرابط", err.message, "error", 10, guideOptions(err));
+    showNotification("تعذّر فتح الرابط", err.message, "error", GUIDE_TOAST_SECONDS, guideOptions(err));
     return null;
   }
 }

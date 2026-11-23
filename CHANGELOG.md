@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - expired draft link (404) -> `/how-to-connect-mcp#s8` (FAQ);
   - failed MCP import / draft (server error, wrong kind, storage full) -> `/how-to-connect-mcp#faq-item-missing`, the new id on the "opened the link, can't find the item" FAQ entry; `doc-steps.js` opens a `<details>` targeted by the URL hash;
   - failed or partly failed upload in the admin wizard -> `/how-to-upload-content#s4` (verifying the upload). Session-expiry failures and network errors carry no link.
+- Toasts with a guide link stay 25 s (`GUIDE_TOAST_SECONDS`) instead of the 5-10 s defaults, so they can be read in full.
 - `tests/guide-links.test.js` checks that every link target exists in the generated guide pages.
 
 ## Docs discoverability

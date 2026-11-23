@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { GUIDE_LINKS, guideAction, guideOptions, withGuide } from "../public/src/shared/guide-links.js";
+import { GUIDE_LINKS, GUIDE_TOAST_SECONDS, guideAction, guideOptions, withGuide } from "../public/src/shared/guide-links.js";
 
 const ROOT = new URL("../", import.meta.url).pathname;
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), "utf8");
@@ -47,6 +47,15 @@ test("fetchImportDraft: expired → #s8, wrong kind / server error → missing-i
   assert.equal(await guideOf(), "itemMissing");
   respond(new Error("offline"));
   assert.equal(await guideOf(), undefined);
+});
+
+test("guide-link toasts stay long enough to read, and no call site hardcodes a shorter time", () => {
+  assert.ok(GUIDE_TOAST_SECONDS >= 20);
+  for (const f of ["features/home/mcp-draft-import.js", "features/create-quiz/create-quiz.js", "features/create-lesson/create-lesson.js", "features/notebook/notebook-editor.js", "features/home/adminUpload.js"]) {
+    const src = read(`public/src/${f}`);
+    assert.doesNotMatch(src, /"(error|warning)", \d+, (guideOptions|\{ action)/, `${f} hardcodes a toast time`);
+    assert.match(src, /GUIDE_TOAST_SECONDS/, `${f} does not use GUIDE_TOAST_SECONDS`);
+  }
 });
 
 test("success toasts carry no guide link; upload failures do", () => {

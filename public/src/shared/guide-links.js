@@ -8,6 +8,9 @@
 //
 // The hrefs must match ids in docs-src/pages/*.html (tests/guide-links.test.js checks it).
 
+/** Seconds a toast with a guide link stays up: long enough to read the message and decide to click. */
+export const GUIDE_TOAST_SECONDS = 25;
+
 export const GUIDE_LINKS = {
   draftExpired: {
     href: "/how-to-connect-mcp#s8",
