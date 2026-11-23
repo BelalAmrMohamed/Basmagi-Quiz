@@ -4,9 +4,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { GUIDE_LINKS, GUIDE_TOAST_SECONDS, guideAction, guideOptions, withGuide } from "../public/src/shared/guide-links.js";
 
-const ROOT = new URL("../", import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 
 test("every guide link points to an id that exists in the generated guide page", () => {

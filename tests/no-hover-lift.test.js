@@ -7,8 +7,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const PUBLIC = new URL("../public/", import.meta.url).pathname;
+const PUBLIC = fileURLToPath(new URL("../public/", import.meta.url));
 
 function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

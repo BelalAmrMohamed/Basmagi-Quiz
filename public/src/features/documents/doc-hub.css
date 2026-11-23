@@ -1,0 +1,448 @@
+/* =============================================================================
+   public/src/features/documents/doc-hub.css
+   Documentation Hub: modern card directory for Basmagi Quiz guides.
+   ============================================================================= */
+
+.docs-hub-body {
+  background-color: var(--color-background, var(--bg));
+  min-height: 100vh;
+}
+
+.hub-main-container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+/* ─────────────────────────────────────────
+   HERO BANNER
+───────────────────────────────────────── */
+.hub-hero {
+  position: relative;
+  background: var(--bg-wash);
+  border: 1px solid var(--rule-heavy);
+  border-radius: var(--radius-2xl, 24px);
+  padding: 40px 36px;
+  margin-bottom: 40px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.hub-hero::before {
+  content: "";
+  position: absolute;
+  top: -60px;
+  left: -60px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--color-primary, #3b82f6) 0%, transparent 70%);
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.hub-hero__content {
+  position: relative;
+  max-width: 760px;
+}
+
+.hub-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--bg-tint);
+  border: 1px solid var(--rule);
+  color: var(--color-primary, #3b82f6);
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.hub-hero__title {
+  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+  margin: 0 0 12px;
+  letter-spacing: -0.02em;
+}
+
+.hub-hero__desc {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  margin: 0 0 20px;
+}
+
+.hub-hero__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.hub-hero__meta-dot {
+  opacity: 0.5;
+}
+
+.hub-hero__controls {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hub-search-wrap {
+  position: relative;
+  max-width: 520px;
+}
+
+.hub-search-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-muted);
+  pointer-events: none;
+}
+
+.hub-search-input {
+  width: 100%;
+  height: 46px;
+  padding: 0 44px 0 16px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--rule-heavy);
+  border-radius: var(--radius-lg, 12px);
+  outline: none;
+  transition: border-color var(--transition-fast, 0.15s ease), box-shadow var(--transition-fast, 0.15s ease);
+}
+
+.hub-search-input:focus {
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.hub-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hub-filter-pill {
+  padding: 6px 16px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast, 0.15s ease),
+              border-color var(--transition-fast, 0.15s ease),
+              color var(--transition-fast, 0.15s ease);
+}
+
+.hub-filter-pill:hover {
+  background: var(--bg-tint);
+  border-color: var(--rule-heavy);
+  color: var(--ink);
+}
+
+.hub-filter-pill.active {
+  background: var(--color-primary, #111827);
+  border-color: var(--color-primary, #111827);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ─────────────────────────────────────────
+   AUDIENCE SECTIONS & HEADERS
+───────────────────────────────────────── */
+.hub-section,
+section[data-audience] {
+  margin-top: 48px;
+}
+
+.hub-section__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.hub-section__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-lg, 12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--bg-tint);
+  border: 1px solid var(--rule);
+}
+
+.hub-icon--students {
+  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.hub-icon--creators {
+  color: #7c3aed;
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.hub-icon--admins {
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.hub-icon--ai {
+  color: #0284c7;
+  background: rgba(14, 165, 233, 0.1);
+  border-color: rgba(14, 165, 233, 0.2);
+}
+
+.hub-section__title {
+  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+  margin: 0;
+}
+
+.hub-section__desc {
+  font-size: 0.88rem;
+  color: var(--ink-muted);
+  margin: 2px 0 0;
+}
+
+/* ─────────────────────────────────────────
+   DOCUMENT CARDS GRID
+───────────────────────────────────────── */
+.doc-hub,
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.doc-hub li {
+  margin: 0;
+  padding: 0;
+}
+
+.doc-hub li::marker {
+  display: none;
+  content: "";
+}
+
+.doc-hub__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  min-height: 190px;
+  box-sizing: border-box;
+  padding: 24px;
+  background: var(--bg-wash);
+  border: 1px solid var(--rule-heavy);
+  border-radius: var(--radius-xl, 16px);
+  text-decoration: none;
+  color: var(--ink);
+  transition: border-color var(--transition-fast, 0.15s ease),
+              background var(--transition-fast, 0.15s ease),
+              box-shadow var(--transition-fast, 0.15s ease);
+}
+
+.doc-hub__card:hover,
+.doc-hub__card:focus-visible {
+  background: var(--bg-tint);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+/* Themed card borders on hover */
+[data-audience="students"] .doc-hub__card:hover,
+[data-audience="students"] .doc-hub__card:focus-visible {
+  border-color: #10b981;
+}
+
+[data-audience="creators"] .doc-hub__card:hover,
+[data-audience="creators"] .doc-hub__card:focus-visible {
+  border-color: #8b5cf6;
+}
+
+[data-audience="admins"] .doc-hub__card:hover,
+[data-audience="admins"] .doc-hub__card:focus-visible {
+  border-color: #f59e0b;
+}
+
+[data-audience="ai"] .doc-hub__card:hover,
+[data-audience="ai"] .doc-hub__card:focus-visible {
+  border-color: #3b82f6;
+}
+
+.doc-hub__card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.doc-hub__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+[data-audience="students"] .doc-hub__icon { color: #059669; }
+[data-audience="creators"] .doc-hub__icon { color: #7c3aed; }
+[data-audience="admins"] .doc-hub__icon { color: #d97706; }
+[data-audience="ai"] .doc-hub__icon { color: #0284c7; }
+
+.doc-hub__tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.doc-hub__note,
+.doc-hub__tag--admin {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-full, 9999px);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #b45309;
+}
+
+.doc-hub__card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.doc-hub__title {
+  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.doc-hub__desc {
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.doc-hub__card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-primary, #3b82f6);
+}
+
+.doc-hub__arrow {
+  color: inherit;
+  transition: transform var(--transition-fast, 0.15s ease);
+}
+
+.doc-hub__card:hover .doc-hub__arrow {
+  transform: translateX(-5px);
+}
+
+/* ─────────────────────────────────────────
+   EMPTY STATE FOR SEARCH
+───────────────────────────────────────── */
+.hub-empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--ink-muted);
+  background: var(--bg-wash);
+  border: 1px dashed var(--rule-heavy);
+  border-radius: var(--radius-xl, 16px);
+  margin-top: 32px;
+}
+
+.hub-empty-state svg {
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.hub-empty-state p {
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────
+   RESPONSIVENESS & REDUCED MOTION
+───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hub-main-container {
+    padding: 24px 16px 60px;
+  }
+  .hub-hero {
+    padding: 28px 20px;
+    border-radius: var(--radius-xl, 16px);
+  }
+  .hub-hero__title {
+    font-size: 1.75rem;
+  }
+  .doc-hub,
+  .hub-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+html[data-motion="reduced"] .doc-hub__card,
+html[data-motion="reduced"] .doc-hub__arrow,
+html[data-motion="reduced"] .hub-filter-pill,
+html[data-motion="reduced"] .hub-search-input {
+  transition: none !important;
+  transform: none !important;
+}

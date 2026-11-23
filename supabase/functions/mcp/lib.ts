@@ -310,6 +310,7 @@ export const CREATOR_INFO: Record<string, string> = {
   pages: `## صفحات مفيدة
 - ${SITE}/create-quiz — إنشاء امتحان
 - ${SITE}/create-lesson — إنشاء درس
+- ${SITE}/docs — الأدلة والمساعدة (مرتّبة حسب الفئة)
 - ${SITE}/how-to-create-content — شرح إنشاء امتحان
 - ${SITE}/how-to-upload-content — شرح رفع امتحان
 - ${SITE}/how-to-connect-mcp — ربط Claude/ChatGPT بالمنصة (MCP) بالصور

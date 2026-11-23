@@ -9,6 +9,10 @@
 //
 //   node scripts/build-docs.mjs           write the pages
 //   node scripts/build-docs.mjs --check   exit 1 if any page is out of date (CI / tests)
+//   node scripts/build-docs.mjs --chapters [slug]   print the video chapters as a YouTube-description block
+//
+// Line endings: a generated page uses the same line ending as its source in docs-src/pages/ (CRLF in this
+// repo), so a rebuild never rewrites a page whose content did not change.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -88,19 +92,134 @@ export function buildHowTo(meta, body, url) {
   };
 }
 
+const pad2 = (n) => String(n).padStart(2, "0");
+
+/** `0 -> "00:00"`, `275 -> "04:35"`, `3725 -> "1:02:05"` (the timestamp format YouTube reads in a description). */
+export function formatTimestamp(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return h ? `${h}:${pad2(m)}:${pad2(s)}` : `${pad2(m)}:${pad2(s)}`;
+}
+
+/** ISO 8601 duration for schema.org: `275 -> "PT4M35S"`. */
+export function isoDuration(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `PT${h ? `${h}H` : ""}${m ? `${m}M` : ""}${s || (!h && !m) ? `${s}S` : ""}`;
+}
+
+/** The `.doc-video-chip[data-time]` buttons of one video card, in page order. */
+export function parseVideoChapters(cardHtml) {
+  const chapters = [];
+  for (const m of cardHtml.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/g)) {
+    if (!/\bclass="[^"]*\bdoc-video-chip\b/.test(m[1])) continue;
+    const time = m[1].match(/\bdata-time="(\d+)"/);
+    if (!time) throw new Error("video: a .doc-video-chip has no numeric data-time");
+    const spans = [...m[2].matchAll(/<span\b[^>]*>([\s\S]*?)<\/span>/g)].map((s) => stripTags(s[1]));
+    const [label, name] = spans;
+    const start = Number(time[1]);
+    if (!name) throw new Error(`video: the chapter at ${start}s has no title`);
+    // The visible label and data-time must agree, otherwise the page itself is wrong.
+    if (label !== formatTimestamp(start)) throw new Error(`video: chapter "${name}" shows ${label} but data-time=${start} is ${formatTimestamp(start)}`);
+    chapters.push({ name, start });
+  }
+  return chapters;
+}
+
+/**
+ * YouTube only turns a description into chapters when: the first timestamp is 0:00, there are at least
+ * three of them, they ascend, and each chapter lasts at least 10 seconds. Offsets are completed here:
+ * each chapter ends where the next starts, the last one at the video duration.
+ */
+export function withChapterEnds(chapters, durationSeconds) {
+  if (!Number.isInteger(durationSeconds) || durationSeconds <= 0) throw new Error("video: durationSeconds must be a positive integer");
+  if (chapters.length < 3) throw new Error(`video: YouTube needs at least 3 chapters (found ${chapters.length})`);
+  if (chapters[0].start !== 0) throw new Error("video: the first chapter must start at 00:00");
+  return chapters.map((c, i) => {
+    const end = i + 1 < chapters.length ? chapters[i + 1].start : durationSeconds;
+    if (end <= c.start) throw new Error(`video: chapter "${c.name}" (${c.start}s) must end after it starts: chapters must ascend and stay inside the ${durationSeconds}s duration`);
+    if (end - c.start < 10) throw new Error(`video: chapter "${c.name}" lasts ${end - c.start}s; YouTube needs at least 10s`);
+    return { ...c, end };
+  });
+}
+
+/** Finds the video card of `cfg.id` and returns what the JSON-LD and the YouTube description are built from. */
+export function readVideo(meta, body) {
+  const cfg = meta.video;
+  if (!cfg) return null;
+  for (const key of ["id", "uploadDate", "durationSeconds"]) if (cfg[key] === undefined) throw new Error(`video: front matter "video.${key}" is missing`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(cfg.uploadDate)) throw new Error('video: "uploadDate" must be YYYY-MM-DD');
+  const cards = body.match(/<article class="doc-video-card"[\s\S]*?<\/article>/g) || [];
+  const card = cards.find((c) => c.includes(`/embed/${cfg.id}`));
+  if (!card) throw new Error(`video: no .doc-video-card embeds ${cfg.id}`);
+  const chapters = withChapterEnds(parseVideoChapters(card), cfg.durationSeconds);
+  const name = stripTags((card.match(/<h[23]>([\s\S]*?)<\/h[23]>/) || [])[1] || "");
+  const description = stripTags((card.match(/<p class="doc-video-card__desc">([\s\S]*?)<\/p>/) || [])[1] || "").replace(/\s*[:：]$/, ".");
+  if (!name || !description) throw new Error("video: the card needs a title and a .doc-video-card__desc");
+  return { id: cfg.id, uploadDate: cfg.uploadDate, durationSeconds: cfg.durationSeconds, name, description, chapters };
+}
+
+/** schema.org VideoObject with one Clip per chapter chip (Google "key moments"), built from the page so it cannot drift. */
+export function buildVideoObject(meta, body) {
+  const v = readVideo(meta, body);
+  if (!v) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    name: v.name,
+    description: v.description,
+    inLanguage: "ar",
+    thumbnailUrl: [`https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`],
+    uploadDate: v.uploadDate,
+    duration: isoDuration(v.durationSeconds),
+    contentUrl: `https://www.youtube.com/watch?v=${v.id}`,
+    embedUrl: `https://www.youtube.com/embed/${v.id}`,
+    hasPart: v.chapters.map((c) => ({
+      "@type": "Clip",
+      name: c.name,
+      startOffset: c.start,
+      endOffset: c.end,
+      url: `https://youtu.be/${v.id}?t=${c.start}`,
+    })),
+  };
+}
+
+/** The same chapters as plain text for the YouTube description: `00:00 Title`, one per line. */
+export function youtubeChapterBlock(meta, body) {
+  const v = readVideo(meta, body);
+  if (!v) return null;
+  return v.chapters.map((c) => `${formatTimestamp(c.start)} ${c.name}`).join("\n");
+}
+
 async function loadNav() {
   return import(pathToFileURL(path.join(PUBLIC, "src/features/documents/docs-nav.js")).href);
 }
 
 function nextGuideHtml(slug, nav) {
-  const idx = nav.GUIDE_ORDER.indexOf(`/${slug}`);
-  if (idx === -1 || idx === nav.GUIDE_ORDER.length - 1) return "";
-  const href = nav.GUIDE_ORDER[idx + 1];
-  const link = nav.DOCS_LINKS.find((l) => l.href === href);
-  if (!link) return "";
-  return `            <nav class="doc-next" aria-label="الدليل التالي">
-                <span class="doc-next__label">الدليل التالي</span>
-                <a class="doc-next__link" href="${href}">${escapeText(link.label)} ←</a>
+  if (slug === "docs") return "";
+  if (!nav.GUIDE_ORDER.includes(`/${slug}`)) return "";
+  return `            <nav class="doc-back-hub" aria-label="مركز الأدلة والمساعدة">
+                <a class="doc-back-hub__card" href="/docs">
+                    <div class="doc-back-hub__icon" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        </svg>
+                    </div>
+                    <div class="doc-back-hub__body">
+                        <span class="doc-back-hub__label">مركز الأدلة والمساعدة</span>
+                        <strong class="doc-back-hub__title">العودة إلى فهرس الأدلة والمستندات</strong>
+                        <p class="doc-back-hub__desc">استعرض جميع أدلة الطلاب، وصنّاع المحتوى، والمشرفين، والربط بالذكاء الاصطناعي</p>
+                    </div>
+                    <div class="doc-back-hub__action" aria-hidden="true">
+                        <span class="doc-back-hub__btn">تصفح الأدلة</span>
+                        <svg class="doc-back-hub__arrow" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m15 18-6-6 6-6"/>
+                        </svg>
+                    </div>
+                </a>
             </nav>`;
 }
 
@@ -112,7 +231,9 @@ export async function buildAll({ write = true } = {}) {
 
   for (const file of fs.readdirSync(path.join(SRC, "pages")).filter((f) => f.endsWith(".html")).sort()) {
     const slug = file.replace(/\.html$/, "");
-    const { meta, body } = parsePage(fs.readFileSync(path.join(SRC, "pages", file), "utf8"), file);
+    const source = fs.readFileSync(path.join(SRC, "pages", file), "utf8");
+    const { meta, body } = parsePage(source, file);
+    const eol = source.includes("\r\n") ? "\r\n" : "\n";
     const shellTpl = fs.readFileSync(path.join(SRC, "shells", `${meta.shell}.html`), "utf8");
 
     const extraStyles = (meta.styles || [])
@@ -120,10 +241,11 @@ export async function buildAll({ write = true } = {}) {
       .map((s) => `    <link rel="stylesheet" href="${s}" />\n`)
       .join("");
     const url = `${ORIGIN}/${slug}`;
-    const ld = meta.jsonLd || buildHowTo(meta, body, url);
-    const jsonLd = ld
-      ? `    <script type="application/ld+json">\n${JSON.stringify(ld, null, 2).replace(/</g, "\\u003c")}\n    </script>\n`
-      : "";
+    // HowTo first (tests and crawlers read the first block), then the VideoObject when the page has a video.
+    const jsonLd = [meta.jsonLd || buildHowTo(meta, body, url), buildVideoObject(meta, body)]
+      .filter(Boolean)
+      .map((ld) => `    <script type="application/ld+json">\n${JSON.stringify(ld, null, 2).replace(/</g, "\\u003c")}\n    </script>\n`)
+      .join("");
     const head = render(headTpl, {
       description: meta.description,
       keywords: meta.keywords || `بصمجي، ${meta.title}، منصة امتحانات`,
@@ -157,7 +279,7 @@ export async function buildAll({ write = true } = {}) {
       next: nextGuideHtml(slug, nav),
       footer,
       extraScripts,
-    }).replace(/\n{3,}/g, "\n\n");
+    }).replace(/\n{3,}/g, "\n\n").replace(/\r?\n/g, eol);
 
     const out = path.join(PUBLIC, `${slug}.html`);
     const current = fs.existsSync(out) ? fs.readFileSync(out, "utf8") : null;
@@ -167,7 +289,17 @@ export async function buildAll({ write = true } = {}) {
   return results;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url) && process.argv.includes("--chapters")) {
+  const arg = process.argv[process.argv.indexOf("--chapters") + 1];
+  const slug = arg && !arg.startsWith("--") ? arg : "how-to-connect-mcp";
+  const { meta, body } = parsePage(fs.readFileSync(path.join(SRC, "pages", `${slug}.html`), "utf8"), `${slug}.html`);
+  const block = youtubeChapterBlock(meta, body);
+  if (!block) {
+    console.error(`${slug}: no "video" in the front matter`);
+    process.exit(1);
+  }
+  console.log(block);
+} else if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const check = process.argv.includes("--check");
   const results = await buildAll({ write: !check });
   const stale = results.filter((r) => r.stale);

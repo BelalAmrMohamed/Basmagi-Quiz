@@ -40,6 +40,7 @@ const NOINDEX_PAGES = [
 const STATIC_INDEXABLE_PAGES = [
     "/about",
     "/create-quiz",
+    "/docs",
     "/how-to-connect-mcp",
     "/how-to-create-content",
     "/how-to-upload-content",
@@ -277,6 +278,30 @@ async function checkStaticIndexablePages() {
     }
 }
 
+// ── 5b. Video structured data on the MCP guide ───────────────────────────────
+
+async function checkGuideVideoStructuredData() {
+    console.log("\n[5b] VideoObject JSON-LD with chapter clips (/how-to-connect-mcp)");
+    const res = await get("/how-to-connect-mcp");
+    if (!res.ok) return fail("/how-to-connect-mcp reachable for the VideoObject check", `HTTP ${res.status}`);
+
+    const blocks = [...res.text.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+    const docs = [];
+    for (const b of blocks) {
+        try { docs.push(JSON.parse(b[1])); } catch { return fail("/how-to-connect-mcp JSON-LD blocks all parse", "JSON.parse threw"); }
+    }
+    pass(`/how-to-connect-mcp has ${docs.length} JSON-LD block(s), all parse`);
+
+    const video = docs.find((d) => d["@type"] === "VideoObject");
+    if (!video) return fail("/how-to-connect-mcp has a VideoObject", "not found");
+    pass("/how-to-connect-mcp has a VideoObject");
+
+    const clips = Array.isArray(video.hasPart) ? video.hasPart : [];
+    const ordered = clips.every((c, i) => c["@type"] === "Clip" && c.endOffset > c.startOffset && (i === 0 || c.startOffset === clips[i - 1].endOffset));
+    if (clips.length >= 3 && clips[0].startOffset === 0 && ordered) pass(`VideoObject has ${clips.length} ordered Clip chapters starting at 0`);
+    else fail("VideoObject has >=3 ordered Clip chapters starting at 0", `${clips.length} clip(s)`);
+}
+
 // ── 6. noindex pages ─────────────────────────────────────────────────────────
 
 async function checkNoindexPages() {
@@ -342,6 +367,7 @@ async function main() {
     await checkFeeds();
     await checkGeoDocs();
     await checkStaticIndexablePages();
+    await checkGuideVideoStructuredData();
     await checkNoindexPages();
     await checkStructuredData();
 

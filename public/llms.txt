@@ -9,16 +9,17 @@
 - [إنشاء امتحانات تفاعلية](https://basmagi-quiz.vercel.app/create-quiz): أنشئ امتحانًا بصيغ اختيار من متعدد، صح/خطأ، ومقالي مع شرح وصور وفيديو.
 - [إنشاء دروس تفاعلية](https://basmagi-quiz.vercel.app/create-lesson): كتابة دروس تفاعلية غنية بالأقسام والوسائط والأسئلة التقييمية.
 - [إنشاء الدفاتر البرمجية](https://basmagi-quiz.vercel.app/notebook/new): دفاتر برمجية تفاعلية بأسلوب MATLAB تعمل بالكامل داخل المتصفح.
-- [كيفية إنشاء امتحان](https://basmagi-quiz.vercel.app/how-to-create-content): دليل خطوة بخطوة.
+- [إنشاء محتوى](https://basmagi-quiz.vercel.app/how-to-create-content): دليل شامل لإنشاء أنواع المحتوى على المنصة.
 - [كيفية رفع امتحان للمشرفين](https://basmagi-quiz.vercel.app/how-to-upload-content): دليل الإدخال الجماعي للامتحانات والدروس والدفاتر.
 - [ربط Claude و ChatGPT بالمنصة (MCP)](https://basmagi-quiz.vercel.app/how-to-connect-mcp): دليل بالصور لربط خادم MCP وإنشاء امتحان أو درس أو دفتر من محاضرتك وحفظه مباشرة في «محتواي».
 - [الباشــمبصمج — مساعد AI](https://basmagi-quiz.vercel.app/how-to-use-ai-agent): مساعد ذكاء اصطناعي لفهم وشرح الأسئلة وتحضير الامتحانات، وربط المنصة بـ Claude عبر MCP.
 - [Skill كتابة الامتحانات والدروس لـ Claude](https://basmagi-quiz.vercel.app/assets/downloads/basmagi-authoring.skill): ملف Skill للتحميل يعرّف Claude بطريقة العمل مع موصّل المنصة.
 
 ## الأدلة وربط الذكاء الاصطناعي
+- [الأدلة والمساعدة](https://basmagi-quiz.vercel.app/docs): مركز الأدلة، مرتّبة حسب الفئة: طلاب، صنّاع محتوى، مشرفون، وربط الذكاء الاصطناعي.
 - خادم MCP للمنصة (بلا تسجيل دخول): https://basmagi-quiz.vercel.app/api/mcp — يتيح البحث في محتوى المنصة وإنشاء امتحان أو درس أو دفتر يُحفظ في «محتواي» عبر رابط مسودة قصير صالح ٧٢ ساعة.
 - [دليل ربط Claude وChatGPT وGemini](https://basmagi-quiz.vercel.app/how-to-connect-mcp): خطوات الربط بالفيديو والصور، ثم طلب إنشاء المحتوى.
-- [دليل إنشاء امتحان](https://basmagi-quiz.vercel.app/how-to-create-content): إنشاء الامتحانات ومراجعتها وتعديلها.
+- [دليل إنشاء محتوى](https://basmagi-quiz.vercel.app/how-to-create-content): إنشاء الامتحانات والدروس والدفاتر والمواد والمجلدات وفيديوهات يوتيوب.
 - [دليل المشرفين لرفع المحتوى ونشره](https://basmagi-quiz.vercel.app/how-to-upload-content): صلاحيات المشرفين ورفع الامتحانات وإنشاء المواد والتحقق من النشر.
 - [دليل الباشــمبصمج](https://basmagi-quiz.vercel.app/how-to-use-ai-agent): استخدام المساعد المدمج.
 
