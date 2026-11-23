@@ -198,7 +198,6 @@ if (sidebarNav) {
   sidebarNav.insertAdjacentHTML(
     "beforeend",
     `<div class="menu-divider" role="separator" aria-hidden="true"></div>` +
-    `<div class="docs-menu-heading sidebar-expanded-only" aria-hidden="true">المستندات</div>` +
     `<div class="docs-menu-section" role="navigation" aria-label="مستندات المنصة">${docsLinksHtml}</div>`,
   );
 
@@ -213,112 +212,6 @@ if (sidebarNav) {
     else link.removeAttribute("aria-current");
   });
 }
-
-// ── Search on /docs Hub ──────────────────────────────────────────────────
-// Moves documentation search to the dedicated /docs page where all guides
-// are listed as cards. Searches guide titles, descriptions, badges, tags,
-// and lazily fetches/searches full document body text.
-function initDocsHubSearch() {
-  const searchInput = document.getElementById("docsHubSearch");
-  const hubGrid = document.querySelector(".hub-grid");
-  const emptyState = document.getElementById("hubSearchEmpty");
-  if (!searchInput || !hubGrid) return;
-
-  const hubItems = Array.from(hubGrid.querySelectorAll(".hub-grid__item"));
-  if (!hubItems.length) return;
-
-  const CONTENT_CACHE_KEY = "docs_search_content_cache_v2";
-  let contentCache = null;
-  function loadContentCache() {
-    if (contentCache) return contentCache;
-    try {
-      contentCache = JSON.parse(sessionStorage.getItem(CONTENT_CACHE_KEY) || "{}");
-    } catch (_) {
-      contentCache = {};
-    }
-    return contentCache;
-  }
-  function saveContentCache() {
-    try {
-      sessionStorage.setItem(CONTENT_CACHE_KEY, JSON.stringify(contentCache || {}));
-    } catch (_) {}
-  }
-
-  async function getDocText(href) {
-    const cache = loadContentCache();
-    if (typeof cache[href] === "string") return cache[href];
-    try {
-      const res = await fetch(href);
-      if (!res.ok) throw new Error(`fetch ${href} failed: ${res.status}`);
-      const html = await res.text();
-      const doc = new DOMParser().parseFromString(html, "text/html");
-      doc.querySelectorAll("script, style, nav, .sidebar, .bottom-nav, .site-footer, .about-footer").forEach((el) => el.remove());
-      const text = (doc.body?.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
-      cache[href] = text;
-      saveContentCache();
-      return text;
-    } catch (_) {
-      cache[href] = "";
-      return "";
-    }
-  }
-
-  let searchToken = 0;
-  async function runSearch(query) {
-    const token = ++searchToken;
-    let anyVisible = false;
-
-    if (!query) {
-      hubItems.forEach((item) => {
-        item.hidden = false;
-      });
-      if (emptyState) emptyState.hidden = true;
-      return;
-    }
-
-    const results = await Promise.all(
-      hubItems.map(async (item) => {
-        const title = (item.querySelector(".doc-hub__title")?.textContent || "").toLowerCase();
-        const desc = (item.querySelector(".doc-hub__desc")?.textContent || "").toLowerCase();
-        const tags = Array.from(item.querySelectorAll(".doc-hub__tag, .doc-hub__note, .doc-hub__badge"))
-          .map((el) => el.textContent.toLowerCase())
-          .join(" ");
-
-        if (title.includes(query) || desc.includes(query) || tags.includes(query)) {
-          return { item, matched: true };
-        }
-
-        const link = item.querySelector("a.doc-hub__card");
-        const href = link?.getAttribute("href");
-        if (href) {
-          const text = await getDocText(href);
-          if (text.includes(query)) {
-            return { item, matched: true };
-          }
-        }
-        return { item, matched: false };
-      }),
-    );
-
-    if (token !== searchToken) return;
-
-    results.forEach(({ item, matched }) => {
-      item.hidden = !matched;
-      if (matched) anyVisible = true;
-    });
-
-    if (emptyState) emptyState.hidden = anyVisible;
-  }
-
-  let debounceHandle = null;
-  searchInput.addEventListener("input", () => {
-    const query = searchInput.value.trim().toLowerCase();
-    clearTimeout(debounceHandle);
-    debounceHandle = setTimeout(() => runSearch(query), query ? 150 : 0);
-  });
-}
-
-initDocsHubSearch();
 
 const mobileProfile = document.querySelector('.bottom-nav-item-profile .bottom-nav-icon');
 if (mobileProfile) mobileProfile.innerHTML = `<svg class="bottom-nav-default-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" /></svg><img class="bottom-nav-avatar" id="navBottomAvatar" src="" alt="" style="display:none;">`;
