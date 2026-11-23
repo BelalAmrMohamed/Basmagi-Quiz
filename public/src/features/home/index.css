@@ -4077,3 +4077,17 @@ kbd {
       rgba(255, 192, 203, 0.6) 50%,
       transparent 100%);
 }
+/* ── «اربط مساعدك» hint inside the My Content empty state ──────────────────── */
+.connect-hint { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 18px; max-width: 520px; }
+.connect-hint p { margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); }
+.connect-hint__url {
+  display: flex; align-items: center; gap: 8px; max-width: 100%;
+  padding: 6px 6px 6px 10px; border: 1px solid var(--color-border-light); border-radius: 8px;
+  background: var(--color-surface);
+}
+.connect-hint__url code { min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 0.8rem; }
+.connect-hint__copy {
+  flex-shrink: 0; padding: 5px 12px; border: 0; border-radius: 6px; cursor: pointer;
+  background: var(--color-primary); color: #fff; font: inherit; font-size: 0.78rem;
+}
+.connect-hint__link { font-size: 0.82rem; color: var(--color-primary); text-decoration: underline; text-underline-offset: 3px; }

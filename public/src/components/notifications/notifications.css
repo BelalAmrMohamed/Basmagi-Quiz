@@ -409,3 +409,12 @@
   color: inherit;
 }
 .confirmation-overlay[popover]:not(:popover-open) { display: none; }
+
+.notification-action {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

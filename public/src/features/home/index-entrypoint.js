@@ -26,6 +26,7 @@ import { initApp, restoreViewFromURL } from "./navigation.js";
 import { renderRootCategories } from "./root-view.js";
 import { renderUserContentView } from "./user-content-view.js";
 import { importMcpDraftFromUrl } from "./mcp-draft-import.js";
+import { maybeShowAdminWelcome } from "./admin-welcome-toast.js";
 import { setFolderState } from "./user-content-folders.js";
 import { initCustomTooltips } from "../../components/tooltip/tooltip.js";
 import { startQuiz } from "./quiz-navigation.js";
@@ -152,6 +153,9 @@ document.addEventListener("DOMContentLoaded", () => {
       setRestoring(false);
     }
   });
+
+  // First admin sign-in: one-time toast linking to the upload guide.
+  maybeShowAdminWelcome();
 
   // MCP draft link (/my-content?draft=<code>): save the item into «محتواي»
   // BEFORE the first render so the grid already contains it (and can highlight it).

@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Docs discoverability
+- Sidebar item «الأدلة والمساعدة» on every page that has the sidebar; docs links in the sign-in dialog, the admin upload wizard, the lesson editor help menu and the notebook creator.
+- «محتواي»: the MCP URL with a copy button and a guide link now appears only inside the empty state (no content at all), via `connect-card.js`.
+- One-time admin welcome toast after the first successful sign-in (`admin-welcome-toast.js`); `llms.txt` lists the guides and the MCP URL; MCP page video chapters restored for the new video.
+- `showNotification` takes an optional 5th argument `{ action: { label, href } }`; the MCP import toast uses it once per browser.
+
+## MCP docs: new video
+- `how-to-connect-mcp`: embedded the new MCP video (`ysckQBfLFFw`), removed the "recorded before the update" note and the old chapter chips (timestamps belonged to the deleted video), bumped `updated`. Plan `docs/plans/documentation-pages.md` updated: new screenshots dropped, draft links save directly to «محتواي».
+
 ## Agent settings and attachment preview inside the window; summarize_youtube transcript fix
 - Settings are a view INSIDE the agent window (back button, Esc, focus returns to the gear), redesigned in grouped sections: provider + own API key, system prompt, phone/Telegram access. Model and reasoning effort are no longer settings (they live in the chat's model bar; the storage keys are unchanged). The attachment preview opens inside the window too, with image, platform-item (quiz, lesson, notebook, YouTube, course, folder) and file layouts and an "open" action. Both use the new `openWindowLayer()` (`ai-agent-window.js`); the chat panel underneath is untouched, so a running reply keeps running.
 - Fix: `summarize_youtube` always answered «الوصف فقط». The transcript is now read through the InnerTube player as the ANDROID, then IOS client (caption URLs without a web `pot` token), then the watch page; each caption URL is tried as json3, XML, srv3 and vtt. Failures are logged as one JSON line per call (`supabase functions logs youtube`) and `GET /api/youtube?action=transcript&id=VIDEO&debug=1` returns the per-step `debug` object (statuses, counts, byte lengths only).

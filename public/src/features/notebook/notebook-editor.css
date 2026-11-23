@@ -15,7 +15,7 @@
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-height: 34px; padding: 6px 12px; border: 1px solid var(--color-border); border-radius: 8px;
   background: var(--color-surface); color: var(--color-text-primary); font: inherit; font-size: .84rem;
-  font-weight: 680; cursor: pointer; transition: background-color .16s ease, border-color .16s ease, box-shadow .16s ease;
+  font-weight: 680; cursor: pointer; text-decoration: none; transition: background-color .16s ease, border-color .16s ease, box-shadow .16s ease;
 }
 .cnb-btn:hover:not(:disabled) { border-color: var(--color-primary); background: var(--color-primary-light); }
 .cnb-btn:active:not(:disabled) { transform: translateY(1px); }

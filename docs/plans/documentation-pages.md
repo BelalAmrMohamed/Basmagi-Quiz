@@ -1,4 +1,4 @@
-## Status (updated 2026-11-12)
+## Status (updated 2026-11-25)
 
 Legend: ✅ done · ⬜ not done · 🧑 needs you
 
@@ -12,12 +12,17 @@ Legend: ✅ done · ⬜ not done · 🧑 needs you
 | Fix the language (MSA) | ✅ | Dialect removed from the MCP page (Skill card, sample prompts). A test flags dialect words. The app UI is untouched. |
 | Screenshots to WebP (~1200px) | ✅ | 10 images, 745 KB to 196 KB. Originals deleted. |
 | `HowTo` JSON-LD on the MCP page | ✅ | Generated from the page's own Claude steps (front-matter `howTo`), so it cannot drift. |
-| "Connect" card inside the app | ⬜ | Product change, not started. |
-| Show the URL in the sign-in flow | ⬜ | Not started. |
-| Link the docs from the "added to My Content" toast | ⬜ | Not started. |
+| New MCP video | ✅ | `https://youtu.be/ysckQBfLFFw` is embedded on the MCP page; the "recorded before the update" note and the old chapter chips are removed. The old video (`ZjizaeFrdwE`) can be deleted on YouTube; nothing in the repo references it. |
+| Video chapters on the MCP page | ✅ | 7 chips (00:00 URL, Claude, ChatGPT, Gemini, each with a usage example). |
+| "Connect" hint inside the app | ✅ | `connect-card.js` renders the URL + copy button + guide link INSIDE the «محتواي» empty state (root level, no content at all). No always-visible link or button is added to `/my-content`. |
+| Docs links where people actually are | ✅ | Sidebar item «الأدلة والمساعدة» on every page with the sidebar; sign-in dialog link to the upload guide; «دليل الرفع» link in the admin upload wizard header; help link in the lesson editor menu and the notebook creator header. |
+| Show the URL in the sign-in flow | ⬜ | Superseded: the sign-in dialog now links to the admin guide; the URL lives in the Connect card. |
+| Link the docs from the "added to My Content" toast | ✅ | `showNotification(..., { action: { label, href } })`; the import toast shows the link once per browser (`bq-mcp-guide-hint-shown`). |
+| Guides for lessons, notebooks and YouTube items | ⬜ | Waiting for the new video «طريقة إنشاء محتوى» (courses, folders, quizzes, lessons, notebooks, YouTube videos and playlists). `/how-to-create-content` will be rewritten when it drops. |
+| One-time admin welcome toast | ✅ | `admin-welcome-toast.js`: after the first successful admin sign-in, links to the upload guide (`bq-admin-welcome-pending` / `bq-admin-welcome-shown`). |
+| Guides in `llms.txt` | ✅ | New section «الأدلة وربط الذكاء الاصطناعي» with the MCP URL and the four guides. |
 | "Try it" demo draft link | ⬜ | Not started. Needs a sample quiz and a `/my-content?draft=` demo. |
-| Screenshots 1–8 | 🧑 | Not taken. Only you can capture them. |
-| Re-record or supplement the video (2:21–2:54) | 🧑 | Not done. The "recorded before the update" note is still on the page. |
+| New screenshots (old items 1–8) | ❌ dropped | The video is enough. The 10 existing step images stay (decided 2026-11-25); take no new ones. |
 
 Also done in the same pass (not in the original plan): `about.html` now has an open-source section, a range-selectable visitors chart, mobile fixes and rich tooltips. Migration `supabase/migrations/20261111180000_analytics_range_stats.sql` must be applied before non-30-day ranges work.
 
@@ -46,9 +51,11 @@ register for the docs. Use simple Modern Standard Arabic and keep dialect for th
 - A **"Connect" card inside the app**, in My Content or Settings, showing the URL with a copy button. Most people would never open the docs.
 - **Show the URL in the sign-in flow too.** Right now it's buried in docs.
 - **Link the docs from the toast.** The new "added to My Content" notification could say "First time? See how to connect" for users arriving from a draft link.
-- **Run the MCP page through your own import flow.** A "Try it" demo link that opens `/my-content?draft=<demo>` and adds a sample quiz would let people see the end result before connecting anything.
+- **Run the MCP page through your own import flow.** (Draft links now save directly in «محتواي», so the demo link needs no editor step.) A "Try it" demo link that opens `/my-content?draft=<demo>` and adds a sample quiz would let people see the end result before connecting anything.
 
-**Screenshots for you to take** (same dark style, 1500×844 if you can):
+**Screenshots: dropped.** The list below is kept only as history; do not take them. The video replaces them.
+
+**Old screenshot list** (same dark style, 1500×844 if you can):
 1. My Content after a draft link opens, with the green «جديد» badge. This is the most important missing image.
 2. The success toast: "تمت إضافة الامتحان إلى «محتواي»".
 3. Claude's reply containing the link, to show what the user clicks.
@@ -61,4 +68,4 @@ register for the docs. Use simple Modern Standard Arabic and keep dialect for th
 **Small technical items:**
 - Convert the screenshots to WebP at about 1200px. They're 40–110 KB now, which is fine, but a JPEG/PNG mix will keep growing.
 - Add `HowTo` structured data (JSON-LD) to the MCP page for search results.
-- The existing video is flagged "recorded before the update". When you can, re-record the 2:21–2:54 segment, or add a 60–90 second clip of the new flow and put it first.
+- ~~The existing video is flagged "recorded before the update".~~ Done: replaced by the new video (see Status).

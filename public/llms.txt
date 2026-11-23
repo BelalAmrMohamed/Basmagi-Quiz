@@ -15,6 +15,13 @@
 - [الباشــمبصمج — مساعد AI](https://basmagi-quiz.vercel.app/how-to-use-ai-agent): مساعد ذكاء اصطناعي لفهم وشرح الأسئلة وتحضير الامتحانات، وربط المنصة بـ Claude عبر MCP.
 - [Skill كتابة الامتحانات والدروس لـ Claude](https://basmagi-quiz.vercel.app/assets/downloads/basmagi-authoring.skill): ملف Skill للتحميل يعرّف Claude بطريقة العمل مع موصّل المنصة.
 
+## الأدلة وربط الذكاء الاصطناعي
+- خادم MCP للمنصة (بلا تسجيل دخول): https://basmagi-quiz.vercel.app/api/mcp — يتيح البحث في محتوى المنصة وإنشاء امتحان أو درس أو دفتر يُحفظ في «محتواي» عبر رابط مسودة قصير صالح ٧٢ ساعة.
+- [دليل ربط Claude وChatGPT وGemini](https://basmagi-quiz.vercel.app/how-to-connect-mcp): خطوات الربط بالفيديو والصور، ثم طلب إنشاء المحتوى.
+- [دليل إنشاء امتحان](https://basmagi-quiz.vercel.app/how-to-create-content): إنشاء الامتحانات ومراجعتها وتعديلها.
+- [دليل المشرفين لرفع المحتوى ونشره](https://basmagi-quiz.vercel.app/how-to-upload-content): صلاحيات المشرفين ورفع الامتحانات وإنشاء المواد والتحقق من النشر.
+- [دليل الباشــمبصمج](https://basmagi-quiz.vercel.app/how-to-use-ai-agent): استخدام المساعد المدمج.
+
 ## التخصصات والمواد (قائمة كاملة محدثة باستمرار)
 - [القائمة الكاملة للمواد والمجلدات والامتحانات والدروس والدفاتر العامة](https://basmagi-quiz.vercel.app/llms-full.txt)
 - [آخر الامتحانات والمواد المضافة (RSS)](https://basmagi-quiz.vercel.app/feed.xml)

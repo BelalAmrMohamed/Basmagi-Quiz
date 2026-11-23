@@ -311,3 +311,24 @@
     text-decoration: underline;
     text-underline-offset: 2px;
 }
+
+/* ── Docs hint (admins: how to upload / publish) ───────────────────────────── */
+.sd-docs-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 14px;
+    padding: 9px 12px;
+    border: 1px dashed var(--color-border-light);
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+.sd-docs-link:hover,
+.sd-docs-link:focus-visible {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
