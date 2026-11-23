@@ -77,6 +77,16 @@
     </div>
 </header>
 
+<div class="hub-search-wrap">
+    <div class="hub-search-box">
+        <svg class="hub-search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input type="search" id="docsHubSearch" class="hub-search-input" placeholder="بحث في المستندات..." aria-label="بحث في المستندات" autocomplete="off">
+    </div>
+</div>
+
 <div class="hub-grid doc-hub" role="list">
     <div class="hub-grid__item" role="listitem">
         <a class="doc-hub__card" href="/how-to-create-content" data-guide="create">
@@ -182,6 +192,8 @@
         </a>
     </div>
 </div>
+
+<p class="hub-empty-state" id="hubSearchEmpty" hidden>لا توجد نتائج مطابقة لبحثك</p>
     </main>
 
 <footer class="site-footer" role="contentinfo">

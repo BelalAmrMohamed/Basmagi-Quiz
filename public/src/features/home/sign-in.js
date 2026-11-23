@@ -102,8 +102,16 @@ function _resetDialog() {
   const requestStep = _q("sd-requestStep");
   const requestLink = _q("sd-requestDirectLink");
   const docsLink = _q("sd-docsLink");
+  const mainTitle = _q("sd-mainTitle");
+  const mainSubtitle = _q("sd-mainSubtitle");
+  const reqFields = _q("sd-requestFormFields");
+  const reqSuccess = _q("sd-requestSuccess");
+  if (mainTitle) mainTitle.style.display = "";
+  if (mainSubtitle) mainSubtitle.style.display = "";
   if (rejectionStep) rejectionStep.style.display = "none";
   if (requestStep) requestStep.style.display = "none";
+  if (reqFields) reqFields.style.display = "";
+  if (reqSuccess) reqSuccess.style.display = "none";
   if (requestLink) requestLink.style.display = "";
   if (docsLink) docsLink.style.display = "";
   if (emailInput) emailInput.value = "";
@@ -676,6 +684,10 @@ function _showRejectionStep(email) {
   const rejectionStep = _q("sd-rejectionStep");
   const requestLink = _q("sd-requestDirectLink");
   const docsLink = _q("sd-docsLink");
+  const mainTitle = _q("sd-mainTitle");
+  const mainSubtitle = _q("sd-mainSubtitle");
+  if (mainTitle) mainTitle.style.display = "none";
+  if (mainSubtitle) mainSubtitle.style.display = "none";
   if (emailStep) emailStep.style.display = "none";
   if (otpStep) otpStep.style.display = "none";
   if (ssoDivider) ssoDivider.style.display = "none";
@@ -690,10 +702,32 @@ function _showRejectionStep(email) {
 }
 
 function _showRequestForm(email) {
+  const emailStep = _q("sd-emailStep");
+  const otpStep = _q("sd-otpStep");
+  const ssoDivider = _q("sd-ssoDivider");
+  const ssoButtons = _q("sd-ssoButtonsContainer");
+  const docsLink = _q("sd-docsLink");
+  const requestLink = _q("sd-requestDirectLink");
   const rejectionStep = _q("sd-rejectionStep");
   const requestStep = _q("sd-requestStep");
+  const mainTitle = _q("sd-mainTitle");
+  const mainSubtitle = _q("sd-mainSubtitle");
+  const reqFields = _q("sd-requestFormFields");
+  const reqSuccess = _q("sd-requestSuccess");
+
+  if (mainTitle) mainTitle.style.display = "none";
+  if (mainSubtitle) mainSubtitle.style.display = "none";
+  if (emailStep) emailStep.style.display = "none";
+  if (otpStep) otpStep.style.display = "none";
+  if (ssoDivider) ssoDivider.style.display = "none";
+  if (ssoButtons) ssoButtons.style.display = "none";
+  if (docsLink) docsLink.style.display = "none";
+  if (requestLink) requestLink.style.display = "none";
   if (rejectionStep) rejectionStep.style.display = "none";
   if (requestStep) requestStep.style.display = "";
+  if (reqFields) reqFields.style.display = "";
+  if (reqSuccess) reqSuccess.style.display = "none";
+
   // Pre-fill email
   const reqEmail = _q("sd-reqEmail");
   if (reqEmail && email) reqEmail.value = email;
@@ -759,16 +793,10 @@ async function _submitAdminRequest() {
     }
 
     // Show success state
-    const requestStep = _q("sd-requestStep");
-    if (requestStep) {
-      requestStep.innerHTML = `
-        <div class="sd-request-success">
-          <div class="sd-request-success-icon">✅</div>
-          <h3 class="sd-request-success-title">تم تقديم طلبك بنجاح!</h3>
-          <p class="sd-request-success-msg">سيتم مراجعة طلبك من قِبل إدارة المنصة. ستتمكن من تسجيل الدخول كمشرف بعد الموافقة على طلبك.</p>
-          <button type="button" class="sd-btn" onclick="this.closest('dialog').close()">حسناً</button>
-        </div>`;
-    }
+    const reqFields = _q("sd-requestFormFields");
+    const reqSuccess = _q("sd-requestSuccess");
+    if (reqFields) reqFields.style.display = "none";
+    if (reqSuccess) reqSuccess.style.display = "";
   } catch (err) {
     _showError("تعذّر الاتصال بالخادم. تحقق من اتصالك بالإنترنت.");
   } finally {
@@ -810,6 +838,14 @@ function _initRequestForm() {
     });
   }
 
+  // Close button on success state
+  const closeSuccessBtn = _q("sd-closeSuccessBtn");
+  if (closeSuccessBtn) {
+    closeSuccessBtn.addEventListener("click", () => {
+      if (_dialog) _dialog.close();
+    });
+  }
+
   // Direct "request admin" link at the bottom of the sign-in dialog
   const directLink = _q("sd-requestDirectLink");
   if (directLink) {
@@ -817,21 +853,7 @@ function _initRequestForm() {
       e.preventDefault();
       _clearError();
       _clearSuccess();
-      const emailStep = _q("sd-emailStep");
-      const otpStep = _q("sd-otpStep");
-      const ssoDivider = _q("sd-ssoDivider");
-      const ssoButtons = _q("sd-ssoButtonsContainer");
-      const requestStep = _q("sd-requestStep");
-      const docsLink = _q("sd-docsLink");
-      if (emailStep) emailStep.style.display = "none";
-      if (otpStep) otpStep.style.display = "none";
-      if (ssoDivider) ssoDivider.style.display = "none";
-      if (ssoButtons) ssoButtons.style.display = "none";
-      if (docsLink) docsLink.style.display = "none";
-      if (requestStep) requestStep.style.display = "";
-      directLink.style.display = "none";
-      const reqEmail = _q("sd-reqEmail");
-      if (reqEmail) reqEmail.focus();
+      _showRequestForm("");
     });
   }
 }

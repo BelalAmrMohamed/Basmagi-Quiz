@@ -1174,8 +1174,8 @@
                 <span class="sd-brand-name">منصة امتحانات بصمجي</span>
             </div>
 
-            <h2 class="sd-title">تسجيل دخول المشرفين</h2>
-            <p class="sd-subtitle">يرجى تسجيل الدخول باستخدام بريدك الإلكتروني أو حساب Google/GitHub.</p>
+            <h2 class="sd-title" id="sd-mainTitle">تسجيل دخول المشرفين</h2>
+            <p class="sd-subtitle" id="sd-mainSubtitle">يرجى تسجيل الدخول باستخدام بريدك الإلكتروني أو حساب Google/GitHub.</p>
 
             <!-- Email Form -->
             <form id="sd-emailForm" novalidate>
@@ -1262,7 +1262,7 @@
 
             <!-- Admin request form -->
             <div id="sd-requestStep" style="display:none;">
-                <div class="sd-request-step">
+                <div class="sd-request-step" id="sd-requestFormFields">
                     <button type="button" class="sd-request-back" id="sd-reqBackBtn">← رجوع</button>
                     <div class="sd-request-title">طلب انضمام كمشرف</div>
                     <p class="sd-request-subtitle">املأ النموذج التالي وسيتم مراجعة طلبك من قِبل إدارة المنصة.</p>
@@ -1296,6 +1296,12 @@
                         <div class="sd-spinner" id="sd-spinnerReq"></div>
                         <span id="sd-btnTextReq">تقديم الطلب</span>
                     </button>
+                </div>
+                <div class="sd-request-success" id="sd-requestSuccess" style="display:none;">
+                    <div class="sd-request-success-icon">✅</div>
+                    <h3 class="sd-request-success-title">تم تقديم طلبك بنجاح!</h3>
+                    <p class="sd-request-success-msg">سيتم مراجعة طلبك من قِبل إدارة المنصة. ستتمكن من تسجيل الدخول كمشرف بعد الموافقة على طلبك.</p>
+                    <button type="button" class="sd-btn" id="sd-closeSuccessBtn">حسناً</button>
                 </div>
             </div>
 
