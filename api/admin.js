@@ -108,9 +108,17 @@ async function handleControlGet(req, res, payload, supabase) {
     return res.status(500).json({ error: "Failed to fetch colleges" });
   }
 
+  const { data: adminRequests, error: requestsError } = await supabase
+    .from("admin_requests")
+    .select("id, email, full_name, college, reason, notes, status, created_at, reviewed_by, reviewed_at")
+    .order("created_at", { ascending: false });
+
+  if (requestsError) console.error("[admin] Failed to fetch admin requests:", requestsError.message);
+
   return res.status(200).json({
     admins: admins || [],
     colleges: colleges || [],
+    adminRequests: adminRequests || [],
     platformStats: {
       totalQuizzes: quizCount ?? 0,
       totalCategories: uniqueCategories.size,
@@ -236,6 +244,66 @@ async function handleControlPost(req, res, payload, supabase) {
     return res.status(200).json({ success: true });
   }
 
+  if (action === "approve_admin_request") {
+    const { requestId, scopes } = req.body;
+    if (!requestId) return res.status(400).json({ error: "Request ID is required" });
+
+    const { data: request } = await supabase
+      .from("admin_requests")
+      .select("email, full_name, status")
+      .eq("id", requestId)
+      .maybeSingle();
+    if (!request) return res.status(404).json({ error: "Request not found" });
+    if (request.status !== "pending") return res.status(400).json({ error: "Request already reviewed" });
+
+    const { error: insertErr } = await supabase
+      .from("admin_users")
+      .insert([{
+        email: request.email,
+        added_by: payload.email,
+        display_name: request.full_name,
+        allowed_scopes: scopes || ["Primary", "Middle", "High", "University", "Featured"],
+      }]);
+    if (insertErr) {
+      if (insertErr.code === "23505") {
+        return res.status(400).json({ error: "Admin already exists" });
+      }
+      return res.status(500).json({ error: "Failed to add admin" });
+    }
+
+    await supabase.from("admin_requests").update({
+      status: "approved",
+      reviewed_by: payload.email,
+      reviewed_at: new Date().toISOString(),
+    }).eq("id", requestId);
+
+    return res.status(200).json({ success: true });
+  }
+
+  if (action === "reject_admin_request") {
+    const { requestId } = req.body;
+    if (!requestId) return res.status(400).json({ error: "Request ID is required" });
+
+    const { error } = await supabase.from("admin_requests").update({
+      status: "rejected",
+      reviewed_by: payload.email,
+      reviewed_at: new Date().toISOString(),
+    }).eq("id", requestId);
+    if (error) return res.status(500).json({ error: "Failed to reject request" });
+
+    return res.status(200).json({ success: true });
+  }
+
+  if (action === "delete_admin_request") {
+    const { requestId } = req.body;
+    if (!requestId) return res.status(400).json({ error: "Request ID is required" });
+
+    const { error } = await supabase.from("admin_requests").delete().eq("id", requestId);
+    if (error) return res.status(500).json({ error: "Failed to delete request" });
+
+    return res.status(200).json({ success: true });
+  }
+
   return res.status(400).json({ error: "Invalid action" });
 }
 
@@ -264,6 +332,75 @@ async function handleControl(req, res) {
   if (req.method === "POST") return handleControlPost(req, res, payload, supabase);
 
   return res.status(405).json({ error: "Method not allowed" });
+}
+
+// =============================================================================
+// Public admin-request submission (no JWT required)
+// =============================================================================
+
+async function handleAdminRequest(req, res) {
+  applyCors(req, res);
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const { email, fullName, college, reason, notes } = req.body || {};
+
+  if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    return res.status(400).json({ error: "يرجى إدخال بريد إلكتروني صالح" });
+  }
+  if (!fullName || typeof fullName !== "string" || fullName.trim().length < 1 || fullName.trim().length > 100) {
+    return res.status(400).json({ error: "يرجى إدخال الاسم الكامل (1-100 حرف)" });
+  }
+  if (!reason || typeof reason !== "string" || reason.trim().length < 10 || reason.trim().length > 1000) {
+    return res.status(400).json({ error: "يرجى كتابة سبب الطلب (10-1000 حرف)" });
+  }
+  if (college && (typeof college !== "string" || college.trim().length > 200)) {
+    return res.status(400).json({ error: "اسم الكلية/المرحلة طويل جداً (الحد الأقصى 200 حرف)" });
+  }
+  if (notes && (typeof notes !== "string" || notes.trim().length > 500)) {
+    return res.status(400).json({ error: "الملاحظات طويلة جداً (الحد الأقصى 500 حرف)" });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (envGuard(res)) return;
+  const supabase = makeClient("service");
+
+  // Check if already an admin
+  const { data: existingAdmin } = await supabase
+    .from("admin_users")
+    .select("id")
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+  if (existingAdmin) {
+    return res.status(400).json({ error: "هذا البريد الإلكتروني مسجل بالفعل كمشرف" });
+  }
+
+  // Check for existing pending request
+  const { data: existingRequest } = await supabase
+    .from("admin_requests")
+    .select("id")
+    .eq("email", normalizedEmail)
+    .eq("status", "pending")
+    .maybeSingle();
+  if (existingRequest) {
+    return res.status(400).json({ error: "يوجد طلب انضمام معلّق بالفعل لهذا البريد الإلكتروني" });
+  }
+
+  const { error } = await supabase.from("admin_requests").insert({
+    email: normalizedEmail,
+    full_name: fullName.trim(),
+    college: college ? college.trim() : null,
+    reason: reason.trim(),
+    notes: notes ? notes.trim() : null,
+  });
+
+  if (error) {
+    console.error("[admin] Failed to insert admin request:", error.message);
+    return res.status(500).json({ error: "فشل في تقديم الطلب. حاول مرة أخرى لاحقاً." });
+  }
+
+  return res.status(200).json({ success: true });
 }
 
 // =============================================================================
@@ -2864,6 +3001,9 @@ const CONTROL_ACTIONS = new Set([
   "update_scopes",
   "save_college",
   "delete_college",
+  "approve_admin_request",
+  "reject_admin_request",
+  "delete_admin_request",
 ]);
 
 function isStatsGet(req) {
@@ -2897,6 +3037,7 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     const action = req.body && req.body.action;
     if (action === "track" || action === "ping") return handleAnalyticsTrack(req, res, supabaseService);
+    if (action === "request_admin") return handleAdminRequest(req, res);
     if (CONTROL_ACTIONS.has(action)) return handleControl(req, res);
     if (ITEM_ACTIONS.has(action)) return handleItemActions(req, res);
     return handleStats(req, res);

@@ -98,6 +98,22 @@ function _resetDialog() {
   if (otpStep) otpStep.style.display = "none";
   if (ssoDivider) ssoDivider.style.display = "";
   if (ssoButtons) ssoButtons.style.display = "";
+  const rejectionStep = _q("sd-rejectionStep");
+  const requestStep = _q("sd-requestStep");
+  const requestLink = _q("sd-requestDirectLink");
+  const docsLink = _q("sd-docsLink");
+  const mainTitle = _q("sd-mainTitle");
+  const mainSubtitle = _q("sd-mainSubtitle");
+  const reqFields = _q("sd-requestFormFields");
+  const reqSuccess = _q("sd-requestSuccess");
+  if (mainTitle) mainTitle.style.display = "";
+  if (mainSubtitle) mainSubtitle.style.display = "";
+  if (rejectionStep) rejectionStep.style.display = "none";
+  if (requestStep) requestStep.style.display = "none";
+  if (reqFields) reqFields.style.display = "";
+  if (reqSuccess) reqSuccess.style.display = "none";
+  if (requestLink) requestLink.style.display = "";
+  if (docsLink) docsLink.style.display = "";
   if (emailInput) emailInput.value = "";
   if (otpInput) otpInput.value = "";
   if (resendOtpBtn) resendOtpBtn.disabled = false; // Bug 3 fix: reset on reopen
@@ -187,7 +203,7 @@ function _onSignedIn() {
 //
 // Fix: destroy the Supabase session immediately on 403 BEFORE showing the error.
 
-async function _handleNonAdminRejection(errorMsg) {
+async function _handleNonAdminRejection(errorMsg, rejectedEmail) {
   // 1. Sign out of Supabase to remove the session from localStorage
   if (_supabaseClient) {
     try {
@@ -203,8 +219,10 @@ async function _handleNonAdminRejection(errorMsg) {
     keysToRemove.forEach((k) => localStorage.removeItem(k));
   } catch (_) { }
 
-  // 3. Show the error in the dialog — do NOT reload (no loop trigger)
-  _showError(errorMsg || "هذا الحساب ليس لديه صلاحيات المشرف.");
+  // 3. Show rejection step with option to request admin membership
+  _clearError();
+  _clearSuccess();
+  _showRejectionStep(rejectedEmail || "");
 }
 
 // ── Email → OTP / Magic Link flow ────────────────────────────────────────────
@@ -294,7 +312,8 @@ function _initOtpSubmit() {
       if (!ok) {
         // Non-admin: destroy the Supabase session before showing error
         await _handleNonAdminRejection(
-          "هذا البريد الإلكتروني ليس لديه صلاحيات المشرف."
+          "هذا البريد الإلكتروني ليس لديه صلاحيات المشرف.",
+          _currentEmailForOtp
         );
         return;
       }
@@ -459,7 +478,8 @@ async function _handleOAuthResult(data, provider) {
       // Bug 1 fix: buttons re-enabled only NOW, after the check resolves
       _setSSOLoading(false, provider);
       if (!ok) {
-        await _handleNonAdminRejection("هذا الحساب ليس لديه صلاحيات المشرف.");
+        const ssoEmail = session?.user?.email || "";
+        await _handleNonAdminRejection("هذا الحساب ليس لديه صلاحيات المشرف.", ssoEmail);
         return;
       }
       _onSignedIn();
@@ -651,6 +671,193 @@ function _initCloseBtn() {
   }
 }
 
+// ── Rejection step + Admin request form ───────────────────────────────────────
+
+let _rejectedEmail = "";
+
+function _showRejectionStep(email) {
+  _rejectedEmail = email || "";
+  const emailStep = _q("sd-emailStep");
+  const otpStep = _q("sd-otpStep");
+  const ssoDivider = _q("sd-ssoDivider");
+  const ssoButtons = _q("sd-ssoButtonsContainer");
+  const rejectionStep = _q("sd-rejectionStep");
+  const requestLink = _q("sd-requestDirectLink");
+  const docsLink = _q("sd-docsLink");
+  const mainTitle = _q("sd-mainTitle");
+  const mainSubtitle = _q("sd-mainSubtitle");
+  if (mainTitle) mainTitle.style.display = "none";
+  if (mainSubtitle) mainSubtitle.style.display = "none";
+  if (emailStep) emailStep.style.display = "none";
+  if (otpStep) otpStep.style.display = "none";
+  if (ssoDivider) ssoDivider.style.display = "none";
+  if (ssoButtons) ssoButtons.style.display = "none";
+  if (requestLink) requestLink.style.display = "none";
+  if (docsLink) docsLink.style.display = "none";
+  if (rejectionStep) {
+    rejectionStep.style.display = "";
+    const emailDisplay = _q("sd-rejectedEmail");
+    if (emailDisplay) emailDisplay.textContent = _rejectedEmail || "";
+  }
+}
+
+function _showRequestForm(email) {
+  const emailStep = _q("sd-emailStep");
+  const otpStep = _q("sd-otpStep");
+  const ssoDivider = _q("sd-ssoDivider");
+  const ssoButtons = _q("sd-ssoButtonsContainer");
+  const docsLink = _q("sd-docsLink");
+  const requestLink = _q("sd-requestDirectLink");
+  const rejectionStep = _q("sd-rejectionStep");
+  const requestStep = _q("sd-requestStep");
+  const mainTitle = _q("sd-mainTitle");
+  const mainSubtitle = _q("sd-mainSubtitle");
+  const reqFields = _q("sd-requestFormFields");
+  const reqSuccess = _q("sd-requestSuccess");
+
+  if (mainTitle) mainTitle.style.display = "none";
+  if (mainSubtitle) mainSubtitle.style.display = "none";
+  if (emailStep) emailStep.style.display = "none";
+  if (otpStep) otpStep.style.display = "none";
+  if (ssoDivider) ssoDivider.style.display = "none";
+  if (ssoButtons) ssoButtons.style.display = "none";
+  if (docsLink) docsLink.style.display = "none";
+  if (requestLink) requestLink.style.display = "none";
+  if (rejectionStep) rejectionStep.style.display = "none";
+  if (requestStep) requestStep.style.display = "";
+  if (reqFields) reqFields.style.display = "";
+  if (reqSuccess) reqSuccess.style.display = "none";
+
+  // Pre-fill email
+  const reqEmail = _q("sd-reqEmail");
+  if (reqEmail && email) reqEmail.value = email;
+  // Focus first empty field
+  const reqName = _q("sd-reqName");
+  if (reqName && !reqName.value) reqName.focus();
+  else if (reqEmail && !reqEmail.value) reqEmail.focus();
+}
+
+async function _submitAdminRequest() {
+  const reqEmail = _q("sd-reqEmail");
+  const reqName = _q("sd-reqName");
+  const reqCollege = _q("sd-reqCollege");
+  const reqReason = _q("sd-reqReason");
+  const reqNotes = _q("sd-reqNotes");
+  const submitBtn = _q("sd-reqSubmitBtn");
+  const spinnerReq = _q("sd-spinnerReq");
+  const btnTextReq = _q("sd-btnTextReq");
+
+  const email = reqEmail ? reqEmail.value.trim() : "";
+  const fullName = reqName ? reqName.value.trim() : "";
+  const college = reqCollege ? reqCollege.value.trim() : "";
+  const reason = reqReason ? reqReason.value.trim() : "";
+  const notes = reqNotes ? reqNotes.value.trim() : "";
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    _showError("يرجى إدخال بريد إلكتروني صالح");
+    return;
+  }
+  if (!fullName) {
+    _showError("يرجى إدخال الاسم الكامل");
+    return;
+  }
+  if (!reason || reason.length < 10) {
+    _showError("يرجى كتابة سبب الطلب (10 أحرف على الأقل)");
+    return;
+  }
+
+  _clearError();
+  _clearSuccess();
+  if (submitBtn) submitBtn.disabled = true;
+  if (spinnerReq) spinnerReq.style.display = "block";
+  if (btnTextReq) btnTextReq.textContent = "جارٍ الإرسال...";
+
+  try {
+    const res = await fetch("/api/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "request_admin",
+        email,
+        fullName,
+        college: college || undefined,
+        reason,
+        notes: notes || undefined,
+      }),
+    });
+
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      _showError(body.error || "فشل في تقديم الطلب");
+      return;
+    }
+
+    // Show success state
+    const reqFields = _q("sd-requestFormFields");
+    const reqSuccess = _q("sd-requestSuccess");
+    if (reqFields) reqFields.style.display = "none";
+    if (reqSuccess) reqSuccess.style.display = "";
+  } catch (err) {
+    _showError("تعذّر الاتصال بالخادم. تحقق من اتصالك بالإنترنت.");
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+    if (spinnerReq) spinnerReq.style.display = "none";
+    if (btnTextReq) btnTextReq.textContent = "تقديم الطلب";
+  }
+}
+
+function _initRequestForm() {
+  // "Request admin" button on rejection step
+  const requestBtn = _q("sd-requestAdminBtn");
+  if (requestBtn) {
+    requestBtn.addEventListener("click", () => {
+      _clearError();
+      _showRequestForm(_rejectedEmail);
+    });
+  }
+
+  // "Back to sign-in" button on rejection step
+  const backToSignIn = _q("sd-backToSignIn");
+  if (backToSignIn) {
+    backToSignIn.addEventListener("click", () => {
+      _resetDialog();
+    });
+  }
+
+  // Submit button on request form
+  const reqSubmitBtn = _q("sd-reqSubmitBtn");
+  if (reqSubmitBtn) {
+    reqSubmitBtn.addEventListener("click", _submitAdminRequest);
+  }
+
+  // "Back" button on request form
+  const reqBackBtn = _q("sd-reqBackBtn");
+  if (reqBackBtn) {
+    reqBackBtn.addEventListener("click", () => {
+      _resetDialog();
+    });
+  }
+
+  // Close button on success state
+  const closeSuccessBtn = _q("sd-closeSuccessBtn");
+  if (closeSuccessBtn) {
+    closeSuccessBtn.addEventListener("click", () => {
+      if (_dialog) _dialog.close();
+    });
+  }
+
+  // Direct "request admin" link at the bottom of the sign-in dialog
+  const directLink = _q("sd-requestDirectLink");
+  if (directLink) {
+    directLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      _clearError();
+      _clearSuccess();
+      _showRequestForm("");
+    });
+  }
+}
+
 // ── Wire up all event listeners after dialog is in DOM ────────────────────────
 
 /**
@@ -667,4 +874,5 @@ export function initSignInDialog() {
   _initResendOtp();
   _initChangeEmail();
   _initSSOButtons();
+  _initRequestForm();
 }

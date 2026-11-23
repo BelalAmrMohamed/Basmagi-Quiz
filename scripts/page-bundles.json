@@ -65,6 +65,18 @@
       "src/components/notifications/notifications.css"
     ]
   },
+  "docs": {
+    "js": [
+      "src/features/documents/documents-shell.js",
+      "src/features/documents/doc-toc.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/components/side-menu/side-menu.css",
+      "src/features/documents/documents.css",
+      "src/features/documents/doc-hub.css"
+    ]
+  },
   "how-to-connect-mcp": {
     "js": [
       "src/features/documents/documents-shell.js",

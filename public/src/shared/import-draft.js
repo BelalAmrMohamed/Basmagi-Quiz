@@ -4,6 +4,8 @@
 // decoded to), or null when there is no ?draft= param. Throws a user-facing
 // Error when the draft is missing/expired.
 
+import { withGuide } from "./guide-links.js";
+
 let lastDraft = null; // last fetched draft response ({ payload, assets })
 
 const DRAFT_RE = /^[2-9a-hj-km-np-z]{10}$/;
@@ -27,9 +29,9 @@ export async function fetchImportDraft(kind) {
   } catch (_) {
     throw new Error("تعذّر الاتصال بالخادم لتحميل الرابط المباشر. تحقق من الإنترنت وحاول مجدداً.");
   }
-  if (res.status === 404) throw new Error("انتهت صلاحية هذا الرابط (يدوم 72 ساعة) أو لم يعد موجوداً. اطلب من Claude رابطاً جديداً.");
-  if (res.status === 409) throw new Error("هذا الرابط يخص نوعاً آخر من المحتوى (امتحان/درس).");
-  if (!res.ok) throw new Error("تعذّر تحميل الرابط المباشر.");
+  if (res.status === 404) throw withGuide(new Error("انتهت صلاحية هذا الرابط (يدوم 72 ساعة) أو لم يعد موجوداً. اطلب من Claude رابطاً جديداً."), "draftExpired");
+  if (res.status === 409) throw withGuide(new Error("هذا الرابط يخص نوعاً آخر من المحتوى (امتحان/درس)."), "itemMissing");
+  if (!res.ok) throw withGuide(new Error("تعذّر تحميل الرابط المباشر."), "itemMissing");
   const body = await res.json();
   lastDraft = body;
   return JSON.stringify(body.payload);

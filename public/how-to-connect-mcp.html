@@ -106,6 +106,73 @@
   ]
 }
     </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "شرح بالفيديو: ربط منصة امتحانات بصمجي بـ Claude مباشرة",
+  "description": "شاهد خطوات إضافة الـ Connector في Claude، وتجربة البحث، وإنشاء امتحان أو درس من محاضرة، ثم الربط مع Gemini وChatGPT. الرابط الذي يعطيك إياه المساعد قصير، وعند فتحه يُحفظ العنصر مباشرة في «محتواي».",
+  "inLanguage": "ar",
+  "thumbnailUrl": [
+    "https://i.ytimg.com/vi/ysckQBfLFFw/hqdefault.jpg"
+  ],
+  "uploadDate": "2026-11-23",
+  "duration": "PT4M35S",
+  "contentUrl": "https://www.youtube.com/watch?v=ysckQBfLFFw",
+  "embedUrl": "https://www.youtube.com/embed/ysckQBfLFFw",
+  "hasPart": [
+    {
+      "@type": "Clip",
+      "name": "الحصول على رابط الـ MCP Server",
+      "startOffset": 0,
+      "endOffset": 28,
+      "url": "https://youtu.be/ysckQBfLFFw?t=0"
+    },
+    {
+      "@type": "Clip",
+      "name": "ربط Claude",
+      "startOffset": 28,
+      "endOffset": 58,
+      "url": "https://youtu.be/ysckQBfLFFw?t=28"
+    },
+    {
+      "@type": "Clip",
+      "name": "مثال للاستخدام مع Claude",
+      "startOffset": 58,
+      "endOffset": 128,
+      "url": "https://youtu.be/ysckQBfLFFw?t=58"
+    },
+    {
+      "@type": "Clip",
+      "name": "ربط ChatGPT",
+      "startOffset": 128,
+      "endOffset": 154,
+      "url": "https://youtu.be/ysckQBfLFFw?t=128"
+    },
+    {
+      "@type": "Clip",
+      "name": "مثال للاستخدام مع ChatGPT",
+      "startOffset": 154,
+      "endOffset": 183,
+      "url": "https://youtu.be/ysckQBfLFFw?t=154"
+    },
+    {
+      "@type": "Clip",
+      "name": "ربط Gemini",
+      "startOffset": 183,
+      "endOffset": 213,
+      "url": "https://youtu.be/ysckQBfLFFw?t=183"
+    },
+    {
+      "@type": "Clip",
+      "name": "مثال للاستخدام مع Gemini",
+      "startOffset": 213,
+      "endOffset": 275,
+      "url": "https://youtu.be/ysckQBfLFFw?t=213"
+    }
+  ]
+}
+    </script>
 
 </head>
 
@@ -487,7 +554,7 @@
         <p>الرابط يعيش ٧٢ ساعة ويُستهلك عند فتحه لأول مرة. افتح «محتواي» في المتصفح الذي فتحت فيه الرابط؛ العنصر هناك.
             وإلا اطلب من المساعد رابطاً جديداً.</p>
     </details>
-    <details class="doc-faq">
+    <details class="doc-faq" id="faq-item-missing">
         <summary>فتحت الرابط ولا أجد العنصر</summary>
         <p>تأكد أنك في المتصفح نفسه (وليس نافذة خاصة أُغلقت)، وأن مساحة التخزين غير ممتلئة. يخزّن «محتواي» بياناته في
             متصفحك؛ مسح بيانات الموقع يمسحه.</p>
@@ -510,9 +577,26 @@
 </section>
 <dialog class="doc-lightbox" id="docLightbox" aria-label="عرض الصورة"><button type="button" class="doc-lightbox__close"
         aria-label="إغلاق">×</button><img alt="" /></dialog>
-            <nav class="doc-next" aria-label="الدليل التالي">
-                <span class="doc-next__label">الدليل التالي</span>
-                <a class="doc-next__link" href="/how-to-use-ai-agent">الباشــمبصمج ←</a>
+            <nav class="doc-back-hub" aria-label="مركز الأدلة والمساعدة">
+                <a class="doc-back-hub__card" href="/docs">
+                    <div class="doc-back-hub__icon" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        </svg>
+                    </div>
+                    <div class="doc-back-hub__body">
+                        <span class="doc-back-hub__label">مركز الأدلة والمساعدة</span>
+                        <strong class="doc-back-hub__title">العودة إلى فهرس الأدلة والمستندات</strong>
+                        <p class="doc-back-hub__desc">استعرض جميع أدلة الطلاب، وصنّاع المحتوى، والمشرفين، والربط بالذكاء الاصطناعي</p>
+                    </div>
+                    <div class="doc-back-hub__action" aria-hidden="true">
+                        <span class="doc-back-hub__btn">تصفح الأدلة</span>
+                        <svg class="doc-back-hub__arrow" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m15 18-6-6 6-6"/>
+                        </svg>
+                    </div>
+                </a>
             </nav>
         </div>
     </main>

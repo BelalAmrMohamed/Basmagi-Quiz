@@ -38,6 +38,10 @@ const _initReady = new Promise((resolve) => {
   _resolveInitReady = resolve;
 });
 
+// Admin requests state
+let _adminRequests = [];
+let _requestsFilter = "pending";
+
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
 // trashNavBtn is disabled at parse time (see control.html) and re-enabled
 // here once _initReady resolves, so navigation cannot begin before session
@@ -315,6 +319,16 @@ async function loadData() {
         list.appendChild(card);
       });
     }
+
+    // Update admin requests
+    _adminRequests = data.adminRequests || [];
+    const pendingCount = _adminRequests.filter((r) => r.status === "pending").length;
+    const badge = document.getElementById("requestsBadge");
+    if (badge) {
+      badge.textContent = pendingCount;
+      badge.hidden = pendingCount === 0;
+    }
+    renderRequestsList();
   } catch (err) {
     showMessage(err.message, true);
   } finally {
@@ -505,16 +519,20 @@ let trashLoadId = 0;
 
 function showTrashView() {
   document.getElementById("overviewView").hidden = true;
+  document.getElementById("requestsSection").hidden = true;
   document.getElementById("trashSection").hidden = false;
   document.getElementById("trashNavBtn").hidden = true;
   document.getElementById("overviewNavBtn").hidden = false;
+  document.getElementById("requestsNavBtn").hidden = false;
 }
 
 function showOverviewView() {
   document.getElementById("trashSection").hidden = true;
+  document.getElementById("requestsSection").hidden = true;
   document.getElementById("overviewView").hidden = false;
   document.getElementById("overviewNavBtn").hidden = true;
   document.getElementById("trashNavBtn").hidden = false;
+  document.getElementById("requestsNavBtn").hidden = false;
 }
 
 const TRASH_TYPE_LABELS = { quiz: "امتحان", lesson: "درس", notebook: "دفتر", folder: "مجلد", course: "مادة" };
@@ -748,7 +766,22 @@ async function saveTrashRetention() {
 }
 
 document.getElementById("trashNavBtn").addEventListener("click", showTrashView);
-document.getElementById("overviewNavBtn").addEventListener("click", showOverviewView);
+document.getElementById("overviewNavBtn").addEventListener("click", () => {
+  // Hide requests view too if visible
+  document.getElementById("requestsSection").hidden = true;
+  document.getElementById("requestsNavBtn").hidden = false;
+  showOverviewView();
+});
+document.getElementById("requestsNavBtn").addEventListener("click", showRequestsView);
+document.getElementById("refreshRequestsBtn").addEventListener("click", loadData);
+document.querySelectorAll(".requests-filter-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".requests-filter-tab").forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    _requestsFilter = tab.dataset.filter;
+    renderRequestsList();
+  });
+});
 document.getElementById("refreshTrashBtn").addEventListener("click", loadTrash);
 document.getElementById("emptyTrashBtn").addEventListener("click", openEmptyTrashConfirm);
 document.getElementById("saveRetentionBtn").addEventListener("click", saveTrashRetention);
@@ -763,6 +796,170 @@ document.querySelectorAll(".trash-filter-tab").forEach((tab) => {
     renderTrashList();
   });
 });
+
+// ── Admin Requests Management ──────────────────────────────────────────────────
+
+function renderRequestsList() {
+  const list = document.getElementById("requestsList");
+  if (!list) return;
+
+  const filtered = _requestsFilter === "all"
+    ? _adminRequests
+    : _adminRequests.filter((r) => r.status === _requestsFilter);
+
+  if (filtered.length === 0) {
+    const emptyMsg = {
+      pending: "لا توجد طلبات معلّقة",
+      approved: "لا توجد طلبات موافق عليها",
+      rejected: "لا توجد طلبات مرفوضة",
+      all: "لا توجد طلبات",
+    };
+    list.innerHTML = `<div class="requests-empty">${emptyMsg[_requestsFilter] || emptyMsg.all}</div>`;
+    return;
+  }
+
+  list.innerHTML = "";
+  filtered.forEach((req) => {
+    const date = new Date(req.created_at).toLocaleDateString("ar-EG", {
+      year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+    });
+    const statusLabels = { pending: "معلّق", approved: "موافق عليه", rejected: "مرفوض" };
+    const statusClasses = { pending: "pending", approved: "approved", rejected: "rejected" };
+
+    const card = document.createElement("div");
+    card.className = "request-card";
+    card.innerHTML = `
+      <div class="request-card-header">
+        <span class="request-status request-status--${statusClasses[req.status] || "pending"}">${statusLabels[req.status] || req.status}</span>
+        <span class="request-date">${date}</span>
+      </div>
+      <div class="request-card-body">
+        <div class="request-field"><span class="request-field-label">الاسم:</span> <span class="request-field-value">${escapeHtml(req.full_name)}</span></div>
+        <div class="request-field"><span class="request-field-label">البريد:</span> <span class="request-field-value" dir="ltr">${escapeHtml(req.email)}</span></div>
+        ${req.college ? `<div class="request-field"><span class="request-field-label">الكلية/المرحلة:</span> <span class="request-field-value">${escapeHtml(req.college)}</span></div>` : ""}
+        <div class="request-field"><span class="request-field-label">السبب:</span> <span class="request-field-value request-reason">${escapeHtml(req.reason)}</span></div>
+        ${req.notes ? `<div class="request-field"><span class="request-field-label">ملاحظات:</span> <span class="request-field-value">${escapeHtml(req.notes)}</span></div>` : ""}
+        ${req.reviewed_by ? `<div class="request-field"><span class="request-field-label">تمت المراجعة بواسطة:</span> <span class="request-field-value" dir="ltr">${escapeHtml(req.reviewed_by)}</span></div>` : ""}
+      </div>
+      ${req.status === "pending" ? `
+      <div class="request-card-actions">
+        <button class="btn-primary request-action-btn" data-action="approve" data-id="${req.id}">✓ قبول وإضافة مشرف</button>
+        <button class="btn-remove request-action-btn" data-action="reject" data-id="${req.id}">✗ رفض</button>
+      </div>` : `
+      <div class="request-card-actions">
+        <button class="btn-remove request-action-btn" data-action="delete" data-id="${req.id}" style="font-size:0.8rem;">حذف الطلب</button>
+      </div>`}
+    `;
+    list.appendChild(card);
+  });
+
+  // Attach action handlers
+  list.querySelectorAll(".request-action-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const action = btn.dataset.action;
+      const id = btn.dataset.id;
+      if (action === "approve") {
+        openConfirmModal({
+          icon: "✓",
+          title: "تأكيد الموافقة",
+          bodyHtml: "سيتم إضافة هذا الشخص كمشرف على المنصة. هل تريد المتابعة؟",
+          confirmLabel: "قبول وإضافة",
+          onConfirm: () => approveAdminRequest(id),
+        });
+      } else if (action === "reject") {
+        openConfirmModal({
+          icon: "✗",
+          title: "تأكيد الرفض",
+          bodyHtml: "هل أنت متأكد من رفض هذا الطلب؟",
+          confirmLabel: "رفض",
+          onConfirm: () => rejectAdminRequest(id),
+        });
+      } else if (action === "delete") {
+        openConfirmModal({
+          icon: "&#9888;",
+          title: "حذف الطلب",
+          bodyHtml: "هل أنت متأكد من حذف هذا الطلب نهائياً؟",
+          confirmLabel: "حذف",
+          onConfirm: () => deleteAdminRequest(id),
+        });
+      }
+    });
+  });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str || "";
+  return div.innerHTML;
+}
+
+async function approveAdminRequest(requestId) {
+  try {
+    await _initReady;
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ action: "approve_admin_request", requestId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showMessage("تم قبول الطلب وإضافة المشرف بنجاح");
+    loadData();
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
+async function rejectAdminRequest(requestId) {
+  try {
+    await _initReady;
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ action: "reject_admin_request", requestId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showMessage("تم رفض الطلب");
+    loadData();
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
+async function deleteAdminRequest(requestId) {
+  try {
+    await _initReady;
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ action: "delete_admin_request", requestId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showMessage("تم حذف الطلب");
+    loadData();
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
+function showRequestsView() {
+  document.getElementById("overviewView").style.display = "none";
+  document.getElementById("trashSection").hidden = true;
+  document.getElementById("requestsSection").hidden = false;
+  const storageSection = document.getElementById("storageSection");
+  if (storageSection) storageSection.hidden = true;
+  document.getElementById("overviewNavBtn").hidden = false;
+  document.getElementById("requestsNavBtn").hidden = true;
+}
+
+function showOverviewFromRequests() {
+  document.getElementById("requestsSection").hidden = true;
+  document.getElementById("overviewView").style.display = "";
+  document.getElementById("overviewNavBtn").hidden = true;
+  document.getElementById("requestsNavBtn").hidden = false;
+}
 
 // ── Logout ─────────────────────────────────────────────────────────────────────
 // fullSignOut() clears BOTH the local JWT AND calls supabaseClient.auth.signOut()

@@ -30,6 +30,7 @@ import { formatItemCounts } from "./upload-counts.js";
 import { ICON, setStatus } from "./admin-icons.js";
 import { getToken, isAdminAuthenticated, signOut } from "../../shared/adminAuth.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { guideAction, GUIDE_TOAST_SECONDS } from "../../shared/guide-links.js";
 import { userProfile } from "../../shared/userProfile.js";
 import { generateQuizId } from "../../shared/quizId.js";
 import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.js";
@@ -396,6 +397,14 @@ function stepsHTML(cur) {
         <span class="adm-step-lbl">${lbl}</span>
       </div>`;
   }).join("")}</div>`;
+}
+
+/**
+ * A failed upload explains itself in the toast and links to the guide's verification step
+ * (what to check after an upload). Shown only on failure; success toasts stay link-free.
+ */
+function uploadFailToast(title, message, type = "error") {
+  showNotification(title, message, type, GUIDE_TOAST_SECONDS, { action: guideAction("uploadVerify") });
 }
 
 const DOC_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
@@ -1024,7 +1033,7 @@ async function doFolderUpload({ educationType, college, year, term }) {
     document.getElementById("adm-folder-btns").style.display = "flex";
     if (isSessionError(err)) {
       setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
-    }
+    } else uploadFailToast("تعذّر الرفع", err.message);
     return;
   }
 
@@ -1041,7 +1050,8 @@ async function doFolderUpload({ educationType, college, year, term }) {
     } else {
       hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} • فشل ${failed.length}`;
       hintEl.style.color = quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0) showNotification(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} (فشل ${failed.length})`, "warning");
+      if (quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0) uploadFailToast(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} (فشل ${failed.length})`, "", "warning");
+      else uploadFailToast(`تعذّر الرفع (فشل ${failed.length})`, "", "error");
       invalidateManifestCache();
     }
   }
@@ -1147,7 +1157,7 @@ async function doCourseUpload({ educationType, college, year, term }) {
     document.getElementById("adm-course-btns").style.display = "flex";
     if (isSessionError(err)) {
       setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
-    }
+    } else uploadFailToast("تعذّر الرفع", err.message);
     return;
   }
 
@@ -1164,7 +1174,8 @@ async function doCourseUpload({ educationType, college, year, term }) {
     } else {
       hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} • فشل ${failed.length}`;
       hintEl.style.color = quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0) showNotification(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} (فشل ${failed.length})`, "warning");
+      if (quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0) uploadFailToast(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} (فشل ${failed.length})`, "", "warning");
+      else uploadFailToast(`تعذّر الرفع (فشل ${failed.length})`, "", "error");
       invalidateManifestCache();
     }
   }
@@ -1341,7 +1352,7 @@ async function doFolderUploadToExisting({ educationType, college, year, term }) 
     document.getElementById("adm-folder-target-btns").style.display = "flex";
     if (isSessionError(err)) {
       setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
-    }
+    } else uploadFailToast("تعذّر الرفع", err.message);
     return;
   }
 
@@ -1358,7 +1369,8 @@ async function doFolderUploadToExisting({ educationType, college, year, term }) 
     } else {
       hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} • فشل ${failed.length}`;
       hintEl.style.color = quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0) showNotification(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} (فشل ${failed.length})`, "warning");
+      if (quizzesUploaded + lessonsUploaded + notebooksUploaded + youtubeUploaded > 0) uploadFailToast(`تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} (فشل ${failed.length})`, "", "warning");
+      else uploadFailToast(`تعذّر الرفع (فشل ${failed.length})`, "", "error");
       invalidateManifestCache();
     }
   }
@@ -1481,7 +1493,7 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
     } else {
       hintEl.textContent = `تم رفع ${successCount} • فشل ${errorCount}`;
       hintEl.style.color = successCount > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (successCount > 0) showNotification(`تم ${successCount} امتحان (فشل ${errorCount})`, "warning");
+      uploadFailToast(successCount > 0 ? `تم رفع ${successCount} امتحان (فشل ${errorCount})` : "تعذّر رفع الامتحانات", "", successCount > 0 ? "warning" : "error");
     }
   }
 

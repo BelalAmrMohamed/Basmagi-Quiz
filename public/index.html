@@ -150,7 +150,7 @@
         {
           "@type": "ListItem",
           "position": 4,
-          "name": "كيفية إنشاء امتحان",
+          "name": "إنشاء محتوى",
           "item": "https://basmagi-quiz.vercel.app/how-to-create-content"
         },
         {
@@ -728,7 +728,7 @@
         <!-- Pinned bottom actions stay outside the scrollable nav so long
                   menus cannot paint underneath them. -->
         <div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية">
-            <a href="/how-to-create-content" class="menu-item" data-tooltip="الأدلة والمساعدة">
+            <a href="/docs" class="menu-item" data-tooltip="الأدلة والمساعدة">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     aria-hidden="true">
@@ -1174,8 +1174,8 @@
                 <span class="sd-brand-name">منصة امتحانات بصمجي</span>
             </div>
 
-            <h2 class="sd-title">تسجيل دخول المشرفين</h2>
-            <p class="sd-subtitle">يرجى تسجيل الدخول باستخدام بريدك الإلكتروني أو حساب Google/GitHub.</p>
+            <h2 class="sd-title" id="sd-mainTitle">تسجيل دخول المشرفين</h2>
+            <p class="sd-subtitle" id="sd-mainSubtitle">يرجى تسجيل الدخول باستخدام بريدك الإلكتروني أو حساب Google/GitHub.</p>
 
             <!-- Email Form -->
             <form id="sd-emailForm" novalidate>
@@ -1246,7 +1246,71 @@
 
             </form>
 
-            <a class="sd-docs-link" href="/how-to-upload-content" target="_blank" rel="noopener noreferrer"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>أول مرة مشرفاً؟ اقرأ دليل رفع المحتوى ونشره</span></a>
+            <!-- Rejection step (shown after 403) -->
+            <div id="sd-rejectionStep" style="display:none;">
+                <div class="sd-rejection-step">
+                    <div class="sd-rejection-icon">🔒</div>
+                    <div class="sd-rejection-title">هذا الحساب ليس مشرفاً بعد</div>
+                    <p class="sd-rejection-msg">تسجيل الدخول متاح للمشرفين فقط. إذا كنت ترغب في المساهمة بنشر محتوى تعليمي على المنصة، يمكنك تقديم طلب انضمام.</p>
+                    <div class="sd-rejected-email-display" id="sd-rejectedEmail"></div>
+                    <div class="sd-rejection-actions">
+                        <button type="button" class="sd-btn" id="sd-requestAdminBtn">📝 تقديم طلب انضمام كمشرف</button>
+                        <button type="button" class="sd-link-btn" id="sd-backToSignIn" style="text-align:center;">← العودة لتسجيل الدخول بحساب آخر</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin request form -->
+            <div id="sd-requestStep" style="display:none;">
+                <div class="sd-request-step" id="sd-requestFormFields">
+                    <button type="button" class="sd-request-back" id="sd-reqBackBtn">← رجوع</button>
+                    <div class="sd-request-title">طلب انضمام كمشرف</div>
+                    <p class="sd-request-subtitle">املأ النموذج التالي وسيتم مراجعة طلبك من قِبل إدارة المنصة.</p>
+
+                    <label class="sd-field-label" for="sd-reqEmail">البريد الإلكتروني</label>
+                    <div class="sd-field-wrapper">
+                        <input id="sd-reqEmail" class="sd-field-input email-ltr" type="email" dir="ltr" required />
+                    </div>
+
+                    <label class="sd-field-label" for="sd-reqName">الاسم الكامل</label>
+                    <div class="sd-field-wrapper">
+                        <input id="sd-reqName" class="sd-field-input" type="text" placeholder="مثال: أحمد محمد" required />
+                    </div>
+
+                    <label class="sd-field-label" for="sd-reqCollege">الكلية / المرحلة التعليمية <span class="sd-field-optional">(اختياري)</span></label>
+                    <div class="sd-field-wrapper">
+                        <input id="sd-reqCollege" class="sd-field-input" type="text" placeholder="مثال: كلية الهندسة - جامعة القاهرة" />
+                    </div>
+
+                    <label class="sd-field-label" for="sd-reqReason">ما المحتوى الذي تريد نشره ولماذا؟</label>
+                    <div class="sd-field-wrapper">
+                        <textarea id="sd-reqReason" class="sd-field-input" rows="3" placeholder="مثال: أريد رفع امتحانات مادة الفيزياء للفرقة الأولى..." required></textarea>
+                    </div>
+
+                    <label class="sd-field-label" for="sd-reqNotes">ملاحظات أو رابط تواصل <span class="sd-field-optional">(اختياري)</span></label>
+                    <div class="sd-field-wrapper">
+                        <input id="sd-reqNotes" class="sd-field-input" type="text" placeholder="مثال: t.me/username أو رقم واتساب" />
+                    </div>
+
+                    <button type="button" class="sd-btn" id="sd-reqSubmitBtn">
+                        <div class="sd-spinner" id="sd-spinnerReq"></div>
+                        <span id="sd-btnTextReq">تقديم الطلب</span>
+                    </button>
+                </div>
+                <div class="sd-request-success" id="sd-requestSuccess" style="display:none;">
+                    <div class="sd-request-success-icon">✅</div>
+                    <h3 class="sd-request-success-title">تم تقديم طلبك بنجاح!</h3>
+                    <p class="sd-request-success-msg">سيتم مراجعة طلبك من قِبل إدارة المنصة. ستتمكن من تسجيل الدخول كمشرف بعد الموافقة على طلبك.</p>
+                    <button type="button" class="sd-btn" id="sd-closeSuccessBtn">حسناً</button>
+                </div>
+            </div>
+
+            <a class="sd-docs-link" href="/how-to-upload-content" target="_blank" rel="noopener noreferrer" id="sd-docsLink"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>أول مرة مشرفاً؟ اقرأ دليل رفع المحتوى ونشره</span></a>
+
+            <button type="button" class="sd-request-direct-link" id="sd-requestDirectLink">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                <span>لست مشرفاً؟ قدّم طلب انضمام كمشرف</span>
+            </button>
 
             <div class="sd-footer">
                 <a href="/privacy-policy">سياسة الخصوصية</a> •

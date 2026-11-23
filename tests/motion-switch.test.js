@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // The platform's own switch is <html data-motion="reduced"> (High-Performance Mode): the USER
 // controls it. theme-controller.js is the only file allowed to read the OS preference — it uses
@@ -15,6 +16,9 @@ const LEGACY = [
   "public/about.html",
   "public/assets/notebook-runtime-cpp/runtime.css",
   "public/assets/notebook-runtime/runtime.css",
+  // Generated from docs-src/shells/_head.html, whose inline script still reads the OS preference. Migrating that
+  // one shell removes this entry together with how-to-*, privacy-policy and terms-of-service.
+  "public/docs.html",
   "public/how-to-connect-mcp.html",
   "public/how-to-create-content.html",
   "public/how-to-upload-content.html",
@@ -49,9 +53,9 @@ const LEGACY = [
   "public/terms-of-service.html",
 ];
 
-const ROOT = new URL("..", import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const EXT = /\.(js|mjs|css|html)$/;
-const SKIP = new Set(["node_modules", ".git", "vendor"]);
+const SKIP = new Set(["node_modules", ".git", "vendor", "dist"]);
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {

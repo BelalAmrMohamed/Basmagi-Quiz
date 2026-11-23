@@ -7,6 +7,7 @@
     "seo:check": "node scripts/seo-check.mjs",
     "docs:build": "node scripts/build-docs.mjs",
     "docs:check": "node scripts/build-docs.mjs --check",
+    "docs:chapters": "node scripts/build-docs.mjs --chapters how-to-connect-mcp",
     "og:test": "node --test tests/og-render.test.js",
     "test:ai-agent": "node --test tests/ai-agent-*.test.js tests/agent-loop.test.js tests/context-trim.test.js tests/turn-runner.test.js tests/ai-agent-undo.test.js tests/ai-agent-schema-parity.test.js",
     "og:snapshot": "node scripts/og-snapshot.mjs",

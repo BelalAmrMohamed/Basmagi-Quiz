@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Contextual deep links on errors
+- Error toasts link to the guide section that explains them; nothing extra is shown otherwise (`shared/guide-links.js`).
+  - expired draft link (404) -> `/how-to-connect-mcp#s8` (FAQ);
+  - failed MCP import / draft (server error, wrong kind, storage full) -> `/how-to-connect-mcp#faq-item-missing`, the new id on the "opened the link, can't find the item" FAQ entry; `doc-steps.js` opens a `<details>` targeted by the URL hash;
+  - failed or partly failed upload in the admin wizard -> `/how-to-upload-content#s4` (verifying the upload). Session-expiry failures and network errors carry no link.
+- Toasts with a guide link stay 25 s (`GUIDE_TOAST_SECONDS`) instead of the 5-10 s defaults, so they can be read in full.
+- `tests/guide-links.test.js` checks that every link target exists in the generated guide pages.
+
 ## Docs discoverability
 - Sidebar item «الأدلة والمساعدة» on every page that has the sidebar; docs links in the sign-in dialog, the admin upload wizard, the lesson editor help menu and the notebook creator.
 - «محتواي»: the MCP URL with a copy button and a guide link now appears only inside the empty state (no content at all), via `connect-card.js`.

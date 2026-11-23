@@ -1,0 +1,323 @@
+/* =============================================================================
+   public/src/features/documents/doc-hub.css
+   Documentation Hub: modern card directory for Basmagi Quiz guides.
+   ============================================================================= */
+
+.docs-hub-body {
+  background-color: var(--color-background, var(--bg));
+  min-height: 100vh;
+}
+
+.hub-main-container {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 36px 24px 72px;
+}
+
+/* ─────────────────────────────────────────
+   HERO BANNER
+───────────────────────────────────────── */
+.hub-hero {
+  position: relative;
+  background: var(--bg-wash);
+  border: 1px solid var(--rule-heavy);
+  border-radius: var(--radius-2xl, 24px);
+  padding: 28px 32px;
+  margin-bottom: 32px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+}
+
+.hub-hero::before {
+  content: "";
+  position: absolute;
+  top: -60px;
+  left: -60px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--color-primary, #3b82f6) 0%, transparent 70%);
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.hub-hero__content {
+  position: relative;
+  max-width: 620px;
+}
+
+.hub-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--bg-tint);
+  border: 1px solid var(--rule);
+  color: var(--color-primary, #3b82f6);
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.hub-hero__title {
+  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+
+.hub-hero__desc {
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.hub-hero__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-top: 6px;
+}
+
+.hub-hero__stat-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--bg-tint);
+  border: 1px solid var(--rule);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.hub-hero__meta-dot {
+  opacity: 0.5;
+}
+
+/* ─────────────────────────────────────────
+   DOCUMENT CARDS GRID
+───────────────────────────────────────── */
+.doc-hub,
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.hub-grid__item {
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+
+.hub-grid__item::marker,
+.doc-hub li::marker {
+  display: none;
+  content: "";
+}
+
+.doc-hub__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 190px;
+  box-sizing: border-box;
+  padding: 24px;
+  background: var(--bg-wash);
+  border: 1px solid var(--rule-heavy);
+  border-radius: var(--radius-xl, 16px);
+  text-decoration: none;
+  color: var(--ink);
+  transition: border-color var(--transition-fast, 0.15s ease),
+              background var(--transition-fast, 0.15s ease),
+              box-shadow var(--transition-fast, 0.15s ease);
+}
+
+.doc-hub__card:hover,
+.doc-hub__card:focus-visible {
+  background: var(--bg-tint);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+/* Themed card borders on hover */
+[data-guide="create"]:hover,
+[data-guide="create"]:focus-visible {
+  border-color: #8b5cf6;
+}
+
+[data-guide="upload"]:hover,
+[data-guide="upload"]:focus-visible {
+  border-color: #f59e0b;
+}
+
+[data-guide="mcp"]:hover,
+[data-guide="mcp"]:focus-visible {
+  border-color: #3b82f6;
+}
+
+[data-guide="agent"]:hover,
+[data-guide="agent"]:focus-visible {
+  border-color: #10b981;
+}
+
+.doc-hub__card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.doc-hub__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+[data-guide="create"] .doc-hub__icon {
+  color: #7c3aed;
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+[data-guide="upload"] .doc-hub__icon {
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+[data-guide="mcp"] .doc-hub__icon {
+  color: #0284c7;
+  background: rgba(14, 165, 233, 0.1);
+  border-color: rgba(14, 165, 233, 0.2);
+}
+
+[data-guide="agent"] .doc-hub__icon {
+  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.doc-hub__tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.doc-hub__note,
+.doc-hub__tag--admin {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-full, 9999px);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #b45309;
+}
+
+.doc-hub__card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.doc-hub__title {
+  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.doc-hub__desc {
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.doc-hub__card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-primary, #3b82f6);
+}
+
+.doc-hub__arrow {
+  color: inherit;
+  transition: transform var(--transition-fast, 0.15s ease);
+}
+
+.doc-hub__card:hover .doc-hub__arrow {
+  transform: translateX(-5px);
+}
+
+/* ─────────────────────────────────────────
+   RESPONSIVENESS & REDUCED MOTION
+───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hub-main-container {
+    padding: 24px 16px 60px;
+  }
+  .hub-hero {
+    flex-direction: column;
+    padding: 22px 20px;
+    gap: 16px;
+    border-radius: var(--radius-xl, 16px);
+  }
+  .hub-hero__title {
+    font-size: 1.6rem;
+  }
+  .doc-hub,
+  .hub-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+html[data-motion="reduced"] .doc-hub__card,
+html[data-motion="reduced"] .doc-hub__arrow {
+  transition: none !important;
+  transform: none !important;
+}
+

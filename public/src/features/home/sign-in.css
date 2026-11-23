@@ -11,10 +11,11 @@
     border-radius: 20px;
     background: transparent;
     max-width: 460px;
-    width: calc(100% - 32px);
-    height: fit-content;
+    width: min(460px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
     box-shadow: none;
-    overflow: visible;
+    overflow: hidden;
     position: fixed;
     inset: 0;
     margin: auto;
@@ -37,13 +38,33 @@
     background: var(--color-surface, #fff);
     border: 1px solid var(--color-border, rgba(255,255,255,0.12));
     border-radius: 20px;
-    padding: 32px 28px 28px;
+    padding: 24px 22px 20px;
     box-shadow:
         0 24px 60px rgba(0,0,0,0.28),
         0 8px 20px rgba(0,0,0,0.12),
         inset 0 1px 0 rgba(255,255,255,0.08);
     animation: sdCardPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
     position: relative;
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+}
+
+.sd-card::-webkit-scrollbar {
+    width: 6px;
+}
+.sd-card::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.25);
+    border-radius: 3px;
+}
+.sd-card::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.4);
+}
+.sd-card::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 @keyframes sdCardPop {
@@ -332,3 +353,280 @@
     color: var(--color-primary);
     border-color: var(--color-primary);
 }
+
+
+/* ── Rejection step (shown after 403) ──────────────────────────────────────── */
+.sd-rejection-step {
+    text-align: center;
+    padding: 8px 0;
+}
+.sd-rejection-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+.sd-rejection-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: 6px;
+}
+.sd-rejection-msg {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+.sd-rejected-email-display {
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+    background: var(--color-surface-alt, rgba(0,0,0,0.04));
+    border-radius: 6px;
+    padding: 6px 12px;
+    margin-bottom: 16px;
+    direction: ltr;
+    font-family: monospace;
+    display: inline-block;
+}
+.sd-rejection-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ── Admin request form ────────────────────────────────────────────────────── */
+.sd-request-step {
+    padding: 4px 0;
+}
+.sd-request-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+}
+.sd-request-subtitle {
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+.sd-request-step .sd-field-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.sd-field-optional {
+    font-weight: 400;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+}
+.sd-request-step textarea.sd-field-input {
+    min-height: 80px;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.5;
+}
+.sd-request-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+    padding: 4px 0;
+    margin-bottom: 12px;
+    transition: color 0.15s;
+}
+.sd-request-back:hover {
+    color: var(--color-text-primary);
+}
+
+/* ── Request success state ─────────────────────────────────────────────────── */
+.sd-request-success {
+    text-align: center;
+    padding: 12px 0;
+}
+.sd-request-success-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+.sd-request-success-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: 8px;
+}
+.sd-request-success-msg {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin-bottom: 18px;
+}
+
+/* ── Direct request link ───────────────────────────────────────────────────── */
+.sd-request-direct-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border: 1px dashed var(--color-border-light);
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    cursor: pointer;
+    background: none;
+    font-family: inherit;
+    width: 100%;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+.sd-request-direct-link:hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+/* ── Mobile responsiveness for phones ─────────────────────────────────────── */
+@media (max-width: 480px) {
+    #adminSignInDialog {
+        max-width: 100%;
+        width: calc(100vw - 20px);
+        max-height: calc(100vh - 20px);
+        max-height: calc(100dvh - 20px);
+        border-radius: 16px;
+    }
+    .sd-card {
+        padding: 20px 16px 16px;
+        border-radius: 16px;
+        max-height: calc(100vh - 20px);
+        max-height: calc(100dvh - 20px);
+    }
+    .sd-close-btn {
+        top: 10px;
+        left: 10px;
+        width: 28px;
+        height: 28px;
+    }
+    .sd-brand {
+        margin-bottom: 12px;
+        gap: 8px;
+    }
+    .sd-brand img {
+        width: 28px;
+        height: 28px;
+    }
+    .sd-title {
+        font-size: 1.15rem;
+    }
+    .sd-subtitle {
+        font-size: 0.8rem;
+        margin-bottom: 14px;
+    }
+    .sd-field-label {
+        font-size: 0.78rem;
+        margin-bottom: 4px;
+    }
+    .sd-field-wrapper {
+        margin-bottom: 10px;
+    }
+    .sd-field-input {
+        padding: 9px 12px;
+        font-size: 0.9rem;
+    }
+    .sd-request-step textarea.sd-field-input {
+        min-height: 60px;
+    }
+    .sd-btn {
+        padding: 11px;
+        font-size: 0.92rem;
+        margin-bottom: 12px;
+    }
+    .sd-rejection-icon {
+        font-size: 2rem;
+        margin-bottom: 6px;
+    }
+    .sd-rejection-title {
+        font-size: 1rem;
+    }
+    .sd-rejection-msg {
+        font-size: 0.8rem;
+    }
+    .sd-rejected-email-display {
+        font-size: 0.76rem;
+        padding: 4px 8px;
+        margin-bottom: 12px;
+    }
+    .sd-docs-link {
+        margin-top: 10px;
+        padding: 7px 10px;
+        font-size: 0.75rem;
+    }
+    .sd-request-direct-link {
+        margin-top: 6px;
+        padding: 7px 10px;
+        font-size: 0.75rem;
+    }
+    .sd-footer {
+        margin-top: 12px;
+        font-size: 0.72rem;
+    }
+}
+
+/* ── Short viewport adjustments (landscape / small windows) ────────────────── */
+@media (max-height: 700px) {
+    .sd-card {
+        padding: 16px 18px 14px;
+    }
+    .sd-brand {
+        margin-bottom: 8px;
+    }
+    .sd-brand img {
+        width: 26px;
+        height: 26px;
+    }
+    .sd-title {
+        font-size: 1.1rem;
+        margin-bottom: 2px;
+    }
+    .sd-subtitle {
+        font-size: 0.78rem;
+        margin-bottom: 10px;
+    }
+    .sd-request-title {
+        font-size: 1rem;
+    }
+    .sd-request-subtitle {
+        font-size: 0.76rem;
+        margin-bottom: 10px;
+    }
+    .sd-field-label {
+        font-size: 0.76rem;
+        margin-bottom: 3px;
+    }
+    .sd-field-wrapper {
+        margin-bottom: 8px;
+    }
+    .sd-field-input {
+        padding: 7px 11px;
+        font-size: 0.88rem;
+    }
+    .sd-request-step textarea.sd-field-input {
+        min-height: 50px;
+    }
+    .sd-btn {
+        padding: 9px;
+        font-size: 0.88rem;
+        margin-bottom: 8px;
+    }
+    .sd-divider {
+        margin: 8px 0;
+    }
+    .sd-request-back {
+        margin-bottom: 6px;
+    }
+}
+

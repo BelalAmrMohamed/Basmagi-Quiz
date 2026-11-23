@@ -7,6 +7,7 @@
 import { getToken, isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 import { fetchImportDraft, getDraftAssets, consumeImportDraft } from "../../shared/import-draft.js";
+import { guideOptions, GUIDE_TOAST_SECONDS } from "../../shared/guide-links.js";
 import { escapeHtml } from "../home/escape-html.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { normalizeNotebookLang } from "../../shared/notebook-lang.js";
@@ -339,7 +340,7 @@ export async function startEditor(edit = null) {
       state = M.notebookFromPayload(r.body.notebook); editId = edit;
       $("cnbPlacementRow").hidden = true;
     }
-  } catch (err) { showNotification(t("loadFail"), err.message, "error"); }
+  } catch (err) { showNotification(t("loadFail"), err.message, "error", GUIDE_TOAST_SECONDS, guideOptions(err, "en")); }
   writeMeta(); applyChrome();
   $("cnbRuntime").disabled = !!editId;
   applyChrome();

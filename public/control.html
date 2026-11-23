@@ -69,6 +69,7 @@
             منصة امتحانات بصمجي
         </div>
         <div class="topnav-actions">
+            <button type="button" class="btn-nav" id="requestsNavBtn">طلبات الانضمام <span id="requestsBadge" class="requests-badge" hidden></span></button>
             <button type="button" class="btn-nav btn-loading" id="trashNavBtn" disabled>سلة
                 المهملات</button>
             <button type="button" class="btn-nav" id="overviewNavBtn" hidden>الرئيسية</button>
@@ -233,6 +234,32 @@
             <span id="storageCleanMsg" role="status"></span>
         </div>
     </section>
+    <!-- ADMIN REQUESTS VIEW -->
+    <div id="requestsSection" class="main-grid" hidden>
+        <div class="panel" style="grid-column: 1 / -1;">
+            <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;">
+                <div class="panel-title">طلبات الانضمام كمشرف</div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn-nav" id="refreshRequestsBtn" style="padding:6px 14px;font-size:0.82rem;">تحديث</button>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="requests-filter-tabs" id="requestsFilterTabs">
+                    <button type="button" class="requests-filter-tab active" data-filter="pending">قيد المراجعة</button>
+                    <button type="button" class="requests-filter-tab" data-filter="approved">تمت الموافقة</button>
+                    <button type="button" class="requests-filter-tab" data-filter="rejected">مرفوضة</button>
+                    <button type="button" class="requests-filter-tab" data-filter="all">الكل</button>
+                </div>
+                <div class="requests-list" id="requestsList">
+                    <div class="control-skeleton-row">
+                        <div class="control-skeleton-block"></div>
+                        <div class="control-skeleton-block"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="main-grid" id="trashSection" hidden>
         <div class="panel" style="grid-column: 1 / -1;">
             <div class="panel-header trash-panel-header">

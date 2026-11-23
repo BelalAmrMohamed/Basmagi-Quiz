@@ -62,6 +62,7 @@ import { CREATE_LESSON_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/
 import { downloadLesson } from "../home/lesson-download.js";
 import { mountSourceField } from "../../shared/rich-input/source-field.js";
 import { fetchImportDraft } from "../../shared/import-draft.js";
+import { guideOptions, GUIDE_TOAST_SECONDS } from "../../shared/guide-links.js";
 
 
 // Matches the canonical published-lesson id shape used across the lesson
@@ -556,7 +557,7 @@ async function loadDraftJsonSafely() {
     try {
         return await fetchImportDraft("lesson");
     } catch (err) {
-        showNotification("تعذّر فتح الرابط", err.message, "error");
+        showNotification("تعذّر فتح الرابط", err.message, "error", GUIDE_TOAST_SECONDS, guideOptions(err));
         return null;
     }
 }

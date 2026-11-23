@@ -28,6 +28,7 @@ import { buildLocalYoutubePlaylistEntry, findSameLevelPlaylistDuplicate } from "
 import { hasSameLevelCollision } from "./user-content-folders.js";
 import * as wsStore from "../../shared/workspace-store.js";
 import { showNotification as showToast } from "../../components/notifications/notifications.js";
+import { withGuide, guideOptions, GUIDE_TOAST_SECONDS } from "../../shared/guide-links.js";
 
 const GUIDE_HINT_KEY = "bq-mcp-guide-hint-shown";
 
@@ -200,8 +201,8 @@ async function fetchDraft(code) {
   } catch {
     throw new Error("تعذّر الاتصال بالخادم لتحميل الرابط. تحقق من الإنترنت وحاول مجدداً.");
   }
-  if (res.status === 404) throw new Error("انتهت صلاحية هذا الرابط (يدوم 72 ساعة) أو تم استخدامه من قبل. اطلب من Claude رابطاً جديداً.");
-  if (!res.ok) throw new Error("تعذّر تحميل الرابط.");
+  if (res.status === 404) throw withGuide(new Error("انتهت صلاحية هذا الرابط (يدوم 72 ساعة) أو تم استخدامه من قبل. اطلب من Claude رابطاً جديداً."), "draftExpired");
+  if (!res.ok) throw withGuide(new Error("تعذّر تحميل الرابط."), "itemMissing");
   return res.json();
 }
 
@@ -250,7 +251,7 @@ export async function importMcpDraftFromUrl() {
     const id = entry.id || entry.meta?.id;
 
     if (!setInStorage("user_quizzes", JSON.stringify([...items, entry]))) {
-      throw new Error("تعذّر الحفظ محلياً. قد تكون مساحة التخزين ممتلئة.");
+      throw withGuide(new Error("تعذّر الحفظ محلياً. قد تكون مساحة التخزين ممتلئة."), "itemMissing");
     }
     rememberImported(code, id);
 
@@ -274,7 +275,10 @@ export async function importMcpDraftFromUrl() {
   } catch (err) {
     console.error("[mcp-draft-import]", err);
     stripDraftParam();
-    showNotification("تعذّر إضافة المحتوى", err?.message || "حدث خطأ غير متوقع.", "error", 10);
+    // Link to the FAQ only for failures it explains: expired link (#s8) or "opened it, can't find the item".
+    // A network failure carries no guide key, so it shows no link. Anything else the builders reject
+    // (empty draft, bad payload) is a content problem a guide cannot fix.
+    showNotification("تعذّر إضافة المحتوى", err?.message || "حدث خطأ غير متوقع.", "error", GUIDE_TOAST_SECONDS, guideOptions(err));
     return null;
   }
 }
