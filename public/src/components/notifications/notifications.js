@@ -10,6 +10,7 @@ export function showNotification(
   message = "",
   type = "info",
   time_in_secconds = 5,
+  options = {},
 ) {
   // 1. Get or Create Container (Logic from Function 2)
   let container = document.getElementById("notification-container");
@@ -58,12 +59,19 @@ export function showNotification(
   // 4. Construct HTML (Visual Structure from Function 1, Safety from Function 2)
   const iconHTML = notificationIconHtml(icon);
 
+  // Optional link under the message: options.action = { label, href } (opens in a new tab).
+  const action = options && options.action;
+  const actionHtml = action && action.label && action.href
+    ? `<a class="notification-action" href="${escapeHtml(action.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(action.label)}</a>`
+    : "";
+
   toast.innerHTML = `
       <div class="notification-content" title="${escapeHtml(title)}">
         ${iconHTML}
         <div>
           <strong dir="auto">${escapeHtml(title)}</strong>
           <p dir="auto">${escapeHtml(message)}</p>
+          ${actionHtml}
         </div>
         <button class="close-btn-notification">×</button>
       </div>

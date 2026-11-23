@@ -42,6 +42,7 @@ import {
 import { openSignInDialog } from "../../components/log-in/sign-in.js";
 import { container, title } from "./dom-refs.js";
 import { createEmptyState } from "./empty-state.js";
+import { createConnectHint } from "./connect-card.js";
 import {
   getNavigationStack,
   isRestoring,
@@ -1065,6 +1066,8 @@ export function renderUserContentView() {
           : "لم تقم بإنشاء أي محتوى بعد",
         subtitle: "قم بإنشاء مادة ، أو مجلد ، أو امتحان ، أو درس ، أو دفتر ، أو فيديو يوتيوب",
       });
+      // First visit (no content at all): show how to connect an AI assistant, inside the empty state.
+      if (!currentFolderId) emptyState.appendChild(createConnectHint());
       quizzesContainer.appendChild(emptyState);
     } else {
       currentChildren.forEach((item, index) => {

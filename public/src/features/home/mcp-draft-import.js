@@ -29,6 +29,17 @@ import { hasSameLevelCollision } from "./user-content-folders.js";
 import * as wsStore from "../../shared/workspace-store.js";
 import { showNotification as showToast } from "../../components/notifications/notifications.js";
 
+const GUIDE_HINT_KEY = "bq-mcp-guide-hint-shown";
+
+/** One-time «how to create more» link on the success toast (not repeated on later imports). */
+function guideToastOptions() {
+  try {
+    if (localStorage.getItem(GUIDE_HINT_KEY) === "1") return {};
+    localStorage.setItem(GUIDE_HINT_KEY, "1");
+  } catch { /* storage unavailable: show the link, it is harmless */ }
+  return { action: { label: "أول مرة؟ تعرّف على طريقة الربط والتعديل", href: "/how-to-connect-mcp#s5" } };
+}
+
 /** A toast must never turn an already-saved import into a reported failure. */
 const showNotification = (...args) => { try { showToast(...args); } catch (e) { console.warn("[mcp-draft-import] toast failed", e); } };
 
@@ -256,6 +267,7 @@ export async function importMcpDraftFromUrl() {
       `«${title}» جاهز الآن — مميّز بشارة «جديد» في القائمة.`,
       "success",
       8,
+      guideToastOptions(),
     );
     if (skippedFiles) showNotification("", "تعذّر تنزيل بعض الملفات التي أرفقها Claude بالدفتر. أضفها يدوياً من مساحة عمل الدفتر.", "warning", 8);
     return pendingHighlight;

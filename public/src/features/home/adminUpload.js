@@ -153,6 +153,8 @@ function injectStyles() {
       position:sticky; top:0; background:var(--color-surface); z-index:1;
       border-radius:18px 18px 0 0;
     }
+    .adm-guide { display:inline-flex; align-items:center; gap:5px; margin-inline-start:auto; margin-inline-end:10px; font-size:.78rem; color:var(--color-text-secondary); text-decoration:none; }
+    .adm-guide:hover { color:var(--color-primary); }
     .adm-header h2 { margin:0; font-size:1.05rem; font-weight:700; color:var(--color-text-primary); display:flex; align-items:center; gap:7px; }
     .adm-close {
       width:30px; height:30px; border-radius:50%;
@@ -396,9 +398,12 @@ function stepsHTML(cur) {
   }).join("")}</div>`;
 }
 
+const DOC_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+
 function hdr(title) {
   return `<div class="adm-header">
     <h2>${ICON.cloud}<span>${title}</span></h2>
+    <a class="adm-guide" href="/how-to-upload-content" target="_blank" rel="noopener noreferrer">${DOC_ICON}<span>دليل الرفع</span></a>
     <button class="adm-close" onclick="window.__admClose()" aria-label="إغلاق">${ICON.x}</button>
   </div>`;
 }
