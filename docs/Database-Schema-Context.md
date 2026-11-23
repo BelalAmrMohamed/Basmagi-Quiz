@@ -1,5 +1,8 @@
 # What is this file?
-This file is for context only. It's copied from the Supabase dashboard directly after running the latest migration: `supabase\migrations\20261027143000_lesson_comment_staff_actor_key.sql`.
+
+This file is for context only. It's copied from the Supabase dashboard directly after running this migration: `20261123120000_admin_requests.sql`.
+
+If there are migrations that exist after that one, it means this document is outdated so it shouldn't be used for Database Context.
 
 # Database 
 
@@ -27,7 +30,7 @@ This file is for context only. It's copied from the Supabase dashboard directly 
 | `uploaded_by` | `uuid` |  Nullable |
 | `course_id` | `uuid` |  Nullable |
 | `folder_id` | `uuid` |  Nullable |
-| `attempt_count` | `int8` |  Default 0 — total submissions; incremented only via RPC `increment_quiz_attempt(p_quiz_id uuid)` (migration `20261028120000_quiz_attempt_count_drop_quiz_access.sql`) |
+| `attempt_count` | `int8` |  |
 
 ## Table `admin_users`
 
@@ -47,11 +50,13 @@ This file is for context only. It's copied from the Supabase dashboard directly 
 | `current_level` | `int4` |  Nullable |
 | `avatar_url` | `text` |  Nullable |
 | `uploaded_quizzes` | `int4` |  Nullable |
-| `uploaded_lessons` | `int4` |  Default 0 — live lessons created by this admin; maintained by trigger `lessons_sync_uploaded_lessons_trigger` (migration `20261028180000_admin_uploaded_lessons.sql`), never written by the API |
 | `activity_heatmap` | `jsonb` |  Nullable |
 | `thumbnail_url` | `text` |  Nullable |
 | `allowed_scopes` | `_text` |  Nullable |
 | `bio` | `text` |  Nullable |
+| `uploaded_lessons` | `int4` |  |
+| `social_links` | `jsonb` |  Nullable |
+| `uploaded_notebooks` | `int4` |  |
 
 ## Table `reports`
 
@@ -193,6 +198,11 @@ A lesson is a sibling leaf next to a quiz under the same course/folder tree — 
 | `description` | `text` |  Nullable |
 | `password_hash` | `text` |  Nullable |
 | `source` | `text` |  Nullable |
+| `view_count` | `int8` |  |
+| `education_type` | `text` |  Nullable |
+| `college` | `text` |  Nullable |
+| `year` | `int4` |  Nullable |
+| `term` | `int4` |  Nullable |
 
 ## Table `lesson_comments`
 
@@ -273,29 +283,49 @@ Reports against a lesson comment, reviewed by admins. Independent of the comment
 | `update_id` | `int8` | Primary |
 | `created_at` | `timestamptz` |  |
 
+## Table `import_drafts`
 
-## Table `storage_limits` / `storage_objects` (storage guard)
+### Columns
 
-Migration `20261104180000_storage_guard.sql`. RLS on, no policies; written only by `storage_reserve()` / `storage_release()` (service_role, called from `api/_storageGuard.js`).
+| Name | Type | Constraints |
+|------|------|-------------|
+| `code` | `text` | Primary |
+| `kind` | `text` |  |
+| `payload` | `jsonb` |  |
+| `created_at` | `timestamptz` |  |
+| `expires_at` | `timestamptz` |  |
 
-- `storage_limits` (single row `id = 1`): `cap_bytes` (default 800 MB of the 1 GB Supabase free file storage), `max_file_bytes` (2 MB for images; audio 10 MB and video 50 MB are fixed in the function), `warn_pct` (80).
-- `storage_objects` `(bucket, path) PK`: `size`, `kind`, `owner`, `created_at`. Running usage = `sum(size)`. Every media upload (quiz-media and notebook-assets) is reserved here BEFORE bytes are sent; at the cap only media is refused, never quiz/lesson/notebook JSON.
-- Bucket `notebook-assets` (public read, images only, 2 MB). No insert policy: only signed upload URLs issued by the admin API can write. Objects are content-addressed (`<sha256>.<ext>`), shared between notebooks.
-- `storage_usage()`, `storage_orphans()` (objects >1 h old that no quiz, lesson, notebook or trash snapshot mentions).
-- Notebook `content.assets`: optional `[{ path, mime, size, sha256, url }]` manifest, validated by `content-rules.js` (`checkNotebookAssets`). Workspace files themselves live only in the browser (IndexedDB `BasmagiWorkspaceDB`) until an admin publishes.
+## Table `notebooks`
 
-## Draft workspace files (MCP) - bucket `draft-assets`
+An executable MATLAB-style notebook: a sibling leaf next to quizzes and lessons in the course/folder tree. Never scored; learner work is local to the browser.
 
-Migration `20261105110000_draft_assets.sql`. Private bucket (service role + signed URLs only). Objects are `<draftCode>/<filename>`, tracked in `storage_objects` (bucket `draft-assets`) so they count against the global cap; `storage_limits.draft_cap_bytes` (150 MB) is their sub-cap, 10 MB per file and 20 MB per draft are enforced in `storage_reserve(..., kind = 'draft')`.
+### Columns
 
-- Created by the MCP tools `add_workspace_asset`, `add_workspace_asset_from_url`, `request_asset_upload` (curl PUT to `/functions/v1/mcp/upload?t=<HMAC token>`, 15 min, one file).
-- `GET /api/mcp/draft/<code>` returns `assets: [{path, mime, size, url}]` (signed URLs, ~1 h). `DELETE /api/mcp/draft/<code>` removes the draft and its files (called by the editor after the notebook is saved/published). Opening the link never deletes anything.
-- Cleanup: expired drafts' files are purged on every draft creation, and daily by the Vercel cron `/api/admin?cron=purge-drafts` (`Authorization: Bearer $CRON_SECRET`) through `draft_assets_to_purge()`. `storage_orphans()` ignores this bucket.
-- `notebooks.slug` can never be `new` or `edit` (`notebooks_slug_not_reserved`, migration `20261105100000`).
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `uuid` | Primary |
+| `course_id` | `uuid` |  Nullable |
+| `folder_id` | `uuid` |  Nullable |
+| `title` | `text` |  |
+| `description` | `text` |  Nullable |
+| `source` | `text` |  Nullable |
+| `slug` | `text` |  Nullable |
+| `runtime` | `text` |  |
+| `content` | `jsonb` |  |
+| `migration_key` | `text` |  Nullable |
+| `sort_order` | `int4` |  Nullable |
+| `created_by` | `uuid` |  Nullable |
+| `created_at` | `timestamptz` |  |
+| `updated_at` | `timestamptz` |  |
+| `education_type` | `text` |  Nullable |
+| `college` | `text` |  Nullable |
+| `year` | `int4` |  Nullable |
+| `term` | `int4` |  Nullable |
+| `view_count` | `int8` |  |
 
 ## Table `analytics_daily`
 
-Page views per Cairo calendar day for the whole platform. Written only by analytics_track_view() (service_role), read only through analytics_live_stats(). Powers the live counter and 30-day sparkline on about.html. RLS enabled with no policies.
+Page views per Cairo calendar day for the whole platform. Written only by analytics_track_view() (service_role), read only through analytics_live_stats(). Powers the live counter and 30-day sparkline on about.html.
 
 ### Columns
 
@@ -303,10 +333,11 @@ Page views per Cairo calendar day for the whole platform. Written only by analyt
 |------|------|-------------|
 | `day` | `date` | Primary |
 | `views` | `int8` |  |
+| `visitors` | `int8` |  |
 
 ## Table `analytics_presence`
 
-Anonymous, daily-rotating visitor hashes with their last activity time, used only for the "online now" count (visitors active in the last 5 minutes). Rows older than 1 hour are purged opportunistically by analytics_track_view(). No raw IPs, no cookies. RLS enabled with no policies.
+Anonymous, daily-rotating visitor hashes with their last activity time, used only for the "online now" count (visitors active in the last 5 minutes). Rows older than 1 hour are purged opportunistically by analytics_track_view(). No raw IPs, no cookies.
 
 ### Columns
 
@@ -314,6 +345,131 @@ Anonymous, daily-rotating visitor hashes with their last activity time, used onl
 |------|------|-------------|
 | `visitor` | `text` | Primary |
 | `last_seen` | `timestamptz` |  |
+
+## Table `storage_limits`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `cap_bytes` | `int8` |  |
+| `max_file_bytes` | `int8` |  |
+| `warn_pct` | `int4` |  |
+| `draft_cap_bytes` | `int8` |  |
+
+## Table `storage_objects`
+
+Ledger of every media object uploaded through the storage guard (running total = sum(size)). Written only by storage_reserve()/storage_release() (service_role).
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `bucket` | `text` | Primary |
+| `path` | `text` | Primary |
+| `size` | `int8` |  |
+| `kind` | `text` |  |
+| `owner` | `text` |  Nullable |
+| `created_at` | `timestamptz` |  |
+
+## Table `cpp_run_quota`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `ip_hash` | `text` | Primary |
+| `window_start` | `timestamptz` | Primary |
+| `n` | `int4` |  |
+
+## Table `ai_agent_platform_usage`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `provider` | `text` | Primary |
+| `window_start` | `date` | Primary |
+| `request_count` | `int4` |  |
+
+## Table `analytics_daily_visitors`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `day` | `date` | Primary |
+| `visitor` | `text` | Primary |
+| `created_at` | `timestamptz` |  |
+
+## Table `quiz_password_attempts`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int8` | Primary |
+| `quiz_id` | `uuid` |  |
+| `client` | `text` |  |
+| `created_at` | `timestamptz` |  |
+
+## Table `ai_agent_turns`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `profile_id` | `uuid` | Primary |
+| `turn_id` | `uuid` | Primary |
+| `steps` | `int4` |  |
+| `started_at` | `timestamptz` |  |
+
+## Table `youtube_public`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `uuid` | Primary |
+| `kind` | `text` |  |
+| `youtube_id` | `text` |  Nullable |
+| `playlist_id` | `text` |  Nullable |
+| `title` | `text` |  |
+| `channel_title` | `text` |  |
+| `channel_id` | `text` |  Nullable |
+| `description` | `text` |  |
+| `thumbnail_url` | `text` |  |
+| `published_at` | `timestamptz` |  Nullable |
+| `duration_seconds` | `int4` |  Nullable |
+| `item_count` | `int4` |  |
+| `total_count` | `int4` |  |
+| `partial` | `bool` |  |
+| `items` | `jsonb` |  |
+| `is_published` | `bool` |  |
+| `created_by` | `uuid` |  Nullable |
+| `created_at` | `timestamptz` |  |
+| `updated_at` | `timestamptz` |  |
+| `course_id` | `uuid` |  Nullable |
+| `folder_id` | `uuid` |  Nullable |
+| `channel_thumbnail_url` | `text` |  Nullable |
+
+## Table `admin_requests`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `uuid` | Primary |
+| `email` | `text` |  |
+| `full_name` | `text` |  |
+| `college` | `text` |  Nullable |
+| `reason` | `text` |  |
+| `notes` | `text` |  Nullable |
+| `status` | `text` |  |
+| `reviewed_by` | `text` |  Nullable |
+| `reviewed_at` | `timestamptz` |  Nullable |
+| `created_at` | `timestamptz` |  |
 
 ## RLS Policies
 
@@ -366,8 +522,21 @@ Anonymous, daily-rotating visitor hashes with their last activity time, used onl
 |--------|---------|-------|--------|-------|------------|
 | `Public can read folders` | SELECT | anon, authenticated | PERMISSIVE | `true` | — |
 
+### `notebooks`
+
+| Policy | Command | Roles | Action | USING | WITH CHECK |
+|--------|---------|-------|--------|-------|------------|
+| `public_read` | SELECT | public | PERMISSIVE | `true` | — |
+
 ### `colleges`
 
 | Policy | Command | Roles | Action | USING | WITH CHECK |
 |--------|---------|-------|--------|-------|------------|
 | `Public can read active colleges` | SELECT | anon, authenticated | PERMISSIVE | `(is_active = true)` | — |
+
+### `youtube_public`
+
+| Policy | Command | Roles | Action | USING | WITH CHECK |
+|--------|---------|-------|--------|-------|------------|
+| `youtube_public_read` | SELECT | public | PERMISSIVE | `is_published` | — |
+
