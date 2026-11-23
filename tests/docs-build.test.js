@@ -68,26 +68,21 @@ test("MCP page ships HowTo structured data built from its own steps, with WebP s
   }
 });
 
-test("/docs hub: first in the sidebar, cards grouped by audience, upload guide only under admins", () => {
+test("/docs hub: first in the sidebar, unsectioned cards list each guide once with title and description", () => {
   assert.equal(DOCS_GROUPS[0].links[0].href, "/docs");
   assert.ok(!GUIDE_ORDER.includes("/docs"), "the hub is not part of the guide reading order");
   const html = fs.readFileSync(path.join(ROOT, "public/docs.html"), "utf8");
-  const sections = [...html.matchAll(/<section class="section"[^>]*data-audience="(\w+)"[^>]*>([\s\S]*?)<\/section>/g)];
-  assert.deepEqual(sections.map((s) => s[1]), ["students", "creators", "admins", "ai"]);
-  const guides = new Set(GUIDE_ORDER);
-  for (const [, audience, block] of sections) {
-    const cards = [...block.matchAll(/<a class="doc-hub__card" href="([^"]+)">([\s\S]*?)<\/a>/g)];
-    assert.ok(cards.length >= 1, `${audience}: no cards`);
-    for (const [, href, inner] of cards) {
-      assert.ok(guides.has(href), `${audience}: ${href} is not a guide`);
-      assert.match(inner, /doc-hub__title">[^<]+</, `${href}: card has no title`);
-      assert.match(inner, /doc-hub__desc">[^<]+</, `${href}: card has no one-line description`);
+  const cards = [...html.matchAll(/<a class="doc-hub__card" href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)];
+  assert.equal(cards.length, GUIDE_ORDER.length, "each guide has exactly one card (no duplicates)");
+  const linked = cards.map((c) => c[1]);
+  assert.deepEqual(linked, GUIDE_ORDER, "all guides are present in guide order");
+  for (const [, href, inner] of cards) {
+    assert.match(inner, /doc-hub__title">[^<]+</, `${href}: card has no title`);
+    assert.match(inner, /doc-hub__desc">[^<]+</, `${href}: card has no description`);
+    if (href === "/how-to-upload-content") {
+      assert.match(inner, /doc-hub__note|doc-hub__tag--admin/, `${href}: upload guide should carry admin note`);
     }
-    const hasUpload = cards.some((c) => c[1] === "/how-to-upload-content");
-    assert.equal(hasUpload, audience === "admins", `${audience}: the upload guide is for admins only`);
   }
-  const linked = new Set([...html.matchAll(/class="doc-hub__card" href="([^"]+)"/g)].map((m) => m[1]));
-  for (const href of GUIDE_ORDER) assert.ok(linked.has(href), `${href} is not reachable from the hub`);
 });
 
 test("/docs is registered like the other guides: vercel.json, sitemap, llms.txt, page bundle, hand-written sidebars", () => {

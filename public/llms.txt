@@ -10,7 +10,7 @@
 - [إنشاء دروس تفاعلية](https://basmagi-quiz.vercel.app/create-lesson): كتابة دروس تفاعلية غنية بالأقسام والوسائط والأسئلة التقييمية.
 - [إنشاء الدفاتر البرمجية](https://basmagi-quiz.vercel.app/notebook/new): دفاتر برمجية تفاعلية بأسلوب MATLAB تعمل بالكامل داخل المتصفح.
 - [إنشاء محتوى](https://basmagi-quiz.vercel.app/how-to-create-content): دليل شامل لإنشاء أنواع المحتوى على المنصة.
-- [كيفية رفع امتحان للمشرفين](https://basmagi-quiz.vercel.app/how-to-upload-content): دليل الإدخال الجماعي للامتحانات والدروس والدفاتر.
+- [كيفية رفع محتوى للمشرفين](https://basmagi-quiz.vercel.app/how-to-upload-content): دليل الإدخال الجماعي للامتحانات والدروس والدفاتر.
 - [ربط Claude و ChatGPT بالمنصة (MCP)](https://basmagi-quiz.vercel.app/how-to-connect-mcp): دليل بالصور لربط خادم MCP وإنشاء امتحان أو درس أو دفتر من محاضرتك وحفظه مباشرة في «محتواي».
 - [الباشــمبصمج — مساعد AI](https://basmagi-quiz.vercel.app/how-to-use-ai-agent): مساعد ذكاء اصطناعي لفهم وشرح الأسئلة وتحضير الامتحانات، وربط المنصة بـ Claude عبر MCP.
 - [Skill كتابة الامتحانات والدروس لـ Claude](https://basmagi-quiz.vercel.app/assets/downloads/basmagi-authoring.skill): ملف Skill للتحميل يعرّف Claude بطريقة العمل مع موصّل المنصة.
