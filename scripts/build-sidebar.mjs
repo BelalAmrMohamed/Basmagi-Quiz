@@ -116,6 +116,13 @@ export function renderDocsShellSidebar() {
   markup = markup.replace("<!-- DOCS_MENU_SLOT -->", "");
   markup = markup.replace("<!-- DOCS_PINNED_ACTION_SLOT -->", "");
 
+  // On doc pages, /docs is already part of the docs navigation menu (DOCS_GROUPS).
+  // Remove the pinned /docs link from .sidebar-pinned-actions to avoid duplicate /docs links.
+  markup = markup.replace(
+    /\s*<!-- PINNED_ITEM:docs -->[\s\S]*?<!-- END_PINNED_ITEM:docs -->/i,
+    ""
+  );
+
   return markup;
 }
 

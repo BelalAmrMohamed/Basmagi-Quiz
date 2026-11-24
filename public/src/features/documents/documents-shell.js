@@ -388,15 +388,6 @@ const sidebarMarkup = `
     <!-- Pinned bottom actions stay outside the scrollable nav so long
               menus cannot paint underneath them. -->
     <div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية">
-        <a href="/docs" class="menu-item" data-tooltip="الأدلة والمساعدة">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                aria-hidden="true">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-            </svg>
-            <span class="menu-label">الأدلة والمساعدة</span>
-        </a>
 
         <!-- PINNED_ITEM:settings -->
         <a href="settings" class="menu-item" data-tooltip="الإعدادات">
@@ -527,40 +518,7 @@ const sidebarMarkup = `
 document.body.insertAdjacentHTML("afterbegin", sidebarMarkup);
 
 const sidebar = document.getElementById("sidebar");
-const profileLink = sidebar?.querySelector('a[href="profile"]');
-if (profileLink) {
-  profileLink.outerHTML = `<div class="menu-item-dropdown-wrap">
-    <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب" aria-haspopup="true" aria-expanded="false" aria-controls="sideMenuProfileDropdown"><svg class="menu-item-default-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" /></svg><img class="menu-item-avatar" id="navSidebarAvatar" src="" alt="" style="display:none;"><span class="menu-label">الحساب</span></button>
-    <div id="sideMenuProfileDropdown" class="side-menu-profile-dropdown" role="menu" aria-label="قائمة الحساب"><div class="side-menu-profile-dropdown-header"><div class="side-menu-profile-dropdown-cover" id="sideMenuDropdownCover" aria-hidden="true"></div><div class="side-menu-profile-dropdown-avatar-wrap"><img class="side-menu-profile-dropdown-avatar" id="sideMenuDropdownAvatar" src="" alt="" style="display:none;"><svg class="side-menu-profile-dropdown-default-icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" /></svg></div><div class="side-menu-profile-dropdown-labels"><span id="sideMenuDropdownName" class="side-menu-profile-dropdown-name"></span><span id="sideMenuDropdownEmailRow" class="side-menu-profile-dropdown-email-row" style="display:none;"><span id="sideMenuDropdownEmail" class="side-menu-profile-dropdown-email"></span></span></div></div><div class="side-menu-profile-dropdown-divider" role="separator"></div><a href="/profile" class="side-menu-profile-dropdown-item" role="menuitem"><svg id="sideMenuDropdownItemAvatarIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" /></svg><img class="side-menu-profile-dropdown-item-avatar" id="sideMenuDropdownItemAvatar" src="" alt="" style="display:none;"><span>الحساب</span></a><a href="/reports" class="side-menu-profile-dropdown-item" role="menuitem"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg><span>البلاغات</span></a><button type="button" class="side-menu-profile-dropdown-item" role="menuitem" onclick="changeUsername()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg><span>تغيير الإسم</span></button><div class="side-menu-profile-dropdown-divider" role="separator"></div><button type="button" id="sideMenuDropdownSignOut" class="side-menu-profile-dropdown-item side-menu-profile-dropdown-item-danger" role="menuitem" style="display:none;"><span>تسجيل الخروج</span></button><span id="sideMenuDropdownSignIn" class="side-menu-profile-dropdown-item side-menu-profile-dropdown-item-signin" role="menuitem" style="display:none;"><svg class="side-menu-dropdown-google-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17Z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24Z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.14-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15Z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98Z"/></svg><span>تسجيل الدخول</span></span></div>
-  </div>`;
-}
-
 const sidebarNav = sidebar?.querySelector("nav");
-if (sidebarNav) {
-  // side-menu.js locates ".mobile-only-menu-item[onclick*='changeUsername']"
-  // to know where to inject the mobile admin-sign-in button and the mobile
-  // reports link (see its DOMContentLoaded handler) — that element only
-  // existed in the full app sidebar (index.html), not in this shell's
-  // trimmed-down copy, so those two nav items silently never appeared on
-  // doc pages even though the shared script runs here too. Adding the same
-  // anchor element restores parity without duplicating side-menu.js's
-  // injection logic a second time.
-  sidebarNav.insertAdjacentHTML(
-    "beforeend",
-    `<button onclick="changeUsername()" class="menu-item mobile-only-menu-item" title="تغيير الإسم" data-tooltip="تغيير الإسم"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg><span class="menu-label">تغيير الإسم: <span class="change-username" id="userNameDisplay"></span></span></button>`,
-  );
-
-  sidebarNav.insertAdjacentHTML("beforeend", `<div class="menu-divider" role="separator" aria-hidden="true"></div><div class="theme-controls-section"><button type="button" class="theme-controls-toggle sidebar-expanded-only" id="themeControlsToggle" aria-expanded="true" aria-controls="themeControlsPanel"><span class="theme-controls-toggle-label"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" /><circle cx="13.5" cy="6.5" r=".5" fill="currentColor" /><circle cx="17.5" cy="10.5" r=".5" fill="currentColor" /><circle cx="6.5" cy="12.5" r=".5" fill="currentColor" /><circle cx="8.5" cy="7.5" r=".5" fill="currentColor" /></svg><span class="menu-label">المظهر والأداء</span></span><svg class="theme-controls-toggle-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button><button type="button" class="theme-section-header sidebar-collapsed-only" data-tooltip="الخلفية" title="المظهر والأداء" aria-label="فتح إعدادات المظهر والأداء"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" /><circle cx="13.5" cy="6.5" r=".5" fill="currentColor" /><circle cx="17.5" cy="10.5" r=".5" fill="currentColor" /><circle cx="6.5" cy="12.5" r=".5" fill="currentColor" /><circle cx="8.5" cy="7.5" r=".5" fill="currentColor" /></svg></button><div class="theme-controls-panel" id="themeControlsPanel"><div class="theme-selector-grid sidebar-expanded-only" role="group" aria-label="اختيار الخلفية"><button class="theme-selector-btn" title="الخلفية السوداء" data-theme="dark" aria-pressed="false"><span class="theme-btn-preview" aria-hidden="true"><span class="theme-btn-preview-header"></span><span class="theme-btn-preview-list"><span class="theme-btn-preview-row"></span><span class="theme-btn-preview-row"></span></span></span><span class="theme-btn-label">السوداء</span></button><button class="theme-selector-btn" title="الخلفية الزرقاء" data-theme="dark-slate" aria-pressed="false"><span class="theme-btn-preview" aria-hidden="true"><span class="theme-btn-preview-header"></span><span class="theme-btn-preview-list"><span class="theme-btn-preview-row"></span><span class="theme-btn-preview-row"></span></span></span><span class="theme-btn-label">الزرقاء</span></button><button class="theme-selector-btn" title="الخلفية البيضاء" data-theme="light" aria-pressed="false"><span class="theme-btn-preview" aria-hidden="true"><span class="theme-btn-preview-header"></span><span class="theme-btn-preview-list"><span class="theme-btn-preview-row"></span><span class="theme-btn-preview-row"></span></span></span><span class="theme-btn-label">البيضاء</span></button></div><label class="animation-toggle-container sidebar-expanded-only"><span class="animation-toggle-label">رسوم الخلفية</span><input type="checkbox" id="animationToggle" class="toggle-input" checked aria-label="رسوم الخلفية المتحركة"><span class="toggle-switch" aria-hidden="true"></span></label><label class="animation-toggle-container high-performance-toggle-container sidebar-expanded-only"><span class="animation-toggle-label">الأداء الفائق</span><input type="checkbox" id="highPerformanceToggle" class="toggle-input" aria-label="تفعيل الأداء الفائق"><span class="toggle-switch" aria-hidden="true"></span></label></div></div>`);
-  sidebar.querySelectorAll(".theme-selector-btn").forEach((button) => {
-    const check = document.createElement("span");
-    check.className = "theme-btn-check";
-    check.setAttribute("aria-hidden", "true");
-    check.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>`;
-    button.insertBefore(check, button.querySelector(".theme-btn-label"));
-  });
-
-  sidebar.insertAdjacentHTML("beforeend", `<div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية"><a href="settings" class="menu-item" id="sidebarSettingsBtn" data-tooltip="الإعدادات"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg><span class="menu-label">الإعدادات</span></a><button class="menu-item install-app" title="تثبيت التطبيق" data-action="installApp" data-tooltip="تثبيت التطبيق" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg><span class="menu-label">تثبيت التطبيق</span></button></div>`);
-}
 
 // ── "المستندات" (Docs) links ────────────────────────────────────────────
 // This shell (documents-shell.js) is only loaded on the doc pages
@@ -570,13 +528,13 @@ if (sidebarNav) {
 // Links come from docs-nav.js, grouped as Start / Create / AI / Legal. Plain
 // labelled groups (not collapsible submenus) since seven links don't need one.
 
-
 if (sidebarNav) {
   const linkHtml = ({ href, label, soon, icon }) =>
     `<a href="${href}" class="menu-item docs-menu-link" title="${label}" data-tooltip="${label}" data-docs-label="${label}">` +
     icon +
     `<span class="menu-label">${label}${soon ? ' <small class="docs-menu-soon-badge">قريباً</small>' : ""}</span>` +
     `</a>`;
+
   // Grouped: Start / Create / Connect AI / Legal. Group labels only show in the
   // expanded sidebar; the collapsed rail keeps its icon-only list.
   const docsLinksHtml = DOCS_GROUPS.map(
@@ -587,11 +545,16 @@ if (sidebarNav) {
       `</div>`,
   ).join("");
 
-  sidebarNav.insertAdjacentHTML(
-    "beforeend",
+  const docsSectionHtml =
     `<div class="menu-divider" role="separator" aria-hidden="true"></div>` +
-    `<div class="docs-menu-section" role="navigation" aria-label="مستندات المنصة">${docsLinksHtml}</div>`,
-  );
+    `<div class="docs-menu-section" role="navigation" aria-label="مستندات المنصة">${docsLinksHtml}</div>`;
+
+  const themeSection = sidebarNav.querySelector(".theme-controls-section");
+  if (themeSection) {
+    themeSection.insertAdjacentHTML("beforebegin", docsSectionHtml);
+  } else {
+    sidebarNav.insertAdjacentHTML("beforeend", docsSectionHtml);
+  }
 
   // Mark the current page's link active via location.pathname, generically,
   // instead of the old per-file hardcoded docs-switcher-link--active class.

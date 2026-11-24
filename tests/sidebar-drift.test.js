@@ -86,7 +86,7 @@ test("all 9 app pages contain the sentinel-wrapped canonical sidebar with proper
   }
 });
 
-test("documents-shell.js contains the canonical docs sidebar", () => {
+test("documents-shell.js contains the canonical docs sidebar without duplicate /docs or /settings links", () => {
   const shellPath = path.join(ROOT, DOCUMENTS_SHELL_FILE);
   const shellJs = fs.readFileSync(shellPath, "utf8");
 
@@ -95,6 +95,29 @@ test("documents-shell.js contains the canonical docs sidebar", () => {
   assert.ok(shellJs.includes('id="sidebar"'), "documents-shell.js missing #sidebar");
   assert.ok(shellJs.includes('id="bottomNav"'), "documents-shell.js missing #bottomNav");
   assert.ok(shellJs.includes('id="themeControlsToggle"'), "documents-shell.js missing #themeControlsToggle");
+
+  // Verify no duplicate /docs or /settings links in documents-shell.js sidebar markup
+  const markupMatch = shellJs.match(/const sidebarMarkup = `([\s\S]*?)`;/);
+  assert.ok(markupMatch, "sidebarMarkup regex match failed");
+  const markup = markupMatch[1];
+  const asideMatch = markup.match(/<aside[\s\S]*?<\/aside>/);
+  assert.ok(asideMatch, "<aside> block missing in sidebarMarkup");
+  const aside = asideMatch[0];
+
+  // In <aside>, /docs is omitted from pinned actions because DOCS_GROUPS supplies it once in the navigation
+  const docsInAside = (aside.match(/href="\/docs"/g) || []).length;
+  assert.equal(docsInAside, 0, "Doc pages <aside> must not contain pinned /docs (DOCS_GROUPS provides it once)");
+
+  // In <aside>, settings link must appear exactly once in pinned actions
+  const settingsInAside = (aside.match(/href="settings"/g) || []).length;
+  assert.equal(settingsInAside, 1, "Doc pages <aside> must contain exactly one settings link");
+
+  // Verify documents-shell.js does not append a duplicate sidebar-pinned-actions block
+  assert.equal(
+    (shellJs.match(/class="sidebar-pinned-actions"/g) || []).length,
+    1,
+    "documents-shell.js must contain only one sidebar-pinned-actions declaration"
+  );
 });
 
 test("canonical template in scripts/partials/sidebar.html contains all expected navigation links", () => {

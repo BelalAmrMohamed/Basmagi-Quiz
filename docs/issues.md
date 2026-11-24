@@ -32,9 +32,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ### Implement the Rich Input Component into the Notebook page's Makrdown cells.
 
-### Update the `createEmptyState`
-* Update the `createEmptyState` to include a link to the `/how-to-create-content`
-
 ### Code Blocks
 * Add Line numbers, VS-Code-style.
 
@@ -65,11 +62,9 @@ Redesign the whole page:
 * Add a short testimonial or review.
 * **Make all the docs measurable.** We already have an analytics beacon, so add one event for "copied MCP URL" and one for "opened My Content from a draft link". That tells us whether people finish setup. A "Was this helpful?" thumbs row per section would also show which steps confuse people.
 
-#### Important Update
-* See [update plan.](plans/documentation-pages.md)
-* I've already created a new video for the MCP Server: `https://youtu.be/ysckQBfLFFw`. And the old, outdated video will be deleted, because it's useless now.
-* The plan is outdated actually, created content now gets saved in user content (i.e., <متحواي>) directly.
-* Skip the screenshots all of them, the video is enough.
+#### Measure what works. 
+
+We already have cookieless analytics. Tagging the entry points (sidebar, sign-in, upload wizard, toast, empty state) with a ?from= value would show which one actually brings people to the guides. Then you can drop the ones nobody uses instead of guessing.
 
 ### Connect Canva
 Think of a new way to download quizzes and lessons, maybe through canva.
