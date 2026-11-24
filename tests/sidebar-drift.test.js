@@ -118,6 +118,12 @@ test("documents-shell.js contains the canonical docs sidebar without duplicate /
     1,
     "documents-shell.js must contain only one sidebar-pinned-actions declaration"
   );
+
+  // Verify theme-controls-section precedes docs-menu-section in documents-shell.js
+  assert.ok(
+    shellJs.includes('themeSection.insertAdjacentHTML("afterend", docsSectionHtml)'),
+    "documents-shell.js must insert docs section after theme-controls-section so theme controls sit directly under account"
+  );
 });
 
 test("canonical template in scripts/partials/sidebar.html contains all expected navigation links", () => {

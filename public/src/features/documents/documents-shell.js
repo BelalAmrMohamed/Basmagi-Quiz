@@ -551,7 +551,7 @@ if (sidebarNav) {
 
   const themeSection = sidebarNav.querySelector(".theme-controls-section");
   if (themeSection) {
-    themeSection.insertAdjacentHTML("beforebegin", docsSectionHtml);
+    themeSection.insertAdjacentHTML("afterend", docsSectionHtml);
   } else {
     sidebarNav.insertAdjacentHTML("beforeend", docsSectionHtml);
   }
