@@ -340,8 +340,6 @@ a.quiz-creator-card:hover .quiz-creator-cta {
 .info-skel--pill { height: 26px; width: 84px; border-radius: 999px; }
 .info-skel--row { height: 16px; }
 .info-skel--card { height: 58px; border-radius: 14px; }
-html[data-motion="reduced"] .info-skel::after { animation: none; }
-@media (prefers-reduced-motion: reduce) { .info-skel::after { animation: none; } }
 
 .source-platform-icon { width: 18px; height: 18px; vertical-align: middle; margin-inline-end: 6px; border-radius: 3px; object-fit: contain; }
 .info-link-group { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; vertical-align: middle; }

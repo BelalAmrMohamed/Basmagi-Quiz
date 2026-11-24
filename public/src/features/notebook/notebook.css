@@ -91,16 +91,6 @@ body.sidebar-expanded {
   }
 }
 
-html[data-motion="reduced"] .notebook-spinner {
-  animation: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .notebook-spinner {
-    animation: none;
-  }
-}
-
 .notebook-retry,
 .notebook-home-link {
   font: inherit;

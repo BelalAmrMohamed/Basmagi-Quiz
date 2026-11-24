@@ -7,7 +7,10 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
-### MATLAB loading animation isn't working in high performance mode, and the lesson page's loading shimmer needs to be improved.
+## Loading Animations
+- The MATLAB loading animation isn't working in high performance mode. It's the loading of the `#cnbEditor` in the `notebook` page.
+- And That issue is happening with many other elements, too. Loading animation should work on high performance mode. 
+- The lesson page's loading shimmer needs to be improved.
 
 ### Sign in
 ![Screenshot](image.png).
@@ -15,6 +18,17 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 * Sometimes it tells me that, then when the page reloads automatically and I find that I'm still signed in, I try again, and it works this time.
 
 ## New Features
+
+### Admin Dashboard & Develpers Dashaboard
+* Developers currently have their dashboard: `/control`, but it needs a link that only appears for developers inside the `#sideMenuProfileDropdown` and the side-menu on phones.
+* Admins & Developers can also see `/reports` to solve reports.
+* But there is no dashboard for admins:
+  * To see the content they uploaded
+  * To see how many views they got on their content.
+  * To see how many reports they got.
+  * Also have a version of the platform's stats on their.
+  * And other things, too.
+* Their is no notification center for the platform.
 
 ### Implement the Rich Input Component into the Notebook page's Makrdown cells.
 
