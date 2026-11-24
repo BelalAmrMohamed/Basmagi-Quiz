@@ -1354,7 +1354,7 @@ function injectMobileAdminAndReportsMenuItems() {
     changeUsernameBtn.parentNode.insertBefore(mobileAdminBtn, changeUsernameBtn);
     changeUsernameBtn.parentNode.insertBefore(mobileReportsLink, changeUsernameBtn);
 
-    mobileAdminBtn.addEventListener("click", () => {
+    mobileAdminBtn.addEventListener("click", async () => {
       // Same as changeUsername: only force-close on mobile bottom-sheet mode.
       if (
         window.innerWidth <= 768 &&
@@ -1366,7 +1366,14 @@ function injectMobileAdminAndReportsMenuItems() {
       if (!roleInfo) {
         openSignInDialog();
       } else {
-        fullSignOut(getIndexSupabaseClient()).then(() => window.location.reload());
+        mobileAdminBtn.disabled = true;
+        try {
+          await fullSignOut(await ensureSharedSupabaseClient());
+        } catch (e) {
+          console.error("Sign out error:", e);
+        } finally {
+          window.location.reload();
+        }
       }
     });
 
