@@ -3474,17 +3474,4 @@ html[data-motion="reduced"] {
   inset: 0;
 }
 
-html[data-motion="reduced"] .upload-skeleton-bar,
-html[data-motion="reduced"] .container.is-data-loading .stat-card .value,
-html[data-motion="reduced"] .container.is-data-loading #activityHeatmap::before {
-  animation: none;
-}
 
-@media (prefers-reduced-motion: reduce) {
-
-  .upload-skeleton-bar,
-  .container.is-data-loading .stat-card .value,
-  .container.is-data-loading #activityHeatmap::before {
-    animation: none;
-  }
-}

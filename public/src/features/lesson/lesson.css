@@ -1841,9 +1841,11 @@ html[data-motion="reduced"] .lesson-question__explain-wrong-btn {
   max-width: 100%;
   height: .85rem;
   border-radius: 8px;
-  background: linear-gradient(90deg, var(--color-surface-hover, rgb(127 127 127 / .1)) 0%, var(--color-border) 50%, var(--color-surface-hover, rgb(127 127 127 / .1)) 100%);
-  background-size: 220% 100%;
-  animation: lesson-shimmer 1.45s ease-in-out infinite;
+  background-color: var(--color-background-secondary);
+  background-image: var(--gradient-loading-skeleton);
+  background-size: 1200px 100%;
+  background-repeat: no-repeat;
+  animation: lesson-shimmer 1.8s ease-in-out infinite;
 }
 
 .lesson-skeleton__line--2 {
@@ -1861,18 +1863,20 @@ html[data-motion="reduced"] .lesson-question__explain-wrong-btn {
 .lesson-skeleton__media {
   min-height: 9rem;
   border-radius: 12px;
-  background: linear-gradient(90deg, var(--color-surface-hover, rgb(127 127 127 / .1)) 0%, var(--color-border) 50%, var(--color-surface-hover, rgb(127 127 127 / .1)) 100%);
-  background-size: 220% 100%;
-  animation: lesson-shimmer 1.45s ease-in-out infinite;
+  background-color: var(--color-background-secondary);
+  background-image: var(--gradient-loading-skeleton);
+  background-size: 1200px 100%;
+  background-repeat: no-repeat;
+  animation: lesson-shimmer 1.8s ease-in-out infinite;
 }
 
 @keyframes lesson-shimmer {
   0% {
-    background-position: 100% 0;
+    background-position: 1200px 0;
   }
 
   100% {
-    background-position: -120% 0;
+    background-position: -1200px 0;
   }
 }
 
@@ -1992,20 +1996,12 @@ html[data-motion="reduced"] .lesson-question__explain-wrong-btn {
   }
 }
 
-html[data-motion="reduced"] .lesson-view--loading * {
-  animation: none !important;
-}
-
 html[data-motion="reduced"] .lesson-tts-block--active,
 html[data-motion="reduced"] .lesson-ai-quiz__progress-track>span {
   transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lesson-view--loading * {
-    animation: none !important;
-  }
-
   .lesson-tts-block--active,
   .lesson-ai-quiz__progress-track>span {
     transition: none !important;
@@ -4900,7 +4896,8 @@ html[data-motion="reduced"] .lesson-question__option.is-correct {
 .lesson-question__formal-score {
   direction: ltr;
   unicode-bidi: isolate;
-}
+}
+
 
 /* ── "Complete" (fill-in-the-blank) question ───────────────────────────── */
 .complete-blank-wrap { display: inline-flex; flex-direction: column; align-items: center; vertical-align: baseline; margin: 0 4px; }

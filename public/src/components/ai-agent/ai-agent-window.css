@@ -265,9 +265,7 @@ html[data-theme="dark-slate"] .aiw { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
 html[data-motion="reduced"] .aiw,
 html[data-motion="reduced"] .aiw.is-minimized { transition: none; }
 html[data-motion="reduced"] .aiw-snap-preview { transition: opacity .01s; }
-html[data-motion="reduced"] .aiw-working i,
-html[data-motion="reduced"] .aiw.is-minimized.is-busy,
-html[data-motion="reduced"] .aiw.is-minimized.is-busy::after { animation: none; }
+
 
 
 /* =============================================================================
