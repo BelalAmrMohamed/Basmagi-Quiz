@@ -51,22 +51,18 @@ export function renderAppSidebar({ activeNav = "none" } = {}) {
       /(<!-- NAV_ITEM:create-quiz -->\s*<a href="create-quiz" class="menu-item)(")/,
       '$1 active" aria-current="page"'
     );
-    template = template.replace(
-      /(<!-- BOTTOM_NAV_ITEM:create-quiz -->\s*<a href="create-quiz" class="bottom-nav-item)(")/,
-      '$1 active" aria-current="page"'
-    );
   } else if (activeNav === "create-lesson") {
     template = template.replace(
       /(<!-- NAV_ITEM:create-lesson -->\s*<a href="create-lesson" class="menu-item)(")/,
       '$1 active" aria-current="page"'
     );
-    template = template.replace(
-      /(<!-- BOTTOM_NAV_ITEM:create-lesson -->\s*<a href="create-lesson" class="bottom-nav-item)(")/,
-      '$1 active" aria-current="page"'
-    );
   } else if (activeNav === "create-notebook") {
     template = template.replace(
       /(<!-- NAV_ITEM:notebook -->\s*<a href="\/notebook\/new" class="menu-item)(")/,
+      '$1 active" aria-current="page"'
+    );
+    template = template.replace(
+      /(<!-- BOTTOM_NAV_ITEM:notebook -->\s*<a href="\/notebook\/new" class="bottom-nav-item)(")/,
       '$1 active" aria-current="page"'
     );
   } else if (activeNav === "profile") {

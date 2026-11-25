@@ -79,6 +79,7 @@ test("all 9 app pages contain the sentinel-wrapped canonical sidebar with proper
     }
     if (item.activeNav === "create-notebook") {
       assert.match(content, /<a href="\/notebook\/new" class="menu-item active"[^>]*data-tooltip="إنشاء دفاتر"/);
+      assert.match(content, /<a href="\/notebook\/new" class="bottom-nav-item active"[^>]*data-bottom-nav="notebook"/);
     }
     if (item.activeNav === "settings") {
       assert.match(content, /<a href="settings" class="menu-item active"[^>]*data-tooltip="الإعدادات"/);
@@ -139,4 +140,17 @@ test("canonical template in scripts/partials/sidebar.html contains all expected 
   assert.ok(template.includes('href="/docs"'), "missing docs link");
   assert.ok(template.includes('href="settings"'), "missing settings link");
   assert.ok(template.includes('class="bottom-nav"'), "missing bottom navigation bar");
+
+  // Verify mobile bottom nav order: profile -> home -> my-content -> notebook -> settings -> more
+  const bottomNavMatch = template.match(/<nav class="bottom-nav"[\s\S]*?<\/nav>/);
+  assert.ok(bottomNavMatch, "bottom-nav block missing");
+  const bottomNav = bottomNavMatch[0];
+  const myContentPos = bottomNav.indexOf('href="/my-content"');
+  const notebookPos = bottomNav.indexOf('href="/notebook/new"');
+  const homePos = bottomNav.indexOf('href="/"');
+  const settingsPos = bottomNav.indexOf('href="settings"');
+  assert.ok(myContentPos > homePos && notebookPos > myContentPos && settingsPos > notebookPos,
+    "bottom-nav must order /my-content and /notebook/new between home and settings");
+  assert.ok(!bottomNav.includes('href="create-quiz"'), "bottom-nav must not include create-quiz");
+  assert.ok(!bottomNav.includes('href="create-lesson"'), "bottom-nav must not include create-lesson");
 });
