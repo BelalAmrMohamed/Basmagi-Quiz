@@ -10,7 +10,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Reorder The Bottom Nav on Phones
 * Move `/my-content` and `/notebook/new` in place of `/create-quiz` and `/create-lesson`.
 * The sign-out button needs to be improved: its placement, its styling, etc.
-* 
 
 See `sidebar.html` and its related files.
 
