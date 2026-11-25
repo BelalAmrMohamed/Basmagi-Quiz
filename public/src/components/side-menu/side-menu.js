@@ -190,9 +190,11 @@ initMenuIconDrawing();
         } else if (href === "/" || tooltip === "الصفحة الرئيسية") {
           isActive = !isMyContent && (pathname === "/" || pathname === "/index.html" || pathname.startsWith("/course/") || !pathname.includes("/"));
         } else if (href) {
-          const cleanHref = href.replace(/^\//, "").replace(/\.html$/, "");
-          const cleanPath = pathname.replace(/^\//, "").replace(/\.html$/, "");
-          isActive = cleanHref === cleanPath;
+          const cleanHref = href.replace(/^\/|\/$/g, "").replace(/\.html$/, "");
+          const cleanPath = pathname.replace(/^\/|\/$/g, "").replace(/\.html$/, "");
+          isActive =
+            cleanHref === cleanPath ||
+            (cleanHref === "notebook/new" && cleanPath === "notebook");
         }
 
         link.classList.toggle("active", isActive);
@@ -211,9 +213,11 @@ initMenuIconDrawing();
         } else if (href === "/" || href === "/index.html") {
           isActive = !isMyContent && (pathname === "/" || pathname === "/index.html" || pathname.startsWith("/course/"));
         } else if (href) {
-          const cleanHref = href.replace(/^\//, "").replace(/\.html$/, "");
-          const cleanPath = pathname.replace(/^\//, "").replace(/\.html$/, "");
-          isActive = cleanHref === cleanPath;
+          const cleanHref = href.replace(/^\/|\/$/g, "").replace(/\.html$/, "");
+          const cleanPath = pathname.replace(/^\/|\/$/g, "").replace(/\.html$/, "");
+          isActive =
+            cleanHref === cleanPath ||
+            (cleanHref === "notebook/new" && cleanPath === "notebook");
         }
         item.classList.toggle("active", isActive);
         if (isActive) item.setAttribute("aria-current", "page");
@@ -974,9 +978,7 @@ export function refreshAdminUI() {
 
   const mobileAdminBtn = document.getElementById("sideMenuMobileAdminSignIn");
   if (mobileAdminBtn) {
-    const roleInfo = getAdminRoleInfo();
-    const label = mobileAdminBtn.querySelector(".menu-label");
-    if (label) label.textContent = roleInfo ? "تسجيل الخروج" : "دخول المشرفين";
+    syncMobileAuthButton(mobileAdminBtn);
   }
 }
 
@@ -1319,20 +1321,38 @@ window.changeUsername = async function (message = "أدخل الإسم الجد�
   }
 };
 
+const MOBILE_SIGN_OUT_ICON = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+`;
+
+const MOBILE_SIGN_IN_ICON = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+      <polyline points="10 17 15 12 10 7" />
+      <line x1="15" y1="12" x2="3" y2="12" />
+  </svg>
+`;
+
+/** Syncs the mobile sheet's auth button icon, label, and state class with the active admin session. */
+function syncMobileAuthButton(btn) {
+  if (!btn) return;
+  const isSignedIn = Boolean(getAdminRoleInfo());
+  const labelText = isSignedIn ? "تسجيل الخروج" : "دخول المشرفين";
+  btn.classList.toggle("is-sign-out", isSignedIn);
+  btn.classList.toggle("is-sign-in", !isSignedIn);
+  btn.setAttribute("aria-label", labelText);
+  btn.innerHTML = `${isSignedIn ? MOBILE_SIGN_OUT_ICON : MOBILE_SIGN_IN_ICON}<span class="menu-label">${labelText}</span>`;
+}
+
 function injectMobileAdminAndReportsMenuItems() {
   const changeUsernameBtn = document.querySelector(".mobile-only-menu-item[onclick*='changeUsername']");
   if (changeUsernameBtn && changeUsernameBtn.parentNode) {
-    const mobileAdminBtn = document.createElement("button");
-    mobileAdminBtn.type = "button";
-    mobileAdminBtn.className = "menu-item mobile-only-menu-item";
-    mobileAdminBtn.id = "sideMenuMobileAdminSignIn";
-    mobileAdminBtn.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" height="22" width="22" fill="currentColor">
-        <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>
-      </svg>
-      <span class="menu-label">دخول المشرفين</span>
-    `;
-
     const mobileReportsLink = document.createElement("a");
     mobileReportsLink.href = "reports";
     mobileReportsLink.className = "menu-item mobile-only-menu-item";
@@ -1350,9 +1370,20 @@ function injectMobileAdminAndReportsMenuItems() {
       </svg>
       <span class="menu-label">البلاغات</span>
     `;
-
-    changeUsernameBtn.parentNode.insertBefore(mobileAdminBtn, changeUsernameBtn);
     changeUsernameBtn.parentNode.insertBefore(mobileReportsLink, changeUsernameBtn);
+
+    const mobileAdminBtn = document.createElement("button");
+    mobileAdminBtn.type = "button";
+    mobileAdminBtn.className = "menu-item mobile-only-menu-item side-menu-mobile-auth-btn";
+    mobileAdminBtn.id = "sideMenuMobileAdminSignIn";
+    syncMobileAuthButton(mobileAdminBtn);
+
+    const pinnedActions = document.querySelector("#sidebar .sidebar-pinned-actions");
+    if (pinnedActions) {
+      pinnedActions.appendChild(mobileAdminBtn);
+    } else {
+      changeUsernameBtn.parentNode.appendChild(mobileAdminBtn);
+    }
 
     mobileAdminBtn.addEventListener("click", async () => {
       // Same as changeUsername: only force-close on mobile bottom-sheet mode.
@@ -1376,13 +1407,6 @@ function injectMobileAdminAndReportsMenuItems() {
         }
       }
     });
-
-    // Initial state setup
-    const roleInfo = getAdminRoleInfo();
-    const label = mobileAdminBtn.querySelector(".menu-label");
-    if (label) {
-      label.textContent = roleInfo ? "تسجيل الخروج" : "دخول المشرفين";
-    }
   }
 }
 

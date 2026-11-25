@@ -195,6 +195,12 @@
     padding 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+@media(max-width: 768px){
+  .sidebar.expanded .sidebar-header {
+    padding: 4px 10px 8px 14px;
+  }
+}
+
 .sidebar-brand-link {
   display: flex;
   align-items: center;
@@ -640,17 +646,45 @@
 
 /* Danger / Sign Out Item */
 .side-menu-profile-dropdown-item-danger {
-  color: #ef4444;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  margin-top: 4px;
+  margin-bottom: 2px;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
 }
 
-.side-menu-profile-dropdown-item-danger:hover {
+[data-theme="light"] .side-menu-profile-dropdown-item-danger {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.07);
+  border-color: rgba(220, 38, 38, 0.2);
+}
+
+.side-menu-profile-dropdown-item-danger:hover:not(:disabled),
+.side-menu-profile-dropdown-item-danger:focus-visible:not(:disabled) {
   background: #dc2626 !important;
+  border-color: #dc2626;
   color: #ffffff !important;
 }
 
-.side-menu-profile-dropdown-item-danger:hover svg {
+.side-menu-profile-dropdown-item-danger:focus-visible:not(:disabled) {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+}
+
+.side-menu-profile-dropdown-item-danger:hover:not(:disabled) svg,
+.side-menu-profile-dropdown-item-danger:focus-visible:not(:disabled) svg {
   stroke: #ffffff !important;
+}
+
+.side-menu-profile-dropdown-item-danger:disabled {
+  color: #f87171;
+  opacity: 0.6;
+  cursor: wait;
+}
+
+[data-theme="light"] .side-menu-profile-dropdown-item-danger:disabled {
+  color: #dc2626;
 }
 
 @media (max-width: 768px) {
@@ -1635,13 +1669,13 @@
   }
 
   /* The sheet opened by "المزيد" reuses the desktop sidebar's <nav>, so hide
-     the 5 links that are now duplicated as their own bottom-nav tabs
-     (الرئيسية / امتحان / درس / الحساب / الإعدادات). Only the leftover links
-     (change name, theme, animations, contact dev, install app) remain. */
+     the links that are now duplicated as their own bottom-nav tabs
+     (الحساب / الرئيسية / محتواي / دفتر / الإعدادات). Only the leftover links
+     (إنشاء امتحانات، إنشاء دروس، البلاغات، تغيير الإسم، المظهر، الأدلة...) remain. */
   .sidebar nav>a[href="/"],
   .sidebar nav>a[href="profile"],
-  .sidebar nav>a[href="create-quiz"],
-  .sidebar nav>a[href="create-lesson"],
+  .sidebar nav>a[href="/my-content"],
+  .sidebar nav>a[href="/notebook/new"],
   .sidebar nav>a[href="settings"] {
     display: none;
   }
@@ -1792,6 +1826,69 @@
        — kept only so nothing regresses if that assumption ever changes. */
     padding: 8px;
     align-items: stretch;
+  }
+
+  /* Mobile Sign-Out / Sign-In button — pinned at the bottom of the sheet */
+  .sidebar .menu-item.side-menu-mobile-auth-btn {
+    margin-top: 6px;
+    margin-bottom: 0;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    transition:
+      background-color 0.18s ease,
+      color 0.18s ease,
+      border-color 0.18s ease,
+      transform 0.12s ease;
+  }
+
+  .sidebar .menu-item.side-menu-mobile-auth-btn.is-sign-out {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.24);
+  }
+
+  [data-theme="light"] .sidebar .menu-item.side-menu-mobile-auth-btn.is-sign-out {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(220, 38, 38, 0.22);
+  }
+
+  .sidebar .menu-item.side-menu-mobile-auth-btn.is-sign-out:hover:not(:disabled),
+  .sidebar .menu-item.side-menu-mobile-auth-btn.is-sign-out:focus-visible:not(:disabled) {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #ffffff;
+  }
+
+  .sidebar .menu-item.side-menu-mobile-auth-btn.is-sign-out:focus-visible:not(:disabled) {
+    outline: 2px solid #ef4444;
+    outline-offset: 2px;
+  }
+
+  .sidebar .menu-item.side-menu-mobile-auth-btn.is-sign-out:active:not(:disabled) {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    color: #ffffff;
+    transform: scale(0.98);
+  }
+
+  .sidebar .menu-item.side-menu-mobile-auth-btn.is-sign-out:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
+  .sidebar .menu-item.side-menu-mobile-auth-btn.is-sign-in {
+    color: var(--color-text-primary, var(--color-text));
+    background: var(--color-background-secondary, rgba(128, 128, 128, 0.08));
+    border-color: var(--color-border);
+  }
+
+  .sidebar .menu-item.side-menu-mobile-auth-btn.is-sign-in:hover:not(:disabled),
+  .sidebar .menu-item.side-menu-mobile-auth-btn.is-sign-in:focus-visible:not(:disabled) {
+    background: var(--color-hover-overlay, rgba(99, 102, 241, 0.08));
+    border-color: var(--color-primary);
+    color: var(--color-primary);
   }
 
   /* More button opened state (drawer visible) */
