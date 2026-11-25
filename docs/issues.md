@@ -7,10 +7,66 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
-## Loading Animations
-- The MATLAB loading animation isn't working in high performance mode. It's the loading of the `#cnbEditor` in the `notebook` page.
-- And That issue is happening with many other elements, too. Loading animation should work on high performance mode. 
-- The lesson page's loading shimmer needs to be improved.
+## The new الباشمبصمج video
+* I added a new video for explaining the AI-Agent. Update the `/how-to-use-ai-agent` page.
+
+* YouTube Link: https://youtu.be/-UMvWeOVUco
+* Title: منصة امتحانات بصمجي | الباشمبصمج
+* Description: 
+```
+﷽
+________________________________________________
+
+منصة امتحانات بصمجي
+الباشمبصمج
+________________________________________________
+
+رابط المنصة
+https://basmagi-quiz.vercel.app
+
+________________________________________________
+
+رابط الباشمبصمج
+https://basmagi-quiz.vercel.app/ai-agent
+________________________________________________
+
+أجزاء الفيديو: 
+
+00:00 تقديم طلب اشراف 
+01:39 طريقة رفع المحتوى
+03:30 طريقة رفع مواد
+________________________________________________
+
+🚫 لمشاهدة الفيديوهات بدون إعلانات:
+ظهور الإعلانات يرجع لسياسات يوتيوب وليس للقناة أي سيطرة عليها. للمشاهدة بدون إعلانات:
+كمبيوتر: استخدم إضافة uBlock Origin على متصفحك.
+موبايل: افتح الفيديوهات من متصفح Brave Browser بدلاً من تطبيق يوتيوب.
+________________________________________________
+
+الموقع الشحصي:
+https://belal-amr.vercel.app
+________________________________________________
+```
+* Subtitles:
+```
+
+```
+
+
+## Reorder The Bottom Nav on Phones
+* Move `/my-content` and `/notebook/new` in place of `/create-quiz` and `/create-lesson`.
+
+See `sidebar.html` and its related files.
+
+## Concentrate on gamefied experience and reward scheduele
+
+## MATLAB Notebook
+* Make sure it supports everything in Lectures from 7 to 9: https://drive.google.com/drive/folders/1A2DYYsY070GQ7g87QT3tzxWzGqOjbnp1?usp=drive_link
+
+
+## Offline Support.
+* Users who have Installed the application: The notebook Page (e.g., `/notebook/new` and notebooks they saved locally at `/my-content`) should work offline as well as.
+* The quiz page and the lesson page should also work, people who have lessons and quizzes locally (i.e., `/my-content`) should work offline.
 
 ### Sign in
 ![Screenshot](image.png).
