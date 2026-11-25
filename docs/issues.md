@@ -7,17 +7,10 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
-## Reorder The Bottom Nav on Phones
-* Move `/my-content` and `/notebook/new` in place of `/create-quiz` and `/create-lesson`.
-* The sign-out button needs to be improved: its placement, its styling, etc.
-
-See `sidebar.html` and its related files.
-
 ## Concentrate on gamefied experience and reward scheduele
 
 ## MATLAB Notebook
 * Make sure it supports everything in Lectures from 7 to 9: https://drive.google.com/drive/folders/1A2DYYsY070GQ7g87QT3tzxWzGqOjbnp1?usp=drive_link
-
 
 ## Offline Support.
 * Users who have Installed the application: The notebook Page (e.g., `/notebook/new` and notebooks they saved locally at `/my-content`) should work offline as well as.
