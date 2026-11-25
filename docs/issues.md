@@ -7,54 +7,10 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
-## The new الباشمبصمج video
-* I added a new video for explaining the AI-Agent. Update the `/how-to-use-ai-agent` page.
-
-* YouTube Link: https://youtu.be/-UMvWeOVUco
-* Title: منصة امتحانات بصمجي | الباشمبصمج
-* Description: 
-```
-﷽
-________________________________________________
-
-منصة امتحانات بصمجي
-الباشمبصمج
-________________________________________________
-
-رابط المنصة
-https://basmagi-quiz.vercel.app
-
-________________________________________________
-
-رابط الباشمبصمج
-https://basmagi-quiz.vercel.app/ai-agent
-________________________________________________
-
-أجزاء الفيديو: 
-
-00:00 تقديم طلب اشراف 
-01:39 طريقة رفع المحتوى
-03:30 طريقة رفع مواد
-________________________________________________
-
-🚫 لمشاهدة الفيديوهات بدون إعلانات:
-ظهور الإعلانات يرجع لسياسات يوتيوب وليس للقناة أي سيطرة عليها. للمشاهدة بدون إعلانات:
-كمبيوتر: استخدم إضافة uBlock Origin على متصفحك.
-موبايل: افتح الفيديوهات من متصفح Brave Browser بدلاً من تطبيق يوتيوب.
-________________________________________________
-
-الموقع الشحصي:
-https://belal-amr.vercel.app
-________________________________________________
-```
-* Subtitles:
-```
-
-```
-
-
 ## Reorder The Bottom Nav on Phones
 * Move `/my-content` and `/notebook/new` in place of `/create-quiz` and `/create-lesson`.
+* The sign-out button needs to be improved: its placement, its styling, etc.
+* 
 
 See `sidebar.html` and its related files.
 
