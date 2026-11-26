@@ -98,6 +98,7 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
       case 'print': run?.sink.out({ k: 'text', s: m.s }); break;
       case 'warn': run?.sink.out({ k: 'warn', s: m.s }); break;
       case 'clc': run?.sink.clear(); break;
+      case 'beep': try { const AC = (globalThis as any).AudioContext || (globalThis as any).webkitAudioContext; if (AC) { const ctx = new AC(), o = ctx.createOscillator(); o.frequency.value = 880; o.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.15); o.onended = () => ctx.close?.(); } } catch { /* audio unavailable */ } break;
       case 'fig': if (run) run.fig++; break;
       case 'img':
         if (run) {

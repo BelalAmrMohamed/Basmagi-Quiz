@@ -1,4 +1,7 @@
 import { parse, MatlabError } from './parser';
+import { registerMath } from './lib-math';
+import { registerArray } from './lib-array';
+import { registerString } from './lib-string';
 import { T, V, S, C, FuncHandle, Idx, Cls, isT, isC, isS, isF, mkStruct, mk, num, str, toStr, isStr, scalarOf, numel, sat, ew, binop, transpose, index, assign, cat, display, dimStr, PrintOpts, idxList, effDims } from './values';
 
 // ---------- host interface (browser UI and Node tests each implement this) ----------
@@ -11,6 +14,8 @@ export interface Host {
   writeImage(path: string, img: { width: number; height: number; channels: 1 | 3; data: Uint8Array }): void;
   showImage(img: { width: number; height: number; rgb: Uint8Array }, opts: { tool: boolean; name?: string }): void;
   newFigure(): void;
+  beep?(): void;
+  tick?(info: { line: number; loops: { iter: number; total: number }[]; elapsedMs: number }): void;
   clc?(): void;
   maxPrintElements?: number;
 }
@@ -1139,7 +1144,7 @@ function mapFun(isCell: boolean): Builtin {
       if (n === 0) return mk('double', dims!.slice());
       const first = data[0];
       if (!isT(first) || first.data.length !== 1) err(`Error using ${fnName}: Non-scalar in Uniform output, at index 1, output 1. Set 'UniformOutput' to false.`);
-      const resCls: Cls = data.every((v): v is T => isT(v) && v.cls === first.cls) ? first.cls : 'double';
+      const resCls: Cls = data.every((v): v is T => isT(v) && v.cls === first.cls) ? (first.cls as Cls) : 'double';
       const out = mk(resCls, dims!.slice());
       for (let i = 0; i < n; i++) {
         const v = data[i];
@@ -1166,3 +1171,8 @@ def('mat2gray', a => { const t = T_(a[0], 'mat2gray'); let lo = Infinity, hi = -
 def('im2gray', (a, n, I) => { const t = T_(a[0], 'im2gray'); return t.dims.length === 3 ? BUILTINS.rgb2gray(a, n, I) : [t]; });
 
 def('im2bw', (a, n, I) => { let t = T_(a[0], 'im2bw'); if (t.dims.length === 3) t = BUILTINS.rgb2gray([t], 1, I)[0] as T; const lv = a[1] ? T_(a[1], 'im2bw').data[0] : 0.5, th = t.cls === 'uint8' ? lv * 255 : lv; const o = mk('logical', t.dims.slice()); for (let i = 0; i < t.data.length; i++) o.data[i] = t.data[i] > th ? 1 : 0; return [o]; });
+
+// Phase 2 libraries (registered last so they supersede the earlier minimal versions)
+registerMath(def);
+registerArray(def);
+registerString(def);

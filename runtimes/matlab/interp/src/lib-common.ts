@@ -116,7 +116,7 @@ export function sprintfFmt(fmt: string, args: V[], fn = 'sprintf'): string {
       else if (c === 'X') s = (v >>> 0).toString(16).toUpperCase();
       else if (c === 'f') s = v.toFixed(pr === undefined ? 6 : +pr);
       else if (c === 'e' || c === 'E') {
-        const exp = v.toExponential(pr === undefined ? 6 : +pr);
+        const exp = v.toExponential(pr === undefined ? 6 : +pr).replace(/e([+-])(\d)$/, 'e$10$2');
         s = c === 'E' ? exp.toUpperCase() : exp;
       } else {
         const p = pr === undefined ? 6 : Math.max(1, +pr);

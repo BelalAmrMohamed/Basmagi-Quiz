@@ -140,7 +140,7 @@ export function registerString(def: Def) {
   def('strjoin', a => {
     if (!isC(a[0])) err('Error using strjoin: First input must be a cell array of strings.');
     const sep = a[1] ? toStr(a[1]) : ' ';
-    return [str(a[0].data.map(toStr).join(sep))];
+    return [str(((a[0] as any).data as V[]).map(toStr).join(sep))];
   });
   def('strcmp', a => [num(+(isStr(a[0]) && isStr(a[1]) && toStr(a[0]) === toStr(a[1])), 'logical')]);
   def('strcmpi', a => [num(+(isStr(a[0]) && isStr(a[1]) && toStr(a[0]).toLowerCase() === toStr(a[1]).toLowerCase()), 'logical')]);

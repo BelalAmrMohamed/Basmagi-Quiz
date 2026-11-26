@@ -40,6 +40,7 @@ const host: Host = {
   showImage: (img, o) => post({ t: 'img', w: img.width, h: img.height, rgb: img.rgb, tool: o.tool, name: o.name }),
   newFigure: () => post({ t: 'fig' }),
   clc: () => post({ t: 'clc' }),
+  beep: () => post({ t: 'beep' }),
   maxPrintElements: 3000,
 };
 let interp = new Interp(host);
