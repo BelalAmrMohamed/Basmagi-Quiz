@@ -224,3 +224,38 @@ test('edit mode captures testStdin from the stdin used for the run', async () =>
   assert.equal(last[0].challenge.testStdin, '3 4');
   assert.equal(last[0].challenge.expectedOutput, 'in:3 4');
 });
+
+test('MATLAB engine: figure messages become plot outputs, img keeps the interpreter figure number', async () => {
+  const dom = env(), w = dom.window, outs = [];
+  const spec = { rows: 1, cols: 1, axes: [{ r: 0, c: 0, items: [] }] };
+  const rgb = new Uint8Array(3);
+  const fakeWorker = { postMessage(m) { if (m.t === 'run') setTimeout(() => {
+    const say = (d) => fakeWorker.onmessage({ data: d });
+    say({ t: 'img', w: 1, h: 1, rgb, tool: false, name: 'A', fig: 3 });
+    say({ t: 'figure', id: 3, spec });
+    say({ t: 'img', w: 1, h: 1, rgb, tool: true, name: 'B', fig: 3 });
+    say({ t: 'img', w: 1, h: 1, rgb, tool: false });            // old-style message without fig: run counter
+    say({ t: 'done', id: m.id, error: null, vars: [] });
+  }, 0); }, terminate() {} };
+  const eng = w.T.createMatlabEngine({ createWorker: () => fakeWorker, baseUrl: 'https://x.test/' });
+  const sink = { out: (o) => outs.push(o), clear() {}, status() {}, input: async () => null };
+  await eng.run({ cells: [{ id: 1, type: 'code', src: 'x' }], target: 0, signal: new w.AbortController().signal }, sink);
+  assert.deepEqual(outs.map((o) => [o.k, o.fig]), [['img', 3], ['plot', 3], ['img', -3], ['img', 1]]);
+  assert.equal(outs[1].spec, spec);
+  eng.dispose();
+});
+
+test('shell: a plot output replaces the earlier img/plot card of the same figure, other figures and imtool cards stay', async () => {
+  const dom = env(), w = dom.window, root = w.document.getElementById('root');
+  const spec = (n) => ({ rows: 1, cols: 1, axes: Array.from({ length: n }, (_, i) => ({ r: 0, c: i, items: [] })) });
+  const eng = fakeEngine({ async run(_req, sink) {
+    sink.out({ k: 'img', fig: 1, w: 1, h: 1, rgb: new Uint8Array(3), tool: false });
+    sink.out({ k: 'plot', fig: 1, spec: spec(1) });
+    sink.out({ k: 'plot', fig: 2, spec: spec(1) });
+    sink.out({ k: 'plot', fig: 1, spec: spec(2) });
+  } });
+  w.T.mountShell(eng, { root, notebook: nb([{ type: 'code', source: 'a' }]) });
+  await w.__mlweb.runCell(w.__mlweb.cells[0]); await tick(w, 60);
+  assert.equal(JSON.stringify(w.__mlweb.cells[0].outs.map((o) => [o.k, o.fig])), '[["plot",2],["plot",1]]'); // jsdom arrays: compare as JSON
+  assert.deepEqual([...root.querySelectorAll('.fig .cap')].map((e) => e.textContent), ['Figure 2 · 1 axes', 'Figure 1 · 2 axes']);
+});

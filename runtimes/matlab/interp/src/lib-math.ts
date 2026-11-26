@@ -444,6 +444,7 @@ export function registerMath(def: Def) {
     if (a.length >= 1 && isStr(a[0])) return [];
     const req = a.length ? scalarOf(a[0]) : 0.01;
     const ms = Math.min(5000, Math.max(0, req * 1000));
+    I.flushFigures();
     const start = performance.now();
     let lastTick = start;
     while (performance.now() - start < ms) {
@@ -453,6 +454,7 @@ export function registerMath(def: Def) {
         I.host.tick?.({ line: I.curLine ?? 1, loops: I.activeLoops?.() ?? [], elapsedMs: now - (I.runStartMs ?? start) });
       }
     }
+    if (ms >= 100) I.flushFigures();
     return [];
   });
   def('beep', (_a, _n, I) => { I.host.beep?.(); return []; });

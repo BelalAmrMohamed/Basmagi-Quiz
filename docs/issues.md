@@ -7,12 +7,15 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
-## Concentrate on gamefied experience and reward scheduele
+### Image Tool Window in MATLAB Notebook
+`mlweb-imtool-statusbar` shouldn't be split on 2 lines, because it convers parts of the image at the bottom, since the image is set to fit. 
 
-## MATLAB Notebook
+### Concentrate on gamefied experience and reward scheduele
+
+### MATLAB Notebook
 * Continue this plan: [plan](<plans/MLWeb Image Processing Course Coverage and Performance UX — Implementation Plan.md>). Some parts of it are already implemented.
 
-## Offline Support.
+### Offline Support.
 * Users who have Installed the application: The notebook Page (e.g., `/notebook/new` and notebooks they saved locally at `/my-content`) should work offline as well as.
 * The quiz page and the lesson page should also work, people who have lessons and quizzes locally (i.e., `/my-content`) should work offline.
 

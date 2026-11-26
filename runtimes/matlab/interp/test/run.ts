@@ -5,10 +5,11 @@ import path from 'node:path';
 import { runLectureTests } from './lectures';
 import { runPhase2 } from './phase2';
 import { runPhase3 } from './phase3';
+import { runPhase4 } from './phase4';
 
 const A = path.join(import.meta.dirname, 'assets');
 const ALIASES: Record<string, string> = { 'peppers.png': 'pepper.png', 'test5.png': 'pepper.png' };
-let out = '', shown: any[] = [], figs = 0, written: Record<string, any> = {}, warns: string[] = [];
+let out = '', shown: any[] = [], plots: { id: number; spec: any }[] = [], figs = 0, written: Record<string, any> = {}, warns: string[] = [];
 const host: Host = {
   print: s => { out += s; },
   warn: s => warns.push(s),
@@ -24,14 +25,15 @@ const host: Host = {
     return { width: png.width, height: png.height, channels: ch as 1 | 3, data: d, bitDepth: 8 * ch, format: 'png', fileSize: statSync(fp).size, colorType: gray ? 'grayscale' : 'truecolor', filename: '/vfs/' + rawBase, fileModDate: '02-Nov-2026 10:00:00' };
   },
   writeImage(p, img) { written[path.basename(p)] = img; },
-  showImage(img, o) { shown.push({ w: img.width, h: img.height, tool: o.tool, name: o.name, fig: figs }); },
+  showImage(img, o) { shown.push({ w: img.width, h: img.height, tool: o.tool, name: o.name, fig: o.fig ?? figs }); },
   newFigure() { figs++; },
+  figure(id, spec) { plots.push({ id, spec }); },
   maxPrintElements: 3000,
 };
 let pass = 0, fail = 0, todoCount = 0;
 function todo(name: string, phase: string) { todoCount++; console.log(`  todo ${name} [${phase}]`); }
 function run(name: string, src: string, check: (o: string, I: Interp) => any, expectErr?: string) {
-  out = ''; shown = []; figs = 0; warns = [];
+  out = ''; shown = []; plots = []; figs = 0; warns = [];
   const I = new Interp(host), t0 = performance.now();
   let res: any;
   try { I.run(src); res = expectErr ? 'no error thrown' : check(out, I); } catch (e: any) { res = expectErr ? (e.message === expectErr ? true : `wrong error: ${e.message}`) : 'THREW: ' + e.message; }
@@ -66,7 +68,8 @@ run('Section_1.m end to end (incl. Windows-path imread)', fixed, (o, I) => {
   if (!/ans =\n\n   200   200     3\n\n/.test(o)) return 'size(x) output wrong';
   if (!/ans =\n\n   200   200\n\n/.test(o)) return 'size(y) output wrong';
   if (!/struct with fields:/.test(o) || !/ColorType: 'truecolor'/.test(o) || !/ColorType: 'grayscale'/.test(o)) return 'imfinfo output wrong';
-  if (shown.length !== 8 || figs !== 2) return `shown=${shown.length} figs=${figs}`;
+  // imshow calls into one figure are coalesced: fig1 (x) posts at line 52, fig2 (x) at line 56, fig3 (y) when imtool starts, then 2 imtool windows.
+  if (shown.length !== 5 || figs !== 2 || shown.map((s: any) => s.fig).join() !== '1,2,3,3,3') return `shown=${shown.length} figs=${figs} ids=${shown.map((s: any) => s.fig)}`;
   if (!written['newTest.png'] || !written['newTestGray.png']) return 'imwrite missing';
   if (!warns.some(w => w.includes('using \'test.png\''))) return 'no path-fallback warning';
   return true;
@@ -252,6 +255,7 @@ e = []
 
 runPhase2({ run, val, eq });
 runPhase3({ run, val, eq });
+runPhase4({ run, val, eq, get shown() { return shown; }, get plots() { return plots; } });
 runLectureTests({ run, todo, val, eq });
 
 console.log(`\n${pass} passed, ${fail} failed${todoCount ? `, ${todoCount} todo` : ''}`);

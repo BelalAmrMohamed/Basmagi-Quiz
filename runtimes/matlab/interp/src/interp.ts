@@ -2,6 +2,7 @@ import { parse, MatlabError } from './parser';
 import { registerMath } from './lib-math';
 import { registerArray } from './lib-array';
 import { registerString } from './lib-string';
+import { Figures, type FigureSpec } from './figures';
 import { T, V, S, C, FuncHandle, Idx, Cls, isT, isC, isS, isF, mkStruct, mk, num, str, toStr, isStr, scalarOf, numel, sat, ew, binop, transpose, index, assign, cat, display, dimStr, PrintOpts, idxList, effDims, outCls, numCls, fltCls, isIntCls, INT_RANGE, CLASS_NAMES, CLASS_BYTES, toUnit, fromUnit } from './values';
 
 // ---------- host interface (browser UI and Node tests each implement this) ----------
@@ -12,8 +13,11 @@ export interface Host {
   warn?(s: string): void;
   readImage(path: string): RawImage | null;
   writeImage(path: string, img: { width: number; height: number; channels: 1 | 3; data: Uint8Array }): void;
-  showImage(img: { width: number; height: number; rgb: Uint8Array }, opts: { tool: boolean; name?: string }): void;
+  /** `fig` is the figure number (imshow) or the current one (imtool). Optional: older hosts count `newFigure` calls instead. */
+  showImage(img: { width: number; height: number; rgb: Uint8Array }, opts: { tool: boolean; name?: string; fig?: number }): void;
   newFigure(): void;
+  /** A figure that is more than one plain image. Posting the same `id` again replaces the previous post. */
+  figure?(id: number, spec: FigureSpec): void;
   beep?(): void;
   tick?(info: { line: number; loops: { iter: number; total: number }[]; elapsedMs: number }): void;
   clc?(): void;
@@ -39,14 +43,25 @@ export class Interp {
   private depth = 0;
   /** Argument expressions (AST) of the builtin call in progress, so builtins like imtool can read the variable name. */
   curArgs: any[] | undefined;
+  /** Figures of the current run (reset at the start of every run). */
+  figs = new Figures();
   constructor(public host: Host) {}
+  /** Post changed figures to the host: plain images as `showImage`, everything else as `figure`. `force` ignores the 100 ms throttle. */
+  flushFigures(force = false) {
+    this.figs.flush({
+      image: (id, it) => this.host.showImage({ width: it.w, height: it.h, rgb: it.rgb }, { tool: false, name: it.name, fig: id }),
+      plot: (id, spec) => this.host.figure?.(id, spec),
+    }, force);
+  }
   get opts(): PrintOpts { return { maxElements: this.host.maxPrintElements ?? 3000, width: 80 }; }
 
   run(src: string) {
     const ast = parse(src);
     for (const s of ast) if (s.k === 'func') this.funcs.set(s.name, s);
     this.curScope = this.vars;
-    this.exec(ast.filter(s => s.k !== 'func'), this.vars);
+    this.figs.reset();
+    try { this.exec(ast.filter(s => s.k !== 'func'), this.vars); }
+    finally { this.flushFigures(true); }
   }
   private store(sc: Scope, name: string, v: V) {
     if (isT(v)) { if ((v as any).held) v = { ...v, data: v.data.slice() }; (v as any).held = true; }
@@ -798,7 +813,17 @@ def('help doc lookfor', (a, _n, I) => {
   return [];
 });
 def('format hold close', () => []);
-def('figure', (_a, _n, I) => { I.host.newFigure(); return []; });
+def('figure', (a, nargout, I) => {
+  I.flushFigures();
+  let id: number;
+  if (a.length) {
+    const n = isStr(a[0]) ? Number(toStr(a[0])) : scalarOf(a[0], 'figure');
+    const { fig, created } = I.figs.select(n); id = fig.id;
+    if (created) I.host.newFigure();
+  } else { id = I.figs.create().id; I.host.newFigure(); }
+  return nargout > 0 ? [num(id)] : [];
+});
+def('drawnow', (_a, _n, I) => { I.flushFigures(); return []; });
 
 // =====================================================================================
 // Image toolbox
@@ -831,7 +856,9 @@ function show(tool: boolean): Builtin {
     const t = T_(a[0], 'imshow'), map = a[1] && isT(a[1]) && a[1].dims[1] === 3 ? a[1] : undefined;
     const b = toBytes(t, map), rgb = new Uint8Array(b.width * b.height * 3);
     for (let p = 0; p < b.width * b.height; p++) for (let k = 0; k < 3; k++) rgb[p * 3 + k] = b.data[p * b.channels + (b.channels === 3 ? k : 0)];
-    I.host.showImage({ width: b.width, height: b.height, rgb }, { tool, name }); return [];
+    const img = { width: b.width, height: b.height, rgb };
+    if (tool) { I.flushFigures(); I.host.showImage(img, { tool: true, name, fig: I.figs.curId || 1 }); return []; }
+    I.figs.add({ t: 'image', w: b.width, h: b.height, rgb, name }); return [];
   };
 }
 def('imshow', show(false)); def('imtool', show(true));

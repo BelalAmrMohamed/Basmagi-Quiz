@@ -68,6 +68,7 @@ function exportHtml(ctx: Ctx, withOutputs: boolean) {
     n += 1;
     const outs = withOutputs ? c.outs.map((o) => {
       if (o.k === 'img') return `<img alt="figure ${o.fig}" src="${rgbToDataUrl(o.w, o.h, o.rgb)}">`;
+      if (o.k === 'plot') return `<pre class="o">[figure ${o.fig}]</pre>`; // SVG export comes with plot-view (Phase 4c/4d)
       if (o.k === 'html') return `<div class="o">${o.html}</div>`;
       if (o.k === 'diag') return `<pre class="o ${o.sev === 'warning' ? 'warn' : 'err'}">${esc(`line ${o.line}: ${o.msg}`)}</pre>`;
       if (o.k === 'stdin') return `<pre class="o">${esc(o.label + ': ' + o.value)}</pre>`;

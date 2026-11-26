@@ -48,7 +48,7 @@ function describeCell(c: UiCell, i: number): CellDescription {
     if (o.k === 'text' || o.k === 'warn') parts.push(o.s);
     else if (o.k === 'err') parts.push('ERROR: ' + o.s);
     else if (o.k === 'diag') parts.push(`${o.sev.toUpperCase()} line ${o.line}: ${o.msg}\n`);
-    else if (o.k === 'img') parts.push('[figure]\n');
+    else if (o.k === 'img' || o.k === 'plot') parts.push('[figure]\n');
   }
   const text = parts.join('');
   return {
@@ -281,9 +281,16 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
   const scheduleRender = () => { if (!renderQ) renderQ = requestAnimationFrame(() => { renderQ = 0; if (!destroyed) render(); }); };
   function applyOut(c: UiCell | undefined, o: Out) {
     if (!c) return;
+    if (o.k === 'plot') {
+      // A figure posted again (image <-> plot, re-plot) replaces its earlier card.
+      c.outs = c.outs.filter((x) => !((x.k === 'plot' || (x.k === 'img' && !x.tool)) && x.fig === o.fig));
+      c.outs.push(o);
+      scheduleRender();
+      return;
+    }
     if (o.k === 'img') {
-      // imshow into the same figure replaces the previous image; imtool images always add.
-      if (!o.tool) c.outs = c.outs.filter((x) => !(x.k === 'img' && x.fig === o.fig));
+      // imshow into the same figure replaces the previous image or plot; imtool images always add.
+      if (!o.tool) c.outs = c.outs.filter((x) => !((x.k === 'img' || x.k === 'plot') && x.fig === o.fig));
       c.outs.push(o);
       scheduleRender();
       if (o.tool) imageTool?.open(o);

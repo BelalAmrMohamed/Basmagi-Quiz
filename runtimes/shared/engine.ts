@@ -8,6 +8,7 @@ import type { Extension } from '@codemirror/state';
 import type { CompletionSource } from '@codemirror/autocomplete';
 import type { Diagnostic } from '@codemirror/lint';
 import type { EditorState } from '@codemirror/state';
+import type { FigureSpec } from './plot-spec';
 
 /** What the engine sees of a notebook cell. `id` is stable for the life of the cell. */
 export type Cell = {
@@ -27,6 +28,8 @@ export type VarInfo = { name: string; size: string; cls: string; bytes: number }
 export type Out =
   | { k: 'text' | 'err' | 'warn'; s: string }
   | { k: 'img'; fig: number; w: number; h: number; rgb: Uint8Array; tool: boolean; /** imtool only: variable or file name shown in the window title. */ name?: string }
+  /** A figure with plots, several axes or decorations. Same `fig` again replaces the earlier `img`/`plot` of that figure in the cell. */
+  | { k: 'plot'; fig: number; spec: FigureSpec }
   | { k: 'html'; html: string }
   | { k: 'diag'; line: number; col?: number; sev: 'error' | 'warning'; msg: string; detail?: string; hint?: string; cell?: number }
   /** Echo of a line of standard input the user typed into the cell (added by the shell, never by engines). */

@@ -37,6 +37,12 @@ function figure(ctx: Ctx, o: ImgOut): HTMLElement {
   return h('div', { class: 'fig' }, cap, h('div', { class: 'scroll' }, cv), px);
 }
 
+/** Temporary card for `plot` outputs until plot-view.ts (Phase 4c) draws them. */
+function plotPlaceholder(ctx: Ctx, o: Extract<Out, { k: 'plot' }>): HTMLElement {
+  const n = o.spec.axes.length;
+  return h('div', { class: 'fig' }, h('div', { class: 'cap' }, `${ctx.t('Figure')} ${o.fig} · ${n} axes`));
+}
+
 /** Compiler/interpreter diagnostics: a jump button (line:col) and the message. */
 function diagnostic(ctx: Ctx, cell: UiCell, o: Extract<Out, { k: 'diag' }>): HTMLElement {
   const where = o.col ? `${o.line}:${o.col}` : String(o.line);
@@ -54,6 +60,7 @@ function diagnostic(ctx: Ctx, cell: UiCell, o: Extract<Out, { k: 'diag' }>): HTM
 export function renderOut(ctx: Ctx, cell: UiCell, o: Out): HTMLElement {
   switch (o.k) {
     case 'img': return figure(ctx, o);
+    case 'plot': return plotPlaceholder(ctx, o);
     case 'html': {
       const box = h('div', { class: 'o o-html' });
       box.innerHTML = DOMPurify.sanitize(o.html);

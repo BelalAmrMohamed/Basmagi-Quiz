@@ -3,7 +3,7 @@
 // Web Worker: runs the MATLAB-subset interpreter off the main thread.
 // Built to public/assets/notebook-runtime/worker.js and loaded by engine.ts.
 // Messages in : putFile | delFile | reset | run
-// Messages out: ready | print | warn | img | fig | clc | wrote | vars | done
+// Messages out: ready | print | warn | img | figure | fig | clc | wrote | vars | done
 // =============================================================================
 import { Interp, MatlabError } from '../interp/src/index';
 import type { Host, RawImage } from '../interp/src/index';
@@ -37,7 +37,8 @@ const host: Host = {
     files.set(base, raw);
     post({ t: 'wrote', name: base, img: raw });
   },
-  showImage: (img, o) => post({ t: 'img', w: img.width, h: img.height, rgb: img.rgb, tool: o.tool, name: o.name }),
+  showImage: (img, o) => post({ t: 'img', w: img.width, h: img.height, rgb: img.rgb, tool: o.tool, name: o.name, fig: o.fig }),
+  figure: (id, spec) => post({ t: 'figure', id, spec }),
   newFigure: () => post({ t: 'fig' }),
   clc: () => post({ t: 'clc' }),
   beep: () => post({ t: 'beep' }),

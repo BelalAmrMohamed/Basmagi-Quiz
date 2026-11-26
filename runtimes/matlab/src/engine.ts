@@ -3,7 +3,7 @@
 // MATLAB engine for the shared notebook UI. Wraps the interpreter Web Worker:
 //   * 60 s time limit per run, Stop aborts; both reset the workspace (like the old runtime)
 //   * workspace variables, current-folder image files (uploads, imwrite output, lesson assets)
-//   * figures and imtool images reported as `img` outputs
+//   * figures reported as `img` (one plain image, imtool) or `plot` outputs
 // Caps: everything except stdin. No DOM and no CSS here; the shell draws everything.
 // =============================================================================
 import type { Engine, ImageFile, VarInfo, RunRequest, RunSink } from '../../shared/engine';
@@ -102,10 +102,13 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
       case 'fig': if (run) run.fig++; break;
       case 'img':
         if (run) {
-          if (run.fig === 0) run.fig = 1;
-          run.sink.out({ k: 'img', fig: m.tool ? -run.fig : run.fig, w: m.w, h: m.h, rgb: m.rgb, tool: !!m.tool, name: m.name });
+          // The interpreter numbers figures itself (m.fig); the run counter is only for hosts that do not.
+          if (m.fig === undefined && run.fig === 0) run.fig = 1;
+          const fig: number = m.fig ?? run.fig;
+          run.sink.out({ k: 'img', fig: m.tool ? -fig : fig, w: m.w, h: m.h, rgb: m.rgb, tool: !!m.tool, name: m.name });
         }
         break;
+      case 'figure': run?.sink.out({ k: 'plot', fig: m.id, spec: m.spec }); break;
       case 'wrote': files.set(m.name, m.img); run?.sink.files?.(); break;
       case 'vars': vars = m.vars; run?.sink.vars?.(vars); break;
       case 'done':
