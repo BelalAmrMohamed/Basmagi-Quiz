@@ -45,6 +45,16 @@
   --syntax-constant: #be185d;
   --syntax-error: #c62828;
   --shadow: 0 12px 32px #22304a0d, 0 2px 6px #22304a08;
+  --plot-bg: var(--panel);
+  --plot-ink: var(--ink);
+  --plot-grid: var(--line);
+  --plot-c1: #0072bd;
+  --plot-c2: #d95319;
+  --plot-c3: #a87b00;
+  --plot-c4: #7e2f8e;
+  --plot-c5: #4f7d17;
+  --plot-c6: #0f7fab;
+  --plot-c7: #a2142f;
 }
 
 :root[data-theme^="dark"] .mlweb {
@@ -78,6 +88,16 @@
   --syntax-constant: #f4a8d0;
   --syntax-error: #ff827c;
   --shadow: 0 12px 32px #0004, 0 2px 6px #0003;
+  --plot-bg: var(--panel);
+  --plot-ink: var(--ink);
+  --plot-grid: var(--line);
+  --plot-c1: #4cb0f0;
+  --plot-c2: #ff8a50;
+  --plot-c3: #f0c245;
+  --plot-c4: #c77fdb;
+  --plot-c5: #9fd35c;
+  --plot-c6: #6fd3f5;
+  --plot-c7: #f0687e;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -112,6 +132,16 @@
       --syntax-constant: #f4a8d0;
       --syntax-error: #ff827c;
       --shadow: 0 12px 32px #0004, 0 2px 6px #0003;
+      --plot-bg: var(--panel);
+      --plot-ink: var(--ink);
+      --plot-grid: var(--line);
+      --plot-c1: #4cb0f0;
+      --plot-c2: #ff8a50;
+      --plot-c3: #f0c245;
+      --plot-c4: #c77fdb;
+      --plot-c5: #9fd35c;
+      --plot-c6: #6fd3f5;
+      --plot-c7: #f0687e;
     }
 
 }

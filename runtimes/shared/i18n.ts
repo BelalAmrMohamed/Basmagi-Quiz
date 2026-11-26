@@ -56,6 +56,7 @@ export const AR: Record<string, string> = {
   "col": "عمود",
   "Image Tool": "أداة الصورة",
   "Figure": "شكل",
+  "Save PNG": "حفظ PNG",
   "Reopen interactive Image Tool": "إعادة فتح أداة الصورة التفاعلية",
   "Open viewer": "فتح العارض",
   "Zoom image": "تكبير الصورة",

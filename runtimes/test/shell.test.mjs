@@ -247,7 +247,7 @@ test('MATLAB engine: figure messages become plot outputs, img keeps the interpre
 
 test('shell: a plot output replaces the earlier img/plot card of the same figure, other figures and imtool cards stay', async () => {
   const dom = env(), w = dom.window, root = w.document.getElementById('root');
-  const spec = (n) => ({ rows: 1, cols: 1, axes: Array.from({ length: n }, (_, i) => ({ r: 0, c: i, items: [] })) });
+  const spec = (n) => ({ rows: 1, cols: 1, axes: Array.from({ length: n }, (_, i) => ({ r: 0, c: i, items: [], title: '', xlabel: '', ylabel: '', xlim: null, ylim: null, grid: false, legend: [], hold: false, colormap: null, colorbar: false, equal: false, tight: false, square: false, off: false })) });
   const eng = fakeEngine({ async run(_req, sink) {
     sink.out({ k: 'img', fig: 1, w: 1, h: 1, rgb: new Uint8Array(3), tool: false });
     sink.out({ k: 'plot', fig: 1, spec: spec(1) });
@@ -257,5 +257,6 @@ test('shell: a plot output replaces the earlier img/plot card of the same figure
   w.T.mountShell(eng, { root, notebook: nb([{ type: 'code', source: 'a' }]) });
   await w.__mlweb.runCell(w.__mlweb.cells[0]); await tick(w, 60);
   assert.equal(JSON.stringify(w.__mlweb.cells[0].outs.map((o) => [o.k, o.fig])), '[["plot",2],["plot",1]]'); // jsdom arrays: compare as JSON
-  assert.deepEqual([...root.querySelectorAll('.fig .cap')].map((e) => e.textContent), ['Figure 2 · 1 axes', 'Figure 1 · 2 axes']);
+  const cards = [...root.querySelectorAll('.fig')];
+  assert.equal(JSON.stringify(cards.map((e) => [e.querySelector('.cap').firstChild.textContent, e.querySelectorAll('svg [data-role="axes"]').length])), '[["Figure 2",1],["Figure 1",2]]');
 });
