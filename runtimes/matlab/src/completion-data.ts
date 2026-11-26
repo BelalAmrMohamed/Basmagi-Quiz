@@ -60,7 +60,35 @@ export const FUNCTION_DOCS: Record<string, [signature: string, description: stri
   ],
   "uint8": [
     "uint8(A)",
-    "Convert to uint8 (saturating)."
+    "Convert to uint8: round half away from zero, saturate to 0–255, NaN becomes 0."
+  ],
+  "int8": [
+    "int8(A)",
+    "Convert to int8: round half away from zero, saturate to −128…127, NaN becomes 0."
+  ],
+  "uint16": [
+    "uint16(A)",
+    "Convert to uint16: round half away from zero, saturate to 0–65535, NaN becomes 0."
+  ],
+  "int16": [
+    "int16(A)",
+    "Convert to int16: round half away from zero, saturate to −32768…32767, NaN becomes 0."
+  ],
+  "uint32": [
+    "uint32(A)",
+    "Convert to uint32: round half away from zero, saturate to 0…4294967295, NaN becomes 0."
+  ],
+  "int32": [
+    "int32(A)",
+    "Convert to int32: round half away from zero, saturate to −2147483648…2147483647, NaN becomes 0."
+  ],
+  "single": [
+    "single(A)",
+    "Convert to single precision (values are rounded to float32)."
+  ],
+  "cast": [
+    "cast(A, 'newclass')",
+    "Convert A to double, single, int8, uint8, int16, uint16, int32, uint32 or logical."
   ],
   "logical": [
     "logical(A)",
@@ -352,11 +380,19 @@ export const FUNCTION_DOCS: Record<string, [signature: string, description: stri
   ],
   "im2double": [
     "im2double(A)",
-    "Convert an image to double in 0–1."
+    "Convert an image to double in 0–1 (integer classes are scaled by their range, e.g. uint16 by 65535)."
+  ],
+  "im2single": [
+    "im2single(A)",
+    "Convert an image to single in 0–1 (integer classes are scaled by their range)."
   ],
   "im2uint8": [
     "im2uint8(A)",
-    "Convert an image to uint8."
+    "Convert an image to uint8, scaling from the range of its class (double/single 0–1 become 0–255)."
+  ],
+  "im2uint16": [
+    "im2uint16(A)",
+    "Convert an image to uint16, scaling from the range of its class (double/single 0–1 become 0–65535, uint8 values are multiplied by 257)."
   ],
   "im2gray": [
     "im2gray(A)",

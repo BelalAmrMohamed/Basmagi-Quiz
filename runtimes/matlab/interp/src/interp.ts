@@ -2,7 +2,7 @@ import { parse, MatlabError } from './parser';
 import { registerMath } from './lib-math';
 import { registerArray } from './lib-array';
 import { registerString } from './lib-string';
-import { T, V, S, C, FuncHandle, Idx, Cls, isT, isC, isS, isF, mkStruct, mk, num, str, toStr, isStr, scalarOf, numel, sat, ew, binop, transpose, index, assign, cat, display, dimStr, PrintOpts, idxList, effDims } from './values';
+import { T, V, S, C, FuncHandle, Idx, Cls, isT, isC, isS, isF, mkStruct, mk, num, str, toStr, isStr, scalarOf, numel, sat, ew, binop, transpose, index, assign, cat, display, dimStr, PrintOpts, idxList, effDims, outCls, numCls, fltCls, isIntCls, INT_RANGE, CLASS_NAMES, CLASS_BYTES, toUnit, fromUnit } from './values';
 
 // ---------- host interface (browser UI and Node tests each implement this) ----------
 export interface RawImage { width: number; height: number; channels: 1 | 3; data: Uint8Array; /* row-major, interleaved */
@@ -435,7 +435,7 @@ export class Interp {
         const a = T_(this.eval(e.a, sc), 'unary');
         if (e.op === '~') return ew(a, a, x => +(x === 0), 'logical');
         if (e.op === '+') return a;
-        return ew(a, a, x => -x, a.cls === 'uint8' ? 'uint8' : 'double');
+        return ew(a, a, x => -x, numCls(a.cls));
       }
       case 'bin': {
         if (e.op === '&&' || e.op === '||') {
@@ -619,7 +619,7 @@ export class Interp {
 // =====================================================================================
 export const BUILTINS: Record<string, Builtin> = {};
 const def = (names: string, f: Builtin) => names.split(' ').forEach(n => (BUILTINS[n] = f));
-const clsFromName = (s: string): Cls => (['double', 'uint8', 'logical'].includes(s) ? (s as Cls) : err(`Unsupported class '${s}'.`));
+const clsFromName = (s: string): Cls => (CLASS_NAMES.includes(s) ? (s as Cls) : err(`Unsupported class '${s}'.`));
 function dimsFrom(a: V[], fn: string): { dims: number[]; cls: Cls } {
   let cls: Cls = 'double'; if (a.length && isStr(a[a.length - 1])) cls = clsFromName(toStr(a.pop()));
   const ts = a.map(x => T_(x, fn));
@@ -646,16 +646,21 @@ def('isstruct', a => [num(+isS(a[0]), 'logical')]);
 def('isa', a => {
   const v = a[0], c = toStr(a[1]);
   if (c === 'numeric') return [num(+(isT(v) && v.cls !== 'logical' && v.cls !== 'char'), 'logical')];
-  if (c === 'float') return [num(+(isT(v) && v.cls === 'double'), 'logical')];
-  if (c === 'integer') return [num(+(isT(v) && v.cls === 'uint8'), 'logical')];
+  if (c === 'float') return [num(+(isT(v) && (v.cls === 'double' || v.cls === 'single')), 'logical')];
+  if (c === 'integer') return [num(+(isT(v) && isIntCls(v.cls)), 'logical')];
   return [num(+(isT(v) ? v.cls === c : v.cls === c), 'logical')];
 });
 const conv = (cls: Cls): Builtin => a => { const t = T_(a[0], cls); return [{ cls, dims: t.dims.slice(), data: t.data.map(v => sat(cls, v)) }]; };
-def('double', conv('double')); def('uint8', conv('uint8')); def('logical', conv('logical'));
-const map1 = (f: (x: number) => number): Builtin => a => { const t = T_(a[0], 'math'); const cls = t.cls === 'uint8' ? 'uint8' : 'double'; return [{ cls, dims: t.dims.slice(), data: t.data.map(v => sat(cls, f(v))) }]; };
+for (const c of CLASS_NAMES) def(c, conv(c as Cls));
+def('cast', a => {
+  const c = isStr(a[1]) ? toStr(a[1]) : '';
+  if (!CLASS_NAMES.includes(c)) err(`Error using cast: Invalid class name '${c}'. Supported: ${CLASS_NAMES.join(', ')}.`);
+  return conv(c as Cls)([a[0]], 1, null);
+});
+const map1 = (f: (x: number) => number): Builtin => a => { const t = T_(a[0], 'math'); const cls = numCls(t.cls); return [{ cls, dims: t.dims.slice(), data: t.data.map(v => sat(cls, f(v))) }]; };
 def('abs', map1(Math.abs)); def('floor', map1(Math.floor)); def('ceil', map1(Math.ceil)); def('round', map1(x => Math.sign(x) * Math.round(Math.abs(x))));
 def('fix', map1(Math.trunc)); def('sqrt', map1(Math.sqrt));
-def('mod', a => { const x = T_(a[0], 'mod'), y = T_(a[1], 'mod'); return [ew(x, y, (p, q) => (q === 0 ? p : p - Math.floor(p / q) * q), x.cls === 'uint8' || y.cls === 'uint8' ? 'uint8' : 'double')]; });
+def('mod', a => { const x = T_(a[0], 'mod'), y = T_(a[1], 'mod'); return [ew(x, y, (p, q) => (q === 0 ? p : p - Math.floor(p / q) * q), outCls(x, y))]; });
 function reduce(t: T, dim: number, f: (v: number[]) => number, cls: Cls): T {
   const d = t.dims.concat(new Array(Math.max(0, dim + 1 - t.dims.length)).fill(1)), len = d[dim];
   const inner = numel(d.slice(0, dim)), outer = numel(d.slice(dim + 1)), rd = d.slice(); rd[dim] = 1;
@@ -668,7 +673,7 @@ def('sum', a => { const t = T_(a[0], 'sum'); return [reduce(t, a[1] ? scalarOf(a
 def('mean', a => { const t = T_(a[0], 'mean'); return [reduce(t, a[1] ? scalarOf(a[1]) - 1 : firstNonSingleton(t), v => v.reduce((p, q) => p + q, 0) / v.length, 'double')]; });
 const minmax = (isMax: boolean): Builtin => a => {
   const t = T_(a[0], 'max'), pick = (x: number, y: number) => (isMax ? Math.max(x, y) : Math.min(x, y));
-  if (a.length >= 2 && T_(a[1], 'max').data.length > 0) { const u = T_(a[1], 'max'); return [ew(t, u, pick, t.cls === 'uint8' || u.cls === 'uint8' ? 'uint8' : 'double')]; }
+  if (a.length >= 2 && T_(a[1], 'max').data.length > 0) { const u = T_(a[1], 'max'); return [ew(t, u, pick, outCls(t, u))]; }
   const dim = a[2] ? scalarOf(a[2]) - 1 : firstNonSingleton(t);
   return [reduce(t, dim, v => v.reduce(pick), t.cls === 'logical' || t.cls === 'char' ? 'double' : t.cls)];
 };
@@ -771,7 +776,7 @@ def('cell', a => {
 def('who', (_a, _n, I) => { if (I.vars.size) I.host.print('Your variables are:\n\n' + [...I.vars.keys()].sort().join('  ') + '\n\n'); return []; });
 def('whos', (_a, _n, I) => {
   if (!I.vars.size) return [];
-  const rows = [...I.vars.entries()].sort().map(([k, v]) => isT(v) || isC(v) ? [k, dimStr(v.dims).replace(/×/g, 'x'), String(v.data.length * (isC(v) ? 8 : v.cls === 'double' ? 8 : v.cls === 'char' ? 2 : 1)), v.cls] : isS(v) ? [k, dimStr(v.dims).replace(/×/g, 'x'), '-', 'struct'] : [k, '1x1', '-', 'function_handle']);
+  const rows = [...I.vars.entries()].sort().map(([k, v]) => isT(v) || isC(v) ? [k, dimStr(v.dims).replace(/×/g, 'x'), String(v.data.length * (isC(v) ? 8 : (CLASS_BYTES[v.cls] ?? 8))), v.cls] : isS(v) ? [k, dimStr(v.dims).replace(/×/g, 'x'), '-', 'struct'] : [k, '1x1', '-', 'function_handle']);
   const w = [4, 4, 5, 5].map((m, i) => Math.max(m, ...rows.map(r => r[i].length)));
   let s = `  ${'Name'.padEnd(w[0])}  ${'Size'.padEnd(w[1])}  ${'Bytes'.padStart(w[2])}  ${'Class'.padEnd(w[3])}  Attributes\n\n`;
   for (const r of rows) s += `  ${r[0].padEnd(w[0])}  ${r[1].padEnd(w[1])}  ${r[2].padStart(w[2])}  ${r[3].padEnd(w[3])}\n`;
@@ -807,7 +812,7 @@ const toTensor = (img: RawImage): T => {
 function toBytes(t: T, map?: T): { width: number; height: number; channels: 1 | 3; data: Uint8Array } {
   const h = t.dims[0], w = t.dims[1], c = t.dims[2] ?? 1;
   if (t.dims.length > 3 || (c !== 1 && c !== 3)) err('Unsupported image: expected an M-by-N or M-by-N-by-3 array.');
-  const to8 = (v: number) => (t.cls === 'uint8' ? v : t.cls === 'logical' ? v * 255 : Math.max(0, Math.min(255, Math.round(v * 255))));
+  const to8 = (v: number) => (t.cls === 'uint8' ? v : Math.max(0, Math.min(255, Math.round(toUnit(t.cls, v) * 255))));
   if (map && c === 1) { // indexed
     const out = new Uint8Array(h * w * 3), m = map.dims[0];
     for (let i = 0; i < h; i++) for (let j = 0; j < w; j++) { const ix = Math.min(m - 1, Math.max(0, t.data[i + h * j])); for (let k = 0; k < 3; k++) out[(i * w + j) * 3 + k] = Math.round(255 * Math.min(1, Math.max(0, map.data[ix + m * k]))); }
@@ -849,7 +854,7 @@ def('imfinfo', (a, _n, I) => {
   return [mkStruct(keys, [1, 1], [rec])];
 });
 const rgbInput = (v: V, fn: string): T => { const t = T_(v, fn); if (t.dims.length !== 3 || t.dims[2] !== 3) err(`Error using ${fn}: RGB input must be M-by-N-by-3.`); return t; };
-const f64 = (t: T): Float64Array => (t.cls === 'uint8' ? t.data.map(v => v / 255) : t.data);
+const f64 = (t: T): Float64Array => (isIntCls(t.cls) ? t.data.map(v => toUnit(t.cls, v)) : t.data);
 function perPixel(t: T, outCls: Cls, f: (r: number, g: number, b: number) => number[]): T {
   const n = t.dims[0] * t.dims[1], d = f64(t), o = mk(outCls, t.dims.slice());
   for (let p = 0; p < n; p++) { const r = f(d[p], d[p + n], d[p + 2 * n]); for (let k = 0; k < 3; k++) o.data[p + k * n] = sat(outCls, r[k]); }
@@ -857,20 +862,32 @@ function perPixel(t: T, outCls: Cls, f: (r: number, g: number, b: number) => num
 }
 def('rgb2gray', a => {
   const t = T_(a[0], 'rgb2gray'); if (t.dims.length === 2) err('Error using rgb2gray: RGB input must be M-by-N-by-3.'); rgbInput(t, 'rgb2gray');
-  const n = t.dims[0] * t.dims[1], cls: Cls = t.cls === 'uint8' ? 'uint8' : 'double', o = mk(cls, [t.dims[0], t.dims[1]]);
+  const n = t.dims[0] * t.dims[1], cls: Cls = numCls(t.cls), o = mk(cls, [t.dims[0], t.dims[1]]);
   for (let p = 0; p < n; p++) o.data[p] = sat(cls, 0.298936 * t.data[p] + 0.587043 * t.data[p + n] + 0.114021 * t.data[p + 2 * n]);
   return [o];
 });
+// im2double / im2single / im2uint8 / im2uint16: integer classes scale by their range, double/single/logical are 0-1 (logical 0/1)
+const im2cls = (cls: Cls, fn: string): Builtin => a => {
+  const t = T_(a[0], fn);
+  if (t.cls === 'char') err(`Error using ${fn}: Invalid input class 'char'.`);
+  if (t.cls === cls) return [t];
+  return [{ cls, dims: t.dims.slice(), data: t.data.map(v => fromUnit(cls, toUnit(t.cls, v))) } as T];
+};
 def('im2double', a => { const t = T_(a[0], 'im2double'); return [{ cls: 'double', dims: t.dims.slice(), data: f64(t) } as T]; });
+def('im2single', im2cls('single', 'im2single')); def('im2uint16', im2cls('uint16', 'im2uint16'));
 def('rgb2hsv', a => [perPixel(rgbInput(a[0], 'rgb2hsv'), 'double', (r, g, b) => {
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0;
   if (d > 0) h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
   return [h / 6, mx === 0 ? 0 : d / mx, mx];
 })]);
-def('rgb2ycbcr', a => { const t = rgbInput(a[0], 'rgb2ycbcr'), u = t.cls === 'uint8'; return [perPixel(t, u ? 'uint8' : 'double', (r, g, b) => {
-  const y = 16 + 65.481 * r + 128.553 * g + 24.966 * b, cb = 128 - 37.797 * r - 74.203 * g + 112 * b, cr = 128 + 112 * r - 93.786 * g - 18.214 * b;
-  return u ? [y, cb, cr] : [y / 255, cb / 255, cr / 255];
-})]; });
+def('rgb2ycbcr', a => {
+  const t = rgbInput(a[0], 'rgb2ycbcr'), k = t.cls === 'uint8' ? 1 : t.cls === 'uint16' ? 257 : t.cls === 'double' || t.cls === 'single' ? 1 / 255 : 0;
+  if (!k) err('Error using rgb2ycbcr: RGB must be uint8, uint16, single or double.');
+  return [perPixel(t, t.cls, (r, g, b) => {
+    const y = 16 + 65.481 * r + 128.553 * g + 24.966 * b, cb = 128 - 37.797 * r - 74.203 * g + 112 * b, cr = 128 + 112 * r - 93.786 * g - 18.214 * b;
+    return [y * k, cb * k, cr * k];
+  })];
+});
 def('rgb2ntsc', a => [perPixel(rgbInput(a[0], 'rgb2ntsc'), 'double', (r, g, b) => [0.299 * r + 0.587 * g + 0.114 * b, 0.596 * r - 0.274 * g - 0.322 * b, 0.211 * r - 0.523 * g + 0.312 * b])]);
 def('imcrop', a => {
   const t = T_(a[0], 'imcrop'), r = T_(a[1], 'imcrop'); if (r.data.length !== 4) err('Error using imcrop: rect must be [xmin ymin width height] (interactive cropping is not available).');
@@ -906,16 +923,23 @@ def('imrotate', a => {
   }
   return [o];
 });
+/** Histogram bin (0-based) of a pixel value: logical and uint8 use the value itself; other integer classes are spread over 256 bins; double/single use round(v*255) for imhist and floor(v*bins) for histeq. */
+const histBin = (cls: Cls, v: number, bins: number, forEq = false): number => {
+  if (cls === 'logical') return v;
+  const r = INT_RANGE[cls];
+  if (r) return cls === 'uint8' ? v : Math.min(bins - 1, Math.max(0, Math.floor(((v - r[0]) * 256) / (r[1] - r[0] + 1))));
+  return forEq ? Math.min(bins - 1, Math.floor(v * bins)) : Math.min(255, Math.max(0, Math.round(v * 255)));
+};
 def('imhist', (a, n) => {
   const t = T_(a[0], 'imhist'); if (n === 0) err('imhist: plotting is not available yet; call counts = imhist(I) to get the histogram.');
   const bins = t.cls === 'logical' ? 2 : 256, o = mk('double', [bins, 1]);
-  for (const v of t.data) o.data[t.cls === 'double' ? Math.min(255, Math.max(0, Math.round(v * 255))) : v]++;
+  for (const v of t.data) o.data[histBin(t.cls, v, bins)]++;
   return [o];
 });
 def('histeq', (a, nargout) => {
   const image = T_(a[0], 'histeq');
   if (image.dims.length !== 2) err('Error using histeq: input must be a two-dimensional grayscale image.');
-  if (image.cls === 'double' && image.data.some(v => v < 0 || v > 1)) err('Error using histeq: double input values must be in the range [0, 1].');
+  if ((image.cls === 'double' || image.cls === 'single') && image.data.some(v => v < 0 || v > 1)) err('Error using histeq: double input values must be in the range [0, 1].');
   const inputBins = image.cls === 'logical' ? 2 : 256;
   const requested = a[1] ? T_(a[1], 'histeq') : null;
   let target: number[];
@@ -929,8 +953,7 @@ def('histeq', (a, nargout) => {
   }
   const hist = new Array(inputBins).fill(0);
   for (const value of image.data) {
-    const bin = image.cls === 'uint8' || image.cls === 'logical' ? Math.round(value) : Math.min(inputBins - 1, Math.floor(value * inputBins));
-    hist[bin]++;
+    hist[histBin(image.cls, value, inputBins, true)]++;
   }
   const targetSum = target.reduce((sum, v) => sum + v, 0);
   if (targetSum <= 0) err('Error using histeq: target histogram must contain a positive value.');
@@ -948,12 +971,11 @@ def('histeq', (a, nargout) => {
     let j = 0;
     while (j < targetCdf.length - 1 && targetCdf[j] < cdf) j++;
     const normalized = image.cls === 'uint8' || image.cls === 'logical' ? j / Math.max(1, target.length - 1) : j / Math.max(1, target.length - 1);
-    lut[i] = image.cls === 'uint8' ? Math.round(normalized * 255) : image.cls === 'logical' ? +(normalized >= 0.5) : normalized;
+    lut[i] = image.cls === 'logical' ? +(normalized >= 0.5) : fromUnit(image.cls, normalized);
   }
   const out = mk(image.cls, image.dims.slice());
   for (let i = 0; i < image.data.length; i++) {
-    const value = image.data[i], bin = image.cls === 'uint8' || image.cls === 'logical' ? Math.round(value) : Math.min(inputBins - 1, Math.floor(value * inputBins));
-    out.data[i] = lut[bin];
+    out.data[i] = lut[histBin(image.cls, image.data[i], inputBins, true)];
   }
   const transform = mk(image.cls, [inputBins, 1], lut);
   return nargout > 1 ? [out, transform] : [out];
@@ -966,7 +988,7 @@ def('Inf inf', constFn(Infinity)); def('NaN nan', constFn(NaN)); def('eps', cons
 const dbl = (f: (x: number) => number): Builtin => a => { const t = T_(a[0], 'math'); return [{ cls: 'double', dims: t.dims.slice(), data: t.data.map(f) }]; };
 def('exp', dbl(Math.exp)); def('log', dbl(Math.log)); def('log2', dbl(Math.log2)); def('log10', dbl(Math.log10));
 def('sin', dbl(Math.sin)); def('cos', dbl(Math.cos)); def('tan', dbl(Math.tan)); def('sign', dbl(Math.sign));
-def('rem', a => { const x = T_(a[0], 'rem'), y = T_(a[1], 'rem'); return [ew(x, y, (p, q) => (q === 0 ? NaN : p % q), x.cls === 'uint8' || y.cls === 'uint8' ? 'uint8' : 'double')]; });
+def('rem', a => { const x = T_(a[0], 'rem'), y = T_(a[1], 'rem'); return [ew(x, y, (p, q) => (q === 0 ? NaN : p % q), outCls(x, y))]; });
 const redDim = (t: T, a: V[]) => (a[1] ? scalarOf(a[1]) - 1 : firstNonSingleton(t));
 def('any', a => { const t = T_(a[0], 'any'); return [reduce(t, redDim(t, a), v => +v.some(x => x !== 0), 'logical')]; });
 def('all', a => { const t = T_(a[0], 'all'); return [reduce(t, redDim(t, a), v => +v.every(x => x !== 0), 'logical')]; });
@@ -1160,17 +1182,17 @@ def('arrayfun', mapFun(false));
 let ticAt = 0; def('tic', () => { ticAt = performance.now(); return []; });
 def('toc', (_a, n, I) => { const s = (performance.now() - ticAt) / 1000; if (n > 0) return [num(s)]; I.host.print(`Elapsed time is ${s.toFixed(6)} seconds.\n`); return []; });
 let seed = 123456789; const rnd = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296);
-def('rand', a => { const { dims } = dimsFrom(a, 'rand'); const t = mk('double', dims); for (let i = 0; i < t.data.length; i++) t.data[i] = rnd(); return [t]; });
+def('rand', a => { const { dims, cls } = dimsFrom(a, 'rand'); const t = mk(cls, dims); for (let i = 0; i < t.data.length; i++) t.data[i] = sat(cls, rnd()); return [t]; });
 def('randi', a => { const m = T_(a[0], 'randi'), hi = m.data[m.data.length - 1], lo = m.data.length > 1 ? m.data[0] : 1; const { dims } = dimsFrom(a.slice(1), 'randi'); const t = mk('double', dims); for (let i = 0; i < t.data.length; i++) t.data[i] = lo + Math.floor(rnd() * (hi - lo + 1)); return [t]; });
 // image arithmetic (saturating, class-aware) and conversions
-const imArith = (f: (x: number, y: number) => number, fn: string): Builtin => a => { const x = T_(a[0], fn), y = T_(a[1], fn); return [ew(x, y, f, x.cls === 'uint8' || y.cls === 'uint8' ? 'uint8' : 'double')]; };
+const imArith = (f: (x: number, y: number) => number, fn: string): Builtin => a => { const x = T_(a[0], fn), y = T_(a[1], fn); return [ew(x, y, f, outCls(x, y))]; };
 def('imadd', imArith((p, q) => p + q, 'imadd')); def('imsubtract', imArith((p, q) => p - q, 'imsubtract')); def('imabsdiff', imArith((p, q) => Math.abs(p - q), 'imabsdiff'));
-def('im2uint8', a => { const t = T_(a[0], 'im2uint8'); return [{ cls: 'uint8', dims: t.dims.slice(), data: t.data.map(v => (t.cls === 'uint8' ? v : t.cls === 'logical' ? v * 255 : sat('uint8', v * 255))) }]; });
-def('imcomplement', a => { const t = T_(a[0], 'imcomplement'); return [{ cls: t.cls, dims: t.dims.slice(), data: t.data.map(v => (t.cls === 'uint8' ? 255 - v : t.cls === 'logical' ? 1 - v : 1 - v)) }]; });
+def('im2uint8', im2cls('uint8', 'im2uint8'));
+def('imcomplement', a => { const t = T_(a[0], 'imcomplement'); return [{ cls: t.cls, dims: t.dims.slice(), data: t.data.map(v => { const r = INT_RANGE[t.cls]; return r ? r[0] + r[1] - v : 1 - v; }) }]; });
 def('mat2gray', a => { const t = T_(a[0], 'mat2gray'); let lo = Infinity, hi = -Infinity; for (const v of t.data) { if (v < lo) lo = v; if (v > hi) hi = v; } const d = hi - lo; return [{ cls: 'double', dims: t.dims.slice(), data: t.data.map(v => (d === 0 ? (v > 0 ? 1 : 0) : (v - lo) / d)) }]; });
 def('im2gray', (a, n, I) => { const t = T_(a[0], 'im2gray'); return t.dims.length === 3 ? BUILTINS.rgb2gray(a, n, I) : [t]; });
 
-def('im2bw', (a, n, I) => { let t = T_(a[0], 'im2bw'); if (t.dims.length === 3) t = BUILTINS.rgb2gray([t], 1, I)[0] as T; const lv = a[1] ? T_(a[1], 'im2bw').data[0] : 0.5, th = t.cls === 'uint8' ? lv * 255 : lv; const o = mk('logical', t.dims.slice()); for (let i = 0; i < t.data.length; i++) o.data[i] = t.data[i] > th ? 1 : 0; return [o]; });
+def('im2bw', (a, n, I) => { let t = T_(a[0], 'im2bw'); if (t.dims.length === 3) t = BUILTINS.rgb2gray([t], 1, I)[0] as T; const lv = a[1] ? T_(a[1], 'im2bw').data[0] : 0.5, th = INT_RANGE[t.cls] ? INT_RANGE[t.cls][0] + lv * (INT_RANGE[t.cls][1] - INT_RANGE[t.cls][0]) : lv; const o = mk('logical', t.dims.slice()); for (let i = 0; i < t.data.length; i++) o.data[i] = t.data[i] > th ? 1 : 0; return [o]; });
 
 // Phase 2 libraries (registered last so they supersede the earlier minimal versions)
 registerMath(def);

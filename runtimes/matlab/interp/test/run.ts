@@ -4,6 +4,7 @@ import { Interp, Host, RawImage } from '../src/index';
 import path from 'node:path';
 import { runLectureTests } from './lectures';
 import { runPhase2 } from './phase2';
+import { runPhase3 } from './phase3';
 
 const A = path.join(import.meta.dirname, 'assets');
 const ALIASES: Record<string, string> = { 'peppers.png': 'pepper.png', 'test5.png': 'pepper.png' };
@@ -250,6 +251,7 @@ e = []
 `, o => eq(o, "a =\n\n     1    20\n   300     4\n\nb =\n\n  1  2\n  3  4\n\nc =\n\n  1  0\n  0  1\n\nd =\n\n    ab\n    cd\n\ne = [](0×0)\n"));
 
 runPhase2({ run, val, eq });
+runPhase3({ run, val, eq });
 runLectureTests({ run, todo, val, eq });
 
 console.log(`\n${pass} passed, ${fail} failed${todoCount ? `, ${todoCount} todo` : ''}`);

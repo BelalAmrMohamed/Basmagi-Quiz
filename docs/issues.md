@@ -35,6 +35,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
   * And other things, too.
 * Their is no notification center for the platform.
 
+### `gradeEssay` improvements (independent of the AI override, still worth doing)
+Add basic LaTeX-aware and Arabic-diacritic-aware normalization to `gradeEssay`'s `normalize()` function in `public\src\shared\rate-answers.js` — strip Arabic diacritics (tashkeel, `\u064B-\u0652`), normalize alef variants (`أ`/`إ`/`آ` → `ا`), and strip/normalize common LaTeX delimiters (`$...$`, `\(...\)`) before comparing text.
+
 ### Implement the Rich Input Component into the Notebook page's Makrdown cells.
 
 ### Code Blocks

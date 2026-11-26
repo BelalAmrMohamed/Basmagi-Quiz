@@ -1,6 +1,15 @@
 // Values: column-major N-d tensors with MATLAB class semantics (uint8 saturation etc.)
 import { MatlabError } from './parser';
-export type Cls = 'double' | 'uint8' | 'logical' | 'char';
+export type Cls = 'double' | 'single' | 'int8' | 'uint8' | 'int16' | 'uint16' | 'int32' | 'uint32' | 'logical' | 'char';
+/** Value range of every integer class. Storage is always Float64Array (plan decision D3). */
+export const INT_RANGE: Record<string, [number, number]> = {
+  int8: [-128, 127], uint8: [0, 255], int16: [-32768, 32767], uint16: [0, 65535],
+  int32: [-2147483648, 2147483647], uint32: [0, 4294967295],
+};
+/** Classes that can be created with double(), single(), int8(), ..., logical() and cast(). */
+export const CLASS_NAMES = ['double', 'single', 'int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32', 'logical'];
+/** Bytes per element for whos. */
+export const CLASS_BYTES: Record<string, number> = { double: 8, single: 4, int8: 1, uint8: 1, int16: 2, uint16: 2, int32: 4, uint32: 4, logical: 1, char: 2 };
 export interface T { cls: Cls; dims: number[]; data: Float64Array }
 export interface S { cls: 'struct'; dims: number[]; keys: string[]; data: Record<string, V>[] }
 export interface C { cls: 'cell'; dims: number[]; data: V[] }
@@ -24,10 +33,18 @@ export function mkStruct(keys: string[], dims: number[] = [1, 1], data?: Record<
   return { cls: 'struct', dims: dims.slice(), keys: keys.slice(), data: out };
 }
 
+/** Round half away from zero and clamp to the class range (NaN -> 0 for integer classes); single rounds to float32. */
 export function sat(cls: Cls, v: number): number {
   if (cls === 'uint8') return v !== v ? 0 : v <= 0 ? 0 : v >= 255 ? 255 : Math.round(v);
+  if (cls === 'double' || cls === 'char') return v;
   if (cls === 'logical') return v !== 0 ? 1 : 0;
-  return v;
+  if (cls === 'single') return Math.fround(v);
+  const r = INT_RANGE[cls];
+  if (!r) return v;
+  if (v !== v) return 0;
+  if (v <= r[0]) return r[0];
+  if (v >= r[1]) return r[1];
+  return v < 0 ? -Math.round(-v) : Math.round(v);
 }
 export const mk = (cls: Cls, dims: number[], data?: ArrayLike<number>): T => {
   while (dims.length > 2 && dims[dims.length - 1] === 1) dims = dims.slice(0, -1);
@@ -44,8 +61,26 @@ export const scalarOf = (t: any, what = 'argument'): number => {
   return t.data[0];
 };
 export const dimStr = (d: number[]) => d.join('×');
-export const outCls = (a: T, b: T): Cls => (a.cls === 'uint8' || b.cls === 'uint8' ? 'uint8' : 'double');
-export const isIntCls = (c: Cls): boolean => c === 'uint8';
+export const isIntCls = (c: Cls): boolean => c in INT_RANGE;
+/** Class of a numeric result that keeps the integer/single class of its input and is double otherwise. */
+export const numCls = (c: Cls): Cls => (c === 'single' || c in INT_RANGE ? c : 'double');
+/** Class of sum/prod/mean results: single stays single, everything else is double. */
+export const fltCls = (t: { cls: Cls }): Cls => (t.cls === 'single' ? 'single' : 'double');
+/** MATLAB result class of a binary arithmetic operation. */
+export const outCls = (a: T, b: T): Cls => {
+  const ia = a.cls in INT_RANGE, ib = b.cls in INT_RANGE;
+  if (ia && ib) {
+    if (a.cls !== b.cls) throw new MatlabError('Integers can only be combined with integers of the same class, or scalar doubles.');
+    return a.cls;
+  }
+  if (ia) return a.cls;
+  if (ib) return b.cls;
+  return a.cls === 'single' || b.cls === 'single' ? 'single' : 'double';
+};
+/** Value of class `cls` mapped to the image convention (integers: [min,max] -> [0,1]; double/single/logical unchanged). */
+export const toUnit = (cls: Cls, v: number): number => { const r = INT_RANGE[cls]; return r ? (v - r[0]) / (r[1] - r[0]) : v; };
+/** Inverse of toUnit, with rounding/saturation of the target class. */
+export const fromUnit = (cls: Cls, u: number): number => { const r = INT_RANGE[cls]; return r ? sat(cls, r[0] + u * (r[1] - r[0])) : sat(cls, u); };
 
 // ---------- elementwise with implicit expansion ----------
 export function ew(a: T, b: T, f: (x: number, y: number) => number, cls: Cls): T {
@@ -181,8 +216,9 @@ export function mpower(a: T, b: T, warn?: (s: string) => void): T {
   return res;
 }
 
+const CMP_OPS = new Set(['<', '<=', '>', '>=', '==', '~=', '&', '|']);
 export function binop(op: string, a: T, b: T, warn?: (s: string) => void): T {
-  const c = outCls(a, b);
+  const c: Cls = CMP_OPS.has(op) ? 'double' : outCls(a, b);
   switch (op) {
     case '+': return ew(a, b, (x, y) => x + y, c);
     case '-': return ew(a, b, (x, y) => x - y, c);
@@ -314,7 +350,8 @@ export function cat(dim: number, parts: T[]): T {
   parts = parts.filter(p => !(p.data.length === 0 && p.dims.length === 2 && p.dims[0] * p.dims[1] === 0 && parts.length > 1));
   if (parts.length === 1) return parts[0];
   if (!parts.length) return mk('double', [0, 0]);
-  const cls: Cls = parts.some(p => p.cls === 'char') ? 'char' : parts.some(p => p.cls === 'uint8') ? 'uint8' : parts.every(p => p.cls === 'logical') ? 'logical' : 'double';
+  const firstInt = parts.find(p => p.cls in INT_RANGE);
+  const cls: Cls = parts.some(p => p.cls === 'char') ? 'char' : firstInt ? firstInt.cls : parts.some(p => p.cls === 'single') ? 'single' : parts.every(p => p.cls === 'logical') ? 'logical' : 'double';
   const nd = Math.max(dim + 1, ...parts.map(p => p.dims.length));
   const dd = parts.map(p => p.dims.concat(new Array(nd - p.dims.length).fill(1)));
   for (const d of dd) for (let i = 0; i < nd; i++) if (i !== dim && d[i] !== dd[0][i]) throw new MatlabError('Dimensions of arrays being concatenated are not consistent.');
@@ -336,9 +373,9 @@ function fmtSlice(t: T, off: number, rows: number, cols: number): string {
   let w: number, f: (v: number) => string;
   if (t.cls === 'char') { return Array.from({ length: rows }, (_, i) => '    ' + String.fromCharCode(...Array.from({ length: cols }, (_, j) => cell(i, j)))).join('\n') + '\n'; }
   const all = Array.from(t.data.subarray(off, off + rows * cols));
-  if (t.cls === 'uint8' || t.cls === 'logical' || all.every(v => Number.isInteger(v))) {
+  if (isIntCls(t.cls) || t.cls === 'logical' || all.every(v => Number.isInteger(v))) {
     const ml = Math.max(...all.map(v => String(v).length), 1);
-    w = t.cls === 'double' ? Math.max(6, ml + 3) : ml + 2;
+    w = t.cls === 'double' || t.cls === 'single' ? Math.max(6, ml + 3) : ml + 2;
     f = v => String(v);
   } else {
     f = v => (Number.isNaN(v) ? 'NaN' : !isFinite(v) ? (v < 0 ? '-Inf' : 'Inf') : v.toFixed(4));
@@ -381,7 +418,7 @@ export function display(name: string, v: V, o: PrintOpts): string {
   }
   return out;
 }
-const scalarStr = (x: number, cls: Cls) => (cls === 'double' && !Number.isInteger(x) ? (Number.isFinite(x) ? x.toFixed(4) : x > 0 ? 'Inf' : x < 0 ? '-Inf' : 'NaN') : String(x));
+const scalarStr = (x: number, cls: Cls) => ((cls === 'double' || cls === 'single') && !Number.isInteger(x) ? (Number.isFinite(x) ? x.toFixed(4) : x > 0 ? 'Inf' : x < 0 ? '-Inf' : 'NaN') : String(x));
 function inline(x: any): string {
   if (isF(x)) return x.name.startsWith('@') ? x.name : '@' + x.name;
   if (isC(x)) return `{${dimStr(x.dims)} cell}`;

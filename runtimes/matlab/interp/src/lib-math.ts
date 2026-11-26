@@ -1,4 +1,4 @@
-import { T, Cls, isStr, toStr, scalarOf, numel, sat, ew, matmul, transpose, solveLinear, mk, num } from './values';
+import { T, Cls, isStr, toStr, scalarOf, numel, sat, ew, matmul, transpose, solveLinear, mk, num, outCls, numCls, fltCls, INT_RANGE } from './values';
 import { Def, err, T_, firstNonSingleton, reduce, reduceWithIdx, redDim, singularValues } from './lib-common';
 
 const INT_LIMITS: Record<string, [number, number]> = {
@@ -14,7 +14,9 @@ function bitMaskFor(cls: Cls, a?: any): number {
     if (n === 'uint16' || n === 'int16') return 16;
     if (n === 'uint32' || n === 'int32') return 32;
   }
-  if (cls === 'uint8') return 8;
+  if (cls === 'uint8' || cls === 'int8') return 8;
+  if (cls === 'uint16' || cls === 'int16') return 16;
+  if (cls === 'uint32' || cls === 'int32') return 32;
   return 53;
 }
 
@@ -25,7 +27,7 @@ export function registerMath(def: Def) {
   };
   const map1 = (f: (x: number) => number) => (a: any[]) => {
     const t = T_(a[0], 'math');
-    const cls: Cls = t.cls === 'uint8' ? 'uint8' : 'double';
+    const cls: Cls = numCls(t.cls);
     return [{ cls, dims: t.dims.slice(), data: t.data.map(v => sat(cls, f(v))) }];
   };
   const pred = (f: (x: number) => boolean) => (a: any[]) => {
@@ -58,16 +60,16 @@ export function registerMath(def: Def) {
   def('atan2', a => [ew(T_(a[0], 'atan2'), T_(a[1], 'atan2'), Math.atan2, 'double')]);
   def('power', a => {
     const x = T_(a[0], 'power'), y = T_(a[1], 'power');
-    return [ew(x, y, Math.pow, x.cls === 'uint8' || y.cls === 'uint8' ? 'uint8' : 'double')];
+    return [ew(x, y, Math.pow, outCls(x, y))];
   });
   def('hypot', a => [ew(T_(a[0], 'hypot'), T_(a[1], 'hypot'), Math.hypot, 'double')]);
   def('mod', a => {
     const x = T_(a[0], 'mod'), y = T_(a[1], 'mod');
-    return [ew(x, y, (p, q) => (q === 0 ? p : p - Math.floor(p / q) * q), x.cls === 'uint8' || y.cls === 'uint8' ? 'uint8' : 'double')];
+    return [ew(x, y, (p, q) => (q === 0 ? p : p - Math.floor(p / q) * q), outCls(x, y))];
   });
   def('rem', a => {
     const x = T_(a[0], 'rem'), y = T_(a[1], 'rem');
-    return [ew(x, y, (p, q) => (q === 0 ? NaN : p % q), x.cls === 'uint8' || y.cls === 'uint8' ? 'uint8' : 'double')];
+    return [ew(x, y, (p, q) => (q === 0 ? NaN : p % q), outCls(x, y))];
   });
   def('idivide', a => {
     const x = T_(a[0], 'idivide'), y = T_(a[1], 'idivide');
@@ -76,7 +78,7 @@ export function registerMath(def: Def) {
       : opt === 'floor' ? Math.floor
       : opt === 'ceil' ? Math.ceil
       : Math.trunc;
-    const cls = x.cls === 'uint8' || y.cls === 'uint8' ? 'uint8' : 'double';
+    const cls = outCls(x, y);
     return [ew(x, y, (p, q) => op(p / q), cls)];
   });
 
@@ -88,7 +90,7 @@ export function registerMath(def: Def) {
   // Bitwise
   const bitOp = (fn: string, op: (x: number, y: number) => number) => (a: any[]) => {
     const x = T_(a[0], fn), y = T_(a[1], fn);
-    const cls = x.cls === 'uint8' || y.cls === 'uint8' ? 'uint8' : 'double';
+    const cls = outCls(x, y);
     return [ew(x, y, (p, q) => (op(Math.trunc(p), Math.trunc(q)) >>> 0), cls)];
   };
   def('bitand', bitOp('bitand', (p, q) => p & q));
@@ -98,7 +100,7 @@ export function registerMath(def: Def) {
     const x = T_(a[0], 'bitshift'), k = T_(a[1], 'bitshift');
     const bits = bitMaskFor(x.cls, a[2]);
     const mask = bits >= 32 ? 0xffffffff : (1 << bits) - 1;
-    const cls = x.cls === 'uint8' ? 'uint8' : 'double';
+    const cls = numCls(x.cls);
     return [ew(x, k, (v, s) => {
       const iv = Math.trunc(v) >>> 0, sh = Math.trunc(s);
       if (sh >= 0) return sh >= bits ? 0 : ((iv << sh) & mask) >>> 0;
@@ -108,7 +110,7 @@ export function registerMath(def: Def) {
   def('bitcmp', a => {
     const x = T_(a[0], 'bitcmp');
     const bits = bitMaskFor(x.cls, a[1]);
-    const cls = x.cls === 'uint8' ? 'uint8' : 'double';
+    const cls = numCls(x.cls);
     const out = mk(cls, x.dims.slice());
     if (bits <= 32) {
       const mask = bits === 32 ? 0xffffffff : (1 << bits) - 1;
@@ -125,17 +127,17 @@ export function registerMath(def: Def) {
   def('sum', a => {
     const t = T_(a[0], 'sum'), dim = redDim(t, a);
     const fn = (v: number[]) => v.reduce((p, q) => p + q, 0);
-    return [dim === 'all' ? redAll(t, fn, 'double') : reduce(t, dim, fn, 'double')];
+    return [dim === 'all' ? redAll(t, fn, fltCls(t)) : reduce(t, dim, fn, fltCls(t))];
   });
   def('prod', a => {
     const t = T_(a[0], 'prod'), dim = redDim(t, a);
     const fn = (v: number[]) => v.reduce((p, q) => p * q, 1);
-    return [dim === 'all' ? redAll(t, fn, 'double') : reduce(t, dim, fn, 'double')];
+    return [dim === 'all' ? redAll(t, fn, fltCls(t)) : reduce(t, dim, fn, fltCls(t))];
   });
   def('mean', a => {
     const t = T_(a[0], 'mean'), dim = redDim(t, a);
     const fn = (v: number[]) => (v.length ? v.reduce((p, q) => p + q, 0) / v.length : NaN);
-    return [dim === 'all' ? redAll(t, fn, 'double') : reduce(t, dim, fn, 'double')];
+    return [dim === 'all' ? redAll(t, fn, fltCls(t)) : reduce(t, dim, fn, fltCls(t))];
   });
   def('any', a => {
     const t = T_(a[0], 'any'), dim = redDim(t, a);
@@ -154,7 +156,7 @@ export function registerMath(def: Def) {
     const pick = (x: number, y: number) => (isMax ? Math.max(x, y) : Math.min(x, y));
     if (a.length >= 2 && T_(a[1], fnName).data.length > 0 && !isStr(a[1])) {
       const u = T_(a[1], fnName);
-      return [ew(t, u, pick, t.cls === 'uint8' || u.cls === 'uint8' ? 'uint8' : 'double')];
+      return [ew(t, u, pick, outCls(t, u))];
     }
     const dim = a.length >= 3 ? redDim(t, a, 2) : (a.length === 2 && isStr(a[1]) ? redDim(t, a, 1) : firstNonSingleton(t));
     const cls: Cls = t.cls === 'logical' || t.cls === 'char' ? 'double' : t.cls;
@@ -188,7 +190,7 @@ export function registerMath(def: Def) {
 
   def('mode', (a, nargout) => {
     const t = T_(a[0], 'mode'), dim = redDim(t, a);
-    const cls: Cls = t.cls === 'uint8' ? 'uint8' : 'double';
+    const cls: Cls = numCls(t.cls);
     const modeFn = (v: number[]): [number, number] => {
       if (!v.length) return [NaN, 0];
       const counts = new Map<number, number>();
@@ -229,7 +231,7 @@ export function registerMath(def: Def) {
   def('range', a => {
     const t = T_(a[0], 'range'), dim = redDim(t, a);
     const fn = (v: number[]) => (v.length ? Math.max(...v) - Math.min(...v) : NaN);
-    const cls: Cls = t.cls === 'uint8' ? 'uint8' : 'double';
+    const cls: Cls = numCls(t.cls);
     return [dim === 'all' ? redAll(t, fn, cls) : reduce(t, dim, fn, cls)];
   });
 
@@ -238,7 +240,7 @@ export function registerMath(def: Def) {
     const dim = a[1] ? Math.floor(scalarOf(a[1])) - 1 : firstNonSingleton(t);
     const d = t.dims.concat(new Array(Math.max(0, dim + 1 - t.dims.length)).fill(1)), len = d[dim];
     const inner = numel(d.slice(0, dim)), outer = numel(d.slice(dim + 1));
-    const cls: Cls = outCls ?? (t.cls === 'uint8' ? 'uint8' : 'double');
+    const cls: Cls = outCls ?? (numCls(t.cls));
     const r = mk(cls, t.dims.slice());
     for (let o = 0; o < outer; o++) {
       for (let i = 0; i < inner; i++) {
@@ -266,10 +268,10 @@ export function registerMath(def: Def) {
     for (let step = 0; step < n; step++) {
       const d = t.dims.concat(new Array(Math.max(0, dim + 1 - t.dims.length)).fill(1));
       const len = d[dim];
-      if (len <= 1) { const rd = d.slice(); rd[dim] = 0; return [mk(t.cls === 'uint8' ? 'uint8' : 'double', rd)]; }
+      if (len <= 1) { const rd = d.slice(); rd[dim] = 0; return [mk(numCls(t.cls), rd)]; }
       const inner = numel(d.slice(0, dim)), outer = numel(d.slice(dim + 1));
       const rd = d.slice(); rd[dim] = len - 1;
-      const cls: Cls = t.cls === 'uint8' ? 'uint8' : 'double';
+      const cls: Cls = numCls(t.cls);
       const r = mk(cls, rd);
       for (let o = 0; o < outer; o++) {
         for (let i = 0; i < inner; i++) {
@@ -411,29 +413,30 @@ export function registerMath(def: Def) {
   });
 
   // Constants
+  const clsArg = (v: any, dflt: string) => (!v ? dflt : isStr(v) ? toStr(v).toLowerCase() : (v as T).cls);
   def('intmax', a => {
-    const c = a[0] ? toStr(a[0]).toLowerCase() : 'int32';
+    const c = clsArg(a[0], 'int32');
     const lim = INT_LIMITS[c];
     if (!lim) return err(`Error using intmax: Invalid integer class '${c}'.`);
-    return [num(lim[1])];
+    return [num(lim[1], c as Cls)];
   });
   def('intmin', a => {
-    const c = a[0] ? toStr(a[0]).toLowerCase() : 'int32';
+    const c = clsArg(a[0], 'int32');
     const lim = INT_LIMITS[c];
     if (!lim) return err(`Error using intmin: Invalid integer class '${c}'.`);
-    return [num(lim[0])];
+    return [num(lim[0], c as Cls)];
   });
   def('realmax', a => {
     const c = a[0] ? toStr(a[0]).toLowerCase() : 'double';
-    return [num(c === 'single' ? 3.4028234663852886e+38 : Number.MAX_VALUE)];
+    return [num(c === 'single' ? 3.4028234663852886e+38 : Number.MAX_VALUE, c === 'single' ? 'single' : 'double')];
   });
   def('realmin', a => {
     const c = a[0] ? toStr(a[0]).toLowerCase() : 'double';
-    return [num(c === 'single' ? 1.1754943508222875e-38 : Number.MIN_VALUE * 4.503599627370496e15)]; // 2^-1022
+    return [num(c === 'single' ? 1.1754943508222875e-38 : Number.MIN_VALUE * 4.503599627370496e15, c === 'single' ? 'single' : 'double')]; // 2^-1022
   });
   def('flintmax', a => {
     const c = a[0] ? toStr(a[0]).toLowerCase() : 'double';
-    return [num(c === 'single' ? 16777216 : 9007199254740992)];
+    return [num(c === 'single' ? 16777216 : 9007199254740992, c === 'single' ? 'single' : 'double')];
   });
 
   // Time and sound

@@ -1,4 +1,4 @@
-import { T, V, C, S, Cls, isT, isC, isS, isStr, toStr, scalarOf, numel, sat, mk, num, cat, dimStr, mkStruct } from './values';
+import { T, V, C, S, Cls, isT, isC, isS, isStr, toStr, scalarOf, numel, sat, mk, num, cat, dimStr, mkStruct, outCls } from './values';
 import { Def, err, T_, dimsFrom, rnd, setSeed, randnSample } from './lib-common';
 
 function magicSquare(n: number): number[] {
@@ -145,22 +145,24 @@ export function registerArray(def: Def) {
   def('rand', a => {
     if (a.length >= 2 && isStr(a[0]) && toStr(a[0]).toLowerCase() === 'seed') { setSeed(Math.floor(scalarOf(a[1]))); return []; }
     const { dims, cls } = dimsFrom(a, 'rand');
+    if (cls !== 'double' && cls !== 'single') err("Error using rand: Invalid data type. Valid data types are 'double' or 'single'.");
     const t = mk(cls, dims);
-    for (let i = 0; i < t.data.length; i++) t.data[i] = rnd();
+    for (let i = 0; i < t.data.length; i++) t.data[i] = sat(cls, rnd());
     return [t];
   });
   def('randn', a => {
     if (a.length >= 2 && isStr(a[0]) && toStr(a[0]).toLowerCase() === 'seed') { setSeed(Math.floor(scalarOf(a[1]))); return []; }
     const { dims, cls } = dimsFrom(a, 'randn');
+    if (cls !== 'double' && cls !== 'single') err("Error using randn: Invalid data type. Valid data types are 'double' or 'single'.");
     const t = mk(cls, dims);
-    for (let i = 0; i < t.data.length; i++) t.data[i] = randnSample();
+    for (let i = 0; i < t.data.length; i++) t.data[i] = sat(cls, randnSample());
     return [t];
   });
   def('randi', a => {
     const m = T_(a[0], 'randi'), hi = m.data[m.data.length - 1], lo = m.data.length > 1 ? m.data[0] : 1;
     const { dims, cls } = dimsFrom(a.slice(1), 'randi');
     const t = mk(cls, dims);
-    for (let i = 0; i < t.data.length; i++) t.data[i] = lo + Math.floor(rnd() * (hi - lo + 1));
+    for (let i = 0; i < t.data.length; i++) t.data[i] = sat(cls, lo + Math.floor(rnd() * (hi - lo + 1)));
     return [t];
   });
 
@@ -226,7 +228,7 @@ export function registerArray(def: Def) {
     if (A.dims.length > 2 || B.dims.length > 2) err('Error using kron: Inputs must be 2-D.');
     const [ma, na] = A.dims, [mb, nb] = B.dims;
     const M = ma * mb, N = na * nb;
-    const cls: Cls = A.cls === 'uint8' || B.cls === 'uint8' ? 'uint8' : 'double';
+    const cls: Cls = outCls(A, B);
     const out = mk(cls, [M, N]);
     for (let ja = 0; ja < na; ja++) for (let ia = 0; ia < ma; ia++) {
       const av = A.data[ia + ma * ja];

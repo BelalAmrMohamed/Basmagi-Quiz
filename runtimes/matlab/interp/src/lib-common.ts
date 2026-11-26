@@ -1,5 +1,5 @@
 import { MatlabError } from './parser';
-import { T, V, Cls, isT, isStr, toStr, scalarOf, numel, sat, mk, num } from './values';
+import { T, V, Cls, isT, isStr, toStr, scalarOf, numel, sat, mk, num, CLASS_NAMES } from './values';
 
 export type Builtin = (a: V[], nargout: number, I: any) => V[];
 export type Def = (names: string, f: Builtin) => void;
@@ -14,7 +14,7 @@ export const T_ = (v: V, fn: string): T =>
   isT(v) ? v : err(`Error using ${fn}: Invalid argument (struct/cell/handle not allowed here).`);
 
 export const clsFromName = (s: string): Cls =>
-  (['double', 'uint8', 'logical'].includes(s) ? (s as Cls) : err(`Unsupported class '${s}'.`));
+  (CLASS_NAMES.includes(s) ? (s as Cls) : err(`Unsupported class '${s}'.`));
 
 export function dimsFrom(a: V[], fn: string): { dims: number[]; cls: Cls } {
   let cls: Cls = 'double';
