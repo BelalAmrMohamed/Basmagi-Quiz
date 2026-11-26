@@ -3,7 +3,7 @@ export class MatlabError extends Error {}
 export type Tok = { t: string; v: any; sp: boolean; line: number };
 const KW = new Set(['for', 'while', 'if', 'elseif', 'else', 'end', 'function', 'return', 'break', 'continue', 'switch', 'case', 'otherwise', 'try', 'catch']);
 // Commands MATLAB allows in "command syntax" (e.g. `imfinfo 'x.png'`, `hold on`).
-const CMDS = new Set(['imfinfo', 'clear', 'close', 'help', 'doc', 'lookfor', 'format', 'hold', 'who', 'whos', 'clc', 'figure', 'clearvars', 'imtool', 'imshow', 'warning']);
+const CMDS = new Set(['imfinfo', 'clear', 'close', 'help', 'doc', 'lookfor', 'format', 'hold', 'who', 'whos', 'clc', 'figure', 'clearvars', 'imtool', 'imshow', 'warning', 'axis', 'grid', 'colormap', 'colorbar']);
 
 export function lex(src: string): Tok[] {
   src = src.replace(/\r\n?/g, '\n');

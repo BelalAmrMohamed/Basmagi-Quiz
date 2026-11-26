@@ -1,6 +1,7 @@
 // Phase 4a tests: figure state (subplot math, hold, replace, flush rules) and the interpreter's figure plumbing. Expected values are computed by hand.
 import type { Interp } from '../src/index';
 import { Figures, parseSubplot, cellOf, indexOf, FLUSH_THROTTLE_MS } from '../src/figures';
+import { parseLineSpec } from '../src/lib-plot';
 type Run = (name: string, src: string, check: (o: string, I: Interp) => any, expectErr?: string) => void;
 type Ctx = { run: Run; val: (I: Interp, n: string) => number[]; eq: (a: any, b: any) => any; shown: any[]; plots: { id: number; spec: any }[] };
 
@@ -148,4 +149,120 @@ export function runPhase4(ctx: Ctx) {
     I.run(`${A} imshow(A);`); I.figs.setHold('on'); I.figs.add(line([1, 2, 3])); I.flushFigures(true);
     const p = ctx.plots; return eq([ctx.shown.length, p.length, p[0].id, p[0].spec.axes[0].items.map((i: any) => i.t)], [1, 1, 1, ['image', 'line']]);
   });
+  runPhase4b(ctx);
+}
+
+// ---------- Phase 4b: plotting built-ins ----------
+function runPhase4b(ctx: Ctx) {
+  const { run, eq, val } = ctx;
+  console.log('Phase 4b (plotting built-ins)');
+  /** The posted spec of figure `id` (last post). */
+  const spec = (id = 1) => [...ctx.plots].reverse().find(p => p.id === id)!.spec;
+  const ax = (id = 1, i = 0) => spec(id).axes[i];
+  const rgb = (it: any) => Array.from(it.rgb as Uint8Array);
+  const grays = (it: any) => rgb(it).filter((_, i) => i % 3 === 0);
+  const rounded = (a: number[]) => a.map(v => Math.round(v * 1000) / 1000);
+  /** Rows of an m-by-3 colormap variable. */
+  const cmap = (I: Interp, n: string) => { const d = rounded(val(I, n)), m = d.length / 3; return Array.from({ length: m }, (_, i) => [d[i], d[i + m], d[i + 2 * m]]); };
+  const first = (...checks: (true | string)[]) => checks.find(c => c !== true) ?? true;
+
+  // ---- colormap generators ----
+  run('gray(3), hot(8), bone(8) follow the MATLAB formulas', `g = gray(3); h = hot(8); b = bone(8);`, (_o, I) => first(
+    eq(cmap(I, 'g'), [[0, 0, 0], [0.5, 0.5, 0.5], [1, 1, 1]]),
+    eq(cmap(I, 'h'), [[0.333, 0, 0], [0.667, 0, 0], [1, 0, 0], [1, 0.333, 0], [1, 0.667, 0], [1, 1, 0], [1, 1, 0.5], [1, 1, 1]]),
+    eq([cmap(I, 'b')[0], cmap(I, 'b')[7]], [[0, 0, 0.042], [1, 1, 1]])));
+  run('jet(4), jet(8), hsv(6); default size is 256 and a variable named gray still wins', `j = jet(4); k = jet(8); v = hsv(6); n = size(hot); gray = 7; q = gray + 1;`, (_o, I) => first(
+    eq(cmap(I, 'j'), [[0, 0, 1], [0, 1, 1], [1, 1, 0], [1, 0, 0]]),
+    eq([cmap(I, 'k')[0], cmap(I, 'k')[1], cmap(I, 'k')[7]], [[0, 0, 1], [0, 0.5, 1], [0.5, 0, 0]]),
+    eq(cmap(I, 'v'), [[1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 1, 1], [0, 0, 1], [1, 0, 1]]),
+    eq([val(I, 'n'), val(I, 'q')], [[256, 3], [8]])));
+
+  // ---- imshow display range ----
+  run('imshow(A,[lo hi]) maps lo to black and hi to white and stays a plain image', `imshow([0 50; 100 200], [50 150]);`, (_o, I) => {
+    const it: any = I.figs.current().axes[0].items[0];
+    return first(eq(grays(it), [0, 0, 128, 255]), eq([it.range, ctx.shown.length, ctx.plots.length], [[50, 150], 1, 0]));
+  });
+  run('imshow(A,[]) uses the data min and max; a constant image is black; default range is the class range', `A = uint8([10 20 30]); imshow(A, []); figure; imshow([7 7], []); figure; imshow(A);`, (_o, I) => {
+    const it = (n: number): any => I.figs.figs.get(n)!.axes[0].items[0];
+    return first(eq([grays(it(1)), grays(it(2)), grays(it(3))], [[0, 128, 255], [0, 0], [10, 20, 30]]), eq([it(1).range, it(3).range], [[10, 30], [0, 255]]));
+  });
+  run('imshow rejects a decreasing range', `imshow([1 2], [5 5]);`, () => 0, 'Error using imshow: Display range [low high] must be increasing.');
+  run("imshow('file', []) keeps the range argument", `imshow('testgray.png', []);`, (_o, I) => { const r = (I.figs.current().axes[0].items[0] as any).range; return r[0] >= 0 && r[1] <= 255 && r[0] < r[1] || `range ${r}`; });
+
+  // ---- colormaps on images ----
+  run('colormap recolors a shown grayscale image; the next imshow is gray again', `imshow(uint8([0 255])); colormap([1 0 0; 0 0 1]); figure; colormap jet\nimshow(uint8([0 255]));`, (_o, I) => {
+    const it = (n: number): any => I.figs.figs.get(n)!.axes[0].items[0];
+    return eq([rgb(it(1)), rgb(it(2))], [[255, 0, 0, 0, 0, 255], [0, 0, 0, 255, 255, 255]]);
+  });
+  run('colormap default restores the gray pixels of imshow', `imshow(uint8([0 90])); colormap hot\ncolormap('default');`, (_o, I) => eq(grays(I.figs.current().axes[0].items[0]), [0, 90]));
+  run('imagesc scales to the data range through the colormap and is a plot with ticks', `imagesc([1 2; 3 4]); colormap(gray(4)); colorbar; m = colormap;`, (_o, I) => {
+    const a = ax(), it = a.items[0];
+    // u = 0, 1/3, 2/3, 1 -> rows 1..4 of gray(4) = 0, 85, 170, 255
+    return first(eq([grays(it), it.range, it.ticks, a.colorbar], [[0, 85, 170, 255], [1, 4], true, true]), eq([cmap(I, 'm').length, ctx.shown.length], [4, 0]));
+  });
+  run('imagesc(C,[lo hi]) clamps; the figure colormap applies to later subplots', `colormap(gray(2)); subplot(1,2,1); imagesc([0 5 10], [0 10]); subplot(1,2,2); imagesc([1 2]);`, () =>
+    eq([grays(ax(1, 0).items[0]), grays(ax(1, 1).items[0])], [[0, 255, 255], [0, 255]]));
+  run('image(C) maps directly: double is 1-based, uint8 is 0-based', `colormap(gray(3)); image([1 2 3 9]); figure; colormap(gray(3)); image(uint8([0 1 2]));`, () =>
+    eq([grays(ax(1).items[0]), grays(ax(2).items[0]), ax(1).items[0].range], [[0, 128, 255, 255], [0, 128, 255], [1, 3]]));
+  run('image and imagesc accept RGB arrays', `A = zeros(1,2,3); A(1,2,1) = 1; image(A);`, () => eq(rgb(ax().items[0]), [0, 0, 0, 255, 0, 0]));
+  run('colormap rejects bad input', `colormap([2 0 0]);`, () => 0, 'Error using colormap: Colormap must be an m-by-3 matrix with values between 0 and 1.');
+
+  // ---- imhist ----
+  run('imhist(testgray) with no output posts exactly one figure with 256 bars', `g = imread('testgray.png'); imhist(g)`, o => {
+    const it = ax().items[0];
+    return eq([o, ctx.plots.length, ctx.shown.length, ax().items.length, it.t, it.x.length, it.x[0], it.x[255], it.y.reduce((p: number, q: number) => p + q, 0), it.ramp], ['', 1, 0, 1, 'bar', 256, 0, 255, 40000, true]);
+  });
+  run('[counts, x] = imhist(I) and imhist(I, n)', `[c, x] = imhist(uint8([0 0 255])); a = [c(1) c(256) x(1) x(256)]; [d, y] = imhist(uint8([0 100 200 255]), 2); [e, z] = imhist([0 1], 3);`, (_o, I) =>
+    eq([val(I, 'a'), val(I, 'd'), val(I, 'y'), val(I, 'e'), val(I, 'z'), ctx.plots.length], [[2, 1, 0, 255], [2, 2], [0, 255], [1, 0, 1], [0, 0.5, 1], 0]));
+  run('imhist of a logical image draws 2 bars at 0 and 1', `imhist(logical([1 0 1]));`, () => eq([ax().items[0].x, ax().items[0].y], [[0, 1], [1, 2]]));
+
+  // ---- plot ----
+  U('parseLineSpec', () => eq(['r--o', 'k.', '-.', 'o-', 'hello', ''].map(s => parseLineSpec(s)),
+    [{ color: 'r', style: '--', marker: 'o' }, { color: 'k', marker: '.', style: 'none' }, { style: '-.' }, { marker: 'o', style: '-' }, null, null]));
+  function U(name: string, f: () => any) { run(name, 'x = 1;', () => f()); }
+  run('plot: x, y, LineSpec and properties', `plot(1:3, [4 5 6], 'r--o', 'LineWidth', 2);`, () => eq(ax().items, [{ t: 'line', x: [1, 2, 3], y: [4, 5, 6], spec: { color: 'r', style: '--', marker: 'o', width: 2 } }]));
+  run('plot: matrix columns and several groups', `plot([1 2; 3 4]); figure; plot([0 1], [2 3], 'b', [0 1], [4 5], ':', 'Color', [0 1 0]);`, () => first(
+    eq(ax(1).items.map((i: any) => [i.x, i.y]), [[[1, 2], [1, 3]], [[1, 2], [2, 4]]]),
+    eq(ax(2).items.map((i: any) => [i.y, i.spec]), [[[2, 3], { color: [0, 1, 0] }], [[4, 5], { style: ':', color: [0, 1, 0] }]])));
+  run('plot: length mismatch', `plot([1 2], [1 2 3]);`, () => 0, 'Error using plot: Vectors must be the same length.');
+  run('plot: unknown property', `plot([1 2], 'Wobble', 3);`, () => 0, "Error using plot: Unrecognized property 'Wobble'.");
+  run('hold on keeps earlier series; a plain plot replaces them', `plot([1 2]); hold on\nplot([3 4]); figure; plot([1 2]); plot([3 4]);`, () => eq([ax(1).items.length, ax(2).items.length, ax(2).items[0].y], [2, 1, [3, 4]]));
+
+  // ---- bar, stem, scatter, hist, histogram ----
+  run('bar: default width, grouped columns, relative width', `bar([4 5 6]); figure; bar([1 2; 3 4]); figure; bar([10 20 30], [1 2 3], 0.5);`, () => {
+    const g = ax(2).items;
+    return first(eq([ax(1).items[0].x, ax(1).items[0].width], [[1, 2, 3], 0.8]),
+      eq([rounded(g[0].x), rounded(g[1].x), g[0].y, g[1].y, g[0].width], [[0.8, 1.8], [1.2, 2.2], [1, 3], [2, 4], 0.4]),
+      eq([ax(3).items[0].x, ax(3).items[0].width], [[10, 20, 30], 5]));
+  });
+  run('stem and scatter', `stem([2 4], [1 3], 'g', 'filled'); figure; scatter([1 2], [3 4], 25, 'r', 'filled');`, () => eq([ax(1).items[0], ax(2).items[0]], [
+    { t: 'stem', x: [2, 4], y: [1, 3], spec: { color: 'g' }, filled: true },
+    { t: 'scatter', x: [1, 2], y: [3, 4], spec: { color: 'r' }, filled: true, size: 25 }]));
+  // hist, 4 bins over [1,9]: centers 2 4 6 8; 3 is a tie and goes to the lower bin
+  run('hist draws without outputs and still returns numbers with them', `d = [1 2 2 3 9 9]; [n, c] = hist(d, 4); hist(d, 4)`, (o, I) =>
+    eq([o, val(I, 'n'), val(I, 'c'), ax().items[0].x, ax().items[0].y, ax().items[0].width], ['', [4, 0, 0, 2], [2, 4, 6, 8], [2, 4, 6, 8], [4, 0, 0, 2], 2]));
+  run('histogram: equal bins, last edge included; default bin count', `histogram([0 1 2 3 4 4], 2); figure; histogram([0 1 2 3 4 4]);`, () =>
+    eq([ax(1).items[0].x, ax(1).items[0].y, ax(1).items[0].width, ax(2).items[0].y.length], [[1, 3], [2, 4], 2, 4]));
+
+  // ---- decorations ----
+  run('title, xlabel, ylabel, legend, grid, text', `plot([1 2]); title({'a','b'}); xlabel('time'); ylabel(5); legend('one', 'Location', 'best'); grid on\ntext(1, 2, 'hi');`, () => {
+    const a = ax();
+    return eq([a.title, a.xlabel, a.ylabel, a.legend, a.grid, a.items.map((i: any) => i.t), a.items[1]], ['a\nb', 'time', '5', ['one'], true, ['line', 'text'], { t: 'text', x: 1, y: 2, s: 'hi' }]);
+  });
+  run('legend({..}) / legend(show) / legend off; grid toggles; colorbar off', `plot([1 2; 3 4]); legend('show'); figure; plot(1); legend({'p','q'}); legend('off'); grid; grid; grid; colorbar; colorbar off`, () =>
+    eq([ax(1).legend, ax(2).legend, ax(2).grid, ax(2).colorbar], [['data1', 'data2'], [], true, false]));
+  run('axis limits and modes; xlim/ylim set, query and reset', `plot([3 7], [1 2]); q = xlim; axis([0 5 -1 1]); r = ylim; xlim([1 4]); ylim('auto');`, (_o, I) =>
+    eq([val(I, 'q'), val(I, 'r'), ax().xlim, ax().ylim], [[3, 7], [-1, 1], [1, 4], null]));
+  run('axis command syntax on an image turns it into a plot', `imshow(uint8([1 2])); axis on\n`, () => eq([ctx.shown.length, ax().off, ax().items[0].ticks], [0, false, true]));
+  run('axis image / square / off', `imshow(uint8([1 2])); axis image off\naxis square`, () => eq([ax().equal, ax().tight, ax().off, ax().square], [true, true, true, true]));
+  run('bad limits', `xlim([2 1]);`, () => 0, 'Error using xlim: Limits must be increasing.');
+  run('title on an image gives one plot post with image + title', `imshow(uint8([1 2])); title('T');`, () => eq([ctx.shown.length, ctx.plots.length, ax().title, ax().items[0].t], [0, 1, 'T', 'image']));
+
+  // ---- figures ----
+  run('subplot with two images posts one 1x2 figure', `A = uint8([1 2]); subplot(1,2,1); imshow(A); title('a'); subplot(122); imshow(A);`, () =>
+    eq([ctx.plots.length, ctx.shown.length, spec().rows, spec().cols, spec().axes.map((a: any) => a.title)], [1, 0, 1, 2, ['a', '']]));
+  run('clf empties, close removes, figure properties are ignored', `plot(1); clf; plot([2 3]); figure('Name', 'x'); plot(1); close; figure(5); close(5); s = close('all');`, (_o, I) =>
+    eq([I.figs.figs.size, val(I, 's'), ctx.plots.length >= 1], [0, [1], true]));
+  run('close of a missing figure', `close(4)`, () => 0, 'Error using close: Invalid figure handle.');
+  run('clear; close all; clc at the top of a script is harmless', `clear; close all; clc\nimshow(uint8([1 2]));`, () => eq(ctx.shown.length, 1));
 }

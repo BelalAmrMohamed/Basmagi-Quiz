@@ -284,15 +284,15 @@ export const FUNCTION_DOCS: Record<string, [signature: string, description: stri
   ],
   "close": [
     "close all",
-    "Close figures."
+    "Close the current figure, figure n (close(n)) or all figures. Cards already shown stay in the output."
   ],
   "figure": [
-    "figure",
-    "Create a figure."
+    "figure(n)",
+    "Create a new figure, or select figure n. Window properties such as 'Name' are ignored."
   ],
   "hold": [
     "hold on",
-    "Keep the current figure."
+    "Keep the current items when plotting again (hold off replaces them)."
   ],
   "format": [
     "format long",
@@ -327,8 +327,8 @@ export const FUNCTION_DOCS: Record<string, [signature: string, description: stri
     "Write an image to the current folder."
   ],
   "imshow": [
-    "imshow(A)",
-    "Display an image."
+    "imshow(A, [lo hi])",
+    "Display an image; [lo hi] or [] (data min and max) sets the gray display range, imshow(X, map) shows an indexed image."
   ],
   "imtool": [
     "imtool(A)",
@@ -351,8 +351,8 @@ export const FUNCTION_DOCS: Record<string, [signature: string, description: stri
     "Rotate an image."
   ],
   "imhist": [
-    "imhist(A)",
-    "Image histogram counts."
+    "[counts, x] = imhist(I, n)",
+    "Image histogram; without outputs it draws one bar per bin (256, or 2 for logical images) on a 0-255 axis."
   ],
   "histeq": [
     "histeq(A)",
@@ -656,7 +656,7 @@ export const FUNCTION_DOCS: Record<string, [signature: string, description: stri
   ],
   "hist": [
     "[n, x] = hist(data, k)",
-    "Histogram counts and centers for k bins (numeric form; drawing arrives with plotting)."
+    "Histogram with k bins; without outputs it draws the bars. Matrix data is pooled."
   ],
   "isequal": [
     "isequal(a, b, ...)",
@@ -789,6 +789,110 @@ export const FUNCTION_DOCS: Record<string, [signature: string, description: stri
   "beep": [
     "beep",
     "Play a short tone."
+  ],
+  "clf": [
+    "clf",
+    "Clear the current figure."
+  ],
+  "subplot": [
+    "subplot(m, n, p)",
+    "Select cell p of an m-by-n grid of axes (also subplot(mnp)). A different grid replaces the old axes."
+  ],
+  "title": [
+    "title(text)",
+    "Title of the current axes."
+  ],
+  "xlabel": [
+    "xlabel(text)",
+    "Label of the x axis."
+  ],
+  "ylabel": [
+    "ylabel(text)",
+    "Label of the y axis."
+  ],
+  "drawnow": [
+    "drawnow",
+    "Show pending figure changes now (at most one update per figure every 100 ms)."
+  ],
+  "plot": [
+    "plot(x, y, 'r--o')",
+    "Line plot of vectors or matrix columns; several x, y, spec groups and 'LineWidth', 'Color' are accepted."
+  ],
+  "bar": [
+    "bar(x, y, width)",
+    "Bar chart; matrix columns are drawn side by side."
+  ],
+  "stem": [
+    "stem(x, y)",
+    "Stem plot; accepts a line spec and 'filled'."
+  ],
+  "histogram": [
+    "histogram(data, nbins)",
+    "Draw a histogram with equal-width bins (default: ceil(log2(n)) + 1). No output object."
+  ],
+  "scatter": [
+    "scatter(x, y, size, color)",
+    "Scatter plot with one marker size and color; accepts 'filled'."
+  ],
+  "axis": [
+    "axis([x1 x2 y1 y2])",
+    "Set axis limits, or axis tight / equal / image / square / off / on / auto / normal."
+  ],
+  "xlim": [
+    "xlim([lo hi])",
+    "Set or query the x limits; xlim auto resets them."
+  ],
+  "ylim": [
+    "ylim([lo hi])",
+    "Set or query the y limits; ylim auto resets them."
+  ],
+  "grid": [
+    "grid on",
+    "Show or hide grid lines."
+  ],
+  "legend": [
+    "legend('a', 'b')",
+    "Name the plotted series; legend off removes the legend. The position is chosen automatically."
+  ],
+  "imagesc": [
+    "imagesc(C, [lo hi])",
+    "Display a matrix scaled through the colormap (default: an approximation of parula)."
+  ],
+  "image": [
+    "image(C)",
+    "Display values as colormap rows (double: 1-based, integers: 0-based), or an RGB array."
+  ],
+  "colormap": [
+    "colormap(map)",
+    "Set the figure colormap by name (gray, jet, hot, bone, hsv, parula) or an m-by-3 matrix."
+  ],
+  "colorbar": [
+    "colorbar",
+    "Show the color scale of the current axes; colorbar off hides it."
+  ],
+  "text": [
+    "text(x, y, str)",
+    "Write text at data coordinates."
+  ],
+  "gray": [
+    "gray(m)",
+    "Gray colormap, m-by-3 (default m = 256)."
+  ],
+  "jet": [
+    "jet(m)",
+    "Jet colormap, m-by-3 (default m = 256)."
+  ],
+  "hot": [
+    "hot(m)",
+    "Black-red-yellow-white colormap, m-by-3 (default m = 256)."
+  ],
+  "bone": [
+    "bone(m)",
+    "Gray colormap with a blue tint, m-by-3 (default m = 256)."
+  ],
+  "hsv": [
+    "hsv(m)",
+    "Hue circle colormap, m-by-3 (default m = 256)."
   ]
 };
 

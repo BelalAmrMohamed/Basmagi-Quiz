@@ -8,7 +8,7 @@ import { MatlabError } from './parser';
 import type { FigureSpec, PlotAxes, PlotItem } from '../../../shared/plot-spec';
 export type { FigureSpec, PlotAxes, PlotItem } from '../../../shared/plot-spec';
 
-export interface Fig { id: number; rows: number; cols: number; axes: PlotAxes[]; /** index into `axes` of the current axes, -1 = none */ cur: number; rev: number }
+export interface Fig { id: number; rows: number; cols: number; axes: PlotAxes[]; /** index into `axes` of the current axes, -1 = none */ cur: number; rev: number; /** set by colormap(); new axes of the figure start with it */ cmap: number[][] | null }
 
 export interface FlushSink {
   /** A figure that is exactly one undecorated image: emitted as the classic `img` output. */
@@ -59,7 +59,7 @@ export class Figures {
   /** `figure`: new figure with the lowest unused number, made current. */
   create(): Fig { return this.make(this.lowestFreeId()); }
   private make(id: number): Fig {
-    const f: Fig = { id, rows: 1, cols: 1, axes: [], cur: -1, rev: 0 };
+    const f: Fig = { id, rows: 1, cols: 1, axes: [], cur: -1, rev: 0, cmap: null };
     this.figs.set(id, f); this.curId = id; return f;
   }
   /** `figure(n)`: select figure n, creating it when it does not exist. `created` tells which. */
@@ -73,7 +73,7 @@ export class Figures {
   current(): Fig { return this.figs.get(this.curId) ?? this.create(); }
 
   /** `clf`: empty the current figure (one cell, no axes). */
-  clf() { const f = this.current(); f.rows = 1; f.cols = 1; f.axes = []; f.cur = -1; this.touch(f); }
+  clf() { const f = this.current(); f.rows = 1; f.cols = 1; f.axes = []; f.cur = -1; f.cmap = null; this.touch(f); }
   /** Remove figure `id`; the current figure becomes the highest remaining number (or none). */
   close(id: number) {
     if (!this.figs.delete(id)) return;
@@ -88,7 +88,7 @@ export class Figures {
     if (f.rows !== m || f.cols !== n) { f.rows = m; f.cols = n; f.axes = []; }
     const [r, c] = cellOf(p, n);
     let i = f.axes.findIndex(a => a.r === r && a.c === c);
-    if (i < 0) { f.axes.push(newAxes(r, c)); i = f.axes.length - 1; }
+    if (i < 0) { f.axes.push({ ...newAxes(r, c), colormap: f.cmap }); i = f.axes.length - 1; }
     f.cur = i; this.touch(f);
     return f.axes[i];
   }
@@ -96,7 +96,7 @@ export class Figures {
   gca(): PlotAxes {
     const f = this.current();
     if (f.cur < 0 || !f.axes[f.cur]) {
-      if (!f.axes.length) f.axes.push(newAxes(0, 0));
+      if (!f.axes.length) f.axes.push({ ...newAxes(0, 0), colormap: f.cmap });
       f.cur = f.axes.length - 1; this.touch(f);
     }
     return f.axes[f.cur];
@@ -105,15 +105,17 @@ export class Figures {
   changed() { const f = this.figs.get(this.curId); if (f) this.touch(f); }
 
   /**
-   * Add a plot item to the current axes. Without `hold on` the axes is first reset (items and
-   * decorations, like MATLAB's NextPlot = 'replace'; the colormap is kept); with it the item is appended.
+   * Add the items of one plotting call to the current axes. Without `hold on` the axes is first reset (items and
+   * decorations, like MATLAB's NextPlot = 'replace'; the colormap is kept); with it the items are appended.
    */
-  add(item: PlotItem): PlotAxes {
+  add(...items: PlotItem[]): PlotAxes {
     const ax = this.gca();
     if (!ax.hold) { const keep = ax.colormap; Object.assign(ax, newAxes(ax.r, ax.c), { colormap: keep }); }
-    ax.items.push(item); this.changed();
+    ax.items.push(...items); this.changed();
     return ax;
   }
+  /** Append items without ever replacing what is drawn (MATLAB's `text`). */
+  annotate(...items: PlotItem[]) { this.gca().items.push(...items); this.changed(); }
   /** `hold on` / `hold off` / `hold` (toggle) on the current axes. */
   setHold(mode: 'on' | 'off' | 'toggle') {
     const ax = this.gca();
@@ -125,7 +127,7 @@ export class Figures {
   plainImage(f: Fig): Extract<PlotItem, { t: 'image' }> | null {
     if (f.rows * f.cols !== 1 || f.axes.length !== 1) return null;
     const a = f.axes[0];
-    if (a.items.length !== 1 || a.items[0].t !== 'image') return null;
+    if (a.items.length !== 1 || a.items[0].t !== 'image' || a.items[0].ticks) return null;
     if (a.title || a.xlabel || a.ylabel || a.xlim || a.ylim || a.grid || a.legend.length || a.colorbar || a.equal || a.tight || a.square || a.off) return null;
     return a.items[0];
   }

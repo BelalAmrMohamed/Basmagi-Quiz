@@ -1,5 +1,6 @@
 import { T, V, C, S, Cls, isT, isC, isS, isStr, toStr, scalarOf, numel, sat, mk, num, cat, dimStr, mkStruct, outCls } from './values';
 import { Def, err, T_, dimsFrom, rnd, setSeed, randnSample } from './lib-common';
+import { drawBars } from './lib-plot';
 
 function magicSquare(n: number): number[] {
   if (n === 0) return [];
@@ -461,7 +462,7 @@ export function registerArray(def: Def) {
     return [mk('double', isRow ? [1, m] : [m, 1], counts), bin];
   });
 
-  def('hist', a => {
+  def('hist', (a, nargout, I) => {
     const data = T_(a[0], 'hist');
     const kOrCenters = a[1] ? T_(a[1], 'hist') : num(10);
     let lo = Infinity, hi = -Infinity;
@@ -482,6 +483,11 @@ export function registerArray(def: Def) {
         if (d < bd) { bd = d; best = i; }
       }
       counts[best]++;
+    }
+    if (nargout === 0) { // draw it: touching bars at the bin centers
+      const width = centers.length > 1 ? Math.min(...centers.slice(1).map((c, i) => Math.abs(c - centers[i]))) || 1 : hi > lo ? hi - lo : 1;
+      drawBars(I.figs, [{ x: centers, y: Array.from(counts), width }]);
+      return [];
     }
     return [mk('double', [1, counts.length], counts), mk('double', [1, centers.length], centers)];
   });

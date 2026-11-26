@@ -2,6 +2,7 @@ import { parse, MatlabError } from './parser';
 import { registerMath } from './lib-math';
 import { registerArray } from './lib-array';
 import { registerString } from './lib-string';
+import { registerPlot, addImage, drawBars, type ImageSource } from './lib-plot';
 import { Figures, type FigureSpec } from './figures';
 import { T, V, S, C, FuncHandle, Idx, Cls, isT, isC, isS, isF, mkStruct, mk, num, str, toStr, isStr, scalarOf, numel, sat, ew, binop, transpose, index, assign, cat, display, dimStr, PrintOpts, idxList, effDims, outCls, numCls, fltCls, isIntCls, INT_RANGE, CLASS_NAMES, CLASS_BYTES, toUnit, fromUnit } from './values';
 
@@ -812,10 +813,12 @@ def('help doc lookfor', (a, _n, I) => {
   else I.host.print('MLWeb help: supported educational MATLAB subset. Try imread, imshow, histeq, switch, cell, struct, size, or help command.\n');
   return [];
 });
-def('format hold close', () => []);
+def('format', () => []);
 def('figure', (a, nargout, I) => {
   I.flushFigures();
   let id: number;
+  // figure('Name', 'x', ...): window properties are accepted and ignored
+  if (a.length && isStr(a[0]) && Number.isNaN(Number(toStr(a[0])))) a = [];
   if (a.length) {
     const n = isStr(a[0]) ? Number(toStr(a[0])) : scalarOf(a[0], 'figure');
     const { fig, created } = I.figs.select(n); id = fig.id;
@@ -852,13 +855,37 @@ function show(tool: boolean): Builtin {
     // Like MATLAB's imtool: the window is named after the variable (imtool(I)) or the file (imtool('a.png')); nothing for other expressions.
     const a0 = I.curArgs?.[0];
     const name: string | undefined = a0?.k === 'id' ? a0.n : a0?.k === 'str' ? String(a0.v).split(/[\\/]/).pop() || undefined : undefined;
-    if (isStr(a[0])) { const im = readImg(I, toStr(a[0])); a = [toTensor(im), ...(im.colormap ? [mk('double', [im.colormap.length, 3], im.colormap.map(r => r[0]).concat(im.colormap.map(r => r[1]), im.colormap.map(r => r[2])))] : [])]; }
-    const t = T_(a[0], 'imshow'), map = a[1] && isT(a[1]) && a[1].dims[1] === 3 ? a[1] : undefined;
-    const b = toBytes(t, map), rgb = new Uint8Array(b.width * b.height * 3);
+    if (isStr(a[0])) { const im = readImg(I, toStr(a[0])); a = [toTensor(im), ...(im.colormap ? [mk('double', [im.colormap.length, 3], im.colormap.map(r => r[0]).concat(im.colormap.map(r => r[1]), im.colormap.map(r => r[2])))] : []), ...a.slice(1)]; }
+    const t = T_(a[0], 'imshow');
+    // second argument: [] or [lo hi] = display range, m-by-3 = colormap of an indexed image
+    const opt = a[1] && isT(a[1]) && a[1].cls !== 'char' ? a[1] : undefined;
+    const map = opt && opt.data.length && opt.dims.length === 2 && opt.dims[1] === 3 ? opt : undefined;
+    const gray = !map && t.dims.length === 2;
+    let range: [number, number] | undefined;
+    if (opt && !map) {
+      if (opt.data.length === 2) { range = [opt.data[0], opt.data[1]]; if (!(range[0] < range[1])) err('Error using imshow: Display range [low high] must be increasing.'); }
+      else if (!opt.data.length) {
+        let lo = Infinity, hi = -Infinity; for (const v of t.data) if (Number.isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        if (lo > hi) { lo = 0; hi = 1; } else if (lo === hi) hi = lo + 1;
+        range = [lo, hi];
+      } else err('Error using imshow: Display range must be [] or a two-element vector.');
+    }
+    // the range only applies to grayscale images (MATLAB ignores it for truecolor)
+    const scaled = gray && range ? mk('double', t.dims.slice(), t.data.map(v => (v !== v ? 0 : (v - range![0]) / (range![1] - range![0])))) : t;
+    const b = toBytes(scaled, map), rgb = new Uint8Array(b.width * b.height * 3);
     for (let p = 0; p < b.width * b.height; p++) for (let k = 0; k < 3; k++) rgb[p * 3 + k] = b.data[p * b.channels + (b.channels === 3 ? k : 0)];
     const img = { width: b.width, height: b.height, rgb };
     if (tool) { I.flushFigures(); I.host.showImage(img, { tool: true, name, fig: I.figs.curId || 1 }); return []; }
-    I.figs.add({ t: 'image', w: b.width, h: b.height, rgb, name }); return [];
+    if (gray) range ??= INT_RANGE[t.cls] ? [INT_RANGE[t.cls][0], INT_RANGE[t.cls][1]] : [0, 1];
+    let source: ImageSource | undefined, cmap: number[][] | null = null;
+    if (gray) source = { kind: 'gray', rgb };
+    else if (map && t.dims.length === 2) {
+      const m = map.dims[0], ix = new Int32Array(b.width * b.height);
+      cmap = Array.from({ length: m }, (_, i) => [map.data[i], map.data[i + m], map.data[i + 2 * m]]);
+      for (let i = 0; i < b.height; i++) for (let j = 0; j < b.width; j++) ix[i * b.width + j] = Math.min(m - 1, Math.max(0, t.data[i + b.height * j]));
+      source = { kind: 'indexed', ix, base: cmap };
+    }
+    addImage(I.figs, { t: 'image', w: b.width, h: b.height, rgb, name, ...(gray ? { range } : {}) }, source, cmap); return [];
   };
 }
 def('imshow', show(false)); def('imtool', show(true));
@@ -957,11 +984,20 @@ const histBin = (cls: Cls, v: number, bins: number, forEq = false): number => {
   if (r) return cls === 'uint8' ? v : Math.min(bins - 1, Math.max(0, Math.floor(((v - r[0]) * 256) / (r[1] - r[0] + 1))));
   return forEq ? Math.min(bins - 1, Math.floor(v * bins)) : Math.min(255, Math.max(0, Math.round(v * 255)));
 };
-def('imhist', (a, n) => {
-  const t = T_(a[0], 'imhist'); if (n === 0) err('imhist: plotting is not available yet; call counts = imhist(I) to get the histogram.');
-  const bins = t.cls === 'logical' ? 2 : 256, o = mk('double', [bins, 1]);
-  for (const v of t.data) o.data[histBin(t.cls, v, bins)]++;
-  return [o];
+def('imhist', (a, nargout, I) => {
+  const t = T_(a[0], 'imhist'), asked = a[1] ? T_(a[1], 'imhist') : null;
+  if (asked && (asked.data.length !== 1 || !Number.isInteger(asked.data[0]) || asked.data[0] < 1 || asked.data[0] > 65536)) err('Error using imhist: Number of bins must be a positive integer (imhist(X, map) is not supported).');
+  const logical = t.cls === 'logical', bins = logical ? 2 : asked ? asked.data[0] : 256, o = mk('double', [bins, 1]);
+  // 256 bins keep the class mapping above; another count spreads the class range over `bins` centers
+  for (const v of t.data) o.data[logical || bins === 256 ? histBin(t.cls, v, bins) : Math.min(bins - 1, Math.max(0, Math.round(toUnit(t.cls, v) * (bins - 1))))]++;
+  const [lo, hi] = INT_RANGE[t.cls] ?? [0, 1];
+  const centers = (a0: number, a1: number) => Array.from({ length: bins }, (_, i) => (bins === 1 ? a0 : a0 + (i * (a1 - a0)) / (bins - 1)));
+  if (nargout === 0) { // draw it: x on the 0..255 scale (0 and 1 for logical images)
+    const top = logical ? 1 : 255;
+    drawBars(I.figs, [{ x: centers(0, top), y: Array.from(o.data), width: bins > 1 ? top / (bins - 1) : top, ramp: true }]);
+    return [];
+  }
+  return nargout > 1 ? [o, mk('double', [bins, 1], centers(lo, hi))] : [o];
 });
 def('histeq', (a, nargout) => {
   const image = T_(a[0], 'histeq');
@@ -1225,3 +1261,4 @@ def('im2bw', (a, n, I) => { let t = T_(a[0], 'im2bw'); if (t.dims.length === 3) 
 registerMath(def);
 registerArray(def);
 registerString(def);
+registerPlot(def);

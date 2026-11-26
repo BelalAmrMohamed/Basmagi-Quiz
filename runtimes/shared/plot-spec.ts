@@ -8,12 +8,18 @@
 export type LineSpec = { color?: string | [number, number, number]; style?: '-' | '--' | ':' | '-.' | 'none'; marker?: string; width?: number };
 
 export type PlotItem =
-  /** `rgb` is row-major, 3 bytes per pixel, already mapped through the colormap. `range` is the [lo hi] used (for colorbar labels). */
-  | { t: 'image'; w: number; h: number; rgb: Uint8Array; range?: [number, number]; name?: string }
+  /**
+   * `rgb` is row-major, 3 bytes per pixel, already mapped through the colormap. `range` is the [lo hi] used (for colorbar labels),
+   * `cmap` the colormap that made the pixels (absent = gray). `ticks`: draw axis ticks around it (imagesc, image, `axis on`).
+   * Pixel centers are at x = 1..w, y = 1..h with y growing downwards.
+   */
+  | { t: 'image'; w: number; h: number; rgb: Uint8Array; range?: [number, number]; name?: string; cmap?: number[][]; ticks?: boolean }
   | { t: 'line'; x: number[]; y: number[]; spec: LineSpec }
-  | { t: 'bar'; x: number[]; y: number[]; width: number }
-  | { t: 'stem'; x: number[]; y: number[] }
-  | { t: 'scatter'; x: number[]; y: number[] }
+  /** `x` are the bar centers, `width` is in x units. `ramp`: gray-ramp strip under the axis (imhist). */
+  | { t: 'bar'; x: number[]; y: number[]; width: number; spec?: LineSpec; ramp?: boolean }
+  | { t: 'stem'; x: number[]; y: number[]; spec?: LineSpec; filled?: boolean }
+  /** `size` is the marker area in points^2, as in MATLAB. */
+  | { t: 'scatter'; x: number[]; y: number[]; spec?: LineSpec; filled?: boolean; size?: number }
   | { t: 'text'; x: number; y: number; s: string };
 
 export interface PlotAxes {
