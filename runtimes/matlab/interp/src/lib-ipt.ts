@@ -6,6 +6,10 @@
 import { T, V, Cls, isStr, toStr, mk, num, sat, toUnit, fromUnit, ew, outCls, INT_RANGE, CLASS_NAMES } from './values';
 import { Def, T_, err, rnd, randnSample } from './lib-common';
 import { registerFilter, filterT } from './lib-filter';
+import { registerEdge } from './lib-edge';
+import { registerGeom } from './lib-geom';
+import { registerColor } from './lib-color';
+import { registerMorph } from './lib-morph';
 
 const lc = (v: V) => toStr(v).toLowerCase();
 const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
@@ -173,6 +177,10 @@ function imnoise(a: V[]): T {
 
 export function registerIpt(def: Def) {
   registerFilter(def);
+  registerEdge(def);
+  registerGeom(def);
+  registerColor(def);
+  registerMorph(def);
 
   def('stretchlim', a => {
     const I = numeric(a[0], 'stretchlim'), t = a[1] === undefined || T_(a[1], 'stretchlim').data.length === 0 ? null : T_(a[1], 'stretchlim');

@@ -119,6 +119,26 @@ export function runLectureTests({ run, todo, val, eq, lecture }: LectureHelpers)
     imshow(g), figure, imhist(g)
     figure, imhist(histeq(g))
   `, () => eq([lecture.shown.map((s: any) => s.fig), lecture.plots.map((q: any) => q.id), lecture.plots.map((q: any) => q.spec.axes[0].items[0].y.reduce((a: number, b: number) => a + b, 0))], [[1], [2, 3], [40000, 40000]]));
-  todo('Book labs ch.1-4: peppers.png, edge(G,sobel), title, mean(I,3), imfinfo.BitDepth', 'Phase 5');
+  // Book labs, chapter 1: peppers.png (aliased to the course picture) -> rgb2gray -> edge(G,'sobel') -> three figures with titles
+  run('Book labs ch.1-4: peppers.png, rgb2gray, edge(G,sobel), figure/imshow/title, mean(I,3), imfinfo.BitDepth', `
+    I = imread('peppers.png');
+    figure; imshow(I); title('Original');
+    G = rgb2gray(I);
+    figure; imshow(G); title('Gray');
+    E = edge(G, 'sobel');
+    figure; imshow(E); title('Sobel edges');
+    M = mean(I, 3);
+    info = imfinfo('peppers.png');
+    bd = info.BitDepth;
+    sg = size(G); se = size(E); sm = size(M); ne = nnz(E); ce = strcmp(class(E), 'logical');
+  `, (o, I) => {
+    // title() turns an image figure into a plot figure with an image item, so the three figures arrive as plots
+    const pl = lecture.plots;
+    if (o !== '') return `unexpected output ${JSON.stringify(o)}`;
+    if (pl.length !== 3) return `expected 3 figures, got ${pl.length} (images posted: ${lecture.shown.length})`;
+    const items = pl.map((q: any) => q.spec.axes[0].items[0]), [w, h] = [items[0].w, items[0].h];
+    return eq([pl.map((q: any) => q.id), pl.map((q: any) => q.spec.axes[0].title), items.map((i: any) => i.t), items.every((i: any) => i.w === w && i.h === h), val(I, 'sg'), val(I, 'se'), val(I, 'sm'), val(I, 'bd'), val(I, 'ce'), val(I, 'ne')[0] > 0],
+      [[1, 2, 3], ['Original', 'Gray', 'Sobel edges'], ['image', 'image', 'image'], true, [h, w], [h, w], [h, w], [24], [1], true]);
+  });
   todo('L9 simulated webcam motion detection (imaqhwinfo, videoinput, getsnapshot, pause, beep)', 'Phase 8');
 }

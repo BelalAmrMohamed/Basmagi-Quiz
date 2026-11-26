@@ -343,12 +343,12 @@ export const FUNCTION_DOCS: Record<string, [signature: string, description: stri
     "Crop an image."
   ],
   "imresize": [
-    "imresize(A, scale)",
-    "Resize an image."
+    "B = imresize(A, scale | [m n], method, 'Antialiasing', tf)",
+    "Resize an image; scale is a factor (size rounded up) or [rows cols] (one may be NaN). Methods: 'nearest', 'bilinear', 'bicubic' (default). Shrinking with bilinear or bicubic widens the kernel (anti-aliasing) unless 'Antialiasing', false. The class of A is kept."
   ],
   "imrotate": [
-    "imrotate(A, angle)",
-    "Rotate an image."
+    "B = imrotate(A, angle, method, bbox)",
+    "Rotate an image counterclockwise by angle degrees about its center. method: 'nearest' (default), 'bilinear', 'bicubic'; bbox: 'loose' (default, whole rotated image) or 'crop' (same size as A). Uncovered pixels are 0."
   ],
   "imhist": [
     "[counts, x] = imhist(I, n)",
@@ -445,6 +445,90 @@ export const FUNCTION_DOCS: Record<string, [signature: string, description: stri
   "imnoise": [
     "J = imnoise(I, type, ...)",
     "Add noise: 'gaussian' (mean 0, variance 0.01), 'salt & pepper' (density 0.05) or 'speckle' (variance 0.04), on the 0-1 scale. Seeded through rng; the class of I is kept."
+  ],
+  "edge": [
+    "[BW, thresh] = edge(I, method, thresh, ...)",
+    "Edges of a grayscale image as a logical image. Methods: 'sobel' (default), 'prewitt' and 'roberts' (options 'horizontal', 'vertical', 'both', 'nothinning'), 'log' (thresh, sigma = 2) and 'canny' (thresh scalar or [low high], sigma = sqrt(2)). The second output is the threshold used."
+  ],
+  "imtranslate": [
+    "B = imtranslate(A, [tx ty], method, 'FillValues', v, 'OutputView', view)",
+    "Shift an image tx columns right and ty rows down (negative values go the other way). method: 'linear' (default), 'nearest', 'cubic'; OutputView 'same' (default) or 'full'; uncovered pixels use FillValues (default 0)."
+  ],
+  "hsv2rgb": [
+    "rgb = hsv2rgb(hsv)",
+    "Convert HSV (hue, saturation, value, each 0 to 1) to RGB. Accepts an M-by-N-by-3 image or an m-by-3 colormap of class double or single."
+  ],
+  "ycbcr2rgb": [
+    "rgb = ycbcr2rgb(ycbcr)",
+    "Convert YCbCr to RGB (inverse of rgb2ycbcr). Accepts uint8, uint16, double or single; the result has the class of the input."
+  ],
+  "ntsc2rgb": [
+    "rgb = ntsc2rgb(yiq)",
+    "Convert NTSC (YIQ) to RGB (inverse of rgb2ntsc); the result is clipped to 0-1."
+  ],
+  "rgb2lab": [
+    "lab = rgb2lab(rgb)",
+    "Convert sRGB to CIE L*a*b* with the D65 white point; L is 0 to 100. Accepts uint8, uint16, double or single (M-by-N-by-3 or m-by-3); the result is double (single for single input)."
+  ],
+  "lab2rgb": [
+    "rgb = lab2rgb(lab, 'OutputType', type)",
+    "Convert CIE L*a*b* (sRGB, D65) to RGB; the result is double in 0-1 unless OutputType is 'uint8', 'uint16' or 'single'."
+  ],
+  "rgb2ind": [
+    "[X, map] = rgb2ind(RGB, n | tol | map)",
+    "Convert an RGB image to an indexed image with n colors, a uniform-quantization tolerance, or a given colormap. X holds 0-based indices (uint8, or uint16 above 256 colors); map is m-by-3 in 0-1. No dithering."
+  ],
+  "ind2rgb": [
+    "RGB = ind2rgb(X, map)",
+    "Convert an indexed image to RGB (double). Indices of class double or single are 1-based; integer classes are 0-based. Out-of-range indices are clamped."
+  ],
+  "gray2ind": [
+    "[X, map] = gray2ind(I, n)",
+    "Convert a grayscale image to an indexed image with n gray levels (default 64): X = round(I*(n-1)), uint8 (uint16 above 256), and map = gray(n)."
+  ],
+  "ind2gray": [
+    "I = ind2gray(X, map)",
+    "Convert an indexed image to grayscale using the colormap intensities (0.299 R + 0.587 G + 0.114 B); the result has the class of X."
+  ],
+  "strel": [
+    "se = strel(shape, ...)",
+    "Structuring element: strel('square', w), 'rectangle' [m n], 'diamond' r, 'disk' r (n = 4 approximates, 0 is exact), 'line' len deg, 'arbitrary' nhood (height). Returns a struct with Neighborhood and Height."
+  ],
+  "getnhood": [
+    "nhood = getnhood(se)",
+    "Neighborhood (logical matrix) of a structuring element; a numeric array is returned as logical."
+  ],
+  "imerode": [
+    "J = imerode(I, se)",
+    "Erosion: the minimum over the neighborhood; pixels outside the image count as the maximum of the class. Binary and grayscale, per channel for RGB; se is a strel or a 0/1 array."
+  ],
+  "imdilate": [
+    "J = imdilate(I, se)",
+    "Dilation: the maximum over the (reflected) neighborhood; pixels outside the image count as the minimum of the class. Binary and grayscale, per channel for RGB."
+  ],
+  "imopen": [
+    "J = imopen(I, se)",
+    "Opening: erosion followed by dilation with the same structuring element."
+  ],
+  "imclose": [
+    "J = imclose(I, se)",
+    "Closing: dilation followed by erosion with the same structuring element."
+  ],
+  "imfill": [
+    "J = imfill(I, 'holes')",
+    "Fill holes: background pixels not connected (4-connected) to the border become foreground. Also fills grayscale basins."
+  ],
+  "bwlabel": [
+    "[L, num] = bwlabel(BW, conn)",
+    "Label connected components (conn 4 or 8, default 8); labels are numbered in the order their first pixel is met scanning column by column."
+  ],
+  "bwareaopen": [
+    "BW2 = bwareaopen(BW, P, conn)",
+    "Remove connected components that have fewer than P pixels (conn 4 or 8, default 8)."
+  ],
+  "regionprops": [
+    "s = regionprops(L, 'Area', 'Centroid', 'BoundingBox')",
+    "Measure the regions of a label matrix (or a logical image, labeled 8-connected). Returns a struct array with Area, Centroid [x y] and BoundingBox [x y width height]."
   ],
   "histeq": [
     "histeq(A)",

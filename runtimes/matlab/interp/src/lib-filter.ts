@@ -80,7 +80,7 @@ function checkImg(A: T, fn: string, pos = 1, name = 'A') {
 }
 
 // ---------- fspecial ----------
-function fspecial(a: V[]): T {
+export function fspecial(a: V[]): T {
   const type = a[0] ? lc(a[0]) : err('Error using fspecial: Not enough input arguments.');
   const arg = (k: number) => (a[k] === undefined ? undefined : T_(a[k], 'fspecial'));
   const size2 = (k: number, def: number[]): [number, number] => {

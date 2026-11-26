@@ -842,9 +842,9 @@ function toBytes(t: T, map?: T): { width: number; height: number; channels: 1 | 
   const h = t.dims[0], w = t.dims[1], c = t.dims[2] ?? 1;
   if (t.dims.length > 3 || (c !== 1 && c !== 3)) err('Unsupported image: expected an M-by-N or M-by-N-by-3 array.');
   const to8 = (v: number) => (t.cls === 'uint8' ? v : Math.max(0, Math.min(255, Math.round(toUnit(t.cls, v) * 255))));
-  if (map && c === 1) { // indexed
+  if (map && c === 1) { // indexed: double/single indices are 1-based (MATLAB), integer classes 0-based
     const out = new Uint8Array(h * w * 3), m = map.dims[0];
-    for (let i = 0; i < h; i++) for (let j = 0; j < w; j++) { const ix = Math.min(m - 1, Math.max(0, t.data[i + h * j])); for (let k = 0; k < 3; k++) out[(i * w + j) * 3 + k] = Math.round(255 * Math.min(1, Math.max(0, map.data[ix + m * k]))); }
+    for (let i = 0; i < h; i++) for (let j = 0; j < w; j++) { const ix = Math.min(m - 1, Math.max(0, Math.floor(t.data[i + h * j]) - (t.cls === 'double' || t.cls === 'single' ? 1 : 0))); for (let k = 0; k < 3; k++) out[(i * w + j) * 3 + k] = Math.round(255 * Math.min(1, Math.max(0, map.data[ix + m * k]))); }
     return { width: w, height: h, channels: 3, data: out };
   }
   const out = new Uint8Array(h * w * c);
@@ -883,7 +883,7 @@ function show(tool: boolean): Builtin {
     else if (map && t.dims.length === 2) {
       const m = map.dims[0], ix = new Int32Array(b.width * b.height);
       cmap = Array.from({ length: m }, (_, i) => [map.data[i], map.data[i + m], map.data[i + 2 * m]]);
-      for (let i = 0; i < b.height; i++) for (let j = 0; j < b.width; j++) ix[i * b.width + j] = Math.min(m - 1, Math.max(0, t.data[i + b.height * j]));
+      for (let i = 0; i < b.height; i++) for (let j = 0; j < b.width; j++) ix[i * b.width + j] = Math.min(m - 1, Math.max(0, Math.floor(t.data[i + b.height * j]) - (t.cls === 'double' || t.cls === 'single' ? 1 : 0)));
       source = { kind: 'indexed', ix, base: cmap };
     }
     addImage(I.figs, { t: 'image', w: b.width, h: b.height, rgb, name, ...(gray ? { range } : {}) }, source, cmap); return [];
@@ -951,32 +951,6 @@ def('imcrop', a => {
   const rows = mk('double', [1, Math.max(0, r1 - r0 + 1)]), cols = mk('double', [1, Math.max(0, c1 - c0 + 1)]);
   rows.data.forEach((_, i) => (rows.data[i] = r0 + i)); cols.data.forEach((_, i) => (cols.data[i] = c0 + i));
   return [index(t, t.dims.length === 3 ? [rows, cols, 'colon'] : [rows, cols])];
-});
-def('imresize', (a, _n, I) => {
-  const t = T_(a[0], 'imresize'), H = t.dims[0], W = t.dims[1], C = t.dims[2] ?? 1, s = T_(a[1], 'imresize');
-  const nh = s.data.length === 1 ? Math.ceil(H * s.data[0]) : s.data[0], nw = s.data.length === 1 ? Math.ceil(W * s.data[0]) : s.data[1];
-  let method = a[2] && isStr(a[2]) ? toStr(a[2]).toLowerCase() : 'bicubic';
-  if (method === 'bicubic') { I.host.warn?.("imresize: 'bicubic' is not implemented yet; using 'bilinear'."); method = 'bilinear'; }
-  if (method !== 'nearest' && method !== 'bilinear') err(`Error using imresize: unsupported method '${method}'.`);
-  const o = mk(t.cls, t.dims.length === 3 ? [nh, nw, C] : [nh, nw]);
-  for (let k = 0; k < C; k++) for (let i = 0; i < nh; i++) for (let j = 0; j < nw; j++) {
-    const sy = (i + 0.5) * H / nh - 0.5, sx = (j + 0.5) * W / nw - 0.5; let v: number;
-    const at = (r: number, c: number) => t.data[Math.min(H - 1, Math.max(0, r)) + H * Math.min(W - 1, Math.max(0, c)) + H * W * k];
-    if (method === 'nearest') v = at(Math.floor(sy + 0.5), Math.floor(sx + 0.5));
-    else { const y0 = Math.floor(sy), x0 = Math.floor(sx), fy = sy - y0, fx = sx - x0; v = (1 - fy) * ((1 - fx) * at(y0, x0) + fx * at(y0, x0 + 1)) + fy * ((1 - fx) * at(y0 + 1, x0) + fx * at(y0 + 1, x0 + 1)); }
-    o.data[i + nh * j + nh * nw * k] = sat(t.cls, v);
-  }
-  return [o];
-});
-def('imrotate', a => {
-  const t = T_(a[0], 'imrotate'), ang = ((scalarOf(a[1]) % 360) + 360) % 360, H = t.dims[0], W = t.dims[1], C = t.dims[2] ?? 1;
-  if (ang % 90 !== 0) err('imrotate currently supports multiples of 90 degrees only.');
-  const q = ang / 90, nh = q % 2 ? W : H, nw = q % 2 ? H : W, o = mk(t.cls, t.dims.length === 3 ? [nh, nw, C] : [nh, nw]);
-  for (let k = 0; k < C; k++) for (let i = 0; i < H; i++) for (let j = 0; j < W; j++) {
-    const [ni, nj] = q === 0 ? [i, j] : q === 1 ? [W - 1 - j, i] : q === 2 ? [H - 1 - i, W - 1 - j] : [j, H - 1 - i];
-    o.data[ni + nh * nj + nh * nw * k] = t.data[i + H * j + H * W * k];
-  }
-  return [o];
 });
 /** Histogram bin (0-based) of a pixel value: logical and uint8 use the value itself; other integer classes are spread over 256 bins; double/single use round(v*255) for imhist and floor(v*bins) for histeq. */
 const histBin = (cls: Cls, v: number, bins: number, forEq = false): number => {
