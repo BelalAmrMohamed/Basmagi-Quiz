@@ -6,6 +6,7 @@ import { registerIpt } from './lib-ipt';
 import { registerPlot, addImage, drawBars, type ImageSource } from './lib-plot';
 import { Figures, type FigureSpec } from './figures';
 import { T, V, S, C, FuncHandle, Idx, Cls, isT, isC, isS, isF, mkStruct, mk, num, str, toStr, isStr, scalarOf, numel, sat, ew, binop, transpose, index, assign, cat, display, dimStr, PrintOpts, idxList, effDims, outCls, numCls, fltCls, isIntCls, INT_RANGE, CLASS_NAMES, CLASS_BYTES, toUnit, fromUnit } from './values';
+import { ScalarEval, isScalarExpr } from './scalar';
 
 // ---------- host interface (browser UI and Node tests each implement this) ----------
 export interface RawImage { width: number; height: number; channels: 1 | 3; data: Uint8Array; /* row-major, interleaved */
@@ -43,6 +44,9 @@ export class Interp {
   fnStack: { name: string; nargin: number; nargout: number; f: any }[] = [];
   private endStack: { t: { dims: number[]; data: { length: number } }; pos: number; n: number }[] = [];
   private depth = 0;
+  private readonly scalar = new ScalarEval();
+  /** Allocation-free evaluation of scalar expressions. Tests switch it off to compare against the general path. */
+  scalarFastPath = true;
   /** Argument expressions (AST) of the builtin call in progress, so builtins like imtool can read the variable name. */
   curArgs: any[] | undefined;
   /** Figures of the current run (reset at the start of every run). */
@@ -136,7 +140,7 @@ export class Interp {
         }
         case 'if': {
           let done = false;
-          for (const c of s.clauses) if (this.truthy(this.eval(c.c, sc))) { const r = this.exec(c.body, sc); if (r) return r; done = true; break; }
+          for (const c of s.clauses) if (this.cond(c.c, sc)) { const r = this.exec(c.body, sc); if (r) return r; done = true; break; }
           if (!done && s.els) { const r = this.exec(s.els, sc); if (r) return r; }
           break;
         }
@@ -150,7 +154,7 @@ export class Interp {
         }
         case 'while': {
           let guard = 0;
-          while (this.truthy(this.eval(s.c, sc))) {
+          while (this.cond(s.c, sc)) {
             if (++guard > 5e6) err('Loop iteration limit (5,000,000) exceeded.');
             const r = this.exec(s.body, sc); if (r === BRK) break; if (r === RET) return r;
           }
@@ -164,6 +168,16 @@ export class Interp {
     return 0;
   }
   private truthy(v: V): boolean { const t = T_(v, 'if'); return t.data.length > 0 && t.data.every(x => x !== 0); }
+  /** Truth value of a condition; scalar conditions are decided without building a value. */
+  private cond(e: any, sc: Scope): boolean {
+    const x = this.tryScalar(e, sc);
+    return x !== undefined ? x !== 0 : this.truthy(this.eval(e, sc));
+  }
+  /** Value of a scalar expression (its class is then `this.scalar.cls`), or undefined when the general path is needed. */
+  private tryScalar(e: any, sc: Scope): number | undefined {
+    if (!this.scalarFastPath || !isScalarExpr(e)) return undefined;
+    return this.scalar.run(e, sc, this.endStack.length ? this.endStack[this.endStack.length - 1] : undefined);
+  }
 
   private sameCase(a: V, b: V): boolean {
     if (isT(a) && isT(b)) return a.cls === b.cls && a.dims.join(',') === b.dims.join(',') && a.data.length === b.data.length && a.data.every((x, i) => x === b.data[i]);
@@ -429,6 +443,11 @@ export class Interp {
     return [this.eval(e, sc)];
   }
   eval(e: any, sc: Scope): V {
+    // `id`, `num` and `paren` are left to the switch: a variable must be returned as is, not copied.
+    if (e.k === 'bin' || e.k === 'idx' || e.k === 'un') {
+      const x = this.tryScalar(e, sc);
+      if (x !== undefined) return num(x, this.scalar.cls);
+    }
     switch (e.k) {
       case 'num': return num(e.v);
       case 'str': return str(e.v);
@@ -456,9 +475,9 @@ export class Interp {
       }
       case 'bin': {
         if (e.op === '&&' || e.op === '||') {
-          const l = this.truthy(this.eval(e.a, sc));
+          const l = this.cond(e.a, sc);
           if (e.op === '&&' ? !l : l) return num(+l, 'logical');
-          return num(+this.truthy(this.eval(e.b, sc)), 'logical');
+          return num(+this.cond(e.b, sc), 'logical');
         }
         return binop(e.op, T_(this.eval(e.a, sc), e.op), T_(this.eval(e.b, sc), e.op), s => this.host.warn?.(s));
       }
