@@ -260,3 +260,31 @@ test('shell: a plot output replaces the earlier img/plot card of the same figure
   const cards = [...root.querySelectorAll('.fig')];
   assert.equal(JSON.stringify(cards.map((e) => [e.querySelector('.cap').firstChild.textContent, e.querySelectorAll('svg [data-role="axes"]').length])), '[["Figure 2",1],["Figure 1",2]]');
 });
+
+test('export: plot outputs become image/svg+xml in .ipynb and inline SVG in .html', async () => {
+  const dom = env(), w = dom.window, root = w.document.getElementById('root');
+  const axes = { r: 0, c: 0, items: [{ t: 'line', x: [1, 2], y: [3, 4], spec: {} }], title: 'A<B', xlabel: '', ylabel: '', xlim: null, ylim: null, grid: false, legend: [], hold: false, colormap: null, colorbar: false, equal: false, tight: false, square: false, off: false };
+  const eng = fakeEngine({ async run(_req, sink) { sink.out({ k: 'plot', fig: 1, spec: { rows: 1, cols: 1, axes: [axes] } }); } });
+  const saved = [];
+  w.URL.createObjectURL = (b) => { saved.push(b); return 'blob:x'; };
+  w.URL.revokeObjectURL = () => {};
+  w.HTMLAnchorElement.prototype.click = () => {};
+  w.mountedShell = w.T.mountShell(eng, { root, notebook: nb([{ type: 'code', source: 'plot' }]) });
+  await w.__mlweb.runCell(w.__mlweb.cells[0]); await tick(w, 60);
+  const exportAs = async (format) => {
+    root.querySelector(`#exportDialog input[value="${format}"]`).checked = true;
+    root.querySelector('#exportDialog #exportOutputs').checked = true;
+    root.querySelector('#exportDialog [data-export-accept]').click();
+    const blob = saved.at(-1);
+    return new Promise((res) => { const r = new w.FileReader(); r.onload = () => res(r.result); r.readAsText(blob); });
+  };
+  const ipynb = JSON.parse(await exportAs('ipynb'));
+  const [out] = ipynb.cells[0].outputs;
+  assert.equal(out.output_type, 'display_data');
+  const svg = out.data['image/svg+xml'].join('');
+  assert.match(svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+  assert.ok(svg.includes('A&lt;B') && svg.includes('data-role="line"') && !svg.includes('var('), 'escaped, drawn, standalone');
+  const html = await exportAs('html');
+  assert.ok(html.includes('<svg xmlns=') && !html.includes('[figure 1]'));
+  assert.match(await exportAs('script'), /\[1 figure not included\]/);
+});

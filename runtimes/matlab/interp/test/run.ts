@@ -256,7 +256,7 @@ e = []
 runPhase2({ run, val, eq });
 runPhase3({ run, val, eq });
 runPhase4({ run, val, eq, get shown() { return shown; }, get plots() { return plots; } });
-runLectureTests({ run, todo, val, eq });
+runLectureTests({ run, todo, val, eq, lecture: { get shown() { return shown; }, get plots() { return plots; } } });
 
 console.log(`\n${pass} passed, ${fail} failed${todoCount ? `, ${todoCount} todo` : ''}`);
 process.exit(fail ? 1 : 0);

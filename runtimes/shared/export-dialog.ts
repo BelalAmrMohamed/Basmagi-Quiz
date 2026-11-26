@@ -7,6 +7,8 @@ import type { Ctx, UiCell } from './ctx';
 import { h, openDialog, closeDialog, download, esc } from './dom';
 import { renderMarkdown } from './markdown';
 import { rgbToDataUrl } from './images';
+import { renderPlot, plotSvgText } from './plot-view';
+import type { FigureSpec } from './plot-spec';
 
 declare global { interface Window { __mlwebExport?: { zip?: () => void | Promise<void> }; __mlwebImport?: (f: File) => void | Promise<void>; __mlwebFileHook?: { add?(f: File): void; del?(name: string): void; rename?(from: string, to: string): void } } }
 
@@ -14,6 +16,8 @@ const lines = (s: string) => s.split('\n').map((l, i, a) => (i < a.length - 1 ? 
 const fileBase = (ctx: Ctx) =>
   (ctx.opts.notebook.title || 'notebook').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'notebook';
 const hasOutputs = (ctx: Ctx) => ctx.state.cells.some((c) => c.type === 'code' && c.outs.length > 0);
+/** A figure as a self-contained SVG file in the light theme's colors (documents have a white page). */
+const plotSvg = (spec: FigureSpec) => plotSvgText(renderPlot(spec));
 const outText = (c: UiCell) => c.outs.map((o) => (o.k === 'text' || o.k === 'err' || o.k === 'warn' ? o.s : o.k === 'diag' ? `${o.sev}: line ${o.line}: ${o.msg}\n` : '')).join('');
 
 function exportIpynb(ctx: Ctx, withOutputs: boolean) {
@@ -32,6 +36,7 @@ function exportIpynb(ctx: Ctx, withOutputs: boolean) {
       if (withOutputs) {
         for (const o of c.outs) {
           if (o.k === 'img') outputs.push({ output_type: 'display_data', metadata: {}, data: { 'image/png': rgbToDataUrl(o.w, o.h, o.rgb).split(',')[1], 'text/plain': ['<image>'] } });
+          else if (o.k === 'plot') outputs.push({ output_type: 'display_data', metadata: {}, data: { 'image/svg+xml': lines(plotSvg(o.spec)), 'text/plain': ['<figure>'] } });
           else if (o.k === 'text') stdout += o.s;
           else if (o.k === 'err' || o.k === 'warn') outputs.push({ output_type: 'stream', name: 'stderr', text: [o.s] });
           else if (o.k === 'diag') outputs.push({ output_type: 'stream', name: 'stderr', text: [`${o.sev}: line ${o.line}: ${o.msg}\n`] });
@@ -50,7 +55,7 @@ function exportScript(ctx: Ctx, withOutputs: boolean) {
   const cm = engine.exportExt === '.m' ? '%' : '//';
   const outputBlock = (c: UiCell) => {
     const text = outText(c).replace(/\s+$/, '');
-    const figs = c.outs.filter((o) => o.k === 'img').length;
+    const figs = c.outs.filter((o) => o.k === 'img' || o.k === 'plot').length;
     const rows = text ? text.split('\n').map((l) => `${cm}   ${l}`) : [];
     if (figs) rows.push(`${cm}   [${figs} figure${figs === 1 ? '' : 's'} not included]`);
     return rows.length ? `\n${cm} Output:\n` + rows.join('\n') : '';
@@ -68,7 +73,7 @@ function exportHtml(ctx: Ctx, withOutputs: boolean) {
     n += 1;
     const outs = withOutputs ? c.outs.map((o) => {
       if (o.k === 'img') return `<img alt="figure ${o.fig}" src="${rgbToDataUrl(o.w, o.h, o.rgb)}">`;
-      if (o.k === 'plot') return `<pre class="o">[figure ${o.fig}]</pre>`; // SVG export comes with plot-view (Phase 4c/4d)
+      if (o.k === 'plot') return plotSvg(o.spec);
       if (o.k === 'html') return `<div class="o">${o.html}</div>`;
       if (o.k === 'diag') return `<pre class="o ${o.sev === 'warning' ? 'warn' : 'err'}">${esc(`line ${o.line}: ${o.msg}`)}</pre>`;
       if (o.k === 'stdin') return `<pre class="o">${esc(o.label + ': ' + o.value)}</pre>`;
@@ -91,6 +96,7 @@ function exportHtml(ctx: Ctx, withOutputs: boolean) {
  pre.src{margin:0;padding:10px 12px;background:#f6f7fb;border:1px solid #dce2ed;border-radius:4px;font:13.5px/1.6 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap}
  pre.o{margin:6px 0 0;padding:6px 4px;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap} pre.o.err{background:#fff1f0;color:#b42318;padding:8px 12px}
  .code img{display:block;max-width:100%;margin-top:8px;border:1px solid #dce2ed}
+ .code div>svg{display:block;max-width:100%!important;height:auto;margin-top:8px;border:1px solid #dce2ed}
  @media print{body{padding:0} pre.src{break-inside:avoid}}
 </style>
 </head>

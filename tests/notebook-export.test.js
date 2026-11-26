@@ -32,6 +32,14 @@ test(".ipynb export round-trips through the importer", () => {
   assert.deepEqual(back.content.cells.map((c) => [c.type, c.source]), cells.map((c) => [c.type, c.source]));
 });
 
+test(".ipynb export writes plot outputs as image/svg+xml display data", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg">\n<rect/></svg>';
+  const flat = { ...rowToNotebook(local), cells: [{ id: "c1", type: "code", source: "plot(1)", outputs: [{ k: "plot", fig: 1, svg }, { k: "text", s: "x" }, { k: "plot", fig: 2 }] }] };
+  const out = notebookToIpynb(flat);
+  assert.deepEqual(out.cells[0].outputs, [{ output_type: "display_data", metadata: {}, data: { "image/svg+xml": ['<svg xmlns="http://www.w3.org/2000/svg">\n', "<rect/></svg>"], "text/plain": ["<figure>"] } }]);
+  assert.deepEqual(notebookToIpynb(local).cells[1].outputs, [], "saved notebooks have no outputs");
+});
+
 test(".m export uses %% sections and keeps code verbatim", () => {
   const m = notebookToMScript(local);
   assert.match(m, /^% My NB/);

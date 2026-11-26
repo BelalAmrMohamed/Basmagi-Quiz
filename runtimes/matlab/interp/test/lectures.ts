@@ -5,9 +5,11 @@ export interface LectureHelpers {
   todo: (name: string, phase: string) => void;
   val: (I: Interp, n: string) => number[];
   eq: (a: any, b: any) => true | string;
+  /** Images and figures posted by the current run. */
+  lecture: { shown: any[]; plots: { id: number; spec: any }[] };
 }
 
-export function runLectureTests({ run, todo, val, eq }: LectureHelpers) {
+export function runLectureTests({ run, todo, val, eq, lecture }: LectureHelpers) {
   console.log('Lectures 5-9 & Book labs');
 
   // Lecture 5: gray conversion methods + binary thresholding
@@ -97,7 +99,26 @@ export function runLectureTests({ run, todo, val, eq }: LectureHelpers) {
   `, (_o, I) => eq([val(I, 'd5'), val(I, 'szT'), val(I, 'szB'), val(I, 'px')], [[0], [200, 200], [2, 3, 3], [0, 0, 255]]));
 
   // Pending Phase 4 / 5 / 8 lecture items
-  todo('L8 imhist(g) no-output + figure; histeq', 'Phase 4');
+  // 2x3 image: levels 50, 100, 150 appear 3, 2 and 1 times
+  run('L8 imhist(g) no-output + figure; histeq', `
+    g = uint8([50 50 100; 50 100 150]);
+    figure; imhist(g)
+    h = histeq(g);
+    figure; imhist(h)
+    figure; imshow(h)
+    [c, x] = imhist(g);
+    n = [c(51) c(101) c(151) sum(c) numel(x)];
+    m = [h(1,1) < h(1,3), h(1,3) < h(2,3), h(2,3)];
+  `, (o, I) => {
+    const p = lecture.plots, bars = p[0]?.spec.axes[0].items[0];
+    if (o !== '' || p.length !== 2 || lecture.shown.length !== 1) return `output=${JSON.stringify(o)} plots=${p.length} images=${lecture.shown.length}`;
+    return eq([p.map((q: any) => q.id), lecture.shown[0].fig, bars.t, bars.x.length, [bars.y[50], bars.y[100], bars.y[150]], val(I, 'n'), val(I, 'm')], [[1, 2], 3, 'bar', 256, [3, 2, 1], [3, 2, 1, 6, 256], [1, 1, 255]]);
+  });
+  run('L8 imhist and histeq on testgray.png, each in its own figure', `
+    g = imread('testgray.png');
+    imshow(g), figure, imhist(g)
+    figure, imhist(histeq(g))
+  `, () => eq([lecture.shown.map((s: any) => s.fig), lecture.plots.map((q: any) => q.id), lecture.plots.map((q: any) => q.spec.axes[0].items[0].y.reduce((a: number, b: number) => a + b, 0))], [[1], [2, 3], [40000, 40000]]));
   todo('Book labs ch.1-4: peppers.png, edge(G,sobel), title, mean(I,3), imfinfo.BitDepth', 'Phase 5');
   todo('L9 simulated webcam motion detection (imaqhwinfo, videoinput, getsnapshot, pause, beep)', 'Phase 8');
 }

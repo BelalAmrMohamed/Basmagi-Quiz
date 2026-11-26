@@ -85,7 +85,16 @@ export function notebookAttachmentPayload(row) {
 
 const lines = (s) => s.split("\n").map((l, i, a) => (i < a.length - 1 ? l + "\n" : l));
 
-/** Jupyter nbformat 4.5 document (outputs are not stored, so code cells export without outputs). */
+/** `plot` outputs that carry their rendered SVG ({k: "plot", svg}) as Jupyter `image/svg+xml` display data. */
+const plotOutputs = (outputs) =>
+  (Array.isArray(outputs) ? outputs : [])
+    .filter((o) => o?.k === "plot" && typeof o.svg === "string" && o.svg)
+    .map((o) => ({ output_type: "display_data", metadata: {}, data: { "image/svg+xml": lines(o.svg), "text/plain": ["<figure>"] } }));
+
+/**
+ * Jupyter nbformat 4.5 document. Saved notebooks store no outputs, so their code cells export without any;
+ * a flat notebook whose code cells carry `outputs` gets its figures written as SVG.
+ */
 export function notebookToIpynb(input) {
   const nb = input?.cells && input?.title !== undefined && !input.meta ? input : rowToNotebook(input);
   return {
@@ -100,7 +109,7 @@ export function notebookToIpynb(input) {
     cells: nb.cells.map((c, i) => {
       const id = (c.id || `cell-${i + 1}`).replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 64) || `cell-${i + 1}`;
       return c.type === "code"
-        ? { id, cell_type: "code", metadata: { ...(c.stdin !== undefined ? { stdin: c.stdin } : {}), ...(c.challenge ? { challenge: c.challenge } : {}) }, execution_count: null, source: lines(c.source), outputs: [] }
+        ? { id, cell_type: "code", metadata: { ...(c.stdin !== undefined ? { stdin: c.stdin } : {}), ...(c.challenge ? { challenge: c.challenge } : {}) }, execution_count: null, source: lines(c.source), outputs: plotOutputs(c.outputs) }
         : { id, cell_type: "markdown", metadata: {}, source: lines(c.source) };
     }),
   };
