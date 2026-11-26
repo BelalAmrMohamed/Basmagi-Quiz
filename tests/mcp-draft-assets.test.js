@@ -31,6 +31,8 @@ test("Drive share links become direct downloads", () => {
   assert.match(driveDirectUrl("https://drive.google.com/file/d/1AbCdEfGhIjK/view"), /drive\.usercontent\.google\.com\/download\?id=1AbCdEfGhIjK/);
   assert.equal(driveDirectUrl("https://example.com/x.png"), "https://example.com/x.png");
 });
-test("notebook guide documents the three asset tools", () => {
-  for (const t of ["add_workspace_asset", "add_workspace_asset_from_url", "request_asset_upload"]) assert.ok(AUTHORING_GUIDE.notebook.includes(t), t);
+test("notebook guide documents unified add_workspace_asset modes", () => {
+  for (const term of ["add_workspace_asset", "base64", "url", "request_upload"]) {
+    assert.ok(AUTHORING_GUIDE.notebook.includes(term), term);
+  }
 });

@@ -10,7 +10,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Concentrate on gamefied experience and reward scheduele
 
 ## MATLAB Notebook
-* Make sure it supports everything in Lectures from 7 to 9: https://drive.google.com/drive/folders/1A2DYYsY070GQ7g87QT3tzxWzGqOjbnp1?usp=drive_link
+* Continue this plan: [plan](<plans/MLWeb Image Processing Course Coverage and Performance UX — Implementation Plan.md>). Some parts of it are already implemented.
 
 ## Offline Support.
 * Users who have Installed the application: The notebook Page (e.g., `/notebook/new` and notebooks they saved locally at `/my-content`) should work offline as well as.
@@ -19,7 +19,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ### Sign in
 ![Screenshot](image.png).
 * This is extremely annoying, it's telling me my session has ended, but its still showing me that I'm signed in in the sidebar's dropdown and in the profile page, and I don't know why are sessions ending quickly.
-* Sometimes it tells me that, then when the page reloads automatically and I find that I'm still signed in, I try again, and it works this time.
+* Sometimes it tells me that ("انتهت صلاحية الجلسة. يرجى تسجيل الدخول مجددًا."), then when the page reloads automatically and I find that I'm still signed in, I try again, and it works this time.
+* There appears to be some timeout, when it run out, people automatically get signed out, which is extremely annoying, remove it, people should never be signed out automatically.
 
 ## New Features
 
@@ -41,7 +42,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ### Result Pages
 
-#### Videos (Easy to make and intersting idea)
+#### Videos (Easy to make and are an intersting idea)
 * Add a result-page feature that displays themed meme videos based on the user’s degree or score.
 * Suggested themes include:
   * دعوية
@@ -85,34 +86,11 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 
 ## Suggestions
 
-### Notebook Page (I.E., `public/notebook.html`)
-
-#### Image Tool (`imtool`): remaining recommendations
-
-Done so far: fit-to-image window size, MATLAB-style title, touch pixel info, "..." More menu, click-to-pin, snap to neighbouring windows, readable minimized tabs.
-
-#### 1. Tile / Arrange windows (high value)
-- Buttons for Tile side-by-side, Tile stacked and Cascade, shown when two or more image windows are open.
-- Today students drag and resize windows by hand for every before/after comparison.
-
-#### 2. Link views (high value)
-- A toggle that syncs zoom and pan across image windows.
-- Shared pixel marker: hovering or pinning a pixel in one window highlights the same pixel in the others, and every status bar updates together.
-
-#### 3. Compare tool
-- Pick two windows and view them as a slider wipe, a blend or an absolute difference.
-- Useful for filtering and histogram-equalization demos.
-
-#### 4. Pixel neighbourhood
-- Show a small 5x5 grid of values around the pinned pixel (helps with convolution / filter lessons).
-- Show the value as a MATLAB expression, e.g. `I(9,9) = 184`, so students connect the window to the code.
-
-#### 5. Analysis panels
-- Histogram panel and an intensity profile along a drawn line.
-- Contrast adjustment (like MATLAB's Adjust Contrast) and a colormap selector for grayscale images.
-
-#### Notes
-- MATLAB behaviour check: two `imshow` calls in a row show only the last image (same figure and axes are reused), so the current output is correct. `imtool` opens a separate window each time.
+### Public profile for all users
+* Public profile for all users, so all users get a public `/@userName` instead of a localOnly `/profile`.
+* That profile would be public for everyone.
+* The local `المتصدرين` leaderboard (i.e., `#localLeaderboardCard`) will be replaced with a real leaderboard: Shows the top 10 students.
+* Sync is really bad between admins' profile and their localStorage.
 
 ### YouTube Update: Recommendations (not requested; propose, do not build without a go-ahead)
 

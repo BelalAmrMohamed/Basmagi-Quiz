@@ -12,10 +12,22 @@ const files = new Map<string, RawImage>();
 const post = (m: any) => (self as any).postMessage(m);
 const extOf = (n: string) => (n.split('.').pop() || 'png').toLowerCase();
 
+const IMAGE_ALIASES: Record<string, string> = {
+  'peppers.png': 'pepper.png',
+  'test5.png': 'pepper.png',
+};
+const lookupFile = (p: string): RawImage | null =>
+  files.get(p) ?? [...files].find(([k]) => k.toLowerCase() === p.toLowerCase())?.[1] ?? null;
+
 const host: Host = {
   print: (s) => post({ t: 'print', s }),
   warn: (s) => post({ t: 'warn', s }),
-  readImage: (p) => files.get(p) ?? [...files].find(([k]) => k.toLowerCase() === p.toLowerCase())?.[1] ?? null,
+  readImage: (p) => {
+    const direct = lookupFile(p);
+    if (direct) return direct;
+    const alias = IMAGE_ALIASES[p.toLowerCase()];
+    return alias ? lookupFile(alias) : null;
+  },
   writeImage(p, img) {
     const base = p.split(/[\\/]/).pop()!;
     const raw: RawImage = {
@@ -35,8 +47,10 @@ let interp = new Interp(host);
 function summary() {
   const out: any[] = [];
   for (const [name, v] of interp.vars as Map<string, any>) {
-    if (v && Array.isArray(v.dims)) out.push({ name, size: v.dims.join('x'), cls: v.cls, bytes: v.data.length * (v.cls === 'double' || v.cls === 'cell' ? 8 : v.cls === 'char' ? 2 : 1) });
-    else out.push({ name, size: '1x1', cls: 'struct', bytes: 0 });
+    if (!v) continue;
+    if (v.cls === 'struct') out.push({ name, size: (v.dims ?? [1, 1]).join('x'), cls: 'struct', bytes: 0 });
+    else if (v.cls === 'function_handle') out.push({ name, size: '1x1', cls: 'function_handle', bytes: 0 });
+    else if (Array.isArray(v.dims)) out.push({ name, size: v.dims.join('x'), cls: v.cls, bytes: v.data.length * (v.cls === 'double' || v.cls === 'cell' ? 8 : v.cls === 'char' ? 2 : 1) });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }

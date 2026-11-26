@@ -18,6 +18,11 @@ import { MATLAB_HELP } from './help';
 export const TIME_LIMIT_MS = 60_000;
 const DEFAULT_FILES = ['test.png', 'testgray.png'];
 
+const IMAGE_ALIASES: Record<string, string> = {
+  'peppers.png': 'pepper.png',
+  'test5.png': 'pepper.png',
+};
+
 export interface MatlabEngineOptions {
   baseUrl?: string;
   lang?: Lang;
@@ -124,7 +129,8 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
   function mentionedAssets(src: string): string[] {
     const found = new Set<string>();
     for (const m of src.matchAll(/['"]([^'"\n]{1,200})['"]/g)) {
-      const real = manifest.get(baseName(m[1]).toLowerCase());
+      const lower = baseName(m[1]).toLowerCase();
+      const real = manifest.get(lower) ?? manifest.get(IMAGE_ALIASES[lower] ?? '');
       if (real) found.add(real);
     }
     return [...found];
