@@ -354,6 +354,98 @@ export const FUNCTION_DOCS: Record<string, [signature: string, description: stri
     "[counts, x] = imhist(I, n)",
     "Image histogram; without outputs it draws one bar per bin (256, or 2 for logical images) on a 0-255 axis."
   ],
+  "conv2": [
+    "C = conv2(A, B, shape)",
+    "2-D convolution; shape is 'full' (default), 'same' or 'valid'. conv2(v1, v2, A) convolves the columns with v1 and the rows with v2. Result is double (single if an input is single)."
+  ],
+  "filter2": [
+    "Y = filter2(h, A, shape)",
+    "2-D correlation with the kernel h; shape is 'same' (default), 'full' or 'valid'. Result is double (single if an input is single)."
+  ],
+  "imfilter": [
+    "B = imfilter(A, h, options)",
+    "Filter an image with kernel h (correlation by default). Options: 'conv', 'replicate', 'symmetric', 'circular', a number for constant padding (default 0), 'same' (default), 'full'. The output keeps the class of A (rounded and saturated for integers); RGB images are filtered per channel."
+  ],
+  "fspecial": [
+    "h = fspecial(type, ...)",
+    "Filter kernels: 'average' [3 3], 'gaussian' [3 3] sigma 0.5, 'laplacian' alpha 0.2, 'log' [5 5] sigma 0.5, 'prewitt', 'sobel', 'disk' radius 5, 'motion' len 9 theta 0, 'unsharp' alpha 0.2."
+  ],
+  "padarray": [
+    "B = padarray(A, padsize, padval, direction)",
+    "Pad an array: padval is a number (default 0), 'replicate', 'symmetric' or 'circular'; direction is 'both' (default), 'pre' or 'post'. The class of A is kept."
+  ],
+  "medfilt2": [
+    "B = medfilt2(A, [m n], padopt)",
+    "Median filter of an m x n window (default [3 3]). padopt is 'zeros' (default), 'symmetric' or 'indexed'. For an even window the two middle values are averaged. The class of A is kept."
+  ],
+  "ordfilt2": [
+    "B = ordfilt2(A, order, domain, S, padopt)",
+    "Order-statistic filter: the order-th smallest of the pixels where domain is nonzero (optionally plus offsets S). padopt is 'zeros' (default) or 'symmetric'. ordfilt2(A,1,ones(3)) is a minimum filter."
+  ],
+  "imgaussfilt": [
+    "B = imgaussfilt(A, sigma, 'FilterSize', n, 'Padding', p)",
+    "Gaussian smoothing with standard deviation sigma (default 0.5; [rows columns] if two values). The default kernel size is 2*ceil(2*sigma)+1 and the border is replicated. The class of A is kept."
+  ],
+  "stretchlim": [
+    "lowhigh = stretchlim(I, tol)",
+    "Intensity limits (0 to 1) that clip the fraction tol = [low high] of the pixels (default [0.01 0.99]); one column per channel for RGB."
+  ],
+  "imadjust": [
+    "J = imadjust(I, [lin_lo lin_hi], [lout_lo lout_hi], gamma)",
+    "Map intensities from the input range to the output range with a gamma curve. Ranges are on the 0-1 scale; [] means default (stretchlim, [0 1]); a 2x3 range adjusts each RGB channel. The class of I is kept."
+  ],
+  "graythresh": [
+    "level = graythresh(I)",
+    "Otsu's global threshold of an image as a double in [0, 1] (256-bin histogram; ties use the mean bin)."
+  ],
+  "imbinarize": [
+    "BW = imbinarize(I, level)",
+    "Logical image that is true where I is above the level (0 to 1). Without level the Otsu threshold from graythresh is used."
+  ],
+  "immultiply": [
+    "Z = immultiply(X, Y)",
+    "Element-wise product with saturation; an integer image times a double keeps the integer class."
+  ],
+  "imdivide": [
+    "Z = imdivide(X, Y)",
+    "Element-wise quotient, rounded and saturated for integer classes (x/0 saturates, 0/0 is 0)."
+  ],
+  "imlincomb": [
+    "Z = imlincomb(k1, A1, k2, A2, ..., k, outclass)",
+    "Linear combination k1*A1 + k2*A2 + ... (+ k), computed in double, then rounded and saturated to the class of A1 (or outclass)."
+  ],
+  "mean2": [
+    "m = mean2(A)",
+    "Mean of all elements of A."
+  ],
+  "std2": [
+    "s = std2(A)",
+    "Standard deviation of all elements of A (normalized by N-1)."
+  ],
+  "corr2": [
+    "r = corr2(A, B)",
+    "Correlation coefficient of two images of the same size."
+  ],
+  "entropy": [
+    "e = entropy(I)",
+    "Entropy -sum(p.*log2(p)) of the 256-bin histogram of an image (2 bins for logical), in bits."
+  ],
+  "immse": [
+    "err = immse(X, Y)",
+    "Mean squared error between two images of the same size."
+  ],
+  "psnr": [
+    "[peaksnr, snr] = psnr(A, ref, peakval)",
+    "Peak signal-to-noise ratio in dB; the peak is 255 for uint8, 65535 for uint16 and 1 for double, unless peakval is given. The second output is the SNR."
+  ],
+  "ssim": [
+    "[ssimval, ssimmap] = ssim(A, ref)",
+    "Structural similarity index (11x11 Gaussian window, sigma 1.5, K = [0.01 0.03]); returns the mean over the whole image and the local map."
+  ],
+  "imnoise": [
+    "J = imnoise(I, type, ...)",
+    "Add noise: 'gaussian' (mean 0, variance 0.01), 'salt & pepper' (density 0.05) or 'speckle' (variance 0.04), on the 0-1 scale. Seeded through rng; the class of I is kept."
+  ],
   "histeq": [
     "histeq(A)",
     "Histogram equalization (grayscale)."

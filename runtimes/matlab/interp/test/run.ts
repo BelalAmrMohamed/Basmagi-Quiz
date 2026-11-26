@@ -6,6 +6,7 @@ import { runLectureTests } from './lectures';
 import { runPhase2 } from './phase2';
 import { runPhase3 } from './phase3';
 import { runPhase4 } from './phase4';
+import { runPhase5 } from './phase5';
 
 const A = path.join(import.meta.dirname, 'assets');
 const ALIASES: Record<string, string> = { 'peppers.png': 'pepper.png', 'test5.png': 'pepper.png' };
@@ -256,6 +257,7 @@ e = []
 runPhase2({ run, val, eq });
 runPhase3({ run, val, eq });
 runPhase4({ run, val, eq, get shown() { return shown; }, get plots() { return plots; } });
+runPhase5({ run, val, eq });
 runLectureTests({ run, todo, val, eq, lecture: { get shown() { return shown; }, get plots() { return plots; } } });
 
 console.log(`\n${pass} passed, ${fail} failed${todoCount ? `, ${todoCount} todo` : ''}`);
