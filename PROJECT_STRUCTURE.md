@@ -77,8 +77,8 @@ Run `npm run map` to regenerate this file.
 │   ├── upload-quiz.js
 │   └── user-profile.js
 │
-├── docs/ [385.15 KB, 2791 LOC]
-│   ├── plans/ [62.87 KB, 505 LOC]
+├── docs/ [385.19 KB, 2792 LOC]
+│   ├── plans/ [62.23 KB, 500 LOC]
 │   │   ├── advanced-read-aloud.md
 │   │   ├── ai-agent-on-quiz-page-prompt.md
 │   │   ├── Cpp-runtime-PLAN_remaining.md
@@ -110,8 +110,8 @@ Run `npm run map` to regenerate this file.
 │       ├── hub.html
 │       └── legal.html
 │
-├── public/ [228.74 MB, 173565 LOC]
-│   ├── assets/ [222.13 MB, 2002 LOC]
+├── public/ [228.86 MB, 173579 LOC]
+│   ├── assets/ [222.24 MB, 2007 LOC]
 │   │   ├── document-pages/ [918.4 KB, 741 LOC]
 │   │   │   ├── chatGPT/ [370.92 KB, 313 LOC]
 │   │   │   │   ├── step-1.jpeg
@@ -183,7 +183,7 @@ Run `npm run map` to regenerate this file.
 │   │   │   ├── white-icon.png
 │   │   │   └── white-icon.svg
 │   │   │
-│   │   ├── notebook-runtime/ [2.57 MB, 521 LOC]
+│   │   ├── notebook-runtime/ [2.68 MB, 526 LOC]
 │   │   │   ├── assets/ [1.37 MB, 13 LOC]
 │   │   │   │   ├── BinaryImage.png.json
 │   │   │   │   ├── ColorImage.png.json
@@ -389,7 +389,7 @@ Run `npm run map` to regenerate this file.
 │   │       ├── memfs.gz
 │   │       └── sysroot.tar.gz
 │   │
-│   ├── src/ [5.55 MB, 154279 LOC]
+│   ├── src/ [5.55 MB, 154288 LOC]
 │   │   ├── components/ [1.03 MB, 27299 LOC]
 │   │   │   ├── ai-agent/ [698.29 KB, 16768 LOC]
 │   │   │   │   ├── components/ [10.9 KB, 266 LOC]
@@ -684,7 +684,7 @@ Run `npm run map` to regenerate this file.
 │   │   │   ├── pwa-init.js
 │   │   │   └── quiz-inline.js
 │   │   │
-│   │   ├── shared/ [754.66 KB, 18523 LOC]
+│   │   ├── shared/ [755.17 KB, 18532 LOC]
 │   │   │   ├── rich-input/ [115.06 KB, 2586 LOC]
 │   │   │   │   ├── code-block-view.js
 │   │   │   │   ├── dictation.js
@@ -809,7 +809,7 @@ Run `npm run map` to regenerate this file.
 │   ├── sitemap.xml
 │   └── terms-of-service.html
 │
-├── runtimes/ [1.2 MB, 15275 LOC]
+├── runtimes/ [1.46 MB, 19056 LOC]
 │   ├── cpp/ [144.8 KB, 2410 LOC]
 │   │   └── src/ [144.8 KB, 2410 LOC]
 │   │       ├── assemble.ts
@@ -822,19 +822,28 @@ Run `npm run map` to regenerate this file.
 │   │       ├── wasm-toolchain.ts
 │   │       └── worker.ts
 │   │
-│   ├── matlab/ [723.63 KB, 5479 LOC]
-│   │   ├── interp/ [672.34 KB, 3937 LOC]
-│   │   │   ├── src/ [166.38 KB, 3304 LOC]
+│   ├── matlab/ [949.28 KB, 8584 LOC]
+│   │   ├── interp/ [869.7 KB, 6714 LOC]
+│   │   │   ├── src/ [286.91 KB, 5371 LOC]
+│   │   │   │   ├── colormaps.ts
+│   │   │   │   ├── figures.ts
 │   │   │   │   ├── index.ts
 │   │   │   │   ├── interp.ts
 │   │   │   │   ├── lib-array.ts
+│   │   │   │   ├── lib-color.ts
 │   │   │   │   ├── lib-common.ts
+│   │   │   │   ├── lib-edge.ts
+│   │   │   │   ├── lib-filter.ts
+│   │   │   │   ├── lib-geom.ts
+│   │   │   │   ├── lib-ipt.ts
 │   │   │   │   ├── lib-math.ts
+│   │   │   │   ├── lib-morph.ts
+│   │   │   │   ├── lib-plot.ts
 │   │   │   │   ├── lib-string.ts
 │   │   │   │   ├── parser.ts
 │   │   │   │   └── values.ts
 │   │   │   │
-│   │   │   ├── test/ [488.48 KB, 624 LOC]
+│   │   │   ├── test/ [565.31 KB, 1334 LOC]
 │   │   │   │   ├── assets/ [456.4 KB, 75 LOC]
 │   │   │   │   │   └── ... (max depth reached)
 │   │   │   │   │
@@ -842,12 +851,15 @@ Run `npm run map` to regenerate this file.
 │   │   │   │   ├── lectures.ts
 │   │   │   │   ├── lessons.ts
 │   │   │   │   ├── phase2.ts
+│   │   │   │   ├── phase3.ts
+│   │   │   │   ├── phase4.ts
+│   │   │   │   ├── phase5.ts
 │   │   │   │   └── run.ts
 │   │   │   │
 │   │   │   ├── package-lock.json
 │   │   │   └── package.json
 │   │   │
-│   │   └── src/ [51.29 KB, 1542 LOC]
+│   │   └── src/ [79.57 KB, 1870 LOC]
 │   │       ├── completion-data.ts
 │   │       ├── completions.ts
 │   │       ├── engine.ts
@@ -858,8 +870,8 @@ Run `npm run map` to regenerate this file.
 │   │       ├── lint.ts
 │   │       └── worker.ts
 │   │
-│   ├── shared/ [220.53 KB, 6096 LOC]
-│   │   ├── styles/ [68.21 KB, 3290 LOC]
+│   ├── shared/ [247.85 KB, 6561 LOC]
+│   │   ├── styles/ [69.17 KB, 3326 LOC]
 │   │   │   ├── cells.css
 │   │   │   ├── challenge.css
 │   │   │   ├── dialogs.css
@@ -888,12 +900,14 @@ Run `npm run map` to regenerate this file.
 │   │   ├── lint.ts
 │   │   ├── markdown.ts
 │   │   ├── outputs.ts
+│   │   ├── plot-spec.ts
+│   │   ├── plot-view.ts
 │   │   ├── shell.ts
 │   │   ├── side-panel.ts
 │   │   ├── toolbar.ts
 │   │   └── wasm-dialog.ts
 │   │
-│   ├── test/ [61.13 KB, 1058 LOC]
+│   ├── test/ [75.07 KB, 1269 LOC]
 │   │   ├── challenge.test.mjs
 │   │   ├── completions.test.mjs
 │   │   ├── cpp-assemble.test.mjs
@@ -903,6 +917,7 @@ Run `npm run map` to regenerate this file.
 │   │   ├── lint.test.mjs
 │   │   ├── matlab-interp.test.mjs
 │   │   ├── parity.test.mjs
+│   │   ├── plot-view.test.mjs
 │   │   └── shell.test.mjs
 │   │
 │   ├── tiptap-vendor/ [2.67 KB, 42 LOC]
@@ -1075,7 +1090,7 @@ Run `npm run map` to regenerate this file.
 │   │
 │   └── config.toml
 │
-└── tests/ [331.95 KB, 6689 LOC]
+└── tests/ [332.63 KB, 6697 LOC]
     ├── helpers/ [3.7 KB, 107 LOC]
     │   ├── dom-stub.js
     │   └── fake-chat.js
@@ -1171,14 +1186,14 @@ Run `npm run map` to regenerate this file.
 
 | Directory | Lines of Code |
 |-----------|---------------|
-| `public` | 173565 |
+| `public` | 173579 |
+| `runtimes` | 19056 |
 | `api` | 18542 |
 | `supabase` | 16765 |
-| `runtimes` | 15275 |
-| `tests` | 6689 |
+| `tests` | 6697 |
 | `scripts` | 5860 |
-| `docs` | 2791 |
-| `(root)` | 2194 |
+| `docs` | 2792 |
+| `(root)` | 2321 |
 | `docs-src` | 1761 |
 
 ### Top 10 Largest Code Files
@@ -1200,14 +1215,14 @@ Run `npm run map` to regenerate this file.
 
 | Extension | Files | Lines of Code | Size |
 |-----------|-------|---------------|------------|
-| .js | 451 | 131967 | 8.01 MB |
-| .ts | 67 | 22033 | 4.45 MB |
-| .css | 58 | 56928 | 1.55 MB |
+| .js | 451 | 131989 | 8.12 MB |
+| .ts | 81 | 25567 | 4.7 MB |
+| .css | 58 | 56964 | 1.55 MB |
 | .sql | 52 | 2796 | 130 KB |
 | .html | 38 | 19216 | 1.16 MB |
-| .mjs | 32 | 3228 | 174.97 KB |
+| .mjs | 33 | 3439 | 188.91 KB |
 | .json | 26 | 841 | 1.63 MB |
-| .md | 14 | 4671 | 242.72 KB |
+| .md | 14 | 4799 | 247.25 KB |
 | .webp | 10 | 741 | 191.03 KB |
 | .py | 9 | 266 | 14.65 KB |
 | .txt | 4 | 136 | 9.15 KB |
@@ -1218,7 +1233,7 @@ Run `npm run map` to regenerate this file.
 | .sh | 1 | 7 | 486 B |
 | .toml | 1 | 438 | 16.09 KB |
 | .yml | 1 | 41 | 1.02 KB |
-| **Total** | **769** | **243442** | **17.57 MB** |
+| **Total** | **784** | **247373** | **17.95 MB** |
 
 ### Binary / Media Files (Physical Size)
 
@@ -1238,5 +1253,5 @@ Run `npm run map` to regenerate this file.
 | .gif | 1 | 13.63 KB |
 | **Total** | **215** | **218.68 MB** |
 
-**Grand Total Files:** 984  
-**Total Repository Size:** 236.25 MB
+**Grand Total Files:** 999  
+**Total Repository Size:** 236.63 MB

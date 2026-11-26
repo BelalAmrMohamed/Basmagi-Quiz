@@ -13,7 +13,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ### Concentrate on gamefied experience and reward scheduele
 
 ### MATLAB Notebook
-* Continue this plan: [plan](<plans/MLWeb Image Processing Course Coverage and Performance UX — Implementation Plan.md>). Some parts of it are already implemented.
+Continue implementing the plan docs/plans/MLWeb Image Processing Course Coverage and Performance UX — Implementation Plan.md in the attached repo (basmagi.zip). Phases 0-5 are already applied. Implement Phase 6 (Performance and UX for long runs) only.
 
 ### Offline Support.
 * Users who have Installed the application: The notebook Page (e.g., `/notebook/new` and notebooks they saved locally at `/my-content`) should work offline as well as.
