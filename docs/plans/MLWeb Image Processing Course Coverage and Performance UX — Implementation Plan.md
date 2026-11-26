@@ -198,7 +198,7 @@ Implement in `interp/src/lib-ipt.ts` (split further into `lib-filter.ts`, `lib-m
 
 **Tests (all of 5.x):** hand-computed 3x3 to 6x6 cases per function, class-preservation tests, RGB per-channel tests, and the book-lab pipeline from chapter 1 (`rgb2gray`, `edge(G,'sobel')`, `figure; imshow; title`) running end to end on `pepper.png` and producing three figures.
 
-### Phase 6 — Performance and UX for long runs
+### Phase 6 (Important: Give it real effort. Implement on multiple goes) — Performance and UX for long runs
 
 This phase targets the biggest user pain: pixel loops that run for seconds with no feedback.
 
