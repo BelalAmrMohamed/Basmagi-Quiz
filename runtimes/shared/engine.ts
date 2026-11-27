@@ -98,6 +98,8 @@ export interface Engine {
   help?: { title?: string; intro?: string; searchPlaceholder?: string; items: Array<[title: string, en: string, ar: string]> };
   caps: { workspace: boolean; files: boolean; images: boolean; stdin: boolean; history: boolean };
   toolbarExtra?: (ctx: any) => HTMLElement;
+  /** Run time limit the user can choose. The shell draws the selector (#timelimit); the engine stores and enforces it. */
+  timeLimit?: { options: readonly number[]; get(): number; set(ms: number): void };
   /** Shown once per session in the running cell when a run takes more than 5 s (already translated). */
   slowRunTip?: string;
   /** Script export extension: `.m` or `.cpp`. */
@@ -119,7 +121,7 @@ export interface Engine {
   /** Rename a workspace file in place (keeps its position in `files`). The shell validates the name first. */
   renameFile?(from: string, to: string): void;
   /** Called once at mount: lets the engine read notebook state (for autocomplete). */
-  attach?(host: { codeSources(): string[] }): void;
+  attach?(host: { codeSources(): string[]; notify?(message: string): void }): void;
   /** Called with the cell sources so the engine can pre-load files they mention. */
   prepare?(sources: string[]): Promise<void>;
   /** Release workers and timers. The shell calls this on destroy. */

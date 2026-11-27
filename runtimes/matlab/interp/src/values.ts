@@ -331,7 +331,8 @@ export function assign(t: T | undefined, ix: Idx[], rhs: T, inPlace = false): T 
   if (nr !== 1 && nr !== cnt) throw new MatlabError(`Unable to perform assignment because the size of the left side is ${dimStr(lists.map(l => l.length))} and the size of the right side is ${dimStr(rhs.dims)}.`);
   const nd = ed.map((d, i) => Math.max(d, lists[i].reduce((m, v) => Math.max(m, v + 1), 0)));
   let data: Float64Array;
-  if (nd.some((d, i) => d !== ed[i])) {
+  const resized = nd.some((d, i) => d !== ed[i]);
+  if (resized) {
     if (k < cur.dims.length) throw new MatlabError('Unable to resize array with fewer subscripts than dimensions.');
     data = new Float64Array(numel(nd)); const sub = new Array(k).fill(0), n0 = cur.data.length;
     for (let o = 0; o < n0; o++) { let p = 0, m = 1; for (let d = 0; d < k; d++) { p += sub[d] * m; m *= nd[d]; } data[p] = cur.data[o]; for (let d = 0; d < k; d++) { if (++sub[d] < ed[d]) break; sub[d] = 0; } }
@@ -344,7 +345,8 @@ export function assign(t: T | undefined, ix: Idx[], rhs: T, inPlace = false): T 
     data[p] = sat(cls, rhs.data[nr === 1 ? 0 : o]);
     for (let d = 0; d < k; d++) { if (++sub[d] < rd[d]) break; sub[d] = 0; }
   }
-  let dd = ed; while (dd.length > 2 && dd[dd.length - 1] === 1) dd = dd.slice(0, -1);
+  // Fewer subscripts than dimensions fold the trailing ones for indexing only: without a resize the shape is unchanged.
+  let dd = resized ? ed : cur.dims.slice(); while (dd.length > 2 && dd[dd.length - 1] === 1) dd = dd.slice(0, -1);
   return { cls, dims: dd, data };
 }
 

@@ -48,9 +48,20 @@ export function renderToolbar(ctx: Ctx, importInput: HTMLInputElement) {
       'aria-pressed': String(ctx.q('layout')?.classList.contains('side-open') ?? false),
       onclick: (e: MouseEvent) => { const open = ctx.q('layout')!.classList.toggle('side-open'); (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(open)); },
     }, t('Workspace'))] : []),
+    ...(engine.timeLimit ? [timeLimitSelect(ctx, engine.timeLimit)] : []),
     ...((engine as any).toolbarExtra ? [(engine as any).toolbarExtra(ctx)] : []),
     ...(ctx.opts.onInfo ? [h('button', { type: 'button', title: t('Notebook information'), 'aria-label': t('Notebook information'), onclick: () => ctx.opts.onInfo?.() }, t('ⓘ Info'))] : []),
     menu, importInput);
+}
+
+/** Run time limit chooser (#timelimit). Only engines that declare `timeLimit` get one; the choice is the engine's to store. */
+function timeLimitSelect(ctx: Ctx, tl: NonNullable<Ctx['engine']['timeLimit']>): HTMLElement {
+  const { t } = ctx;
+  const cur = tl.get();
+  const sel = h('select', { id: 'timelimit', title: t('Time limit per run'), 'aria-label': t('Time limit per run'), disabled: ctx.state.busy,
+    onchange: (e: Event) => tl.set(Number((e.currentTarget as HTMLSelectElement).value)) },
+    ...tl.options.map((ms) => h('option', { value: String(ms), selected: ms === cur }, t('{n} s', { n: ms / 1000 })))) as HTMLSelectElement;
+  return sel;
 }
 
 /** The hidden <input type=file> behind "Import…". Uses the host's importer when it provides one. */

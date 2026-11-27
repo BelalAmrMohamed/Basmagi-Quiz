@@ -1,7 +1,8 @@
 // =============================================================================
 // runtimes/matlab/src/engine.ts
 // MATLAB engine for the shared notebook UI. Wraps the interpreter Web Worker:
-//   * 60 s time limit per run, Stop aborts; both reset the workspace (like the old runtime)
+//   * time limit per run (60 s default; 60/120/300 s selectable, kept in localStorage), Stop aborts;
+//     both reset the workspace and end with the same message
 //   * workspace variables, current-folder image files (uploads, imwrite output, lesson assets)
 //   * figures reported as `img` (one plain image, imtool) or `plot` outputs
 // Caps: everything except stdin. No DOM and no CSS here; the shell draws everything.
@@ -9,6 +10,7 @@
 import type { Engine, ImageFile, VarInfo, RunRequest, RunSink } from '../../shared/engine';
 import { createT, type Lang } from '../../shared/i18n';
 import { fileToImage } from '../../shared/images';
+import { store } from '../../shared/dom';
 import { progressPercent } from '../interp/src/progress';
 import { formatRunStatus } from './run-status';
 import { matlabLanguage } from './language';
@@ -17,7 +19,9 @@ import { matlabCompletions } from './completions';
 import { matlabIndent } from './indent';
 import { MATLAB_HELP } from './help';
 
-export const TIME_LIMIT_MS = 60_000;
+export const TIME_LIMIT_OPTIONS_MS = [60_000, 120_000, 300_000] as const;
+export const TIME_LIMIT_MS = TIME_LIMIT_OPTIONS_MS[0];
+export const TIME_LIMIT_KEY = 'mlweb.timeLimitMs';
 const DEFAULT_FILES = ['test.png', 'testgray.png'];
 
 const IMAGE_ALIASES: Record<string, string> = {
@@ -56,6 +60,13 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
   let cur: Run | null = null;
   let disposed = false, epoch = 0;
   let codeSources: () => string[] = () => opts.publishedSources ?? [];
+  let notifyHost: ((message: string) => void) | undefined;
+  const stoppedMsg = t('Execution stopped. The workspace was reset; use Run all to rebuild it.\n');
+  const timeLimit = {
+    options: TIME_LIMIT_OPTIONS_MS as readonly number[],
+    get(): number { const n = Number(store.get(TIME_LIMIT_KEY)); return (TIME_LIMIT_OPTIONS_MS as readonly number[]).includes(n) ? n : TIME_LIMIT_MS; },
+    set(ms: number) { if ((TIME_LIMIT_OPTIONS_MS as readonly number[]).includes(ms)) store.set(TIME_LIMIT_KEY, String(ms)); },
+  };
 
   // ---------------- worker ----------------
   const buildWorker = (url: string): Worker => {
@@ -191,6 +202,7 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
       completions: matlabCompletions({ workspace: () => vars, codeSources: () => codeSources(), fileNames: () => [...files.keys()] }),
     },
     help: MATLAB_HELP,
+    timeLimit,
     slowRunTip: t('Per-pixel loops are slow in the browser. Vectorized code such as `b = a + 50;` runs the same operation in one step.'),
     files,
 
@@ -201,10 +213,10 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
       return new Promise<void>((resolve) => {
         const run: Run = {
           sink, id: cell.id, fig: 0, settle: resolve,
-          timer: window.setTimeout(() => abortRun(t('Execution stopped: time limit (60 s) exceeded. The workspace was reset.\n')), TIME_LIMIT_MS),
+          timer: window.setTimeout(() => abortRun(stoppedMsg), timeLimit.get()),
         };
         cur = run;
-        signal.addEventListener('abort', () => { if (cur === run) abortRun(t('Execution interrupted by user. The workspace was reset.\n')); }, { once: true });
+        signal.addEventListener('abort', () => { if (cur === run) abortRun(stoppedMsg); }, { once: true });
         // Images named in the code must be in the worker before it runs.
         loadFor([cell.src]).then(() => { if (cur === run) worker!.postMessage({ t: 'run', id: cell.id, src: cell.src }); });
       });
@@ -213,7 +225,7 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
     reset() { if (!cur) { worker?.postMessage({ t: 'reset' }); vars = []; } },
 
     async addFile(f: File) {
-      const img = await fileToImage(f);
+      const img = await fileToImage(f, { t, notify: (m) => notifyHost?.(m) });
       files.set(f.name, img);
       worker?.postMessage({ t: 'putFile', name: f.name, img });
     },
@@ -229,7 +241,7 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
       worker?.postMessage({ t: 'putFile', name: to, img: files.get(to) });
     },
 
-    attach(host) { codeSources = host.codeSources; },
+    attach(host) { codeSources = host.codeSources; notifyHost = host.notify; },
 
     async prepare(sources: string[]) {
       await manifestReady;

@@ -302,6 +302,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     const stopBtn = q('stop');
     stopBtn?.toggleAttribute('disabled', !state.busy);
     q('runall')?.toggleAttribute('disabled', state.busy);
+    q('timelimit')?.toggleAttribute('disabled', state.busy);
     if (stopBtn) stopBtn.hidden = !state.busy;
   }
 
@@ -485,7 +486,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
   }
   async function addFile(f: File) {
     if (!engine.addFile && !engine.files) return;
-    if (!engine.addFile) { engine.files?.set(f.name, await fileToImage(f)); }
+    if (!engine.addFile) { engine.files?.set(f.name, await fileToImage(f, { t, notify })); }
     else await engine.addFile(f);
     window.__mlwebFileHook?.add?.(f);
     ctx.renderSide();
@@ -699,7 +700,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
   }
   state.cells = edit() ? published() : (loadLocal() ?? published());
   if (!edit()) save();
-  engine.attach?.({ codeSources: () => state.cells.filter((c) => c.type === 'code').map((c) => c.src) });
+  engine.attach?.({ codeSources: () => state.cells.filter((c) => c.type === 'code').map((c) => c.src), notify });
   ctx.renderToolbar();
   updateSaveState();
   setStatus(t('Ready'));

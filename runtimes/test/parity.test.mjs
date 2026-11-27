@@ -68,7 +68,7 @@ function skeleton(e) {
   return e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + (e.classList.length ? '.' + [...e.classList].sort().join('.') : '') + (kids.length ? `[${kids.join(',')}]` : '');
 }
 /** Elements that exist only because an engine's caps ask for them (see Engine.caps). */
-const CAPS_PANELS = ['#toggleside', '#side', '#imageTool', '#cppWasmBtn', '#cppWasmDialog'];
+const CAPS_PANELS = ['#toggleside', '#timelimit', '#side', '#imageTool', '#cppWasmBtn', '#cppWasmDialog'];
 const prune = (el) => { const c = el.cloneNode(true); CAPS_PANELS.forEach((s) => c.querySelectorAll(s).forEach((n) => n.remove())); return c; };
 const rendered = (el) => [...el.children].map(skeleton).join('\n');
 

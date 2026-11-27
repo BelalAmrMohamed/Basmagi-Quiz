@@ -7,8 +7,13 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
+### AI Models
+My platform has an integrated AI Chat that uses API Keys for Gemini, DeepSeek, & Claude. Google dropped new models lately, so it's time to update, based on the screenshot, what am I missing?
+
+They always add new models; is there any dynamic way to keep my website updated?
+
 ### Image Tool Window in MATLAB Notebook
-`mlweb-imtool-statusbar` shouldn't be split on 2 lines, because it convers parts of the image at the bottom, since the image is set to fit. 
+`mlweb-imtool-statusbar` shouldn't be split on 2 lines, because it convers parts of the image at the bottom, since the image is set to fit. See `public\src\features\notebook\image-tool-window.css` and `image-tool-window.js`.
 
 ### Concentrate on gamefied experience and reward scheduele
 

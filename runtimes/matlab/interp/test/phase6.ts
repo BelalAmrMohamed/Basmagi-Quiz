@@ -286,4 +286,22 @@ end`, { mask: 0, interval: 0 });
     [35, 12, 0.35]));
   run('percent: unknown counts', '', () => eq([pct(), pct([1, Infinity]), pct([5, NaN]), pct([1, 0]), pct([1, Infinity], [3, 4]), pct([2, 4], [1, Infinity]), pct([2, 4], [7, 0])],
     [null, null, null, null, null, 25, 25]));
+
+  console.log('Older bugs fixed with 6.3');
+  // Fewer subscripts than dimensions fold the trailing ones, but the shape stays 2x2x2. A(2,3) is row 2 of the 2x4 view = A(2,1,2).
+  run('A(i,j) = v on a 3-D array keeps its shape', `A = zeros(2,2,2); A(1,1) = 5; A(2,3) = 7; A(2,4) = 9; s = size(A); p = [A(1,1,1) A(2,1,2) A(2,2,2) sum(A(:))];`,
+    (_o, I) => eq([val(I, 's'), val(I, 'p')], [[2, 2, 2], [5, 7, 9, 21]]));
+  run('A(i,j) = v beyond the folded size is still an error', `A = zeros(2,2,2); A(1,5) = 1;`, () => true, 'Unable to resize array with fewer subscripts than dimensions.');
+  run('plain 2-D growth is unchanged', `B = zeros(2,2); B(3,3) = 1; C = 1:3; C(5) = 9; s = [size(B) size(C)];`, (_o, I) => eq(val(I, 's'), [3, 3, 1, 5]));
+  run('for over a cell gives 1x1 cells (columns of a 2-row cell are n-by-1 cells)', `a = [1 2 3]; k = zeros(1,2); i = 0; for m = {a, 'x'}, i = i + 1; k(i) = iscell(m) * 10 + numel(m{1}); end
+sz = []; for m = {1,2;3,4}, sz(end+1) = m{2}; sz(end+1) = size(m, 1); end; e = 0; for m = {}, e = e + 1; end; r = [k sz e];`,
+    (_o, I) => eq(val(I, 'r'), [13, 11, 3, 2, 4, 2, 0]));
+  run('for over a cell: the variable is a cell even for a one-element cell', `a = 1; for m = {a}, end; r = [iscell(m) size(m)];`, (_o, I) => eq(val(I, 'r'), [1, 1, 1]));
+  run('t.g{1} = x creates the struct, the field and the cell, and reads back', `x = 4; t.g{1} = x; y = t.g{1}; t.g{3} = 6; r = [y numel(t.g) isempty(t.g{2}) t.g{3}];`,
+    (_o, I) => eq(val(I, 'r'), [4, 3, 1, 6]));
+  run('c{k} = x grows a missing, empty or short cell (row, column, 2-D)', `a{2} = 5; b = {}; b{1} = 4; c = {1}; c{3} = 2; d = []; d{2} = 1; e = cell(2,1); e{4} = 3; f = {}; f{2,3} = 8;
+r = [size(a) size(b) size(c) size(d) size(e) size(f) f{2,3} isempty(f{1,1})];`,
+    (_o, I) => eq(val(I, 'r'), [1, 2, 1, 1, 1, 3, 1, 2, 4, 1, 2, 3, 8, 1]));
+  run('c{k} = x on a matrix cell cannot grow along an ambiguous dimension', `c = cell(2,2); c{7} = 1;`, () => true, 'Attempt to grow array along ambiguous dimension.');
+  run('nested brace and field assignment still work', `c = {{1}}; c{1}{1} = 7; s.a = {2}; s.a{2} = 3; r = [c{1}{1} s.a{1} s.a{2}];`, (_o, I) => eq(val(I, 'r'), [7, 2, 3]));
 }

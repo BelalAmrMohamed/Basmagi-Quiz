@@ -181,7 +181,7 @@ export class Interp {
             if (res) return res;
             break;
           }
-          const rng = this.eval(s.e, sc) as T, rows = rng.dims[0], cols = rng.data.length / (rows || 1);
+          const rng = this.eval(s.e, sc) as T | C, rows = rng.dims[0], cols = rng.data.length / (rows || 1);
           if (isT(rng)) this.buffers.hold(rng.data); // the loop keeps iterating the original if the body writes the variable
           const mark = this.loops.length, loop = { iter: 0, total: rng.data.length ? cols : 0 };
           this.loops.push(loop);
@@ -189,7 +189,8 @@ export class Interp {
           for (let j = 0; j < (rng.data.length ? cols : 0); j++) {
             loop.iter = j + 1;
             if (!(++this.backEdges & this.tickMask)) this.maybeTick(s.line);
-            this.store(sc, s.v, rows === 1 ? num(rng.data[j], rng.cls) : mk(rng.cls, [rows, 1], rng.data.subarray(j * rows, (j + 1) * rows)));
+            this.store(sc, s.v, isC(rng) ? { cls: 'cell', dims: [rows, 1], data: rng.data.slice(j * rows, (j + 1) * rows) } as C
+              : rows === 1 ? num(rng.data[j], rng.cls) : mk(rng.cls, [rows, 1], rng.data.subarray(j * rows, (j + 1) * rows)));
             const r = this.exec(s.body, sc); if (r === BRK) break; if (r === RET) { res = r; break; }
           }
           this.loops.length = mark;
@@ -445,8 +446,11 @@ export class Interp {
       return this.writeLvalue(cur, lv.a, next, sc);
     }
     if (lv.k === 'cellidx') {
-      const base = lv.a.k === 'id' ? cur : this.readOrInit(lv.a, sc);
-      if (!base || !isC(base)) throw new MatlabError('Brace indexing is only supported for cell arrays.');
+      let base = lv.a.k === 'id' ? cur : this.readOrInit(lv.a, sc);
+      // A missing variable or field, or [], starts as an empty cell; c{k} = x grows it like MATLAB does.
+      if (base === undefined || (isT(base) && base.data.length === 0)) base = { cls: 'cell', dims: [0, 0], data: [] } as C;
+      if (!isC(base)) throw new MatlabError('Brace indexing is only supported for cell arrays.');
+      base = this.growCell(base, lv.args, sc);
       const positions = this.cellPositions(base, lv.args, sc).positions;
       if (positions.length !== 1) err('Cell assignment requires one selected cell.');
       const next: C = { cls: 'cell', dims: base.dims.slice(), data: base.data.slice() };
@@ -666,6 +670,36 @@ export class Interp {
       return base.data[positions[0]];
     }
     return { cls: 'cell', dims, data: positions.map(i => base.data[i]) } as C;
+  }
+  /** `c{k} = x` or `c{i,j} = x` past the end: the cell array grows, new cells are []. Anything else is left to cellPositions. */
+  private growCell(base: C, args: any[], sc: Scope): C {
+    const ix = this.evalArgs(args, base, sc);
+    if (!ix.length || ix.some(x => x === 'colon' || x.data.length !== 1 || x.cls === 'logical')) return base;
+    const subs = ix.map(x => (x as T).data[0]);
+    if (subs.some(v => !Number.isInteger(v) || v < 1)) return base;
+    const dims = base.dims;
+    let target: number[];
+    if (subs.length === 1) {
+      const k = subs[0], n = base.data.length;
+      if (k <= n) return base;
+      if (n === 0 || (dims.length === 2 && dims[0] === 1)) target = [1, k];
+      else if (dims.length === 2 && dims[1] === 1) target = [k, 1];
+      else return err('Attempt to grow array along ambiguous dimension.');
+    } else {
+      if (subs.length < dims.length) return base;
+      target = subs.map((v, d) => Math.max(v, dims[d] ?? 1));
+      if (target.every((v, d) => v === (dims[d] ?? 1))) return base;
+    }
+    const old = dims.concat(new Array(Math.max(0, target.length - dims.length)).fill(1));
+    const data: V[] = Array.from({ length: numel(target) }, () => mk('double', [0, 0]));
+    const sub = new Array(target.length).fill(0);
+    for (let o = 0; o < base.data.length; o++) {
+      let p = 0, m = 1;
+      for (let d = 0; d < target.length; d++) { p += sub[d] * m; m *= target[d]; }
+      data[p] = base.data[o];
+      for (let d = 0; d < target.length; d++) { if (++sub[d] < old[d]) break; sub[d] = 0; }
+    }
+    return { cls: 'cell', dims: target, data };
   }
   private cellPositions(base: C, args: any[], sc: Scope): { positions: number[]; dims: number[] } {
     if (!args.length) err('Cell indexing requires at least one subscript.');
