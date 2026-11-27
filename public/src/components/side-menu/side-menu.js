@@ -6,6 +6,8 @@
 
 import { mountSignInDialog, openSignInDialog } from "../log-in/sign-in.js";
 import { initMenuIconDrawing } from "./menu-icon-draw.js";
+// Admin notification center: un-hides the bell item in the sidebar and wires up the panel.
+import { initNotificationCenter } from "../notification-center/notification-center.js";
 
 mountSignInDialog();
 
@@ -14,6 +16,7 @@ mountSignInDialog();
 // Watches for late-injected rows (mobile admin/reports buttons below, the docs
 // links in documents-shell.js) so those animate too. See menu-icon-draw.js.
 initMenuIconDrawing();
+initNotificationCenter();
 
 // ── PWA Install Prompt — captured globally so it works on every page ─────────
 (function () {

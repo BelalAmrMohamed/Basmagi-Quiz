@@ -10,6 +10,7 @@
 //   storage-orphans-list / -delete -> unreferenced objects (admin cleanup)
 // =============================================================================
 import { NOTEBOOK_ASSET_MIME, LIMITS } from "../scripts/lib/content-rules.js";
+import { broadcastNotification } from "./_notifications.js";
 
 const BUCKETS = new Set(["notebook-assets", "quiz-media"]);
 const SHA_RE = /^[0-9a-f]{64}$/;
@@ -30,6 +31,32 @@ function publicUrl(bucket, path) {
   return `${process.env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${path.split("/").map(encodeURIComponent).join("/")}`;
 }
 
+/**
+ * After a successful NEW reservation: once usage reaches storage_limits.warn_pct, every admin gets
+ * ONE "storage is filling up" notification per day (dedupe_key = the date). Best-effort.
+ */
+async function maybeWarnStorage(supabase, reserved) {
+  try {
+    const used = Number(reserved?.used);
+    const cap = Number(reserved?.cap);
+    if (!used || !cap) return;
+    const pct = (used / cap) * 100;
+    if (pct < 50) return; // warn_pct is never lower in practice; skips the extra query
+    const { data: lim } = await supabase.from("storage_limits").select("warn_pct").eq("id", 1).maybeSingle();
+    if (pct < (lim?.warn_pct ?? 80)) return;
+    const pctRounded = Math.min(100, Math.round(pct));
+    await broadcastNotification(supabase, {
+      type: "storage_warning",
+      title: `مساحة الوسائط ${pctRounded}%`,
+      body: "اقتربت مساحة تخزين الوسائط من الحد الأقصى. احذف الملفات غير المستخدمة قبل رفع وسائط جديدة.",
+      meta: { pct: pctRounded, used, cap },
+      dedupeKey: `storage:${new Date().toISOString().slice(0, 10)}`,
+    });
+  } catch (e) {
+    console.error("[storage-warning] failed:", e?.message || e);
+  }
+}
+
 export async function handleStorageAction(req, res, action, adminId, supabase) {
   const body = req.body || {};
   try {
@@ -45,6 +72,7 @@ export async function handleStorageAction(req, res, action, adminId, supabase) {
       const { data, error } = await supabase.rpc("storage_reserve", { p_bucket: bucket, p_path: path, p_size: Number(size), p_kind: kind || "image", p_owner: String(adminId || "") });
       if (error) throw error;
       if (!data.ok) return res.status(413).json({ error: reasonText(data), reason: data.reason });
+      if (!data.exists) await maybeWarnStorage(supabase, data);
       return res.status(200).json(data);
     }
 
@@ -64,6 +92,7 @@ export async function handleStorageAction(req, res, action, adminId, supabase) {
       if (!files || files.length < 1 || files.length > LIMITS.notebookAssets) return res.status(400).json({ error: "قائمة الملفات غير صالحة." });
       const out = [];
       const reservedNow = [];
+      let lastReserved = null;
       for (const f of files) {
         const ext = String(f?.path || "").split(".").pop().toLowerCase();
         if (!NOTEBOOK_ASSET_MIME[ext] || NOTEBOOK_ASSET_MIME[ext] !== f.mime || !SHA_RE.test(String(f.sha256 || "")) || !Number.isInteger(f.size)) {
@@ -83,7 +112,9 @@ export async function handleStorageAction(req, res, action, adminId, supabase) {
           item.token = signed.token;
         }
         out.push(item);
+        if (!data.exists) lastReserved = data;
       }
+      if (lastReserved) await maybeWarnStorage(supabase, lastReserved);
       return res.status(200).json({ files: out });
     }
 

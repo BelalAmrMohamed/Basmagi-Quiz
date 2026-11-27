@@ -40,6 +40,7 @@ import { resolveAdminId, isAuthorizedForItem, getTrashRetentionDays, computeExpi
 import { isRateLimited } from "./_rateLimit.js";
 import { notifySearchEngines } from "./_seoNotify.js";
 import { quizUrl } from "./_urls.js";
+import { pushNotification } from "./_notifications.js";
 
 const supabase = makeClient("service");
 
@@ -378,6 +379,28 @@ async function handlePostReports(req, res) {
             return res.status(500).json({ error: "فشل تقديم البلاغ. حاول مجددًا." });
         }
 
+        // Tell the uploader (never blocks the student's report). Reports on the same quiz
+        // merge into one unread notification: "3 new reports on <quiz>".
+        try {
+            const { data: owner } = await supabase
+                .from("quizzes")
+                .select("title, uploaded_by")
+                .eq("id", quiz_id)
+                .maybeSingle();
+            if (owner?.uploaded_by) {
+                await pushNotification(supabase, owner.uploaded_by, {
+                    type: "report_new",
+                    title: owner.title || "",
+                    body: reason.trim(),
+                    href: "/reports",
+                    meta: { quizId: quiz_id, quizTitle: owner.title || "", questionIndex: question_index, reason: reason.trim().slice(0, 200) },
+                    groupKey: `report:${quiz_id}`,
+                });
+            }
+        } catch (notifyErr) {
+            console.error("[reports] owner notification failed:", notifyErr?.message || notifyErr);
+        }
+
         return res.status(201).json({ success: true, report: data });
     }
 
@@ -426,6 +449,27 @@ async function handlePostReports(req, res) {
         if (error) {
             console.error("[reports] Update error:", error.message);
             return res.status(500).json({ error: "فشل تحديث حالة البلاغ." });
+        }
+
+        // If another admin closed a report on this admin's quiz, the uploader hears about it.
+        try {
+            const { data: rep } = await supabase
+                .from("reports")
+                .select("question_index, quizzes ( id, title, uploaded_by )")
+                .eq("id", report_id)
+                .maybeSingle();
+            const q = Array.isArray(rep?.quizzes) ? rep.quizzes[0] : rep?.quizzes;
+            if (q?.uploaded_by && q.uploaded_by !== adminId) {
+                await pushNotification(supabase, q.uploaded_by, {
+                    type: "report_closed",
+                    title: q.title || "",
+                    href: "/reports",
+                    meta: { quizId: q.id, quizTitle: q.title || "", questionIndex: rep.question_index, status },
+                    groupKey: `report-closed:${q.id}:${status}`,
+                });
+            }
+        } catch (notifyErr) {
+            console.error("[reports] resolve notification failed:", notifyErr?.message || notifyErr);
         }
 
         return res.status(200).json({ success: true });

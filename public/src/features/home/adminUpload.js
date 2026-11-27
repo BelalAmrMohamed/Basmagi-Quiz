@@ -37,6 +37,10 @@ import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.
 import { UPLOAD_ICON_SVG } from "./icons.js";
 import { buildCourseUploadPayload, buildFolderUploadPayload } from "./user-content-folders.js";
 
+// The server records each successful upload in the notification center (api/_notifications.js);
+// this nudges the bell to fetch it now instead of at the next poll.
+const refreshNotificationCenter = () => window.dispatchEvent(new Event("bq:notifications-refresh"));
+
 // ─── Track definitions ────────────────────────────────────────────────────────
 const TRACK_LABELS = {
   University: "جامعي",
@@ -1050,6 +1054,7 @@ async function doFolderUpload({ educationType, college, year, term }) {
       setStatus(hintEl, "success", `تم إنشاء ${foldersCreated} مجلد/مادة ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} بنجاح`);
       hintEl.style.color = "var(--color-success)";
       showNotification("تم الرفع بنجاح", "", "success");
+      refreshNotificationCenter();
       invalidateManifestCache();
     } else {
       hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} • فشل ${failed.length}`;
@@ -1172,6 +1177,7 @@ async function doCourseUpload({ educationType, college, year, term }) {
       setStatus(hintEl, "success", `تم إنشاء ${coursesCount} مادة و${foldersCreated} مجلد ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} بنجاح`);
       hintEl.style.color = "var(--color-success)";
       showNotification("تم الرفع بنجاح", "", "success");
+      refreshNotificationCenter();
       invalidateManifestCache();
     } else {
       hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} • فشل ${failed.length}`;
@@ -1365,6 +1371,7 @@ async function doFolderUploadToExisting({ educationType, college, year, term }) 
       setStatus(hintEl, "success", `تم إنشاء ${foldersCreated} مجلد ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} بنجاح`);
       hintEl.style.color = "var(--color-success)";
       showNotification("تم الرفع بنجاح", "", "success");
+      refreshNotificationCenter();
       invalidateManifestCache();
     } else {
       hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} • فشل ${failed.length}`;
@@ -1489,6 +1496,7 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
       setStatus(hintEl, "success", `تم رفع ${successCount} امتحان بنجاح`);
       hintEl.style.color = "var(--color-success)";
       showNotification(`تم الرفع بنجاح (${successCount} امتحان)`, "", "success");
+      refreshNotificationCenter();
     } else {
       hintEl.textContent = `تم رفع ${successCount} • فشل ${errorCount}`;
       hintEl.style.color = successCount > 0 ? "var(--color-text-secondary)" : "var(--color-error)";

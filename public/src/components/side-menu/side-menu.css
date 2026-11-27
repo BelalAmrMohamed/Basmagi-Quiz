@@ -2316,3 +2316,40 @@ html[data-motion="reduced"] body {
   height: 18px;
   flex: none;
 }
+
+/* ── Notification center entry (admin-only; behavior in notification-center.js) ── */
+.menu-item[hidden] {
+  display: none !important;
+}
+
+.notification-center-item .nc-badge {
+  margin-inline-start: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.notification-center-item .nc-badge[hidden] {
+  display: none;
+}
+
+/* Collapsed rail: no room for the pill, so it becomes a count dot on the bell's corner. */
+.sidebar:not(.expanded) .notification-center-item .nc-badge {
+  position: absolute;
+  top: 4px;
+  inset-inline-start: 6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 0.62rem;
+  line-height: 16px;
+  box-shadow: 0 0 0 2px var(--sidebar-color, var(--color-surface));
+}

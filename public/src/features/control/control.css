@@ -1433,3 +1433,41 @@ input::placeholder {
         width: 100%;
     }
 }
+
+/* ── Announcement form (notification center broadcast) ───────────────────── */
+.announce-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.announce-form textarea {
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.9rem;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.announce-form textarea:focus {
+    border-color: var(--gold);
+}
+
+.announce-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.announce-hint {
+    color: var(--text-dim);
+    font-size: 0.82rem;
+}

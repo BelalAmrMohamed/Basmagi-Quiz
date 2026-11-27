@@ -37,18 +37,12 @@ AI Agent files: `public\src\components\ai-agent\`
 * **Add Multi-device support:** Admins should be able to sign in with the same email on multiple devices normally no problem. Currently it results in some issues.
 * **Add Multi-email support:** Allow Admins to sign in with Multiple Emails at once and switch between them in the UI. Each one of them must get the same verification (e.g., each email of them must be an Admin/Developer).
 
-### Notifications
-Add notifications to the platform. The platform already has notifications (i.e., `public\src\components\notifications\`), but it's temporary, I want a notification center (Example: like that in youtube.com).
-
-#### Functionality for Admins (I.E., What it shows)
-- **Sign-in Message:** The notification that is showed to the admin when they sign in for the first time, specially because that notification includes a link to a documentation page that can come in handy later.
-- **Successfull uploads to the platform:** When admins upload an item to the platform, the notification should also be shows in the notification center. See `public\src\features\home\adminUpload.js`
-- **Reports on their uploaded items:** When a user reports anything that they uploaded, they get a notification. See `public/reports.html` and its related files.
-- Recommend to me other functionalities it could show.
-
 ### Admin Dashboard & Develpers Dashaboard
 * Developers currently have their dashboard: `/control`, but it needs a link that only appears for developers inside the `#sideMenuProfileDropdown` and the side-menu on phones.
 * Admins & Developers can also see `/reports` to solve reports.
+* Admins need their own control page, too, separate from that of the developers:
+  * Admins should be able to see the trash that is related to their scope only: Admins with `المرحلة الجامعية` as a scope only see trash related to it. Developers keep seeing all.
+  * "إرسال إعلان للمشرفين": In admins of a specific scope can send a notification to the other admins in the same scope. 
 
 ### Result Pages
 
