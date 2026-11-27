@@ -15,21 +15,6 @@ My platform has an integrated AI Chat that uses API Keys for Gemini, DeepSeek, &
 
 They always add new models; is there any dynamic way to keep my website updated?
 
-### Implement the shared markdown engine into the Notebook page's Makrdown cells.
-* The Notebook page uses its own simple version of Markdown, replace it with this custom engine `public\src\shared\markdown.js`
-
-### Code Blocks in markdown.js
-The code blocks in the shared markdown engine are badly styled, give them the same styles as code blocks in the rich input, including theme responsiveness.
-
-### Scrollbar on the AI Agent's Input Field
-The scrollbar sometimes exceeds the bonds of the input field itself.
-
-Fix them quickly, then present me the new patch.
-
-Related Files:
-* `public\src\components\ai-agent\`
-* `public\src\shared\rich-input\`
-
 ## New Features
 
 ### Sign-In For Admins: Add Multi-device support and multi-email support
