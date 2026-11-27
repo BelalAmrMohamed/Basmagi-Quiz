@@ -17,24 +17,9 @@ They always add new models; is there any dynamic way to keep my website updated?
 
 ## New Features
 
-### Admin Dashboard & Develpers Dashaboard
-* Developers currently have their dashboard: `/control`, but it needs a link that only appears for developers inside the `#sideMenuProfileDropdown` and the side-menu on phones.
-* Admins & Developers can also see `/reports` to solve reports.
-* But there is no dashboard for admins:
-  * To see the content they uploaded
-  * To see how many views they got on their content.
-  * To see how many reports they got.
-  * Also have a version of the platform's stats on their.
-  * And other things, too.
-
-### Notifications
-Add notifications to the platform. The platform already has notifications (i.e., `public\src\components\notifications\`), but it's temporary, I want a notification center (Example: like that in youtube.com).
-
-#### Functionality for Admins (I.E., What it shows)
-- **Sign-in Message:** The notification that is showed to the admin when they sign in for the first time, specially because that notification includes a link to a documentation page that can come in handy later.
-- **Successfull uploads to the platform:** When admins upload an item to the platform, the notification should also be shows in the notification center. See `public\src\features\home\adminUpload.js`
-- **Reports on their uploaded items:** When a user reports anything that they uploaded, they get a notification. See `public/reports.html` and its related files.
-- Recommend to me other functionalities it could show.
+### Offline Support.
+* Users who have Installed the application: The notebook Page (e.g., `/notebook/new` and notebooks they saved locally at `/my-content`) should work offline as well as.
+* The quiz page and the lesson page should also work, people who have lessons and quizzes locally (i.e., `/my-content`) should work offline.
 
 ### Code Blocks
 
@@ -48,13 +33,22 @@ Code blocks should have proper Line numbers, VS-Code-style:
 
 AI Agent files: `public\src\components\ai-agent\`
 
-### Offline Support.
-* Users who have Installed the application: The notebook Page (e.g., `/notebook/new` and notebooks they saved locally at `/my-content`) should work offline as well as.
-* The quiz page and the lesson page should also work, people who have lessons and quizzes locally (i.e., `/my-content`) should work offline.
-
 ### Sign-In For Admins: Add Multi-device support and multi-email support
 * **Add Multi-device support:** Admins should be able to sign in with the same email on multiple devices normally no problem. Currently it results in some issues.
 * **Add Multi-email support:** Allow Admins to sign in with Multiple Emails at once and switch between them in the UI. Each one of them must get the same verification (e.g., each email of them must be an Admin/Developer).
+
+### Notifications
+Add notifications to the platform. The platform already has notifications (i.e., `public\src\components\notifications\`), but it's temporary, I want a notification center (Example: like that in youtube.com).
+
+#### Functionality for Admins (I.E., What it shows)
+- **Sign-in Message:** The notification that is showed to the admin when they sign in for the first time, specially because that notification includes a link to a documentation page that can come in handy later.
+- **Successfull uploads to the platform:** When admins upload an item to the platform, the notification should also be shows in the notification center. See `public\src\features\home\adminUpload.js`
+- **Reports on their uploaded items:** When a user reports anything that they uploaded, they get a notification. See `public/reports.html` and its related files.
+- Recommend to me other functionalities it could show.
+
+### Admin Dashboard & Develpers Dashaboard
+* Developers currently have their dashboard: `/control`, but it needs a link that only appears for developers inside the `#sideMenuProfileDropdown` and the side-menu on phones.
+* Admins & Developers can also see `/reports` to solve reports.
 
 ### Result Pages
 
