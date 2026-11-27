@@ -7,6 +7,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
+### UI Issue: Offline/Online Notification
+* It sometimes appears on top of other elements, so it needs to be pushed to the bottom of the page and it must push everything else up.
+
 ### AI Models
 My platform has an integrated AI Chat that uses API Keys for Gemini, DeepSeek, & Claude. Google dropped new models lately, so it's time to update, based on the screenshot, what am I missing?
 
