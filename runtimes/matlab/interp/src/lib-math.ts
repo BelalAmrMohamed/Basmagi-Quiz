@@ -446,14 +446,7 @@ export function registerMath(def: Def) {
     const ms = Math.min(5000, Math.max(0, req * 1000));
     I.flushFigures();
     const start = performance.now();
-    let lastTick = start;
-    while (performance.now() - start < ms) {
-      const now = performance.now();
-      if (now - lastTick >= 100) {
-        lastTick = now;
-        I.host.tick?.({ line: I.curLine ?? 1, loops: I.activeLoops?.() ?? [], elapsedMs: now - (I.runStartMs ?? start) });
-      }
-    }
+    while (performance.now() - start < ms) I.maybeTick();
     if (ms >= 100) I.flushFigures();
     return [];
   });

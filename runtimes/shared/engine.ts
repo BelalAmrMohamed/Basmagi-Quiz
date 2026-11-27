@@ -52,6 +52,8 @@ export interface RunSink {
   clear(cell?: number): void;
   /** Toolbar status text. `'run'` while working, `'error'` for a failure, `'result'` for a summary that stays until the next run. */
   status(text: string, kind?: 'run' | 'error' | 'result'): void;
+  /** Share of the run that is done (0..100, null when unknown) while it runs. Drives the cell's progress bar. */
+  progress?(p: { percent: number | null; elapsedMs: number }): void;
   /** Replace the workspace variable table (only shown when `caps.workspace`). */
   vars?(v: VarInfo[]): void;
   /** The engine's file list changed (only shown when `caps.files`). */
@@ -96,6 +98,8 @@ export interface Engine {
   help?: { title?: string; intro?: string; searchPlaceholder?: string; items: Array<[title: string, en: string, ar: string]> };
   caps: { workspace: boolean; files: boolean; images: boolean; stdin: boolean; history: boolean };
   toolbarExtra?: (ctx: any) => HTMLElement;
+  /** Shown once per session in the running cell when a run takes more than 5 s (already translated). */
+  slowRunTip?: string;
   /** Script export extension: `.m` or `.cpp`. */
   exportExt: '.m' | '.cpp';
   /** Jupyter kernelspec name written to exported .ipynb files. */

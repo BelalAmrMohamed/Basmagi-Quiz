@@ -9,6 +9,8 @@
 import type { Engine, ImageFile, VarInfo, RunRequest, RunSink } from '../../shared/engine';
 import { createT, type Lang } from '../../shared/i18n';
 import { fileToImage } from '../../shared/images';
+import { progressPercent } from '../interp/src/progress';
+import { formatRunStatus } from './run-status';
 import { matlabLanguage } from './language';
 import { matlabLint, type LintMessages } from './lint';
 import { matlabCompletions } from './completions';
@@ -109,6 +111,13 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
         }
         break;
       case 'figure': run?.sink.out({ k: 'plot', fig: m.id, spec: m.spec }); break;
+      case 'progress':
+        if (run) {
+          const percent = progressPercent(Array.isArray(m.loops) ? m.loops : []);
+          run.sink.status(formatRunStatus(t, { line: m.line, percent, elapsedMs: m.elapsedMs }), 'run');
+          run.sink.progress?.({ percent, elapsedMs: m.elapsedMs });
+        }
+        break;
       case 'wrote': files.set(m.name, m.img); run?.sink.files?.(); break;
       case 'vars': vars = m.vars; run?.sink.vars?.(vars); break;
       case 'done':
@@ -182,6 +191,7 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
       completions: matlabCompletions({ workspace: () => vars, codeSources: () => codeSources(), fileNames: () => [...files.keys()] }),
     },
     help: MATLAB_HELP,
+    slowRunTip: t('Per-pixel loops are slow in the browser. Vectorized code such as `b = a + 50;` runs the same operation in one step.'),
     files,
 
     run({ cells, target, signal }: RunRequest, sink: RunSink) {

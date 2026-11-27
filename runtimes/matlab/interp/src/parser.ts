@@ -83,7 +83,9 @@ export function parse(src: string): any[] {
       skipSeps();
       const t = peek();
       if (t.t === 'eof' || (t.t === 'kw' && terms.includes(t.v))) return out;
-      out.push(statement());
+      const first = t.line;
+      const st = statement(); st.line = first; // 1-based source line, for progress reports
+      out.push(st);
     }
   }
   function endOfStmt(): boolean { // returns the "show result" flag

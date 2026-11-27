@@ -21,6 +21,7 @@ import { renderCell } from './cell-view';
 import { renderSide, hasSidePanels } from './side-panel';
 import { renderToolbar, createImportInput } from './toolbar';
 import { hasError } from './outputs';
+import { RunProgress, formatElapsed, type TipSession } from './run-progress';
 import { fileToImage } from './images';
 
 export interface ShellHandle {
@@ -64,6 +65,8 @@ type MlwebGlobal = { readonly cells: UiCell[]; runAll(): Promise<void>; runCell(
 const w = window as unknown as { __mlweb?: MlwebGlobal };
 
 let activeDestroy: (() => void) | null = null;
+/** The slow-run tip is offered once per page load. */
+const sessionTip: TipSession = { shown: false };
 
 /** FNV-1a over the cell types and sources: tells "published version" from "local edits". */
 const fnv = (s: string) => {
@@ -263,6 +266,31 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     } catch { return null; }
   }
 
+  // ---------------- long-run progress ----------------
+  const progress = new RunProgress(sessionTip);
+  let progressTimer = 0;
+  /** Updates the footer of the running cell and the Stop button in place (no re-render). */
+  function paintProgress() {
+    const v = progress.view();
+    const box = root.querySelector<HTMLElement>('.cell.running .run-progress');
+    if (box) {
+      box.hidden = !v.visible;
+      if (v.visible) {
+        const bar = box.querySelector<HTMLElement>('.run-bar')!, fill = box.querySelector<HTMLElement>('.run-fill')!;
+        bar.classList.toggle('indeterminate', v.percent === null);
+        if (v.percent === null) { bar.removeAttribute('aria-valuenow'); fill.style.width = ''; }
+        else { bar.setAttribute('aria-valuenow', String(v.percent)); fill.style.width = v.percent + '%'; }
+        box.querySelector<HTMLElement>('.run-time')!.textContent = (v.percent === null ? '' : v.percent + '% · ') + formatElapsed(v.elapsedMs, t);
+        const tip = box.querySelector<HTMLElement>('.run-tip')!;
+        tip.hidden = !(v.tip && engine.slowRunTip);
+        if (!tip.hidden) tip.textContent = '💡 ' + engine.slowRunTip;
+      }
+    }
+    q('stop')?.classList.toggle('primary', v.stopPrimary);
+  }
+  function startProgress() { progress.start(); clearInterval(progressTimer); progressTimer = window.setInterval(paintProgress, 250); }
+  function endProgress() { clearInterval(progressTimer); progress.stop(); paintProgress(); }
+
   // ---------------- status ----------------
   function setStatus(text: string, kind?: 'run' | 'error' | 'result') {
     statusKind = kind;
@@ -315,6 +343,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
       out: (o, i) => { if (run === generation) applyOut(live(i), o); },
       clear: (i) => { const c = live(i); if (c && run === generation) { c.outs = c.outs.filter((x) => x.k === 'err'); scheduleRender(); } },
       status: (text, kind) => { if (run === generation) setStatus(text, kind); },
+      progress: (p) => { if (run === generation) progress.update(p.percent); },
       vars: (v: VarInfo[]) => { if (run === generation) { state.vars = v; ctx.renderSide(); } },
       files: () => { if (run === generation) ctx.renderSide(); },
       input: (req, i) => (run === generation ? ask(live(i), req) : Promise.resolve(null)),
@@ -328,6 +357,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     const run = ++generation;
     for (const c of targets) { c.outs = []; c.result = undefined; c.running = true; c.count = ++execCount; }
     setStatus(t('Running…'), 'run');
+    startProgress();
     render();
     const snapshot: Cell[] = state.cells.map((c) => {
       const base: Cell = { id: c.id, type: c.type, src: c.src, ...(c.stdin !== undefined ? { stdin: c.stdin } : {}) };
@@ -349,6 +379,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     } finally {
       if (cur?.ctrl === ctrl) {
         cur = null; state.busy = false;
+        endProgress();
         for (const c of targets) {
           c.running = false;
           if (c.type === 'code' && c.challenge && edit()) {
@@ -572,6 +603,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
 
     nb.replaceChildren();
     state.cells.forEach((c, i) => nb.append(renderCell(ctx, c, i)));
+    paintProgress();
 
     if (focusEditorId !== null) {
       const view = editors.get(focusEditorId);
@@ -687,7 +719,7 @@ export function mountShell(engine: Engine, opts: MountOptions, extraAr: Record<s
     if (activeDestroy === destroy) activeDestroy = null;
     generation++;
     if (renderQ) cancelAnimationFrame(renderQ);
-    cur?.ctrl.abort(); cancelInputs(); cur = null; state.busy = false;
+    cur?.ctrl.abort(); cancelInputs(); cur = null; state.busy = false; clearInterval(progressTimer);
     for (const view of editors.values()) view.destroy();
     editors.clear();
     try { engine.dispose(); } catch { /* engine already gone */ }

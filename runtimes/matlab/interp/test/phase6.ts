@@ -2,6 +2,8 @@
 // plus differential runs of the fast paths against the general evaluator.
 import { Interp, Host } from '../src/index';
 import { BUILTINS } from '../src/interp';
+import { progressFraction, progressPercent } from '../src/progress';
+import { BENCH_CASES, BENCH_REFERENCE_MS, CALIBRATION_REF_MS, bestOf, calibrateMs } from './bench';
 type Run = (name: string, src: string, check: (o: string, I: Interp) => any, expectErr?: string) => void;
 type Ctx = { run: Run; val: (I: Interp, n: string) => number[]; eq: (a: any, b: any) => any };
 
@@ -193,4 +195,95 @@ end`, (o, I) => eq([o, val(I, 'i')], ['1;2;5;', [5]]));
   // brackets make the loop go through the general path, which builds the array first
   same('differential: range loops against loops over the built array', heads.map(h => `acc = []; i = -7; for i = ${h}\n acc(end+1) = i; k = class(i); end`),
     p => outcome(p.replace(/for i = (.*)\n/, 'for i = [$1]\n'), true));
+
+  console.log('Phase 6.1 (benchmark ceilings)');
+  // A ceiling is 2.5x the reference time (2x regression plus noise) times how much slower this machine is on a fixed JS
+  // workload, with a 40 ms floor. The pre-Phase-6 timings of the 512 loops were 2.5-4.5x the references, so they fail.
+  const machine = Math.min(8, Math.max(1, calibrateMs() / CALIBRATION_REF_MS));
+  for (const c of BENCH_CASES) {
+    const ref = BENCH_REFERENCE_MS[c.name];
+    run(`bench: ${c.name} is within its ceiling`, '', () => {
+      if (ref === undefined) throw new Error('no reference time for this case');
+      const ceiling = Math.max(40, 2.5 * ref * machine);
+      let ms = bestOf(c, 2);
+      if (ms > ceiling) ms = Math.min(ms, bestOf(c, 3)); // one more chance before failing on a noisy run
+      if (ms > ceiling) throw new Error(`${ms.toFixed(0)} ms > ceiling ${ceiling.toFixed(0)} ms (reference ${ref} ms, machine x${machine.toFixed(2)})`);
+      return true;
+    });
+  }
+
+  console.log('Phase 6.2a (progress ticks)');
+  type Info = { line: number; loops: { iter: number; total: number }[]; elapsedMs: number };
+  /** Runs `src` with a recording `tick`. `step` moves a fake clock forward on every read; reads are counted. */
+  const ticked = (src: string, o: { mask?: number; interval?: number; step?: number; tick?: boolean; realClock?: boolean } = {}) => {
+    const infos: Info[] = [];
+    let t = 0, reads = 0;
+    const host: Host = { print: () => {}, warn: () => {}, readImage: () => null, writeImage: () => {}, showImage: () => {}, newFigure: () => {} };
+    if (o.tick !== false) host.tick = info => { infos.push(info); };
+    const I = new Interp(host);
+    I.tickMask = o.mask ?? 4095;
+    I.tickIntervalMs = o.interval ?? 100;
+    if (!o.realClock) I.clock = () => { reads++; return (t += o.step ?? 10); };
+    I.run(src);
+    return { infos, reads, I };
+  };
+  const loopsOf = (i: Info) => i.loops.map(l => `${l.iter}/${l.total}`).join(' ');
+  run('tick: sent at most every 100 ms of clock time', '', () => {
+    const { infos } = ticked('for i = 1:1000, end', { mask: 0 });
+    // the clock moves 10 ms per read: one read at the start, then one per iteration
+    const gaps = infos.slice(1).map((x, i) => x.elapsedMs - infos[i].elapsedMs);
+    return eq([infos.length >= 99, gaps.every(g => g === 100), infos[0].elapsedMs >= 100], [true, true, true]);
+  });
+  run('tick: the clock is read only every 4096th iteration', '', () => {
+    const a = ticked('for i = 1:4095, end'), b = ticked('for i = 1:4096, end'), c = ticked('k = 0; while k < 8192, k = k + 1; end');
+    return eq([a.reads, b.reads, c.reads], [1, 2, 3]); // 1 = the read at the start of the run
+  });
+  run('tick: without host.tick the clock is never read in a loop', '', () => eq(ticked('for i = 1:20000, end', { mask: 0, tick: false }).reads, 1));
+  run('tick: line, nesting and trip counts', '', () => {
+    const { infos } = ticked('for i = 1:3\n  for j = 1:4\n    x = 1;\n  end\nend', { mask: 0, interval: 0, step: 1 });
+    return eq([infos.length, loopsOf(infos[0]), loopsOf(infos[1]), loopsOf(infos[infos.length - 1]), infos.slice(0, 6).map(x => x.line)],
+      [15, '1/3', '1/3 1/4', '3/3 4/4', [1, 2, 2, 2, 2, 1]]);
+  });
+  run('tick: while, 1:Inf and a materialized array', '', () => {
+    const w = ticked('k = 0; while k < 3, k = k + 1; end', { mask: 0, interval: 0 }).infos;
+    const inf = ticked('for i = 1:Inf, if i > 2, break; end, end', { mask: 0, interval: 0 }).infos;
+    const arr = ticked('for v = [5 6 7], end', { mask: 0, interval: 0 }).infos;
+    const nan = ticked('for i = 1:NaN, end', { mask: 0, interval: 0 }).infos;
+    return eq([w.map(loopsOf), inf.map(loopsOf), arr.map(loopsOf), nan.length], [['1/Infinity', '2/Infinity', '3/Infinity'], ['1/Infinity', '2/Infinity', '3/Infinity'], ['1/3', '2/3', '3/3'], 0]);
+  });
+  run('tick: loops left by break, return and an error are not reported later', '', () => {
+    const { infos } = ticked(`function f()
+  for q = 1:3, return; end
+end
+for i = 1:3
+  for b = 1:2, break; end
+  f();
+  try, for j = 1:2, error('x'); end, catch, end
+end`, { mask: 0, interval: 0 });
+    const per = (i: number) => [`${i}/3`, `${i}/3 1/2`, `${i}/3 1/3`, `${i}/3 1/2`];
+    return eq([infos.map(loopsOf), infos.map(x => x.line)], [[1, 2, 3].flatMap(per), [4, 5, 2, 7, 4, 5, 2, 7, 4, 5, 2, 7]]);
+  });
+  run('tick: array and while loops left by break or return are not reported later', '', () => {
+    const { infos } = ticked(`function f()
+  while true, return; end
+end
+for i = 1:2
+  for v = [7 8], break; end
+  while true, break; end
+  f();
+  x = 1;
+end`, { mask: 0, interval: 0 });
+    const per = (i: number) => [`${i}/2`, `${i}/2 1/2`, `${i}/2 1/Infinity`, `${i}/2 1/Infinity`];
+    return eq(infos.map(loopsOf), [1, 2].flatMap(per));
+  });
+  run('tick: pause reports progress', '', () => {
+    const n = ticked('pause(0.25)', { realClock: true }).infos.length; // real clock: about 2 ticks in 250 ms
+    return n >= 1 && n <= 3 ? true : eq(n, 2);
+  });
+  const pct = (...l: [number, number][]) => progressPercent(l.map(([iter, total]) => ({ iter, total })));
+  run('percent: one loop', '', () => eq([pct([1, 10]), pct([3, 10]), pct([10, 10]), pct([1, 1])], [0, 20, 90, 0]));
+  run('percent: nested loops are (outerIter-1 + innerFraction) / outerTotal', '', () => eq([pct([2, 4], [3, 5]), pct([1, 2], [1, 2], [2, 2]), progressFraction([{ iter: 2, total: 4 }, { iter: 3, total: 5 }])],
+    [35, 12, 0.35]));
+  run('percent: unknown counts', '', () => eq([pct(), pct([1, Infinity]), pct([5, NaN]), pct([1, 0]), pct([1, Infinity], [3, 4]), pct([2, 4], [1, Infinity]), pct([2, 4], [7, 0])],
+    [null, null, null, null, null, 25, 25]));
 }

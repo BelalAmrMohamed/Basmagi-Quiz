@@ -48,6 +48,17 @@ export class Interp {
   private readonly scalar = new ScalarEval();
   /** Allocation-free scalar evaluation and direct element access. Tests switch it off to compare against the general path. */
   scalarFastPath = true;
+  /** Source line of the statement being run (1-based, 0 before the first). Reported by `host.tick`. */
+  curLine = 0;
+  runStartMs = 0;
+  /** Loops being run, outermost first. `total` is Infinity when unknown (`while`, `1:Inf`, a NaN bound). */
+  private loops: { iter: number; total: number }[] = [];
+  private backEdges = 0;
+  private lastTickMs = 0;
+  /** The clock is looked at every `tickMask + 1` loop iterations (a power of two) and `host.tick` is called at most every `tickIntervalMs`. */
+  tickMask = 4095;
+  tickIntervalMs = 100;
+  clock: () => number = () => performance.now();
   /** Which array buffers are shared (copy-on-write). */
   readonly buffers = new BufferOwners();
   /** Argument expressions (AST) of the builtin call in progress, so builtins like imtool can read the variable name. */
@@ -69,6 +80,8 @@ export class Interp {
     for (const s of ast) if (s.k === 'func') this.funcs.set(s.name, s);
     this.curScope = this.vars;
     this.figs.reset();
+    this.loops.length = 0; this.backEdges = 0; this.curLine = 0;
+    this.runStartMs = this.lastTickMs = this.clock();
     try { this.exec(ast.filter(s => s.k !== 'func'), this.vars); }
     finally { this.flushFigures(true); }
   }
@@ -89,6 +102,7 @@ export class Interp {
   // ---------- statements ----------
   exec(stmts: any[], sc: Scope): number {
     for (const s of stmts) {
+      this.curLine = s.line;
       switch (s.k) {
         case 'expr': {
           const e = s.e;
@@ -115,11 +129,13 @@ export class Interp {
           break;
         }
         case 'try': {
+          const nLoops = this.loops.length;
           try {
             const r = this.exec(s.body, sc);
             if (r) return r;
           } catch (e: any) {
             if (!(e instanceof MatlabError)) throw e;
+            this.loops.length = nLoops; // loops left by the error
             const me: S = {
               cls: 'struct', dims: [1, 1], keys: ['message', 'identifier'],
               data: [{ message: str(e.message), identifier: str((e as any).identifier ?? 'MLWeb:Error') }],
@@ -152,26 +168,46 @@ export class Interp {
           if (head.k === 'range') {
             // The values are produced one at a time, so the range is never built as an array.
             const { first, step, count } = this.rangeBounds(head, sc);
+            const mark = this.loops.length, loop = { iter: 0, total: Number.isFinite(count) ? count : Infinity };
+            this.loops.push(loop);
+            let res = 0;
             for (let j = 0; j < count; j++) {
+              loop.iter = j + 1;
+              if (!(++this.backEdges & this.tickMask)) this.maybeTick(s.line);
               sc.set(s.v, num(first + j * step));
-              const r = this.exec(s.body, sc); if (r === BRK) break; if (r === RET) return r;
+              const r = this.exec(s.body, sc); if (r === BRK) break; if (r === RET) { res = r; break; }
             }
+            this.loops.length = mark;
+            if (res) return res;
             break;
           }
           const rng = this.eval(s.e, sc) as T, rows = rng.dims[0], cols = rng.data.length / (rows || 1);
           if (isT(rng)) this.buffers.hold(rng.data); // the loop keeps iterating the original if the body writes the variable
+          const mark = this.loops.length, loop = { iter: 0, total: rng.data.length ? cols : 0 };
+          this.loops.push(loop);
+          let res = 0;
           for (let j = 0; j < (rng.data.length ? cols : 0); j++) {
+            loop.iter = j + 1;
+            if (!(++this.backEdges & this.tickMask)) this.maybeTick(s.line);
             this.store(sc, s.v, rows === 1 ? num(rng.data[j], rng.cls) : mk(rng.cls, [rows, 1], rng.data.subarray(j * rows, (j + 1) * rows)));
-            const r = this.exec(s.body, sc); if (r === BRK) break; if (r === RET) return r;
+            const r = this.exec(s.body, sc); if (r === BRK) break; if (r === RET) { res = r; break; }
           }
+          this.loops.length = mark;
+          if (res) return res;
           break;
         }
         case 'while': {
-          let guard = 0;
+          let guard = 0, res = 0;
+          const mark = this.loops.length, loop = { iter: 0, total: Infinity };
+          this.loops.push(loop);
           while (this.cond(s.c, sc)) {
             if (++guard > 5e6) err('Loop iteration limit (5,000,000) exceeded.');
-            const r = this.exec(s.body, sc); if (r === BRK) break; if (r === RET) return r;
+            loop.iter = guard;
+            if (!(++this.backEdges & this.tickMask)) this.maybeTick(s.line);
+            const r = this.exec(s.body, sc); if (r === BRK) break; if (r === RET) { res = r; break; }
           }
+          this.loops.length = mark;
+          if (res) return res;
           break;
         }
         case 'break': return BRK;
@@ -180,6 +216,16 @@ export class Interp {
       }
     }
     return 0;
+  }
+  /** Reports progress to `host.tick` unless one went out less than `tickIntervalMs` ago. Called at loop back-edges and by `pause`. */
+  maybeTick(line = this.curLine) {
+    const tick = this.host.tick;
+    if (!tick) return;
+    const now = this.clock();
+    if (now - this.lastTickMs < this.tickIntervalMs) return;
+    this.lastTickMs = now;
+    this.curLine = line; // a loop reports its own line, not the last line of its body
+    tick.call(this.host, { line: this.curLine, loops: this.loops.map(l => ({ iter: l.iter, total: l.total })), elapsedMs: now - this.runStartMs });
   }
   /** First value, step and length of `a:b` or `a:step:b`. The length is NaN (no elements) when a bound is NaN. */
   private rangeBounds(e: any, sc: Scope): { first: number; step: number; count: number } {

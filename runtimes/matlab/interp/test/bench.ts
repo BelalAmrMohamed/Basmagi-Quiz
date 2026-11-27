@@ -95,6 +95,48 @@ h = imhist(j);`,
   },
 ]);
 
+/** Reference timings (ms, best of several runs on the machine the ceilings were set on) after Phase 6.1c. */
+export const BENCH_REFERENCE_MS: Record<string, number> = {
+  'L7 brightness loop (256x256x3)': 117,
+  'L6 pixel-replication zoom 2x (128x128x3 -> 256x256x3)': 70,
+  'L8 rotate-90 loop (256x256x3)': 58,
+  'L8 slicing loop (256x256x3)': 31,
+  'histeq + imhist (256x256)': 12.5,
+  'L7 brightness loop (512x512x3)': 340,
+  'L6 pixel-replication zoom 2x (256x256x3 -> 512x512x3)': 195,
+  'L8 rotate-90 loop (512x512x3)': 242,
+  'L8 slicing loop (512x512x3)': 58,
+  'histeq + imhist (512x512)': 33,
+};
+
+/** Fixed pure-JS workload, so a slower machine raises the ceilings instead of failing the benchmark test. */
+export function calibrateMs(): number {
+  let best = Infinity;
+  for (let r = 0; r < 5; r++) {
+    const t0 = performance.now();
+    const a = new Float64Array(1 << 20);
+    let s = 0;
+    for (let k = 0; k < 8; k++) for (let i = 0; i < a.length; i++) { a[i] = a[i] * 0.5 + i; s += a[i]; }
+    if (s === -1) console.log(s);
+    best = Math.min(best, performance.now() - t0);
+  }
+  return best;
+}
+/** calibrateMs() on the reference machine. */
+export const CALIBRATION_REF_MS = 15;
+
+/** Best of `runs` runs of one case, in ms. */
+export function bestOf(c: BenchCase, runs = 3): number {
+  let best = Infinity;
+  for (let r = 0; r < runs; r++) {
+    const I = new Interp(host);
+    const t0 = performance.now();
+    I.run(c.src);
+    best = Math.min(best, performance.now() - t0);
+  }
+  return best;
+}
+
 export function runBench(): Record<string, number> {
   const results: Record<string, number> = {};
   for (const c of BENCH_CASES) {
