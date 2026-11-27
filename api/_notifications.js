@@ -9,6 +9,10 @@
 //   notifications-read-all    -> { ok }
 //   notifications-delete      -> { ok }                       body: { ids: [uuid] }
 //   notifications-broadcast   -> { sent }  owner-only         body: { title, body?, href? }
+//   notifications-prefs-get   -> { muted, quiet }             muted = never stored; quiet = stored, no badge
+//   notifications-prefs-set   -> { muted, quiet, unread }     body: { muted: [type], quiet: [type] }
+//   notifications-broadcast-preview -> { total, receiving, silent }  owner-only
+//   notifications-list also takes { filter: "important" }
 //
 // Rows are only created through push_admin_notification() / broadcast_admin_notification()
 // (supabase/migrations/20261127120000_admin_notifications.sql), which also do the
@@ -26,7 +30,20 @@ export const NOTIFICATION_ACTIONS = new Set([
   "notifications-read-all",
   "notifications-delete",
   "notifications-broadcast",
+  "notifications-prefs-get",
+  "notifications-prefs-set",
+  "notifications-broadcast-preview",
 ]);
+
+/** The "important" tab, and what gets pinned to the top of the list while unread. */
+export const IMPORTANT_TYPES = ["welcome", "announcement", "report_new", "storage_warning"];
+
+/**
+ * Types an admin may mute (admin_users.notification_muted). `welcome` and `storage_warning`
+ * are deliberately absent: they can never be muted. Keep in sync with the list in
+ * public/src/components/notification-center/notification-center.js.
+ */
+export const MUTABLE_TYPES = ["announcement", "report_new", "report_closed", "milestone", "level_up", "badge", "upload"];
 
 /** Internal links only: "/reports" is fine, "//evil.com" and "https://..." are not. */
 export function safeHref(href) {
@@ -103,12 +120,31 @@ function cleanIds(ids) {
   return Array.isArray(ids) ? [...new Set(ids.filter((i) => typeof i === "string" && UUID_RE.test(i)))].slice(0, 100) : [];
 }
 
-async function unreadCount(supabase, adminId) {
-  const { count, error } = await supabase
-    .from("admin_notifications")
-    .select("id", { count: "exact", head: true })
-    .eq("recipient_admin_id", adminId)
-    .is("read_at", null);
+async function getPrefs(supabase, adminId) {
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("notification_muted, notification_quiet")
+    .eq("id", adminId)
+    .maybeSingle();
+  if (error) throw error;
+  const ok = (a) => (Array.isArray(a) ? a : []).filter((t) => MUTABLE_TYPES.includes(t));
+  const muted = ok(data?.notification_muted);
+  return { muted, quiet: ok(data?.notification_quiet).filter((t) => !muted.includes(t)) };
+}
+
+/** Hides the given types (rows created before a mute, or quiet types in the badge count). */
+const hideTypes = (query, types) => (types.length ? query.not("type", "in", `(${types.join(",")})`) : query);
+
+/** Badge count: muted and quiet ("digest") types never count. */
+async function unreadCount(supabase, adminId, prefs) {
+  const { count, error } = await hideTypes(
+    supabase
+      .from("admin_notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("recipient_admin_id", adminId)
+      .is("read_at", null),
+    [...prefs.muted, ...prefs.quiet],
+  );
   if (error) throw error;
   return count || 0;
 }
@@ -117,6 +153,20 @@ export async function handleNotificationAction(req, res, action, payload, adminI
   const body = req.body || {};
 
   try {
+    if (action === "notifications-broadcast-preview") {
+      if (!payload?.isOwner) return res.status(403).json({ error: "هذه الصلاحية للمالك فقط." });
+      const { data, error } = await supabase.from("admin_users").select("notification_muted, notification_quiet");
+      if (error) throw error;
+      const rows = data || [];
+      const has = (r, col) => Array.isArray(r[col]) && r[col].includes("announcement");
+      const receiving = rows.filter((r) => !has(r, "notification_muted"));
+      return res.status(200).json({
+        total: rows.length,
+        receiving: receiving.length,
+        silent: receiving.filter((r) => has(r, "notification_quiet")).length,
+      });
+    }
+
     if (action === "notifications-broadcast") {
       if (!payload?.isOwner) return res.status(403).json({ error: "هذه الصلاحية للمالك فقط." });
       const title = typeof body.title === "string" ? body.title.trim() : "";
@@ -140,32 +190,54 @@ export async function handleNotificationAction(req, res, action, payload, adminI
     if (!adminId) {
       if (action === "notifications-list") return res.status(200).json({ items: [], unread: 0, hasMore: false });
       if (action === "notifications-count") return res.status(200).json({ unread: 0 });
+      if (action.startsWith("notifications-prefs")) return res.status(200).json({ muted: [], quiet: [], unread: 0 });
       return res.status(200).json({ ok: true });
     }
 
+    if (action === "notifications-prefs-get") {
+      return res.status(200).json(await getPrefs(supabase, adminId));
+    }
+
+    if (action === "notifications-prefs-set") {
+      if (!Array.isArray(body.muted)) return res.status(400).json({ error: "قائمة الأنواع غير صالحة." });
+      const pick = (a) => [...new Set((Array.isArray(a) ? a : []).filter((t) => MUTABLE_TYPES.includes(t)))];
+      const muted = pick(body.muted);
+      const quiet = pick(body.quiet).filter((t) => !muted.includes(t)); // muted wins
+      const { error } = await supabase
+        .from("admin_users")
+        .update({ notification_muted: muted, notification_quiet: quiet })
+        .eq("id", adminId);
+      if (error) throw error;
+      return res.status(200).json({ muted, quiet, unread: await unreadCount(supabase, adminId, { muted, quiet }) });
+    }
+
+    const prefs = await getPrefs(supabase, adminId);
+
     if (action === "notifications-count") {
-      return res.status(200).json({ unread: await unreadCount(supabase, adminId) });
+      return res.status(200).json({ unread: await unreadCount(supabase, adminId, prefs) });
     }
 
     if (action === "notifications-list") {
       const limit = Math.min(Math.max(parseInt(body.limit, 10) || PAGE_DEFAULT, 1), PAGE_MAX);
-      let q = supabase
-        .from("admin_notifications")
-        .select(COLUMNS)
-        .eq("recipient_admin_id", adminId)
+      let q = hideTypes(
+        supabase.from("admin_notifications").select(COLUMNS).eq("recipient_admin_id", adminId),
+        prefs.muted,
+      )
         .order("updated_at", { ascending: false })
         .order("id", { ascending: false })
         .limit(limit + 1);
       if (typeof body.before === "string" && !Number.isNaN(Date.parse(body.before))) {
         q = q.lt("updated_at", body.before);
       }
+      if (body.filter === "important") q = q.in("type", IMPORTANT_TYPES);
       const { data, error } = await q;
       if (error) throw error;
       const rows = data || [];
       const hasMore = rows.length > limit;
       return res.status(200).json({
         items: hasMore ? rows.slice(0, limit) : rows,
-        unread: await unreadCount(supabase, adminId),
+        unread: await unreadCount(supabase, adminId, prefs),
+        quiet: prefs.quiet,
         hasMore,
       });
     }

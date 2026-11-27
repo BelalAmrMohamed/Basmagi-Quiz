@@ -100,6 +100,25 @@ export function describe(n) {
   }
 }
 
+// Shown in the "important" tab and pinned to the top while unread. Keep in sync with
+// IMPORTANT_TYPES in api/_notifications.js.
+const IMPORTANT = new Set(["welcome", "announcement", "report_new", "storage_warning"]);
+const rank = (n) => (!n.read_at && IMPORTANT.has(n.type) ? 0 : 1);
+
+// ── Preferences (mute types) ─────────────────────────────────────────────────
+// Keep in sync with MUTABLE_TYPES in api/_notifications.js. `welcome` and `storage_warning`
+// are never mutable (the server refuses them too).
+
+export const MUTABLE_TYPES = [
+  { type: "announcement", label: "إعلانات المطوّرين", hint: "رسائل عامة من فريق المنصة." },
+  { type: "report_new", label: "بلاغات على امتحاناتي", hint: "عندما يبلّغ طالب عن سؤال في امتحانك." },
+  { type: "report_closed", label: "إغلاق البلاغات", hint: "عندما يحلّ مشرف آخر بلاغًا أو يتجاهله." },
+  { type: "milestone", label: "الإنجازات", hint: "عدد مشاهدات كبير على محتواك" },
+  { type: "level_up", label: "الارتقاء بالمستوى", hint: "عند وصولك إلى مستوى جديد." },
+  { type: "badge", label: "الشارات الجديدة", hint: "عند حصولك على شارة." },
+  { type: "upload", label: "تأكيد رفع المحتوى", hint: "رسالة «تم الرفع بنجاح» بعد كل عملية رفع." },
+];
+
 // ── Icons (24×24 stroke paths) ───────────────────────────────────────────────
 
 const ICONS = {
@@ -171,6 +190,15 @@ let retried = false;
 let trigger = null, badge = null, panel = null, backdrop = null;
 let listEl = null, footEl = null, markAllBtn = null, headCount = null;
 let items = [];
+let view = "list"; // "list" | "prefs"
+let muted = new Set();
+let quiet = new Set(); // digest types: listed, but never counted in the badge
+let tab = "all"; // "all" | "important"
+let tabsEl = null;
+let prefsState = "idle"; // idle | loading | ready | error
+let prefsSave = Promise.resolve();
+let gearBtn = null, titleText = null;
+const oldest = () => items.reduce((m, n) => (!m || n.updated_at < m ? n.updated_at : m), null);
 let unread = 0;
 let hasMore = false;
 let loading = false;
@@ -194,7 +222,7 @@ function renderBadge() {
   }
   if (trigger) trigger.setAttribute("aria-label", unread > 0 ? `الإشعارات، ${unread} غير مقروء` : "الإشعارات");
   if (headCount) {
-    headCount.hidden = unread <= 0;
+    headCount.hidden = unread <= 0 || view === "prefs";
     headCount.textContent = unread > 99 ? "99+" : String(unread);
   }
   if (markAllBtn) markAllBtn.disabled = unread <= 0;
@@ -225,24 +253,44 @@ function buildPanel() {
   panel.hidden = true;
 
   const head = el("header", "nc-head");
-  const title = el("h2", "nc-title", "الإشعارات");
+  const title = el("h2", "nc-title");
+  titleText = el("span", "", "الإشعارات");
+  title.appendChild(titleText);
   headCount = el("span", "nc-head-count");
   headCount.hidden = true;
   title.appendChild(headCount);
   markAllBtn = el("button", "nc-markall", "تحديد الكل كمقروء");
   markAllBtn.type = "button";
   markAllBtn.addEventListener("click", markAllRead);
+  gearBtn = el("button", "nc-gear");
+  gearBtn.type = "button";
+  gearBtn.setAttribute("aria-label", "إعدادات الإشعارات");
+  gearBtn.appendChild(svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>', 18));
+  gearBtn.addEventListener("click", () => setView(view === "prefs" ? "list" : "prefs"));
   const closeBtn = el("button", "nc-close", "×");
   closeBtn.type = "button";
   closeBtn.setAttribute("aria-label", "إغلاق");
   closeBtn.addEventListener("click", () => close({ returnFocus: true }));
-  head.append(title, markAllBtn, closeBtn);
+  head.append(title, markAllBtn, gearBtn, closeBtn);
+
+  tabsEl = el("div", "nc-tabs");
+  tabsEl.setAttribute("role", "group");
+  tabsEl.setAttribute("aria-label", "تصفية الإشعارات");
+  for (const [key, label] of [["all", "الكل"], ["important", "المهم"]]) {
+    const b = el("button", "nc-tab", label);
+    b.type = "button";
+    b.dataset.tab = key;
+    b.setAttribute("aria-pressed", String(key === tab));
+    b.addEventListener("click", () => setTab(key));
+    tabsEl.appendChild(b);
+  }
 
   listEl = el("ul", "nc-list");
   listEl.setAttribute("aria-live", "polite");
   footEl = el("div", "nc-foot");
 
-  panel.append(head, listEl, footEl);
+  panel.tabIndex = -1;
+  panel.append(head, tabsEl, listEl, footEl);
   document.body.append(backdrop, panel);
 }
 
@@ -250,6 +298,8 @@ function renderList() {
   if (!listEl) return;
   listEl.textContent = "";
   footEl.textContent = "";
+
+  if (view === "prefs") { renderPrefs(); return; }
 
   if (loading && !items.length) {
     for (let i = 0; i < 3; i++) listEl.appendChild(el("li", "nc-skeleton"));
@@ -260,12 +310,17 @@ function renderList() {
     const empty = el("li", "nc-empty");
     const icon = el("span", "nc-empty-icon");
     icon.appendChild(svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', 28));
-    empty.append(icon, el("strong", "", "لا توجد إشعارات بعد"), el("span", "", "ستظهر هنا عمليات الرفع، والبلاغات على امتحاناتك، وإنجازاتك."));
+    empty.append(
+      icon,
+      el("strong", "", tab === "important" ? "لا توجد إشعارات مهمة" : "لا توجد إشعارات بعد"),
+      el("span", "", tab === "important" ? "هنا تظهر الإعلانات والبلاغات الجديدة وتحذيرات التخزين." : "ستظهر هنا عمليات الرفع، والبلاغات على امتحاناتك، وإنجازاتك."),
+    );
     listEl.appendChild(empty);
     return;
   }
 
-  for (const n of items) listEl.appendChild(renderItem(n));
+  // Unread important items first; `items` itself stays newest-first (it drives paging).
+  for (const n of [...items].sort((a, b) => rank(a) - rank(b))) listEl.appendChild(renderItem(n));
 
   if (hasMore) {
     const more = el("button", "nc-more", "عرض المزيد");
@@ -275,9 +330,129 @@ function renderList() {
   }
 }
 
+function setTab(next) {
+  if (tab === next) return;
+  tab = next;
+  for (const b of tabsEl.children) b.setAttribute("aria-pressed", String(b.dataset.tab === tab));
+  items = [];
+  hasMore = false;
+  loading = false;
+  renderList();
+  loadFirstPage();
+}
+
+function setView(next) {
+  view = next;
+  const prefs = view === "prefs";
+  if (titleText) titleText.textContent = prefs ? "إعدادات الإشعارات" : "الإشعارات";
+  if (markAllBtn) markAllBtn.hidden = prefs;
+  if (tabsEl) tabsEl.hidden = prefs;
+  if (headCount) headCount.hidden = prefs || unread <= 0;
+  if (gearBtn) {
+    gearBtn.classList.toggle("nc-gear-on", prefs);
+    gearBtn.setAttribute("aria-label", prefs ? "العودة إلى الإشعارات" : "إعدادات الإشعارات");
+    gearBtn.setAttribute("aria-pressed", String(prefs));
+  }
+  if (prefs) {
+    loadPrefs();
+  } else {
+    loadFirstPage({ silent: items.length > 0 }); // muted types are filtered server-side: refresh
+  }
+  renderList();
+  position();
+}
+
+async function loadPrefs() {
+  prefsState = "loading";
+  try {
+    const data = await call({ action: "notifications-prefs-get" });
+    muted = new Set(data.muted || []);
+    quiet = new Set(data.quiet || []);
+    prefsState = "ready";
+  } catch {
+    prefsState = "error";
+  }
+  if (isOpen && view === "prefs") renderList();
+}
+
+const MODES = [
+  ["on", "تنبيه", "يصلك الإشعار ويُحسب في العدّاد"],
+  ["quiet", "صامت", "يظهر في القائمة بدون عدّاد"],
+  ["off", "إيقاف", "لن يُنشأ إشعار"],
+];
+const modeOf = (type) => (muted.has(type) ? "off" : quiet.has(type) ? "quiet" : "on");
+
+function renderPrefs() {
+  if (prefsState === "loading" || prefsState === "idle") {
+    for (let i = 0; i < 4; i++) listEl.appendChild(el("li", "nc-skeleton"));
+    return;
+  }
+  if (prefsState === "error") {
+    const li = el("li", "nc-empty");
+    li.append(el("strong", "", "تعذّر تحميل الإعدادات"), el("span", "", "تحقق من اتصالك بالإنترنت."));
+    const retry = el("button", "nc-more", "إعادة المحاولة");
+    retry.type = "button";
+    retry.addEventListener("click", loadPrefs);
+    li.appendChild(retry);
+    listEl.appendChild(li);
+    return;
+  }
+
+  listEl.appendChild(el("li", "nc-pref-intro", "«صامت» يُبقي الإشعار في القائمة بدون عدّاد، و«إيقاف» يمنع وصوله تمامًا. يمكنك التغيير في أي وقت."));
+  for (const t of MUTABLE_TYPES) {
+    const li = el("li", "nc-pref");
+    const text = el("span", "nc-pref-text");
+    text.append(el("strong", "nc-pref-label", t.label), el("span", "nc-pref-hint", t.hint));
+    const seg = el("span", "nc-seg");
+    seg.setAttribute("role", "radiogroup");
+    seg.setAttribute("aria-label", t.label);
+    for (const [mode, label, title] of MODES) {
+      const b = el("button", "nc-seg-btn", label);
+      b.type = "button";
+      b.title = title;
+      b.setAttribute("role", "radio");
+      b.setAttribute("aria-checked", String(modeOf(t.type) === mode));
+      b.addEventListener("click", () => setMode(t.type, mode, seg));
+      seg.appendChild(b);
+    }
+    li.append(text, seg);
+    listEl.appendChild(li);
+  }
+  listEl.appendChild(el("li", "nc-pref-note", "رسالة الترحيب وتحذيرات مساحة التخزين تصلك دائمًا."));
+}
+
+function paintSeg(seg, type) {
+  const cur = modeOf(type);
+  [...seg.children].forEach((b, i) => b.setAttribute("aria-checked", String(MODES[i][0] === cur)));
+}
+
+function setMode(type, mode, seg) {
+  const prev = modeOf(type);
+  if (prev === mode) return;
+  const apply = (m) => {
+    muted.delete(type);
+    quiet.delete(type);
+    if (m === "off") muted.add(type);
+    if (m === "quiet") quiet.add(type);
+  };
+  apply(mode);
+  paintSeg(seg, type); // optimistic
+  // Saves are chained so the last tap always wins on the server.
+  prefsSave = prefsSave.then(async () => {
+    try {
+      const data = await call({ action: "notifications-prefs-set", muted: [...muted], quiet: [...quiet] });
+      if (typeof data.unread === "number") { unread = data.unread; renderBadge(); }
+    } catch {
+      apply(prev);
+      paintSeg(seg, type);
+      showNotification("تعذّر حفظ الإعدادات", "حاول مرة أخرى.", "error");
+    }
+  });
+}
+
 function renderItem(n) {
   const d = describe(n);
-  const li = el("li", `nc-item${n.read_at ? "" : " nc-unread"}`);
+  const li = el("li", `nc-item${n.read_at ? "" : " nc-unread"}${quiet.has(n.type) ? " nc-quiet" : ""}`);
 
   const main = el("button", "nc-item-main");
   main.type = "button";
@@ -320,7 +495,7 @@ function markLocalRead(id) {
   const n = items.find((x) => x.id === id);
   if (n && !n.read_at) {
     n.read_at = new Date().toISOString();
-    unread = Math.max(0, unread - 1);
+    if (!quiet.has(n.type)) unread = Math.max(0, unread - 1);
     renderBadge();
   }
 }
@@ -328,7 +503,7 @@ function markLocalRead(id) {
 function openItem(n, d) {
   if (!n.read_at) {
     markLocalRead(n.id);
-    call({ action: "notifications-read", ids: [n.id] }).catch(() => {});
+    call({ action: "notifications-read", ids: [n.id] }).catch(() => { });
   }
   if (!d.href) { renderList(); return; }
   close();
@@ -360,14 +535,15 @@ async function removeItem(n) {
   const idx = items.indexOf(n);
   if (idx < 0) return;
   items.splice(idx, 1);
-  if (!n.read_at) unread = Math.max(0, unread - 1);
+  const counted = !n.read_at && !quiet.has(n.type);
+  if (counted) unread = Math.max(0, unread - 1);
   renderBadge();
   renderList();
   try {
     await call({ action: "notifications-delete", ids: [n.id] });
   } catch {
     items.splice(idx, 0, n);
-    if (!n.read_at) unread += 1;
+    if (counted) unread += 1;
     renderBadge();
     renderList();
     showNotification("تعذّر حذف الإشعار", "حاول مرة أخرى.", "error");
@@ -381,8 +557,9 @@ async function loadFirstPage({ silent = false } = {}) {
   loading = true;
   if (!silent && isOpen) renderList();
   try {
-    const data = await call({ action: "notifications-list", limit: PAGE });
+    const data = await call({ action: "notifications-list", limit: PAGE, filter: tab === "important" ? "important" : undefined });
     items = data.items || [];
+    quiet = new Set(data.quiet || []);
     unread = data.unread || 0;
     hasMore = !!data.hasMore;
     failures = 0;
@@ -397,13 +574,13 @@ async function loadFirstPage({ silent = false } = {}) {
 }
 
 async function loadMore() {
-  const last = items[items.length - 1];
-  if (!last || loading) return;
+  const before = oldest();
+  if (!before || loading) return;
   loading = true;
   const btn = footEl.querySelector(".nc-more");
   if (btn) { btn.disabled = true; btn.textContent = "جارٍ التحميل…"; }
   try {
-    const data = await call({ action: "notifications-list", limit: PAGE, before: last.updated_at });
+    const data = await call({ action: "notifications-list", limit: PAGE, before, filter: tab === "important" ? "important" : undefined });
     const seen = new Set(items.map((n) => n.id));
     items = items.concat((data.items || []).filter((n) => !seen.has(n.id)));
     hasMore = !!data.hasMore;
@@ -473,10 +650,12 @@ function position() {
   if (!panel || !trigger) return;
   if (isMobile()) { panel.style.cssText = ""; return; }
   const r = trigger.getBoundingClientRect();
-  const height = Math.min(panel.offsetHeight || 480, window.innerHeight - 16);
+  const MIN_H = 280; // never squeeze the panel below this, even next to a low bell
   // The sidebar is on the right edge (RTL): the panel opens to the left of the bell.
+  const top = Math.min(Math.max(8, r.top - 8), Math.max(8, window.innerHeight - MIN_H - 8));
   panel.style.right = `${Math.max(8, window.innerWidth - r.left + 10)}px`;
-  panel.style.top = `${Math.min(Math.max(8, r.top - 8), Math.max(8, window.innerHeight - height - 8))}px`;
+  panel.style.top = `${top}px`;
+  panel.style.maxHeight = `${Math.min(600, window.innerHeight - top - 8)}px`; // content scrolls inside
   panel.style.left = "auto";
   panel.style.bottom = "auto";
 }
@@ -501,6 +680,7 @@ function onDocClick(e) {
 function open() {
   if (!panel) buildPanel();
   isOpen = true;
+  if (view !== "list") setView("list");
   panel.hidden = false;
   backdrop.hidden = !isMobile();
   trigger.setAttribute("aria-expanded", "true");
@@ -512,7 +692,9 @@ function open() {
   document.addEventListener("keydown", onKeydown, true);
   window.addEventListener("resize", position);
   loadFirstPage({ silent: items.length > 0 });
-  panel.querySelector(".nc-close")?.focus({ preventScroll: true });
+  // The close button is hidden on desktop (click outside / Esc closes): focus the panel instead.
+  const closeBtn = panel.querySelector(".nc-close");
+  (closeBtn && closeBtn.offsetParent ? closeBtn : panel).focus({ preventScroll: true });
 }
 
 function close({ returnFocus = false } = {}) {

@@ -463,6 +463,16 @@ document.getElementById("announceForm").addEventListener("submit", async (e) => 
   }
   await withButtonLoading(document.getElementById("announceSendBtn"), async () => {
     try {
+      // Confirm first: some admins mute announcements, others get them silently (no badge).
+      const { total, receiving, silent } = await postAdminItemAction("notifications-broadcast-preview", {});
+      if (!receiving) {
+        showMessage("كل المشرفين أوقفوا الإعلانات، لن يصل هذا الإعلان لأحد.", true);
+        return;
+      }
+      const lines = [`سيصل هذا الإعلان إلى ${receiving} من أصل ${total} مشرف.`];
+      if (total > receiving) lines.push(`${total - receiving} أوقفوا الإعلانات.`);
+      if (silent) lines.push(`${silent} سيصلهم بصمت (بدون عدّاد).`);
+      if (!window.confirm(`${lines.join("\n")}\n\nهل تريد الإرسال؟`)) return;
       const { sent } = await postAdminItemAction("notifications-broadcast", { title, body, href });
       showMessage(`تم إرسال الإعلان إلى ${sent} مشرف`);
       e.target.reset();
