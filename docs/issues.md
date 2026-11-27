@@ -17,6 +17,16 @@ They always add new models; is there any dynamic way to keep my website updated?
 
 ## New Features
 
+### Notification Preferences
+Notification Preferences: Let each admin mute noisy types. With the option to unmute them later, you could implement a small notifications settings tooltip or modal if needed, or you could go with a better option if you have one. Types that admins can mute could be like these:
+1. Developer announcements.
+2. Reports on my quizzes.
+3. Report closed (resolved/dismissed by others)
+4. Milestones.
+5. Level-ups
+6. New Badges.
+7. Other types (if they exist).
+
 ### Offline Support.
 * Users who have Installed the application: The notebook Page (e.g., `/notebook/new` and notebooks they saved locally at `/my-content`) should work offline as well as.
 * The quiz page and the lesson page should also work, people who have lessons and quizzes locally (i.e., `/my-content`) should work offline.
@@ -42,7 +52,7 @@ AI Agent files: `public\src\components\ai-agent\`
 * Admins & Developers can also see `/reports` to solve reports.
 * Admins need their own control page, too, separate from that of the developers:
   * Admins should be able to see the trash that is related to their scope only: Admins with `المرحلة الجامعية` as a scope only see trash related to it. Developers keep seeing all.
-  * "إرسال إعلان للمشرفين": In admins of a specific scope can send a notification to the other admins in the same scope. 
+  * "إرسال إعلان للمشرفين": In admins of a specific scope can send a notification to the other admins in the same scope.
 
 ### Result Pages
 

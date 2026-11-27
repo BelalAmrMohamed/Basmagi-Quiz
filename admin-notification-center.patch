@@ -1,0 +1,2162 @@
+diff --git a/api/_notifications.js b/api/_notifications.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..442036baa88325fc4ba82dbadb565a44b66e8ae4
+--- /dev/null
++++ b/api/_notifications.js
+@@ -0,0 +1,213 @@
++// =============================================================================
++// api/_notifications.js
++// Admin notification center: server-side helpers + the endpoints behind the bell.
++// Routed through api/admin.js handleItemActions (no new Vercel function).
++//
++//   notifications-list        -> { items, unread, hasMore }   body: { limit?, before? }
++//   notifications-count       -> { unread }                   (cheap; polled every ~60s)
++//   notifications-read        -> { ok }                       body: { ids: [uuid] }
++//   notifications-read-all    -> { ok }
++//   notifications-delete      -> { ok }                       body: { ids: [uuid] }
++//   notifications-broadcast   -> { sent }  owner-only         body: { title, body?, href? }
++//
++// Rows are only created through push_admin_notification() / broadcast_admin_notification()
++// (supabase/migrations/20261127120000_admin_notifications.sql), which also do the
++// grouping / de-duplication atomically.
++// =============================================================================
++
++const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++const PAGE_DEFAULT = 20;
++const PAGE_MAX = 50;
++
++export const NOTIFICATION_ACTIONS = new Set([
++  "notifications-list",
++  "notifications-count",
++  "notifications-read",
++  "notifications-read-all",
++  "notifications-delete",
++  "notifications-broadcast",
++]);
++
++/** Internal links only: "/reports" is fine, "//evil.com" and "https://..." are not. */
++export function safeHref(href) {
++  if (typeof href !== "string") return null;
++  const h = href.trim();
++  return h.length <= 500 && /^\/([^/\\]|$)/.test(h) ? h : null;
++}
++
++/**
++ * Stores one notification for one admin. NEVER throws: a failed notification must
++ * not fail the upload / report / sign-in that triggered it.
++ */
++export async function pushNotification(supabase, recipientAdminId, n) {
++  if (!recipientAdminId || !n || !n.type || !n.title) return null;
++  try {
++    const { data, error } = await supabase.rpc("push_admin_notification", {
++      p_recipient: recipientAdminId,
++      p_type: n.type,
++      p_title: String(n.title).slice(0, 200),
++      p_body: n.body ? String(n.body).slice(0, 1000) : null,
++      p_href: safeHref(n.href),
++      p_meta: n.meta && typeof n.meta === "object" ? n.meta : {},
++      p_group_key: n.groupKey || null,
++      p_dedupe_key: n.dedupeKey || null,
++    });
++    if (error) throw error;
++    return data || null;
++  } catch (e) {
++    console.error("[notifications] push failed:", e?.message || e);
++    return null;
++  }
++}
++
++/**
++ * "Your item is live". Uploads of the same kind merge into ONE unread row (group_key),
++ * so a 40-file folder upload shows "40 quizzes uploaded", not 40 rows.
++ * @param {"quiz"|"lesson"|"notebook"|"youtube"} kind
++ */
++export async function notifyUpload(supabase, adminId, kind, { title, href } = {}) {
++  return pushNotification(supabase, adminId, {
++    type: "upload",
++    title: title || kind,
++    href,
++    meta: { kind, itemTitle: title || "" },
++    groupKey: `upload:${kind}`,
++  });
++}
++
++/** One notification for every admin (announcements, storage warnings). Never throws. */
++export async function broadcastNotification(supabase, n) {
++  if (!n || !n.type || !n.title) return 0;
++  try {
++    const { data, error } = await supabase.rpc("broadcast_admin_notification", {
++      p_type: n.type,
++      p_title: String(n.title).slice(0, 200),
++      p_body: n.body ? String(n.body).slice(0, 1000) : null,
++      p_href: safeHref(n.href),
++      p_meta: n.meta && typeof n.meta === "object" ? n.meta : {},
++      p_dedupe_key: n.dedupeKey || null,
++    });
++    if (error) throw error;
++    return Number(data) || 0;
++  } catch (e) {
++    console.error("[notifications] broadcast failed:", e?.message || e);
++    return 0;
++  }
++}
++
++// ── Endpoints ────────────────────────────────────────────────────────────────
++
++const COLUMNS = "id, type, title, body, href, meta, count, read_at, created_at, updated_at";
++
++function cleanIds(ids) {
++  return Array.isArray(ids) ? [...new Set(ids.filter((i) => typeof i === "string" && UUID_RE.test(i)))].slice(0, 100) : [];
++}
++
++async function unreadCount(supabase, adminId) {
++  const { count, error } = await supabase
++    .from("admin_notifications")
++    .select("id", { count: "exact", head: true })
++    .eq("recipient_admin_id", adminId)
++    .is("read_at", null);
++  if (error) throw error;
++  return count || 0;
++}
++
++export async function handleNotificationAction(req, res, action, payload, adminId, supabase) {
++  const body = req.body || {};
++
++  try {
++    if (action === "notifications-broadcast") {
++      if (!payload?.isOwner) return res.status(403).json({ error: "هذه الصلاحية للمالك فقط." });
++      const title = typeof body.title === "string" ? body.title.trim() : "";
++      const text = typeof body.body === "string" ? body.body.trim() : "";
++      const rawHref = typeof body.href === "string" ? body.href.trim() : "";
++      if (!title || title.length > 200) return res.status(400).json({ error: "العنوان مطلوب (حتى 200 حرف)." });
++      if (text.length > 1000) return res.status(400).json({ error: "النص طويل جدًا (حتى 1000 حرف)." });
++      if (rawHref && !safeHref(rawHref)) return res.status(400).json({ error: "الرابط يجب أن يكون مسارًا داخليًا يبدأ بـ /" });
++      const sent = await broadcastNotification(supabase, {
++        type: "announcement",
++        title,
++        body: text,
++        href: rawHref || null,
++        // Fresh key per announcement: two different announcements must both arrive.
++        dedupeKey: `announcement:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
++      });
++      return res.status(200).json({ sent });
++    }
++
++    // An owner without an admin_users row has no inbox; the bell must not error.
++    if (!adminId) {
++      if (action === "notifications-list") return res.status(200).json({ items: [], unread: 0, hasMore: false });
++      if (action === "notifications-count") return res.status(200).json({ unread: 0 });
++      return res.status(200).json({ ok: true });
++    }
++
++    if (action === "notifications-count") {
++      return res.status(200).json({ unread: await unreadCount(supabase, adminId) });
++    }
++
++    if (action === "notifications-list") {
++      const limit = Math.min(Math.max(parseInt(body.limit, 10) || PAGE_DEFAULT, 1), PAGE_MAX);
++      let q = supabase
++        .from("admin_notifications")
++        .select(COLUMNS)
++        .eq("recipient_admin_id", adminId)
++        .order("updated_at", { ascending: false })
++        .order("id", { ascending: false })
++        .limit(limit + 1);
++      if (typeof body.before === "string" && !Number.isNaN(Date.parse(body.before))) {
++        q = q.lt("updated_at", body.before);
++      }
++      const { data, error } = await q;
++      if (error) throw error;
++      const rows = data || [];
++      const hasMore = rows.length > limit;
++      return res.status(200).json({
++        items: hasMore ? rows.slice(0, limit) : rows,
++        unread: await unreadCount(supabase, adminId),
++        hasMore,
++      });
++    }
++
++    if (action === "notifications-read") {
++      const ids = cleanIds(body.ids);
++      if (!ids.length) return res.status(400).json({ error: "لا توجد إشعارات محددة." });
++      const { error } = await supabase
++        .from("admin_notifications")
++        .update({ read_at: new Date().toISOString() })
++        .eq("recipient_admin_id", adminId)
++        .in("id", ids)
++        .is("read_at", null);
++      if (error) throw error;
++      return res.status(200).json({ ok: true });
++    }
++
++    if (action === "notifications-read-all") {
++      const { error } = await supabase
++        .from("admin_notifications")
++        .update({ read_at: new Date().toISOString() })
++        .eq("recipient_admin_id", adminId)
++        .is("read_at", null);
++      if (error) throw error;
++      return res.status(200).json({ ok: true });
++    }
++
++    if (action === "notifications-delete") {
++      const ids = cleanIds(body.ids);
++      if (!ids.length) return res.status(400).json({ error: "لا توجد إشعارات محددة." });
++      const { error } = await supabase
++        .from("admin_notifications")
++        .delete()
++        .eq("recipient_admin_id", adminId)
++        .in("id", ids);
++      if (error) throw error;
++      return res.status(200).json({ ok: true });
++    }
++  } catch (e) {
++    console.error(`[admin:${action}] failed:`, e?.message || e);
++    return res.status(500).json({ error: "تعذّر تحميل الإشعارات." });
++  }
++
++  return res.status(400).json({ error: "Invalid action" });
++}
+diff --git a/api/_storageGuard.js b/api/_storageGuard.js
+index e4a28e77d92b5131610b2848908f4f609d02b565..9f3de4940e7a35f701b48e1de538285005378c8b 100644
+--- a/api/_storageGuard.js
++++ b/api/_storageGuard.js
+@@ -10,6 +10,7 @@
+ //   storage-orphans-list / -delete -> unreferenced objects (admin cleanup)
+ // =============================================================================
+ import { NOTEBOOK_ASSET_MIME, LIMITS } from "../scripts/lib/content-rules.js";
++import { broadcastNotification } from "./_notifications.js";
+ 
+ const BUCKETS = new Set(["notebook-assets", "quiz-media"]);
+ const SHA_RE = /^[0-9a-f]{64}$/;
+@@ -30,6 +31,32 @@ function publicUrl(bucket, path) {
+   return `${process.env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${path.split("/").map(encodeURIComponent).join("/")}`;
+ }
+ 
++/**
++ * After a successful NEW reservation: once usage reaches storage_limits.warn_pct, every admin gets
++ * ONE "storage is filling up" notification per day (dedupe_key = the date). Best-effort.
++ */
++async function maybeWarnStorage(supabase, reserved) {
++  try {
++    const used = Number(reserved?.used);
++    const cap = Number(reserved?.cap);
++    if (!used || !cap) return;
++    const pct = (used / cap) * 100;
++    if (pct < 50) return; // warn_pct is never lower in practice; skips the extra query
++    const { data: lim } = await supabase.from("storage_limits").select("warn_pct").eq("id", 1).maybeSingle();
++    if (pct < (lim?.warn_pct ?? 80)) return;
++    const pctRounded = Math.min(100, Math.round(pct));
++    await broadcastNotification(supabase, {
++      type: "storage_warning",
++      title: `مساحة الوسائط ${pctRounded}%`,
++      body: "اقتربت مساحة تخزين الوسائط من الحد الأقصى. احذف الملفات غير المستخدمة قبل رفع وسائط جديدة.",
++      meta: { pct: pctRounded, used, cap },
++      dedupeKey: `storage:${new Date().toISOString().slice(0, 10)}`,
++    });
++  } catch (e) {
++    console.error("[storage-warning] failed:", e?.message || e);
++  }
++}
++
+ export async function handleStorageAction(req, res, action, adminId, supabase) {
+   const body = req.body || {};
+   try {
+@@ -45,6 +72,7 @@ export async function handleStorageAction(req, res, action, adminId, supabase) {
+       const { data, error } = await supabase.rpc("storage_reserve", { p_bucket: bucket, p_path: path, p_size: Number(size), p_kind: kind || "image", p_owner: String(adminId || "") });
+       if (error) throw error;
+       if (!data.ok) return res.status(413).json({ error: reasonText(data), reason: data.reason });
++      if (!data.exists) await maybeWarnStorage(supabase, data);
+       return res.status(200).json(data);
+     }
+ 
+@@ -64,6 +92,7 @@ export async function handleStorageAction(req, res, action, adminId, supabase) {
+       if (!files || files.length < 1 || files.length > LIMITS.notebookAssets) return res.status(400).json({ error: "قائمة الملفات غير صالحة." });
+       const out = [];
+       const reservedNow = [];
++      let lastReserved = null;
+       for (const f of files) {
+         const ext = String(f?.path || "").split(".").pop().toLowerCase();
+         if (!NOTEBOOK_ASSET_MIME[ext] || NOTEBOOK_ASSET_MIME[ext] !== f.mime || !SHA_RE.test(String(f.sha256 || "")) || !Number.isInteger(f.size)) {
+@@ -83,7 +112,9 @@ export async function handleStorageAction(req, res, action, adminId, supabase) {
+           item.token = signed.token;
+         }
+         out.push(item);
++        if (!data.exists) lastReserved = data;
+       }
++      if (lastReserved) await maybeWarnStorage(supabase, lastReserved);
+       return res.status(200).json({ files: out });
+     }
+ 
+diff --git a/api/admin.js b/api/admin.js
+index 79c9910d6bc2d1e97df65d36945cd5f860de2f70..593889856a89c5c0aa595724cf9b51577ed792f8 100644
+--- a/api/admin.js
++++ b/api/admin.js
+@@ -54,6 +54,7 @@ import {
+ import crypto from "crypto";
+ import { handleAnalyticsTrack, handleAnalyticsLive } from "./_analytics.js";
+ import { STORAGE_ACTIONS, handleStorageAction, handleCronPurge } from "./_storageGuard.js";
++import { NOTIFICATION_ACTIONS, handleNotificationAction, pushNotification, notifyUpload } from "./_notifications.js";
+ 
+ const MAX_BIO_LENGTH = 280;
+ 
+@@ -439,6 +440,7 @@ const ITEM_ACTIONS = new Set([
+   "list-youtube-public",
+   "unpublish-youtube",
+   ...STORAGE_ACTIONS,
++  ...NOTIFICATION_ACTIONS,
+ ]);
+ 
+ async function fetchItemForAuth(supabase, itemType, itemId) {
+@@ -1707,6 +1709,7 @@ async function handlePublishYoutube(req, res, adminPayload, adminId, supabase) {
+     console.error("[publish-youtube]", error);
+     return res.status(500).json({ error: "تعذّر حفظ المحتوى المنشور." });
+   }
++  await notifyUpload(supabase, adminId, "youtube", { title: row.title, href: "/" });
+   return res.status(200).json({ success: true, item: data });
+ }
+ 
+@@ -1804,6 +1807,7 @@ async function handleCreateLesson(req, res, adminPayload, adminId, supabase) {
+   }
+ 
+   notifySearchEngines({ add: [lessonUrl(data.slug || data.id)], reason: "create-lesson" });
++  await notifyUpload(supabase, adminId, "lesson", { title: insertRow.title, href: `/lesson/${data.slug || data.id}` });
+ 
+   return res.status(200).json({ success: true, id: data.id, passwordProtected: Boolean(insertRow.password_hash) });
+ }
+@@ -2135,6 +2139,7 @@ async function handleCreateNotebook(req, res, adminPayload, adminId, supabase) {
+   }
+ 
+   notifySearchEngines({ add: [notebookUrl(data.slug || data.id)], reason: "create-notebook" });
++  await notifyUpload(supabase, adminId, "notebook", { title: insertRow.title, href: `/notebook/${data.slug || data.id}` });
+   return res.status(200).json({ success: true, id: data.id });
+ }
+ 
+@@ -2315,6 +2320,7 @@ async function handleItemActions(req, res) {
+   if (action === "list-youtube-public") return handleListYoutubePublished(req, res, payload, adminId, supabase);
+   if (action === "unpublish-youtube") return handleUnpublishYoutube(req, res, payload, adminId, supabase);
+   if (STORAGE_ACTIONS.has(action)) return handleStorageAction(req, res, action, adminId, supabase);
++  if (NOTIFICATION_ACTIONS.has(action)) return handleNotificationAction(req, res, action, payload, adminId, supabase);
+ 
+   return res.status(400).json({ error: "Invalid action" });
+ }
+@@ -2547,6 +2553,17 @@ async function handleStatsSync(req, res) {
+       .trim()
+       .toLowerCase()
+       .replace(/[%_\\]/g, "\\$&");
++    // Level / badge notifications compare against what the row held BEFORE this sync.
++    let before = null;
++    if (updates.current_level !== undefined || updates.total_badges !== undefined) {
++      const { data: prev } = await supabaseService
++        .from("admin_users")
++        .select("id, current_level, total_badges")
++        .ilike("email", normalizedEmail)
++        .maybeSingle();
++      before = prev || null;
++    }
++
+     const { data: updated, error } = await supabaseService
+       .from("admin_users")
+       .update(updates)
+@@ -2562,6 +2579,29 @@ async function handleStatsSync(req, res) {
+       return res.status(404).json({ error: "Admin not found" });
+     }
+     if (updatedHandle === undefined) updatedHandle = updated.handle;
++
++    // Only real increases from a known (> 0) previous value, so the first sync of a freshly
++    // seeded row never announces "level 7" out of nowhere. dedupe_key: each value fires once.
++    if (before?.id) {
++      if (updates.current_level > 0 && before.current_level > 0 && updates.current_level > before.current_level) {
++        await pushNotification(supabaseService, before.id, {
++          type: "level_up",
++          title: String(updates.current_level),
++          href: "/profile",
++          meta: { level: updates.current_level },
++          dedupeKey: `level:${updates.current_level}`,
++        });
++      }
++      if (updates.total_badges > 0 && before.total_badges > 0 && updates.total_badges > before.total_badges) {
++        await pushNotification(supabaseService, before.id, {
++          type: "badge",
++          title: String(updates.total_badges),
++          href: "/profile",
++          meta: { total: updates.total_badges, gained: updates.total_badges - before.total_badges },
++          dedupeKey: `badges:${updates.total_badges}`,
++        });
++      }
++    }
+   }
+ 
+   return res.status(200).json({ synced: true, handle: updatedHandle });
+diff --git a/api/auth.js b/api/auth.js
+index 44b6738d36210635ad3c5cd159336a70e254cd71..db69647c510437b895440219bc3a21fd148ec7b0 100644
+--- a/api/auth.js
++++ b/api/auth.js
+@@ -16,6 +16,7 @@ import jwt from "jsonwebtoken";
+ import { applyCors } from "./_middleware.js";
+ import { makeClient, envGuard } from "./_supabase.js";
+ import { slugifyHandle, claimHandle } from "./_handle.js";
++import { pushNotification } from "./_notifications.js";
+ 
+ /**
+  * Generates a URL-safe default handle from an admin's email local-part
+@@ -112,6 +113,16 @@ export default async function handler(req, res) {
+     if (!adminHandle) {
+       adminHandle = await ensureHandle(supabase, adminData.id, userEmail);
+     }
++
++    // Welcome message: dedupe_key makes it once per ACCOUNT (any device). It stays in the
++    // center for good because it links to the upload guide.
++    await pushNotification(supabase, adminData.id, {
++      type: "welcome",
++      title: "مرحباً بك مشرفاً",
++      body: "تعرّف على طريقة رفع المحتوى ونشره على المنصة.",
++      href: "/how-to-upload-content",
++      dedupeKey: "welcome",
++    });
+   }
+ 
+   if (!isAuthorized) {
+diff --git a/api/college-quiz.js b/api/college-quiz.js
+index e9e9453b814e5f40833e7457ee83071c6359dca0..929772accf8d700be7a715b1ffd2182c37890d4a 100644
+--- a/api/college-quiz.js
++++ b/api/college-quiz.js
+@@ -40,6 +40,7 @@ import { resolveAdminId, isAuthorizedForItem, getTrashRetentionDays, computeExpi
+ import { isRateLimited } from "./_rateLimit.js";
+ import { notifySearchEngines } from "./_seoNotify.js";
+ import { quizUrl } from "./_urls.js";
++import { pushNotification } from "./_notifications.js";
+ 
+ const supabase = makeClient("service");
+ 
+@@ -378,6 +379,28 @@ async function handlePostReports(req, res) {
+             return res.status(500).json({ error: "فشل تقديم البلاغ. حاول مجددًا." });
+         }
+ 
++        // Tell the uploader (never blocks the student's report). Reports on the same quiz
++        // merge into one unread notification: "3 new reports on <quiz>".
++        try {
++            const { data: owner } = await supabase
++                .from("quizzes")
++                .select("title, uploaded_by")
++                .eq("id", quiz_id)
++                .maybeSingle();
++            if (owner?.uploaded_by) {
++                await pushNotification(supabase, owner.uploaded_by, {
++                    type: "report_new",
++                    title: owner.title || "",
++                    body: reason.trim(),
++                    href: "/reports",
++                    meta: { quizId: quiz_id, quizTitle: owner.title || "", questionIndex: question_index, reason: reason.trim().slice(0, 200) },
++                    groupKey: `report:${quiz_id}`,
++                });
++            }
++        } catch (notifyErr) {
++            console.error("[reports] owner notification failed:", notifyErr?.message || notifyErr);
++        }
++
+         return res.status(201).json({ success: true, report: data });
+     }
+ 
+@@ -428,6 +451,27 @@ async function handlePostReports(req, res) {
+             return res.status(500).json({ error: "فشل تحديث حالة البلاغ." });
+         }
+ 
++        // If another admin closed a report on this admin's quiz, the uploader hears about it.
++        try {
++            const { data: rep } = await supabase
++                .from("reports")
++                .select("question_index, quizzes ( id, title, uploaded_by )")
++                .eq("id", report_id)
++                .maybeSingle();
++            const q = Array.isArray(rep?.quizzes) ? rep.quizzes[0] : rep?.quizzes;
++            if (q?.uploaded_by && q.uploaded_by !== adminId) {
++                await pushNotification(supabase, q.uploaded_by, {
++                    type: "report_closed",
++                    title: q.title || "",
++                    href: "/reports",
++                    meta: { quizId: q.id, quizTitle: q.title || "", questionIndex: rep.question_index, status },
++                    groupKey: `report-closed:${q.id}:${status}`,
++                });
++            }
++        } catch (notifyErr) {
++            console.error("[reports] resolve notification failed:", notifyErr?.message || notifyErr);
++        }
++
+         return res.status(200).json({ success: true });
+     }
+ 
+diff --git a/api/upload-quiz.js b/api/upload-quiz.js
+index 5491314caefbd8c3feb06bc2e6797c2640cd5808..03ba144d016ff75f37c5e29497809c3bf2ef0ae8 100644
+--- a/api/upload-quiz.js
++++ b/api/upload-quiz.js
+@@ -55,6 +55,7 @@ import { validateLessonContent, validateLessonDescription, validateLessonSource,
+ import { validateItemName, hasLessonNameCollision, hasNotebookNameCollision } from "./_itemActions.js";
+ import { validateNotebook } from "./_validateNotebook.js";
+ import { notebookFromFile } from "../scripts/lib/notebook-convert.js";
++import { notifyUpload } from "./_notifications.js";
+ 
+ const supabase = makeClient("service");
+ 
+@@ -252,6 +253,8 @@ async function handleSingleUpload(req, res, adminPayload) {
+     return res.status(500).json({ error: "فشل رفع الامتحان. حاول مجددًا." });
+   }
+ 
++  await notifyUpload(supabase, adminId, "quiz", { title: cleanQuiz.meta.title, href: `/quiz/${cleanQuiz.meta.id}` });
++
+   if (adminId) {
+     // Use an atomic DB-side increment via an RPC for safety under concurrency.
+     try {
+@@ -471,6 +474,7 @@ async function handleFolderUpload(req, res, adminPayload) {
+         }
+         results.lessonsUploaded++;
+         uploadedLessonUrls.push(lessonUrl(insertedLesson.slug || insertedLesson.id));
++        await notifyUpload(supabase, adminId, "lesson", { title: titleCheck.clean, href: `/lesson/${insertedLesson.slug || insertedLesson.id}` });
+         continue;
+       }
+ 
+@@ -495,6 +499,7 @@ async function handleFolderUpload(req, res, adminPayload) {
+           continue;
+         }
+         results.youtubeUploaded++;
++        await notifyUpload(supabase, adminId, "youtube", { title: fields.title, href: "/" });
+         continue;
+       }
+ 
+@@ -542,6 +547,7 @@ async function handleFolderUpload(req, res, adminPayload) {
+         results.notebooksUploaded++;
+         if (warnings.length) (results.notebookWarnings ||= []).push({ name: clean.title, warnings });
+         uploadedNotebookUrls.push(notebookUrl(insertedNotebook.slug || insertedNotebook.id));
++        await notifyUpload(supabase, adminId, "notebook", { title: clean.title, href: `/notebook/${insertedNotebook.slug || insertedNotebook.id}` });
+         continue;
+       }
+ 
+@@ -614,6 +620,7 @@ async function handleFolderUpload(req, res, adminPayload) {
+         }
+         results.quizzesUploaded++;
+         uploadedQuizUrls.push(quizUrl(cleanQuiz.meta.id));
++        await notifyUpload(supabase, adminId, "quiz", { title: cleanQuiz.meta.title, href: `/quiz/${cleanQuiz.meta.id}` });
+ 
+         if (adminId) {
+           try {
+diff --git a/public/control.html b/public/control.html
+index 248a527b2de27749f4d063a072db4fbe1078b525..b2488be0b18a249f4a17b2eff5a31dab161699cd 100644
+--- a/public/control.html
++++ b/public/control.html
+@@ -205,6 +205,24 @@
+                 </div>
+             </div>
+ 
++            <!-- ANNOUNCEMENT: one notification for every admin's notification center -->
++            <div class="panel" style="grid-column: 1 / -1;">
++                <div class="panel-header">
++                    <div class="panel-title">إرسال إعلان لجميع المشرفين</div>
++                </div>
++                <div class="panel-body">
++                    <form id="announceForm" class="announce-form" novalidate>
++                        <input type="text" id="announceTitle" maxlength="200" placeholder="عنوان الإعلان (مطلوب)" autocomplete="off">
++                        <textarea id="announceBody" maxlength="1000" rows="3" placeholder="نص الإعلان (اختياري)"></textarea>
++                        <input type="text" id="announceHref" dir="ltr" maxlength="500" placeholder="رابط داخلي اختياري، مثل /how-to-upload-content" autocomplete="off">
++                        <div class="announce-actions">
++                            <span class="announce-hint">يظهر في مركز الإشعارات لدى كل مشرف.</span>
++                            <button class="btn-primary" type="submit" id="announceSendBtn">إرسال الإعلان</button>
++                        </div>
++                    </form>
++                </div>
++            </div>
++
+         </div>
+     </div>
+ 
+diff --git a/public/create-lesson.html b/public/create-lesson.html
+index 64fe609c634f95258e58f01d0b600877a6373755..639e1fd94fa75b7340151a789335dbc957d9bfa9 100644
+--- a/public/create-lesson.html
++++ b/public/create-lesson.html
+@@ -348,6 +348,20 @@
+             <span class="menu-label">إنشاء دفاتر</span>
+         </a>
+ 
++        <!-- NAV_ITEM:notifications -->
++        <!-- Admin-only: notification-center.js un-hides it (and shows the unread badge) for a signed-in admin. -->
++        <button type="button" id="notificationCenterItem" class="menu-item notification-center-item" hidden
++            data-tooltip="الإشعارات" aria-haspopup="dialog" aria-expanded="false" aria-controls="notificationCenterPanel">
++            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
++                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
++                aria-hidden="true">
++                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
++                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
++            </svg>
++            <span class="menu-label">الإشعارات</span>
++            <span class="nc-badge" id="notificationCenterBadge" hidden aria-live="polite"></span>
++        </button>
++
+         <div class="menu-item-dropdown-wrap">
+             <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
+                 aria-haspopup="true" aria-expanded="false" aria-controls="sideMenuProfileDropdown">
+diff --git a/public/create-quiz.html b/public/create-quiz.html
+index 9d4bbacfbbac381b633a1e7cdec3bd6f91cb5362..6bcec7bed4f5d8783a777c599081b5e67d923c64 100644
+--- a/public/create-quiz.html
++++ b/public/create-quiz.html
+@@ -351,6 +351,20 @@
+             <span class="menu-label">إنشاء دفاتر</span>
+         </a>
+ 
++        <!-- NAV_ITEM:notifications -->
++        <!-- Admin-only: notification-center.js un-hides it (and shows the unread badge) for a signed-in admin. -->
++        <button type="button" id="notificationCenterItem" class="menu-item notification-center-item" hidden
++            data-tooltip="الإشعارات" aria-haspopup="dialog" aria-expanded="false" aria-controls="notificationCenterPanel">
++            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
++                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
++                aria-hidden="true">
++                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
++                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
++            </svg>
++            <span class="menu-label">الإشعارات</span>
++            <span class="nc-badge" id="notificationCenterBadge" hidden aria-live="polite"></span>
++        </button>
++
+         <div class="menu-item-dropdown-wrap">
+             <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
+                 aria-haspopup="true" aria-expanded="false" aria-controls="sideMenuProfileDropdown">
+diff --git a/public/index.html b/public/index.html
+index 3dca0f5f84dba3684d5319919f2ac2efa3589221..b8043d870a60ca01fd29e90919eaf4c305baa06e 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -491,6 +491,20 @@
+             <span class="menu-label">إنشاء دفاتر</span>
+         </a>
+ 
++        <!-- NAV_ITEM:notifications -->
++        <!-- Admin-only: notification-center.js un-hides it (and shows the unread badge) for a signed-in admin. -->
++        <button type="button" id="notificationCenterItem" class="menu-item notification-center-item" hidden
++            data-tooltip="الإشعارات" aria-haspopup="dialog" aria-expanded="false" aria-controls="notificationCenterPanel">
++            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
++                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
++                aria-hidden="true">
++                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
++                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
++            </svg>
++            <span class="menu-label">الإشعارات</span>
++            <span class="nc-badge" id="notificationCenterBadge" hidden aria-live="polite"></span>
++        </button>
++
+         <div class="menu-item-dropdown-wrap">
+             <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
+                 aria-haspopup="true" aria-expanded="false" aria-controls="sideMenuProfileDropdown">
+diff --git a/public/lesson.html b/public/lesson.html
+index 5db2168bd42453d46dbfb06fcc6017805c04f1c8..c5622b7c61558fe7eeae147a3997f240bbe260bf 100644
+--- a/public/lesson.html
++++ b/public/lesson.html
+@@ -299,6 +299,20 @@
+             <span class="menu-label">إنشاء دفاتر</span>
+         </a>
+ 
++        <!-- NAV_ITEM:notifications -->
++        <!-- Admin-only: notification-center.js un-hides it (and shows the unread badge) for a signed-in admin. -->
++        <button type="button" id="notificationCenterItem" class="menu-item notification-center-item" hidden
++            data-tooltip="الإشعارات" aria-haspopup="dialog" aria-expanded="false" aria-controls="notificationCenterPanel">
++            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
++                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
++                aria-hidden="true">
++                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
++                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
++            </svg>
++            <span class="menu-label">الإشعارات</span>
++            <span class="nc-badge" id="notificationCenterBadge" hidden aria-live="polite"></span>
++        </button>
++
+         <div class="menu-item-dropdown-wrap">
+             <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
+                 aria-haspopup="true" aria-expanded="false" aria-controls="sideMenuProfileDropdown">
+diff --git a/public/notebook.html b/public/notebook.html
+index 9b2e5166b771e192205347b0e767c7dbdd3c33dd..b2baedf26eb2a9e50ee04df0f916ee6d1ddaa873 100644
+--- a/public/notebook.html
++++ b/public/notebook.html
+@@ -343,6 +343,20 @@
+             <span class="menu-label">إنشاء دفاتر</span>
+         </a>
+ 
++        <!-- NAV_ITEM:notifications -->
++        <!-- Admin-only: notification-center.js un-hides it (and shows the unread badge) for a signed-in admin. -->
++        <button type="button" id="notificationCenterItem" class="menu-item notification-center-item" hidden
++            data-tooltip="الإشعارات" aria-haspopup="dialog" aria-expanded="false" aria-controls="notificationCenterPanel">
++            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
++                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
++                aria-hidden="true">
++                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
++                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
++            </svg>
++            <span class="menu-label">الإشعارات</span>
++            <span class="nc-badge" id="notificationCenterBadge" hidden aria-live="polite"></span>
++        </button>
++
+         <div class="menu-item-dropdown-wrap">
+             <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
+                 aria-haspopup="true" aria-expanded="false" aria-controls="sideMenuProfileDropdown">
+diff --git a/public/profile.html b/public/profile.html
+index e2245f85b484987d8c2aa34660a3c2a4fbcc6d03..417fa5f7e36eaa5aa7d011a5736f4d2450466ad2 100644
+--- a/public/profile.html
++++ b/public/profile.html
+@@ -484,6 +484,20 @@
+             <span class="menu-label">إنشاء دفاتر</span>
+         </a>
+ 
++        <!-- NAV_ITEM:notifications -->
++        <!-- Admin-only: notification-center.js un-hides it (and shows the unread badge) for a signed-in admin. -->
++        <button type="button" id="notificationCenterItem" class="menu-item notification-center-item" hidden
++            data-tooltip="الإشعارات" aria-haspopup="dialog" aria-expanded="false" aria-controls="notificationCenterPanel">
++            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
++                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
++                aria-hidden="true">
++                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
++                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
++            </svg>
++            <span class="menu-label">الإشعارات</span>
++            <span class="nc-badge" id="notificationCenterBadge" hidden aria-live="polite"></span>
++        </button>
++
+         <div class="menu-item-dropdown-wrap">
+             <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
+                 aria-haspopup="true" aria-expanded="false" aria-controls="sideMenuProfileDropdown">
+diff --git a/public/reports.html b/public/reports.html
+index fd068828f5462a2f33063afa91f035bde9c03973..4fe7c22a1376f96f53e908ed92bb0f67ead1fb79 100644
+--- a/public/reports.html
++++ b/public/reports.html
+@@ -293,6 +293,20 @@
+             <span class="menu-label">إنشاء دفاتر</span>
+         </a>
+ 
++        <!-- NAV_ITEM:notifications -->
++        <!-- Admin-only: notification-center.js un-hides it (and shows the unread badge) for a signed-in admin. -->
++        <button type="button" id="notificationCenterItem" class="menu-item notification-center-item" hidden
++            data-tooltip="الإشعارات" aria-haspopup="dialog" aria-expanded="false" aria-controls="notificationCenterPanel">
++            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
++                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
++                aria-hidden="true">
++                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
++                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
++            </svg>
++            <span class="menu-label">الإشعارات</span>
++            <span class="nc-badge" id="notificationCenterBadge" hidden aria-live="polite"></span>
++        </button>
++
+         <div class="menu-item-dropdown-wrap">
+             <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
+                 aria-haspopup="true" aria-expanded="false" aria-controls="sideMenuProfileDropdown">
+diff --git a/public/result.html b/public/result.html
+index 329e77eee2989d13077f9ce1be26736ee39d0b56..de47c08d2c72d2549b7b75695d4878acb5e2f1b4 100644
+--- a/public/result.html
++++ b/public/result.html
+@@ -340,6 +340,20 @@
+             <span class="menu-label">إنشاء دفاتر</span>
+         </a>
+ 
++        <!-- NAV_ITEM:notifications -->
++        <!-- Admin-only: notification-center.js un-hides it (and shows the unread badge) for a signed-in admin. -->
++        <button type="button" id="notificationCenterItem" class="menu-item notification-center-item" hidden
++            data-tooltip="الإشعارات" aria-haspopup="dialog" aria-expanded="false" aria-controls="notificationCenterPanel">
++            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
++                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
++                aria-hidden="true">
++                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
++                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
++            </svg>
++            <span class="menu-label">الإشعارات</span>
++            <span class="nc-badge" id="notificationCenterBadge" hidden aria-live="polite"></span>
++        </button>
++
+         <div class="menu-item-dropdown-wrap">
+             <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
+                 aria-haspopup="true" aria-expanded="false" aria-controls="sideMenuProfileDropdown">
+diff --git a/public/settings.html b/public/settings.html
+index 58983d842f6cfdce5cf193a8c040edaeb5d7f2f1..88fd19474bf864e5ad0eb62b03e6f0d58cf44d54 100644
+--- a/public/settings.html
++++ b/public/settings.html
+@@ -336,6 +336,20 @@
+             <span class="menu-label">إنشاء دفاتر</span>
+         </a>
+ 
++        <!-- NAV_ITEM:notifications -->
++        <!-- Admin-only: notification-center.js un-hides it (and shows the unread badge) for a signed-in admin. -->
++        <button type="button" id="notificationCenterItem" class="menu-item notification-center-item" hidden
++            data-tooltip="الإشعارات" aria-haspopup="dialog" aria-expanded="false" aria-controls="notificationCenterPanel">
++            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
++                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
++                aria-hidden="true">
++                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
++                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
++            </svg>
++            <span class="menu-label">الإشعارات</span>
++            <span class="nc-badge" id="notificationCenterBadge" hidden aria-live="polite"></span>
++        </button>
++
+         <div class="menu-item-dropdown-wrap">
+             <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
+                 aria-haspopup="true" aria-expanded="false" aria-controls="sideMenuProfileDropdown">
+diff --git a/public/src/components/notification-center/notification-center.css b/public/src/components/notification-center/notification-center.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..45b6827872d71eacadc1d07f84b9d4b91b6ccb38
+--- /dev/null
++++ b/public/src/components/notification-center/notification-center.css
+@@ -0,0 +1,260 @@
++/* =============================================================================
++   public/src/components/notification-center/notification-center.css
++   Admin notification center panel (behavior: notification-center.js).
++   The sidebar entry + unread badge live in side-menu.css (.notification-center-item).
++   Colors come from theme tokens, so every theme follows.
++   ============================================================================= */
++
++.nc-panel {
++  position: fixed;
++  z-index: var(--z-modal, 6000);
++  width: min(400px, calc(100vw - 16px));
++  max-height: min(600px, calc(100vh - 16px));
++  display: flex;
++  flex-direction: column;
++  direction: rtl;
++  background: var(--color-surface, #fff);
++  color: var(--color-text-primary, #111827);
++  border: 1px solid var(--color-border, #e5e7eb);
++  border-radius: 14px;
++  box-shadow: var(--shadow-lg, 0 12px 32px rgba(0, 0, 0, 0.22));
++  overflow: hidden;
++  opacity: 0;
++  transform: translateX(8px) scale(0.98);
++  transform-origin: right center;
++  transition: opacity 0.16s ease, transform 0.16s ease;
++}
++.nc-panel[hidden] { display: none; }
++.nc-panel.nc-open { opacity: 1; transform: none; }
++
++.nc-backdrop {
++  position: fixed;
++  inset: 0;
++  z-index: calc(var(--z-modal, 6000) - 1);
++  background: var(--yt-scrim, rgba(8, 10, 18, 0.5));
++}
++.nc-backdrop[hidden] { display: none; }
++
++.nc-head {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  padding: 12px 14px;
++  border-bottom: 1px solid var(--color-border, #e5e7eb);
++}
++.nc-title {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  margin: 0;
++  margin-inline-end: auto;
++  font-size: 1rem;
++  font-weight: 700;
++}
++.nc-head-count {
++  min-width: 20px;
++  height: 20px;
++  padding: 0 6px;
++  border-radius: 999px;
++  background: var(--color-primary, #6366f1);
++  color: var(--color-on-primary, #fff);
++  font-size: 0.72rem;
++  line-height: 20px;
++  text-align: center;
++  font-variant-numeric: tabular-nums;
++}
++.nc-head-count[hidden] { display: none; }
++
++.nc-markall {
++  border: none;
++  background: none;
++  padding: 6px 8px;
++  border-radius: 8px;
++  font: inherit;
++  font-size: 0.8rem;
++  font-weight: 600;
++  color: var(--color-primary-text, #4f46e5);
++  cursor: pointer;
++}
++.nc-markall:hover:not(:disabled),
++.nc-markall:focus-visible { background: var(--color-primary-light, #eef2ff); }
++.nc-markall:disabled { color: var(--color-text-tertiary, #6b7485); cursor: default; }
++
++.nc-close {
++  width: 30px;
++  height: 30px;
++  border: none;
++  border-radius: 50%;
++  background: none;
++  color: var(--color-text-secondary, #6b7280);
++  font-size: 1.3rem;
++  line-height: 1;
++  cursor: pointer;
++}
++.nc-close:hover,
++.nc-close:focus-visible {
++  background: var(--color-background-secondary, #f3f4f6);
++  color: var(--color-text-primary, #111827);
++}
++
++.nc-list {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  overflow-y: auto;
++  overscroll-behavior: contain;
++  flex: 1 1 auto;
++}
++.nc-item {
++  position: relative;
++  display: flex;
++  align-items: stretch;
++  border-bottom: 1px solid var(--color-border, #e5e7eb);
++}
++.nc-item:last-child { border-bottom: none; }
++.nc-item.nc-unread {
++  background: color-mix(in srgb, var(--color-primary, #6366f1) 7%, var(--color-surface, #fff));
++}
++.nc-item-main {
++  flex: 1 1 auto;
++  min-width: 0;
++  display: flex;
++  align-items: flex-start;
++  gap: 12px;
++  padding: 12px 14px;
++  border: none;
++  background: none;
++  color: inherit;
++  font: inherit;
++  text-align: right;
++  cursor: pointer;
++}
++.nc-item-main:hover,
++.nc-item-main:focus-visible { background: var(--color-background-secondary, #f3f4f6); }
++.nc-item-main:focus-visible { outline: 2px solid var(--color-primary, #6366f1); outline-offset: -2px; }
++
++.nc-icon {
++  flex: 0 0 auto;
++  width: 38px;
++  height: 38px;
++  border-radius: 50%;
++  display: grid;
++  place-items: center;
++  background: var(--color-primary-light, #eef2ff);
++  color: var(--color-primary-text, #4f46e5);
++}
++.nc-tone-success { background: var(--color-success-light, #d1fae5); color: var(--color-success-hover, #059669); }
++.nc-tone-warning { background: var(--color-warning-light, #fef3c7); color: var(--color-warning-hover, #d97706); }
++.nc-tone-danger  { background: var(--color-error-light, #fee2e2);   color: var(--color-error-hover, #dc2626); }
++.nc-tone-admin   { background: var(--color-admin-light, #fef3c7);   color: var(--color-admin-hover, #ca8a04); }
++
++.nc-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
++.nc-item-title { font-size: 0.9rem; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
++.nc-item-body {
++  font-size: 0.82rem;
++  line-height: 1.45;
++  color: var(--color-text-secondary, #6b7280);
++  overflow-wrap: anywhere;
++  display: -webkit-box;
++  -webkit-line-clamp: 2;
++  line-clamp: 2;
++  -webkit-box-orient: vertical;
++  overflow: hidden;
++}
++.nc-time { margin-top: 2px; font-size: 0.74rem; color: var(--color-text-tertiary, #6b7485); }
++
++.nc-dot { flex: 0 0 auto; align-self: center; width: 9px; height: 9px; border-radius: 50%; background: transparent; }
++.nc-unread .nc-dot { background: var(--color-primary, #6366f1); }
++.nc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
++
++.nc-del {
++  flex: 0 0 auto;
++  align-self: center;
++  width: 28px;
++  height: 28px;
++  margin-inline-end: 8px;
++  border: none;
++  border-radius: 50%;
++  background: none;
++  color: var(--color-text-tertiary, #6b7485);
++  font-size: 1.1rem;
++  line-height: 1;
++  cursor: pointer;
++  opacity: 0;
++  transition: opacity 0.12s ease;
++}
++.nc-item:hover .nc-del,
++.nc-del:focus-visible { opacity: 1; }
++.nc-del:hover,
++.nc-del:focus-visible { background: var(--color-error-light, #fee2e2); color: var(--color-error, #ef4444); }
++@media (hover: none) { .nc-del { opacity: 1; } }
++
++.nc-empty {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  gap: 6px;
++  padding: 40px 24px;
++  text-align: center;
++  color: var(--color-text-secondary, #6b7280);
++  font-size: 0.85rem;
++  line-height: 1.5;
++}
++.nc-empty strong { color: var(--color-text-primary, #111827); font-size: 0.95rem; }
++.nc-empty-icon {
++  width: 56px;
++  height: 56px;
++  border-radius: 50%;
++  display: grid;
++  place-items: center;
++  margin-bottom: 4px;
++  background: var(--color-background-secondary, #f3f4f6);
++  color: var(--color-text-tertiary, #6b7485);
++}
++.nc-skeleton {
++  height: 62px;
++  margin: 12px 14px;
++  border-radius: 10px;
++  background: linear-gradient(90deg,
++      var(--color-background-secondary, #f3f4f6) 25%,
++      var(--color-border, #e5e7eb) 50%,
++      var(--color-background-secondary, #f3f4f6) 75%);
++  background-size: 200% 100%;
++  animation: nc-shimmer 1.2s linear infinite;
++}
++@keyframes nc-shimmer { to { background-position: -200% 0; } }
++
++.nc-foot:empty { display: none; }
++.nc-foot { border-top: 1px solid var(--color-border, #e5e7eb); }
++.nc-more {
++  display: block;
++  width: 100%;
++  padding: 11px;
++  border: none;
++  background: none;
++  font: inherit;
++  font-size: 0.85rem;
++  font-weight: 600;
++  color: var(--color-primary-text, #4f46e5);
++  cursor: pointer;
++}
++.nc-more:hover:not(:disabled),
++.nc-more:focus-visible { background: var(--color-primary-light, #eef2ff); }
++.nc-more:disabled { color: var(--color-text-tertiary, #6b7485); cursor: default; }
++.nc-empty .nc-more { width: auto; margin-top: 8px; padding: 8px 16px; border-radius: 8px; }
++
++/* Phones: bottom sheet */
++@media (max-width: 768px) {
++  .nc-panel {
++    inset: auto 0 0 0 !important;
++    width: 100%;
++    max-height: 82vh;
++    border-radius: 18px 18px 0 0;
++    border-bottom: none;
++    transform: translateY(24px);
++    transform-origin: center bottom;
++  }
++  .nc-item-main { padding: 14px; }
++}
++html[data-motion="reduced"] .nc-panel { transition: none; }
++html[data-motion="reduced"] .nc-skeleton { animation: none; }
+diff --git a/public/src/components/notification-center/notification-center.js b/public/src/components/notification-center/notification-center.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..031e914081b8facca1748255576fab5689a16ad5
+--- /dev/null
++++ b/public/src/components/notification-center/notification-center.js
+@@ -0,0 +1,564 @@
++// =============================================================================
++// public/src/components/notification-center/notification-center.js
++// Admin notification center (bell entry in the sidebar + panel), like YouTube's.
++//
++// - Entry: #notificationCenterItem in the sidebar (scripts/partials/sidebar.html), hidden
++//   until a signed-in admin is found. side-menu.js calls initNotificationCenter().
++// - Data: POST /api/admin { action: "notifications-*" } (api/_notifications.js). The server
++//   creates notifications (sign-in, uploads, reports, ...); this file lists/reads/deletes them.
++// - Wording is built here from `type` + `count` + `meta`, so grouped rows ("3 new reports on X")
++//   and wording changes need no migration.
++// - Database text (report reasons are typed by anonymous students) is written with
++//   textContent only, never innerHTML.
++// Not to be confused with ../notifications/notifications.js (transient toasts).
++// =============================================================================
++
++import { getToken, getAdminRoleInfo } from "../../shared/adminAuth.js";
++import { showNotification } from "../notifications/notifications.js";
++
++const POLL_MS = 60_000;
++const PAGE = 20;
++const TOAST_KEY = "bq-nc-toasted"; // welcome toast: once per browser while it is unread
++const REFRESH_EVENT = "bq:notifications-refresh";
++
++// ── Wording ──────────────────────────────────────────────────────────────────
++
++const KIND_NOUN = { quiz: "امتحان", lesson: "درس", notebook: "دفتر", youtube: "عنصر يوتيوب" };
++const METRIC_NOUN = { attempts: "محاولة", views: "مشاهدة" };
++const fmt = (n) => Number(n).toLocaleString("en");
++const q = (s) => `«${s}»`;
++
++export function describe(n) {
++  const m = n.meta || {};
++  const count = n.count || 1;
++  const base = { tone: "primary", title: n.title, body: n.body || "", href: n.href || null };
++
++  switch (n.type) {
++    case "welcome":
++      return { ...base, tone: "admin", newTab: true };
++
++    case "upload": {
++      const noun = KIND_NOUN[m.kind] || "عنصر";
++      return {
++        ...base,
++        tone: "success",
++        title: count > 1 ? `تم رفع ${fmt(count)} ${noun} بنجاح` : `تم رفع ${noun} بنجاح`,
++        body: count > 1 ? (m.itemTitle ? `آخرها: ${m.itemTitle}` : "") : (m.itemTitle || n.title),
++        href: count > 1 ? "/profile" : n.href,
++      };
++    }
++
++    case "report_new": {
++      const quiz = m.quizTitle || n.title;
++      const qn = Number.isInteger(m.questionIndex) ? m.questionIndex + 1 : null;
++      return {
++        ...base,
++        tone: "warning",
++        title: count > 1 ? `${fmt(count)} بلاغات جديدة على ${q(quiz)}` : `بلاغ جديد على ${q(quiz)}`,
++        body: count > 1 ? (m.reason ? `آخرها: ${m.reason}` : "") : `${qn ? `السؤال ${qn}: ` : ""}${m.reason || n.body || ""}`,
++        href: "/reports",
++      };
++    }
++
++    case "report_closed": {
++      const quiz = m.quizTitle || n.title;
++      const what = m.status === "resolved" ? "حل" : "تجاهل";
++      return {
++        ...base,
++        tone: "success",
++        title: count > 1 ? `تم ${what} ${fmt(count)} بلاغات على ${q(quiz)}` : `تم ${what} بلاغ على ${q(quiz)}`,
++        body: "قام مشرف آخر بمراجعة البلاغ.",
++        href: "/reports",
++      };
++    }
++
++    case "milestone": {
++      const noun = KIND_NOUN[m.kind] || "عنصر";
++      return {
++        ...base,
++        title: `${q(m.itemTitle || n.title)} وصل إلى ${fmt(m.value)} ${METRIC_NOUN[m.metric] || ""}`.trim(),
++        body: `إنجاز جديد لـ${noun} الذي نشرته 🎉`,
++      };
++    }
++
++    case "level_up":
++      return { ...base, title: `ارتقيت إلى المستوى ${m.level ?? n.title}`, body: "استمر في التقدّم!" };
++
++    case "badge": {
++      const gained = m.gained > 1 ? `${fmt(m.gained)} شارات جديدة` : "شارة جديدة";
++      return { ...base, title: `حصلت على ${gained}`, body: m.total ? `إجمالي شاراتك: ${fmt(m.total)}` : "" };
++    }
++
++    case "storage_warning":
++      return { ...base, tone: "danger" };
++
++    case "announcement":
++      return { ...base, tone: "admin" };
++
++    default:
++      return base;
++  }
++}
++
++// ── Icons (24×24 stroke paths) ───────────────────────────────────────────────
++
++const ICONS = {
++  welcome: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M21 5h-4"/>',
++  upload: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
++  report_new: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>',
++  report_closed: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
++  milestone: '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
++  level_up: '<path d="m12 3 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 20.9l1.1-6.5L2.6 9.8l6.5-.9z"/>',
++  badge: '<circle cx="12" cy="8" r="6"/><path d="M15.5 12.9 17 22l-5-3-5 3 1.5-9.1"/>',
++  storage_warning: '<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
++  announcement: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
++  _default: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
++};
++
++function svg(paths, size = 20) {
++  const e = document.createElementNS("http://www.w3.org/2000/svg", "svg");
++  e.setAttribute("viewBox", "0 0 24 24");
++  e.setAttribute("width", size);
++  e.setAttribute("height", size);
++  e.setAttribute("fill", "none");
++  e.setAttribute("stroke", "currentColor");
++  e.setAttribute("stroke-width", "2");
++  e.setAttribute("stroke-linecap", "round");
++  e.setAttribute("stroke-linejoin", "round");
++  e.setAttribute("aria-hidden", "true");
++  e.innerHTML = paths; // static strings from ICONS above, never user data
++  return e;
++}
++
++// ── Time ─────────────────────────────────────────────────────────────────────
++
++const rtf = (() => {
++  try { return new Intl.RelativeTimeFormat("ar", { numeric: "auto" }); } catch { return null; }
++})();
++
++function timeAgo(iso) {
++  const t = Date.parse(iso);
++  if (Number.isNaN(t)) return "";
++  const s = Math.round((t - Date.now()) / 1000);
++  const abs = Math.abs(s);
++  if (!rtf) return new Date(t).toLocaleDateString("ar");
++  if (abs < 45) return "الآن";
++  if (abs < 3600) return rtf.format(Math.round(s / 60), "minute");
++  if (abs < 86400) return rtf.format(Math.round(s / 3600), "hour");
++  if (abs < 86400 * 30) return rtf.format(Math.round(s / 86400), "day");
++  return new Date(t).toLocaleDateString("ar", { year: "numeric", month: "short", day: "numeric" });
++}
++
++// ── API ──────────────────────────────────────────────────────────────────────
++
++async function call(body) {
++  const token = getToken();
++  if (!token) throw new Error("no-session");
++  const res = await fetch("/api/admin", {
++    method: "POST",
++    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
++    body: JSON.stringify(body),
++  });
++  const data = await res.json().catch(() => ({}));
++  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
++  return data;
++}
++
++// ── State ────────────────────────────────────────────────────────────────────
++
++let started = false;
++let retried = false;
++let trigger = null, badge = null, panel = null, backdrop = null;
++let listEl = null, footEl = null, markAllBtn = null, headCount = null;
++let items = [];
++let unread = 0;
++let hasMore = false;
++let loading = false;
++let isOpen = false;
++let pollTimer = null;
++let failures = 0;
++
++const isMobile = () => window.matchMedia("(max-width: 768px)").matches;
++
++function el(tag, cls, text) {
++  const e = document.createElement(tag);
++  if (cls) e.className = cls;
++  if (text != null) e.textContent = text;
++  return e;
++}
++
++function renderBadge() {
++  if (badge) {
++    badge.hidden = unread <= 0;
++    badge.textContent = unread > 99 ? "99+" : String(unread);
++  }
++  if (trigger) trigger.setAttribute("aria-label", unread > 0 ? `الإشعارات، ${unread} غير مقروء` : "الإشعارات");
++  if (headCount) {
++    headCount.hidden = unread <= 0;
++    headCount.textContent = unread > 99 ? "99+" : String(unread);
++  }
++  if (markAllBtn) markAllBtn.disabled = unread <= 0;
++}
++
++// ── Panel DOM ────────────────────────────────────────────────────────────────
++
++function loadStylesheet() {
++  if (document.getElementById("notification-center-css")) return;
++  const link = document.createElement("link");
++  link.id = "notification-center-css";
++  link.rel = "stylesheet";
++  link.href = new URL("./notification-center.css", import.meta.url).href;
++  document.head.appendChild(link);
++}
++
++function buildPanel() {
++  loadStylesheet();
++
++  backdrop = el("div", "nc-backdrop");
++  backdrop.hidden = true;
++  backdrop.addEventListener("click", () => close());
++
++  panel = el("section", "nc-panel");
++  panel.id = "notificationCenterPanel";
++  panel.setAttribute("role", "dialog");
++  panel.setAttribute("aria-label", "الإشعارات");
++  panel.hidden = true;
++
++  const head = el("header", "nc-head");
++  const title = el("h2", "nc-title", "الإشعارات");
++  headCount = el("span", "nc-head-count");
++  headCount.hidden = true;
++  title.appendChild(headCount);
++  markAllBtn = el("button", "nc-markall", "تحديد الكل كمقروء");
++  markAllBtn.type = "button";
++  markAllBtn.addEventListener("click", markAllRead);
++  const closeBtn = el("button", "nc-close", "×");
++  closeBtn.type = "button";
++  closeBtn.setAttribute("aria-label", "إغلاق");
++  closeBtn.addEventListener("click", () => close({ returnFocus: true }));
++  head.append(title, markAllBtn, closeBtn);
++
++  listEl = el("ul", "nc-list");
++  listEl.setAttribute("aria-live", "polite");
++  footEl = el("div", "nc-foot");
++
++  panel.append(head, listEl, footEl);
++  document.body.append(backdrop, panel);
++}
++
++function renderList() {
++  if (!listEl) return;
++  listEl.textContent = "";
++  footEl.textContent = "";
++
++  if (loading && !items.length) {
++    for (let i = 0; i < 3; i++) listEl.appendChild(el("li", "nc-skeleton"));
++    return;
++  }
++
++  if (!items.length) {
++    const empty = el("li", "nc-empty");
++    const icon = el("span", "nc-empty-icon");
++    icon.appendChild(svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', 28));
++    empty.append(icon, el("strong", "", "لا توجد إشعارات بعد"), el("span", "", "ستظهر هنا عمليات الرفع، والبلاغات على امتحاناتك، وإنجازاتك."));
++    listEl.appendChild(empty);
++    return;
++  }
++
++  for (const n of items) listEl.appendChild(renderItem(n));
++
++  if (hasMore) {
++    const more = el("button", "nc-more", "عرض المزيد");
++    more.type = "button";
++    more.addEventListener("click", loadMore);
++    footEl.appendChild(more);
++  }
++}
++
++function renderItem(n) {
++  const d = describe(n);
++  const li = el("li", `nc-item${n.read_at ? "" : " nc-unread"}`);
++
++  const main = el("button", "nc-item-main");
++  main.type = "button";
++
++  const icon = el("span", `nc-icon nc-tone-${d.tone}`);
++  icon.appendChild(svg(ICONS[n.type] || ICONS._default));
++
++  const text = el("span", "nc-text");
++  const t = el("strong", "nc-item-title", d.title);
++  t.dir = "auto";
++  text.appendChild(t);
++  if (d.body) {
++    const b = el("span", "nc-item-body", d.body);
++    b.dir = "auto";
++    text.appendChild(b);
++  }
++  const time = el("time", "nc-time", timeAgo(n.updated_at));
++  time.dateTime = n.updated_at;
++  text.appendChild(time);
++  if (!n.read_at) text.appendChild(el("span", "nc-sr", "غير مقروء"));
++
++  const dot = el("span", "nc-dot");
++  dot.setAttribute("aria-hidden", "true");
++
++  main.append(icon, text, dot);
++  main.addEventListener("click", () => openItem(n, d));
++
++  const del = el("button", "nc-del", "×");
++  del.type = "button";
++  del.setAttribute("aria-label", "حذف الإشعار");
++  del.addEventListener("click", (e) => { e.stopPropagation(); removeItem(n); });
++
++  li.append(main, del);
++  return li;
++}
++
++// ── Actions ──────────────────────────────────────────────────────────────────
++
++function markLocalRead(id) {
++  const n = items.find((x) => x.id === id);
++  if (n && !n.read_at) {
++    n.read_at = new Date().toISOString();
++    unread = Math.max(0, unread - 1);
++    renderBadge();
++  }
++}
++
++function openItem(n, d) {
++  if (!n.read_at) {
++    markLocalRead(n.id);
++    call({ action: "notifications-read", ids: [n.id] }).catch(() => {});
++  }
++  if (!d.href) { renderList(); return; }
++  close();
++  if (d.newTab) { window.open(d.href, "_blank", "noopener,noreferrer"); return; }
++  if (new URL(d.href, location.href).pathname === location.pathname) return;
++  location.assign(d.href);
++}
++
++async function markAllRead() {
++  const before = items.map((n) => n.read_at);
++  const prev = unread;
++  const now = new Date().toISOString();
++  items.forEach((n) => { if (!n.read_at) n.read_at = now; });
++  unread = 0;
++  renderBadge();
++  renderList();
++  try {
++    await call({ action: "notifications-read-all" });
++  } catch {
++    items.forEach((n, i) => { n.read_at = before[i]; });
++    unread = prev;
++    renderBadge();
++    renderList();
++    showNotification("تعذّر تحديد الإشعارات كمقروءة", "حاول مرة أخرى.", "error");
++  }
++}
++
++async function removeItem(n) {
++  const idx = items.indexOf(n);
++  if (idx < 0) return;
++  items.splice(idx, 1);
++  if (!n.read_at) unread = Math.max(0, unread - 1);
++  renderBadge();
++  renderList();
++  try {
++    await call({ action: "notifications-delete", ids: [n.id] });
++  } catch {
++    items.splice(idx, 0, n);
++    if (!n.read_at) unread += 1;
++    renderBadge();
++    renderList();
++    showNotification("تعذّر حذف الإشعار", "حاول مرة أخرى.", "error");
++  }
++}
++
++// ── Loading ──────────────────────────────────────────────────────────────────
++
++async function loadFirstPage({ silent = false } = {}) {
++  if (loading) return;
++  loading = true;
++  if (!silent && isOpen) renderList();
++  try {
++    const data = await call({ action: "notifications-list", limit: PAGE });
++    items = data.items || [];
++    unread = data.unread || 0;
++    hasMore = !!data.hasMore;
++    failures = 0;
++    maybeToastWelcome();
++  } catch {
++    failures++;
++    if (isOpen && !items.length) { loading = false; renderError(); return; }
++  }
++  loading = false;
++  renderBadge();
++  if (isOpen) renderList();
++}
++
++async function loadMore() {
++  const last = items[items.length - 1];
++  if (!last || loading) return;
++  loading = true;
++  const btn = footEl.querySelector(".nc-more");
++  if (btn) { btn.disabled = true; btn.textContent = "جارٍ التحميل…"; }
++  try {
++    const data = await call({ action: "notifications-list", limit: PAGE, before: last.updated_at });
++    const seen = new Set(items.map((n) => n.id));
++    items = items.concat((data.items || []).filter((n) => !seen.has(n.id)));
++    hasMore = !!data.hasMore;
++    unread = data.unread ?? unread;
++  } catch {
++    showNotification("تعذّر تحميل المزيد", "تحقق من اتصالك وحاول مرة أخرى.", "error");
++  }
++  loading = false;
++  renderBadge();
++  renderList();
++}
++
++function renderError() {
++  listEl.textContent = "";
++  footEl.textContent = "";
++  const li = el("li", "nc-empty");
++  li.append(el("strong", "", "تعذّر تحميل الإشعارات"), el("span", "", "تحقق من اتصالك بالإنترنت."));
++  const retry = el("button", "nc-more", "إعادة المحاولة");
++  retry.type = "button";
++  retry.addEventListener("click", () => loadFirstPage());
++  li.appendChild(retry);
++  listEl.appendChild(li);
++}
++
++/** The first sign-in message also pops up once as a toast so a new admin cannot miss it. */
++function maybeToastWelcome() {
++  const w = items.find((n) => n.type === "welcome" && !n.read_at);
++  if (!w) return;
++  try {
++    const seen = JSON.parse(localStorage.getItem(TOAST_KEY) || "[]");
++    if (seen.includes(w.id)) return;
++    localStorage.setItem(TOAST_KEY, JSON.stringify([...seen, w.id].slice(-20)));
++  } catch {
++    return; // storage unavailable: it is still in the center
++  }
++  showNotification(w.title, w.body || "", "success", 12, {
++    action: { label: "افتح دليل رفع المحتوى", href: w.href || "/how-to-upload-content" },
++  });
++}
++
++// ── Polling ──────────────────────────────────────────────────────────────────
++
++async function pollCount() {
++  if (document.visibilityState !== "visible" || !getToken()) return;
++  try {
++    const { unread: n } = await call({ action: "notifications-count" });
++    failures = 0;
++    if (typeof n === "number" && n !== unread) {
++      unread = n;
++      renderBadge();
++      loadFirstPage({ silent: true });
++    }
++  } catch {
++    failures++;
++  }
++}
++
++function schedulePoll() {
++  clearTimeout(pollTimer);
++  const wait = Math.min(POLL_MS * 2 ** Math.min(failures, 3), 5 * 60_000);
++  pollTimer = setTimeout(async () => { await pollCount(); schedulePoll(); }, wait);
++}
++
++// ── Open / close ─────────────────────────────────────────────────────────────
++
++function position() {
++  if (!panel || !trigger) return;
++  if (isMobile()) { panel.style.cssText = ""; return; }
++  const r = trigger.getBoundingClientRect();
++  const height = Math.min(panel.offsetHeight || 480, window.innerHeight - 16);
++  // The sidebar is on the right edge (RTL): the panel opens to the left of the bell.
++  panel.style.right = `${Math.max(8, window.innerWidth - r.left + 10)}px`;
++  panel.style.top = `${Math.min(Math.max(8, r.top - 8), Math.max(8, window.innerHeight - height - 8))}px`;
++  panel.style.left = "auto";
++  panel.style.bottom = "auto";
++}
++
++function onKeydown(e) {
++  if (e.key === "Escape") { e.preventDefault(); close({ returnFocus: true }); return; }
++  if (e.key === "Tab" && isMobile()) {
++    const f = [...panel.querySelectorAll("button:not([disabled])")];
++    if (!f.length) return;
++    const first = f[0], last = f[f.length - 1];
++    if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
++      e.preventDefault();
++      (e.shiftKey ? last : first).focus();
++    }
++  }
++}
++
++function onDocClick(e) {
++  if (!panel.contains(e.target) && !trigger.contains(e.target)) close();
++}
++
++function open() {
++  if (!panel) buildPanel();
++  isOpen = true;
++  panel.hidden = false;
++  backdrop.hidden = !isMobile();
++  trigger.setAttribute("aria-expanded", "true");
++  renderBadge();
++  renderList();
++  position();
++  requestAnimationFrame(() => panel.classList.add("nc-open"));
++  document.addEventListener("click", onDocClick, true);
++  document.addEventListener("keydown", onKeydown, true);
++  window.addEventListener("resize", position);
++  loadFirstPage({ silent: items.length > 0 });
++  panel.querySelector(".nc-close")?.focus({ preventScroll: true });
++}
++
++function close({ returnFocus = false } = {}) {
++  if (!isOpen) return;
++  isOpen = false;
++  panel.classList.remove("nc-open");
++  panel.hidden = true;
++  backdrop.hidden = true;
++  trigger.setAttribute("aria-expanded", "false");
++  document.removeEventListener("click", onDocClick, true);
++  document.removeEventListener("keydown", onKeydown, true);
++  window.removeEventListener("resize", position);
++  if (returnFocus) trigger.focus();
++}
++
++// ── Init ─────────────────────────────────────────────────────────────────────
++
++export function initNotificationCenter() {
++  if (started) return;
++  trigger = document.getElementById("notificationCenterItem");
++  badge = document.getElementById("notificationCenterBadge");
++  if (!trigger) {
++    // Docs pages inject the sidebar from a script that may run after this module: look again later.
++    if (document.readyState !== "complete" && !retried) {
++      retried = true;
++      window.addEventListener("load", initNotificationCenter, { once: true });
++    }
++    return;
++  }
++
++  // `id` is admin_users.id: students (and an owner with no admin row) have no inbox.
++  const info = getAdminRoleInfo();
++  if (!info || !info.id) return;
++  started = true;
++
++  trigger.hidden = false;
++  trigger.addEventListener("click", (e) => {
++    e.preventDefault();
++    if (isOpen) close(); else open();
++  });
++
++  // adminUpload.js nudges this right after a successful upload instead of waiting for the poll.
++  window.addEventListener(REFRESH_EVENT, () => loadFirstPage({ silent: true }));
++  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") pollCount(); });
++  window.addEventListener("online", pollCount);
++
++  loadFirstPage({ silent: true });
++  schedulePoll();
++}
+diff --git a/public/src/components/side-menu/side-menu.css b/public/src/components/side-menu/side-menu.css
+index d6cc405e3876775cf69c780efbae09c62ab9be7e..36575e67f8661bca1b167eb19c02937666394fa7 100644
+--- a/public/src/components/side-menu/side-menu.css
++++ b/public/src/components/side-menu/side-menu.css
+@@ -2315,4 +2315,41 @@ html[data-motion="reduced"] body {
+   width: 18px;
+   height: 18px;
+   flex: none;
+-}
+\ No newline at end of file
++}
++
++/* ── Notification center entry (admin-only; behavior in notification-center.js) ── */
++.menu-item[hidden] {
++  display: none !important;
++}
++
++.notification-center-item .nc-badge {
++  margin-inline-start: auto;
++  min-width: 20px;
++  height: 20px;
++  padding: 0 6px;
++  border-radius: 999px;
++  background: var(--color-error);
++  color: #fff;
++  font-size: 0.72rem;
++  font-weight: 700;
++  line-height: 20px;
++  text-align: center;
++  font-variant-numeric: tabular-nums;
++}
++
++.notification-center-item .nc-badge[hidden] {
++  display: none;
++}
++
++/* Collapsed rail: no room for the pill, so it becomes a count dot on the bell's corner. */
++.sidebar:not(.expanded) .notification-center-item .nc-badge {
++  position: absolute;
++  top: 4px;
++  inset-inline-start: 6px;
++  min-width: 16px;
++  height: 16px;
++  padding: 0 4px;
++  font-size: 0.62rem;
++  line-height: 16px;
++  box-shadow: 0 0 0 2px var(--sidebar-color, var(--color-surface));
++}
+diff --git a/public/src/components/side-menu/side-menu.js b/public/src/components/side-menu/side-menu.js
+index 3dc494e83a6fecd847af2f91f54f343c2f8d758a..e66d67febd47563259ca67fa784d5a0fd4b711b5 100644
+--- a/public/src/components/side-menu/side-menu.js
++++ b/public/src/components/side-menu/side-menu.js
+@@ -6,6 +6,8 @@
+ 
+ import { mountSignInDialog, openSignInDialog } from "../log-in/sign-in.js";
+ import { initMenuIconDrawing } from "./menu-icon-draw.js";
++// Admin notification center: un-hides the bell item in the sidebar and wires up the panel.
++import { initNotificationCenter } from "../notification-center/notification-center.js";
+ 
+ mountSignInDialog();
+ 
+@@ -14,6 +16,7 @@ mountSignInDialog();
+ // Watches for late-injected rows (mobile admin/reports buttons below, the docs
+ // links in documents-shell.js) so those animate too. See menu-icon-draw.js.
+ initMenuIconDrawing();
++initNotificationCenter();
+ 
+ // ── PWA Install Prompt — captured globally so it works on every page ─────────
+ (function () {
+diff --git a/public/src/features/control/control.css b/public/src/features/control/control.css
+index ccc34036a7883499815addc749f6058eaa8c6942..5bdef7443c8f9c5d4d594152846d75dd8a975427 100644
+--- a/public/src/features/control/control.css
++++ b/public/src/features/control/control.css
+@@ -1433,3 +1433,41 @@ input::placeholder {
+         width: 100%;
+     }
+ }
++
++/* ── Announcement form (notification center broadcast) ───────────────────── */
++.announce-form {
++    display: flex;
++    flex-direction: column;
++    gap: 10px;
++}
++
++.announce-form textarea {
++    width: 100%;
++    padding: 11px 14px;
++    background: var(--bg-card2);
++    border: 1px solid var(--border);
++    border-radius: 8px;
++    color: var(--text);
++    font-family: 'Cairo', sans-serif;
++    font-size: 0.9rem;
++    resize: vertical;
++    outline: none;
++    transition: border-color 0.2s;
++}
++
++.announce-form textarea:focus {
++    border-color: var(--gold);
++}
++
++.announce-actions {
++    display: flex;
++    align-items: center;
++    justify-content: space-between;
++    gap: 12px;
++    flex-wrap: wrap;
++}
++
++.announce-hint {
++    color: var(--text-dim);
++    font-size: 0.82rem;
++}
+diff --git a/public/src/features/control/control.js b/public/src/features/control/control.js
+index c309772eb4a7c913e0c37f5c420be6a85052d169..8f11b9df4aa58b9fb316015229a7036ccb1aff32 100644
+--- a/public/src/features/control/control.js
++++ b/public/src/features/control/control.js
+@@ -447,6 +447,31 @@ window.removeAdmin = function (email) {
+ 
+ window.submitAddAdmin = submitAddAdmin;
+ 
++// Announcement -> every admin's notification center (owner-only on the server too).
++document.getElementById("announceForm").addEventListener("submit", async (e) => {
++  e.preventDefault();
++  const title = document.getElementById("announceTitle").value.trim();
++  const body = document.getElementById("announceBody").value.trim();
++  const href = document.getElementById("announceHref").value.trim();
++  if (!title) {
++    showMessage("عنوان الإعلان مطلوب", true);
++    return;
++  }
++  if (href && !/^\/([^/\\]|$)/.test(href)) {
++    showMessage("الرابط يجب أن يكون مسارًا داخليًا يبدأ بـ /", true);
++    return;
++  }
++  await withButtonLoading(document.getElementById("announceSendBtn"), async () => {
++    try {
++      const { sent } = await postAdminItemAction("notifications-broadcast", { title, body, href });
++      showMessage(`تم إرسال الإعلان إلى ${sent} مشرف`);
++      e.target.reset();
++    } catch (err) {
++      showMessage(err.message, true);
++    }
++  });
++});
++
+ document.getElementById("collegeForm").addEventListener("submit", saveCollege);
+ document.getElementById("cancelCollegeEdit").addEventListener("click", resetCollegeForm);
+ 
+diff --git a/public/src/features/documents/documents-shell.js b/public/src/features/documents/documents-shell.js
+index 1371e9e191fe72cba2b0b88121552286a746106e..bcdd689bb379f6e58329080d4c6c5346dbb78515 100644
+--- a/public/src/features/documents/documents-shell.js
++++ b/public/src/features/documents/documents-shell.js
+@@ -143,6 +143,20 @@ const sidebarMarkup = `
+             <span class="menu-label">إنشاء دفاتر</span>
+         </a>
+ 
++        <!-- NAV_ITEM:notifications -->
++        <!-- Admin-only: notification-center.js un-hides it (and shows the unread badge) for a signed-in admin. -->
++        <button type="button" id="notificationCenterItem" class="menu-item notification-center-item" hidden
++            data-tooltip="الإشعارات" aria-haspopup="dialog" aria-expanded="false" aria-controls="notificationCenterPanel">
++            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
++                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
++                aria-hidden="true">
++                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
++                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
++            </svg>
++            <span class="menu-label">الإشعارات</span>
++            <span class="nc-badge" id="notificationCenterBadge" hidden aria-live="polite"></span>
++        </button>
++
+         <div class="menu-item-dropdown-wrap">
+             <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
+                 aria-haspopup="true" aria-expanded="false" aria-controls="sideMenuProfileDropdown">
+diff --git a/public/src/features/home/admin-welcome-toast.js b/public/src/features/home/admin-welcome-toast.js
+deleted file mode 100644
+index 4f2bb5a0c897f23ce5bb574c8298703b728fac15..0000000000000000000000000000000000000000
+--- a/public/src/features/home/admin-welcome-toast.js
++++ /dev/null
+@@ -1,28 +0,0 @@
+-// =============================================================================
+-// public/src/features/home/admin-welcome-toast.js
+-// One-time toast after an admin's first successful sign-in, linking to the
+-// upload guide. sign-in.js sets the pending flag right before its reload.
+-// =============================================================================
+-
+-import { showNotification } from "../../components/notifications/notifications.js";
+-
+-const PENDING_KEY = "bq-admin-welcome-pending";
+-const SHOWN_KEY = "bq-admin-welcome-shown";
+-
+-export function maybeShowAdminWelcome() {
+-  try {
+-    if (localStorage.getItem(PENDING_KEY) !== "1") return;
+-    localStorage.removeItem(PENDING_KEY);
+-    if (localStorage.getItem(SHOWN_KEY) === "1") return;
+-    localStorage.setItem(SHOWN_KEY, "1");
+-  } catch {
+-    return;
+-  }
+-  showNotification(
+-    "مرحباً بك مشرفاً",
+-    "تعرّف على طريقة رفع المحتوى ونشره على المنصة.",
+-    "success",
+-    12,
+-    { action: { label: "افتح دليل رفع المحتوى", href: "/how-to-upload-content" } },
+-  );
+-}
+diff --git a/public/src/features/home/adminUpload.js b/public/src/features/home/adminUpload.js
+index 41759204e619b8ff379aa338ff2e3a8411b54ea4..c60f729d71cdad2bf73009cfa1483db87bb3451d 100644
+--- a/public/src/features/home/adminUpload.js
++++ b/public/src/features/home/adminUpload.js
+@@ -37,6 +37,10 @@ import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.
+ import { UPLOAD_ICON_SVG } from "./icons.js";
+ import { buildCourseUploadPayload, buildFolderUploadPayload } from "./user-content-folders.js";
+ 
++// The server records each successful upload in the notification center (api/_notifications.js);
++// this nudges the bell to fetch it now instead of at the next poll.
++const refreshNotificationCenter = () => window.dispatchEvent(new Event("bq:notifications-refresh"));
++
+ // ─── Track definitions ────────────────────────────────────────────────────────
+ const TRACK_LABELS = {
+   University: "جامعي",
+@@ -1050,6 +1054,7 @@ async function doFolderUpload({ educationType, college, year, term }) {
+       setStatus(hintEl, "success", `تم إنشاء ${foldersCreated} مجلد/مادة ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} بنجاح`);
+       hintEl.style.color = "var(--color-success)";
+       showNotification("تم الرفع بنجاح", "", "success");
++      refreshNotificationCenter();
+       invalidateManifestCache();
+     } else {
+       hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} • فشل ${failed.length}`;
+@@ -1172,6 +1177,7 @@ async function doCourseUpload({ educationType, college, year, term }) {
+       setStatus(hintEl, "success", `تم إنشاء ${coursesCount} مادة و${foldersCreated} مجلد ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} بنجاح`);
+       hintEl.style.color = "var(--color-success)";
+       showNotification("تم الرفع بنجاح", "", "success");
++      refreshNotificationCenter();
+       invalidateManifestCache();
+     } else {
+       hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} • فشل ${failed.length}`;
+@@ -1365,6 +1371,7 @@ async function doFolderUploadToExisting({ educationType, college, year, term })
+       setStatus(hintEl, "success", `تم إنشاء ${foldersCreated} مجلد ورفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} بنجاح`);
+       hintEl.style.color = "var(--color-success)";
+       showNotification("تم الرفع بنجاح", "", "success");
++      refreshNotificationCenter();
+       invalidateManifestCache();
+     } else {
+       hintEl.textContent = `تم رفع ${formatItemCounts({ quizzes: quizzesUploaded, lessons: lessonsUploaded, notebooks: notebooksUploaded, youtube: youtubeUploaded })} • فشل ${failed.length}`;
+@@ -1489,6 +1496,7 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
+       setStatus(hintEl, "success", `تم رفع ${successCount} امتحان بنجاح`);
+       hintEl.style.color = "var(--color-success)";
+       showNotification(`تم الرفع بنجاح (${successCount} امتحان)`, "", "success");
++      refreshNotificationCenter();
+     } else {
+       hintEl.textContent = `تم رفع ${successCount} • فشل ${errorCount}`;
+       hintEl.style.color = successCount > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
+diff --git a/public/src/features/home/index-entrypoint.js b/public/src/features/home/index-entrypoint.js
+index 8425582c9ee9f3f24f8b0cdda230c66f6b8b833a..f8e5601256c818171532b3b7dd0eff54d84fff6d 100644
+--- a/public/src/features/home/index-entrypoint.js
++++ b/public/src/features/home/index-entrypoint.js
+@@ -26,7 +26,6 @@ import { initApp, restoreViewFromURL } from "./navigation.js";
+ import { renderRootCategories } from "./root-view.js";
+ import { renderUserContentView } from "./user-content-view.js";
+ import { importMcpDraftFromUrl } from "./mcp-draft-import.js";
+-import { maybeShowAdminWelcome } from "./admin-welcome-toast.js";
+ import { setFolderState } from "./user-content-folders.js";
+ import { initCustomTooltips } from "../../components/tooltip/tooltip.js";
+ import { startQuiz } from "./quiz-navigation.js";
+@@ -154,9 +153,6 @@ document.addEventListener("DOMContentLoaded", () => {
+     }
+   });
+ 
+-  // First admin sign-in: one-time toast linking to the upload guide.
+-  maybeShowAdminWelcome();
+-
+   // MCP draft link (/my-content?draft=<code>): save the item into «محتواي»
+   // BEFORE the first render so the grid already contains it (and can highlight it).
+   // Never throws; the page loads normally if the link is bad or expired.
+diff --git a/public/src/features/home/sign-in.js b/public/src/features/home/sign-in.js
+index 103c7491ea8c0235c7e994834fb8a51c5976596a..f0213b8aa4acea945ec294064d4bc4266875f46e 100644
+--- a/public/src/features/home/sign-in.js
++++ b/public/src/features/home/sign-in.js
+@@ -185,10 +185,8 @@ function _clearSuccess() {
+ 
+ function _onSignedIn() {
+   if (_dialog) _dialog.close();
+-  // One-time welcome toast after the first successful admin sign-in (shown after the reload below).
+-  try {
+-    if (localStorage.getItem("bq-admin-welcome-shown") !== "1") localStorage.setItem("bq-admin-welcome-pending", "1");
+-  } catch { /* storage unavailable: no welcome toast */ }
++  // The first-sign-in welcome message is created on the server (api/auth.js) and shown by the
++  // notification center after the reload below, so nothing needs to be remembered here.
+   // Reload so all admin-dependent UI (upload buttons, sign-out button) refreshes.
+   window.location.reload();
+ }
+diff --git a/scripts/partials/sidebar.html b/scripts/partials/sidebar.html
+index 96d23d035b6b843aa66aeecba71ecd6ee70f2610..bd0c1a631848ac2ce16518a38c0dee6db2af1143 100644
+--- a/scripts/partials/sidebar.html
++++ b/scripts/partials/sidebar.html
+@@ -171,6 +171,20 @@
+             <span class="menu-label">إنشاء دفاتر</span>
+         </a>
+ 
++        <!-- NAV_ITEM:notifications -->
++        <!-- Admin-only: notification-center.js un-hides it (and shows the unread badge) for a signed-in admin. -->
++        <button type="button" id="notificationCenterItem" class="menu-item notification-center-item" hidden
++            data-tooltip="الإشعارات" aria-haspopup="dialog" aria-expanded="false" aria-controls="notificationCenterPanel">
++            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
++                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
++                aria-hidden="true">
++                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
++                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
++            </svg>
++            <span class="menu-label">الإشعارات</span>
++            <span class="nc-badge" id="notificationCenterBadge" hidden aria-live="polite"></span>
++        </button>
++
+         <div class="menu-item-dropdown-wrap">
+             <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"
+                 aria-haspopup="true" aria-expanded="false" aria-controls="sideMenuProfileDropdown">
+diff --git a/supabase/migrations/20261127120000_admin_notifications.sql b/supabase/migrations/20261127120000_admin_notifications.sql
+new file mode 100644
+index 0000000000000000000000000000000000000000..cb328b18afb3975ac7f173e6949c23b9fde7fbec
+--- /dev/null
++++ b/supabase/migrations/20261127120000_admin_notifications.sql
+@@ -0,0 +1,204 @@
++-- =============================================================================
++-- Admin notification center.
++-- One row per notification per admin. Only the API server (service_role) reads
++-- or writes the table; no public RLS policies (same pattern as admin_requests).
++-- `type` + `count` + `meta` drive the wording on the client; title/body are the
++-- plain-text fallback (and the whole message for announcements).
++--   group_key  -> while the existing row is UNREAD, a new event with the same key
++--                 bumps `count` and moves the row to the top (bulk uploads, reports).
++--   dedupe_key -> the event is stored at most once, ever (welcome, milestones, daily warning).
++-- =============================================================================
++
++CREATE TABLE IF NOT EXISTS public.admin_notifications (
++  id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
++  recipient_admin_id uuid NOT NULL REFERENCES public.admin_users (id) ON DELETE CASCADE,
++  type               text NOT NULL CHECK (type ~ '^[a-z][a-z_]{1,39}$'),
++  title              text NOT NULL CHECK (char_length(title) BETWEEN 1 AND 200),
++  body               text CHECK (body IS NULL OR char_length(body) <= 1000),
++  -- Internal paths only ("/reports"); never "//host" or a full URL.
++  href               text CHECK (href IS NULL OR (char_length(href) <= 500 AND href ~ '^/([^/\\]|$)')),
++  meta               jsonb NOT NULL DEFAULT '{}'::jsonb,
++  count              integer NOT NULL DEFAULT 1 CHECK (count >= 1),
++  group_key          text CHECK (group_key IS NULL OR char_length(group_key) <= 200),
++  dedupe_key         text CHECK (dedupe_key IS NULL OR char_length(dedupe_key) <= 200),
++  read_at            timestamptz,
++  created_at         timestamptz NOT NULL DEFAULT now(),
++  updated_at         timestamptz NOT NULL DEFAULT now()
++);
++
++CREATE INDEX IF NOT EXISTS admin_notifications_inbox_idx
++  ON public.admin_notifications (recipient_admin_id, updated_at DESC);
++CREATE INDEX IF NOT EXISTS admin_notifications_unread_idx
++  ON public.admin_notifications (recipient_admin_id) WHERE read_at IS NULL;
++CREATE UNIQUE INDEX IF NOT EXISTS admin_notifications_dedupe_uidx
++  ON public.admin_notifications (recipient_admin_id, dedupe_key) WHERE dedupe_key IS NOT NULL;
++CREATE UNIQUE INDEX IF NOT EXISTS admin_notifications_open_group_uidx
++  ON public.admin_notifications (recipient_admin_id, group_key)
++  WHERE group_key IS NOT NULL AND read_at IS NULL;
++
++ALTER TABLE public.admin_notifications ENABLE ROW LEVEL SECURITY;
++REVOKE ALL ON public.admin_notifications FROM anon, authenticated;
++
++CREATE OR REPLACE FUNCTION public.push_admin_notification(
++  p_recipient  uuid,
++  p_type       text,
++  p_title      text,
++  p_body       text  DEFAULT NULL,
++  p_href       text  DEFAULT NULL,
++  p_meta       jsonb DEFAULT '{}'::jsonb,
++  p_group_key  text  DEFAULT NULL,
++  p_dedupe_key text  DEFAULT NULL
++) RETURNS uuid
++LANGUAGE plpgsql
++SECURITY DEFINER
++SET search_path = public
++AS $$
++DECLARE
++  v_id uuid;
++BEGIN
++  IF p_recipient IS NULL OR NOT EXISTS (SELECT 1 FROM public.admin_users WHERE id = p_recipient) THEN
++    RETURN NULL;
++  END IF;
++
++  IF p_dedupe_key IS NOT NULL THEN
++    INSERT INTO public.admin_notifications (recipient_admin_id, type, title, body, href, meta, dedupe_key)
++    VALUES (p_recipient, p_type, p_title, p_body, p_href, COALESCE(p_meta, '{}'::jsonb), p_dedupe_key)
++    ON CONFLICT (recipient_admin_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING
++    RETURNING id INTO v_id;
++
++  ELSIF p_group_key IS NOT NULL THEN
++    INSERT INTO public.admin_notifications (recipient_admin_id, type, title, body, href, meta, group_key)
++    VALUES (p_recipient, p_type, p_title, p_body, p_href, COALESCE(p_meta, '{}'::jsonb), p_group_key)
++    ON CONFLICT (recipient_admin_id, group_key) WHERE group_key IS NOT NULL AND read_at IS NULL
++    DO UPDATE SET
++      count      = public.admin_notifications.count + 1,
++      title      = EXCLUDED.title,
++      body       = EXCLUDED.body,
++      href       = COALESCE(EXCLUDED.href, public.admin_notifications.href),
++      meta       = public.admin_notifications.meta || EXCLUDED.meta,
++      updated_at = now()
++    RETURNING id INTO v_id;
++
++  ELSE
++    INSERT INTO public.admin_notifications (recipient_admin_id, type, title, body, href, meta)
++    VALUES (p_recipient, p_type, p_title, p_body, p_href, COALESCE(p_meta, '{}'::jsonb))
++    RETURNING id INTO v_id;
++  END IF;
++
++  -- Housekeeping: read items older than 90 days go away (unread and the welcome message stay).
++  DELETE FROM public.admin_notifications
++   WHERE recipient_admin_id = p_recipient
++     AND read_at IS NOT NULL
++     AND type <> 'welcome'
++     AND updated_at < now() - interval '90 days';
++
++  RETURN v_id;
++END;
++$$;
++
++CREATE OR REPLACE FUNCTION public.broadcast_admin_notification(
++  p_type       text,
++  p_title      text,
++  p_body       text  DEFAULT NULL,
++  p_href       text  DEFAULT NULL,
++  p_meta       jsonb DEFAULT '{}'::jsonb,
++  p_dedupe_key text  DEFAULT NULL
++) RETURNS integer
++LANGUAGE plpgsql
++SECURITY DEFINER
++SET search_path = public
++AS $$
++DECLARE
++  v_n integer;
++BEGIN
++  WITH ins AS (
++    INSERT INTO public.admin_notifications (recipient_admin_id, type, title, body, href, meta, dedupe_key)
++    SELECT a.id, p_type, p_title, p_body, p_href, COALESCE(p_meta, '{}'::jsonb), p_dedupe_key
++      FROM public.admin_users a
++    ON CONFLICT (recipient_admin_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING
++    RETURNING 1
++  )
++  SELECT count(*)::integer INTO v_n FROM ins;
++  RETURN v_n;
++END;
++$$;
++
++REVOKE ALL ON FUNCTION public.push_admin_notification(uuid, text, text, text, text, jsonb, text, text) FROM PUBLIC, anon, authenticated;
++REVOKE ALL ON FUNCTION public.broadcast_admin_notification(text, text, text, text, jsonb, text) FROM PUBLIC, anon, authenticated;
++GRANT EXECUTE ON FUNCTION public.push_admin_notification(uuid, text, text, text, text, jsonb, text, text) TO service_role;
++GRANT EXECUTE ON FUNCTION public.broadcast_admin_notification(text, text, text, text, jsonb, text) TO service_role;
++
++-- View / attempt milestones: same signatures, SECURITY DEFINER and anon grants as the
++-- originals (CREATE OR REPLACE keeps the grants); only the milestone check is added.
++CREATE OR REPLACE FUNCTION public.admin_notification_milestone(p_count bigint)
++RETURNS boolean
++LANGUAGE sql
++IMMUTABLE
++AS $$
++  SELECT p_count = ANY (ARRAY[50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000]::bigint[]);
++$$;
++
++CREATE OR REPLACE FUNCTION public.increment_quiz_attempt(p_quiz_id uuid)
++RETURNS void
++LANGUAGE plpgsql
++SECURITY DEFINER
++SET search_path = public
++AS $$
++DECLARE
++  v_count bigint; v_owner uuid; v_title text; v_meta_id text;
++BEGIN
++  UPDATE public.quizzes SET attempt_count = attempt_count + 1 WHERE id = p_quiz_id
++  RETURNING attempt_count, uploaded_by, title, data #>> '{meta,id}'
++       INTO v_count, v_owner, v_title, v_meta_id;
++
++  IF v_owner IS NOT NULL AND public.admin_notification_milestone(v_count) THEN
++    PERFORM public.push_admin_notification(
++      v_owner, 'milestone', v_title, v_count || ' محاولة',
++      CASE WHEN v_meta_id IS NULL THEN NULL ELSE '/quiz/' || v_meta_id END,
++      jsonb_build_object('kind', 'quiz', 'metric', 'attempts', 'value', v_count, 'itemTitle', v_title),
++      NULL, 'milestone:quiz:' || p_quiz_id || ':' || v_count);
++  END IF;
++END;
++$$;
++
++CREATE OR REPLACE FUNCTION public.increment_lesson_view(p_lesson_id uuid)
++RETURNS void
++LANGUAGE plpgsql
++SECURITY DEFINER
++SET search_path = public
++AS $$
++DECLARE
++  v_count bigint; v_owner uuid; v_title text;
++BEGIN
++  UPDATE public.lessons SET view_count = view_count + 1 WHERE id = p_lesson_id
++  RETURNING view_count, created_by, title INTO v_count, v_owner, v_title;
++
++  IF v_owner IS NOT NULL AND public.admin_notification_milestone(v_count) THEN
++    PERFORM public.push_admin_notification(
++      v_owner, 'milestone', v_title, v_count || ' مشاهدة', '/lesson/' || p_lesson_id,
++      jsonb_build_object('kind', 'lesson', 'metric', 'views', 'value', v_count, 'itemTitle', v_title),
++      NULL, 'milestone:lesson:' || p_lesson_id || ':' || v_count);
++  END IF;
++END;
++$$;
++
++CREATE OR REPLACE FUNCTION public.increment_notebook_view(p_notebook_id uuid)
++RETURNS void
++LANGUAGE plpgsql
++SECURITY DEFINER
++SET search_path = public
++AS $$
++DECLARE
++  v_count bigint; v_owner uuid; v_title text;
++BEGIN
++  UPDATE public.notebooks SET view_count = view_count + 1 WHERE id = p_notebook_id
++  RETURNING view_count, created_by, title INTO v_count, v_owner, v_title;
++
++  IF v_owner IS NOT NULL AND public.admin_notification_milestone(v_count) THEN
++    PERFORM public.push_admin_notification(
++      v_owner, 'milestone', v_title, v_count || ' مشاهدة', '/notebook/' || p_notebook_id,
++      jsonb_build_object('kind', 'notebook', 'metric', 'views', 'value', v_count, 'itemTitle', v_title),
++      NULL, 'milestone:notebook:' || p_notebook_id || ':' || v_count);
++  END IF;
++END;
++$$;
