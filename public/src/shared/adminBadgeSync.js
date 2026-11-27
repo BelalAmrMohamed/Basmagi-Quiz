@@ -36,7 +36,8 @@
 
 import {
   isAdminAuthenticated,
-  signInWithSupabase,
+  exchangeSupabaseToken,
+  renewAdminToken,
   fullSignOut,
 } from "./adminAuth.js";
 import { ensureSharedSupabaseClient } from "./supabaseClientRegistry.js";
@@ -62,12 +63,10 @@ import { _alert } from "../components/notifications/notifications.js";
  *   register it as their page's "owned" client (see app-state.js) can do so
  *   without creating a second client instance.
  */
-// Upper bound for the getSession() call below. getSession() only reads
-// localStorage and, when autoRefreshToken is off (see
-// supabaseClientRegistry.js), does not itself perform a network refresh —
-// but supabase-js's internal lock/init sequencing can still await a
-// previous in-flight auth call, so this stays defensive against that
-// hanging during an outage instead of assuming it's always instant.
+// Upper bound for the getSession() call below. getSession() usually only reads
+// localStorage, but it refreshes an expired access token over the network and
+// can await a previous in-flight auth call, so don't let it hang during an
+// outage.
 const GET_SESSION_TIMEOUT_MS = 3000;
 
 /**
@@ -102,6 +101,7 @@ export async function syncAdminSession({ onRecovered, onSignedOut } = {}) {
   try {
     const {
       data: { session },
+      error,
     } = await Promise.race([
       client.auth.getSession(),
       new Promise((_, reject) =>
@@ -118,10 +118,10 @@ export async function syncAdminSession({ onRecovered, onSignedOut } = {}) {
       // the admin JWT from the existing Supabase session instead of
       // silently showing "logged out" while another tab/page would show
       // "logged in".
-      const ok = await signInWithSupabase(session.access_token);
-      if (ok) {
+      const status = await exchangeSupabaseToken(session.access_token);
+      if (status === "ok") {
         if (typeof onRecovered === "function") onRecovered();
-      } else {
+      } else if (status === "forbidden") {
         // ── Non-admin rejection ─────────────────────────────────────────
         // /api/auth returned 403 — this user is authenticated with Supabase
         // but is NOT an admin. Without explicitly destroying the Supabase
@@ -137,10 +137,12 @@ export async function syncAdminSession({ onRecovered, onSignedOut } = {}) {
         } catch (_) { }
         if (typeof onSignedOut === "function") onSignedOut();
       }
-    } else if (!session && isAdminAuthenticated()) {
-      // Local admin JWT still exists but Supabase's own session is gone
-      // (e.g. it expired, or was revoked elsewhere) — don't keep showing
-      // an authenticated admin UI based on stale local state.
+    } else if (session) {
+      await renewAdminToken();
+      if (!isAdminAuthenticated() && typeof onSignedOut === "function") onSignedOut();
+    } else if (!error && !hasStoredSupabaseSession() && isAdminAuthenticated()) {
+      // The Supabase session was removed (e.g. signed out in another tab).
+      // A failed refresh that left it stored is temporary: stay signed in.
       fullSignOut(null); // no supabaseClient.auth.signOut() needed, already gone
       if (typeof onSignedOut === "function") onSignedOut();
     }

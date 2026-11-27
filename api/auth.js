@@ -120,7 +120,9 @@ export default async function handler(req, res) {
       .json({ error: "هذا الحساب ليس لديه صلاحيات المشرف" });
   }
 
-  // Issue a short-lived JWT.
+  // Issue the admin JWT. It still expires, but the client renews it silently from
+  // the Supabase session (see adminAuth.js), so admins are not signed out. The
+  // lifetime also bounds how long a leaked token stays usable.
   const token = jwt.sign(
     {
       role: "admin",
@@ -140,7 +142,7 @@ export default async function handler(req, res) {
       id: adminData?.id || null,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "4h", algorithm: "HS256" }
+    { expiresIn: "7d", algorithm: "HS256" }
   );
 
   return res.status(200).json({ token });

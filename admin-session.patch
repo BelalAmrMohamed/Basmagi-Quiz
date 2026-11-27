@@ -1,0 +1,361 @@
+diff --git a/api/auth.js b/api/auth.js
+index 7a4e9ff..44b6738 100644
+--- a/api/auth.js
++++ b/api/auth.js
+@@ -120,7 +120,9 @@ export default async function handler(req, res) {
+       .json({ error: "هذا الحساب ليس لديه صلاحيات المشرف" });
+   }
+ 
+-  // Issue a short-lived JWT.
++  // Issue the admin JWT. It still expires, but the client renews it silently from
++  // the Supabase session (see adminAuth.js), so admins are not signed out. The
++  // lifetime also bounds how long a leaked token stays usable.
+   const token = jwt.sign(
+     {
+       role: "admin",
+@@ -140,7 +142,7 @@ export default async function handler(req, res) {
+       id: adminData?.id || null,
+     },
+     process.env.JWT_SECRET,
+-    { expiresIn: "4h", algorithm: "HS256" }
++    { expiresIn: "7d", algorithm: "HS256" }
+   );
+ 
+   return res.status(200).json({ token });
+diff --git a/public/src/features/home/adminUpload.js b/public/src/features/home/adminUpload.js
+index d85bb7f..4175920 100644
+--- a/public/src/features/home/adminUpload.js
++++ b/public/src/features/home/adminUpload.js
+@@ -28,7 +28,7 @@ import { apiUrl } from "../../shared/api-base.js";
+ import { prepareNotebookAssets, rollbackAssets } from "../../shared/notebook-publish-assets.js";
+ import { formatItemCounts } from "./upload-counts.js";
+ import { ICON, setStatus } from "./admin-icons.js";
+-import { getToken, isAdminAuthenticated, signOut } from "../../shared/adminAuth.js";
++import { getToken, isAdminAuthenticated, renewAdminToken } from "../../shared/adminAuth.js";
+ import { showNotification } from "../../components/notifications/notifications.js";
+ import { guideAction, GUIDE_TOAST_SECONDS } from "../../shared/guide-links.js";
+ import { userProfile } from "../../shared/userProfile.js";
+@@ -343,7 +343,7 @@ function mkOption(value, text, selected = false) {
+ // ─── Auth helpers ─────────────────────────────────────────────────────────────
+ function authHeaders() {
+   const token = getToken();
+-  if (!token) { signOut(); throw new Error("انتهت الجلسة. يرجى تسجيل الدخول مجددًا."); }
++  if (!token) throw new Error("انتهت الجلسة. يرجى تسجيل الدخول مجددًا.");
+   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+ }
+ 
+@@ -360,11 +360,17 @@ async function postUpload(payload) {
+     reserved.push(...up.reserved);
+     item.notebook = { ...item.notebook, content: { ...item.notebook.content, cells: up.cells, ...(up.assets.length ? { assets: up.assets } : {}) } };
+   }
++  const send = () => fetch(apiUrl("/api/upload-quiz"), {
++    method: "POST", headers: authHeaders(), body: JSON.stringify(payload),
++  });
+   let res;
+   try {
+-    res = await fetch(apiUrl("/api/upload-quiz"), {
+-      method: "POST", headers: authHeaders(), body: JSON.stringify(payload),
+-    });
++    await renewAdminToken();
++    res = await send();
++    if (res.status === 401) { // expired token: renew it and retry once
++      await renewAdminToken({ force: true });
++      res = await send();
++    }
+   } catch (e) { await rollbackAssets(reserved); throw e; }
+   if (!res.ok) await rollbackAssets(reserved);
+   let body = {};
+@@ -1031,9 +1037,7 @@ async function doFolderUpload({ educationType, college, year, term }) {
+     const hintEl = document.getElementById("adm-folder-hint");
+     if (hintEl) { setStatus(hintEl, "error", err.message); hintEl.style.color = "var(--color-error)"; }
+     document.getElementById("adm-folder-btns").style.display = "flex";
+-    if (isSessionError(err)) {
+-      setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
+-    } else uploadFailToast("تعذّر الرفع", err.message);
++    uploadFailToast("تعذّر الرفع", err.message);
+     return;
+   }
+ 
+@@ -1155,9 +1159,7 @@ async function doCourseUpload({ educationType, college, year, term }) {
+     const hintEl = document.getElementById("adm-course-hint");
+     if (hintEl) { setStatus(hintEl, "error", err.message); hintEl.style.color = "var(--color-error)"; }
+     document.getElementById("adm-course-btns").style.display = "flex";
+-    if (isSessionError(err)) {
+-      setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
+-    } else uploadFailToast("تعذّر الرفع", err.message);
++    uploadFailToast("تعذّر الرفع", err.message);
+     return;
+   }
+ 
+@@ -1350,9 +1352,7 @@ async function doFolderUploadToExisting({ educationType, college, year, term })
+     const hintEl = document.getElementById("adm-folder-target-hint");
+     if (hintEl) { setStatus(hintEl, "error", err.message); hintEl.style.color = "var(--color-error)"; }
+     document.getElementById("adm-folder-target-btns").style.display = "flex";
+-    if (isSessionError(err)) {
+-      setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
+-    } else uploadFailToast("تعذّر الرفع", err.message);
++    uploadFailToast("تعذّر الرفع", err.message);
+     return;
+   }
+ 
+@@ -1478,7 +1478,6 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
+           hintEl.style.color = "var(--color-error)";
+         }
+         showNotification(err.message, "error");
+-        setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
+         return;
+       }
+     }
+diff --git a/public/src/shared/adminAuth.js b/public/src/shared/adminAuth.js
+index 7d5dfab..8963028 100644
+--- a/public/src/shared/adminAuth.js
++++ b/public/src/shared/adminAuth.js
+@@ -9,8 +9,14 @@
+ //   cryptographically regardless of what sessionStorage holds.
+ // =============================================================================
+ 
++import { ensureSharedSupabaseClient } from "./supabaseClientRegistry.js";
++
+ const SESSION_KEY = "__bq_adm"; // intentionally opaque key name
+ 
++// Renew the admin JWT once it is this old, checking at this interval.
++const RENEW_AFTER_MS = 60 * 60 * 1000;
++const RENEW_CHECK_MS = 10 * 60 * 1000;
++
+ // ── Restore token on module load ─────────────────────────────────────────────
+ // Runs once when this module is first imported on any page.
+ let _token = null;
+@@ -78,6 +84,19 @@ export async function signIn(adminId) {
+  * @returns {boolean} true if successful, false otherwise
+  */
+ export async function signInWithSupabase(supabaseToken) {
++  return (await exchangeSupabaseToken(supabaseToken)) === "ok";
++}
++
++/**
++ * Like signInWithSupabase(), but tells a real rejection apart from a failure
++ * that may succeed later (offline, server error, expired Supabase token).
++ *
++ * @param {string} supabaseToken
++ * @param {() => boolean} [isStale] - if it returns true once the server has
++ *   answered, the new token is discarded
++ * @returns {Promise<"ok"|"forbidden"|"error">} "forbidden" = not an admin
++ */
++export async function exchangeSupabaseToken(supabaseToken, isStale) {
+   let res;
+   try {
+     res = await fetch("/api/auth", {
+@@ -87,7 +106,7 @@ export async function signInWithSupabase(supabaseToken) {
+     });
+   } catch (networkErr) {
+     console.error("Network error authenticating with Supabase token");
+-    return false;
++    return "error";
+   }
+ 
+   let body = {};
+@@ -97,19 +116,71 @@ export async function signInWithSupabase(supabaseToken) {
+ 
+   if (!res.ok) {
+     console.warn(body.error || "Failed to authenticate as admin via Supabase");
+-    return false;
++    return res.status === 403 ? "forbidden" : "error";
+   }
+ 
+   const { token } = body;
+-  if (!token || typeof token !== "string") {
+-    return false;
++  if (!token || typeof token !== "string" || isStale?.()) {
++    return "error";
+   }
+ 
+   _token = token;
+   try {
+     sessionStorage.setItem(SESSION_KEY, token);
+   } catch (_) { }
+-  return true;
++  return "ok";
++}
++
++// ── Silent renewal ───────────────────────────────────────────────────────────
++
++let _renewal = null; // in-flight renewal, shared by concurrent callers
++
++/**
++ * Replaces the current admin JWT with a fresh one, using the long-lived
++ * Supabase session. Does nothing when not signed in. A temporary failure keeps
++ * the current token; only a server "not an admin" answer clears it.
++ *
++ * @param {object} [options]
++ * @param {boolean} [options.force] - renew even if the token is still recent
++ * @returns {Promise<void>}
++ */
++export function renewAdminToken({ force = false } = {}) {
++  const current = getToken();
++  if (!current || (!force && !isDueForRenewal(current))) {
++    return Promise.resolve();
++  }
++  if (_renewal) return _renewal;
++
++  // True after a sign-out (or another sign-in) while we were waiting.
++  const isStale = () => getToken() !== current;
++
++  _renewal = (async () => {
++    try {
++      const client = await ensureSharedSupabaseClient();
++      if (!client) return;
++      // getSession() refreshes an expired Supabase access token itself.
++      const { data } = await client.auth.getSession();
++      const accessToken = data?.session?.access_token;
++      if (!accessToken || isStale()) return;
++      const status = await exchangeSupabaseToken(accessToken, isStale);
++      if (status === "forbidden" && !isStale()) signOut(); // admin access removed
++    } catch (err) {
++      console.warn("Could not renew the admin session:", err);
++    } finally {
++      _renewal = null;
++    }
++  })();
++  return _renewal;
++}
++
++function isDueForRenewal(token) {
++  try {
++    const part = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
++    const { iat } = JSON.parse(atob(part));
++    return !iat || Date.now() - iat * 1000 >= RENEW_AFTER_MS;
++  } catch (_) {
++    return true;
++  }
+ }
+ 
+ /**
+@@ -172,7 +243,7 @@ export function signOut() {
+ }
+ 
+ /**
+- * Full sign-out: clears the local admin JWT (sessionStorage) AND, if a
++ * Full sign-out (this browser only): clears the local admin JWT (sessionStorage) AND, if a
+  * Supabase client is provided, ends the underlying Supabase session too.
+  *
+  * WHY THIS EXISTS:
+@@ -189,7 +260,9 @@ export function signOut() {
+ export async function fullSignOut(supabaseClient) {
+   if (supabaseClient) {
+     try {
+-      await supabaseClient.auth.signOut();
++      // "local": the default ("global") would also end this admin's sessions
++      // on every other device.
++      await supabaseClient.auth.signOut({ scope: "local" });
+     } catch (err) {
+       console.error("Error signing out of Supabase:", err);
+     }
+@@ -204,4 +277,16 @@ export async function fullSignOut(supabaseClient) {
+  */
+ export function hasAdminSessionHint() {
+   return isAdminAuthenticated();
+-}
+\ No newline at end of file
++}
++
++// ── Keep the session alive on every page that uses this module ───────────────
++// (Real browsers only: not workers or test stubs.)
++if (typeof document !== "undefined" && typeof document.visibilityState === "string") {
++  const renew = () => { renewAdminToken(); };
++  setTimeout(renew, 0);
++  setInterval(renew, RENEW_CHECK_MS);
++  window.addEventListener("online", renew);
++  document.addEventListener("visibilitychange", () => {
++    if (document.visibilityState === "visible") renew();
++  });
++}
+diff --git a/public/src/shared/adminBadgeSync.js b/public/src/shared/adminBadgeSync.js
+index 3942f62..c983527 100644
+--- a/public/src/shared/adminBadgeSync.js
++++ b/public/src/shared/adminBadgeSync.js
+@@ -36,7 +36,8 @@
+ 
+ import {
+   isAdminAuthenticated,
+-  signInWithSupabase,
++  exchangeSupabaseToken,
++  renewAdminToken,
+   fullSignOut,
+ } from "./adminAuth.js";
+ import { ensureSharedSupabaseClient } from "./supabaseClientRegistry.js";
+@@ -62,12 +63,10 @@ import { _alert } from "../components/notifications/notifications.js";
+  *   register it as their page's "owned" client (see app-state.js) can do so
+  *   without creating a second client instance.
+  */
+-// Upper bound for the getSession() call below. getSession() only reads
+-// localStorage and, when autoRefreshToken is off (see
+-// supabaseClientRegistry.js), does not itself perform a network refresh —
+-// but supabase-js's internal lock/init sequencing can still await a
+-// previous in-flight auth call, so this stays defensive against that
+-// hanging during an outage instead of assuming it's always instant.
++// Upper bound for the getSession() call below. getSession() usually only reads
++// localStorage, but it refreshes an expired access token over the network and
++// can await a previous in-flight auth call, so don't let it hang during an
++// outage.
+ const GET_SESSION_TIMEOUT_MS = 3000;
+ 
+ /**
+@@ -102,6 +101,7 @@ export async function syncAdminSession({ onRecovered, onSignedOut } = {}) {
+   try {
+     const {
+       data: { session },
++      error,
+     } = await Promise.race([
+       client.auth.getSession(),
+       new Promise((_, reject) =>
+@@ -118,10 +118,10 @@ export async function syncAdminSession({ onRecovered, onSignedOut } = {}) {
+       // the admin JWT from the existing Supabase session instead of
+       // silently showing "logged out" while another tab/page would show
+       // "logged in".
+-      const ok = await signInWithSupabase(session.access_token);
+-      if (ok) {
++      const status = await exchangeSupabaseToken(session.access_token);
++      if (status === "ok") {
+         if (typeof onRecovered === "function") onRecovered();
+-      } else {
++      } else if (status === "forbidden") {
+         // ── Non-admin rejection ─────────────────────────────────────────
+         // /api/auth returned 403 — this user is authenticated with Supabase
+         // but is NOT an admin. Without explicitly destroying the Supabase
+@@ -137,10 +137,12 @@ export async function syncAdminSession({ onRecovered, onSignedOut } = {}) {
+         } catch (_) { }
+         if (typeof onSignedOut === "function") onSignedOut();
+       }
+-    } else if (!session && isAdminAuthenticated()) {
+-      // Local admin JWT still exists but Supabase's own session is gone
+-      // (e.g. it expired, or was revoked elsewhere) — don't keep showing
+-      // an authenticated admin UI based on stale local state.
++    } else if (session) {
++      await renewAdminToken();
++      if (!isAdminAuthenticated() && typeof onSignedOut === "function") onSignedOut();
++    } else if (!error && !hasStoredSupabaseSession() && isAdminAuthenticated()) {
++      // The Supabase session was removed (e.g. signed out in another tab).
++      // A failed refresh that left it stored is temporary: stay signed in.
+       fullSignOut(null); // no supabaseClient.auth.signOut() needed, already gone
+       if (typeof onSignedOut === "function") onSignedOut();
+     }
+diff --git a/public/src/shared/supabaseClientRegistry.js b/public/src/shared/supabaseClientRegistry.js
+index fd714d0..47414e1 100644
+--- a/public/src/shared/supabaseClientRegistry.js
++++ b/public/src/shared/supabaseClientRegistry.js
+@@ -67,12 +67,12 @@ export async function ensureSharedSupabaseClient() {
+       if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+         throw new Error("Supabase public configuration is missing");
+       }
+-      // Persist sessions for OAuth/admin recovery, but avoid background
+-      // refresh requests that create noise during service outages.
++      // Persist and auto-refresh sessions: the admin JWT is renewed from this
++      // session, so letting it lapse would sign admins out.
+       sharedSupabaseClient = sdk.createClient(
+         SUPABASE_URL,
+         SUPABASE_ANON_KEY,
+-        { auth: { autoRefreshToken: false, persistSession: true } },
++        { auth: { autoRefreshToken: true, persistSession: true } },
+       );
+       return sharedSupabaseClient;
+     } catch (error) {

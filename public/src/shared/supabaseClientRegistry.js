@@ -67,12 +67,12 @@ export async function ensureSharedSupabaseClient() {
       if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
         throw new Error("Supabase public configuration is missing");
       }
-      // Persist sessions for OAuth/admin recovery, but avoid background
-      // refresh requests that create noise during service outages.
+      // Persist and auto-refresh sessions: the admin JWT is renewed from this
+      // session, so letting it lapse would sign admins out.
       sharedSupabaseClient = sdk.createClient(
         SUPABASE_URL,
         SUPABASE_ANON_KEY,
-        { auth: { autoRefreshToken: false, persistSession: true } },
+        { auth: { autoRefreshToken: true, persistSession: true } },
       );
       return sharedSupabaseClient;
     } catch (error) {

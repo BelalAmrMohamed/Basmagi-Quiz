@@ -195,7 +195,7 @@
     padding 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@media(max-width: 768px){
+@media(max-width: 768px) {
   .sidebar.expanded .sidebar-header {
     padding: 4px 10px 8px 14px;
   }
@@ -409,7 +409,7 @@
   border: 1px solid var(--color-border);
   border-radius: 12px;
   box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.18));
-  padding: 0 0 6px;
+  padding: 0;
   z-index: 1000;
   direction: rtl;
   overflow: hidden;
@@ -526,7 +526,8 @@
 }
 
 .side-menu-profile-dropdown-name {
-  unicode-bidi: plaintext; /* truncate by the name's own direction */
+  unicode-bidi: plaintext;
+  /* truncate by the name's own direction */
   text-align: start;
   font-size: 0.95rem;
   font-weight: 700;
@@ -631,7 +632,7 @@
 .side-menu-profile-dropdown-item-signin:hover:not(:disabled) {
   background: var(--color-hover-overlay, rgba(99, 102, 241, 0.06));
   border-color: var(--color-primary, #6366f1);
-  
+
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
@@ -650,7 +651,7 @@
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.22);
   margin-top: 4px;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
 }
 
@@ -928,7 +929,7 @@
   display: none;
 }
 
-.docs-menu-group + .docs-menu-group {
+.docs-menu-group+.docs-menu-group {
   margin-top: 8px;
 }
 
@@ -1202,7 +1203,7 @@
 }
 
 .theme-selector-btn:hover {
-  
+
   box-shadow: var(--shadow-sm);
 }
 
@@ -2098,7 +2099,7 @@ html[data-motion="reduced"] body {
 }
 
 .contact-option-btn:hover {
-  
+
   box-shadow: var(--shadow-md);
 }
 
@@ -2303,7 +2304,10 @@ html[data-motion="reduced"] body {
 /* Mobile: the sheet is always expanded and nav is the scroll owner, so let the
    list flow instead of nesting a second scroller. */
 @media (max-width: 768px) {
-  .lesson-section-nav__list { max-height: none; overflow: visible; }
+  .lesson-section-nav__list {
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 /* Collapsed-rail icon matches the 18px theme icon (lessonIcon svgs are unsized). */

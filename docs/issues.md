@@ -7,31 +7,18 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
-### UI Issue: Offline/Online Notification
-* It sometimes appears on top of other elements, so it needs to be pushed to the bottom of the page and it must push everything else up.
-
 ### AI Models
 My platform has an integrated AI Chat that uses API Keys for Gemini, DeepSeek, & Claude. Google dropped new models lately, so it's time to update, based on the screenshot, what am I missing?
 
 They always add new models; is there any dynamic way to keep my website updated?
 
-### Image Tool Window in MATLAB Notebook
-`mlweb-imtool-statusbar` shouldn't be split on 2 lines, because it convers parts of the image at the bottom, since the image is set to fit. See `public\src\features\notebook\image-tool-window.css` and `image-tool-window.js`.
-
-### Concentrate on gamefied experience and reward scheduele
-
-### MATLAB Notebook
-Continue implementing the plan docs/plans/MLWeb Image Processing Course Coverage and Performance UX — Implementation Plan.md in the attached repo (basmagi.zip). Phases 0-5 are already applied. Implement Phase 6 (Performance and UX for long runs) only, which is only partially implemented.
-
 ### Offline Support.
 * Users who have Installed the application: The notebook Page (e.g., `/notebook/new` and notebooks they saved locally at `/my-content`) should work offline as well as.
 * The quiz page and the lesson page should also work, people who have lessons and quizzes locally (i.e., `/my-content`) should work offline.
 
-### Sign in
-![Screenshot](image.png).
-* This is extremely annoying, it's telling me my session has ended, but its still showing me that I'm signed in in the sidebar's dropdown and in the profile page, and I don't know why are sessions ending quickly.
-* Sometimes it tells me that ("انتهت صلاحية الجلسة. يرجى تسجيل الدخول مجددًا."), then when the page reloads automatically and I find that I'm still signed in, I try again, and it works this time.
-* There appears to be some timeout, when it run out, people automatically get signed out, which is extremely annoying, remove it, people should never be signed out automatically.
+### Sign-In For Admins: Add Multi-device support and multi-email support
+* **Add Multi-device support:** Admins should be able to sign in with the same email on multiple devices normally no problem. Currently it results in some issues.
+* **Add Multi-email support:** Allow Admins to sign in with Multiple Emails at once and switch between them in the UI. Each one of them must get the same verification (e.g., each email of them must be an Admin/Developer).
 
 ## New Features
 
@@ -44,15 +31,33 @@ Continue implementing the plan docs/plans/MLWeb Image Processing Course Coverage
   * To see how many reports they got.
   * Also have a version of the platform's stats on their.
   * And other things, too.
-* Their is no notification center for the platform.
 
-### `gradeEssay` improvements (independent of the AI override, still worth doing)
+### Notifications
+Add notifications to the platform. The platform already has notifications (i.e., `public\src\components\notifications\`), but it's temporary, I want a notification center (Example: like that in youtube.com).
+
+#### Functionality for Admins (I.E., What it shows)
+- **Sign-in Message:** The notification that is showed to the admin when they sign in for the first time, specially because that notification includes a link to a documentation page that can come in handy later.
+- **Successfull uploads to the platform:** When admins upload an item to the platform, the notification should also be shows in the notification center. See `public\src\features\home\adminUpload.js`
+- **Reports on their uploaded items:** When a user reports anything that they uploaded, they get a notification. See `public/reports.html` and its related files.
+- Recommend to me other functionalities it could show.
+
+### `gradeEssay` improvements
 Add basic LaTeX-aware and Arabic-diacritic-aware normalization to `gradeEssay`'s `normalize()` function in `public\src\shared\rate-answers.js` — strip Arabic diacritics (tashkeel, `\u064B-\u0652`), normalize alef variants (`أ`/`إ`/`آ` → `ا`), and strip/normalize common LaTeX delimiters (`$...$`, `\(...\)`) before comparing text.
 
 ### Implement the Rich Input Component into the Notebook page's Makrdown cells.
+* The Notebook page uses its own simple version of Markdown, replace it with this custom engine `public\src\shared\rich-input\`
 
 ### Code Blocks
-* Add Line numbers, VS-Code-style.
+
+#### 1. Line Numbers
+Code blocks should have proper Line numbers, VS-Code-style:
+* `public\src\shared\rich-input\`
+* `public\src\shared\markdown.js`
+
+#### 2. Issue in the AI Agent's Code Blocks
+* The AI Agent uses the `public\src\shared\rich-input\`, but when a user types ` ``` `, it doesn't insert a code block automatically. Fix it.
+
+AI Agent files: `public\src\components\ai-agent\`
 
 ### Result Pages
 
@@ -119,3 +124,5 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 10. **Quota and performance:** cache `channels.list` and `videos.list` results, batch ids, and lazy-load card images. Consider moving published playlist `items` out of the catalog fetch (already lazy) and paginating long lists.
 11. **Tests worth adding:** copy-tree with YouTube (§1.5), the embed/link builders (§2), the window snap math, the attachment kind mapping (§1.3), and the admin `move-item` with the `youtube` type (extend `admin-action-routing`).
 12. **Code health:** the two copies of `youtube-mcp-model.js` (`public/src/shared/` and `scripts/lib/`) can drift. Add a test that fails when they differ, or generate one from the other in the build.
+
+### Concentrate on gamefied experience and reward scheduele

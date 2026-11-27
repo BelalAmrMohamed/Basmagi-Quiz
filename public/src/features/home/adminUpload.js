@@ -28,7 +28,7 @@ import { apiUrl } from "../../shared/api-base.js";
 import { prepareNotebookAssets, rollbackAssets } from "../../shared/notebook-publish-assets.js";
 import { formatItemCounts } from "./upload-counts.js";
 import { ICON, setStatus } from "./admin-icons.js";
-import { getToken, isAdminAuthenticated, signOut } from "../../shared/adminAuth.js";
+import { getToken, isAdminAuthenticated, renewAdminToken } from "../../shared/adminAuth.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { guideAction, GUIDE_TOAST_SECONDS } from "../../shared/guide-links.js";
 import { userProfile } from "../../shared/userProfile.js";
@@ -343,7 +343,7 @@ function mkOption(value, text, selected = false) {
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 function authHeaders() {
   const token = getToken();
-  if (!token) { signOut(); throw new Error("انتهت الجلسة. يرجى تسجيل الدخول مجددًا."); }
+  if (!token) throw new Error("انتهت الجلسة. يرجى تسجيل الدخول مجددًا.");
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 }
 
@@ -360,11 +360,17 @@ async function postUpload(payload) {
     reserved.push(...up.reserved);
     item.notebook = { ...item.notebook, content: { ...item.notebook.content, cells: up.cells, ...(up.assets.length ? { assets: up.assets } : {}) } };
   }
+  const send = () => fetch(apiUrl("/api/upload-quiz"), {
+    method: "POST", headers: authHeaders(), body: JSON.stringify(payload),
+  });
   let res;
   try {
-    res = await fetch(apiUrl("/api/upload-quiz"), {
-      method: "POST", headers: authHeaders(), body: JSON.stringify(payload),
-    });
+    await renewAdminToken();
+    res = await send();
+    if (res.status === 401) { // expired token: renew it and retry once
+      await renewAdminToken({ force: true });
+      res = await send();
+    }
   } catch (e) { await rollbackAssets(reserved); throw e; }
   if (!res.ok) await rollbackAssets(reserved);
   let body = {};
@@ -1031,9 +1037,7 @@ async function doFolderUpload({ educationType, college, year, term }) {
     const hintEl = document.getElementById("adm-folder-hint");
     if (hintEl) { setStatus(hintEl, "error", err.message); hintEl.style.color = "var(--color-error)"; }
     document.getElementById("adm-folder-btns").style.display = "flex";
-    if (isSessionError(err)) {
-      setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
-    } else uploadFailToast("تعذّر الرفع", err.message);
+    uploadFailToast("تعذّر الرفع", err.message);
     return;
   }
 
@@ -1155,9 +1159,7 @@ async function doCourseUpload({ educationType, college, year, term }) {
     const hintEl = document.getElementById("adm-course-hint");
     if (hintEl) { setStatus(hintEl, "error", err.message); hintEl.style.color = "var(--color-error)"; }
     document.getElementById("adm-course-btns").style.display = "flex";
-    if (isSessionError(err)) {
-      setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
-    } else uploadFailToast("تعذّر الرفع", err.message);
+    uploadFailToast("تعذّر الرفع", err.message);
     return;
   }
 
@@ -1350,9 +1352,7 @@ async function doFolderUploadToExisting({ educationType, college, year, term }) 
     const hintEl = document.getElementById("adm-folder-target-hint");
     if (hintEl) { setStatus(hintEl, "error", err.message); hintEl.style.color = "var(--color-error)"; }
     document.getElementById("adm-folder-target-btns").style.display = "flex";
-    if (isSessionError(err)) {
-      setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
-    } else uploadFailToast("تعذّر الرفع", err.message);
+    uploadFailToast("تعذّر الرفع", err.message);
     return;
   }
 
@@ -1478,7 +1478,6 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
           hintEl.style.color = "var(--color-error)";
         }
         showNotification(err.message, "error");
-        setTimeout(() => { signOut(); window.location.href = "/my-content"; }, 2500);
         return;
       }
     }
