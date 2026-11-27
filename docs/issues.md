@@ -17,10 +17,6 @@ They always add new models; is there any dynamic way to keep my website updated?
 
 ## New Features
 
-### Offline Support.
-* Users who have Installed the application: The notebook Page (e.g., `/notebook/new` and notebooks they saved locally at `/my-content`) should work offline as well as.
-* The quiz page and the lesson page should also work, people who have lessons and quizzes locally (i.e., `/my-content`) should work offline.
-
 ### Code Blocks
 
 #### 1. Line Numbers

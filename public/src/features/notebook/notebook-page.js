@@ -130,7 +130,7 @@ async function init() {
   try {
     runtime = await loadRuntime(notebook.runtime);
   } catch {
-    return showError(notebookText(lang, "runtimeFailed"), { retry: init });
+    return showError(notebookText(lang, notebook.runtime === "cpp" && navigator.onLine === false ? "cppOffline" : "runtimeFailed"), { retry: init });
   }
 
   let handle;
