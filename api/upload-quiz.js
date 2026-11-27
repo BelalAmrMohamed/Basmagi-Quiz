@@ -55,6 +55,7 @@ import { validateLessonContent, validateLessonDescription, validateLessonSource,
 import { validateItemName, hasLessonNameCollision, hasNotebookNameCollision } from "./_itemActions.js";
 import { validateNotebook } from "./_validateNotebook.js";
 import { notebookFromFile } from "../scripts/lib/notebook-convert.js";
+import { notifyUpload } from "./_notifications.js";
 
 const supabase = makeClient("service");
 
@@ -251,6 +252,8 @@ async function handleSingleUpload(req, res, adminPayload) {
     console.error("[upload-quiz] Supabase error:", error.message);
     return res.status(500).json({ error: "فشل رفع الامتحان. حاول مجددًا." });
   }
+
+  await notifyUpload(supabase, adminId, "quiz", { title: cleanQuiz.meta.title, href: `/quiz/${cleanQuiz.meta.id}` });
 
   if (adminId) {
     // Use an atomic DB-side increment via an RPC for safety under concurrency.
@@ -471,6 +474,7 @@ async function handleFolderUpload(req, res, adminPayload) {
         }
         results.lessonsUploaded++;
         uploadedLessonUrls.push(lessonUrl(insertedLesson.slug || insertedLesson.id));
+        await notifyUpload(supabase, adminId, "lesson", { title: titleCheck.clean, href: `/lesson/${insertedLesson.slug || insertedLesson.id}` });
         continue;
       }
 
@@ -495,6 +499,7 @@ async function handleFolderUpload(req, res, adminPayload) {
           continue;
         }
         results.youtubeUploaded++;
+        await notifyUpload(supabase, adminId, "youtube", { title: fields.title, href: "/" });
         continue;
       }
 
@@ -542,6 +547,7 @@ async function handleFolderUpload(req, res, adminPayload) {
         results.notebooksUploaded++;
         if (warnings.length) (results.notebookWarnings ||= []).push({ name: clean.title, warnings });
         uploadedNotebookUrls.push(notebookUrl(insertedNotebook.slug || insertedNotebook.id));
+        await notifyUpload(supabase, adminId, "notebook", { title: clean.title, href: `/notebook/${insertedNotebook.slug || insertedNotebook.id}` });
         continue;
       }
 
@@ -614,6 +620,7 @@ async function handleFolderUpload(req, res, adminPayload) {
         }
         results.quizzesUploaded++;
         uploadedQuizUrls.push(quizUrl(cleanQuiz.meta.id));
+        await notifyUpload(supabase, adminId, "quiz", { title: cleanQuiz.meta.title, href: `/quiz/${cleanQuiz.meta.id}` });
 
         if (adminId) {
           try {

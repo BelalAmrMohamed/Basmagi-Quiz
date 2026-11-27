@@ -100,6 +100,17 @@ tells GitHub to just serve the files exactly as they are, which helps bots reach
 
 Notebooks support MATLAB-style browser execution and C++17. C++ cells are sent to an online compiler, require an internet connection, and replay earlier cells when a later cell runs. Cell output is separated by cell; optional `stdin` input is available for each C++ cell. Compiler output is not stored.
 
+
+### MLWeb (MATLAB-style) additions
+
+| Area | Functions |
+|---|---|
+| Frequency domain | `fft ifft fft2 ifft2 fftshift ifftshift abs angle real imag conj isreal`, literals `1i`/`1j` |
+| Video (simulated) | `imaqhwinfo videoinput preview closepreview getsnapshot start stop isrunning delete webcam snapshot` |
+| Help | `help name`, `doc name`, `lookfor keyword` |
+
+Differences from MATLAB: complex values work only with the frequency-domain functions, `+ - .* ./ *`, `exp`, `sum`, `mean`, indexing and `disp`; the camera is simulated (a deterministic demo scene, no real webcam); `fft` accepts integer input and converts it to double.
+
 ---
 
 ## Pushing Updates

@@ -16,6 +16,7 @@ import jwt from "jsonwebtoken";
 import { applyCors } from "./_middleware.js";
 import { makeClient, envGuard } from "./_supabase.js";
 import { slugifyHandle, claimHandle } from "./_handle.js";
+import { pushNotification } from "./_notifications.js";
 
 /**
  * Generates a URL-safe default handle from an admin's email local-part
@@ -112,6 +113,16 @@ export default async function handler(req, res) {
     if (!adminHandle) {
       adminHandle = await ensureHandle(supabase, adminData.id, userEmail);
     }
+
+    // Welcome message: dedupe_key makes it once per ACCOUNT (any device). It stays in the
+    // center for good because it links to the upload guide.
+    await pushNotification(supabase, adminData.id, {
+      type: "welcome",
+      title: "مرحباً بك مشرفاً",
+      body: "تعرّف على طريقة رفع المحتوى ونشره على المنصة.",
+      href: "/how-to-upload-content",
+      dedupeKey: "welcome",
+    });
   }
 
   if (!isAuthorized) {
@@ -120,7 +131,9 @@ export default async function handler(req, res) {
       .json({ error: "هذا الحساب ليس لديه صلاحيات المشرف" });
   }
 
-  // Issue a short-lived JWT.
+  // Issue the admin JWT. It still expires, but the client renews it silently from
+  // the Supabase session (see adminAuth.js), so admins are not signed out. The
+  // lifetime also bounds how long a leaked token stays usable.
   const token = jwt.sign(
     {
       role: "admin",
@@ -140,7 +153,7 @@ export default async function handler(req, res) {
       id: adminData?.id || null,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "4h", algorithm: "HS256" }
+    { expiresIn: "7d", algorithm: "HS256" }
   );
 
   return res.status(200).json({ token });

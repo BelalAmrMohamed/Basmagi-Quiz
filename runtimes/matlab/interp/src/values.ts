@@ -10,7 +10,7 @@ export const INT_RANGE: Record<string, [number, number]> = {
 export const CLASS_NAMES = ['double', 'single', 'int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32', 'logical'];
 /** Bytes per element for whos. */
 export const CLASS_BYTES: Record<string, number> = { double: 8, single: 4, int8: 1, uint8: 1, int16: 2, uint16: 2, int32: 4, uint32: 4, logical: 1, char: 2 };
-export interface T { cls: Cls; dims: number[]; data: Float64Array }
+export interface T { cls: Cls; dims: number[]; data: Float64Array; /** imaginary part; present only for complex values (plan D4) */ im?: Float64Array }
 export interface S { cls: 'struct'; dims: number[]; keys: string[]; data: Record<string, V>[] }
 export interface C { cls: 'cell'; dims: number[]; data: V[] }
 export interface FuncHandle { cls: 'function_handle'; name: string; params?: string[]; body?: any; env?: Map<string, V> }
@@ -125,7 +125,7 @@ export function matmul(a: T, b: T): T {
   return r;
 }
 
-export function transpose(a: T): T {
+function transposeR(a: T): T {
   if (a.dims.length > 2) throw new MatlabError('Transpose on ND array is not defined.');
   const [m, n] = a.dims, r = mk(a.cls, [n, m]);
   for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) r.data[j + n * i] = a.data[i + m * j];
@@ -261,7 +261,7 @@ export const effDims = (d: number[], k: number) => {
   if (k >= d.length) return d.concat(new Array(k - d.length).fill(1));
   return d.slice(0, k - 1).concat([numel(d.slice(k - 1))]);
 };
-export function index(t: T, ix: Idx[]): T {
+function indexR(t: T, ix: Idx[]): T {
   const k = ix.length;
   if (k === 0) return t;
   if (k === 1) {
@@ -303,7 +303,7 @@ export function index(t: T, ix: Idx[]): T {
   else { const sub = new Array(k).fill(0); for (let o = 0; o < n; o++) { let p = 0; for (let d = 0; d < k; d++) p += lists[d][sub[d]] * strides[d]; r[o] = t.data[p]; for (let d = 0; d < k; d++) { if (++sub[d] < rd[d]) break; sub[d] = 0; } } }
   return mk(t.cls, rd, r);
 }
-export function assign(t: T | undefined, ix: Idx[], rhs: T, inPlace = false): T {
+function assignR(t: T | undefined, ix: Idx[], rhs: T, inPlace = false): T {
   const cls = t ? t.cls : rhs.cls;
   let cur: T = t ?? { cls, dims: [0, 0], data: new Float64Array(0) };
   const k = ix.length, nr = rhs.data.length;
@@ -351,7 +351,7 @@ export function assign(t: T | undefined, ix: Idx[], rhs: T, inPlace = false): T 
 }
 
 // ---------- concatenation ----------
-export function cat(dim: number, parts: T[]): T {
+function catR(dim: number, parts: T[]): T {
   parts = parts.filter(p => !(p.data.length === 0 && p.dims.length === 2 && p.dims[0] * p.dims[1] === 0 && parts.length > 1));
   if (parts.length === 1) return parts[0];
   if (!parts.length) return mk('double', [0, 0]);
@@ -410,6 +410,7 @@ export function display(name: string, v: V, o: PrintOpts): string {
     if (!v.keys.length) return `${name} = \n\n  ${dimStr(v.dims)} struct array with no fields.\n\n`;
     return `${name} = \n\n  ${dimStr(v.dims)} struct array with fields:\n\n` + v.keys.map(k => `    ${k}`).join('\n') + '\n\n';
   }
+  if (isComplex(v)) return v.data.length === 1 ? `${name} = ${complexBody(v)}\n` : v.dims.length > 2 ? `${name} =\n\n  ${dimStr(v.dims)} complex double array\n\n` : `${name} =\n\n${complexBody(v)}\n`;
   const n = v.data.length;
   if (v.cls === 'char' && v.dims.length === 2 && v.dims[0] <= 1) return `${name} = ${toStr(v)}\n`;
   if (n === 0) return `${name} = [](${dimStr(v.dims)})\n`;
@@ -432,4 +433,52 @@ function inline(x: any): string {
   if (x.data.length === 1) return scalarStr(x.data[0], x.cls);
   if (x.data.length === 0) return `[]`;
   return `[${dimStr(x.dims)} ${x.cls}]`;
+}
+
+// ---------- complex support (Phase 7): a complex T carries `im`; real parts go through the real routines ----------
+export const isComplex = (v: any): v is T & { im: Float64Array } => !!v && v.im instanceof Float64Array;
+/** Build a double tensor from real and imaginary parts; `im` is dropped when it is all zeros (MATLAB narrows to real). */
+export function cplx(re: T, im: Float64Array): T {
+  for (let i = 0; i < im.length; i++) if (im[i] !== 0) return { cls: 'double', dims: re.dims, data: re.data, im };
+  return { cls: re.cls, dims: re.dims, data: re.data };
+}
+export const reOf = (t: T): T => ({ cls: t.cls, dims: t.dims, data: t.data });
+export const imOf = (t: T): T => ({ cls: 'double', dims: t.dims, data: t.im ?? new Float64Array(t.data.length) });
+export function transpose(a: T, conj = false): T {
+  const r = transposeR(reOf(a)); if (!a.im) return r;
+  const i = transposeR(imOf(a)); if (conj) for (let k = 0; k < i.data.length; k++) i.data[k] = -i.data[k];
+  return cplx(r, i.data);
+}
+export function index(t: T, ix: Idx[]): T {
+  if (!t.im) return indexR(t, ix);
+  return cplx(indexR(reOf(t), ix), indexR(imOf(t), ix).data);
+}
+export function assign(t: T | undefined, ix: Idx[], rhs: T, inPlace = false): T {
+  if (!t?.im && !rhs.im) return assignR(t, ix, rhs, inPlace);
+  const z = (x: T) => ({ cls: 'double' as Cls, dims: x.dims, data: new Float64Array(x.data.length) });
+  const a = t ? (t.im ? imOf(t) : z(t)) : undefined;
+  const re = assignR(t ? { cls: 'double', dims: t.dims, data: t.data } : undefined, ix, { cls: 'double', dims: rhs.dims, data: rhs.data });
+  const im = assignR(a, ix, rhs.im ? imOf(rhs) : z(rhs));
+  return cplx(re, im.data);
+}
+export function cat(dim: number, parts: T[]): T {
+  if (!parts.some(p => p.im)) return catR(dim, parts);
+  const re = catR(dim, parts.map(p => ({ cls: 'double' as Cls, dims: p.dims, data: p.data })));
+  const im = catR(dim, parts.map(imOf));
+  return cplx(re, im.data);
+}
+const cnumStr = (re: number, im: number, frac: boolean) => {
+  const f = (x: number) => (frac ? Math.abs(x).toFixed(4) : String(Math.abs(x)));
+  return `${frac ? (re < 0 ? '-' : '') + f(re) : String(re)} ${im < 0 || Object.is(im, -0) ? '-' : '+'} ${f(im)}i`;
+};
+/** Text of a complex tensor without its name header (used by display and disp). */
+export function complexBody(t: T): string {
+  const im = t.im!, n = t.data.length;
+  const frac = [...t.data, ...im].some(x => !Number.isInteger(x));
+  const cells = Array.from({ length: n }, (_, k) => cnumStr(t.data[k], im[k], frac));
+  if (n === 1) return cells[0];
+  const [r, c] = t.dims, w = Math.max(...cells.map(s => s.length)) + 3;
+  let out = '';
+  for (let i = 0; i < r; i++) { let line = ''; for (let j = 0; j < c; j++) line += cells[i + r * j].padStart(w); out += line + '\n'; }
+  return out;
 }

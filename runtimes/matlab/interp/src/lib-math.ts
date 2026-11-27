@@ -445,8 +445,8 @@ export function registerMath(def: Def) {
     const req = a.length ? scalarOf(a[0]) : 0.01;
     const ms = Math.min(5000, Math.max(0, req * 1000));
     I.flushFigures();
-    const start = performance.now();
-    while (performance.now() - start < ms) I.maybeTick();
+    const start = I.clock();
+    while (I.clock() - start < ms) I.maybeTick();
     if (ms >= 100) I.flushFigures();
     return [];
   });

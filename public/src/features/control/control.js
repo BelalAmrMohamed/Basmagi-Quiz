@@ -447,6 +447,41 @@ window.removeAdmin = function (email) {
 
 window.submitAddAdmin = submitAddAdmin;
 
+// Announcement -> every admin's notification center (owner-only on the server too).
+document.getElementById("announceForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const title = document.getElementById("announceTitle").value.trim();
+  const body = document.getElementById("announceBody").value.trim();
+  const href = document.getElementById("announceHref").value.trim();
+  if (!title) {
+    showMessage("عنوان الإعلان مطلوب", true);
+    return;
+  }
+  if (href && !/^\/([^/\\]|$)/.test(href)) {
+    showMessage("الرابط يجب أن يكون مسارًا داخليًا يبدأ بـ /", true);
+    return;
+  }
+  await withButtonLoading(document.getElementById("announceSendBtn"), async () => {
+    try {
+      // Confirm first: some admins mute announcements, others get them silently (no badge).
+      const { total, receiving, silent } = await postAdminItemAction("notifications-broadcast-preview", {});
+      if (!receiving) {
+        showMessage("كل المشرفين أوقفوا الإعلانات، لن يصل هذا الإعلان لأحد.", true);
+        return;
+      }
+      const lines = [`سيصل هذا الإعلان إلى ${receiving} من أصل ${total} مشرف.`];
+      if (total > receiving) lines.push(`${total - receiving} أوقفوا الإعلانات.`);
+      if (silent) lines.push(`${silent} سيصلهم بصمت (بدون عدّاد).`);
+      if (!window.confirm(`${lines.join("\n")}\n\nهل تريد الإرسال؟`)) return;
+      const { sent } = await postAdminItemAction("notifications-broadcast", { title, body, href });
+      showMessage(`تم إرسال الإعلان إلى ${sent} مشرف`);
+      e.target.reset();
+    } catch (err) {
+      showMessage(err.message, true);
+    }
+  });
+});
+
 document.getElementById("collegeForm").addEventListener("submit", saveCollege);
 document.getElementById("cancelCollegeEdit").addEventListener("click", resetCollegeForm);
 

@@ -54,6 +54,7 @@ import {
 import crypto from "crypto";
 import { handleAnalyticsTrack, handleAnalyticsLive } from "./_analytics.js";
 import { STORAGE_ACTIONS, handleStorageAction, handleCronPurge } from "./_storageGuard.js";
+import { NOTIFICATION_ACTIONS, handleNotificationAction, pushNotification, notifyUpload } from "./_notifications.js";
 
 const MAX_BIO_LENGTH = 280;
 
@@ -439,6 +440,7 @@ const ITEM_ACTIONS = new Set([
   "list-youtube-public",
   "unpublish-youtube",
   ...STORAGE_ACTIONS,
+  ...NOTIFICATION_ACTIONS,
 ]);
 
 async function fetchItemForAuth(supabase, itemType, itemId) {
@@ -1707,6 +1709,7 @@ async function handlePublishYoutube(req, res, adminPayload, adminId, supabase) {
     console.error("[publish-youtube]", error);
     return res.status(500).json({ error: "تعذّر حفظ المحتوى المنشور." });
   }
+  await notifyUpload(supabase, adminId, "youtube", { title: row.title, href: "/" });
   return res.status(200).json({ success: true, item: data });
 }
 
@@ -1804,6 +1807,7 @@ async function handleCreateLesson(req, res, adminPayload, adminId, supabase) {
   }
 
   notifySearchEngines({ add: [lessonUrl(data.slug || data.id)], reason: "create-lesson" });
+  await notifyUpload(supabase, adminId, "lesson", { title: insertRow.title, href: `/lesson/${data.slug || data.id}` });
 
   return res.status(200).json({ success: true, id: data.id, passwordProtected: Boolean(insertRow.password_hash) });
 }
@@ -2135,6 +2139,7 @@ async function handleCreateNotebook(req, res, adminPayload, adminId, supabase) {
   }
 
   notifySearchEngines({ add: [notebookUrl(data.slug || data.id)], reason: "create-notebook" });
+  await notifyUpload(supabase, adminId, "notebook", { title: insertRow.title, href: `/notebook/${data.slug || data.id}` });
   return res.status(200).json({ success: true, id: data.id });
 }
 
@@ -2315,6 +2320,7 @@ async function handleItemActions(req, res) {
   if (action === "list-youtube-public") return handleListYoutubePublished(req, res, payload, adminId, supabase);
   if (action === "unpublish-youtube") return handleUnpublishYoutube(req, res, payload, adminId, supabase);
   if (STORAGE_ACTIONS.has(action)) return handleStorageAction(req, res, action, adminId, supabase);
+  if (NOTIFICATION_ACTIONS.has(action)) return handleNotificationAction(req, res, action, payload, adminId, supabase);
 
   return res.status(400).json({ error: "Invalid action" });
 }
@@ -2547,6 +2553,17 @@ async function handleStatsSync(req, res) {
       .trim()
       .toLowerCase()
       .replace(/[%_\\]/g, "\\$&");
+    // Level / badge notifications compare against what the row held BEFORE this sync.
+    let before = null;
+    if (updates.current_level !== undefined || updates.total_badges !== undefined) {
+      const { data: prev } = await supabaseService
+        .from("admin_users")
+        .select("id, current_level, total_badges")
+        .ilike("email", normalizedEmail)
+        .maybeSingle();
+      before = prev || null;
+    }
+
     const { data: updated, error } = await supabaseService
       .from("admin_users")
       .update(updates)
@@ -2562,6 +2579,29 @@ async function handleStatsSync(req, res) {
       return res.status(404).json({ error: "Admin not found" });
     }
     if (updatedHandle === undefined) updatedHandle = updated.handle;
+
+    // Only real increases from a known (> 0) previous value, so the first sync of a freshly
+    // seeded row never announces "level 7" out of nowhere. dedupe_key: each value fires once.
+    if (before?.id) {
+      if (updates.current_level > 0 && before.current_level > 0 && updates.current_level > before.current_level) {
+        await pushNotification(supabaseService, before.id, {
+          type: "level_up",
+          title: String(updates.current_level),
+          href: "/profile",
+          meta: { level: updates.current_level },
+          dedupeKey: `level:${updates.current_level}`,
+        });
+      }
+      if (updates.total_badges > 0 && before.total_badges > 0 && updates.total_badges > before.total_badges) {
+        await pushNotification(supabaseService, before.id, {
+          type: "badge",
+          title: String(updates.total_badges),
+          href: "/profile",
+          meta: { total: updates.total_badges, gained: updates.total_badges - before.total_badges },
+          dedupeKey: `badges:${updates.total_badges}`,
+        });
+      }
+    }
   }
 
   return res.status(200).json({ synced: true, handle: updatedHandle });

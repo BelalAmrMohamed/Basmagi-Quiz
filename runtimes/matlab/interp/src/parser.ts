@@ -40,7 +40,7 @@ export function lex(src: string): Tok[] {
     }
     let m: RegExpExecArray | null;
     const rest = src.slice(i, i + 64);
-    if ((m = /^(\d+(\.(?![*\/^\\'])\d*)?|\.\d+)([eE][+-]?\d+)?/.exec(rest))) { push('num', parseFloat(m[0]), sp); i += m[0].length; continue; }
+    if ((m = /^(\d+(\.(?![*\/^\\'])\d*)?|\.\d+)([eE][+-]?\d+)?/.exec(rest))) { const im = /^[ij](?![A-Za-z0-9_])/.test(src.slice(i + m[0].length, i + m[0].length + 2)); push(im ? 'cnum' : 'num', parseFloat(m[0]), sp); i += m[0].length + (im ? 1 : 0); continue; }
     if ((m = /^[A-Za-z_]\w*/.exec(rest))) {
       const w = m[0];
       if (KW.has(w) && !(w === 'end' && st.length)) push('kw', w, sp); else push('id', w, sp);
@@ -53,7 +53,7 @@ export function lex(src: string): Tok[] {
     }
     if (c === "'") {
       const p = toks[toks.length - 1];
-      const operand = p && (p.t === 'num' || p.t === 'id' || p.t === 'str' || (p.t === 'op' && [')', ']', '}', "'", ".'"].includes(p.v)));
+      const operand = p && (p.t === 'num' || p.t === 'cnum' || p.t === 'id' || p.t === 'str' || (p.t === 'op' && [')', ']', '}', "'", ".'"].includes(p.v)));
       if (operand && !(sp && top === '[')) { push('op', "'", sp); i++; continue; }
       let j = i + 1, s = '';
       while (j < src.length && src[j] !== '\n' && !(src[j] === "'" && src[j + 1] !== "'")) { if (src[j] === "'") j++; s += src[j]; j++; }
@@ -275,6 +275,7 @@ export function parse(src: string): any[] {
   function primary(): any {
     const t = nxt();
     if (t.t === 'num') return { k: 'num', v: t.v };
+    if (t.t === 'cnum') return { k: 'cnum', v: t.v };
     if (t.t === 'str') return { k: 'str', v: t.v };
     if (t.t === 'id') {
       if (t.v === 'end') return { k: 'end' };

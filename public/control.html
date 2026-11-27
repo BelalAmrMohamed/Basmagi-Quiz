@@ -205,6 +205,24 @@
                 </div>
             </div>
 
+            <!-- ANNOUNCEMENT: one notification for every admin's notification center -->
+            <div class="panel" style="grid-column: 1 / -1;">
+                <div class="panel-header">
+                    <div class="panel-title">إرسال إعلان لجميع المشرفين</div>
+                </div>
+                <div class="panel-body">
+                    <form id="announceForm" class="announce-form" novalidate>
+                        <input type="text" id="announceTitle" maxlength="200" placeholder="عنوان الإعلان (مطلوب)" autocomplete="off">
+                        <textarea id="announceBody" maxlength="1000" rows="3" placeholder="نص الإعلان (اختياري)"></textarea>
+                        <input type="text" id="announceHref" dir="ltr" maxlength="500" placeholder="رابط داخلي اختياري، مثل /how-to-upload-content" autocomplete="off">
+                        <div class="announce-actions">
+                            <span class="announce-hint">يظهر في مركز الإشعارات لدى كل مشرف.</span>
+                            <button class="btn-primary" type="submit" id="announceSendBtn">إرسال الإعلان</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
         </div>
     </div>
 

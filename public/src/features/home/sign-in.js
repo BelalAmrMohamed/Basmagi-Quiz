@@ -185,10 +185,8 @@ function _clearSuccess() {
 
 function _onSignedIn() {
   if (_dialog) _dialog.close();
-  // One-time welcome toast after the first successful admin sign-in (shown after the reload below).
-  try {
-    if (localStorage.getItem("bq-admin-welcome-shown") !== "1") localStorage.setItem("bq-admin-welcome-pending", "1");
-  } catch { /* storage unavailable: no welcome toast */ }
+  // The first-sign-in welcome message is created on the server (api/auth.js) and shown by the
+  // notification center after the reload below, so nothing needs to be remembered here.
   // Reload so all admin-dependent UI (upload buttons, sign-out button) refreshes.
   window.location.reload();
 }

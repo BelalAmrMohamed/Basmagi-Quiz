@@ -8,6 +8,8 @@ import { runPhase3 } from './phase3';
 import { runPhase4 } from './phase4';
 import { runPhase5 } from './phase5';
 import { runPhase6 } from './phase6';
+import { runPhase7 } from './phase7';
+import { runPhase8 } from './phase8';
 
 const A = path.join(import.meta.dirname, 'assets');
 const ALIASES: Record<string, string> = { 'peppers.png': 'pepper.png', 'test5.png': 'pepper.png' };
@@ -260,7 +262,11 @@ runPhase3({ run, val, eq });
 runPhase4({ run, val, eq, get shown() { return shown; }, get plots() { return plots; } });
 runPhase5({ run, val, eq });
 runPhase6({ run, val, eq });
+runPhase7({ run, val, eq });
+runPhase8({ run, val, eq });
 runLectureTests({ run, todo, val, eq, lecture: { get shown() { return shown; }, get plots() { return plots; } } });
 
+if ((globalThis as any).__p8f) fail++;
+pass += (globalThis as any).__p8 ?? 0;
 console.log(`\n${pass} passed, ${fail} failed${todoCount ? `, ${todoCount} todo` : ''}`);
 process.exit(fail ? 1 : 0);

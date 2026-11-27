@@ -140,5 +140,5 @@ export function runLectureTests({ run, todo, val, eq, lecture }: LectureHelpers)
     return eq([pl.map((q: any) => q.id), pl.map((q: any) => q.spec.axes[0].title), items.map((i: any) => i.t), items.every((i: any) => i.w === w && i.h === h), val(I, 'sg'), val(I, 'se'), val(I, 'sm'), val(I, 'bd'), val(I, 'ce'), val(I, 'ne')[0] > 0],
       [[1, 2, 3], ['Original', 'Gray', 'Sobel edges'], ['image', 'image', 'image'], true, [h, w], [h, w], [h, w], [24], [1], true]);
   });
-  todo('L9 simulated webcam motion detection (imaqhwinfo, videoinput, getsnapshot, pause, beep)', 'Phase 8');
+  // L9 simulated webcam motion detection: see phase8.ts
 }

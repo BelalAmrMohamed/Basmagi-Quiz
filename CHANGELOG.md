@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## MLWeb: frequency domain, simulated camera, single-source docs
+- Complex numbers (`1i`, `1j`, `+ - .* ./ *`, `exp`, `abs`, `angle`, `real`, `imag`, `conj`, `sum`, `mean`, indexing, `disp`) and `fft`, `ifft`, `fft2`, `ifft2` (padding, `dim`, `'symmetric'`), `fftshift`, `ifftshift`. Other functions given a complex value report `complex values are not supported`.
+- Simulated camera for Lecture 9: `imaqhwinfo`, `videoinput`, `preview`, `closepreview`, `getsnapshot`, `start`, `stop`, `isrunning`, `delete`, `webcam`, `snapshot`. Deterministic demo scene (static for the first 2 s, then a rectangle crosses the frame every 12 s); real webcams are not available.
+- `help`, `doc` and `lookfor` now read one documentation table (`interp/src/docs.ts`) shared with autocomplete; new help groups and snippets (pixel loop, histogram plot, motion detection, spectrum).
+- `pause` now uses the interpreter clock.
+
 ## Contextual deep links on errors
 - Error toasts link to the guide section that explains them; nothing extra is shown otherwise (`shared/guide-links.js`).
   - expired draft link (404) -> `/how-to-connect-mcp#s8` (FAQ);
