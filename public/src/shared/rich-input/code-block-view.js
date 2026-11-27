@@ -176,8 +176,14 @@ export function createCodeBlockView({ node: initialNode, editor, getPos }) {
 
   const pre = document.createElement("pre");
   pre.className = "rmci-codeblock-pre";
+  // VS Code-style line-number gutter (chrome, not content).
+  const gutter = document.createElement("span");
+  gutter.className = "rmci-codeblock-gutter";
+  gutter.contentEditable = "false";
+  gutter.setAttribute("aria-hidden", "true");
   const code = document.createElement("code");
-  pre.appendChild(code);
+  pre.append(gutter, code);
+  let lineCount = 0;
 
   const fade = document.createElement("div");
   fade.className = "rmci-codeblock-fade";
@@ -196,6 +202,16 @@ export function createCodeBlockView({ node: initialNode, editor, getPos }) {
     const collapsed = !!node.attrs.collapsed;
     const label = CODE_LANGUAGES.find((l) => l.value === language)?.label ?? language;
     code.className = `hljs language-${language}`;
+    const lines = node.textContent.split("\n").length;
+    if (lines !== lineCount) {
+      lineCount = lines;
+      gutter.textContent = "";
+      for (let i = 1; i <= lines; i++) {
+        const n = document.createElement("div");
+        n.textContent = String(i);
+        gutter.appendChild(n);
+      }
+    }
     pre.dataset.collapsed = String(collapsed);
     pre.classList.toggle("is-collapsed", collapsed);
     fade.hidden = !collapsed;

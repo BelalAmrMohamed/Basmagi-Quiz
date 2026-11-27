@@ -221,7 +221,7 @@ export async function buildQuizHtml(
           .question-media-print-link { display: none; }
           .footer { text-align: center; margin-top: 50px; color: #888; font-size: 0.8rem; border-top: 1px solid #333; padding-top: 20px; }
           .code-block { background: #0d0d0d; border: 1px solid #444; border-radius: 8px; padding: 12px 16px; margin: 10px 0; overflow-x: auto; font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 0.88rem; line-height: 1.6; white-space: pre; text-align: left; direction: ltr; }
-          .code-block code { background: none; padding: 0; color: #e2e8f0; font-size: inherit; }
+          .code-block code { background: none; padding: 0; color: #e2e8f0; font-size: inherit; } .code-line-numbers { display: none; }
           .inline-code { font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 0.88em; background: rgba(99,102,241,0.15); border: 1px solid #555; border-radius: 4px; padding: 1px 6px; color: #a5b4fc; white-space: nowrap; }
           .score-block { text-align: center; margin: 0 0 40px; padding: 36px 28px 32px; background: #1e1e1e; border-radius: 16px; border: 1px solid #333; }
           .score-circle { width: 130px; height: 130px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 800; color: #fff; position: relative; letter-spacing: -1px; }

@@ -1796,6 +1796,12 @@ export function _buildCodeBlockHtml(lang, effectiveLang, code, highlighted) {
 
   const fileName = escHtml(codeFileName(lang || effectiveLang, code));
 
+  // VS Code-style line numbers (gutter sits outside <code>, so copy/download
+  // keep reading the code only).
+  const lineTotal = String(code).replace(/\n$/, "").split("\n").length;
+  let lineNums = "1";
+  for (let i = 2; i <= lineTotal; i++) lineNums += "\n" + i;
+
   return (
     `<div class="code-block-wrapper">` +
     `<button type="button" class="code-collapse-btn"
@@ -1818,7 +1824,7 @@ export function _buildCodeBlockHtml(lang, effectiveLang, code, highlighted) {
     ICON_COPY +
     `<span class="copy-label">${escHtml(COPY_LABEL)}</span>` +
     `</button>` +
-    `<pre class="code-block ltr${langClass}"><code>${highlighted}</code></pre>` +
+    `<pre class="code-block ltr${langClass}"><span class="code-line-numbers" aria-hidden="true">${lineNums}</span><code>${highlighted}</code></pre>` +
     `</div>`
   );
 }

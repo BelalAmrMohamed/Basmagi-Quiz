@@ -316,6 +316,15 @@ html[data-theme="dark-slate"] .rmci-root {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.6;
   transition: max-height .3s ease-out; tab-size: 2;
 }
+.rmci-codeblock-pre { display: flex; align-items: flex-start; }
+.rmci-codeblock-pre code { flex: 1 0 auto; min-width: 0; white-space: pre; }
+.rmci-codeblock-gutter {
+  flex: none; position: sticky; left: 0; z-index: 1; margin: -12px 0 -12px -14px; padding: 12px 10px 12px 14px;
+  text-align: right; user-select: none; pointer-events: none; font: inherit; line-height: inherit;
+  color: var(--rmci-muted); opacity: .7; background: inherit; border-right: 1px solid var(--rmci-border);
+}
+.rmci-codeblock-gutter > div { display: block; white-space: nowrap; line-height: inherit; }
+.rmci-editor .ProseMirror pre .rmci-codeblock-gutter + code { padding-left: 14px; }
 .rmci-codeblock-pre.is-collapsed { max-height: 3.25rem; overflow-y: hidden; }
 .rmci-codeblock-fade { height: 24px; margin-top: -24px; pointer-events: none; background: linear-gradient(to top, var(--rmci-card), transparent); position: relative; }
 .rmci-codeblock-fade[hidden] { display: none; }

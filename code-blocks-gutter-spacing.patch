@@ -1,0 +1,84 @@
+diff --git a/public/src/shared/markdown-css.js b/public/src/shared/markdown-css.js
+index d660eb4..4581369 100644
+--- a/public/src/shared/markdown-css.js
++++ b/public/src/shared/markdown-css.js
+@@ -879,7 +879,7 @@ body.is-resizing-media .media-container.resizable-media {
+   flex: none;
+   position: sticky;
+   left: 0;
+-  margin: -16px 14px -16px -16px;
++  margin: -16px 0 -16px -16px;
+   padding: 16px 12px 16px 16px;
+   text-align: right;
+   white-space: pre;
+@@ -890,6 +890,10 @@ body.is-resizing-media .media-container.resizable-media {
+   border-right: 1px solid rgba(255, 255, 255, 0.06);
+ }
+ 
++.code-block .code-line-numbers + code {
++  padding-left: 16px;
++}
++
+ .code-block code {
+   background: none;
+   padding: 0;
+@@ -1128,7 +1132,7 @@ body.is-resizing-media .media-container.resizable-media {
+   }
+ 
+   .code-line-numbers {
+-    margin: -34px 10px -12px -12px;
++    margin: -34px 0 -12px -12px;
+     padding: 34px 10px 12px 12px;
+   }
+ 
+diff --git a/public/src/shared/rich-input/rich-input.css b/public/src/shared/rich-input/rich-input.css
+index 6f81662..a94a5a3 100644
+--- a/public/src/shared/rich-input/rich-input.css
++++ b/public/src/shared/rich-input/rich-input.css
+@@ -319,11 +319,12 @@ html[data-theme="dark-slate"] .rmci-root {
+ .rmci-codeblock-pre { display: flex; align-items: flex-start; }
+ .rmci-codeblock-pre code { flex: 1 0 auto; min-width: 0; white-space: pre; }
+ .rmci-codeblock-gutter {
+-  flex: none; position: sticky; left: 0; z-index: 1; margin: -12px 12px -12px -14px; padding: 12px 10px 12px 14px;
++  flex: none; position: sticky; left: 0; z-index: 1; margin: -12px 0 -12px -14px; padding: 12px 10px 12px 14px;
+   text-align: right; user-select: none; pointer-events: none; font: inherit; line-height: inherit;
+   color: var(--rmci-muted); opacity: .7; background: inherit; border-right: 1px solid var(--rmci-border);
+ }
+ .rmci-codeblock-gutter > div { display: block; white-space: nowrap; line-height: inherit; }
++.rmci-editor .ProseMirror pre .rmci-codeblock-gutter + code { padding-left: 14px; }
+ .rmci-codeblock-pre.is-collapsed { max-height: 3.25rem; overflow-y: hidden; }
+ .rmci-codeblock-fade { height: 24px; margin-top: -24px; pointer-events: none; background: linear-gradient(to top, var(--rmci-card), transparent); position: relative; }
+ .rmci-codeblock-fade[hidden] { display: none; }
+diff --git a/public/src/styles/markdown.css b/public/src/styles/markdown.css
+index b3befa3..0fe6bc3 100644
+--- a/public/src/styles/markdown.css
++++ b/public/src/styles/markdown.css
+@@ -919,7 +919,7 @@ body.is-resizing-media .media-container.resizable-media {
+   flex: none;
+   position: sticky;
+   left: 0;
+-  margin: -16px 14px -16px -16px;
++  margin: -16px 0 -16px -16px;
+   padding: 16px 12px 16px 16px;
+   text-align: right;
+   white-space: pre;
+@@ -930,6 +930,10 @@ body.is-resizing-media .media-container.resizable-media {
+   border-right: 1px solid rgba(255, 255, 255, 0.06);
+ }
+ 
++.code-block .code-line-numbers + code {
++  padding-left: 16px;
++}
++
+ .code-block code {
+   background: none;
+   padding: 0;
+@@ -1200,7 +1204,7 @@ body.is-resizing-media .media-container.resizable-media {
+   }
+ 
+   .code-line-numbers {
+-    margin: -34px 10px -12px -12px;
++    margin: -34px 0 -12px -12px;
+     padding: 34px 10px 12px 12px;
+   }
+ 
