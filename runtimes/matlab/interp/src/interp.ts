@@ -7,6 +7,7 @@ import { registerPlot, addImage, drawBars, type ImageSource } from './lib-plot';
 import { Figures, type FigureSpec } from './figures';
 import { T, V, S, C, FuncHandle, Idx, Cls, isT, isC, isS, isF, mkStruct, mk, num, str, toStr, isStr, scalarOf, numel, sat, ew, binop, transpose, index, assign, cat, display, dimStr, PrintOpts, idxList, effDims, outCls, numCls, fltCls, isIntCls, INT_RANGE, CLASS_NAMES, CLASS_BYTES, toUnit, fromUnit } from './values';
 import { ScalarEval, isScalarExpr } from './scalar';
+import { BufferOwners } from './cow';
 
 // ---------- host interface (browser UI and Node tests each implement this) ----------
 export interface RawImage { width: number; height: number; channels: 1 | 3; data: Uint8Array; /* row-major, interleaved */
@@ -45,8 +46,10 @@ export class Interp {
   private endStack: { t: { dims: number[]; data: { length: number } }; pos: number; n: number }[] = [];
   private depth = 0;
   private readonly scalar = new ScalarEval();
-  /** Allocation-free evaluation of scalar expressions. Tests switch it off to compare against the general path. */
+  /** Allocation-free scalar evaluation and direct element access. Tests switch it off to compare against the general path. */
   scalarFastPath = true;
+  /** Which array buffers are shared (copy-on-write). */
+  readonly buffers = new BufferOwners();
   /** Argument expressions (AST) of the builtin call in progress, so builtins like imtool can read the variable name. */
   curArgs: any[] | undefined;
   /** Figures of the current run (reset at the start of every run). */
@@ -70,13 +73,13 @@ export class Interp {
     finally { this.flushFigures(true); }
   }
   private store(sc: Scope, name: string, v: V) {
-    if (isT(v)) { if ((v as any).held) v = { ...v, data: v.data.slice() }; (v as any).held = true; }
+    if (isT(v)) this.buffers.hold(v.data); // shared, not copied
     else if (isC(v)) { const c = v; v = { cls: 'cell', dims: c.dims.slice(), data: c.data.map(x => this.cloneValue(x)) }; }
     else if (isS(v)) { const s = v; v = { cls: 'struct', dims: s.dims.slice(), keys: s.keys.slice(), data: s.data.map(rec => { const r: Record<string, V> = {}; for (const k of s.keys) r[k] = this.cloneValue(rec[k]); return r; }) }; }
     sc.set(name, v);
   }
   private cloneValue(v: V): V {
-    if (isT(v)) return { cls: v.cls, dims: v.dims.slice(), data: v.data.slice() };
+    if (isT(v)) { const data = v.data.slice(); this.buffers.hold(data); return { cls: v.cls, dims: v.dims.slice(), data }; }
     if (isC(v)) return { cls: 'cell', dims: v.dims.slice(), data: v.data.map(x => this.cloneValue(x)) };
     if (isS(v)) { const s = v; return { cls: 'struct', dims: s.dims.slice(), keys: s.keys.slice(), data: s.data.map(rec => { const r: Record<string, V> = {}; for (const k of s.keys) r[k] = this.cloneValue(rec[k]); return r; }) }; }
     return v;
@@ -146,6 +149,7 @@ export class Interp {
         }
         case 'for': {
           const rng = this.eval(s.e, sc) as T, rows = rng.dims[0], cols = rng.data.length / (rows || 1);
+          if (isT(rng)) this.buffers.hold(rng.data); // the loop keeps iterating the original if the body writes the variable
           for (let j = 0; j < (rng.data.length ? cols : 0); j++) {
             this.store(sc, s.v, rows === 1 ? num(rng.data[j], rng.cls) : mk(rng.cls, [rows, 1], rng.data.subarray(j * rows, (j + 1) * rows)));
             const r = this.exec(s.body, sc); if (r === BRK) break; if (r === RET) return r;
@@ -176,7 +180,8 @@ export class Interp {
   /** Value of a scalar expression (its class is then `this.scalar.cls`), or undefined when the general path is needed. */
   private tryScalar(e: any, sc: Scope): number | undefined {
     if (!this.scalarFastPath || !isScalarExpr(e)) return undefined;
-    return this.scalar.run(e, sc, this.endStack.length ? this.endStack[this.endStack.length - 1] : undefined);
+    const end = this.endStack.length ? this.endStack[this.endStack.length - 1] : undefined;
+    return this.scalar.run(e, sc, end?.t, end?.pos, end?.n);
   }
 
   private sameCase(a: V, b: V): boolean {
@@ -297,19 +302,59 @@ export class Interp {
       }
       const rhs = T_(val, 'assignment');
       const numericCur = isT(cur) ? cur : undefined;
+      if (numericCur && this.writeDirect(sc, lv, numericCur, rhs)) return;
       const ix = this.evalArgs(lv.args, numericCur ?? null, sc);
       if (numericCur && ix.length >= 2 && rhs.data.length === 1 && ix.every(a => a !== 'colon' && a.data.length === 1 && a.cls !== 'logical') && ix.length === numericCur.dims.length) {
         let off = 0, m = 1, ok = true;
         for (let d = 0; d < ix.length; d++) { const v = (ix[d] as T).data[0]; if (!(v >= 1 && v <= numericCur.dims[d] && v === Math.floor(v))) { ok = false; break; } off += (v - 1) * m; m *= numericCur.dims[d]; }
-        if (ok) { numericCur.data[off] = sat(numericCur.cls, rhs.data[0]); return; }
+        if (ok) { this.writable(sc, lv.n, numericCur)[off] = sat(numericCur.cls, rhs.data[0]); return; }
       }
-      const res = assign(numericCur, ix, rhs, !!numericCur); (res as any).held = true; sc.set(lv.n, res);
+      const res = assign(numericCur, ix, rhs, !!numericCur && this.buffers.exclusive(numericCur.data));
+      if (res.data !== numericCur?.data) this.buffers.hold(res.data);
+      sc.set(lv.n, res);
       return;
     }
     const rootName = (n: any): string => { let c = n; while (c && c.k !== 'id') { c = c.a ?? (c.n ? { k: 'id', n: c.n } : null); if (c?.k === 'idx') return c.n; } return c?.n ?? err('Invalid assignment target.'); };
     const rn = rootName(lv);
     const updated = this.writeLvalue(sc.get(rn), lv, val, sc);
     this.store(sc, rn, updated);
+  }
+  /** The buffer of variable `name`, ready to be written: copied first if anything else holds it. */
+  private writable(sc: Scope, name: string, t: T): Float64Array {
+    if (this.buffers.exclusive(t.data)) return t.data;
+    const data = t.data.slice();
+    this.buffers.hold(data);
+    sc.set(name, { cls: t.cls, dims: t.dims, data });
+    return data;
+  }
+  /**
+   * `A(i)`, `A(i,j,...)` and `A(i,j,:)` assignments inside the current bounds, with scalar subscripts.
+   * Returns false, having changed nothing, for everything else (growth, vectors, logical subscripts, errors).
+   */
+  private writeDirect(sc: Scope, lv: any, t: T, rhs: T): boolean {
+    const args = lv.args, k: number = args.length;
+    // With fewer subscripts than dimensions the general path also reshapes the array, so leave that to it.
+    if (!this.scalarFastPath || !k || (k > 1 && k < t.dims.length)) return false;
+    const page = k === 3 && args[2].k === 'colon', count = page ? 2 : k;
+    for (let d = 0; d < count; d++) if (!isScalarExpr(args[d])) return false;
+    const off = this.scalar.offset(t, args, count, sc);
+    if (off < 0) return false;
+    const stride = page ? t.dims[0] * t.dims[1] : 0, len = page ? t.data.length / stride : 1, src = rhs.data, n = src.length;
+    if (!len || (n !== 1 && n !== len)) return false;
+    const data = this.writable(sc, lv.n, t), cls = t.cls;
+    for (let q = 0; q < len; q++) data[off + q * stride] = sat(cls, src[n === 1 ? 0 : q]);
+    return true;
+  }
+  /** `A(i,j,:)` with in-bounds scalar `i` and `j`: one pixel, read without building index lists. */
+  private readPixel(args: any[], t: T, sc: Scope): T | undefined {
+    if (!this.scalarFastPath || args.length !== 3 || args[2].k !== 'colon' || !isScalarExpr(args[0]) || !isScalarExpr(args[1])) return undefined;
+    const off = this.scalar.offset(t, args, 2, sc);
+    if (off < 0) return undefined;
+    const stride = t.dims[0] * t.dims[1], len = t.data.length / stride;
+    if (!len) return undefined;
+    const data = new Float64Array(len);
+    for (let q = 0; q < len; q++) data[q] = t.data[off + q * stride];
+    return { cls: t.cls, dims: len === 1 ? [1, 1] : [1, 1, len], data };
   }
   private writeLvalue(cur: V | undefined, lv: any, val: V, sc: Scope): V {
     if (lv.k === 'id') return val;
@@ -541,7 +586,7 @@ export class Interp {
             const { positions, dims } = this.structPositions(v, e.args, sc, false);
             return { cls: 'struct', dims, keys: v.keys.slice(), data: positions.map(i => v.data[i]) } as S;
           }
-          const t = T_(v, 'indexing'); return index(t, this.evalArgs(e.args, t, sc));
+          const t = T_(v, 'indexing'); return this.readPixel(e.args, t, sc) ?? index(t, this.evalArgs(e.args, t, sc));
         }
         const r = this.callFn(e.n, this.evalCallArgs(e.args, sc), 1, e.args);
         return r[0] ?? err(`Error using ${e.n}: Too many output arguments.`);
