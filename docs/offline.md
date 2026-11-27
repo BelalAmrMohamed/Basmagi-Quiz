@@ -16,3 +16,7 @@ Offline routing (`offlineShellFor`): `/my-content*` -> `/`; `/notebook/new`, `/n
 
 Rules: the service worker must only delete caches starting with `basmagi-v`; `basmagi-cpp-wasm-*` holds the ~60 MB compiler.
 Shells are cached from their plain URLs only, never from `/quiz/<id>` responses (those carry an injected id).
+
+Not Done: 
+* Test it once on a deployed build with a real install.
+* Test (the ⚡ Instant Compiler) offline.
