@@ -39,7 +39,7 @@ export class ScalarEval {
       case 'num': this.cls = 'double'; return e.v;
       case 'id': {
         const v = sc.get(e.n);
-        if (v === undefined || !isT(v) || v.data.length !== 1) return undefined;
+        if (v === undefined || !isT(v) || v.data.length !== 1 || (v as any).im) return undefined;
         this.cls = v.cls; return v.data[0];
       }
       case 'paren': return this.run(e.a, sc, of, pos, n);
@@ -53,7 +53,7 @@ export class ScalarEval {
       }
       case 'idx': {
         const v = sc.get(e.n);
-        if (v === undefined || !isT(v)) return undefined;
+        if (v === undefined || !isT(v) || (v as any).im) return undefined;
         const off = this.offset(v, e.args, e.args.length, sc);
         if (off < 0) return undefined;
         this.cls = v.cls; return v.data[off];

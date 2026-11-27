@@ -383,8 +383,11 @@ html[data-theme="light"] .mlweb-imtool-tb-btn.is-active {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: nowrap;
   gap: 12px;
   padding: 6px 12px;
+  line-height: 1.5;
+  white-space: nowrap;
   background: var(--color-background-secondary, #f4f6fb);
   border-top: 1px solid var(--color-border, #dce2ed);
   font-size: 12px;
@@ -401,6 +404,10 @@ html[data-theme="dark-slate"] .mlweb-imtool-statusbar {
 }
 
 .mlweb-imtool-status-pixel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-weight: 500;
   color: var(--color-text-primary, #1d2433);
 }
@@ -411,7 +418,7 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
 }
 
 .mlweb-imtool-status-meta {
-  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 /* --- Info Overlay Card --- */
@@ -638,21 +645,6 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
   .mlweb-imtool-tb-btn,
   .mlweb-imtool-zoom-display {
     flex: 0 0 auto;
-  }
-
-  .mlweb-imtool-statusbar {
-    flex-wrap: wrap;
-    gap: 4px 10px;
-  }
-
-  .mlweb-imtool-status-pixel {
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-
-  .mlweb-imtool-status-meta {
-    white-space: normal;
-    text-align: end;
   }
 
   .mlweb-imtool-info-card {
@@ -1011,7 +1003,20 @@ html[data-motion="reduced"] .mlweb-imtool-win.is-minimized {
   }
 }
 
+/* The status bar stays on one line: drop the size / class summary (also in the
+   info card) when the window is too narrow to show it next to the pixel readout. */
+@container imtool (max-width: 520px) {
+  .mlweb-imtool-status-meta {
+    display: none;
+  }
+}
+
 @container imtool (max-width: 440px) {
+  .mlweb-imtool-statusbar {
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+
   .mlweb-imtool-win .mlweb-imtool-toolbar {
     gap: 4px;
     padding: 5px 6px;
@@ -1039,10 +1044,6 @@ html[data-motion="reduced"] .mlweb-imtool-win.is-minimized {
 
   .mlweb-imtool-title {
     font-size: 12.5px;
-  }
-
-  .mlweb-imtool-status-meta {
-    display: none;
   }
 }
 

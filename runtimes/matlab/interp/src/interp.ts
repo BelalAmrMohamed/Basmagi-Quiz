@@ -5,7 +5,10 @@ import { registerString } from './lib-string';
 import { registerIpt } from './lib-ipt';
 import { registerPlot, addImage, drawBars, type ImageSource } from './lib-plot';
 import { Figures, type FigureSpec } from './figures';
-import { T, V, S, C, FuncHandle, Idx, Cls, isT, isC, isS, isF, mkStruct, mk, num, str, toStr, isStr, scalarOf, numel, sat, ew, binop, transpose, index, assign, cat, display, dimStr, PrintOpts, idxList, effDims, outCls, numCls, fltCls, isIntCls, INT_RANGE, CLASS_NAMES, CLASS_BYTES, toUnit, fromUnit } from './values';
+import { T, V, S, C, FuncHandle, Idx, Cls, isT, isC, isS, isF, mkStruct, mk, num, str, toStr, isStr, scalarOf, numel, sat, ew, binop, transpose, index, assign, cat, display, dimStr, PrintOpts, idxList, effDims, outCls, numCls, fltCls, isIntCls, INT_RANGE, CLASS_NAMES, CLASS_BYTES, toUnit, fromUnit, isComplex, cplx } from './values';
+import { FUNCTION_DOCS } from './docs';
+import { registerVideo } from './lib-video';
+import { registerComplex, complexBinop, COMPLEX_OK } from './lib-complex';
 import { ScalarEval, isScalarExpr } from './scalar';
 import { BufferOwners } from './cow';
 
@@ -397,7 +400,7 @@ export class Interp {
   private writeDirect(sc: Scope, lv: any, t: T, rhs: T): boolean {
     const args = lv.args, k: number = args.length;
     // With fewer subscripts than dimensions the general path also reshapes the array, so leave that to it.
-    if (!this.scalarFastPath || !k || (k > 1 && k < t.dims.length)) return false;
+    if (!this.scalarFastPath || !k || (k > 1 && k < t.dims.length) || t.im || rhs.im) return false;
     const page = k === 3 && args[2].k === 'colon', count = page ? 2 : k;
     for (let d = 0; d < count; d++) if (!isScalarExpr(args[d])) return false;
     const off = this.scalar.offset(t, args, count, sc);
@@ -410,7 +413,7 @@ export class Interp {
   }
   /** `A(i,j,:)` with in-bounds scalar `i` and `j`: one pixel, read without building index lists. */
   private readPixel(args: any[], t: T, sc: Scope): T | undefined {
-    if (!this.scalarFastPath || args.length !== 3 || args[2].k !== 'colon' || !isScalarExpr(args[0]) || !isScalarExpr(args[1])) return undefined;
+    if (!this.scalarFastPath || t.im || args.length !== 3 || args[2].k !== 'colon' || !isScalarExpr(args[0]) || !isScalarExpr(args[1])) return undefined;
     const off = this.scalar.offset(t, args, 2, sc);
     if (off < 0) return undefined;
     const stride = t.dims[0] * t.dims[1], len = t.data.length / stride;
@@ -561,6 +564,7 @@ export class Interp {
     }
     switch (e.k) {
       case 'num': return num(e.v);
+      case 'cnum': return cplx(mk('double', [1, 1]), Float64Array.of(e.v));
       case 'str': return str(e.v);
       case 'paren': return this.eval(e.a, sc);
       case 'fhandle': return { cls: 'function_handle', name: e.name } as FuncHandle;
@@ -580,6 +584,7 @@ export class Interp {
       }
       case 'un': {
         const a = T_(this.eval(e.a, sc), 'unary');
+        if (a.im) { if (e.op === '~') err('Operator \'~\' is not supported for complex values.'); return e.op === '+' ? a : cplx(ew(a, a, x => -x, 'double'), a.im.map(x => -x)); }
         if (e.op === '~') return ew(a, a, x => +(x === 0), 'logical');
         if (e.op === '+') return a;
         return ew(a, a, x => -x, numCls(a.cls));
@@ -590,9 +595,11 @@ export class Interp {
           if (e.op === '&&' ? !l : l) return num(+l, 'logical');
           return num(+this.cond(e.b, sc), 'logical');
         }
-        return binop(e.op, T_(this.eval(e.a, sc), e.op), T_(this.eval(e.b, sc), e.op), s => this.host.warn?.(s));
+        const l = T_(this.eval(e.a, sc), e.op), r = T_(this.eval(e.b, sc), e.op);
+        if (l.im || r.im) return complexBinop(e.op, l, r);
+        return binop(e.op, l, r, s => this.host.warn?.(s));
       }
-      case 'post': return transpose(T_(this.eval(e.a, sc), e.op ?? "'"));
+      case 'post': return transpose(T_(this.eval(e.a, sc), e.op ?? "'"), e.op !== '.\'');
       case 'range': {
         const { first, step, count } = this.rangeBounds(e, sc);
         const r = mk('double', [1, count]); for (let i = 0; i < count; i++) r.data[i] = first + i * step; return r;
@@ -785,6 +792,7 @@ export class Interp {
     }
     const b = BUILTINS[name];
     if (!b) err(`Unrecognized function or variable '${name}'.`);
+    for (const x of args) if (isComplex(x) && !COMPLEX_OK.has(name)) err(`${name}: complex values are not supported`);
     this.curArgs = argExprs;
     try { return b(args, nargout, this); } finally { this.curArgs = undefined; }
   }
@@ -958,19 +966,25 @@ def('whos', (_a, _n, I) => {
   for (const r of rows) s += `  ${r[0].padEnd(w[0])}  ${r[1].padEnd(w[1])}  ${r[2].padStart(w[2])}  ${r[3].padEnd(w[3])}\n`;
   I.host.print(s + '\n'); return [];
 });
-def('help doc lookfor', (a, _n, I) => {
-  const topic = a[0] && isStr(a[0]) ? toStr(a[0]).toLowerCase() : '';
-  const descriptions: Record<string, string> = {
-    imread: 'Read an image from the Current Folder: A = imread(filename).',
-    imshow: 'Display an image in a figure: imshow(A).',
-    imwrite: 'Write an image into the Current Folder: imwrite(A, filename).',
-    histeq: 'Enhance grayscale contrast with histogram equalization: B = histeq(A) or B = histeq(A, levels).',
-    switch: 'Select a matching case: switch value; case value; ...; otherwise; ...; end.',
-    cell: 'Create a cell array with cell(m,n), or use a literal such as C = {1, "text"}.',
-    struct: "Create a scalar structure with struct('field', value); read fields using s.field."
-  };
-  if (topic && descriptions[topic]) I.host.print(descriptions[topic] + '\n');
-  else I.host.print('MLWeb help: supported educational MATLAB subset. Try imread, imshow, histeq, switch, cell, struct, size, or help command.\n');
+const FALLBACK_HELP: Record<string, [string, string]> = {
+  switch: ['switch value ... end', 'Select a matching case: switch value; case value; ...; otherwise; ...; end.'],
+};
+const printDoc = (I: Interp, name: string, e: [string, string]) => {
+  const [desc, diff] = e[1].split(/\s*Differences from MATLAB:\s*/);
+  I.host.print(`${name}\n  ${e[0]}\n\n  ${desc}\n` + (diff ? `\n  Differences from MATLAB: ${diff}\n` : ''));
+};
+def('help doc', (a, _n, I) => {
+  const topic = a[0] && isStr(a[0]) ? toStr(a[0]) : '';
+  const e = FUNCTION_DOCS[topic] ?? FUNCTION_DOCS[topic.toLowerCase()] ?? FALLBACK_HELP[topic.toLowerCase()];
+  if (e) printDoc(I, topic, e);
+  else if (topic) I.host.print(`No help found for '${topic}'. Try lookfor ${topic}.\n`);
+  else I.host.print('MLWeb help: supported educational MATLAB subset. Try help imread, help imfilter, help fft2, or lookfor keyword.\n');
+  return [];
+});
+def('lookfor', (a, _n, I) => {
+  const kw = a[0] && isStr(a[0]) ? toStr(a[0]).toLowerCase() : '';
+  const hits = kw ? Object.entries(FUNCTION_DOCS).filter(([k, d]) => k.toLowerCase().includes(kw) || d[1].toLowerCase().includes(kw)) : [];
+  I.host.print(hits.length ? hits.map(([k, d]) => `${k.padEnd(14)} ${d[1].split(/\s*Differences from MATLAB:/)[0]}`).join('\n') + '\n' : `Nothing found for '${kw}'.\n`);
   return [];
 });
 def('format', () => []);
@@ -1396,4 +1410,6 @@ registerMath(def);
 registerArray(def);
 registerString(def);
 registerPlot(def);
+registerComplex(BUILTINS, def);
+registerVideo(BUILTINS, def);
 registerIpt(def);

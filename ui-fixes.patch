@@ -1,0 +1,243 @@
+diff --git a/public/src/components/offline-banner/offline-banner.css b/public/src/components/offline-banner/offline-banner.css
+index 06fb2a2..b3a5c27 100644
+--- a/public/src/components/offline-banner/offline-banner.css
++++ b/public/src/components/offline-banner/offline-banner.css
+@@ -4,40 +4,98 @@
+    ============================================================================ */
+ 
+ /* ── Space reservation ──────────────────────────────────────────────────────
+-   #offlineBanner is `position: fixed`, so by default it floats on top of the
+-   page and permanently covers whatever sits at the bottom (e.g. a footer
+-   with privacy/terms links), and the page can't scroll far enough to reveal
+-   it. `--offline-banner-height` is kept up to date by offline-banner.js
+-   (via getBoundingClientRect + a ResizeObserver) whenever the banner is
+-   shown, and this padding pushes the rest of the page's content up above it.
++   The banner always sits at the very bottom of the viewport and everything
++   else moves up by its height: page content through body padding, and fixed
++   elements (which ignore that padding) through the rules below.
++   `--offline-banner-height` is kept up to date by offline-banner.js.
+    ============================================================================ */
+ body.has-offline-banner {
+   padding-bottom: var(--offline-banner-height, 0px);
+   transition: padding-bottom var(--transition-base, 0.3s ease);
+ }
+ 
++/* Bottom-anchored elements: a margin lifts them without replacing their own
++   `bottom` offsets, which differ between breakpoints. */
++body.has-offline-banner :is(
++  .bottom-nav,
++  .ai-agent-fab,
++  #notification-container,
++  .bulk-action-bar,
++  .doc-toc-toggle,
++  .doc-toc,
++  .lesson-prefs__panel,
++  .lesson-bookmarks__panel,
++  .lesson-skeleton__toc-toggle
++) {
++  margin-bottom: var(--offline-banner-height, 0px);
++}
++
++/* The banner now covers the device's bottom safe area, not the nav bar. */
++body.has-offline-banner .bottom-nav {
++  height: var(--bottom-nav-height, 54px);
++  padding-bottom: 0;
++}
++
++/* Full-screen layers end where the banner starts. */
++body.has-offline-banner :is(
++  .side-menu-backdrop,
++  .modal-overlay,
++  .item-metadata-overlay,
++  .shortcuts-overlay,
++  .ai-agent-overlay,
++  .contact-overlay,
++  .yt-modal-overlay
++) {
++  bottom: var(--offline-banner-height, 0px);
++}
++
++body.has-offline-banner :is(.confirmation-overlay, .report-modal-overlay) {
++  height: calc(100vh - var(--offline-banner-height, 0px));
++  height: calc(100dvh - var(--offline-banner-height, 0px));
++}
++
++/* Side menu: full-height rail on desktop, bottom sheet on mobile. */
++@media (min-width: 769px) {
++  body.has-offline-banner .sidebar {
++    bottom: var(--offline-banner-height, 0px);
++    height: auto;
++  }
++}
++
++@media (max-width: 768px) {
++  body.has-offline-banner .sidebar {
++    margin-bottom: var(--offline-banner-height, 0px);
++  }
++
++  body.has-offline-banner .ai-agent-modal-card {
++    height: calc(100dvh - var(--offline-banner-height, 0px));
++  }
++}
++
+ #offlineBanner {
+   /* ── Position ──────────────────────────────────────────────────────────── */
+   position: fixed;
+   bottom: 0;                       /* anchored to viewport bottom (desktop) */
+   inset-inline: 0;                 /* stretches full width, RTL-aware */
+-  z-index: var(--z-notification, 9999); /* above toasts/overlays */
++  z-index: var(--z-modal-top, 11000); /* above navigation, toasts and overlays */
+ 
+   /* ── Layout ────────────────────────────────────────────────────────────── */
+   display: none;
+   align-items: center;
+   justify-content: center;
+   gap: 0.6rem;
+-  padding: 0.85rem 1.25rem;
+-  max-height: 30px; /* Intentionally make it neatly short, enought without clipping the text nor the icon */
+-  
++  box-sizing: border-box;
++  height: calc(30px + env(safe-area-inset-bottom, 0px)); /* short, without clipping the text or icon */
++  padding: 0 1.25rem env(safe-area-inset-bottom, 0px);
++
+   /* ── Glass fill (neutral default): angled light hitting a physical pane ── */
+   background: linear-gradient(
+     135deg,
+     rgba(255, 255, 255, 0.16) 0%,
+     rgba(255, 255, 255, 0.06) 45%,
+     rgba(255, 255, 255, 0.03) 100%
+-  );
++  ),
++  var(--color-surface, #1f2937); /* opaque base: nothing shows through */
+ 
+   /* ── Multi-layered depth: diffuse + saturate whatever sits behind us ─────── */
+   backdrop-filter: blur(16px) saturate(180%);
+@@ -79,7 +137,8 @@ body.has-offline-banner {
+     color-mix(in srgb, var(--color-warning, #f59e0b) 40%, transparent) 0%,
+     color-mix(in srgb, var(--color-warning, #f59e0b) 16%, transparent) 55%,
+     rgba(255, 255, 255, 0.04) 100%
+-  );
++  ),
++  var(--color-surface, #1f2937);
+   border-top-color: color-mix(in srgb, var(--color-warning, #f59e0b) 45%, rgba(255, 255, 255, 0.3));
+ }
+ 
+@@ -90,7 +149,8 @@ body.has-offline-banner {
+     color-mix(in srgb, var(--color-success, #10b981) 38%, transparent) 0%,
+     color-mix(in srgb, var(--color-success, #10b981) 14%, transparent) 55%,
+     rgba(255, 255, 255, 0.04) 100%
+-  );
++  ),
++  var(--color-surface, #1f2937);
+   border-top-color: color-mix(in srgb, var(--color-success, #10b981) 45%, rgba(255, 255, 255, 0.3));
+ }
+ 
+@@ -171,18 +231,6 @@ body.has-offline-banner {
+   outline-offset: 2px;
+ }
+ 
+-/* ── Mobile: .bottom-nav becomes a fixed bar at this breakpoint (see
+-   side-menu.css, z-index ~4001), so push the banner up above its
+-   reserved height instead of letting the two fixed-bottom elements
+-   overlap. Matches the same pattern used for .bulk-action-bar. ────────── */
+-@media (max-width: 768px) {
+-  #offlineBanner {
+-    bottom: calc(
+-      var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px)
+-    );
+-  }
+-}
+-
+ /* ── Reduced-motion: skip the slide animation, just fade ──────────────────── */
+ html[data-motion="reduced"] {
+   #offlineBanner {
+diff --git a/public/src/features/notebook/image-tool-window.css b/public/src/features/notebook/image-tool-window.css
+index 1974bfe..7902b5e 100644
+--- a/public/src/features/notebook/image-tool-window.css
++++ b/public/src/features/notebook/image-tool-window.css
+@@ -383,8 +383,11 @@ html[data-theme="light"] .mlweb-imtool-tb-btn.is-active {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
++  flex-wrap: nowrap;
+   gap: 12px;
+   padding: 6px 12px;
++  line-height: 1.5;
++  white-space: nowrap;
+   background: var(--color-background-secondary, #f4f6fb);
+   border-top: 1px solid var(--color-border, #dce2ed);
+   font-size: 12px;
+@@ -401,6 +404,10 @@ html[data-theme="dark-slate"] .mlweb-imtool-statusbar {
+ }
+ 
+ .mlweb-imtool-status-pixel {
++  flex: 1 1 auto;
++  min-width: 0;
++  overflow: hidden;
++  text-overflow: ellipsis;
+   font-weight: 500;
+   color: var(--color-text-primary, #1d2433);
+ }
+@@ -411,7 +418,7 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
+ }
+ 
+ .mlweb-imtool-status-meta {
+-  white-space: nowrap;
++  flex: 0 0 auto;
+ }
+ 
+ /* --- Info Overlay Card --- */
+@@ -640,21 +647,6 @@ html[data-theme="dark-slate"] .mlweb-imtool-status-pixel {
+     flex: 0 0 auto;
+   }
+ 
+-  .mlweb-imtool-statusbar {
+-    flex-wrap: wrap;
+-    gap: 4px 10px;
+-  }
+-
+-  .mlweb-imtool-status-pixel {
+-    min-width: 0;
+-    overflow-wrap: anywhere;
+-  }
+-
+-  .mlweb-imtool-status-meta {
+-    white-space: normal;
+-    text-align: end;
+-  }
+-
+   .mlweb-imtool-info-card {
+     top: 8px;
+     inset-inline-end: 8px;
+@@ -1011,7 +1003,20 @@ html[data-motion="reduced"] .mlweb-imtool-win.is-minimized {
+   }
+ }
+ 
++/* The status bar stays on one line: drop the size / class summary (also in the
++   info card) when the window is too narrow to show it next to the pixel readout. */
++@container imtool (max-width: 520px) {
++  .mlweb-imtool-status-meta {
++    display: none;
++  }
++}
++
+ @container imtool (max-width: 440px) {
++  .mlweb-imtool-statusbar {
++    padding-inline: 8px;
++    font-size: 11px;
++  }
++
+   .mlweb-imtool-win .mlweb-imtool-toolbar {
+     gap: 4px;
+     padding: 5px 6px;
+@@ -1040,10 +1045,6 @@ html[data-motion="reduced"] .mlweb-imtool-win.is-minimized {
+   .mlweb-imtool-title {
+     font-size: 12.5px;
+   }
+-
+-  .mlweb-imtool-status-meta {
+-    display: none;
+-  }
+ }
+ 
+ .mlweb-imtool-win button:focus-visible {
