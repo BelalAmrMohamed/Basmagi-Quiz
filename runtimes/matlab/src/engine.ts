@@ -1,22 +1,33 @@
 // =============================================================================
 // runtimes/matlab/src/engine.ts
 // MATLAB engine for the shared notebook UI. Wraps the interpreter Web Worker:
-//   * 60 s time limit per run, Stop aborts; both reset the workspace (like the old runtime)
+//   * time limit per run (60 s default; 60/120/300 s selectable, kept in localStorage), Stop aborts;
+//     both reset the workspace and end with the same message
 //   * workspace variables, current-folder image files (uploads, imwrite output, lesson assets)
-//   * figures and imtool images reported as `img` outputs
+//   * figures reported as `img` (one plain image, imtool) or `plot` outputs
 // Caps: everything except stdin. No DOM and no CSS here; the shell draws everything.
 // =============================================================================
 import type { Engine, ImageFile, VarInfo, RunRequest, RunSink } from '../../shared/engine';
 import { createT, type Lang } from '../../shared/i18n';
 import { fileToImage } from '../../shared/images';
+import { store } from '../../shared/dom';
+import { progressPercent } from '../interp/src/progress';
+import { formatRunStatus } from './run-status';
 import { matlabLanguage } from './language';
 import { matlabLint, type LintMessages } from './lint';
 import { matlabCompletions } from './completions';
 import { matlabIndent } from './indent';
 import { MATLAB_HELP } from './help';
 
-export const TIME_LIMIT_MS = 60_000;
+export const TIME_LIMIT_OPTIONS_MS = [60_000, 120_000, 300_000] as const;
+export const TIME_LIMIT_MS = TIME_LIMIT_OPTIONS_MS[0];
+export const TIME_LIMIT_KEY = 'mlweb.timeLimitMs';
 const DEFAULT_FILES = ['test.png', 'testgray.png'];
+
+const IMAGE_ALIASES: Record<string, string> = {
+  'peppers.png': 'pepper.png',
+  'test5.png': 'pepper.png',
+};
 
 export interface MatlabEngineOptions {
   baseUrl?: string;
@@ -49,6 +60,13 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
   let cur: Run | null = null;
   let disposed = false, epoch = 0;
   let codeSources: () => string[] = () => opts.publishedSources ?? [];
+  let notifyHost: ((message: string) => void) | undefined;
+  const stoppedMsg = t('Execution stopped. The workspace was reset; use Run all to rebuild it.\n');
+  const timeLimit = {
+    options: TIME_LIMIT_OPTIONS_MS as readonly number[],
+    get(): number { const n = Number(store.get(TIME_LIMIT_KEY)); return (TIME_LIMIT_OPTIONS_MS as readonly number[]).includes(n) ? n : TIME_LIMIT_MS; },
+    set(ms: number) { if ((TIME_LIMIT_OPTIONS_MS as readonly number[]).includes(ms)) store.set(TIME_LIMIT_KEY, String(ms)); },
+  };
 
   // ---------------- worker ----------------
   const buildWorker = (url: string): Worker => {
@@ -93,11 +111,22 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
       case 'print': run?.sink.out({ k: 'text', s: m.s }); break;
       case 'warn': run?.sink.out({ k: 'warn', s: m.s }); break;
       case 'clc': run?.sink.clear(); break;
+      case 'beep': try { const AC = (globalThis as any).AudioContext || (globalThis as any).webkitAudioContext; if (AC) { const ctx = new AC(), o = ctx.createOscillator(); o.frequency.value = 880; o.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.15); o.onended = () => ctx.close?.(); } } catch { /* audio unavailable */ } break;
       case 'fig': if (run) run.fig++; break;
       case 'img':
         if (run) {
-          if (run.fig === 0) run.fig = 1;
-          run.sink.out({ k: 'img', fig: m.tool ? -run.fig : run.fig, w: m.w, h: m.h, rgb: m.rgb, tool: !!m.tool, name: m.name });
+          // The interpreter numbers figures itself (m.fig); the run counter is only for hosts that do not.
+          if (m.fig === undefined && run.fig === 0) run.fig = 1;
+          const fig: number = m.fig ?? run.fig;
+          run.sink.out({ k: 'img', fig: m.tool ? -fig : fig, w: m.w, h: m.h, rgb: m.rgb, tool: !!m.tool, name: m.name });
+        }
+        break;
+      case 'figure': run?.sink.out({ k: 'plot', fig: m.id, spec: m.spec }); break;
+      case 'progress':
+        if (run) {
+          const percent = progressPercent(Array.isArray(m.loops) ? m.loops : []);
+          run.sink.status(formatRunStatus(t, { line: m.line, percent, elapsedMs: m.elapsedMs }), 'run');
+          run.sink.progress?.({ percent, elapsedMs: m.elapsedMs });
         }
         break;
       case 'wrote': files.set(m.name, m.img); run?.sink.files?.(); break;
@@ -124,7 +153,8 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
   function mentionedAssets(src: string): string[] {
     const found = new Set<string>();
     for (const m of src.matchAll(/['"]([^'"\n]{1,200})['"]/g)) {
-      const real = manifest.get(baseName(m[1]).toLowerCase());
+      const lower = baseName(m[1]).toLowerCase();
+      const real = manifest.get(lower) ?? manifest.get(IMAGE_ALIASES[lower] ?? '');
       if (real) found.add(real);
     }
     return [...found];
@@ -172,6 +202,8 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
       completions: matlabCompletions({ workspace: () => vars, codeSources: () => codeSources(), fileNames: () => [...files.keys()] }),
     },
     help: MATLAB_HELP,
+    timeLimit,
+    slowRunTip: t('Per-pixel loops are slow in the browser. Vectorized code such as `b = a + 50;` runs the same operation in one step.'),
     files,
 
     run({ cells, target, signal }: RunRequest, sink: RunSink) {
@@ -181,10 +213,10 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
       return new Promise<void>((resolve) => {
         const run: Run = {
           sink, id: cell.id, fig: 0, settle: resolve,
-          timer: window.setTimeout(() => abortRun(t('Execution stopped: time limit (60 s) exceeded. The workspace was reset.\n')), TIME_LIMIT_MS),
+          timer: window.setTimeout(() => abortRun(stoppedMsg), timeLimit.get()),
         };
         cur = run;
-        signal.addEventListener('abort', () => { if (cur === run) abortRun(t('Execution interrupted by user. The workspace was reset.\n')); }, { once: true });
+        signal.addEventListener('abort', () => { if (cur === run) abortRun(stoppedMsg); }, { once: true });
         // Images named in the code must be in the worker before it runs.
         loadFor([cell.src]).then(() => { if (cur === run) worker!.postMessage({ t: 'run', id: cell.id, src: cell.src }); });
       });
@@ -193,7 +225,7 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
     reset() { if (!cur) { worker?.postMessage({ t: 'reset' }); vars = []; } },
 
     async addFile(f: File) {
-      const img = await fileToImage(f);
+      const img = await fileToImage(f, { t, notify: (m) => notifyHost?.(m) });
       files.set(f.name, img);
       worker?.postMessage({ t: 'putFile', name: f.name, img });
     },
@@ -209,7 +241,7 @@ export function createMatlabEngine(opts: MatlabEngineOptions = {}): Engine {
       worker?.postMessage({ t: 'putFile', name: to, img: files.get(to) });
     },
 
-    attach(host) { codeSources = host.codeSources; },
+    attach(host) { codeSources = host.codeSources; notifyHost = host.notify; },
 
     async prepare(sources: string[]) {
       await manifestReady;

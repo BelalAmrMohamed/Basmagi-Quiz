@@ -8,6 +8,7 @@ import type { Extension } from '@codemirror/state';
 import type { CompletionSource } from '@codemirror/autocomplete';
 import type { Diagnostic } from '@codemirror/lint';
 import type { EditorState } from '@codemirror/state';
+import type { FigureSpec } from './plot-spec';
 
 /** What the engine sees of a notebook cell. `id` is stable for the life of the cell. */
 export type Cell = {
@@ -27,6 +28,8 @@ export type VarInfo = { name: string; size: string; cls: string; bytes: number }
 export type Out =
   | { k: 'text' | 'err' | 'warn'; s: string }
   | { k: 'img'; fig: number; w: number; h: number; rgb: Uint8Array; tool: boolean; /** imtool only: variable or file name shown in the window title. */ name?: string }
+  /** A figure with plots, several axes or decorations. Same `fig` again replaces the earlier `img`/`plot` of that figure in the cell. */
+  | { k: 'plot'; fig: number; spec: FigureSpec }
   | { k: 'html'; html: string }
   | { k: 'diag'; line: number; col?: number; sev: 'error' | 'warning'; msg: string; detail?: string; hint?: string; cell?: number }
   /** Echo of a line of standard input the user typed into the cell (added by the shell, never by engines). */
@@ -49,6 +52,8 @@ export interface RunSink {
   clear(cell?: number): void;
   /** Toolbar status text. `'run'` while working, `'error'` for a failure, `'result'` for a summary that stays until the next run. */
   status(text: string, kind?: 'run' | 'error' | 'result'): void;
+  /** Share of the run that is done (0..100, null when unknown) while it runs. Drives the cell's progress bar. */
+  progress?(p: { percent: number | null; elapsedMs: number }): void;
   /** Replace the workspace variable table (only shown when `caps.workspace`). */
   vars?(v: VarInfo[]): void;
   /** The engine's file list changed (only shown when `caps.files`). */
@@ -93,6 +98,10 @@ export interface Engine {
   help?: { title?: string; intro?: string; searchPlaceholder?: string; items: Array<[title: string, en: string, ar: string]> };
   caps: { workspace: boolean; files: boolean; images: boolean; stdin: boolean; history: boolean };
   toolbarExtra?: (ctx: any) => HTMLElement;
+  /** Run time limit the user can choose. The shell draws the selector (#timelimit); the engine stores and enforces it. */
+  timeLimit?: { options: readonly number[]; get(): number; set(ms: number): void };
+  /** Shown once per session in the running cell when a run takes more than 5 s (already translated). */
+  slowRunTip?: string;
   /** Script export extension: `.m` or `.cpp`. */
   exportExt: '.m' | '.cpp';
   /** Jupyter kernelspec name written to exported .ipynb files. */
@@ -112,7 +121,7 @@ export interface Engine {
   /** Rename a workspace file in place (keeps its position in `files`). The shell validates the name first. */
   renameFile?(from: string, to: string): void;
   /** Called once at mount: lets the engine read notebook state (for autocomplete). */
-  attach?(host: { codeSources(): string[] }): void;
+  attach?(host: { codeSources(): string[]; notify?(message: string): void }): void;
   /** Called with the cell sources so the engine can pre-load files they mention. */
   prepare?(sources: string[]): Promise<void>;
   /** Release workers and timers. The shell calls this on destroy. */

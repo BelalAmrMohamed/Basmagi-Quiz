@@ -144,7 +144,12 @@ export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
   if (c.challenge && c.type === 'code' && !c.running) { const banner = challengeResult(ctx, c); if (banner) outs.append(banner); }
   const insert = h('div', { class: 'cell-insert', role: 'group', 'aria-label': t('Insert a cell below') },
     h('button', { onclick: insertAt('code', 1) }, t('+ Code')), h('button', { onclick: insertAt('md', 1) }, t('+ Text')));
-  el.append(outs, insert);
+  // Filled in by the shell while the cell runs (shell.ts paintProgress); hidden until the run takes more than 1.5 s.
+  const footer = c.running ? h('div', { class: 'run-progress', hidden: true },
+    h('div', { class: 'run-bar', role: 'progressbar', 'aria-label': t('Running…') }, h('span', { class: 'run-fill' })),
+    h('span', { class: 'run-time' }),
+    h('div', { class: 'run-tip', hidden: true })) : null;
+  el.append(outs, ...(footer ? [footer] : []), insert);
   return el;
 }
 

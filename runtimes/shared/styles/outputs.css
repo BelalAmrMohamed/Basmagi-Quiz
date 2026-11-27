@@ -440,3 +440,9 @@
   font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace;
   color: inherit;
 }
+
+/* Plot figures (plot-view.ts): the SVG scales with the card, up to its nominal width. */
+.mlweb .fig.plot-fig {
+  width: 100% !important;
+  max-width: min(100%, var(--plot-width, 658px)) !important;
+}

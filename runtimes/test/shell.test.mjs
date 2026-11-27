@@ -224,3 +224,67 @@ test('edit mode captures testStdin from the stdin used for the run', async () =>
   assert.equal(last[0].challenge.testStdin, '3 4');
   assert.equal(last[0].challenge.expectedOutput, 'in:3 4');
 });
+
+test('MATLAB engine: figure messages become plot outputs, img keeps the interpreter figure number', async () => {
+  const dom = env(), w = dom.window, outs = [];
+  const spec = { rows: 1, cols: 1, axes: [{ r: 0, c: 0, items: [] }] };
+  const rgb = new Uint8Array(3);
+  const fakeWorker = { postMessage(m) { if (m.t === 'run') setTimeout(() => {
+    const say = (d) => fakeWorker.onmessage({ data: d });
+    say({ t: 'img', w: 1, h: 1, rgb, tool: false, name: 'A', fig: 3 });
+    say({ t: 'figure', id: 3, spec });
+    say({ t: 'img', w: 1, h: 1, rgb, tool: true, name: 'B', fig: 3 });
+    say({ t: 'img', w: 1, h: 1, rgb, tool: false });            // old-style message without fig: run counter
+    say({ t: 'done', id: m.id, error: null, vars: [] });
+  }, 0); }, terminate() {} };
+  const eng = w.T.createMatlabEngine({ createWorker: () => fakeWorker, baseUrl: 'https://x.test/' });
+  const sink = { out: (o) => outs.push(o), clear() {}, status() {}, input: async () => null };
+  await eng.run({ cells: [{ id: 1, type: 'code', src: 'x' }], target: 0, signal: new w.AbortController().signal }, sink);
+  assert.deepEqual(outs.map((o) => [o.k, o.fig]), [['img', 3], ['plot', 3], ['img', -3], ['img', 1]]);
+  assert.equal(outs[1].spec, spec);
+  eng.dispose();
+});
+
+test('shell: a plot output replaces the earlier img/plot card of the same figure, other figures and imtool cards stay', async () => {
+  const dom = env(), w = dom.window, root = w.document.getElementById('root');
+  const spec = (n) => ({ rows: 1, cols: 1, axes: Array.from({ length: n }, (_, i) => ({ r: 0, c: i, items: [], title: '', xlabel: '', ylabel: '', xlim: null, ylim: null, grid: false, legend: [], hold: false, colormap: null, colorbar: false, equal: false, tight: false, square: false, off: false })) });
+  const eng = fakeEngine({ async run(_req, sink) {
+    sink.out({ k: 'img', fig: 1, w: 1, h: 1, rgb: new Uint8Array(3), tool: false });
+    sink.out({ k: 'plot', fig: 1, spec: spec(1) });
+    sink.out({ k: 'plot', fig: 2, spec: spec(1) });
+    sink.out({ k: 'plot', fig: 1, spec: spec(2) });
+  } });
+  w.T.mountShell(eng, { root, notebook: nb([{ type: 'code', source: 'a' }]) });
+  await w.__mlweb.runCell(w.__mlweb.cells[0]); await tick(w, 60);
+  assert.equal(JSON.stringify(w.__mlweb.cells[0].outs.map((o) => [o.k, o.fig])), '[["plot",2],["plot",1]]'); // jsdom arrays: compare as JSON
+  const cards = [...root.querySelectorAll('.fig')];
+  assert.equal(JSON.stringify(cards.map((e) => [e.querySelector('.cap').firstChild.textContent, e.querySelectorAll('svg [data-role="axes"]').length])), '[["Figure 2",1],["Figure 1",2]]');
+});
+
+test('export: plot outputs become image/svg+xml in .ipynb and inline SVG in .html', async () => {
+  const dom = env(), w = dom.window, root = w.document.getElementById('root');
+  const axes = { r: 0, c: 0, items: [{ t: 'line', x: [1, 2], y: [3, 4], spec: {} }], title: 'A<B', xlabel: '', ylabel: '', xlim: null, ylim: null, grid: false, legend: [], hold: false, colormap: null, colorbar: false, equal: false, tight: false, square: false, off: false };
+  const eng = fakeEngine({ async run(_req, sink) { sink.out({ k: 'plot', fig: 1, spec: { rows: 1, cols: 1, axes: [axes] } }); } });
+  const saved = [];
+  w.URL.createObjectURL = (b) => { saved.push(b); return 'blob:x'; };
+  w.URL.revokeObjectURL = () => {};
+  w.HTMLAnchorElement.prototype.click = () => {};
+  w.mountedShell = w.T.mountShell(eng, { root, notebook: nb([{ type: 'code', source: 'plot' }]) });
+  await w.__mlweb.runCell(w.__mlweb.cells[0]); await tick(w, 60);
+  const exportAs = async (format) => {
+    root.querySelector(`#exportDialog input[value="${format}"]`).checked = true;
+    root.querySelector('#exportDialog #exportOutputs').checked = true;
+    root.querySelector('#exportDialog [data-export-accept]').click();
+    const blob = saved.at(-1);
+    return new Promise((res) => { const r = new w.FileReader(); r.onload = () => res(r.result); r.readAsText(blob); });
+  };
+  const ipynb = JSON.parse(await exportAs('ipynb'));
+  const [out] = ipynb.cells[0].outputs;
+  assert.equal(out.output_type, 'display_data');
+  const svg = out.data['image/svg+xml'].join('');
+  assert.match(svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+  assert.ok(svg.includes('A&lt;B') && svg.includes('data-role="line"') && !svg.includes('var('), 'escaped, drawn, standalone');
+  const html = await exportAs('html');
+  assert.ok(html.includes('<svg xmlns=') && !html.includes('[figure 1]'));
+  assert.match(await exportAs('script'), /\[1 figure not included\]/);
+});

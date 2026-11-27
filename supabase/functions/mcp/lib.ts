@@ -35,16 +35,31 @@ function readCorrect(raw: any[], n: number): { idx: number[]; bad: number[] } {
 // The rules themselves live in content-rules.js (shared with the editor pages and
 // the upload API). This wrapper only builds the cleaned draft payload.
 
+function normalizeQuizInput(args: any) {
+  if (!args || typeof args !== "object" || !Array.isArray(args.questions)) return args;
+  return {
+    ...args,
+    questions: args.questions.map((q: any) => {
+      if (!q || typeof q !== "object") return q;
+      if (q.correct !== undefined) return q;
+      if (q.correctIndexes !== undefined) return { ...q, correct: q.correctIndexes };
+      if (q.correctIndex !== undefined) return { ...q, correct: q.correctIndex };
+      return q;
+    }),
+  };
+}
+
 export function validateQuiz(args: any) {
-  const check = checkQuiz(args);
+  const normalizedArgs = normalizeQuizInput(args);
+  const check = checkQuiz(normalizedArgs);
   const errors: string[] = check.errors.map((e: any) => e.message);
   const warnings: string[] = check.warnings.map((w: any) => w.message);
 
-  const title = str(args?.title);
-  const description = str(args?.description);
-  const source = str(args?.source);
+  const title = str(normalizedArgs?.title);
+  const description = str(normalizedArgs?.description);
+  const source = str(normalizedArgs?.source);
 
-  const rawQs = args?.questions;
+  const rawQs = normalizedArgs?.questions;
   if (!Array.isArray(rawQs) || !rawQs.length) {
     return { ok: false, data: null, errors, warnings, stats: null };
   }
@@ -119,8 +134,8 @@ export function validateNotebook(args: any) {
     cells: content.cells,
   };
   const bytes = new TextEncoder().encode(JSON.stringify(data)).length;
-  if (bytes > LIMITS.draftBytes) {
-    errors.push(`حجم المسودة ${Math.round(bytes / 1000)}KB يتجاوز ${LIMITS.draftBytes / 1000}KB.`);
+  if (bytes > LIMITS.notebookBytes) {
+    errors.push(`حجم المسودة ${Math.round(bytes / 1000)}KB يتجاوز ${LIMITS.notebookBytes / 1000}KB.`);
     return { ok: false, data: null, errors, warnings, stats: null };
   }
   return {
@@ -266,10 +281,80 @@ export function makeDraftCode(len = 10): string {
 export const DRAFT_CODE_RE = /^[2-9a-hj-km-np-z]{10}$/;
 export const DRAFT_TTL_HOURS = 72;
 
-export function draftUrl(kind: "quiz" | "lesson" | "notebook", code: string) {
+export type DraftKind = "quiz" | "lesson" | "notebook" | "youtube_video" | "youtube_playlist";
+
+export function draftUrl(kind: DraftKind, code: string) {
   // Every kind opens «محتواي» directly: the item is saved there when the link is opened.
   void kind;
   return `${SITE}/my-content?draft=${code}`;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isUuid(value: unknown): boolean {
+  return UUID_RE.test(str(value));
+}
+
+/** Strips PostgREST filter syntax characters (commas, parens, wildcards, backslashes) from ilike search inputs. */
+export function escapePostgrestLike(query: unknown, maxLen = 200): string {
+  return String(query ?? "").replace(/[,()%*\\]/g, " ").trim().slice(0, maxLen);
+}
+
+export const SUPPORTED_MCP_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"] as const;
+
+export function negotiateProtocolVersion(requested: unknown): string {
+  const v = typeof requested === "string" ? requested.trim() : "";
+  if ((SUPPORTED_MCP_VERSIONS as readonly string[]).includes(v)) return v;
+  return "2025-03-26";
+}
+
+const rateBuckets = new Map<string, Map<string, number[]>>();
+
+/**
+ * Pure sliding-window rate limiter with bounded bucket size (safe for long-lived isolates).
+ * Returns { allowed: true } or { allowed: false, retryAfterSec }.
+ */
+export function checkRateLimit(
+  bucketName: string,
+  key: string,
+  limit: number,
+  windowMs: number,
+  now = Date.now(),
+): { allowed: true } | { allowed: false; retryAfterSec: number } {
+  let bucket = rateBuckets.get(bucketName);
+  if (!bucket) {
+    bucket = new Map();
+    rateBuckets.set(bucketName, bucket);
+  }
+  const cutoff = now - windowMs;
+  const recent = (bucket.get(key) || []).filter((ts) => ts > cutoff);
+  if (recent.length >= limit) {
+    bucket.set(key, recent);
+    const oldest = recent[0] ?? now;
+    const retryAfterSec = Math.max(1, Math.ceil((oldest + windowMs - now) / 1000));
+    return { allowed: false, retryAfterSec };
+  }
+  recent.push(now);
+  bucket.set(key, recent);
+  if (bucket.size > 2000) {
+    for (const [k, list] of bucket) {
+      if (list.every((ts) => ts <= cutoff)) bucket.delete(k);
+      if (bucket.size <= 1500) break;
+    }
+  }
+  return { allowed: true };
+}
+
+export function outlineYoutubeDraft(kind: "youtube_video" | "youtube_playlist", payload: any): string {
+  if (kind === "youtube_playlist") {
+    const p = payload?.playlist || {};
+    const items: any[] = Array.isArray(payload?.items) ? payload.items : [];
+    const preview = items.slice(0, 10).map((it, i) => `${i + 1}. ${it.unavailable ? "(غير متاح)" : it.title || it.videoId}`).join("\n");
+    const more = items.length > 10 ? `\n… (+${items.length - 10} فيديو)` : "";
+    return `title: ${p.title || ""}\nchannel: ${p.channelTitle || "(none)"}\nplaylistId: ${p.id || ""}\nitems: ${items.length}\n\n${preview}${more}`;
+  }
+  const m = payload?.meta || {};
+  return `title: ${m.title || ""}\nchannel: ${m.channelTitle || "(none)"}\nyoutubeId: ${payload?.youtubeId || ""}\ndurationSeconds: ${m.durationSeconds ?? "(unknown)"}`;
 }
 
 // ── Static content ──────────────────────────────────────────────────────────
@@ -330,7 +415,7 @@ export const AUTHORING_GUIDE: Record<string, string> = {
 4. Give the user the link as-is (never edit/re-encode it) and tell them to open it: the item is saved straight into their «محتواي» and shown there with a «جديد» badge (no editor step, no confirmation, no admin review). It is saved in their own browser only, not published to the public platform. Edit a draft with update_import_draft BEFORE they open the link; once opened, the item lives in «محتواي» and the draft is gone.
 5. Revising: do NOT rebuild and re-send everything.
    - get_import_draft(code) → numbered outline → update_import_draft(code, patch) with only the change (same link stays valid; 1-based positions; atomic).
-   - Improve/translate/extend something that already exists: clone_to_draft(type,id), then patch. Inspect originals cheaply with get_quiz / get_lesson_content format="outline".
+   - Improve/translate/extend something that already exists: clone_to_draft(type,id), then patch. Inspect originals cheaply with get_quiz / get_lesson format="outline".
    - Not sure the content is valid? create_*_import_link with dry_run=true validates without saving.
    - Patching only works while the link is unopened: opening it saves the item into the user's «محتواي» and deletes the draft. To change an already-opened item, create a new draft (the user can delete the old one).
 6. Check for existing content first with search_catalog to avoid duplicates, and offer to link related lessons/quizzes (quizRef / lesson-reference / notebook-reference / folder-reference / course-reference blocks).
@@ -341,14 +426,14 @@ Language: write quiz/lesson text in the language of the source material (usually
   questions: [ ... ≤${LIMITS.quizQuestions} ] }
 
 Question kinds — decided by which fields exist:
-- Single-answer MCQ:  { q, options: [2..${LIMITS.quizOptionsMax} strings], correct: <zero-based int>, explanation }
-- Multi-answer MCQ:   { q, options, correct: [0, 2], multiSelect: true, explanation }
-- True/False:         { q, options: ["صح","خطأ"] (Arabic quiz) or ["True","False"] (English quiz), correct: 0|1, explanation }
+- Single-answer MCQ:  { q, options: [2..${LIMITS.quizOptionsMax} strings], correctIndex: <zero-based int>, explanation } (also accepts legacy correct)
+- Multi-answer MCQ:   { q, options, correctIndexes: [0, 2], multiSelect: true, explanation }
+- True/False:         { q, options: ["صح","خطأ"] (Arabic quiz) or ["True","False"] (English quiz), correctIndex: 0|1, explanation }
 - Essay/open-ended:   { q, answer: "<model answer>", explanation }   ← NO options key at all
-- Fill-in-the-blank:  { q: "عاصمة مصر {{القاهرة|Cairo}}", questionKind: "complete", explanation, strictMatch?: true }   ← blanks inline as {{answer}} or {{answer|alt|alt}}; NO options / correct / answer; 1-${LIMITS.completeBlanksMax} blanks; lenient matching (case, tashkeel, alef forms) unless strictMatch
+- Fill-in-the-blank:  { q: "عاصمة مصر {{القاهرة|Cairo}}", questionKind: "complete", explanation, strictMatch?: true }   ← blanks inline as {{answer}} or {{answer|alt|alt}}; NO options / correctIndex / answer; 1-${LIMITS.completeBlanksMax} blanks; lenient matching (case, tashkeel, alef forms) unless strictMatch
 
-Rules the server enforces (identical to the editor page and the upload check): correct is ZERO-based and must be in range (it never guesses a missing answer); options are non-empty and ≤${LIMITS.quizOptionsMax} (lesson questions: ≤${LIMITS.optionsMax}); an essay question MUST have a non-empty answer; source must be a real https:// link or empty "" — never a sentence (e.g. never "generated by AI").
-True/False options must be in the quiz's language: ["صح","خطأ"] for Arabic, ["True","False"] for English. "correct" is 0 or 1.
+Rules the server enforces (identical to the editor page and the upload check): correctIndex / correctIndexes is ZERO-based and must be in range (it never guesses a missing answer); options are non-empty and ≤${LIMITS.quizOptionsMax} (lesson questions: ≤${LIMITS.optionsMax}); an essay question MUST have a non-empty answer; source must be a real https:// link or empty "" — never a sentence (e.g. never "generated by AI").
+True/False options must be in the quiz's language: ["صح","خطأ"] for Arabic, ["True","False"] for English. "correctIndex" is 0 or 1.
 Math: every formula, variable, exponent, fraction, root, Greek letter or math symbol in q/options/answer/explanation/lesson bodies must be LaTeX: $...$ inline, $$...$$ display. Never plain text (x^2, sqrt(x), 1/2, x², √, ≤). Escape backslashes in JSON (\\\\frac).
 Quality rules: one unambiguous correct answer; plausible distractors of similar length; don't put "all of the above" unless needed; shuffle the position of correct answers (don't make them all 0/1); every question gets a teaching explanation; vary difficulty; no duplicate questions.
 Inline Markdown works in q / options / explanation: **bold**, \`code\`, $x^2$ inline and $$...$$ block LaTeX, GFM tables, ![alt](url) images, ![audio](url), ![video](url) (YouTube auto-embeds).`,
@@ -397,7 +482,7 @@ Authoring tips:
 - Alternate short markdown explanations with small runnable code cells; one idea per cell; prefer 5–40 lines per code cell.
 - Markdown is Arabic-friendly (direction detected per block); code, comments in code and output are always left-to-right. Avoid raw HTML. Math in LaTeX ($...$ / $$...$$).
 - Image examples may only use the bundled sample images (test.png, testgray.png, pepper.png, Test2.png, GrayTest1.png, BinaryImage.png, GrayscaleImage.png, ColorImage.png, test_lookup.gif); learners can upload their own.
-- Your own images (png/jpg/webp/gif; names are used exactly as written, never renamed): after create_notebook_import_link, attach each file the cells use to the SAME draft code — cells then use imread("cat.png") / ![](cat.png). Pick by size: ≤ ~200 KB → add_workspace_asset (base64: you must write every character, so never for bigger files); a public image link or a Drive file shared "Anyone with the link" → add_workspace_asset_from_url (server downloads it, any size ≤10 MB); a file on a disk you can run commands on (user attachment under /mnt/user-data/uploads, Claude Code / Cowork) → request_asset_upload and run the curl it returns. If none works (private Drive file, blocked network), do NOT skip silently: tell the user which images to add themselves (workspace panel → Upload, or Import from Google Drive in the editor). Limits: 10 MB per file, 20 MB per draft; files are temporary (they expire with the 72h draft) and are copied into the user's browser workspace for the notebook when they open the link.
+- Your own images (png/jpg/webp/gif; names are used exactly as written, never renamed): after create_notebook_import_link, attach each file the cells use to the SAME draft code with add_workspace_asset — cells then use imread("cat.png") / ![](cat.png). Pick by size: ≤ ~200 KB → pass base64 (you must write every character, so never for bigger files); a public image link or a Drive file shared "Anyone with the link" → pass url (server downloads it, any size ≤10 MB); a file on a disk you can run commands on (user attachment under /mnt/user-data/uploads, Claude Code / Cowork) → pass request_upload: true (or omit base64/url) and run the curl command it returns. If none works (private Drive file, blocked network), do NOT skip silently: tell the user which images to add themselves (workspace panel → Upload, or Import from Google Drive in the editor). Limits: 10 MB per file, 20 MB per draft; files are temporary (they expire with the 72h draft) and are copied into the user's browser workspace for the notebook when they open the link.
 - Only authored source is stored. Learner outputs/edits stay in the learner's browser (autosave) and are never graded or synced.
 - Notebooks need NO admin approval: opening the link saves the notebook into the user's «محتواي» like quizzes and lessons.`,
 
@@ -427,7 +512,7 @@ Use this when the user shares a folder or several files (usually from Google Dri
 
 ## 4. Create
 - One item at a time: read the file → build → dry_run if unsure → create_*_import_link → keep the link. Fix ERRORS and retry; mention important WARNINGS. For big results create the draft, then refine with update_import_draft instead of re-sending.
-- A notebook that uses images from the folder: attach them with the asset tools described in the notebook guide (add_workspace_asset_from_url works with the Drive share link when the file is shared \"Anyone with the link\"); list in the final report any image the user must add by hand.
+- A notebook that uses images from the folder: attach them with add_workspace_asset (pass url with the Drive share link when the file is shared \"Anyone with the link\"); list in the final report any image the user must add by hand.
 - Each item gets its own draft link; drafts live ${DRAFT_TTL_HOURS}h, so tell the user to open them soon. Opening a link saves that item straight into their «محتواي» (no editor step, no admin review for notebooks).
 
 ## 5. Final report
@@ -515,7 +600,7 @@ export function applyDraftPatch(kind: "quiz" | "lesson" | "notebook", data: any,
 
   const metaTarget = kind === "quiz" ? (d.meta = d.meta || {}) : d;
   if (patch.meta) {
-    for (const k of kind === "notebook" ? ["title", "description", "source", "runtime"] : ["title", "description", "source"]) {
+    for (const k of kind === "notebook" ? ["title", "description", "source", "runtime", "language"] : ["title", "description", "source"]) {
       if (patch.meta[k] !== undefined) { metaTarget[k] = patch.meta[k]; applied.push(`meta.${k}`); }
     }
   }

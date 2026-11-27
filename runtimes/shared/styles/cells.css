@@ -449,3 +449,64 @@
   margin: 0 auto;
   box-shadow: 0 10px 34px #0006;
 }
+
+/* Long runs: a thin bar and an elapsed timer under the running cell (shell.ts paintProgress). */
+.mlweb .cell .run-progress {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 6px 0 2px;
+  padding-inline-start: var(--jp-prompt);
+  font-size: 12px;
+  color: var(--mute);
+}
+
+.mlweb .cell .run-progress[hidden],
+.mlweb .cell .run-tip[hidden] {
+  display: none;
+}
+
+.mlweb .cell .run-bar {
+  position: relative;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.mlweb .cell .run-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.2s linear;
+}
+
+.mlweb .cell .run-bar.indeterminate .run-fill {
+  width: 30%;
+  animation: run-slide 1.4s ease-in-out infinite;
+}
+
+@keyframes run-slide {
+  from { margin-inline-start: -30%; }
+  to { margin-inline-start: 100%; }
+}
+
+.mlweb .cell .run-time {
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+}
+
+.mlweb .cell .run-tip {
+  grid-column: 1 / -1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--warnbg);
+  color: var(--warn);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mlweb .cell .run-bar.indeterminate .run-fill { animation: none; width: 100%; opacity: 0.4; }
+  .mlweb .cell .run-fill { transition: none; }
+}

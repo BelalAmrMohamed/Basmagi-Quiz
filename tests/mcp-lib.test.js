@@ -202,3 +202,66 @@ test("validateQuiz / validateLesson keep Complete (fill-in-the-blank) questions"
   });
   assert.equal(lesson.data.sections[0].blocks[0].questionKind, "complete");
 });
+
+test("protocol version negotiation, UUID guard, PostgREST escaping, and YouTube draft outline", async () => {
+  const {
+    negotiateProtocolVersion,
+    isUuid,
+    escapePostgrestLike,
+    outlineYoutubeDraft,
+    draftUrl,
+    validateNotebook,
+  } = await import("../supabase/functions/mcp/lib.ts");
+
+  assert.equal(negotiateProtocolVersion("2025-06-18"), "2025-06-18");
+  assert.equal(negotiateProtocolVersion("2024-11-05"), "2024-11-05");
+  assert.equal(negotiateProtocolVersion("2099-01-01"), "2025-03-26");
+  assert.equal(negotiateProtocolVersion(undefined), "2025-03-26");
+
+  assert.equal(isUuid("99e44474-2c90-4986-97e7-43a24885b7c3"), true);
+  assert.equal(isUuid("some-slug"), false);
+  assert.equal(isUuid(""), false);
+
+  assert.equal(escapePostgrestLike("Lec 9: Slicing, Video (1)%*\\"), "Lec 9: Slicing  Video  1");
+  assert.equal(draftUrl("youtube_video", "abcdefghjk"), "https://basmagi-quiz.vercel.app/my-content?draft=abcdefghjk");
+
+  const ytVidOutline = outlineYoutubeDraft("youtube_video", { youtubeId: "abc12345678", meta: { title: "Demo", channelTitle: "Chan", durationSeconds: 90 } });
+  assert.match(ytVidOutline, /youtubeId: abc12345678/);
+  const ytPlOutline = outlineYoutubeDraft("youtube_playlist", { playlist: { id: "PL1234567890", title: "Course", channelTitle: "Chan" }, items: [{ title: "Ep 1" }] });
+  assert.match(ytPlOutline, /items: 1/);
+
+  // Notebook size cap aligns with LIMITS.notebookBytes (300 KB), not 200 KB.
+  const bigMarkdown = "a".repeat(19_000);
+  const cells = Array.from({ length: 12 }, () => ({ type: "markdown", source: bigMarkdown }));
+  const nb = validateNotebook({ title: "Big NB", runtime: "matlab", cells });
+  assert.equal(nb.ok, true, JSON.stringify(nb.errors));
+});
+
+test("validateQuiz accepts correctIndex / correctIndexes without mutating input", () => {
+  const input = {
+    title: "Gemini-safe quiz",
+    description: "d",
+    questions: [
+      { q: "Single?", options: ["a", "b"], correctIndex: 1, explanation: "e" },
+      { q: "Multi?", options: ["a", "b", "c"], correctIndexes: [0, 2], multiSelect: true, explanation: "e" },
+    ],
+  };
+  const snap = JSON.stringify(input);
+  const res = validateQuiz(input);
+  assert.equal(res.ok, true, JSON.stringify(res.errors));
+  assert.deepEqual(res.data.questions[0].correct, [1]);
+  assert.deepEqual(res.data.questions[1].correct, [0, 2]);
+  assert.equal(res.data.questions[1].multiSelect, true);
+  assert.equal(JSON.stringify(input), snap);
+});
+
+test("checkRateLimit enforces sliding window limits and resets after expiry", async () => {
+  const { checkRateLimit } = await import("../supabase/functions/mcp/lib.ts");
+  assert.equal(checkRateLimit("test-bucket", "ip-1", 2, 60_000, 1000).allowed, true);
+  assert.equal(checkRateLimit("test-bucket", "ip-1", 2, 60_000, 2000).allowed, true);
+  const blocked = checkRateLimit("test-bucket", "ip-1", 2, 60_000, 3000);
+  assert.equal(blocked.allowed, false);
+  assert.ok(blocked.retryAfterSec >= 58);
+  assert.equal(checkRateLimit("test-bucket", "ip-2", 2, 60_000, 3000).allowed, true);
+  assert.equal(checkRateLimit("test-bucket", "ip-1", 2, 60_000, 62_000).allowed, true);
+});

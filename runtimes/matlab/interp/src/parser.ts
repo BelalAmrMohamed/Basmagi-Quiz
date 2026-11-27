@@ -1,12 +1,20 @@
 // MATLAB-subset lexer + parser. Pure TypeScript, no DOM/Node dependencies.
 export class MatlabError extends Error {}
 export type Tok = { t: string; v: any; sp: boolean; line: number };
-const KW = new Set(['for', 'while', 'if', 'elseif', 'else', 'end', 'function', 'return', 'break', 'continue', 'switch', 'case', 'otherwise']);
+const KW = new Set(['for', 'while', 'if', 'elseif', 'else', 'end', 'function', 'return', 'break', 'continue', 'switch', 'case', 'otherwise', 'try', 'catch']);
 // Commands MATLAB allows in "command syntax" (e.g. `imfinfo 'x.png'`, `hold on`).
-const CMDS = new Set(['imfinfo', 'clear', 'close', 'help', 'doc', 'lookfor', 'format', 'hold', 'who', 'whos', 'clc', 'figure', 'clearvars', 'imtool', 'imshow']);
+const CMDS = new Set(['imfinfo', 'clear', 'close', 'help', 'doc', 'lookfor', 'format', 'hold', 'who', 'whos', 'clc', 'figure', 'clearvars', 'imtool', 'imshow', 'warning', 'axis', 'grid', 'colormap', 'colorbar']);
 
 export function lex(src: string): Tok[] {
   src = src.replace(/\r\n?/g, '\n');
+  // Strip %{ ... %} block comments (markers alone on their own lines), keeping line count intact.
+  let blkDepth = 0;
+  src = src.split('\n').map(l => {
+    const tr = l.trim();
+    if (tr === '%{') { blkDepth++; return ''; }
+    if (blkDepth > 0 && tr === '%}') { blkDepth--; return ''; }
+    return blkDepth > 0 ? '' : l;
+  }).join('\n');
   // command syntax -> function-call syntax, also after `;` or `,` (e.g. `hold on; imfinfo 'a.png'`)
   const CMD_RE = /(^\s*|[;,]\s*)([A-Za-z]\w*)[ \t]+(?![=(])((?:'[^']*'|"[^"]*"|[^\s;,%'"=(])(?:'[^']*'|"[^"]*"|[^;,%'"])*?)(?=\s*(?:[;,%]|$))/g;
   src = src.split('\n').map(l => l.replace(CMD_RE, (m, pre, name, rest) => {
@@ -75,7 +83,9 @@ export function parse(src: string): any[] {
       skipSeps();
       const t = peek();
       if (t.t === 'eof' || (t.t === 'kw' && terms.includes(t.v))) return out;
-      out.push(statement());
+      const first = t.line;
+      const st = statement(); st.line = first; // 1-based source line, for progress reports
+      out.push(st);
     }
   }
   function endOfStmt(): boolean { // returns the "show result" flag
@@ -130,6 +140,24 @@ export function parse(src: string): any[] {
           return { k: 'if', clauses, els };
         }
         case 'function': return func();
+        case 'try': {
+          const body = block(['catch', 'end']);
+          let catchVar: string | null = null;
+          let catchBody: any[] = [];
+          if (isKw('catch')) {
+            p++;
+            if (peek().t === 'id') {
+              const after = toks[p + 1];
+              if (after.t === 'nl' || after.t === 'kw' || after.t === 'eof' || (after.t === 'op' && (after.v === ',' || after.v === ';'))) {
+                catchVar = nxt().v;
+              }
+            }
+            catchBody = block(['end']);
+          }
+          if (!isKw('end')) err("missing 'end'");
+          p++;
+          return { k: 'try', body, catchVar, catchBody };
+        }
         case 'break': case 'continue': case 'return': endOfStmt(); return { k: t.v };
         default: err(`unexpected '${t.v}'`);
       }
@@ -157,8 +185,9 @@ export function parse(src: string): any[] {
     if (isOp('=')) { p++; const rhs = expr(); return { k: 'assign', lhs: [lvalue(e)], rhs, show: endOfStmt() }; }
     return { k: 'expr', e, show: endOfStmt() };
   }
-  function lvalue(e: any) {
-    if (e.k === 'id' || e.k === 'idx' || e.k === 'cellidx' || e.k === 'field') return e;
+  function lvalue(e: any): any {
+    if (e.k === 'id' || e.k === 'idx' || e.k === 'cellidx') return e;
+    if (e.k === 'field' || e.k === 'apply') { lvalue(e.a); return e; }
     return err('invalid assignment target');
   }
   function endBlock() { const b = block(['end']); if (!isKw('end')) err("missing 'end'"); p++; return b; }
@@ -230,7 +259,7 @@ export function parse(src: string): any[] {
   function primaryPostfix(): any {
     let e = primary();
     for (;;) {
-      if (isOp("'") || isOp(".'")) { p++; e = { k: 'post', a: e }; continue; }
+      if (isOp("'") || isOp(".'")) { const op = nxt().v; e = { k: 'post', op, a: e }; continue; }
       if (isOp('(')) { p++; e = { k: 'apply', a: e, args: args(')') }; continue; }
       if (isOp('{')) { p++; e = { k: 'cellidx', a: e, args: args('}') }; continue; }
       if (isOp('.')) {
@@ -253,6 +282,25 @@ export function parse(src: string): any[] {
       return { k: 'id', n: t.v };
     }
     if (t.t === 'op') {
+      if (t.v === '@') {
+        if (isOp('(')) {
+          p++;
+          const params: string[] = [];
+          while (!isOp(')')) {
+            if (peek().t === 'eof') err("missing ')'");
+            if (isOp(',')) { p++; continue; }
+            if (peek().t !== 'id') err('expected parameter name');
+            params.push(nxt().v);
+          }
+          p++;
+          const saved = inMat; inMat = false;
+          const body = expr();
+          inMat = saved;
+          return { k: 'anon', params, body };
+        }
+        if (peek().t === 'id') return { k: 'fhandle', name: nxt().v };
+        return err('expected function name or parameter list after "@"');
+      }
       if (t.v === '(') { const saved = inMat; inMat = false; const e = expr(); inMat = saved; expectOp(')'); return { k: 'paren', a: e }; }
       if (t.v === '{') {
         const saved = inMat; inMat = true; const rows: any[][] = []; let row: any[] = [];

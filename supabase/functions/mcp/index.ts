@@ -37,6 +37,8 @@ import {
   draftUrl, makeDraftCode, validateLesson, validateQuiz, validateNotebook,
   applyDraftPatch, lessonToDraftInput, outlineLesson, outlineQuiz, quizToDraftInput,
   notebookToDraftInput, outlineNotebook,
+  checkRateLimit, escapePostgrestLike, isUuid, negotiateProtocolVersion, outlineYoutubeDraft,
+  SUPPORTED_MCP_VERSIONS, type DraftKind,
 } from "./lib.ts";
 import {
   DRAFT_ASSET_BUCKET, DRAFT_ASSET_MAX_BYTES, DRAFT_REASONS, UPLOAD_TOKEN_TTL_MIN,
@@ -54,12 +56,14 @@ const SUPABASE_KEY =
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const SERVER_VERSION = "3.3.0";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers":
-    "Authorization, Content-Type, Accept, X-Requested-With, mcp-session-id",
-  "Access-Control-Expose-Headers": "Content-Type",
+    "Authorization, Content-Type, Accept, X-Requested-With, mcp-session-id, mcp-protocol-version",
+  "Access-Control-Expose-Headers": "Content-Type, Mcp-Session-Id",
 };
 
 // ── Prompts Library ─────────────────────────────────────────────────────────
@@ -138,20 +142,22 @@ const PROMPTS_REGISTRY: Record<string, { description: string; text: string }> = 
 const TOOLS = [
   {
     name: "search_catalog",
-    annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Search public educational content on Basmagi Platform: courses, folders, quizzes, lessons, and notebooks by keyword with optional scope filter.",
+    annotations: { title: "Search Basmagi catalog", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    description: "Search public educational content on Basmagi Platform: courses, folders, quizzes, lessons, and notebooks by keyword with optional scope and pagination.",
     inputSchema: {
       type: "object",
       properties: {
         query: { type: "string", description: "Keyword or topic to search for" },
         scope: { type: "string", enum: ["all", "quizzes", "lessons", "notebooks", "courses", "folders"], description: "Optional scope filter. Defaults to 'all'." },
+        limit: { type: "integer", description: "Max results per scope (1-25). Defaults to 10." },
+        offset: { type: "integer", description: "Zero-based result offset for pagination. Defaults to 0." },
       },
       required: ["query"],
     },
   },
   {
     name: "list_courses",
-    annotations: { readOnlyHint: true, openWorldHint: false },
+    annotations: { title: "List courses", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "List courses on Basmagi Platform with optional filters (education track, college, year, term). Use this to discover available subjects and get their IDs.",
     inputSchema: {
       type: "object",
@@ -167,7 +173,7 @@ const TOOLS = [
   },
   {
     name: "list_colleges",
-    annotations: { readOnlyHint: true, openWorldHint: false },
+    annotations: { title: "List colleges", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "List all active colleges and institutions registered on Basmagi Platform, with metadata on years and terms.",
     inputSchema: {
       type: "object",
@@ -179,7 +185,7 @@ const TOOLS = [
   },
   {
     name: "get_course_contents",
-    annotations: { readOnlyHint: true, openWorldHint: false },
+    annotations: { title: "Get course contents", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Retrieve all content inside a specific course. Supports 'recursive: true' to gather ALL quizzes and lessons across all nested subfolders in one single call, or direct items when false.",
     inputSchema: {
       type: "object",
@@ -195,7 +201,7 @@ const TOOLS = [
   },
   {
     name: "get_folder_contents",
-    annotations: { readOnlyHint: true, openWorldHint: false },
+    annotations: { title: "Get folder contents", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Retrieve all content inside a specific folder: sub-folders, quizzes, and lessons. Supports 'recursive: true' to gather everything inside all descendant subfolders.",
     inputSchema: {
       type: "object",
@@ -211,7 +217,7 @@ const TOOLS = [
   },
   {
     name: "list_folder_tree",
-    annotations: { readOnlyHint: true, openWorldHint: false },
+    annotations: { title: "List course folder tree", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Get the complete hierarchical folder tree of a course in a single visual ASCII call, with counts of quizzes and lessons in each folder.",
     inputSchema: {
       type: "object",
@@ -223,81 +229,46 @@ const TOOLS = [
   },
   {
     name: "get_quiz",
-    annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Fetch a public quiz by its ID (8-character short ID or UUID). Returns either formatted readable questions with answers and explanations, or raw JSON.",
+    annotations: { title: "Get public quiz", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    description: "Fetch a public quiz by short ID, UUID, or full Basmagi quiz URL. Returns formatted questions, raw JSON, or a compact outline.",
     inputSchema: {
       type: "object",
       properties: {
-        quizId: { type: "string", description: "The unique identifier of the quiz (short ID like 'a1b2c3d4' or full UUID)." },
-        format: { type: "string", enum: ["text", "json", "outline"], description: "'text' (default) readable questions & answers · 'json' exact quiz JSON · 'outline' compact numbered list (type, #options, correct index, first words) + folder path — cheapest way to inspect a quiz." },
+        quizId: { type: "string", description: "Short ID (e.g. 'a1b2c3d4'), UUID, or full Basmagi quiz URL." },
+        format: { type: "string", enum: ["text", "json", "outline"], description: "'text' (default) readable questions & answers · 'json' exact quiz JSON · 'outline' compact numbered list + folder path — cheapest way to inspect a quiz." },
       },
       required: ["quizId"],
     },
   },
   {
-    name: "get_quiz_by_url",
-    annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Resolve and fetch a quiz directly from any Basmagi URL, short ID, or UUID.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        url_or_id: { type: "string", description: "A Basmagi quiz URL (e.g. https://basmagi-quiz.vercel.app/quiz/...), short ID, or UUID." },
-        format: { type: "string", enum: ["text", "json", "outline"], description: "'text' (default), 'json', or 'outline' (compact numbered list + folder path)." },
-      },
-      required: ["url_or_id"],
-    },
-  },
-  {
     name: "get_lesson",
-    annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Fetch metadata (title, description, source, section count, protection status) of a public lesson by ID or slug.",
+    annotations: { title: "Get public lesson", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    description: "Fetch a public lesson by UUID or slug: full content (sections, markdown, questions, media), metadata only, raw JSON, or compact outline.",
     inputSchema: {
       type: "object",
       properties: {
         lessonId: { type: "string", description: "The UUID or slug of the lesson." },
-      },
-      required: ["lessonId"],
-    },
-  },
-  {
-    name: "get_lesson_content",
-    annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Fetch the complete content of a public lesson: sections, full markdown bodies, embedded questions (MCQ/essay), and media references.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        lessonId: { type: "string", description: "The UUID or slug of the lesson." },
-        format: { type: "string", enum: ["text", "json", "outline"], description: "'text' (default) rendered markdown · 'json' raw sections/blocks · 'outline' numbered sections.blocks list (cheapest way to inspect a lesson)." },
+        format: { type: "string", enum: ["text", "metadata", "json", "outline"], description: "'text' (default) rendered markdown · 'metadata' title/description/stats only · 'json' raw sections/blocks · 'outline' numbered sections.blocks list." },
       },
       required: ["lessonId"],
     },
   },
   {
     name: "get_notebook",
-    annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Fetch metadata (title, description, source, runtime, cell count) of a PUBLISHED executable notebook by ID or slug. MATLAB runs in the browser; C++ uses a remote compiler.",
-    inputSchema: {
-      type: "object",
-      properties: { notebookId: { type: "string", description: "The UUID or slug of the notebook." } },
-      required: ["notebookId"],
-    },
-  },
-  {
-    name: "get_notebook_content",
-    annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Fetch the authored content of a PUBLISHED notebook: ordered markdown/code cells. Read-only; learner outputs are never stored. format: 'text' (default) · 'json' raw {schemaVersion, cells} · 'outline' numbered cell list.",
+    annotations: { title: "Get public notebook", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    description: "Fetch a PUBLISHED executable notebook by UUID or slug (MATLAB runs in browser; C++ uses a remote compiler). Read-only; learner outputs are never stored.",
     inputSchema: {
       type: "object",
       properties: {
         notebookId: { type: "string", description: "The UUID or slug of the notebook." },
-        format: { type: "string", enum: ["text", "json", "outline"] },
+        format: { type: "string", enum: ["text", "metadata", "json", "outline"], description: "'text' (default) cells · 'metadata' title/runtime/cell count · 'json' raw {schemaVersion, cells} · 'outline' numbered cell list." },
       },
       required: ["notebookId"],
     },
   },
   {
     name: "list_recent_content",
-    annotations: { readOnlyHint: true, openWorldHint: false },
+    annotations: { title: "List recent public content", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Retrieve recently published or updated public quizzes, lessons and notebooks on Basmagi Platform.",
     inputSchema: {
       type: "object",
@@ -310,7 +281,7 @@ const TOOLS = [
   },
   {
     name: "get_platform_stats",
-    annotations: { readOnlyHint: true, openWorldHint: false },
+    annotations: { title: "Get platform statistics", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Retrieve high-level platform statistics: total count of public quizzes, lessons, notebooks, courses, folders, and colleges.",
     inputSchema: {
       type: "object",
@@ -319,25 +290,9 @@ const TOOLS = [
     },
   },
   {
-    name: "get_prompts",
-    annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Retrieve ready-to-use prompt templates for generating quizzes and lessons aligned with Basmagi specifications.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        name: {
-          type: "string",
-          enum: ["all", "general_purpose_quiz", "english_specializing", "math_specializing", "assistant_system_prompt"],
-          description: "Name of the prompt template, or 'all'.",
-        },
-      },
-      required: ["name"],
-    },
-  },
-  {
     name: "create_quiz_import_link",
     annotations: { title: "Create quiz (short import link)", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    description: "Validate a quiz and return ONE SHORT link (…/my-content?draft=CODE, valid 72h, no sign-in). When the user opens it, the quiz is saved directly into their «محتواي» (highlighted as new) — no editor, no confirmation step. Returns ERRORS (nothing saved — fix and retry; they are the same checks the editor page and the upload step run) or a link plus WARNINGS. Call get_authoring_guide(topic='quiz') first for the schema. Essay questions: give `answer` and NO options.",
+    description: "Validate a quiz and return ONE SHORT link (…/my-content?draft=CODE, valid 72h, no sign-in). When the user opens it, the quiz is saved directly into their «محتواي» (highlighted as new) — no editor, no confirmation step. Returns ERRORS (nothing saved — fix and retry) or a link plus WARNINGS. Call get_authoring_guide(topic='quiz') first. Essay questions: give `answer` and NO options.",
     inputSchema: {
       type: "object",
       properties: {
@@ -353,13 +308,11 @@ const TOOLS = [
             properties: {
               q: { type: "string", description: "Question text. Math must be LaTeX ($...$ / $$...$$)." },
               options: { type: "array", items: { type: "string" }, description: "Choices for MCQ (2-10). For true/false use [\"صح\",\"خطأ\"] in Arabic quizzes or [\"True\",\"False\"] in English quizzes." },
-              correct: {
-                description: "Zero-based index of correct option (number) or array of numbers for multi-select",
-                oneOf: [{ type: "integer" }, { type: "array", items: { type: "integer" } }],
-              },
+              correctIndex: { type: "integer", description: "Zero-based index of the correct option for single-answer MCQ (e.g. 0 or 1)." },
+              correctIndexes: { type: "array", items: { type: "integer" }, description: "Multi-select MCQ only: array of zero-based indexes of correct options (e.g. [0, 2])." },
               multiSelect: { type: "boolean", description: "True if multiple choices are correct" },
               answer: { type: "string", description: "Model answer for open-ended / essay question (REQUIRED for essays; omit options)" },
-              questionKind: { type: "string", enum: ["complete"], description: "Set to 'complete' for fill-in-the-blank: write each blank inline in q as {{answer|alt}}; omit options/correct/answer" },
+              questionKind: { type: "string", enum: ["complete"], description: "Set to 'complete' for fill-in-the-blank: write each blank inline in q as {{answer|alt}}; omit options/correctIndex/answer" },
               strictMatch: { type: "boolean", description: "complete questions only: true = case/diacritics-sensitive matching (default lenient)" },
               explanation: { type: "string", description: "Educational explanation of the correct answer" },
             },
@@ -428,7 +381,7 @@ const TOOLS = [
   },
   {
     name: "get_import_draft",
-    annotations: { title: "Read back a draft", readOnlyHint: true, openWorldHint: false },
+    annotations: { title: "Read back a draft", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Read a draft made by create_*_import_link / clone_to_draft (by the 10-char code or the full link). format 'outline' (default) = numbered, compact; 'json' = full content. Use it to get the numbers you need for update_import_draft, or to recover after losing context.",
     inputSchema: {
       type: "object",
@@ -485,21 +438,19 @@ const TOOLS = [
   },
   {
     name: "add_workspace_asset",
-    annotations: { title: "Add a small image to a notebook draft (base64)", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    description: "Attach ONE image (png/jpg/webp/gif, ≤10 MB, ≤20 MB per draft) to a NOTEBOOK draft's workspace so cells can use it (imread('cat.png'), ![](cat.png)). Use ONLY for small files (≤ ~200 KB): you must write every base64 character yourself. For bigger files prefer add_workspace_asset_from_url or request_asset_upload. Files wait in temporary storage, expire with the draft (72h) and are copied into the user's browser workspace when they open the link. Same filename = replace.",
-    inputSchema: { type: "object", properties: { code: { type: "string", description: "Draft code (10 chars) or its full link." }, filename: { type: "string", description: "Exact name the cells use, with extension, e.g. cat.png (never rename)." }, base64: { type: "string", description: "File bytes, base64 (no data: prefix)." } }, required: ["code", "filename", "base64"] },
-  },
-  {
-    name: "add_workspace_asset_from_url",
-    annotations: { title: "Add an image to a notebook draft from a public URL", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-    description: "Server-side download of ONE image from a public https URL (≤10 MB) into a NOTEBOOK draft's workspace — no base64 needed. Works for direct image links and Google Drive files shared as 'Anyone with the link' (paste the share link; it is converted). Private/login-protected URLs fail. Same limits and lifetime as add_workspace_asset.",
-    inputSchema: { type: "object", properties: { code: { type: "string" }, url: { type: "string", description: "Public https URL or Drive share link." }, filename: { type: "string", description: "Name with extension the cells use; defaults to the URL's last segment." } }, required: ["code", "url"] },
-  },
-  {
-    name: "request_asset_upload",
-    annotations: { title: "Get a one-file upload command for a notebook draft", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    description: "For LARGE files that exist on a disk you can run commands on (e.g. user-attached files under /mnt/user-data/uploads, or Claude Code/Cowork local files). Returns a short-lived (15 min) one-file upload URL and a ready curl command: run it with the bash tool, the file is stored in the draft's workspace (≤10 MB). Requires network access to *.supabase.co (in claude.ai add it in network settings; if the command cannot connect, tell the user to add the file manually in the notebook workspace or from Google Drive).",
-    inputSchema: { type: "object", properties: { code: { type: "string" }, filename: { type: "string", description: "Name with extension the cells use." } }, required: ["code", "filename"] },
+    annotations: { title: "Attach an image to a notebook draft", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    description: "Attach ONE image (png/jpg/webp/gif, ≤10 MB, ≤20 MB per draft) to a NOTEBOOK draft's workspace so cells can use it (imread('cat.png'), ![](cat.png)). Provide ONE of: `base64` (small files ≤ ~200 KB), `url` (public https URL or Google Drive 'Anyone with the link' share URL — downloaded server-side), or `request_upload: true` (returns a 15-min curl upload command for local files). Same filename = replace.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        code: { type: "string", description: "Draft code (10 chars) or its full link." },
+        filename: { type: "string", description: "Exact name the cells use, with extension, e.g. cat.png (required for base64/request_upload; optional for url)." },
+        base64: { type: "string", description: "File bytes, base64 (no data: prefix). Use only for small files (≤ ~200 KB)." },
+        url: { type: "string", description: "Public https URL or Google Drive share link for server-side download (≤10 MB)." },
+        request_upload: { type: "boolean", description: "Set true to receive a one-time curl upload URL/command for local files." },
+      },
+      required: ["code"],
+    },
   },
   {
     name: "update_import_draft",
@@ -509,7 +460,33 @@ const TOOLS = [
       type: "object",
       properties: {
         code: { type: "string", description: "Draft code or the full ?draft= link." },
-        patch: { type: "object", description: "{ meta?, ops? } — see tool description." },
+        patch: {
+          type: "object",
+          description: "{ meta?, ops? } — see tool description.",
+          properties: {
+            meta: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                description: { type: "string" },
+                source: { type: "string" },
+                runtime: { type: "string", enum: ["matlab", "cpp"] },
+                language: { type: "string", enum: ["en", "ar"] },
+              },
+            },
+            ops: {
+              type: "array",
+              description: "Ordered list of patch operations (1-based indexes).",
+              items: {
+                type: "object",
+                properties: {
+                  op: { type: "string", description: "Operation name, e.g. set_question, insert_block, replace_text." },
+                },
+                required: ["op"],
+              },
+            },
+          },
+        },
       },
       required: ["code", "patch"],
     },
@@ -529,24 +506,26 @@ const TOOLS = [
   },
   {
     name: "get_authoring_guide",
-    annotations: { title: "Authoring guide for Claude", readOnlyHint: true, openWorldHint: false },
+    annotations: { title: "Authoring guide for Claude", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Read-me for creating quizzes, lessons and notebooks: workflow, exact schemas, limits, quality rules and supported Markdown. Call once before create_quiz_import_link / create_lesson_import_link. If the user asks to convert existing files or a whole (Google Drive) folder, call topic='convert' FIRST: it says how to choose quiz vs lesson vs notebook per file and when to confirm with the user.",
     inputSchema: {
       type: "object",
       properties: {
         topic: { type: "string", enum: ["all", "workflow", "convert", "quiz", "lesson", "notebook", "markdown"], description: "Defaults to 'all'. Use 'convert' when the user wants existing files / a Drive folder converted." },
       },
+      required: [],
     },
   },
   {
     name: "get_creator_info",
-    annotations: { title: "About the creator & platform", readOnlyHint: true, openWorldHint: false },
+    annotations: { title: "About the creator & platform", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description: "Who built Basmagi and how to reach them: profile, all links (site, GitHub, YouTube, Upwork, Mostaql), contact (WhatsApp/Telegram/email), platform story & principles, tech stack, Telegram bot, useful pages. Use `section` to fetch only one part.",
     inputSchema: {
       type: "object",
       properties: {
         section: { type: "string", enum: ["all", "profile", "links", "contact", "platform", "pages"], description: "Defaults to 'all'." },
       },
+      required: [],
     },
   },
   {
@@ -580,6 +559,7 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: { id: { type: "string", description: "Published item UUID." }, url: { type: "string", description: "YouTube video or playlist URL, or a bare video ID." } },
+      required: [],
     },
   },
   {
@@ -592,42 +572,57 @@ const TOOLS = [
         kind: { type: "string", enum: ["video", "playlist"] },
         limit: { type: "integer", description: "1-25, default 10." },
       },
+      required: [],
     },
   },
 ];
 
 // ── Tool Call Implementations ───────────────────────────────────────────────
 
-async function handleSearchCatalog(args: { query: string; scope?: string }) {
+async function handleSearchCatalog(args: { query: string; scope?: string; limit?: number; offset?: number }) {
   const query = (args?.query || "").trim();
   if (!query) return "الرجاء تحديد كلمة بحث صالحة.";
 
+  const safeQuery = escapePostgrestLike(query);
+  if (!safeQuery) return "الرجاء تحديد كلمة بحث صالحة.";
+
   const scope = args?.scope || "all";
-  const searchPattern = `%${query}%`;
+  const rawLimit = Number(args?.limit);
+  const cap = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 25) : 10;
+  const rawOffset = Number(args?.offset);
+  const offset = Number.isInteger(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
+  const rangeEnd = offset + cap; // fetch cap + 1 rows to detect whether more results exist
+
+  const searchPattern = `%${safeQuery}%`;
   const sections: string[] = [];
+  let anyMore = false;
+
+  const pageLabel = (count: number, hasMore: boolean) => {
+    if (offset === 0 && !hasMore) return `${count}`;
+    const start = offset + 1;
+    const end = offset + count;
+    return hasMore ? `${start}–${end}+` : `${start}–${end}`;
+  };
 
   if (scope === "all" || scope === "quizzes") {
-    const safe = query.replace(/[,()%*]/g, " ").trim();
-    const pat = `%${safe}%`;
     const { data: quizzes } = await supabase
       .from("quizzes")
       .select("id, data")
       .is("password", null)
-      .or(`data->meta->>title.ilike.${pat},data->meta->>description.ilike.${pat},data->>title.ilike.${pat}`)
-      .limit(30);
+      .or(`data->meta->>title.ilike.${searchPattern},data->meta->>description.ilike.${searchPattern},data->>title.ilike.${searchPattern}`)
+      .range(offset, rangeEnd);
 
-    if (quizzes) {
-      const matched = quizzes.map((row: any) => ({ pk: row.id, ...row.data }));
-
-      if (matched.length > 0) {
-        const lines = matched.slice(0, 10).map((q: any) => {
-          const id = q.meta?.id || q.id || q.pk || "unknown";
-          const title = q.meta?.title || q.title || "امتحان بدون عنوان";
-          const qCount = q.questions?.length || 0;
-          return `  - 📝 [امتحان] ${title} (${qCount} أسئلة) — id: ${id}\n    رابط: https://basmagi-quiz.vercel.app/quiz/${id}`;
-        });
-        sections.push(`### امتحانات مطابقة (${matched.length}):\n${lines.join("\n")}`);
-      }
+    if (quizzes && quizzes.length > 0) {
+      const hasMore = quizzes.length > cap;
+      if (hasMore) anyMore = true;
+      const page = quizzes.slice(0, cap).map((row: any) => ({ pk: row.id, ...row.data }));
+      const lines = page.map((q: any) => {
+        const id = q.meta?.id || q.id || q.pk || "unknown";
+        const title = q.meta?.title || q.title || "امتحان بدون عنوان";
+        const qCount = q.questions?.length || 0;
+        return `  - 📝 [امتحان] ${title} (${qCount} أسئلة) — id: ${id}\n    رابط: https://basmagi-quiz.vercel.app/quiz/${id}`;
+      });
+      sections.push(`### امتحانات مطابقة (${pageLabel(page.length, hasMore)}):\n${lines.join("\n")}`);
     }
   }
 
@@ -636,13 +631,16 @@ async function handleSearchCatalog(args: { query: string; scope?: string }) {
       .from("lesson_public")
       .select("id, slug, title, description")
       .or(`title.ilike.${searchPattern},description.ilike.${searchPattern}`)
-      .limit(10);
+      .range(offset, rangeEnd);
 
     if (lessons && lessons.length > 0) {
-      const lines = lessons.map((l: any) =>
+      const hasMore = lessons.length > cap;
+      if (hasMore) anyMore = true;
+      const page = lessons.slice(0, cap);
+      const lines = page.map((l: any) =>
         `  - 📖 [درس] ${l.title} — id: ${l.id}\n    رابط: https://basmagi-quiz.vercel.app/lesson/${l.slug || l.id}`
       );
-      sections.push(`### دروس مطابقة (${lessons.length}):\n${lines.join("\n")}`);
+      sections.push(`### دروس مطابقة (${pageLabel(page.length, hasMore)}):\n${lines.join("\n")}`);
     }
   }
 
@@ -651,13 +649,16 @@ async function handleSearchCatalog(args: { query: string; scope?: string }) {
       .from("notebook_public")
       .select("id, slug, title, description, runtime")
       .or(`title.ilike.${searchPattern},description.ilike.${searchPattern}`)
-      .limit(10);
+      .range(offset, rangeEnd);
 
     if (notebooks && notebooks.length > 0) {
-      const lines = notebooks.map((n: any) =>
+      const hasMore = notebooks.length > cap;
+      if (hasMore) anyMore = true;
+      const page = notebooks.slice(0, cap);
+      const lines = page.map((n: any) =>
         `  - 💻 [دفتر ${n.runtime}] ${n.title} — id: ${n.id}\n    رابط: https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(n.slug || n.id)}`
       );
-      sections.push(`### دفاتر مطابقة (${notebooks.length}):\n${lines.join("\n")}`);
+      sections.push(`### دفاتر مطابقة (${pageLabel(page.length, hasMore)}):\n${lines.join("\n")}`);
     }
   }
 
@@ -666,14 +667,17 @@ async function handleSearchCatalog(args: { query: string; scope?: string }) {
       .from("courses")
       .select("id, name, education_type, college, year, term")
       .or(`name.ilike.${searchPattern},college.ilike.${searchPattern}`)
-      .limit(10);
+      .range(offset, rangeEnd);
 
     if (courses && courses.length > 0) {
-      const lines = courses.map((c: any) => {
+      const hasMore = courses.length > cap;
+      if (hasMore) anyMore = true;
+      const page = courses.slice(0, cap);
+      const lines = page.map((c: any) => {
         const details = [c.education_type, c.college, c.year ? `سنة ${c.year}` : null].filter(Boolean).join(" | ");
         return `  - 🎓 [مادة] ${c.name} [${details}] — id: ${c.id}`;
       });
-      sections.push(`### مواد دراسية مطابقة (${courses.length}):\n${lines.join("\n")}`);
+      sections.push(`### مواد دراسية مطابقة (${pageLabel(page.length, hasMore)}):\n${lines.join("\n")}`);
     }
   }
 
@@ -682,16 +686,24 @@ async function handleSearchCatalog(args: { query: string; scope?: string }) {
       .from("folders")
       .select("id, name, course_id")
       .ilike("name", searchPattern)
-      .limit(10);
+      .range(offset, rangeEnd);
 
     if (folders && folders.length > 0) {
-      const lines = folders.map((f: any) => `  - 📁 [مجلد] ${f.name} — id: ${f.id} (course_id: ${f.course_id})`);
-      sections.push(`### مجلدات مطابقة (${folders.length}):\n${lines.join("\n")}`);
+      const hasMore = folders.length > cap;
+      if (hasMore) anyMore = true;
+      const page = folders.slice(0, cap);
+      const lines = page.map((f: any) => `  - 📁 [مجلد] ${f.name} — id: ${f.id} (course_id: ${f.course_id})`);
+      sections.push(`### مجلدات مطابقة (${pageLabel(page.length, hasMore)}):\n${lines.join("\n")}`);
     }
   }
 
-  if (sections.length === 0) return `لم يتم العثور على نتائج تطابق "${query}" في منصة بصمجي.`;
-  return `# نتائج البحث عن "${query}":\n\n${sections.join("\n\n")}`;
+  if (sections.length === 0) {
+    return offset > 0
+      ? `لا توجد نتائج إضافية تطابق "${query}" عند offset=${offset}.`
+      : `لم يتم العثور على نتائج تطابق "${query}" في منصة بصمجي.`;
+  }
+  const footer = anyMore ? `\n\n💡 توجد نتائج أخرى — لجلب الصفحة التالية أعد استدعاء search_catalog مع offset: ${offset + cap}.` : "";
+  return `# نتائج البحث عن "${query}":\n\n${sections.join("\n\n")}${footer}`;
 }
 
 async function handleListCourses(args: {
@@ -761,6 +773,7 @@ async function handleGetCourseContentsBase(args: {
 }) {
   const courseId = (args?.courseId || "").trim();
   if (!courseId) return "الرجاء تحديد معرف المادة (courseId).";
+  if (!isUuid(courseId)) return `لم يتم العثور على مادة بالمعرف "${courseId}".`;
 
   const recursive = Boolean(args?.recursive);
   const includeQuizzes = args?.include_quizzes !== false;
@@ -960,6 +973,7 @@ async function handleGetFolderContentsBase(args: {
 }) {
   const folderId = (args?.folderId || "").trim();
   if (!folderId) return "الرجاء تحديد معرف المجلد (folderId).";
+  if (!isUuid(folderId)) return `لم يتم العثور على مجلد بالمعرف "${folderId}".`;
 
   const recursive = Boolean(args?.recursive);
   const includeQuizzes = args?.include_quizzes !== false;
@@ -1187,6 +1201,7 @@ async function handleGetFolderContents(args: any) {
 async function handleListFolderTree(args: { courseId: string }) {
   const courseId = (args?.courseId || "").trim();
   if (!courseId) return "الرجاء تحديد معرف المادة (courseId).";
+  if (!isUuid(courseId)) return `لم يتم العثور على مادة بالمعرف "${courseId}".`;
 
   const { data: course, error: cErr } = await supabase
     .from("courses")
@@ -1258,7 +1273,7 @@ async function fetchQuizData(quizId: string): Promise<any | null> {
 
   if (byMetaId) {
     quizData = byMetaId.data;
-  } else {
+  } else if (isUuid(quizId)) {
     // Fallback to primary key UUID
     const { data: byPk } = await supabase
       .from("quizzes")
@@ -1272,9 +1287,12 @@ async function fetchQuizData(quizId: string): Promise<any | null> {
   return quizData;
 }
 
-async function handleGetQuiz(args: { quizId: string; format?: string }) {
-  const quizId = (args?.quizId || "").trim();
-  if (!quizId) return "الرجاء تحديد معرف الامتحان المطلوب (quizId).";
+async function handleGetQuiz(args: { quizId?: string; url_or_id?: string; format?: string }) {
+  const raw = (args?.quizId || args?.url_or_id || "").trim();
+  if (!raw) return "الرجاء تحديد معرف الامتحان المطلوب أو رابطه (quizId).";
+
+  const urlMatch = raw.match(/\/(?:quiz|q)\/([^/?#]+)/);
+  const quizId = urlMatch ? decodeURIComponent(urlMatch[1]) : raw;
 
   const quizData: any = await fetchQuizData(quizId);
 
@@ -1293,6 +1311,9 @@ async function handleGetQuiz(args: { quizId: string; format?: string }) {
   const questions = quizData.questions || [];
 
   const formattedQuestions = questions.map((item: any, idx: number) => {
+    if (item.questionKind === "complete") {
+      return `${idx + 1}. [سؤال إكمال] ${item.q}${item.explanation ? `\n   التفسير: ${item.explanation}` : ""}`;
+    }
     const opts = (item.options || [])
       .map((opt: string, oIdx: number) => `    ${oIdx}) ${opt}`)
       .join("\n");
@@ -1300,8 +1321,8 @@ async function handleGetQuiz(args: { quizId: string; format?: string }) {
       ? item.correct.join(", ")
       : item.correct !== undefined
       ? item.correct
-      : "(غير محدد)";
-    return `${idx + 1}. ${item.q}\n${opts ? opts + "\n" : ""}   الإجابة الصحيحة: ${correct}${item.explanation ? `\n   التفسير: ${item.explanation}` : ""}${item.answer ? `\n   نموذج الإجابة: ${item.answer}` : ""}`;
+      : item.answer ? "(سؤال مقالي)" : "(غير محدد)";
+    return `${idx + 1}. ${item.q}\n${opts ? opts + "\n" : ""}${opts ? `   الإجابة الصحيحة: ${correct}` : ""}${item.explanation ? `\n   التفسير: ${item.explanation}` : ""}${item.answer ? `\n   نموذج الإجابة: ${item.answer}` : ""}`;
   });
 
   const id = quizData.meta?.id || quizId;
@@ -1320,32 +1341,38 @@ async function handleGetQuizByUrl(args: { url_or_id: string; format?: string }) 
   return handleGetQuiz({ quizId, format: args?.format });
 }
 
-async function handleGetLesson(args: { lessonId: string }) {
+async function fetchLessonRow(ref: string, cols: string) {
+  let req: any = supabase.from("lesson_public").select(cols);
+  req = isUuid(ref) ? req.eq("id", ref) : req.eq("slug", ref);
+  return await req.maybeSingle();
+}
+
+async function handleGetLesson(args: { lessonId: string; format?: string }, defaultFormat: "text" | "metadata" = "text") {
   const lessonId = (args?.lessonId || "").trim();
   if (!lessonId) return "الرجاء تحديد معرف الدرس (lessonId).";
 
-  const { data, error } = await supabase
-    .from("lesson_public")
-    .select("id, slug, title, description, source, section_count, password_protected, created_at, updated_at")
-    .or(`id.eq.${lessonId},slug.eq.${lessonId}`)
-    .maybeSingle();
+  const fmt = args?.format || defaultFormat;
+  if (fmt === "metadata") {
+    const { data, error } = await fetchLessonRow(
+      lessonId,
+      "id, slug, title, description, source, section_count, password_protected, created_at, updated_at",
+    );
+    if (error || !data) return `لم يتم العثور على الدرس بالمعرف "${lessonId}".`;
+    const protectedNote = data.password_protected ? "\n⚠️ هذا الدرس محمي بكلمة مرور." : "";
+    return `# 📖 ${data.title}\n\n${data.description || ""}\n\nالمصدر: ${data.source || "منصة بصمجي"}\nعدد الأقسام: ${data.section_count ?? "غير محدد"}${protectedNote}\n\n💡 *للحصول على المحتوى الكامل للدرس، استخدم get_lesson مع format="text".*\nرابط الدرس: https://basmagi-quiz.vercel.app/lesson/${data.slug || data.id}`;
+  }
 
-  if (error || !data) return `لم يتم العثور على الدرس بالمعرف "${lessonId}".`;
-
-  const protectedNote = data.password_protected ? "\n⚠️ هذا الدرس محمي بكلمة مرور." : "";
-
-  return `# 📖 ${data.title}\n\n${data.description || ""}\n\nالمصدر: ${data.source || "منصة بصمجي"}\nعدد الأقسام: ${data.section_count ?? "غير محدد"}${protectedNote}\n\n💡 *للحصول على المحتوى الكامل للدرس، استخدم get_lesson_content.*\nرابط الدرس: https://basmagi-quiz.vercel.app/lesson/${data.slug || data.id}`;
+  return handleGetLessonContent({ lessonId, format: fmt });
 }
 
 async function handleGetLessonContent(args: { lessonId: string; format?: string }) {
   const lessonId = (args?.lessonId || "").trim();
   if (!lessonId) return "الرجاء تحديد معرف الدرس (lessonId).";
 
-  const { data, error } = await supabase
-    .from("lesson_public")
-    .select("id, slug, title, description, source, content, password_protected")
-    .or(`id.eq.${lessonId},slug.eq.${lessonId}`)
-    .maybeSingle();
+  const { data, error } = await fetchLessonRow(
+    lessonId,
+    "id, slug, title, description, source, content, password_protected",
+  );
 
   if (error || !data) return `لم يتم العثور على الدرس بالمعرف "${lessonId}".`;
 
@@ -1556,15 +1583,17 @@ async function saveDraft(kind: "quiz" | "lesson" | "notebook", data: unknown): P
   return { url: base64Link(kind, data), short: false };
 }
 
-const NOTEBOOK_NOTE = { matlab: "ملاحظة: يعمل الدفتر داخل متصفح المتعلم فقط (مفسّر تعليمي بأسلوب MATLAB وليس MATLAB الأصلي)، ولا يُحفظ عمل المتعلم على الخادم.", cpp: "ملاحظة: يُرسل كود C++ إلى مترجم عبر الإنترنت لتشغيله ولا يُخزّن؛ يتطلب الإنترنت، بينما يبقى عمل الدفتر على جهاز المتعلم." };
+const NOTEBOOK_NOTE: Record<string, string> = { matlab: "ملاحظة: يعمل الدفتر داخل متصفح المتعلم فقط (مفسّر تعليمي بأسلوب MATLAB وليس MATLAB الأصلي)، ولا يُحفظ عمل المتعلم على الخادم.", cpp: "ملاحظة: يُرسل كود C++ إلى مترجم عبر الإنترنت لتشغيله ولا يُخزّن؛ يتطلب الإنترنت، بينما يبقى عمل الدفتر على جهاز المتعلم." };
 
 async function fetchNotebook(ref: string) {
   const id = String(ref || "").trim();
-  const slug = id.match(/\/notebook\/([^/?#]+)/)?.[1] || id;
+  const slug = decodeURIComponent(id.match(/\/notebook\/([^/?#]+)/)?.[1] || id);
+  if (!slug) return null;
   // Only the public view is read: unavailable/non-public data is never returned.
-  const { data, error } = await supabase.from("notebook_public")
-    .select("id, slug, title, description, source, runtime, content, cell_count")
-    .or(`id.eq.${slug},slug.eq.${slug}`).maybeSingle();
+  let req: any = supabase.from("notebook_public")
+    .select("id, slug, title, description, source, runtime, content, cell_count");
+  req = isUuid(slug) ? req.eq("id", slug) : req.eq("slug", slug);
+  const { data, error } = await req.maybeSingle();
   if (error || !data) return null;
   return data;
 }
@@ -1587,6 +1616,9 @@ async function ytGet(path: string, params: Record<string, string>): Promise<any>
 /** Stores a YouTube draft (no fallback link: the payload must be saved). */
 async function saveYoutubeDraft(kind: "youtube_video" | "youtube_playlist", data: unknown): Promise<string> {
   await supabase.from("import_drafts").delete().lt("expires_at", new Date().toISOString());
+  await purgeDraftAssets();
+  const { count } = await supabase.from("import_drafts").select("*", { count: "exact", head: true });
+  if ((count ?? 0) > 5000) throw new Error("YOUTUBE_DRAFT_STORE_FULL");
   for (let attempt = 0; attempt < 3; attempt++) {
     const code = makeDraftCode();
     const { error } = await supabase.from("import_drafts").insert({
@@ -1594,14 +1626,16 @@ async function saveYoutubeDraft(kind: "youtube_video" | "youtube_playlist", data
       expires_at: new Date(Date.now() + DRAFT_TTL_HOURS * 3600_000).toISOString(),
     });
     if (!error) return `${YT_SITE}/my-content?draft=${code}`;
-    if (error.code !== "23505") throw error; // 23505 = code collision → retry
+    if (error.code !== "23505") throw new Error("YOUTUBE_DRAFT_SAVE_FAILED"); // 23505 = code collision → retry
   }
-  throw new Error("could not allocate a draft code");
+  throw new Error("YOUTUBE_DRAFT_SAVE_FAILED");
 }
 
 function ytErrorText(err: any): string {
   const msg = String(err?.message || err);
   if (msg === "YOUTUBE_NOT_CONFIGURED") return "خدمة يوتيوب غير مُفعّلة على الخادم حالياً.";
+  if (msg === "YOUTUBE_DRAFT_STORE_FULL") return "مخزن المسودات ممتلئ مؤقتاً. حاول لاحقاً.";
+  if (msg === "YOUTUBE_DRAFT_SAVE_FAILED") return "تعذّر حفظ مسودة يوتيوب مؤقتاً. حاول مرة أخرى.";
   if (msg.startsWith("YOUTUBE_HTTP_429")) return "تم تجاوز حصة يوتيوب اليومية. حاول لاحقاً.";
   if (!msg.startsWith("YOUTUBE_HTTP_")) return msg; // validation messages from youtube-mcp-model.js are already user-facing
   return "تعذّر الاتصال بيوتيوب. حاول مرة أخرى بعد قليل.";
@@ -1663,8 +1697,7 @@ function clampLimit(limit: unknown): number {
 }
 
 async function handleSearchYoutubePublished(args: { query?: string; kind?: string; limit?: number }) {
-  // Strip characters that have meaning in PostgREST filters before matching.
-  const q = String(args?.query || "").replace(/[%,()*\\]/g, " ").trim().slice(0, 100);
+  const q = escapePostgrestLike(args?.query, 100);
   if (!q) return "الرجاء كتابة كلمة للبحث (query).";
   let req: any = supabase.from("youtube_public").select(PUBLISHED_COLS_LITE)
     .eq("is_published", true).ilike("title", `%${q}%`).limit(clampLimit(args?.limit));
@@ -1681,7 +1714,8 @@ async function handleGetYoutubePublished(args: { id?: string; url?: string }) {
   let req: any = supabase.from("youtube_public").select(PUBLISHED_COLS).eq("is_published", true);
   if (parsed.kind === "video") req = req.eq("kind", "video").eq("youtube_id", parsed.videoId);
   else if (parsed.kind === "playlist") req = req.eq("kind", "playlist").eq("playlist_id", parsed.playlistId);
-  else req = req.eq("id", ref);
+  else if (isUuid(ref)) req = req.eq("id", ref);
+  else return "لم يتم العثور على محتوى منشور بهذا المعرّف أو الرابط.";
   const { data, error } = await req.maybeSingle();
   if (error || !data) return "لم يتم العثور على محتوى منشور بهذا المعرّف أو الرابط.";
   return formatPublishedDetail(data);
@@ -1696,11 +1730,15 @@ async function handleListRecentYoutubePublished(args: { kind?: string; limit?: n
   return formatPublishedList(data || [], "أحدث المحتوى المنشور من يوتيوب");
 }
 
-async function handleGetNotebook(args: { notebookId: string }) {
+async function handleGetNotebook(args: { notebookId: string; format?: string }, defaultFormat: "text" | "metadata" = "text") {
   if (!String(args?.notebookId || "").trim()) return "الرجاء تحديد معرف الدفتر (notebookId).";
-  const d = await fetchNotebook(args.notebookId);
-  if (!d) return `لم يتم العثور على الدفتر بالمعرف "${args.notebookId}".`;
-  return `# 💻 ${d.title}\n\n${d.description || ""}\n\nالمصدر: ${d.source || "منصة بصمجي"}\nبيئة التشغيل: ${d.runtime}\nعدد الخلايا: ${d.cell_count ?? "غير محدد"}\n\n${NOTEBOOK_NOTE[d.runtime] || NOTEBOOK_NOTE.matlab}\n💡 للمحتوى الكامل استخدم get_notebook_content.\nرابط الدفتر: https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(d.slug || d.id)}`;
+  const fmt = args?.format || defaultFormat;
+  if (fmt === "metadata") {
+    const d = await fetchNotebook(args.notebookId);
+    if (!d) return `لم يتم العثور على الدفتر بالمعرف "${args.notebookId}".`;
+    return `# 💻 ${d.title}\n\n${d.description || ""}\n\nالمصدر: ${d.source || "منصة بصمجي"}\nبيئة التشغيل: ${d.runtime}\nعدد الخلايا: ${d.cell_count ?? "غير محدد"}\n\n${NOTEBOOK_NOTE[d.runtime] || NOTEBOOK_NOTE.matlab}\n💡 للمحتوى الكامل استخدم get_notebook مع format="text".\nرابط الدفتر: https://basmagi-quiz.vercel.app/notebook/${encodeURIComponent(d.slug || d.id)}`;
+  }
+  return handleGetNotebookContent({ notebookId: args.notebookId, format: fmt });
 }
 
 async function handleGetNotebookContent(args: { notebookId: string; format?: string }) {
@@ -1773,7 +1811,7 @@ function extractCode(raw: string): string {
 async function loadDraft(code: string) {
   const { data, error } = await supabase.from("import_drafts").select("kind, payload, expires_at").eq("code", code).maybeSingle();
   if (error || !data || new Date(data.expires_at).getTime() < Date.now()) return null;
-  return data as { kind: "quiz" | "lesson" | "notebook"; payload: any; expires_at: string };
+  return data as { kind: DraftKind; payload: any; expires_at: string };
 }
 
 const NO_DRAFT = "❌ المسودة غير موجودة أو انتهت صلاحيتها (72 ساعة). أنشئ مسودة جديدة بـ create_*_import_link أو clone_to_draft.";
@@ -1785,8 +1823,15 @@ async function handleGetImportDraft(args: { code: string; format?: string }) {
   if (!d) return NO_DRAFT;
   const link = draftUrl(d.kind, code);
   if (args?.format === "json") return JSON.stringify({ kind: d.kind, link, expires_at: d.expires_at, content: d.payload }, null, 2);
-  const label = d.kind === "quiz" ? "امتحان" : d.kind === "notebook" ? "دفتر" : "درس";
-  const outline = d.kind === "quiz" ? outlineQuiz(d.payload) : d.kind === "notebook" ? outlineNotebook(d.payload) : outlineLesson(d.payload);
+  const label = d.kind === "quiz" ? "امتحان"
+    : d.kind === "notebook" ? "دفتر"
+    : d.kind === "youtube_video" ? "فيديو يوتيوب"
+    : d.kind === "youtube_playlist" ? "قائمة تشغيل يوتيوب"
+    : "درس";
+  const outline = d.kind === "quiz" ? outlineQuiz(d.payload)
+    : d.kind === "notebook" ? outlineNotebook(d.payload)
+    : (d.kind === "youtube_video" || d.kind === "youtube_playlist") ? outlineYoutubeDraft(d.kind, d.payload)
+    : outlineLesson(d.payload);
   return `# مسودة ${label} — ${link}\nتنتهي: ${d.expires_at}\n\n${outline}`;
 }
 
@@ -1795,6 +1840,9 @@ async function handleUpdateImportDraft(args: { code: string; patch: any }) {
   if (!code) return "الرجاء تمرير كود المسودة (10 أحرف) أو رابطها الكامل.";
   const d = await loadDraft(code);
   if (!d) return NO_DRAFT;
+  if (d.kind === "youtube_video" || d.kind === "youtube_playlist") {
+    return "❌ مسودات يوتيوب تُجلب من يوتيوب مباشرة ولا يمكن تعديلها.";
+  }
 
   const res = applyDraftPatch(d.kind, d.payload, args?.patch);
   if (res.error) return `❌ لم يتغير شيء — ${res.error}`;
@@ -1829,10 +1877,11 @@ async function handleCloneToDraft(args: { type: string; id: string }) {
     input = quizToDraftInput(qd);
   } else if (args?.type === "lesson") {
     kind = "lesson";
-    const slug = id.match(/\/lesson\/([^/?#]+)/)?.[1] || id;
-    const { data, error } = await supabase.from("lesson_public")
-      .select("title, description, source, content, password_protected")
-      .or(`id.eq.${slug},slug.eq.${slug}`).maybeSingle();
+    const slug = decodeURIComponent(id.match(/\/lesson\/([^/?#]+)/)?.[1] || id);
+    const { data, error } = await fetchLessonRow(
+      slug,
+      "title, description, source, content, password_protected",
+    );
     if (error || !data) return `لم يتم العثور على الدرس "${id}".`;
     if (data.password_protected) return "هذا الدرس محمي بكلمة مرور ولا يمكن نسخه.";
     input = lessonToDraftInput(data);
@@ -1975,16 +2024,43 @@ async function handleRequestUpload(args: { code: string; filename: string }) {
   const n = sanitizeAssetName(args?.filename);
   if (!n.ok) return `❌ ${n.error}`;
   const token = await signUploadToken(Deno.env.get("MCP_UPLOAD_SECRET") || SUPABASE_KEY, { code, name: n.name });
-  const url = `${SUPABASE_URL}/functions/v1/mcp/upload?t=${token}`;
-  return `Run this in a shell where the file exists (valid ${UPLOAD_TOKEN_TTL_MIN} min, ONE file named ${n.name}, ≤10 MB):\n\ncurl -sS -X PUT --data-binary @/path/to/${n.name} "${url}"\n\nExpected reply: {"ok":true,...}. If curl cannot connect (network blocked), tell the user to add the file in the notebook workspace manually or import it from Google Drive.`;
+  const proxyUrl = `${SITE}/api/mcp/upload?t=${token}`;
+  const directUrl = SUPABASE_URL ? `${SUPABASE_URL.replace(/\/+$/, "")}/functions/v1/mcp/upload?t=${token}` : "";
+  const fallbackNote = directUrl ? ` Direct Supabase fallback URL (if needed): "${directUrl}".` : "";
+  return `Run this in a shell where the file exists (valid ${UPLOAD_TOKEN_TTL_MIN} min, ONE file named ${n.name}, ≤10 MB):\n\ncurl -sS -X PUT --data-binary @/path/to/${n.name} "${proxyUrl}"\n\nExpected reply: {"ok":true,...}.${fallbackNote} If curl cannot connect (network blocked), tell the user to add the file in the notebook workspace manually or import it from Google Drive.`;
 }
 
-async function handleUploadPut(req: Request): Promise<Response> {
-  const json = (obj: unknown, status: number) => new Response(JSON.stringify(obj), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+async function handleAddWorkspaceAsset(args: { code: string; filename?: string; base64?: string; url?: string; request_upload?: boolean }, clientIp: string) {
+  if (args?.url) {
+    const rl = checkRateLimit("asset-url", clientIp, 15, 60_000);
+    if (!rl.allowed) return `❌ طلبات تنزيل كثيرة في وقت قصير. انتظر ${rl.retryAfterSec} ثانية ثم حاول مجدداً.`;
+    return await handleAddAssetUrl({ code: args.code, url: args.url, filename: args.filename });
+  }
+  if (args?.base64) {
+    const rl = checkRateLimit("asset-write", clientIp, 30, 60_000);
+    if (!rl.allowed) return `❌ طلبات رفع كثيرة في وقت قصير. انتظر ${rl.retryAfterSec} ثانية ثم حاول مجدداً.`;
+    if (!args?.filename) return "❌ filename مطلوب مع base64.";
+    return await handleAddAssetB64({ code: args.code, filename: args.filename, base64: args.base64 });
+  }
+  if (args?.request_upload || args?.filename) {
+    if (!args?.filename) return "❌ filename مطلوب عند طلب رابط الرفع.";
+    return await handleRequestUpload({ code: args.code, filename: args.filename });
+  }
+  return "❌ مرّر base64 أو url أو request_upload: true مع filename.";
+}
+
+async function handleUploadPut(req: Request, clientIp: string): Promise<Response> {
+  const json = (obj: unknown, status: number, extra: Record<string, string> = {}) =>
+    new Response(JSON.stringify(obj), { status, headers: { ...corsHeaders, ...extra, "Content-Type": "application/json" } });
+  const rl = checkRateLimit("asset-write", clientIp, 30, 60_000);
+  if (!rl.allowed) {
+    return json({ ok: false, error: "rate_limited", retry_after: rl.retryAfterSec }, 429, { "Retry-After": String(rl.retryAfterSec) });
+  }
   const t = await verifyUploadToken(Deno.env.get("MCP_UPLOAD_SECRET") || SUPABASE_KEY, new URL(req.url).searchParams.get("t") || "");
   if (!t) return json({ ok: false, error: "invalid_or_expired_token" }, 401);
   if (Number(req.headers.get("content-length") || 0) > DRAFT_ASSET_MAX_BYTES) return json({ ok: false, error: DRAFT_REASONS.file_too_large }, 413);
   const bytes = new Uint8Array(await req.arrayBuffer());
+  if (bytes.length > DRAFT_ASSET_MAX_BYTES) return json({ ok: false, error: DRAFT_REASONS.file_too_large }, 413);
   const r = await storeDraftAsset(t.code, t.name, bytes);
   return r.ok ? json({ ok: true, name: r.name, size: r.size }, 200) : json({ ok: false, error: r.error }, 400);
 }
@@ -2015,13 +2091,38 @@ async function purgeDraftAssets() {
   await supabase.rpc("storage_release", { p_bucket: DRAFT_ASSET_BUCKET, p_paths: paths });
 }
 
+function getClientIp(req: Request): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim() || "unknown";
+  return req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || "unknown";
+}
+
+function checkDraftRateLimit(clientIp: string): string | null {
+  const min = checkRateLimit("draft-min", clientIp, 30, 60_000);
+  if (!min.allowed) return `طلبات إنشاء مسودات كثيرة في وقت قصير. انتظر ${min.retryAfterSec} ثانية ثم حاول مجدداً.`;
+  const hr = checkRateLimit("draft-hr", clientIp, 120, 3_600_000);
+  if (!hr.allowed) return `تم تجاوز الحد الساعي لإنشاء المسودات مؤقتاً. انتظر ${hr.retryAfterSec} ثانية ثم حاول مجدداً.`;
+  return null;
+}
+
 // ── MCP JSON-RPC Handler ────────────────────────────────────────────────────
 
-async function handleRpcRequest(reqBody: any) {
-  const { jsonrpc, id, method, params } = reqBody || {};
+async function handleRpcRequest(reqBody: any, clientIp = "unknown"): Promise<any> {
+  if (!reqBody || typeof reqBody !== "object" || Array.isArray(reqBody)) {
+    return { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Invalid Request" } };
+  }
 
-  if (jsonrpc !== "2.0") {
-    return { jsonrpc: "2.0", id: id || null, error: { code: -32600, message: "Invalid Request: must be JSON-RPC 2.0" } };
+  const { jsonrpc, id, method, params } = reqBody;
+  const hasId = Object.prototype.hasOwnProperty.call(reqBody, "id") && id !== undefined;
+  const isNotification = !hasId || (typeof method === "string" && method.startsWith("notifications/"));
+
+  if (jsonrpc !== "2.0" || typeof method !== "string" || !method) {
+    if (!hasId) return null;
+    return { jsonrpc: "2.0", id: id ?? null, error: { code: -32600, message: "Invalid Request: must be JSON-RPC 2.0" } };
+  }
+
+  if (isNotification) {
+    return null;
   }
 
   switch (method) {
@@ -2030,15 +2131,12 @@ async function handleRpcRequest(reqBody: any) {
         jsonrpc: "2.0",
         id,
         result: {
-          protocolVersion: "2024-11-05",
+          protocolVersion: negotiateProtocolVersion(params?.protocolVersion),
           capabilities: { tools: {}, prompts: {} },
-          serverInfo: { name: "Basmagi Quiz Connector", version: "3.2.0" },
+          serverInfo: { name: "Basmagi Quiz Connector", version: SERVER_VERSION },
           instructions: "Basmagi Quiz creates short links: when the user opens one it saves the item directly into their personal «محتواي» (private to their browser, highlighted as new); nothing is published to the public platform. Before creating any quiz, lesson or notebook, call get_authoring_guide. When the user asks to convert existing files or a whole folder (for example a shared Google Drive folder), call get_authoring_guide(topic=\"convert\") first: it explains how to decide per file between quiz, lesson and MATLAB/C++ notebook, when to confirm the plan with the user, and how to report the results.",
         },
       };
-
-    case "notifications/initialized":
-      return null;
 
     case "ping":
       return { jsonrpc: "2.0", id, result: {} };
@@ -2060,30 +2158,60 @@ async function handleRpcRequest(reqBody: any) {
           case "get_course_contents":       resultText = await handleGetCourseContents(toolArgs);   break;
           case "get_folder_contents":       resultText = await handleGetFolderContents(toolArgs);   break;
           case "list_folder_tree":          resultText = await handleListFolderTree(toolArgs);      break;
-          case "get_quiz":                  resultText = await handleGetQuiz(toolArgs);             break;
-          case "get_quiz_by_url":           resultText = await handleGetQuizByUrl(toolArgs);        break;
-          case "get_lesson":                resultText = await handleGetLesson(toolArgs);           break;
-          case "get_lesson_content":        resultText = await handleGetLessonContent(toolArgs);    break;
-          case "list_recent_content":       resultText = await handleListRecentContent(toolArgs);   break;
-          case "get_platform_stats":        resultText = await handleGetPlatformStats();            break;
-          case "get_prompts":               resultText = handleGetPrompts(toolArgs);                break;
-          case "create_quiz_import_link":   resultText = await handleCreateQuizImportLink(toolArgs);  break;
-          case "create_lesson_import_link": resultText = await handleCreateLessonImportLink(toolArgs); break;
-          case "create_notebook_import_link": resultText = await handleCreateNotebookImportLink(toolArgs); break;
-          case "create_youtube_import_link":    resultText = await handleCreateYoutubeImportLink(toolArgs); break;
+          case "get_quiz":                  resultText = await handleGetQuiz(toolArgs);                     break;
+          case "get_quiz_by_url":           resultText = await handleGetQuizByUrl(toolArgs);                break;
+          case "get_lesson":                resultText = await handleGetLesson(toolArgs, "text");           break;
+          case "get_lesson_content":        resultText = await handleGetLessonContent(toolArgs);            break;
+          case "list_recent_content":       resultText = await handleListRecentContent(toolArgs);           break;
+          case "get_platform_stats":        resultText = await handleGetPlatformStats();                    break;
+          case "get_prompts":               resultText = handleGetPrompts(toolArgs);                        break;
+          case "create_quiz_import_link": {
+            const limited = toolArgs?.dry_run ? null : checkDraftRateLimit(clientIp);
+            if (limited) { isError = true; resultText = limited; break; }
+            resultText = await handleCreateQuizImportLink(toolArgs);
+            break;
+          }
+          case "create_lesson_import_link": {
+            const limited = toolArgs?.dry_run ? null : checkDraftRateLimit(clientIp);
+            if (limited) { isError = true; resultText = limited; break; }
+            resultText = await handleCreateLessonImportLink(toolArgs);
+            break;
+          }
+          case "create_notebook_import_link": {
+            const limited = toolArgs?.dry_run ? null : checkDraftRateLimit(clientIp);
+            if (limited) { isError = true; resultText = limited; break; }
+            resultText = await handleCreateNotebookImportLink(toolArgs);
+            break;
+          }
+          case "create_youtube_import_link": {
+            const limited = checkDraftRateLimit(clientIp);
+            if (limited) { isError = true; resultText = limited; break; }
+            resultText = await handleCreateYoutubeImportLink(toolArgs);
+            break;
+          }
           case "search_youtube_published":      resultText = await handleSearchYoutubePublished(toolArgs);  break;
           case "get_youtube_published":         resultText = await handleGetYoutubePublished(toolArgs);     break;
           case "list_recent_youtube_published": resultText = await handleListRecentYoutubePublished(toolArgs); break;
-          case "get_notebook":              resultText = await handleGetNotebook(toolArgs);         break;
-          case "get_notebook_content":      resultText = await handleGetNotebookContent(toolArgs);  break;
-          case "get_creator_info":          resultText = handleGetCreatorInfo(toolArgs);            break;
-          case "get_import_draft":          resultText = await handleGetImportDraft(toolArgs);      break;
-          case "add_workspace_asset":       resultText = await handleAddAssetB64(toolArgs);         break;
-          case "add_workspace_asset_from_url": resultText = await handleAddAssetUrl(toolArgs);      break;
-          case "request_asset_upload":      resultText = await handleRequestUpload(toolArgs);       break;
-          case "update_import_draft":       resultText = await handleUpdateImportDraft(toolArgs);   break;
-          case "clone_to_draft":            resultText = await handleCloneToDraft(toolArgs);        break;
-          case "get_authoring_guide":       resultText = handleGetAuthoringGuide(toolArgs);         break;
+          case "get_notebook":              resultText = await handleGetNotebook(toolArgs, "text");         break;
+          case "get_notebook_content":      resultText = await handleGetNotebookContent(toolArgs);          break;
+          case "get_creator_info":          resultText = handleGetCreatorInfo(toolArgs);                    break;
+          case "get_import_draft":          resultText = await handleGetImportDraft(toolArgs);              break;
+          case "add_workspace_asset":       resultText = await handleAddWorkspaceAsset(toolArgs, clientIp); break;
+          case "add_workspace_asset_from_url": {
+            const rl = checkRateLimit("asset-url", clientIp, 15, 60_000);
+            if (!rl.allowed) { isError = true; resultText = `طلبات تنزيل كثيرة في وقت قصير. انتظر ${rl.retryAfterSec} ثانية ثم حاول مجدداً.`; break; }
+            resultText = await handleAddAssetUrl(toolArgs);
+            break;
+          }
+          case "request_asset_upload":      resultText = await handleRequestUpload(toolArgs);               break;
+          case "update_import_draft":       resultText = await handleUpdateImportDraft(toolArgs);           break;
+          case "clone_to_draft": {
+            const limited = checkDraftRateLimit(clientIp);
+            if (limited) { isError = true; resultText = limited; break; }
+            resultText = await handleCloneToDraft(toolArgs);
+            break;
+          }
+          case "get_authoring_guide":       resultText = handleGetAuthoringGuide(toolArgs);                 break;
           default:
             isError = true;
             resultText = `Unknown tool: ${toolName}`;
@@ -2141,9 +2269,11 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
+  const clientIp = getClientIp(req);
+
   {
     const u = new URL(req.url);
-    if ((req.method === "PUT" || req.method === "POST") && /\/upload\/?$/.test(u.pathname)) return await handleUploadPut(req);
+    if ((req.method === "PUT" || req.method === "POST") && /\/upload\/?$/.test(u.pathname)) return await handleUploadPut(req, clientIp);
     if (req.method === "DELETE") {
       const dm = u.pathname.match(/\/draft\/([^/]+)\/?$/);
       if (dm) return await handleDraftDelete(dm[1]);
@@ -2154,12 +2284,23 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const m = url.pathname.match(/\/draft\/([^/]+)\/?$/);
     if (m) return await handleDraftRequest(m[1], url.searchParams.get("kind"));
+
+    // Per MCP Streamable HTTP spec, servers that do not offer a standalone SSE stream on GET must return 405.
+    const accept = req.headers.get("accept") || "";
+    if (/text\/event-stream/i.test(accept) && !/application\/json/i.test(accept)) {
+      return new Response("SSE stream not supported on GET", {
+        status: 405,
+        headers: { ...corsHeaders, Allow: "POST, OPTIONS" },
+      });
+    }
+
     return new Response(
       JSON.stringify({
         status: "ok",
         protocol: "mcp-jsonrpc-2.0",
+        supportedProtocolVersions: SUPPORTED_MCP_VERSIONS,
         name: "Basmagi Quiz Model Context Protocol (MCP) Server",
-        version: "3.1.0",
+        version: SERVER_VERSION,
         homepage: "https://basmagi-quiz.vercel.app",
         toolsCount: TOOLS.length,
         toolsAvailable: TOOLS.map((t) => t.name),
@@ -2169,10 +2310,32 @@ Deno.serve(async (req: Request) => {
   }
 
   if (req.method === "POST") {
+    const postRl = checkRateLimit("mcp-post", clientIp, 120, 60_000);
+    if (!postRl.allowed) {
+      return new Response(
+        JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32000, message: `Rate limit exceeded. Retry after ${postRl.retryAfterSec}s.` } }),
+        { status: 429, headers: { ...corsHeaders, "Retry-After": String(postRl.retryAfterSec), "Content-Type": "application/json" } }
+      );
+    }
     try {
       const body = await req.json();
-      const rpcResponse = await handleRpcRequest(body);
-      if (rpcResponse === null) return new Response(null, { status: 204, headers: corsHeaders });
+      if (Array.isArray(body)) {
+        if (body.length === 0) {
+          return new Response(
+            JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Invalid Request: empty batch" } }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        const results = (await Promise.all(body.map((item) => handleRpcRequest(item, clientIp)))).filter((r) => r !== null);
+        if (results.length === 0) return new Response(null, { status: 202, headers: corsHeaders });
+        return new Response(JSON.stringify(results), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const rpcResponse = await handleRpcRequest(body, clientIp);
+      if (rpcResponse === null) return new Response(null, { status: 202, headers: corsHeaders });
       return new Response(JSON.stringify(rpcResponse), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

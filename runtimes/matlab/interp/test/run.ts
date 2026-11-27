@@ -2,29 +2,40 @@ import { readFileSync, existsSync, writeFileSync, statSync } from 'node:fs';
 import { PNG } from 'pngjs';
 import { Interp, Host, RawImage } from '../src/index';
 import path from 'node:path';
+import { runLectureTests } from './lectures';
+import { runPhase2 } from './phase2';
+import { runPhase3 } from './phase3';
+import { runPhase4 } from './phase4';
+import { runPhase5 } from './phase5';
+import { runPhase6 } from './phase6';
 
 const A = path.join(import.meta.dirname, 'assets');
-let out = '', shown: any[] = [], figs = 0, written: Record<string, any> = {}, warns: string[] = [];
+const ALIASES: Record<string, string> = { 'peppers.png': 'pepper.png', 'test5.png': 'pepper.png' };
+let out = '', shown: any[] = [], plots: { id: number; spec: any }[] = [], figs = 0, written: Record<string, any> = {}, warns: string[] = [];
 const host: Host = {
   print: s => { out += s; },
   warn: s => warns.push(s),
   readImage(p) {
-    const base = path.basename(p); const fp = path.join(A, base);
-    if (written[base]) { const w = written[base]; return { ...w, filename: '/vfs/' + base, fileSize: 0, format: 'png', bitDepth: 8 * w.channels, colorType: w.channels === 1 ? 'grayscale' : 'truecolor' } as RawImage; }
-    if (p !== base || !existsSync(fp)) return null;
+    const rawBase = path.basename(p);
+    const base = ALIASES[rawBase.toLowerCase()] ?? rawBase;
+    const fp = path.join(A, base);
+    if (written[rawBase]) { const w = written[rawBase]; return { ...w, filename: '/vfs/' + rawBase, fileSize: 0, format: 'png', bitDepth: 8 * w.channels, colorType: w.channels === 1 ? 'grayscale' : 'truecolor' } as RawImage; }
+    if (p !== rawBase || !existsSync(fp)) return null;
     const png = PNG.sync.read(readFileSync(fp)); const gray = /gray/.test(base);
     const ch = gray ? 1 : 3, d = new Uint8Array(png.width * png.height * ch);
     for (let i = 0; i < png.width * png.height; i++) for (let k = 0; k < ch; k++) d[i * ch + k] = png.data[i * 4 + (gray ? 0 : k)];
-    return { width: png.width, height: png.height, channels: ch as 1 | 3, data: d, bitDepth: 8 * ch, format: 'png', fileSize: statSync(fp).size, colorType: gray ? 'grayscale' : 'truecolor', filename: '/vfs/' + base, fileModDate: '02-Nov-2026 10:00:00' };
+    return { width: png.width, height: png.height, channels: ch as 1 | 3, data: d, bitDepth: 8 * ch, format: 'png', fileSize: statSync(fp).size, colorType: gray ? 'grayscale' : 'truecolor', filename: '/vfs/' + rawBase, fileModDate: '02-Nov-2026 10:00:00' };
   },
   writeImage(p, img) { written[path.basename(p)] = img; },
-  showImage(img, o) { shown.push({ w: img.width, h: img.height, tool: o.tool, name: o.name, fig: figs }); },
+  showImage(img, o) { shown.push({ w: img.width, h: img.height, tool: o.tool, name: o.name, fig: o.fig ?? figs }); },
   newFigure() { figs++; },
+  figure(id, spec) { plots.push({ id, spec }); },
   maxPrintElements: 3000,
 };
-let pass = 0, fail = 0;
+let pass = 0, fail = 0, todoCount = 0;
+function todo(name: string, phase: string) { todoCount++; console.log(`  todo ${name} [${phase}]`); }
 function run(name: string, src: string, check: (o: string, I: Interp) => any, expectErr?: string) {
-  out = ''; shown = []; figs = 0; warns = [];
+  out = ''; shown = []; plots = []; figs = 0; warns = [];
   const I = new Interp(host), t0 = performance.now();
   let res: any;
   try { I.run(src); res = expectErr ? 'no error thrown' : check(out, I); } catch (e: any) { res = expectErr ? (e.message === expectErr ? true : `wrong error: ${e.message}`) : 'THREW: ' + e.message; }
@@ -59,7 +70,8 @@ run('Section_1.m end to end (incl. Windows-path imread)', fixed, (o, I) => {
   if (!/ans =\n\n   200   200     3\n\n/.test(o)) return 'size(x) output wrong';
   if (!/ans =\n\n   200   200\n\n/.test(o)) return 'size(y) output wrong';
   if (!/struct with fields:/.test(o) || !/ColorType: 'truecolor'/.test(o) || !/ColorType: 'grayscale'/.test(o)) return 'imfinfo output wrong';
-  if (shown.length !== 8 || figs !== 2) return `shown=${shown.length} figs=${figs}`;
+  // imshow calls into one figure are coalesced: fig1 (x) posts at line 52, fig2 (x) at line 56, fig3 (y) when imtool starts, then 2 imtool windows.
+  if (shown.length !== 5 || figs !== 2 || shown.map((s: any) => s.fig).join() !== '1,2,3,3,3') return `shown=${shown.length} figs=${figs} ids=${shown.map((s: any) => s.fig)}`;
   if (!written['newTest.png'] || !written['newTestGray.png']) return 'imwrite missing';
   if (!warns.some(w => w.includes('using \'test.png\''))) return 'no path-fallback warning';
   return true;
@@ -109,5 +121,146 @@ run('command syntax with unquoted filename: imtool test.png / imshow testgray.pn
 run('imtool window is named after the variable or file (MATLAB: "Image Tool 1 - A")', `A=zeros(4,4,'uint8'); imtool(A); imtool(A+1); imtool('test.png'); imtool test.png; imshow(A);`, () => eq(shown.map((x: any) => x.name), ['A', undefined, 'test.png', 'test.png', 'A']));
 run('error() raises', `error('boom %d', 5);`, () => true, 'boom 5');
 
-console.log(`\n${pass} passed, ${fail} failed`);
+console.log('Phase 1 (language features)');
+run('block comments %{ ... %} strip lines and keep line numbers', `
+x = 1;
+%{
+this is ignored
+y = does_not_exist();
+  %{
+  nested comment
+  %}
+still ignored
+%}
+y = x + 2;
+`, (_o, I) => eq([val(I, 'x'), val(I, 'y')], [[1], [3]]));
+
+run('try/catch with identifier, MException, error(id,fmt), rethrow, warning', `
+msg1 = ''; id1 = '';
+try
+  error('MyPkg:BadVal', 'bad value %d', 42);
+catch e
+  msg1 = e.message;
+  id1 = e.identifier;
+end
+msg2 = '';
+try
+  try
+    error('inner err');
+  catch ME
+    rethrow(ME);
+  end
+catch outer
+  msg2 = outer.message;
+end
+warning('low %s', 'mem');
+`, (_o, I) => {
+  const m1 = String.fromCharCode(...val(I, 'msg1'));
+  const i1 = String.fromCharCode(...val(I, 'id1'));
+  const m2 = String.fromCharCode(...val(I, 'msg2'));
+  return eq([m1, i1, m2, warns], ['bad value 42', 'MyPkg:BadVal', 'inner err', ['low mem']]);
+});
+
+run('function handles, closures by value, feval, func2str, isa', `
+k = 10;
+f = @(x, y) x + y + k;
+k = 999;
+r1 = f(2, 3);
+g = @sqrt;
+r2 = feval(g, 16);
+r3 = feval('abs', -7);
+s1 = func2str(g);
+C = {@(x) x*2};
+r4 = C{1}(5);
+st.fn = @(x) x + 1;
+r5 = st.fn(8);
+isH = [isa(f, 'function_handle') isa(g, 'function_handle') isa(r1, 'function_handle')];
+`, (_o, I) => {
+  const s1 = String.fromCharCode(...val(I, 's1'));
+  return eq([val(I, 'r1'), val(I, 'r2'), val(I, 'r3'), s1, val(I, 'r4'), val(I, 'r5'), val(I, 'isH')], [[15], [4], [7], 'sqrt', [10], [9], [1, 1, 0]]);
+});
+
+run('cellfun and arrayfun with UniformOutput true/false and multiple outputs', `
+C = {[1 2], [3 4 5]; [6], [7 8 9 10]};
+u = cellfun(@numel, C);
+nu = cellfun(@(x) x + 1, C, 'UniformOutput', false);
+A = [1 4 9];
+sq = arrayfun(@sqrt, A);
+function [a, b] = pair(x), a = x; b = x*10; end
+[p1, p2] = arrayfun(@pair, [2 3]);
+v1 = nu{2, 2};
+`, (_o, I) => eq([val(I, 'u'), val(I, 'sq'), val(I, 'p1'), val(I, 'p2'), val(I, 'v1')], [[2, 1, 3, 4], [1, 2, 3], [2, 3], [20, 30], [8, 9, 10, 11]]));
+
+run('nargin, nargout, exist, varargin, varargout, return', `
+function varargout = flex(a, varargin)
+  ex1 = exist('a', 'var');
+  ex0 = exist('nope', 'var');
+  ni = nargin;
+  no = nargout;
+  varargout = {ni, no, numel(varargin), ex1, ex0};
+  if a < 0, return; end
+end
+[ni, no, nv, ex1, ex0] = flex(1, 'x', 'y');
+exTop = exist('ni', 'var');
+exBuilt = exist('sum', 'builtin');
+`, (_o, I) => eq([val(I, 'ni'), val(I, 'no'), val(I, 'nv'), val(I, 'ex1'), val(I, 'ex0'), val(I, 'exTop'), val(I, 'exBuilt')], [[3], [5], [2], [1], [0], [1], [5]]));
+
+run('matrix operators *, /, \\, ^, .\' and singular/integer checks', `
+A = [2 1; 1 3];
+b = [5; 10];
+x = A \\ b;
+y = b' / A';
+p2 = A ^ 2;
+p0 = A ^ 0;
+pm1 = A ^ -1;
+tr = [1 2; 3 4].';
+errInt = false;
+try
+  z = uint8([1 2; 3 4]) * uint8([1 2; 3 4]);
+catch
+  errInt = true;
+end
+S = [1 2; 2 4] \\ [3; 6];
+`, (_o, I) => {
+  const x = val(I, 'x'), y = val(I, 'y'), p2 = val(I, 'p2'), p0 = val(I, 'p0'), pm1 = val(I, 'pm1'), tr = val(I, 'tr');
+  const close = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) < 1e-9);
+  return close(x, [1, 3]) && close(y, [1, 3]) && eq(p2, [5, 5, 5, 10]) === true && eq(p0, [1, 0, 0, 1]) === true && close(pm1, [0.6, -0.2, -0.2, 0.4]) && eq(tr, [1, 2, 3, 4]) === true && val(I, 'errInt')[0] === 1 && warns.some(w => w.includes('singular'));
+});
+
+run('struct arrays, comma-separated lists [s.f]/{s.f}, isfield, fieldnames, rmfield', `
+s(2).f = 20;
+s(1).f = 10;
+s(2).g = 99;
+arr = [s.f];
+cel = {s.f};
+s2 = struct('a', {1, 2, 3}, 'b', 5);
+arr2 = [s2.a];
+n2 = numel(s2);
+sub = s2(2:3);
+ns = numel(sub);
+isf = [isfield(s, 'f') isfield(s, 'nope') isstruct(s2)];
+fns = fieldnames(s);
+s3 = rmfield(s, 'g');
+hasG = isfield(s3, 'g');
+`, (_o, I) => {
+  const fns = (I.vars.get('fns') as any).data.map((x: any) => String.fromCharCode(...x.data));
+  return eq([val(I, 'arr'), val(I, 'arr2'), val(I, 'n2'), val(I, 'ns'), val(I, 'isf'), fns, val(I, 'hasG')], [[10, 20], [1, 2, 3], [3], [2], [1, 0, 1], ['f', 'g'], [0]]);
+});
+
+run('display parity golden tests (double, uint8, logical, char 2D, empty)', `
+a = [1 20; 300 4]
+b = uint8([1 2; 3 4])
+c = logical([1 0; 0 1])
+d = ['ab'; 'cd']
+e = []
+`, o => eq(o, "a =\n\n     1    20\n   300     4\n\nb =\n\n  1  2\n  3  4\n\nc =\n\n  1  0\n  0  1\n\nd =\n\n    ab\n    cd\n\ne = [](0×0)\n"));
+
+runPhase2({ run, val, eq });
+runPhase3({ run, val, eq });
+runPhase4({ run, val, eq, get shown() { return shown; }, get plots() { return plots; } });
+runPhase5({ run, val, eq });
+runPhase6({ run, val, eq });
+runLectureTests({ run, todo, val, eq, lecture: { get shown() { return shown; }, get plots() { return plots; } } });
+
+console.log(`\n${pass} passed, ${fail} failed${todoCount ? `, ${todoCount} todo` : ''}`);
 process.exit(fail ? 1 : 0);

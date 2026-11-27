@@ -1,12 +1,13 @@
 // =============================================================================
 // runtimes/shared/outputs.ts
-// One renderer per `Out` kind: text/err/warn, img (figure), html, diag.
+// One renderer per `Out` kind: text/err/warn, img (figure), plot (figure), html, diag.
 // =============================================================================
 import DOMPurify from 'dompurify';
 import type { Out } from './engine';
 import type { Ctx, UiCell } from './ctx';
 import { h, download } from './dom';
 import { rgbToCanvas, toBlob } from './images';
+import { renderPlot, plotToPng } from './plot-view';
 
 type ImgOut = Extract<Out, { k: 'img' }>;
 
@@ -37,6 +38,15 @@ function figure(ctx: Ctx, o: ImgOut): HTMLElement {
   return h('div', { class: 'fig' }, cap, h('div', { class: 'scroll' }, cv), px);
 }
 
+/** A `plot` output: the SVG figure and a button that saves it as PNG. */
+function plot(ctx: Ctx, o: Extract<Out, { k: 'plot' }>): HTMLElement {
+  const svg = renderPlot(o.spec);
+  const save = h('button', { onclick: async () => download(`figure${o.fig}.png`, await plotToPng(svg)) }, ctx.t('Save PNG'));
+  // the card is as wide as the figure's nominal width plus padding and border
+  const width = Number(svg.getAttribute('viewBox')!.split(' ')[2]) + 18;
+  return h('div', { class: 'fig plot-fig', style: `--plot-width:${width}px` }, h('div', { class: 'cap' }, `${ctx.t('Figure')} ${o.fig}`, save), svg as unknown as Node);
+}
+
 /** Compiler/interpreter diagnostics: a jump button (line:col) and the message. */
 function diagnostic(ctx: Ctx, cell: UiCell, o: Extract<Out, { k: 'diag' }>): HTMLElement {
   const where = o.col ? `${o.line}:${o.col}` : String(o.line);
@@ -54,6 +64,7 @@ function diagnostic(ctx: Ctx, cell: UiCell, o: Extract<Out, { k: 'diag' }>): HTM
 export function renderOut(ctx: Ctx, cell: UiCell, o: Out): HTMLElement {
   switch (o.k) {
     case 'img': return figure(ctx, o);
+    case 'plot': return plot(ctx, o);
     case 'html': {
       const box = h('div', { class: 'o o-html' });
       box.innerHTML = DOMPurify.sanitize(o.html);
