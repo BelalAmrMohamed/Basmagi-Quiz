@@ -52,7 +52,10 @@ export const mk = (cls: Cls, dims: number[], data?: ArrayLike<number>): T => {
   if (data) for (let i = 0; i < n; i++) d[i] = data[i];
   return { cls, dims, data: d };
 };
-export const num = (v: number, cls: Cls = 'double'): T => ({ cls, dims: [1, 1], data: Float64Array.of(sat(cls, v)) });
+export const num = (v: number, cls: Cls = 'double'): T => {
+  const data = new Float64Array(1); data[0] = sat(cls, v); // much faster than Float64Array.of
+  return { cls, dims: [1, 1], data };
+};
 export const str = (s: string): T => mk('char', [s.length ? 1 : 0, s.length], Array.from(s, c => c.charCodeAt(0)));
 export const toStr = (t: any): string => (isT(t) ? String.fromCharCode(...Array.from(t.data)) : '');
 export const isStr = (t: any) => isT(t) && t.cls === 'char';

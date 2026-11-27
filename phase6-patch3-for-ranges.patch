@@ -1,0 +1,131 @@
+From 03d92d1a2a5936185af8f6b2c17959920bdfd54b Mon Sep 17 00:00:00 2001
+From: Claude <c@x>
+Date: Fri, 27 Nov 2026 03:10:44 +0200
+Subject: [PATCH] MLWeb Phase 6.1c: for over a range without building it
+
+A for loop over a:b or a:s:b (also in parentheses) now computes one value per
+iteration. Bounds are still evaluated once, in the same order. Behaviour change:
+ranges too large to allocate (1:Inf, 1:1e12) used to throw an internal
+allocation error and now loop until break, as in MATLAB. A loop without a break
+over such a range runs until Stop or the time limit.
+num() builds its one-element buffer with new Float64Array(1), which is cheaper
+than Float64Array.of; it is the per-iteration cost of every loop variable.
+
+Profile before this patch (bench.ts, bundled, node --cpu-prof, self time):
+ScalarEval.run 14.6%, readPixel 12.3%, GC 9.8%, num 9.0% (8.5% of the total
+called from the for loop), exec 7.5%, assignTo 7.1%.
+
+512x512 medians, 9 alternating runs, Node 22 (noise about 15%):
+  L7 brightness 337 -> 302 ms, L6 zoom 186 -> 185, L8 rotate 236 -> 218,
+  L8 slicing 80 -> 62, histeq+imhist 36 -> 37.
+
+6.1d (variable slots) measured and not implemented: 0.5-2.1 million lookups per
+512x512 loop case; even if a lookup went from ~6.5 ns to 0 the gain is 3-5%.
+The whole scalar evaluator is 16.6% of the profile, which bounds what compiling
+expressions to closures could save.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01RLPPTf6CfzEERcf3C1o2Ng
+---
+ runtimes/matlab/interp/src/interp.ts  | 21 ++++++++++++++++++---
+ runtimes/matlab/interp/src/values.ts  |  5 ++++-
+ runtimes/matlab/interp/test/phase6.ts | 23 +++++++++++++++++++++++
+ 3 files changed, 45 insertions(+), 4 deletions(-)
+
+diff --git a/runtimes/matlab/interp/src/interp.ts b/runtimes/matlab/interp/src/interp.ts
+index 96fdba7..1d86ff9 100644
+--- a/runtimes/matlab/interp/src/interp.ts
++++ b/runtimes/matlab/interp/src/interp.ts
+@@ -148,6 +148,16 @@ export class Interp {
+           break;
+         }
+         case 'for': {
++          let head = s.e; while (head.k === 'paren') head = head.a;
++          if (head.k === 'range') {
++            // The values are produced one at a time, so the range is never built as an array.
++            const { first, step, count } = this.rangeBounds(head, sc);
++            for (let j = 0; j < count; j++) {
++              sc.set(s.v, num(first + j * step));
++              const r = this.exec(s.body, sc); if (r === BRK) break; if (r === RET) return r;
++            }
++            break;
++          }
+           const rng = this.eval(s.e, sc) as T, rows = rng.dims[0], cols = rng.data.length / (rows || 1);
+           if (isT(rng)) this.buffers.hold(rng.data); // the loop keeps iterating the original if the body writes the variable
+           for (let j = 0; j < (rng.data.length ? cols : 0); j++) {
+@@ -171,6 +181,12 @@ export class Interp {
+     }
+     return 0;
+   }
++  /** First value, step and length of `a:b` or `a:step:b`. The length is NaN (no elements) when a bound is NaN. */
++  private rangeBounds(e: any, sc: Scope): { first: number; step: number; count: number } {
++    const first = scalarOf(this.eval(e.a, sc)), step = e.step ? scalarOf(this.eval(e.step, sc)) : 1, last = scalarOf(this.eval(e.b, sc));
++    const count = step === 0 || (step > 0 && first > last) || (step < 0 && first < last) ? 0 : Math.floor((last - first) / step + 1e-10) + 1;
++    return { first, step, count };
++  }
+   private truthy(v: V): boolean { const t = T_(v, 'if'); return t.data.length > 0 && t.data.every(x => x !== 0); }
+   /** Truth value of a condition; scalar conditions are decided without building a value. */
+   private cond(e: any, sc: Scope): boolean {
+@@ -528,9 +544,8 @@ export class Interp {
+       }
+       case 'post': return transpose(T_(this.eval(e.a, sc), e.op ?? "'"));
+       case 'range': {
+-        const a = scalarOf(this.eval(e.a, sc)), st = e.step ? scalarOf(this.eval(e.step, sc)) : 1, b = scalarOf(this.eval(e.b, sc));
+-        const n = st === 0 || (st > 0 && a > b) || (st < 0 && a < b) ? 0 : Math.floor((b - a) / st + 1e-10) + 1;
+-        const r = mk('double', [1, n]); for (let i = 0; i < n; i++) r.data[i] = a + i * st; return r;
++        const { first, step, count } = this.rangeBounds(e, sc);
++        const r = mk('double', [1, count]); for (let i = 0; i < count; i++) r.data[i] = first + i * step; return r;
+       }
+       case 'mat': {
+         const rows = e.rows.map((r: any[]) => {
+diff --git a/runtimes/matlab/interp/src/values.ts b/runtimes/matlab/interp/src/values.ts
+index 930109d..d0cd37c 100644
+--- a/runtimes/matlab/interp/src/values.ts
++++ b/runtimes/matlab/interp/src/values.ts
+@@ -52,7 +52,10 @@ export const mk = (cls: Cls, dims: number[], data?: ArrayLike<number>): T => {
+   if (data) for (let i = 0; i < n; i++) d[i] = data[i];
+   return { cls, dims, data: d };
+ };
+-export const num = (v: number, cls: Cls = 'double'): T => ({ cls, dims: [1, 1], data: Float64Array.of(sat(cls, v)) });
++export const num = (v: number, cls: Cls = 'double'): T => {
++  const data = new Float64Array(1); data[0] = sat(cls, v); // much faster than Float64Array.of
++  return { cls, dims: [1, 1], data };
++};
+ export const str = (s: string): T => mk('char', [s.length ? 1 : 0, s.length], Array.from(s, c => c.charCodeAt(0)));
+ export const toStr = (t: any): string => (isT(t) ? String.fromCharCode(...Array.from(t.data)) : '');
+ export const isStr = (t: any) => isT(t) && t.cls === 'char';
+diff --git a/runtimes/matlab/interp/test/phase6.ts b/runtimes/matlab/interp/test/phase6.ts
+index 6340b07..28e34d4 100644
+--- a/runtimes/matlab/interp/test/phase6.ts
++++ b/runtimes/matlab/interp/test/phase6.ts
+@@ -170,4 +170,27 @@ end`; });
+     }
+     return eq([...bad], []);
+   });
++
++  console.log('Phase 6.1c (for over a range without building it)');
++  run('range loops: negative and fractional steps', `a = []; for k = 10:-3:1, a(end+1) = k; end; b = []; for x = 0:0.25:1, b(end+1) = x; end; c = isa(x, 'double');`,
++    (_o, I) => eq([val(I, 'a'), val(I, 'b'), val(I, 'c')], [[10, 7, 4, 1], [0, 0.25, 0.5, 0.75, 1], [1]]));
++  run('empty and NaN ranges run no iterations and leave the variable alone', `k = 7; n = 0; for k = 5:1, n = n + 1; end; for k = 1:0:5, n = n + 1; end; for k = 1:NaN, n = n + 1; end; for k = NaN:3, n = n + 1; end`,
++    (_o, I) => eq([val(I, 'k'), val(I, 'n')], [[7], [0]]));
++  // the body changes both the bound and the loop variable; neither changes the 3 iterations
++  run('bounds are fixed on entry and assigning the loop variable does not skip', `n = 3; a = []; for i = 1:n, a(end+1) = i; n = 10; i = 99; end`,
++    (_o, I) => eq([val(I, 'a'), val(I, 'i'), val(I, 'n')], [[1, 2, 3], [99], [10]]));
++  run('each bound is evaluated once, in order', `for i = noisy(1):noisy(2):noisy(5), end
++function y = noisy(x)
++  fprintf('%d;', x);
++  y = x;
++end`, (o, I) => eq([o, val(I, 'i')], ['1;2;5;', [5]]));
++  run('a kept loop value does not follow the loop', `for i = 1:3, if i == 1, y = i; c = {i}; end, end; z = c{1};`, (_o, I) => eq([val(I, 'y'), val(I, 'z'), val(I, 'i')], [[1], [1], [3]]));
++  // 1e12 doubles cannot be allocated, so these finish only if the range is never built
++  run('huge and infinite ranges can be left with break', `for a = 1:1e12, if a > 3, break; end, end; for b = ((5:Inf)), if b > 7, break; end, end; for c = 0:-2:-Inf, if c < -5, break; end, end`,
++    (_o, I) => eq([val(I, 'a'), val(I, 'b'), val(I, 'c')], [[4], [8], [-6]]));
++  const bounds = ['0', '1', '3', '-2', '2.5', '0.1', 'NaN', 'uint8(3)', 'int8(-2)', 'true', "'c'", '[2 3]', '[]'];
++  const heads = bounds.flatMap(a => bounds.flatMap(b => [`${a}:${b}`, `(${a}:${b})`, ...bounds.map(st => `${a}:${st}:${b}`)]));
++  // brackets make the loop go through the general path, which builds the array first
++  same('differential: range loops against loops over the built array', heads.map(h => `acc = []; i = -7; for i = ${h}\n acc(end+1) = i; k = class(i); end`),
++    p => outcome(p.replace(/for i = (.*)\n/, 'for i = [$1]\n'), true));
+ }
+-- 
+2.43.0
+

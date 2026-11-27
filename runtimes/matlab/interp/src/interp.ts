@@ -148,6 +148,16 @@ export class Interp {
           break;
         }
         case 'for': {
+          let head = s.e; while (head.k === 'paren') head = head.a;
+          if (head.k === 'range') {
+            // The values are produced one at a time, so the range is never built as an array.
+            const { first, step, count } = this.rangeBounds(head, sc);
+            for (let j = 0; j < count; j++) {
+              sc.set(s.v, num(first + j * step));
+              const r = this.exec(s.body, sc); if (r === BRK) break; if (r === RET) return r;
+            }
+            break;
+          }
           const rng = this.eval(s.e, sc) as T, rows = rng.dims[0], cols = rng.data.length / (rows || 1);
           if (isT(rng)) this.buffers.hold(rng.data); // the loop keeps iterating the original if the body writes the variable
           for (let j = 0; j < (rng.data.length ? cols : 0); j++) {
@@ -170,6 +180,12 @@ export class Interp {
       }
     }
     return 0;
+  }
+  /** First value, step and length of `a:b` or `a:step:b`. The length is NaN (no elements) when a bound is NaN. */
+  private rangeBounds(e: any, sc: Scope): { first: number; step: number; count: number } {
+    const first = scalarOf(this.eval(e.a, sc)), step = e.step ? scalarOf(this.eval(e.step, sc)) : 1, last = scalarOf(this.eval(e.b, sc));
+    const count = step === 0 || (step > 0 && first > last) || (step < 0 && first < last) ? 0 : Math.floor((last - first) / step + 1e-10) + 1;
+    return { first, step, count };
   }
   private truthy(v: V): boolean { const t = T_(v, 'if'); return t.data.length > 0 && t.data.every(x => x !== 0); }
   /** Truth value of a condition; scalar conditions are decided without building a value. */
@@ -528,9 +544,8 @@ export class Interp {
       }
       case 'post': return transpose(T_(this.eval(e.a, sc), e.op ?? "'"));
       case 'range': {
-        const a = scalarOf(this.eval(e.a, sc)), st = e.step ? scalarOf(this.eval(e.step, sc)) : 1, b = scalarOf(this.eval(e.b, sc));
-        const n = st === 0 || (st > 0 && a > b) || (st < 0 && a < b) ? 0 : Math.floor((b - a) / st + 1e-10) + 1;
-        const r = mk('double', [1, n]); for (let i = 0; i < n; i++) r.data[i] = a + i * st; return r;
+        const { first, step, count } = this.rangeBounds(e, sc);
+        const r = mk('double', [1, count]); for (let i = 0; i < count; i++) r.data[i] = first + i * step; return r;
       }
       case 'mat': {
         const rows = e.rows.map((r: any[]) => {

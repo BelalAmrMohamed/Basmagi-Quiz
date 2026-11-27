@@ -170,4 +170,27 @@ end`; });
     }
     return eq([...bad], []);
   });
+
+  console.log('Phase 6.1c (for over a range without building it)');
+  run('range loops: negative and fractional steps', `a = []; for k = 10:-3:1, a(end+1) = k; end; b = []; for x = 0:0.25:1, b(end+1) = x; end; c = isa(x, 'double');`,
+    (_o, I) => eq([val(I, 'a'), val(I, 'b'), val(I, 'c')], [[10, 7, 4, 1], [0, 0.25, 0.5, 0.75, 1], [1]]));
+  run('empty and NaN ranges run no iterations and leave the variable alone', `k = 7; n = 0; for k = 5:1, n = n + 1; end; for k = 1:0:5, n = n + 1; end; for k = 1:NaN, n = n + 1; end; for k = NaN:3, n = n + 1; end`,
+    (_o, I) => eq([val(I, 'k'), val(I, 'n')], [[7], [0]]));
+  // the body changes both the bound and the loop variable; neither changes the 3 iterations
+  run('bounds are fixed on entry and assigning the loop variable does not skip', `n = 3; a = []; for i = 1:n, a(end+1) = i; n = 10; i = 99; end`,
+    (_o, I) => eq([val(I, 'a'), val(I, 'i'), val(I, 'n')], [[1, 2, 3], [99], [10]]));
+  run('each bound is evaluated once, in order', `for i = noisy(1):noisy(2):noisy(5), end
+function y = noisy(x)
+  fprintf('%d;', x);
+  y = x;
+end`, (o, I) => eq([o, val(I, 'i')], ['1;2;5;', [5]]));
+  run('a kept loop value does not follow the loop', `for i = 1:3, if i == 1, y = i; c = {i}; end, end; z = c{1};`, (_o, I) => eq([val(I, 'y'), val(I, 'z'), val(I, 'i')], [[1], [1], [3]]));
+  // 1e12 doubles cannot be allocated, so these finish only if the range is never built
+  run('huge and infinite ranges can be left with break', `for a = 1:1e12, if a > 3, break; end, end; for b = ((5:Inf)), if b > 7, break; end, end; for c = 0:-2:-Inf, if c < -5, break; end, end`,
+    (_o, I) => eq([val(I, 'a'), val(I, 'b'), val(I, 'c')], [[4], [8], [-6]]));
+  const bounds = ['0', '1', '3', '-2', '2.5', '0.1', 'NaN', 'uint8(3)', 'int8(-2)', 'true', "'c'", '[2 3]', '[]'];
+  const heads = bounds.flatMap(a => bounds.flatMap(b => [`${a}:${b}`, `(${a}:${b})`, ...bounds.map(st => `${a}:${st}:${b}`)]));
+  // brackets make the loop go through the general path, which builds the array first
+  same('differential: range loops against loops over the built array', heads.map(h => `acc = []; i = -7; for i = ${h}\n acc(end+1) = i; k = class(i); end`),
+    p => outcome(p.replace(/for i = (.*)\n/, 'for i = [$1]\n'), true));
 }
