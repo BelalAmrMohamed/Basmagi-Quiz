@@ -257,7 +257,8 @@
   .nc-item-main { padding: 14px; }
 }
 html[data-motion="reduced"] .nc-panel { transition: none; }
-html[data-motion="reduced"] .nc-skeleton { animation: none; }
+/* Loading skeletons keep shimmering in High Performance Mode (html[data-motion="reduced"]):
+   themes.css exempts [class*="skeleton"] from the kill-switch, so nothing may cancel it here. */
 
 /* ── Preferences view ───────────────────────────────────────────────────────── */
 .nc-gear {
