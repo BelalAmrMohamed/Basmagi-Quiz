@@ -12,13 +12,8 @@ My platform has an integrated AI Chat that uses API Keys for Gemini, DeepSeek, &
 
 They always add new models; is there any dynamic way to keep my website updated?
 
-### Offline Support.
-* Users who have Installed the application: The notebook Page (e.g., `/notebook/new` and notebooks they saved locally at `/my-content`) should work offline as well as.
-* The quiz page and the lesson page should also work, people who have lessons and quizzes locally (i.e., `/my-content`) should work offline.
-
-### Sign-In For Admins: Add Multi-device support and multi-email support
-* **Add Multi-device support:** Admins should be able to sign in with the same email on multiple devices normally no problem. Currently it results in some issues.
-* **Add Multi-email support:** Allow Admins to sign in with Multiple Emails at once and switch between them in the UI. Each one of them must get the same verification (e.g., each email of them must be an Admin/Developer).
+### Implement the shared markdown engine into the Notebook page's Makrdown cells.
+* The Notebook page uses its own simple version of Markdown, replace it with this custom engine `public\src\shared\markdown.js`
 
 ## New Features
 
@@ -41,12 +36,6 @@ Add notifications to the platform. The platform already has notifications (i.e.,
 - **Reports on their uploaded items:** When a user reports anything that they uploaded, they get a notification. See `public/reports.html` and its related files.
 - Recommend to me other functionalities it could show.
 
-### `gradeEssay` improvements
-Add basic LaTeX-aware and Arabic-diacritic-aware normalization to `gradeEssay`'s `normalize()` function in `public\src\shared\rate-answers.js` — strip Arabic diacritics (tashkeel, `\u064B-\u0652`), normalize alef variants (`أ`/`إ`/`آ` → `ا`), and strip/normalize common LaTeX delimiters (`$...$`, `\(...\)`) before comparing text.
-
-### Implement the Rich Input Component into the Notebook page's Makrdown cells.
-* The Notebook page uses its own simple version of Markdown, replace it with this custom engine `public\src\shared\rich-input\`
-
 ### Code Blocks
 
 #### 1. Line Numbers
@@ -58,6 +47,14 @@ Code blocks should have proper Line numbers, VS-Code-style:
 * The AI Agent uses the `public\src\shared\rich-input\`, but when a user types ` ``` `, it doesn't insert a code block automatically. Fix it.
 
 AI Agent files: `public\src\components\ai-agent\`
+
+### Offline Support.
+* Users who have Installed the application: The notebook Page (e.g., `/notebook/new` and notebooks they saved locally at `/my-content`) should work offline as well as.
+* The quiz page and the lesson page should also work, people who have lessons and quizzes locally (i.e., `/my-content`) should work offline.
+
+### Sign-In For Admins: Add Multi-device support and multi-email support
+* **Add Multi-device support:** Admins should be able to sign in with the same email on multiple devices normally no problem. Currently it results in some issues.
+* **Add Multi-email support:** Allow Admins to sign in with Multiple Emails at once and switch between them in the UI. Each one of them must get the same verification (e.g., each email of them must be an Admin/Developer).
 
 ### Result Pages
 

@@ -187,18 +187,23 @@ export function gradeEssay(userInput, modelAnswer) {
       : canonicalSide(s);
   };
 
+  // Arabic folding shared by the text normalizer and the stop-word list:
+  // drop tashkeel/Quranic marks/tatweel, unify alef variants and alef maqsura.
+  const foldArabic = (s) =>
+    String(s)
+      .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, "")
+      .replace(/[\u0622\u0623\u0625\u0671]/g, "\u0627")
+      .replace(/\u0649/g, "\u064a");
+
   const normalizeText = (raw) =>
-    toAsciiDigits(raw)
+    foldArabic(toAsciiDigits(raw)
       .normalize("NFKC")
       .replace(/\\(?:text|textbf|textit|mathrm|mathbf|mathit|operatorname)\s*\{([^{}]*)\}/g, "$1")
       .replace(/\\(?:dfrac|tfrac|frac)\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, "$1 $2")
       .replace(/\\(?:left|right|bigg?|Bigg?)(?![a-zA-Z])/g, "")
       .replace(/\\[,;:! ]/g, " ")
       .replace(/\$\$|\$|\\\(|\\\)|\\\[|\\\]/g, " ")
-      .replace(/\\([a-zA-Z]+)/g, "$1")
-      .replace(/[\u064B-\u0652\u0670\u0640]/g, "")
-      .replace(/[\u0622\u0623\u0625\u0671]/g, "\u0627")
-      .replace(/\u0649/g, "\u064a")
+      .replace(/\\([a-zA-Z]+)/g, "$1"))
       .replace(/[\u060C\u061B\u061F\u00AB\u00BB\u2026]/g, " ")
       .toLowerCase()
       .replace(/[^\p{L}\p{N}]+/gu, " ")
@@ -266,7 +271,7 @@ export function gradeEssay(userInput, modelAnswer) {
     "not", "no", "so", "also", "في", "من", "إلى", "الى", "على", "عن", "مع",
     "هو", "هي", "هم", "هن", "هذا", "هذه", "ذلك", "تلك", "الذي", "التي",
     "و", "أو", "ثم", "أن", "إن", "كان", "كانت", "يكون", "تكون", "ما", "لا",
-  ]);
+  ].map(foldArabic));
   const normalizeWord = (word) => {
     let value = word.replace(/\u0629$/g, "\u0647");
     if (/[\u0600-\u06FF]/.test(value)) {
