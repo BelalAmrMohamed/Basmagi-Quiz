@@ -7,6 +7,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
+### Notification Button in the Sidebar
+* When pages load at first, the notification button doesn't appear for the first second or 2 of loading, but then it appears (for signed in admins). Fix that flashing.
+
 ### AI Models
 My platform has an integrated AI Chat that uses API Keys for Gemini, DeepSeek, & Claude. Google dropped new models lately, so it's time to update, based on the screenshot, what am I missing?
 
@@ -16,18 +19,6 @@ They always add new models; is there any dynamic way to keep my website updated?
 * The Notebook page uses its own simple version of Markdown, replace it with this custom engine `public\src\shared\markdown.js`
 
 ## New Features
-
-### Code Blocks
-
-#### 1. Line Numbers
-Code blocks should have proper Line numbers, VS-Code-style:
-* `public\src\shared\rich-input\`
-* `public\src\shared\markdown.js`
-
-#### 2. Issue in the AI Agent's Code Blocks
-* The AI Agent uses the `public\src\shared\rich-input\`, but when a user types ` ``` `, it doesn't insert a code block automatically. Fix it.
-
-AI Agent files: `public\src\components\ai-agent\`
 
 ### Sign-In For Admins: Add Multi-device support and multi-email support
 * **Add Multi-device support:** Admins should be able to sign in with the same email on multiple devices normally no problem. Currently it results in some issues.

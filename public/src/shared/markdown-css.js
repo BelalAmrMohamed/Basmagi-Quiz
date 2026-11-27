@@ -879,7 +879,7 @@ body.is-resizing-media .media-container.resizable-media {
   flex: none;
   position: sticky;
   left: 0;
-  margin: -16px 0 -16px -16px;
+  margin: -16px 0 -16px 0;
   padding: 16px 12px 16px 16px;
   text-align: right;
   white-space: pre;
@@ -888,6 +888,13 @@ body.is-resizing-media .media-container.resizable-media {
   color: #636370;
   background: #121214;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Chrome measures sticky \`left\` from the <pre>'s content edge, which cancels a
+   negative left margin and leaves the gutter on top of the code. So when a
+   gutter exists, drop the <pre>'s left padding and give it to the code. */
+.code-block:has(> .code-line-numbers) {
+  padding-left: 0;
 }
 
 .code-block .code-line-numbers + code {
@@ -1131,8 +1138,16 @@ body.is-resizing-media .media-container.resizable-media {
     padding: 34px 12px 12px;
   }
 
+  .code-block:has(> .code-line-numbers) {
+    padding-left: 0;
+  }
+
+  .code-block .code-line-numbers + code {
+    padding-left: 12px;
+  }
+
   .code-line-numbers {
-    margin: -34px 0 -12px -12px;
+    margin: -34px 0 -12px 0;
     padding: 34px 10px 12px 12px;
   }
 

@@ -21,7 +21,7 @@
 //    users who have local content, or users who installed the C++ Instant Compiler. The C++ runtime is
 //    cached only for the last group.
 
-const CACHE_VERSION = "basmagi-v10.0.0";
+const CACHE_VERSION = "basmagi-v10.0.1";
 const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
 const CACHE_PREFIX = "basmagi-v"; // only caches with this prefix belong to the service worker and may be pruned
 // Owned by the C++ runtime (runtimes/cpp/src/wasm-cache.ts): the ~60 MB Instant Compiler. NEVER delete it.
