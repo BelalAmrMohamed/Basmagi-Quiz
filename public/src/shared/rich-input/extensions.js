@@ -69,45 +69,51 @@ export function buildExtensions(T, options) {
     },
   });
 
+  // ```lang on its own line -> code block; a lone ``` at the end of a code
+  // block -> leave it. Shared by Enter, Shift+Enter, Ctrl+Enter and
+  // Ctrl+Shift+Enter so every one of them opens/closes the block.
+  function fenceEnter(editor) {
+    const { $from, empty } = editor.state.selection;
+    const parent = $from.parent;
+    const atEnd = empty && $from.parentOffset === parent.content.size;
+    if (!atEnd) return false;
+
+    if (parent.type.name === "codeBlock") {
+      const m = /(^|\n)```$/.exec(parent.textContent);
+      if (!m) return false;
+      return editor.chain().focus()
+        .deleteRange({ from: $from.pos - m[0].length, to: $from.pos })
+        .exitCode()
+        .run();
+    }
+
+    if (parent.type.name === "paragraph") {
+      const f = /^```([\w+#.-]*)$/.exec(parent.textContent);
+      if (!f) return false;
+      return editor.chain().focus()
+        .deleteRange({ from: $from.start(), to: $from.end() })
+        .setCodeBlock(f[1] ? { language: f[1] } : undefined)
+        .run();
+    }
+    return false;
+  }
+
   const ChatShortcuts = T.Extension.create({
     name: "chatShortcuts",
     priority: 1000,
     addKeyboardShortcuts() {
       return {
-        "Mod-Enter": () => onSubmit(),
+        "Mod-Enter": ({ editor }) => fenceEnter(editor) || onSubmit(),
+        "Mod-Shift-Enter": ({ editor }) => fenceEnter(editor),
         "Shift-Enter": ({ editor }) => {
+          if (fenceEnter(editor)) return true;
           if (editor.isActive("codeBlock")) return editor.commands.newlineInCode();
           if (editor.isActive("bulletList") || editor.isActive("orderedList")) {
             return editor.commands.splitListItem("listItem");
           }
           return editor.commands.splitBlock();
         },
-        Enter: ({ editor }) => {
-          const { $from, empty } = editor.state.selection;
-          const parent = $from.parent;
-          const atEnd = empty && $from.parentOffset === parent.content.size;
-
-          if (atEnd && parent.type.name === "codeBlock") {
-            const m = /(^|\n)```$/.exec(parent.textContent);
-            if (m) {
-              return editor.chain().focus()
-                .deleteRange({ from: $from.pos - m[0].length, to: $from.pos })
-                .exitCode()
-                .run();
-            }
-          }
-
-          if (atEnd && parent.type.name === "paragraph") {
-            const f = /^```([\w+#.-]*)$/.exec(parent.textContent);
-            if (f) {
-              return editor.chain().focus()
-                .deleteRange({ from: $from.start(), to: $from.end() })
-                .setCodeBlock(f[1] ? { language: f[1] } : undefined)
-                .run();
-            }
-          }
-          return false;
-        },
+        Enter: ({ editor }) => fenceEnter(editor),
       };
     },
   });

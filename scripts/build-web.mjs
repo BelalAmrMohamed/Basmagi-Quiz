@@ -113,6 +113,36 @@ async function cleanStaleTempDirs() {
   }
 }
 
+
+// ---- Offline manifest -----------------------------------------------------------
+// The service worker (public/service-worker.js) cannot know the hashed chunk names, so the build
+// lists, per page, every file the page needs: its entry JS/CSS, the chunks it imports (static AND
+// dynamic, transitively) and the files its CSS references (KaTeX fonts ...). Only pages the offline
+// feature needs are listed (OFFLINE_PAGES). Paths are URLs relative to the site root.
+const OFFLINE_PAGES = { home: "home", quiz: "pages/quiz", lesson: "pages/lesson", notebook: "pages/notebook" };
+function offlineManifest(jsMeta, cssMeta) {
+  const outputs = { ...jsMeta.outputs, ...cssMeta.outputs };
+  const key = (f) => path.relative(root, path.resolve(process.cwd(), f)).split(path.sep).join("/");
+  const byKey = new Map(Object.entries(outputs).map(([f, o]) => [key(f), o]));
+  const url = (k) => "/" + path.relative(pub, path.join(root, k)).split(path.sep).join("/");
+  const pages = {};
+  for (const [page, entry] of Object.entries(OFFLINE_PAGES)) {
+    const seen = new Set();
+    const visit = (k) => {
+      if (seen.has(k) || !byKey.has(k)) return;
+      seen.add(k);
+      for (const imp of byKey.get(k).imports || []) {
+        if (imp.external) continue;
+        if (["import-statement", "dynamic-import", "url-token", "import-rule"].includes(imp.kind)) visit(key(imp.path));
+      }
+    };
+    for (const ext of ["js", "css"]) visit(key(path.join(out, `${entry}.${ext}`)));
+    pages[page] = [...seen].map(url).sort();
+  }
+  // `all` = every file this build produced, so the service worker can drop chunks of earlier deploys.
+  return { pages, all: [...byKey.keys()].map(url).sort() };
+}
+
 async function run() {
   await cleanStaleTempDirs();
   await mkdir(out, { recursive: true });
@@ -185,9 +215,11 @@ async function run() {
   const res = await build(jsOpts);
   const cssRes = await build(cssOpts);
   await writeFile(path.join(out, "meta.json"), JSON.stringify(Object.keys(res.metafile.outputs), null, 1));
+  await writeFile(path.join(out, "offline-manifest.json"), JSON.stringify(offlineManifest(res.metafile, cssRes.metafile), null, 1));
   // Drop files from earlier builds (old hashed chunks etc.) that this build did not produce.
   const keep = new Set([...Object.keys(res.metafile.outputs), ...Object.keys(cssRes.metafile.outputs)].map((f) => path.resolve(process.cwd(), f)));
   keep.add(path.join(out, "meta.json"));
+  keep.add(path.join(out, "offline-manifest.json"));
   const left = await pruneDir(out, keep);
   if (left) console.warn(`Note: ${left} old file(s) in public/dist are open in another program and were left in place; they are harmless and will be cleaned on a later build.`);
   await removeDirQuietly(tmp);

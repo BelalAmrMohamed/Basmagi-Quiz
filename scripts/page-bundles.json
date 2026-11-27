@@ -134,7 +134,8 @@
       "src/shared/flow-field.js",
       "src/features/lesson/lesson-page.js",
       "src/components/side-menu/side-menu.js",
-      "src/pages/admin-session-sync.js"
+      "src/pages/admin-session-sync.js",
+      "src/pages/pwa-init.js"
     ],
     "css": [
       "src/styles/themes.css",
@@ -157,7 +158,8 @@
       "src/shared/flow-field.js",
       "src/features/notebook/notebook-page.js",
       "src/components/side-menu/side-menu.js",
-      "src/pages/notebook-admin-session-sync.js"
+      "src/pages/notebook-admin-session-sync.js",
+      "src/pages/pwa-init.js"
     ],
     "css": [
       "src/styles/themes.css",

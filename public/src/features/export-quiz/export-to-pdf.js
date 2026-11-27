@@ -112,6 +112,7 @@ const PDF_PRINT_CSS = (backgroundChoice = "light") => `
     word-break: break-word !important;
     overflow-wrap: anywhere !important;
   }
+  .code-line-numbers { display: none !important; }
   .code-block code {
     white-space: pre-wrap !important;
     word-break: break-word !important;
