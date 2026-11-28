@@ -56,6 +56,13 @@ async function init() {
     return;
   }
 
+  // 1b. /control is developer-only; scoped admins belong on /admin (the server enforces
+  // this too — this just avoids a page full of 403s).
+  if (!IS_ADMIN_PAGE && !getAdminRoleInfo()?.isOwner) {
+    window.location.replace("/admin");
+    return;
+  }
+
   // 2. Reconcile local admin state with the live Supabase session
   try {
     _supabaseClient = await syncAdminSession({

@@ -95,6 +95,15 @@ export function describe(n) {
     case "announcement":
       return { ...base, tone: "admin" };
 
+    case "admin_request":
+      return {
+        ...base,
+        tone: "admin",
+        title: count > 1 ? `${fmt(count)} طلبات انضمام جديدة كمشرف` : "طلب انضمام جديد كمشرف",
+        body: count > 1 ? (m.name ? `آخرها: ${m.name}` : "") : n.body || m.name || "",
+        href: "/control",
+      };
+
     default:
       return base;
   }
@@ -102,7 +111,7 @@ export function describe(n) {
 
 // Shown in the "important" tab and pinned to the top while unread. Keep in sync with
 // IMPORTANT_TYPES in api/_notifications.js.
-const IMPORTANT = new Set(["welcome", "announcement", "report_new", "storage_warning"]);
+const IMPORTANT = new Set(["welcome", "announcement", "report_new", "storage_warning", "admin_request"]);
 const rank = (n) => (!n.read_at && IMPORTANT.has(n.type) ? 0 : 1);
 
 // ── Preferences (mute types) ─────────────────────────────────────────────────
@@ -130,6 +139,7 @@ const ICONS = {
   level_up: '<path d="m12 3 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 20.9l1.1-6.5L2.6 9.8l6.5-.9z"/>',
   badge: '<circle cx="12" cy="8" r="6"/><path d="M15.5 12.9 17 22l-5-3-5 3 1.5-9.1"/>',
   storage_warning: '<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  admin_request: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>',
   announcement: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
   _default: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
 };

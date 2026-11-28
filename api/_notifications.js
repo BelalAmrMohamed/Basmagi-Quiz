@@ -42,7 +42,7 @@ export const NOTIFICATION_ACTIONS = new Set([
 ]);
 
 /** The "important" tab, and what gets pinned to the top of the list while unread. */
-export const IMPORTANT_TYPES = ["welcome", "announcement", "report_new", "storage_warning"];
+export const IMPORTANT_TYPES = ["welcome", "announcement", "report_new", "storage_warning", "admin_request"];
 
 /**
  * Types an admin may mute (admin_users.notification_muted). `welcome` and `storage_warning`
