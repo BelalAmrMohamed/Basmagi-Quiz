@@ -318,7 +318,7 @@
       "src/components/notifications/notifications.css",
       "src/features/control/control.css",
       "src/features/control/control-stats.css",
-      "src/features/control/admin-panel.css"
+      "src/features/admin/admin-panel.css"
     ]
   }
 }

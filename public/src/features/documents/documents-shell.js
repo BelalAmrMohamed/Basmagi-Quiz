@@ -199,7 +199,19 @@ const sidebarMarkup = `
                         </svg>
                     </div>
                     <div class="side-menu-profile-dropdown-labels">
-                        <span id="sideMenuDropdownName" class="side-menu-profile-dropdown-name"></span>
+                        <span class="side-menu-profile-dropdown-name-row">
+                            <span id="sideMenuDropdownName" class="side-menu-profile-dropdown-name"></span>
+                            <button type="button" id="sideMenuDropdownEditName"
+                                class="side-menu-profile-dropdown-edit-name" title="تغيير الإسم"
+                                aria-label="تغيير الإسم" onclick="changeUsername()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+                                    <path d="m15 5 4 4" />
+                                </svg>
+                            </button>
+                        </span>
                         <span id="sideMenuDropdownEmailRow" class="side-menu-profile-dropdown-email-row"
                             style="display:none;">
                             <span id="sideMenuDropdownEmail" class="side-menu-profile-dropdown-email"></span>
@@ -255,16 +267,6 @@ const sidebarMarkup = `
                     <span>لوحة المشرف</span>
                 </a>
 
-                <button type="button" class="side-menu-profile-dropdown-item" role="menuitem"
-                    onclick="changeUsername()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                    </svg>
-                    <span>تغيير الإسم</span>
-                </button>
 
                 <div class="side-menu-profile-dropdown-divider" role="separator"></div>
 
