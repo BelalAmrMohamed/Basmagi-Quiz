@@ -288,3 +288,16 @@ test('export: plot outputs become image/svg+xml in .ipynb and inline SVG in .htm
   assert.ok(html.includes('<svg xmlns=') && !html.includes('[figure 1]'));
   assert.match(await exportAs('script'), /\[1 figure not included\]/);
 });
+
+test('text cells use the host renderMarkdown when given, and fall back to the built-in one if it throws', () => {
+  const dom = env(), w = dom.window, root = w.document.getElementById('root');
+  const cells = [{ type: 'markdown', source: '# Hi' }];
+  const h = w.T.mountShell(fakeEngine(), { root, notebook: nb(cells), renderMarkdown: (src) => `<h1 class="md-h1">host:${src}</h1>` });
+  assert.ok(root.querySelector('.md-host .md-h1'), 'host HTML inside .md-host');
+  assert.equal(root.querySelector('.md'), null, 'built-in wrapper not used');
+  h.destroy();
+  const dom2 = env(), w2 = dom2.window, root2 = w2.document.getElementById('root');
+  w2.T.mountShell(fakeEngine(), { root: root2, notebook: nb(cells), renderMarkdown: () => { throw new Error('boom'); } });
+  assert.ok(root2.querySelector('.md h1'), 'fallback to the built-in renderer');
+  assert.equal(root2.querySelector('.md-host'), null);
+});

@@ -182,6 +182,12 @@
   padding: 6px 14px;
 }
 
+/* Text cells rendered by the host page's Markdown engine (opts.renderMarkdown): the host stylesheet styles the
+   content, so only the cell padding comes from here. */
+.mlweb .md-host {
+  padding: 6px 14px;
+}
+
 .mlweb .outs {
   padding: 2px 0 8px;
 }
