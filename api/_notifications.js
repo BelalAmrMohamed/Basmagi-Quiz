@@ -12,6 +12,10 @@
 //   notifications-prefs-get   -> { muted, quiet }             muted = never stored; quiet = stored, no badge
 //   notifications-prefs-set   -> { muted, quiet, unread }     body: { muted: [type], quiet: [type] }
 //   notifications-broadcast-preview -> { total, receiving, silent }  owner-only
+//   notifications-scope-preview   -> { total, receiving, silent }  any admin; body: { scopes: [..] }
+//   notifications-scope-broadcast -> { sent }  any admin; body: { title, body?, href?, scopes: [..] }
+//       Reaches only the OTHER admins who share at least one of `scopes`; a non-owner may only
+//       pick scopes they hold themselves.
 //   notifications-list also takes { filter: "important" }
 //
 // Rows are only created through push_admin_notification() / broadcast_admin_notification()
@@ -33,6 +37,8 @@ export const NOTIFICATION_ACTIONS = new Set([
   "notifications-prefs-get",
   "notifications-prefs-set",
   "notifications-broadcast-preview",
+  "notifications-scope-preview",
+  "notifications-scope-broadcast",
 ]);
 
 /** The "important" tab, and what gets pinned to the top of the list while unread. */
@@ -112,6 +118,36 @@ export async function broadcastNotification(supabase, n) {
   }
 }
 
+
+export const ALL_SCOPES = ["Primary", "Middle", "High", "University", "Featured"];
+const SCOPE_BROADCAST_MAX = 500;
+
+/**
+ * Resolves the recipients of a scoped announcement: the other admins sharing at least one of the
+ * requested scopes. Returns { error } (an HTTP-ready message) or { scopes, recipients }.
+ * A NULL allowed_scopes row means "every scope" (same default as api/auth.js).
+ */
+async function resolveScopeRecipients(supabase, payload, adminId, rawScopes) {
+  const requested = [...new Set(Array.isArray(rawScopes) ? rawScopes : [])].filter((s) => ALL_SCOPES.includes(s));
+  if (!requested.length) return { status: 400, error: "اختر مرحلة واحدة على الأقل." };
+  const mine = Array.isArray(payload?.allowed_scopes) && payload.allowed_scopes.length ? payload.allowed_scopes : ALL_SCOPES;
+  if (!payload?.isOwner && requested.some((s) => !mine.includes(s))) {
+    return { status: 403, error: "لا يمكنك الإرسال إلى مرحلة خارج صلاحياتك." };
+  }
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("id, allowed_scopes, notification_muted, notification_quiet");
+  if (error) throw error;
+  const recipients = (data || [])
+    .filter((r) => r.id !== adminId)
+    .filter((r) => {
+      const theirs = Array.isArray(r.allowed_scopes) && r.allowed_scopes.length ? r.allowed_scopes : ALL_SCOPES;
+      return requested.some((s) => theirs.includes(s));
+    })
+    .slice(0, SCOPE_BROADCAST_MAX);
+  return { scopes: requested, recipients };
+}
+
 // ── Endpoints ────────────────────────────────────────────────────────────────
 
 const COLUMNS = "id, type, title, body, href, meta, count, read_at, created_at, updated_at";
@@ -183,6 +219,41 @@ export async function handleNotificationAction(req, res, action, payload, adminI
         // Fresh key per announcement: two different announcements must both arrive.
         dedupeKey: `announcement:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
       });
+      return res.status(200).json({ sent });
+    }
+
+    if (action === "notifications-scope-preview" || action === "notifications-scope-broadcast") {
+      const r = await resolveScopeRecipients(supabase, payload, adminId, body.scopes);
+      if (r.error) return res.status(r.status).json({ error: r.error });
+      const has = (row, col) => Array.isArray(row[col]) && row[col].includes("announcement");
+      if (action === "notifications-scope-preview") {
+        const receiving = r.recipients.filter((row) => !has(row, "notification_muted"));
+        return res.status(200).json({
+          total: r.recipients.length,
+          receiving: receiving.length,
+          silent: receiving.filter((row) => has(row, "notification_quiet")).length,
+        });
+      }
+      const title = typeof body.title === "string" ? body.title.trim() : "";
+      const text = typeof body.body === "string" ? body.body.trim() : "";
+      const rawHref = typeof body.href === "string" ? body.href.trim() : "";
+      if (!title || title.length > 200) return res.status(400).json({ error: "العنوان مطلوب (حتى 200 حرف)." });
+      if (text.length > 1000) return res.status(400).json({ error: "النص طويل جدًا (حتى 1000 حرف)." });
+      if (rawHref && !safeHref(rawHref)) return res.status(400).json({ error: "الرابط يجب أن يكون مسارًا داخليًا يبدأ بـ /" });
+      const stamp = `${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+      let sent = 0;
+      for (const row of r.recipients) {
+        if (has(row, "notification_muted")) continue;
+        const stored = await pushNotification(supabase, row.id, {
+          type: "announcement",
+          title,
+          body: text,
+          href: rawHref || null,
+          meta: { scopes: r.scopes, scoped: true },
+          dedupeKey: `announcement:${stamp}:${row.id}`,
+        });
+        if (stored) sent += 1;
+      }
       return res.status(200).json({ sent });
     }
 

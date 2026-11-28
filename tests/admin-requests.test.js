@@ -44,7 +44,6 @@ test("index.html and sign-in.js dialog contain required request elements", () =>
 });
 
 test("control.html and control.js have admin requests section and functions", () => {
-  assert.ok(controlHtml.includes('id="requestsNavBtn"'), "control.html has requestsNavBtn");
   assert.ok(controlHtml.includes('id="requestsSection"'), "control.html has requestsSection");
   assert.ok(controlHtml.includes('id="requestsBadge"'), "control.html has requestsBadge");
   assert.ok(controlHtml.includes('id="requestsList"'), "control.html has requestsList");

@@ -23,7 +23,7 @@ const ROOT = fileURLToPath(new URL("../", import.meta.url));
 
 test("buildAll({ write: false }) reports 0 stale files (run `npm run sidebar:build`)", () => {
   const { results, staleCount, total } = buildAll({ write: false });
-  assert.equal(total, 10, "Must check all 9 app pages and documents-shell.js");
+  assert.equal(total, 12, "Must check all 11 app pages and documents-shell.js");
   const stale = results.filter((r) => r.stale).map((r) => r.file);
   assert.deepEqual(
     stale,
@@ -33,7 +33,7 @@ test("buildAll({ write: false }) reports 0 stale files (run `npm run sidebar:bui
   assert.equal(staleCount, 0, "No files should be stale");
 });
 
-test("all 9 app pages contain the sentinel-wrapped canonical sidebar with proper active states", () => {
+test("all 11 app pages contain the sentinel-wrapped canonical sidebar with proper active states", () => {
   for (const item of APP_PAGES) {
     const fullPath = path.join(ROOT, item.file);
     assert.ok(fs.existsSync(fullPath), `${item.file} does not exist`);

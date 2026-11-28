@@ -432,6 +432,29 @@
                     <span>البلاغات</span>
                 </a>
 
+                <!-- Developer-only: shown by side-menu.js (populateDropdown) when the admin JWT has isOwner. -->
+                <a href="control" id="sideMenuDropdownControl" class="side-menu-profile-dropdown-item" role="menuitem"
+                    style="display:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <polyline points="16 18 22 12 16 6" />
+                        <polyline points="8 6 2 12 8 18" />
+                    </svg>
+                    <span>صفحة المطوّر</span>
+                </a>
+
+                <!-- Admin-only (NOT developers, who get /control above): shown by side-menu.js (populateDropdown). -->
+                <a href="admin" id="sideMenuDropdownAdmin" class="side-menu-profile-dropdown-item" role="menuitem"
+                    style="display:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    <span>لوحة المشرف</span>
+                </a>
+
                 <button type="button" class="side-menu-profile-dropdown-item" role="menuitem"
                     onclick="changeUsername()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"

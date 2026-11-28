@@ -28,6 +28,7 @@ const AI_BOTS = [
 
 const NOINDEX_PAGES = [
     "/control",
+    "/admin",
     "/settings",
     "/reports",
     "/result",
@@ -51,6 +52,7 @@ const STATIC_INDEXABLE_PAGES = [
 
 const FORBIDDEN_LOC_PATTERNS = [
     "/control",
+    "/admin",
     "/settings",
     "/profile\"",       // exact-ish guard against the private shell, not /@handle
     "/result",

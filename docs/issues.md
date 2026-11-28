@@ -9,6 +9,10 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## New Features
 
+### Replace the "تغيير الإسم" button in the `#sideMenuProfileDropdown`
+Replace the "تغيير الإسم" button in the `#sideMenuProfileDropdown` with a pen icon next to the name itself (i.e., `#sideMenuDropdownName`) that does the same thing.
+
+
 ### Admin Sign-In: Multi-Device & Multi-Account Support
 - **Multi-Device Sessions (Important):** Allow the same Admin/Developer email to remain signed in across multiple devices simultaneously without session conflicts or forced logouts. Ensure sessions/tokens are tracked per device so logging in on one doesn't invalidate another.
 - **Multi-Account Switcher (Multiple Emails):** Allow Admins to sign in with multiple emails in the same browser and switch between them seamlessly in the profile UI.
@@ -16,7 +20,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
   - **State Isolation:** Ensure switching accounts cleanly updates the active session token, invalidates stale cached data, and scopes local state per user so requests and UI always match the active account.
 
 ### Admin Dashboard & Develpers Dashaboard
-* Developers currently have their dashboard: `/control`, but it needs a link that only appears for developers inside the `#sideMenuProfileDropdown` and the side-menu on phones.
 * Admins & Developers can also see `/reports` to solve reports.
 * Admins need their own control page, too, separate from that of the developers:
   * Admins should be able to see the trash that is related to their scope only: Admins with `المرحلة الجامعية` as a scope only see trash related to it. Developers keep seeing all.

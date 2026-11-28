@@ -1,0 +1,60 @@
+/* public/src/features/control/admin-panel.css — extras for /admin (scoped admin page).
+   Builds on control.css; theme tokens only, so every theme + High Performance Mode apply. */
+.admin-hint,
+.announce-hint {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.admin-scope-chips,
+.announce-scopes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin: 10px 0 14px;
+}
+
+.admin-scope-chip {
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--gold-dim);
+    border: 1px solid var(--border-strong);
+    color: var(--gold-light);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.admin-quick-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-quick-links .btn-nav {
+    text-decoration: none;
+}
+
+.announce-scopes-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.announce-scopes label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.trash-scope-filter {
+    padding: 8px 12px;
+    background: var(--bg-card2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Cairo', sans-serif;
+}
+
+.trash-scope-filter[hidden] {
+    display: none;
+}

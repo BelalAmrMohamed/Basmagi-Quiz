@@ -14,6 +14,12 @@ import { syncAdminSession } from "../../shared/adminBadgeSync.js";
 
 import { _alert } from "../../components/notifications/notifications.js";
 
+// This module serves two pages: /control (developers, data-page="control") and
+// /admin (scoped admins, data-page="admin"). Elements that only exist on one of
+// them are looked up null-safely.
+const IS_ADMIN_PAGE = document.body?.dataset.page === "admin";
+const $on = (id, ev, fn) => document.getElementById(id)?.addEventListener(ev, fn);
+
 const API_URL = "/api/admin-control";
 // Trash actions (list/restore/empty/settings) live on the general admin
 // items surface (/api/admin?action=...) rather than /api/admin-control —
@@ -43,9 +49,6 @@ let _adminRequests = [];
 let _requestsFilter = "pending";
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
-// trashNavBtn is disabled at parse time (see control.html) and re-enabled
-// here once _initReady resolves, so navigation cannot begin before session
-// reconciliation completes.
 async function init() {
   // 1. Redirect immediately if no local admin JWT exists
   if (!isAdminAuthenticated()) {
@@ -73,13 +76,78 @@ async function init() {
   }
 
   _resolveInitReady();
-  document.getElementById("trashNavBtn").disabled = false;
-  document.getElementById("trashNavBtn").classList.remove("btn-loading");
 
   // 3. Load admin-control data and prime the trash view through its normal
   // refresh-button handler once the session is ready.
-  loadData();
+  if (IS_ADMIN_PAGE) initAdminPage();
+  else loadData();
   document.getElementById("refreshTrashBtn").click();
+}
+
+// ── /admin page: scope overview, scoped announcement targets, trash scope filter ──
+function initAdminPage() {
+  const info = getAdminRoleInfo();
+  const scopes = (info?.allowed_scopes?.length ? info.allowed_scopes : Object.keys(SCOPE_LABELS)).filter((x) => SCOPE_LABELS[x]);
+
+  const chips = document.getElementById("adminScopeChips");
+  if (chips) {
+    chips.replaceChildren(
+      ...scopes.map((sc) => {
+        const el = document.createElement("span");
+        el.className = "admin-scope-chip";
+        el.textContent = SCOPE_LABELS[sc];
+        return el;
+      }),
+    );
+  }
+
+  const boxes = document.getElementById("announceScopes");
+  if (boxes) {
+    boxes.replaceChildren(
+      ...scopes.map((sc) => {
+        const label = document.createElement("label");
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.className = "announce-scope";
+        input.value = sc;
+        input.checked = true;
+        input.addEventListener("change", updateAnnounceReach);
+        label.append(input, ` ${SCOPE_LABELS[sc]}`);
+        return label;
+      }),
+    );
+    updateAnnounceReach();
+  }
+
+  const filter = document.getElementById("trashScopeFilter");
+  if (filter && scopes.length > 1) {
+    filter.replaceChildren(new Option("كل المراحل", "all"), ...scopes.map((sc) => new Option(SCOPE_LABELS[sc], sc)));
+    filter.hidden = false;
+    filter.addEventListener("change", () => {
+      trashScope = filter.value;
+      renderTrashList();
+    });
+  }
+}
+
+// Live "who will receive this" hint under the scope checkboxes.
+let reachSeq = 0;
+async function updateAnnounceReach() {
+  const el = document.getElementById("announceReach");
+  if (!el) return;
+  const scopes = selectedAnnounceScopes();
+  if (!scopes.length) {
+    el.textContent = "اختر مرحلة واحدة على الأقل.";
+    return;
+  }
+  const seq = ++reachSeq;
+  try {
+    const { total, receiving } = await postAdminItemAction("notifications-scope-preview", { scopes });
+    if (seq !== reachSeq) return;
+    el.textContent = total ? `سيصل إلى ${receiving} من أصل ${total} مشرف آخر.` : "لا يوجد مشرفون آخرون في هذه المراحل.";
+  } catch (_) {
+    if (seq === reachSeq) el.textContent = "";
+  }
 }
 
 function getHeaders() {
@@ -447,8 +515,22 @@ window.removeAdmin = function (email) {
 
 window.submitAddAdmin = submitAddAdmin;
 
-// Announcement -> every admin's notification center (owner-only on the server too).
-document.getElementById("announceForm").addEventListener("submit", async (e) => {
+// Announcement -> admins' notification centers.
+//  /control (developer): every admin.   /admin: only the other admins who share
+//  at least one of the chosen scopes (server enforces both).
+const SCOPE_LABELS = {
+  Primary: "المرحلة الابتدائية",
+  Middle: "المرحلة الإعدادية",
+  High: "المرحلة الثانوية",
+  University: "المرحلة الجامعية",
+  Featured: "مسارات مميزة",
+};
+
+function selectedAnnounceScopes() {
+  return Array.from(document.querySelectorAll(".announce-scope:checked")).map((cb) => cb.value);
+}
+
+$on("announceForm", "submit", async (e) => {
   e.preventDefault();
   const title = document.getElementById("announceTitle").value.trim();
   const body = document.getElementById("announceBody").value.trim();
@@ -461,10 +543,21 @@ document.getElementById("announceForm").addEventListener("submit", async (e) => 
     showMessage("الرابط يجب أن يكون مسارًا داخليًا يبدأ بـ /", true);
     return;
   }
+  const scopes = IS_ADMIN_PAGE ? selectedAnnounceScopes() : [];
+  if (IS_ADMIN_PAGE && !scopes.length) {
+    showMessage("اختر مرحلة واحدة على الأقل.", true);
+    return;
+  }
+  const previewAction = IS_ADMIN_PAGE ? "notifications-scope-preview" : "notifications-broadcast-preview";
+  const sendAction = IS_ADMIN_PAGE ? "notifications-scope-broadcast" : "notifications-broadcast";
   await withButtonLoading(document.getElementById("announceSendBtn"), async () => {
     try {
       // Confirm first: some admins mute announcements, others get them silently (no badge).
-      const { total, receiving, silent } = await postAdminItemAction("notifications-broadcast-preview", {});
+      const { total, receiving, silent } = await postAdminItemAction(previewAction, { scopes });
+      if (!total) {
+        showMessage("لا يوجد مشرفون آخرون في هذه المراحل.", true);
+        return;
+      }
       if (!receiving) {
         showMessage("كل المشرفين أوقفوا الإعلانات، لن يصل هذا الإعلان لأحد.", true);
         return;
@@ -473,7 +566,7 @@ document.getElementById("announceForm").addEventListener("submit", async (e) => 
       if (total > receiving) lines.push(`${total - receiving} أوقفوا الإعلانات.`);
       if (silent) lines.push(`${silent} سيصلهم بصمت (بدون عدّاد).`);
       if (!window.confirm(`${lines.join("\n")}\n\nهل تريد الإرسال؟`)) return;
-      const { sent } = await postAdminItemAction("notifications-broadcast", { title, body, href });
+      const { sent } = await postAdminItemAction(sendAction, { title, body, href, scopes });
       showMessage(`تم إرسال الإعلان إلى ${sent} مشرف`);
       e.target.reset();
     } catch (err) {
@@ -482,8 +575,8 @@ document.getElementById("announceForm").addEventListener("submit", async (e) => 
   });
 });
 
-document.getElementById("collegeForm").addEventListener("submit", saveCollege);
-document.getElementById("cancelCollegeEdit").addEventListener("click", resetCollegeForm);
+$on("collegeForm", "submit", saveCollege);
+$on("cancelCollegeEdit", "click", resetCollegeForm);
 
 // ── Scopes Modal ─────────────────────────────────────────────────────────────
 let currentScopeEmail = null;
@@ -503,7 +596,7 @@ window.openScopeModal = function (email, currentScopes) {
   document.getElementById("scopeModal").classList.add("show");
 };
 
-document.getElementById("saveScopesBtn").addEventListener("click", async (e) => {
+$on("saveScopesBtn", "click", async (e) => {
   if (!currentScopeEmail) return;
 
   const checkboxes = document.querySelectorAll(".scope-checkbox:checked");
@@ -532,10 +625,10 @@ document.getElementById("saveScopesBtn").addEventListener("click", async (e) => 
   });
 });
 
-document.getElementById("confirmModal").addEventListener("click", function (e) {
+$on("confirmModal", "click", function (e) {
   if (e.target === this) closeModal();
 });
-document.getElementById("scopeModal").addEventListener("click", function (e) {
+$on("scopeModal", "click", function (e) {
   if (e.target === this) closeScopeModal();
 });
 
@@ -550,25 +643,8 @@ document.getElementById("scopeModal").addEventListener("click", function (e) {
 
 let trashItemsCache = [];
 let trashFilter = "all";
+let trashScope = "all"; // /admin only: narrow the (already server-scoped) list to one stage
 let trashLoadId = 0;
-
-function showTrashView() {
-  document.getElementById("overviewView").hidden = true;
-  document.getElementById("requestsSection").hidden = true;
-  document.getElementById("trashSection").hidden = false;
-  document.getElementById("trashNavBtn").hidden = true;
-  document.getElementById("overviewNavBtn").hidden = false;
-  document.getElementById("requestsNavBtn").hidden = false;
-}
-
-function showOverviewView() {
-  document.getElementById("trashSection").hidden = true;
-  document.getElementById("requestsSection").hidden = true;
-  document.getElementById("overviewView").hidden = false;
-  document.getElementById("overviewNavBtn").hidden = true;
-  document.getElementById("trashNavBtn").hidden = false;
-  document.getElementById("requestsNavBtn").hidden = false;
-}
 
 const TRASH_TYPE_LABELS = { quiz: "امتحان", lesson: "درس", notebook: "دفتر", folder: "مجلد", course: "مادة" };
 
@@ -595,10 +671,14 @@ function daysUntil(expiresAtIso) {
 
 function renderTrashList() {
   const list = document.getElementById("trashList");
-  const filtered =
-    trashFilter === "all"
-      ? trashItemsCache
-      : trashItemsCache.filter((item) => item.itemType === trashFilter);
+  const filtered = trashItemsCache
+    .filter((item) => trashFilter === "all" || item.itemType === trashFilter)
+    .filter((item) => trashScope === "all" || item.educationType === trashScope);
+  const countBadge = document.getElementById("trashCount");
+  if (countBadge) {
+    countBadge.textContent = String(trashItemsCache.length);
+    countBadge.hidden = trashItemsCache.length === 0;
+  }
 
   list.replaceChildren();
   if (!filtered.length) {
@@ -685,12 +765,12 @@ async function loadTrash() {
       const settings = await postAdminItemAction("trash-settings");
       if (currentLoadId !== trashLoadId) return;
       document.getElementById("trashRetentionInput").value = settings.retentionDays ?? 30;
-      retentionBox.hidden = false;
+      if (retentionBox) retentionBox.hidden = false;
     } catch (_) {
-      if (currentLoadId === trashLoadId) retentionBox.hidden = true;
+      if (currentLoadId === trashLoadId && retentionBox) retentionBox.hidden = true;
     }
   } else {
-    retentionBox.hidden = true;
+    if (retentionBox) retentionBox.hidden = true;
   }
 }
 
@@ -800,15 +880,7 @@ async function saveTrashRetention() {
   });
 }
 
-document.getElementById("trashNavBtn").addEventListener("click", showTrashView);
-document.getElementById("overviewNavBtn").addEventListener("click", () => {
-  // Hide requests view too if visible
-  document.getElementById("requestsSection").hidden = true;
-  document.getElementById("requestsNavBtn").hidden = false;
-  showOverviewView();
-});
-document.getElementById("requestsNavBtn").addEventListener("click", showRequestsView);
-document.getElementById("refreshRequestsBtn").addEventListener("click", loadData);
+$on("refreshRequestsBtn", "click", loadData);
 document.querySelectorAll(".requests-filter-tab").forEach((tab) => {
   tab.addEventListener("click", () => {
     document.querySelectorAll(".requests-filter-tab").forEach((t) => t.classList.remove("active"));
@@ -817,10 +889,10 @@ document.querySelectorAll(".requests-filter-tab").forEach((tab) => {
     renderRequestsList();
   });
 });
-document.getElementById("refreshTrashBtn").addEventListener("click", loadTrash);
-document.getElementById("emptyTrashBtn").addEventListener("click", openEmptyTrashConfirm);
-document.getElementById("saveRetentionBtn").addEventListener("click", saveTrashRetention);
-document.getElementById("typedConfirmModal").addEventListener("click", function (e) {
+$on("refreshTrashBtn", "click", loadTrash);
+$on("emptyTrashBtn", "click", openEmptyTrashConfirm);
+$on("saveRetentionBtn", "click", saveTrashRetention);
+$on("typedConfirmModal", "click", function (e) {
   if (e.target === this) closeTypedConfirmModal();
 });
 document.querySelectorAll(".trash-filter-tab").forEach((tab) => {
@@ -977,23 +1049,6 @@ async function deleteAdminRequest(requestId) {
   } catch (err) {
     showMessage(err.message, true);
   }
-}
-
-function showRequestsView() {
-  document.getElementById("overviewView").style.display = "none";
-  document.getElementById("trashSection").hidden = true;
-  document.getElementById("requestsSection").hidden = false;
-  const storageSection = document.getElementById("storageSection");
-  if (storageSection) storageSection.hidden = true;
-  document.getElementById("overviewNavBtn").hidden = false;
-  document.getElementById("requestsNavBtn").hidden = true;
-}
-
-function showOverviewFromRequests() {
-  document.getElementById("requestsSection").hidden = true;
-  document.getElementById("overviewView").style.display = "";
-  document.getElementById("overviewNavBtn").hidden = true;
-  document.getElementById("requestsNavBtn").hidden = false;
 }
 
 // ── Logout ─────────────────────────────────────────────────────────────────────
