@@ -10,6 +10,7 @@ import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.
 import { parseNotebookRoute, isUuid, prepareNotebook } from "./notebook-data.js";
 import { resolveNotebookLang, notebookText } from "../../shared/notebook-lang.js";
 import { showNotebookInfoModal } from "../home/notebook-actions.js";
+import { renderMarkdown as renderSharedMarkdown } from "../../shared/markdown.js";
 import { createWorkspaceBridge } from "../../shared/workspace-bridge.js";
 import { exportNotebookZip } from "../../shared/notebook-bundle.js";
 import { loadRuntime } from "../../shared/runtime-loader.js";
@@ -141,6 +142,7 @@ async function init() {
       notebook,
       lang,
       onInfo: () => showNotebookInfoModal(row),
+      renderMarkdown: (src) => renderSharedMarkdown(src),
       onPrompt: (message, value) => _prompt(message, value, { dismissOnBackdrop: false }),
       onNotice: (message) => window.dispatchEvent(new CustomEvent("notebook:notice", { detail: message })),
     });

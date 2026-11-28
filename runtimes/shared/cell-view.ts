@@ -81,8 +81,10 @@ export function renderCell(ctx: Ctx, c: UiCell, i: number): HTMLElement {
   });
 
   if (c.type === 'md' && !c.mdEdit) {
-    const v = h('div', { class: 'md', dir: mdDirection(c.src) });
-    v.innerHTML = renderMarkdown(c.src);
+    let hostHtml: string | null = null;
+    if (ctx.opts.renderMarkdown) { try { hostHtml = ctx.opts.renderMarkdown(c.src); } catch { hostHtml = null; } }
+    const v = h('div', { class: hostHtml === null ? 'md' : 'md-host', dir: mdDirection(c.src) });
+    v.innerHTML = hostHtml ?? renderMarkdown(c.src);
     v.ondblclick = () => { c.mdEdit = true; ctx.render(); };
     el.append(v);
   } else if (c.type === 'md') {

@@ -615,6 +615,8 @@ html:not([data-motion="reduced"]) .ai-agent-dropdown-menu--actions .ai-agent-dro
 
 .ai-agent-msg .md-list>li {
   text-align: start;
+  /* markers are inside here, so no per-item indent (see markdown.css) */
+  margin-inline-start: 0;
 }
 
 .ai-agent-msg .md-list .md-list {

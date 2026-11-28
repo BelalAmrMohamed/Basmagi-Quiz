@@ -33,6 +33,10 @@ export interface MountOptions {
   onChange?: (cells: HostCell[]) => void;
   onNotice?: (message: string) => void;
   onInfo?: () => void;
+  /** Optional host Markdown renderer for text cells (source -> HTML string). When given, text cells are rendered
+   *  with it (inside a `.md-host` wrapper, so the host page's own Markdown styles apply) instead of the built-in
+   *  marked + KaTeX renderer. If it throws, the built-in renderer is used. The HTML must already be safe. */
+  renderMarkdown?: (src: string) => string;
   onConfirm?: (title: string, message: string, accept: string) => boolean | Promise<boolean>;
   /** Single-line text prompt (the platform's _prompt). Resolves to the text, or null when cancelled. */
   onPrompt?: (message: string, value: string) => string | null | Promise<string | null>;

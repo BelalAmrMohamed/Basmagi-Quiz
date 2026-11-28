@@ -25,6 +25,7 @@ import "./image-tool-window.js";
 import "./notebook-output-controls.js";
 import "./notebook-menu-controls.js";
 import { mountNotebookAgent } from "./notebook-agent.js";
+import { renderMarkdown as renderSharedMarkdown } from "../../shared/markdown.js";
 
 const $ = (id) => document.getElementById(id);
 let state = M.emptyNotebook();
@@ -196,6 +197,7 @@ async function mountEditor() {
       baseUrl: RUNTIME_CONFIG[state.runtime].base,
       mode: "edit",
       lang: state.language,
+      renderMarkdown: (src) => renderSharedMarkdown(src),
       notebook: { id: editId || "draft", title: state.title, schemaVersion: 1, runtime: state.runtime, cells: state.cells.map((c, i) => ({ id: c.id || `cell-${i + 1}`, ...cellToPlain(c) })) },
       onChange: (cells) => { state = { ...state, cells: cells.map(cellToPlain) }; markDirty(); },
       onNotice: (m) => showNotification("", m, "info"),

@@ -365,22 +365,30 @@ export const ICON_DOWNLOAD = `<svg xmlns="http://www.w3.org/2000/svg" width="14"
   <path d="m7 10 5 5 5-5"/>
 </svg>`;
 
-export const ICON_CHEVRON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+// Collapse / expand glyph pair (the same chevrons the rich input uses). Both
+// are rendered; markdown.css shows one depending on .is-collapsed.
+export const ICON_CHEVRON = `<svg class="cb-ic-collapse" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <path d="m6 9 6 6 6-6"/>
+  <path d="m7 20 5-5 5 5"/>
+  <path d="m7 4 5 5 5-5"/>
+</svg><svg class="cb-ic-expand" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="m7 15 5 5 5-5"/>
+  <path d="m7 9 5-5 5 5"/>
 </svg>`;
 
 // ─── 4b. Copy-button label (i18n) ──────────────────────────────────────────────
-// The "Copy" text shown on fenced code-block copy buttons. Was previously
-// hardcoded to Arabic ("نسخ") regardless of page language. Pages can set
-// `window.MD_COPY_LABEL` before calling renderMarkdown() to localise it;
-// otherwise it falls back to the original Arabic default to preserve
-// existing visual behaviour for callers that relied on it.
+// The text shown on fenced code-block copy buttons. Defaults to "Copy" (same
+// as the rich input's code block). Pages can set `window.MD_COPY_LABEL` before
+// calling renderMarkdown() to localise it.
 export const COPY_LABEL =
-  (typeof window !== "undefined" && window.MD_COPY_LABEL) || "نسخ";
+  (typeof window !== "undefined" && window.MD_COPY_LABEL) || "Copy";
 
-// Same idea for the download button (`window.MD_DOWNLOAD_LABEL`).
+// The download button is icon-only now (its tooltip names the file), so this
+// label is no longer rendered. It stays exported because export-to-quiz.js
+// still bakes it into exported pages by name.
 export const DOWNLOAD_LABEL =
   (typeof window !== "undefined" && window.MD_DOWNLOAD_LABEL) || "تنزيل";
 
@@ -1772,7 +1780,7 @@ export function detectLang(code) {
 }
 
 // ─── 6b. Fenced code-block markup ─────────────────────────────────────────────
-// Header (left → right): collapse chevron · language badge · download · copy.
+// Header (left → right): collapse icon · language badge · download (icon only) · copy.
 // The file name is resolved here, at render time, from the language tag and
 // the code, and stored on the download button (data-filename) — so the click
 // handler (live pages and the HTML/quiz exports alike) needs no language
@@ -1816,7 +1824,6 @@ export function _buildCodeBlockHtml(lang, effectiveLang, code, highlighted) {
              data-filename="${fileName}"
              aria-label="Download ${fileName}" title="${fileName}">` +
     ICON_DOWNLOAD +
-    `<span class="download-label">${escHtml(DOWNLOAD_LABEL)}</span>` +
     `</button>` +
     `<button class="copy-code-btn"
              onclick="window.copyCodeBlock(this)"

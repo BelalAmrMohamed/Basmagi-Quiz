@@ -3257,17 +3257,32 @@ body.reorder-mode-active .question-card {
   margin: 0.8em 0;
 }
 
+/* Telegram-style quote: translucent green fill, accent bar on the START side
+   of the quote's own direction, and a quote glyph in the trailing corner
+   (padding-inline-end keeps the text clear of it). */
 .md-blockquote {
-  border-inline-start: 4px solid var(--color-primary);
+  position: relative;
   margin: 0.5em 0;
-  padding: 8px 16px;
-  background: var(--color-primary-light);
-  border-start-start-radius: 0;
-  border-end-start-radius: 0;
-  border-start-end-radius: 6px;
-  border-end-end-radius: 6px;
-  color: var(--color-text-secondary);
-  font-style: italic;
+  padding-block: 0.55rem;
+  padding-inline: 1rem 2rem;
+  background: rgba(75, 160, 45, 0.14);
+  border-inline-start: 3.5px solid #4ba02d;
+  border-radius: 7px;
+  text-align: start;
+  color: var(--color-text-primary);
+}
+
+.md-blockquote::after {
+  content: "”";
+  position: absolute;
+  top: 0.25rem;
+  inset-inline-end: 0.55rem;
+  color: rgba(75, 160, 45, 0.75);
+  font-size: 1.1rem;
+  font-style: normal;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
 }
 
 .md-list {
