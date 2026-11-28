@@ -144,21 +144,32 @@
    BLOCKQUOTE
    ══════════════════════════════════════════════════════════════════════════════ */
 
-/* Logical properties: the accent bar sits on the START side of the quote's own
-   resolved direction (right for Arabic, left for English) instead of always
-   on the right, so an English quote no longer looks stuck to the wrong edge. */
+/* Telegram-style quote: translucent green fill, accent bar on the START side
+   of the quote's own direction, and a quote glyph in the trailing corner
+   (padding-inline-end keeps the text clear of it). */
 .md-blockquote {
-  border-inline-start: 4px solid var(--color-primary);
+  position: relative;
   margin: 0.5em 0;
-  padding: 8px 16px;
-  background: var(--color-primary-light);
-  border-start-start-radius: 0;
-  border-end-start-radius: 0;
-  border-start-end-radius: 6px;
-  border-end-end-radius: 6px;
+  padding-block: 0.55rem;
+  padding-inline: 1rem 2rem;
+  background: rgba(75, 160, 45, 0.14);
+  border-inline-start: 3.5px solid #4ba02d;
+  border-radius: 7px;
   text-align: start;
-  color: var(--color-text-secondary);
-  font-style: italic;
+  color: var(--color-text-primary);
+}
+
+.md-blockquote::after {
+  content: "”";
+  position: absolute;
+  top: 0.25rem;
+  inset-inline-end: 0.55rem;
+  color: rgba(75, 160, 45, 0.75);
+  font-size: 1.1rem;
+  font-style: normal;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -200,6 +211,16 @@
 .md-list li {
   margin-bottom: 4px;
   line-height: 1.6;
+}
+
+/* A list takes its direction from its FIRST item, but each item resolves its
+   own. When an item runs the other way (an Arabic item in an English list, or
+   the reverse) its outside marker lands on the side the list has no margin on
+   and spills out of the container. Give that item the same indent on its own
+   start side. :where() keeps this at zero specificity, so hosts that lay lists
+   out differently (e.g. the AI agent's inside markers) can simply override it. */
+:where(.md-list[dir="ltr"] > li[dir="rtl"], .md-list[dir="rtl"] > li[dir="ltr"]) {
+  margin-inline-start: 1.4em;
 }
 
 /* ── Nested list indentation & bullet-style progression (Fix 2) ─────────────
@@ -767,17 +788,24 @@ html[data-theme="dark-slate"] .code-block-wrapper {
   pointer-events: none;
 }
 
-/* Header buttons — ghost style, always visible (like the rich input) */
-.copy-code-btn,
-.code-download-btn,
-.code-collapse-btn {
+/* Header buttons — ghost style, always visible (like the rich input).
+   Scoped to .code-block-wrapper > button.… on purpose: host pages (the
+   notebook runtime, for one) ship a blanket button { min-height; padding;
+   border; background } reset that has the same weight as a bare class
+   selector and was inflating these buttons. The extra parent + element
+   qualifier (and :not(:disabled) on :hover) outweighs such resets. */
+.code-block-wrapper > button.copy-code-btn,
+.code-block-wrapper > button.code-download-btn,
+.code-block-wrapper > button.code-collapse-btn {
   z-index: 2;
   align-self: center;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  box-sizing: border-box;
   height: 24px;
+  min-height: 0;
   padding: 0 6px;
   border: 0;
   border-radius: 8px;
@@ -791,51 +819,53 @@ html[data-theme="dark-slate"] .code-block-wrapper {
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.copy-code-btn .copy-label,
-.code-download-btn .download-label {
+.code-block-wrapper > button.copy-code-btn .copy-label {
   font-family: "Inter", "Tajawal", sans-serif;
 }
 
-.copy-code-btn:hover,
-.code-download-btn:hover,
-.code-collapse-btn:hover {
+.code-block-wrapper > button.copy-code-btn:hover:not(:disabled),
+.code-block-wrapper > button.code-download-btn:hover:not(:disabled),
+.code-block-wrapper > button.code-collapse-btn:hover:not(:disabled) {
   background: var(--mdcb-hover);
   color: var(--mdcb-fg);
 }
 
-.copy-code-btn:active,
-.code-download-btn:active,
-.code-collapse-btn:active {
+.code-block-wrapper > button.copy-code-btn:active:not(:disabled),
+.code-block-wrapper > button.code-download-btn:active:not(:disabled),
+.code-block-wrapper > button.code-collapse-btn:active:not(:disabled) {
   transform: scale(0.96);
 }
 
-.copy-code-btn:focus-visible,
-.code-download-btn:focus-visible,
-.code-collapse-btn:focus-visible {
+.code-block-wrapper > button.copy-code-btn:focus-visible,
+.code-block-wrapper > button.code-download-btn:focus-visible,
+.code-block-wrapper > button.code-collapse-btn:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--color-primary, #b94a16) 55%, transparent);
   outline-offset: 1px;
 }
 
-.copy-code-btn.copied,
-.code-download-btn.copied {
+.code-block-wrapper > button.copy-code-btn.copied,
+.code-block-wrapper > button.code-download-btn.copied {
   color: #34d399;
 }
 
-.copy-code-btn {
+.code-block-wrapper > button.copy-code-btn {
   grid-column: 4;
   grid-row: 1;
   justify-self: end;
   margin-right: 8px;
 }
 
-.code-download-btn {
+/* Icon-only (the tooltip names the file that will be saved). */
+.code-block-wrapper > button.code-download-btn {
   grid-column: 3;
   grid-row: 1;
   justify-self: end;
   margin-right: 4px;
+  width: 24px;
+  padding: 0;
 }
 
-.code-collapse-btn {
+.code-block-wrapper > button.code-collapse-btn {
   grid-column: 1;
   grid-row: 1;
   justify-self: start;
@@ -844,12 +874,18 @@ html[data-theme="dark-slate"] .code-block-wrapper {
   padding: 0;
 }
 
-.code-collapse-btn svg {
-  transition: transform 0.2s ease;
+/* Collapse / expand glyphs (same pair the rich input uses). The button holds
+   both; the wrapper's state decides which one shows. */
+.code-collapse-btn .cb-ic-expand {
+  display: none;
 }
 
-.code-block-wrapper.is-collapsed .code-collapse-btn svg {
-  transform: rotate(-90deg);
+.code-block-wrapper.is-collapsed .code-collapse-btn .cb-ic-collapse {
+  display: none;
+}
+
+.code-block-wrapper.is-collapsed .code-collapse-btn .cb-ic-expand {
+  display: inline-block;
 }
 
 /* Collapsed state — header + a short peek that fades out at the bottom. */
