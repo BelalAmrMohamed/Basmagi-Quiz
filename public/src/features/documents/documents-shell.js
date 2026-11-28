@@ -144,7 +144,7 @@ const sidebarMarkup = `
         </a>
 
         <!-- NAV_ITEM:notifications -->
-        <!-- Admin-only: notification-center.js un-hides it (and shows the unread badge) for a signed-in admin. -->
+        <!-- Admin-only: un-hidden by the inline script below (no flash) and wired by notification-center.js, which also shows the unread badge. -->
         <button type="button" id="notificationCenterItem" class="menu-item notification-center-item" hidden
             data-tooltip="الإشعارات" aria-haspopup="dialog" aria-expanded="false" aria-controls="notificationCenterPanel">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -156,6 +156,19 @@ const sidebarMarkup = `
             <span class="menu-label">الإشعارات</span>
             <span class="nc-badge" id="notificationCenterBadge" hidden aria-live="polite"></span>
         </button>
+        <script>
+            // Anti-flash: reveal the bell for a signed-in admin during parsing (same check as
+            // notification-center.js: a session token that carries an admin id), instead of waiting
+            // for the side-menu.js module graph to load. notification-center.js still wires it up.
+            (function () {
+                try {
+                    var t = sessionStorage.getItem("__bq_adm");
+                    if (!t || t === "null") return;
+                    var p = JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+                    if (p && p.id) document.getElementById("notificationCenterItem").hidden = false;
+                } catch (e) { }
+            })();
+        </script>
 
         <div class="menu-item-dropdown-wrap">
             <button type="button" id="sideMenuProfileTrigger" title="الحساب" class="menu-item" data-tooltip="الحساب"

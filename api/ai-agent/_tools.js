@@ -328,7 +328,7 @@ const NOTEBOOK_CHALLENGE_SCHEMA = {
   description: "Turns a code cell into a graded coding challenge. Grading compares what the program PRINTS (stdout) with expectedOutput, never the code text. The cell's source is the learner's starter code.",
   properties: {
     expectedOutput: { type: "string", description: "Exact text the correct program prints. For matchMode=regex: a regular expression matching the whole output." },
-    matchMode: { type: "string", enum: ["trimmed", "exact", "numeric", "regex"], description: "Default trimmed (ignores CRLF, trailing spaces per line, trailing blank lines). numeric: numbers within tolerance, words exact." },
+    matchMode: { type: "string", enum: ["trimmed", "exact", "numeric", "regex"], description: "Default trimmed (ignores CRLF, indentation and spacing, and blank lines; words and numbers must match). numeric: numbers within tolerance, words exact." },
     tolerance: { type: "number", description: "numeric mode only (default 1e-6)." },
     testStdin: { type: "string", description: "C++ notebooks only: input fed to cin when graded." },
     hint: { type: "string" },
