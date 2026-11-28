@@ -7,17 +7,10 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
-### Notebook Page Challenges
-![screenshot](image.png)
-
-### Notification Button in the Sidebar
-* When pages load at first, the notification button doesn't appear for the first second or 2 of loading, but then it appears (for signed in admins). Fix that flashing.
-* Question: Should notifications be visible to all users? And give developers the ability to announce to all students? Or is that useless and we should just keep it for admins only? Because we might all all students to sign-in in the feature. 
-
 ## New Features
 
 ### Admin Sign-In: Multi-Device & Multi-Account Support
-- **Multi-Device Sessions:** Allow the same Admin/Developer email to remain signed in across multiple devices simultaneously without session conflicts or forced logouts. Ensure sessions/tokens are tracked per device so logging in on one doesn't invalidate another.
+- **Multi-Device Sessions (Important):** Allow the same Admin/Developer email to remain signed in across multiple devices simultaneously without session conflicts or forced logouts. Ensure sessions/tokens are tracked per device so logging in on one doesn't invalidate another.
 - **Multi-Account Switcher (Multiple Emails):** Allow Admins to sign in with multiple emails in the same browser and switch between them seamlessly in the profile UI.
   - **Verification:** Each added account must independently pass full authentication and Admin/Developer role verification (on sign-in and switch).
   - **State Isolation:** Ensure switching accounts cleanly updates the active session token, invalidates stale cached data, and scopes local state per user so requests and UI always match the active account.
