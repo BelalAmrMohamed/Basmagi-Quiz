@@ -21,6 +21,7 @@
 // =============================================================================
 
 import { makeClient } from "../_supabase.js";
+import { DEFAULT_MODELS } from "../../public/src/shared/ai-models.js";
 import { getNextKey } from "./_keyPool.js";
 import { processTelegramInbound } from "./_telegramFiles.js";
 import { BOT_TOOLS, executeBotTool } from "./_botTools.js";
@@ -77,8 +78,10 @@ const FALLBACK_MESSAGE =
 const HISTORY_FETCH_LIMIT = 12; // last N messages for context window
 const HISTORY_PRUNE_LIMIT = 30; // max messages to keep per chat
 // Tool-loop limits (time budget + high ceiling) live in _botLoop.js.
-const PRIMARY_GEMINI_MODEL = "gemini-3.8-flash";
-const FALLBACK_GEMINI_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest"];
+// The bot only ever uses the shared free-tier keys, so it is pinned to the
+// platform default (the newest Flash-Lite via its -latest alias). Heavier
+// models are not free-tier and would drain the shared quota.
+const BOT_GEMINI_MODEL = DEFAULT_MODELS.google;
 
 // ── Supabase client (service_role — server-side only) ────────────────────────
 
@@ -254,7 +257,7 @@ async function generateGeminiReplyWithTools(contents, chatId) {
     return decl;
   });
 
-  const modelsToTry = [PRIMARY_GEMINI_MODEL, ...FALLBACK_GEMINI_MODELS];
+  const modelsToTry = [BOT_GEMINI_MODEL];
   const startedAt = Date.now();
 
   for (let loop = 0; loop < MAX_TOOL_LOOPS; loop++) {
@@ -267,7 +270,7 @@ async function generateGeminiReplyWithTools(contents, chatId) {
       const key = getGoogleKey();
       if (!key) throw new Error("No Google API keys configured");
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
       const body = {
         systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
         contents,
@@ -281,17 +284,17 @@ async function generateGeminiReplyWithTools(contents, chatId) {
       try {
         res = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
           body: JSON.stringify(body),
         });
 
         if (res.status === 429) {
           // Rate limited on this key, rotate key and retry once
           const retryKey = getGoogleKey();
-          const retryUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${retryKey}`;
+          const retryUrl = url;
           res = await fetch(retryUrl, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "x-goog-api-key": retryKey },
             body: JSON.stringify(body),
           });
         }
@@ -430,7 +433,7 @@ async function processWhatsAppMessage(from, msgText) {
     const key = getGoogleKey();
     if (!key) throw new Error("No Google API keys configured");
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${BOT_GEMINI_MODEL}:generateContent`;
     const body = {
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents: [{ role: "user", parts: [{ text: msgText }] }],
@@ -439,7 +442,7 @@ async function processWhatsAppMessage(from, msgText) {
 
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify(body),
     });
 

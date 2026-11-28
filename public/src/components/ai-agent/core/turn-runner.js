@@ -41,7 +41,7 @@ export const ATTACHMENT_TOOLS = ["fetch_attached_quiz", "fetch_attached_lesson"]
  * @param {() => Promise<void>} deps.persist  saves the conversation
  * @param {object} deps.ui  DOM-side callbacks:
  *   onThinking(thinking), onAssistantMessage(text, thinking), setStep({label,kind,step}),
- *   resetToolGroup(), addToolCard(tc) -> card, flushResultCards(cards), showError(msg), finish()
+ *   resetToolGroup(), addToolCard(tc) -> card, flushResultCards(cards), showError(msg, debug?), finish()
  */
 export async function runTurn(deps) {
   const {
@@ -143,7 +143,7 @@ export async function runTurn(deps) {
     });
 
     if (loopResult?.error) {
-      ui.showError(loopResult.error);
+      ui.showError(loopResult.error, loopResult.debug);
     }
     return loopResult;
   } catch (err) {

@@ -216,7 +216,7 @@ function usageRow(g, formatReset) {
   return row;
 }
 
-function menuItem({ iconHtml = "", label, hint = "", selected = false, locked = false, leadingCheck = false, onClick }) {
+function menuItem({ iconHtml = "", label, hint = "", badge = "", selected = false, locked = false, leadingCheck = false, onClick }) {
   const item = document.createElement("button");
   item.type = "button";
   item.className = `rmci-menu-item${locked ? " is-locked" : ""}`;
@@ -247,6 +247,12 @@ function menuItem({ iconHtml = "", label, hint = "", selected = false, locked = 
     `<span class="rmci-menu-text"><span class="rmci-menu-label"></span>${hint ? '<span class="rmci-menu-hint"></span>' : ""}</span>` +
     trailing;
   item.querySelector(".rmci-menu-label").textContent = label;
+  if (badge) {
+    const badgeEl = document.createElement("span");
+    badgeEl.className = "rmci-menu-badge";
+    badgeEl.textContent = badge;
+    item.querySelector(".rmci-menu-label").appendChild(badgeEl);
+  }
   if (hint) item.querySelector(".rmci-menu-hint").textContent = hint;
   item.addEventListener("mousedown", (e) => e.preventDefault());
   item.addEventListener("click", onClick);
@@ -792,6 +798,7 @@ export function createRichInput(options = {}) {
           menu.appendChild(menuItem({
             label: m.label,
             hint: m.description || "",
+            badge: m.badge || "",
             selected: m.id === active.id,
             locked: !!m.locked,
             leadingCheck: true,

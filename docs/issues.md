@@ -11,16 +11,13 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 * When pages load at first, the notification button doesn't appear for the first second or 2 of loading, but then it appears (for signed in admins). Fix that flashing.
 * Question: Should notifications be visible to all users? And give developers the ability to announce to all students? Or is that useless and we should just keep it for admins only? Because we might all all students to sign-in in the feature. 
 
-### AI Models
-My platform has an integrated AI Chat that uses API Keys for Gemini, DeepSeek, & Claude. Google dropped new models lately, so it's time to update, based on the screenshot, what am I missing?
-
-They always add new models; is there any dynamic way to keep my website updated?
-
 ## New Features
 
-### Sign-In For Admins: Add Multi-device support and multi-email support
-* **Add Multi-device support:** Admins should be able to sign in with the same email on multiple devices normally no problem. Currently it results in some issues.
-* **Add Multi-email support:** Allow Admins to sign in with Multiple Emails at once and switch between them in the UI. Each one of them must get the same verification (e.g., each email of them must be an Admin/Developer).
+### Admin Sign-In: Multi-Device & Multi-Account Support
+- **Multi-Device Sessions:** Allow the same Admin/Developer email to remain signed in across multiple devices simultaneously without session conflicts or forced logouts. Ensure sessions/tokens are tracked per device so logging in on one doesn't invalidate another.
+- **Multi-Account Switcher (Multiple Emails):** Allow Admins to sign in with multiple emails in the same browser and switch between them seamlessly in the profile UI.
+  - **Verification:** Each added account must independently pass full authentication and Admin/Developer role verification (on sign-in and switch).
+  - **State Isolation:** Ensure switching accounts cleanly updates the active session token, invalidates stale cached data, and scopes local state per user so requests and UI always match the active account.
 
 ### Admin Dashboard & Develpers Dashaboard
 * Developers currently have their dashboard: `/control`, but it needs a link that only appears for developers inside the `#sideMenuProfileDropdown` and the side-menu on phones.

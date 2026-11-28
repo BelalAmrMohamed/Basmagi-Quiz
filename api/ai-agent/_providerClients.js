@@ -1,5 +1,6 @@
 // =============================================================================
 import { readSse } from "../../public/src/components/ai-agent/core/sse.js";
+import { DEFAULT_MODELS, resolveModelId, resolveEffort } from "../../public/src/shared/ai-models.js";
 // api/ai-agent/_providerClients.js
 // Thin adapters that normalize { provider, apiKey, messages } into each
 // LLM provider's own request shape, and normalize their responses back to
@@ -20,46 +21,15 @@ import { readSse } from "../../public/src/components/ai-agent/core/sse.js";
  * always just sees plain text and never needs to look at `attachments`).
  */
 
-// Per-provider allowlists for the optional client-supplied `model`
-// override (see chat.js's handler + ai-agent-settings.js's
-// MODELS_BY_PROVIDER, which this list mirrors). Validated server-side
-// rather than trusting the client string outright, since it's interpolated
-// directly into the Google request URL below — an unchecked value there
-// would be an open redirect/SSRF-shaped bug, not just a "wrong model"
-// bug. An unrecognized/omitted value always falls back to the provider's
-// own lightest/cheapest/latest default, exactly as if this feature didn't
-// exist.
-const ALLOWED_MODELS = {
-  google: new Set([
-    "gemini-flash-latest",
-    "gemini-flash-lite-latest",
-    "gemini-3.8-flash",
-    "gemini-3.1-pro-preview",
-    "gemini-2.5-pro", // auto-mapped to gemini-3.1-pro-preview
-  ]),
-  deepseek: new Set(["deepseek-chat", "deepseek-reasoner"]),
-  claude: new Set(["claude-haiku-4-5-20251001", "claude-sonnet-4-6", "claude-opus-4-6"]),
-};
+// Model allowlists, defaults and legacy-id mapping live in ONE shared file
+// (public/src/shared/ai-models.js) that the browser imports too. Every
+// client-supplied `model` is validated against it before being interpolated
+// into the Google request URL — an unchecked value there would be an open
+// redirect/SSRF-shaped bug, not just a "wrong model" bug.
+export { DEFAULT_MODELS };
 
-export const DEFAULT_MODELS = {
-  google: "gemini-flash-lite-latest", // always the lightest free-tier model for shared platform keys
-  deepseek: "deepseek-chat",
-  claude: "claude-haiku-4-5-20251001",
-};
-
-/**
- * @param {"google"|"deepseek"|"claude"} provider
- * @param {string} [requestedModel] - client-supplied override, if any
- * @returns {string} a validated model id, safe to interpolate/send as-is
- */
 function resolveModel(provider, requestedModel) {
-  if (requestedModel && ALLOWED_MODELS[provider]?.has(requestedModel)) {
-    if (provider === "google" && requestedModel === "gemini-2.5-pro") {
-      return "gemini-3.1-pro-preview";
-    }
-    return requestedModel;
-  }
-  return DEFAULT_MODELS[provider];
+  return resolveModelId(provider, requestedModel);
 }
 
 export function buildGeminiContents(messages) {
@@ -114,13 +84,11 @@ export function buildGeminiContents(messages) {
 }
 
 async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, requestedModel, effort, streamOptions = {}) {
-  let model = resolveModel("google", requestedModel);
-  if (model === "gemini-2.5-pro") {
-    model = "gemini-3.1-pro-preview";
-  }
+  const model = resolveModel("google", requestedModel);
   const action = streamOptions.onEvent ? "streamGenerateContent" : "generateContent";
-  const query = streamOptions.onEvent ? "?alt=sse" : "?";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}${query}${query === "?" ? "" : "&"}key=${apiKey}`;
+  // The key goes in the x-goog-api-key header, never in the URL, so it can't
+  // leak into proxy/CDN/server logs or error messages that echo the URL.
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}${streamOptions.onEvent ? "?alt=sse" : ""}`;
 
   const contents = buildGeminiContents(messages);
 
@@ -133,9 +101,10 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, request
   // includeThoughts asks Gemini to return thought *summaries* as parts flagged
   // `thought: true`. They are kept out of `text` and returned as `thinking`.
   const thinkingConfig = { includeThoughts: true };
-  if (effort && ["low", "medium", "high"].includes(effort)) {
-    thinkingConfig.thinkingLevel = effort;
-  }
+  // Only send a thinking level the chosen model actually accepts (e.g. "xhigh"
+  // is Hydrogen-only; Flash-Lite has no level control). "auto" = model default.
+  const level = resolveEffort("google", model, effort);
+  if (level) thinkingConfig.thinkingLevel = level;
   body.generationConfig = { ...(body.generationConfig || {}), thinkingConfig };
 
   if (Array.isArray(tools) && tools.length) {
@@ -154,7 +123,7 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, request
 
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify(body),
     signal: streamOptions.signal,
   });
