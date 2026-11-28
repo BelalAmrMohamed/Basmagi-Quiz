@@ -14,6 +14,8 @@ export const SENTINEL_END = "<!-- END: Unified Sidebar & Navigation -->";
 export const APP_PAGES = [
   { file: "public/index.html", activeNav: "home" },
   { file: "public/create-quiz.html", activeNav: "create-quiz" },
+  { file: "public/admin.html", activeNav: "none" },
+  { file: "public/control.html", activeNav: "none" },
   { file: "public/create-lesson.html", activeNav: "create-lesson" },
   { file: "public/lesson.html", activeNav: "none" },
   { file: "public/notebook.html", activeNav: "create-notebook" },

@@ -17,10 +17,16 @@
   },
   "control": {
     "js": [
+      "src/shared/theme-controller.js",
+      "src/shared/flow-field.js",
       "src/features/control/control.js",
-      "src/features/control/storage-panel.js"
+      "src/features/control/storage-panel.js",
+      "src/components/side-menu/side-menu.js"
     ],
     "css": [
+      "src/styles/themes.css",
+      "src/components/side-menu/side-menu.css",
+      "src/components/notifications/notifications.css",
       "src/features/control/control.css",
       "src/features/control/control-stats.css"
     ]
@@ -297,6 +303,22 @@
       "src/styles/themes.css",
       "src/components/side-menu/side-menu.css",
       "src/features/documents/documents.css"
+    ]
+  },
+  "admin": {
+    "js": [
+      "src/shared/theme-controller.js",
+      "src/shared/flow-field.js",
+      "src/features/control/control.js",
+      "src/components/side-menu/side-menu.js"
+    ],
+    "css": [
+      "src/styles/themes.css",
+      "src/components/side-menu/side-menu.css",
+      "src/components/notifications/notifications.css",
+      "src/features/control/control.css",
+      "src/features/control/control-stats.css",
+      "src/features/admin/admin-panel.css"
     ]
   }
 }

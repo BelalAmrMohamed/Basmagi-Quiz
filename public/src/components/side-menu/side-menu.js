@@ -983,6 +983,8 @@ export function refreshAdminUI() {
   if (mobileAdminBtn) {
     syncMobileAuthButton(mobileAdminBtn);
   }
+
+  syncMobileControlLink();
 }
 
 // populateDropdown() is defined further down (only when the dropdown markup
@@ -1125,6 +1127,13 @@ function initProfileDropdown() {
     } else if (emailRow) {
       emailRow.style.display = "none";
     }
+
+    // Developer-only entry to /control (the admin JWT's isOwner flag).
+    const controlRow = popover.querySelector("#sideMenuDropdownControl");
+    if (controlRow) controlRow.style.display = roleInfo?.isOwner ? "flex" : "none";
+    // Scoped-admin panel: admins only (developers have /control instead).
+    const adminRow = popover.querySelector("#sideMenuDropdownAdmin");
+    if (adminRow) adminRow.style.display = roleInfo && !roleInfo.isOwner ? "flex" : "none";
 
     if (signOutRow) signOutRow.style.display = isAdmin ? "flex" : "none";
     if (currentSignInRow) currentSignInRow.style.display = isAdmin ? "none" : "flex";
@@ -1342,6 +1351,27 @@ const MOBILE_SIGN_IN_ICON = `
   </svg>
 `;
 
+/** Shows the mobile "صفحة المطوّر" link only for developers (admin JWT isOwner). */
+function syncMobileControlLink() {
+  const link = document.getElementById("sideMenuMobileControlLink");
+  if (!link) return;
+  let isOwner = false;
+  try {
+    isOwner = Boolean(getAdminRoleInfo()?.isOwner);
+  } catch (_) { }
+  link.style.display = isOwner ? "" : "none";
+
+  const adminLink = document.getElementById("sideMenuMobileAdminLink");
+  if (adminLink) {
+    let isAdminOnly = false;
+    try {
+      const info = getAdminRoleInfo();
+      isAdminOnly = Boolean(info && !info.isOwner);
+    } catch (_) { }
+    adminLink.style.display = isAdminOnly ? "" : "none";
+  }
+}
+
 /** Syncs the mobile sheet's auth button icon, label, and state class with the active admin session. */
 function syncMobileAuthButton(btn) {
   if (!btn) return;
@@ -1374,6 +1404,42 @@ function injectMobileAdminAndReportsMenuItems() {
       <span class="menu-label">البلاغات</span>
     `;
     changeUsernameBtn.parentNode.insertBefore(mobileReportsLink, changeUsernameBtn);
+
+    // Developer-only link to /control (hidden for everyone else).
+    const mobileControlLink = document.createElement("a");
+    mobileControlLink.href = "control";
+    mobileControlLink.className = "menu-item mobile-only-menu-item";
+    mobileControlLink.id = "sideMenuMobileControlLink";
+    mobileControlLink.style.display = "none";
+    if (window.location.pathname.endsWith("/control")) {
+      mobileControlLink.classList.add("active");
+    }
+    mobileControlLink.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="16 18 22 12 16 6" />
+        <polyline points="8 6 2 12 8 18" />
+      </svg>
+      <span class="menu-label">صفحة المطوّر</span>
+    `;
+    changeUsernameBtn.parentNode.insertBefore(mobileControlLink, changeUsernameBtn);
+
+    // Admin-only link to /admin (hidden for developers and normal users).
+    const mobileAdminLink = document.createElement("a");
+    mobileAdminLink.href = "admin";
+    mobileAdminLink.className = "menu-item mobile-only-menu-item";
+    mobileAdminLink.id = "sideMenuMobileAdminLink";
+    mobileAdminLink.style.display = "none";
+    if (window.location.pathname.endsWith("/admin")) {
+      mobileAdminLink.classList.add("active");
+    }
+    mobileAdminLink.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+      <span class="menu-label">لوحة المشرف</span>
+    `;
+    changeUsernameBtn.parentNode.insertBefore(mobileAdminLink, changeUsernameBtn);
+    syncMobileControlLink();
 
     const mobileAdminBtn = document.createElement("button");
     mobileAdminBtn.type = "button";
