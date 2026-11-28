@@ -7,6 +7,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches 
 
+### Notebook Page Challenges
+![screenshot](image.png)
+
 ### Notification Button in the Sidebar
 * When pages load at first, the notification button doesn't appear for the first second or 2 of loading, but then it appears (for signed in admins). Fix that flashing.
 * Question: Should notifications be visible to all users? And give developers the ability to announce to all students? Or is that useless and we should just keep it for admins only? Because we might all all students to sign-in in the feature. 
