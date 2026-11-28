@@ -92,7 +92,9 @@ import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { recordPlatformUsage } from "./_usage.js";
 import { chargeAgentTurn } from "./_quota.js";
-import { callProvider, openProviderStream, isSupportedProvider, DEFAULT_MODELS } from "./_providerClients.js";
+import { callProvider, openProviderStream, isSupportedProvider } from "./_providerClients.js";
+import { OWN_KEY_DEFAULT_MODELS, resolveModelId, resolvePlatformModelId } from "../../public/src/shared/ai-models.js";
+import { describeProviderError, buildDebugInfo } from "./_providerErrors.js";
 import { SEARCH_YOUTUBE_TOOL, LIST_YOUTUBE_TOOL, ADD_YOUTUBE_TOOL, SUMMARIZE_YOUTUBE_TOOL, REMOVE_YOUTUBE_TOOL } from "./_tools.js";
 import { CREATE_QUIZ_TOOL, ADD_LESSON_QUESTION_TOOL, CREATE_LESSON_TOOL, ADD_LESSON_SECTION_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, FETCH_ATTACHED_LESSON_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL, GET_CREATOR_INFO_TOOL, DISPLAY_CREATOR_CARD_TOOL, CREATE_FLASHCARDS_TOOL, NOTEBOOK_ADD_CELL_TOOL, NOTEBOOK_EDIT_CELL_TOOL, NOTEBOOK_DELETE_CELL_TOOL, NOTEBOOK_RUN_CELL_TOOL, CREATE_NOTEBOOK_TOOL, EDIT_ITEM_TOOL, GET_AUTHORING_GUIDE_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
@@ -432,9 +434,9 @@ function streamingOptions(req, res, requested) {
       finished = true;
       res.end();
     },
-    fail(error) {
+    fail(error, extra) {
       if (!opened) return false;
-      writeStreamEvent(res, "error", { error: error || "فشل الاتصال بمزوّد الذكاء الاصطناعي" });
+      writeStreamEvent(res, "error", { error: error || "فشل الاتصال بمزوّد الذكاء الاصطناعي", ...(extra || {}) });
       finished = true;
       res.end();
       return true;
@@ -500,14 +502,20 @@ export default async function handler(req, res) {
     }
 
     const streamState = streamingOptions(req, res, stream === true);
+    // Own key: any catalog model is allowed; unknown/empty -> the own-key default.
+    const ownModel = resolveModelId(provider, model, OWN_KEY_DEFAULT_MODELS[provider]);
     try {
       const invoke = streamState ? openProviderStream : callProvider;
-      const result = await invoke(provider, ownKey, messages, systemPrompt, tools, model, effort, streamState);
+      const result = await invoke(provider, ownKey, messages, systemPrompt, tools, ownModel, effort, streamState);
       if (streamState) { streamState.finish(result); return res; }
       return res.status(200).json(result);
     } catch (err) {
+      const ctx = { provider, model: ownModel, ownKey: true };
+      const friendly = describeProviderError(err, ctx);
+      // `debug` = full redacted technical text for the UI's "copy details" button.
+      const debug = friendly?.debug || buildDebugInfo(err, ctx);
       if (streamState?.opened) {
-        if (err?.name !== "AbortError") streamState.fail(err.message);
+        if (err?.name !== "AbortError") streamState.fail(friendly?.message || err.message, { code: friendly?.code, debug });
         return res;
       }
       console.error(
@@ -515,24 +523,26 @@ export default async function handler(req, res) {
         err,
         err?.cause ? `(cause: ${err.cause.code || err.cause})` : "",
       );
+      if (friendly) {
+        return res.status(isTransientUpstreamStatus(friendly.status) ? friendly.status : 502).json({
+          error: friendly.message,
+          code: friendly.code,
+          debug,
+          transient: isTransientUpstreamStatus(friendly.status) || undefined,
+        });
+      }
+      // Unrecognised error: keep the original wording, plus the debug text.
       if (isTransientUpstreamStatus(err.upstreamStatus)) {
         return res.status(err.upstreamStatus).json({
           error: transientMessageFor(err.upstreamStatus),
-          detail: process.env.NODE_ENV === "production" ? undefined : String(err.message || err),
+          debug,
           transient: true,
         });
       }
       if (isNetworkLevelFailure(err)) {
-        return res.status(502).json({
-          error: networkFailureMessage(),
-          detail: process.env.NODE_ENV === "production" ? undefined : String(err.cause?.code || err.message || err),
-          networkLevel: true,
-        });
+        return res.status(502).json({ error: networkFailureMessage(), debug, networkLevel: true });
       }
-      return res.status(502).json({
-        error: "فشل الاتصال بمزوّد الذكاء الاصطناعي",
-        detail: process.env.NODE_ENV === "production" ? undefined : String(err.message || err),
-      });
+      return res.status(502).json({ error: "فشل الاتصال بمزوّد الذكاء الاصطناعي", debug });
     }
   }
 
@@ -588,10 +598,10 @@ export default async function handler(req, res) {
   // shares the same rotated Google AI Studio free-tier keys, so honoring a
   // client-requested heavier model here would let any caller — admin or
   // capped regular user alike — drain the shared rate limit for everyone.
-  // Force the provider's lightest/cheapest/latest default regardless of
-  // what the client sent.
+  // Only models flagged `platformFree` in the shared catalog (free-tier safe)
+  // are honored; anything else is forced to the provider's default.
+  const platformModel = resolvePlatformModelId(provider, model);
   try {
-    const platformModel = DEFAULT_MODELS[provider] || "gemini-flash-lite-latest";
     const invoke = streamState ? openProviderStream : callProvider;
     const result = await invoke(provider, picked.key, messages, systemPrompt, tools, platformModel, effort, streamState);
     // Meter the shared pool (feeds the "View Usage" menu). Awaited so the
@@ -601,7 +611,8 @@ export default async function handler(req, res) {
     return res.status(200).json(quotaInfo ? { ...result, quota: quotaInfo } : result);
   } catch (err) {
     if (streamState?.opened) {
-      if (err?.name !== "AbortError") streamState.fail("فشل الاتصال بمزوّد الذكاء الاصطناعي");
+      const friendly = describeProviderError(err, { provider, model: platformModel, ownKey: false });
+      if (err?.name !== "AbortError") streamState.fail(friendly?.message || "فشل الاتصال بمزوّد الذكاء الاصطناعي", friendly ? { code: friendly.code } : undefined);
       return res;
     }
     console.error(
@@ -609,6 +620,15 @@ export default async function handler(req, res) {
       err,
       err?.cause ? `(cause: ${err.cause.code || err.cause})` : "",
     );
+    // Platform keys are shared: never expose upstream details (no `debug`) here.
+    const friendly = describeProviderError(err, { provider, model: platformModel, ownKey: false });
+    if (friendly) {
+      return res.status(isTransientUpstreamStatus(friendly.status) ? friendly.status : 502).json({
+        error: friendly.message,
+        code: friendly.code,
+        transient: isTransientUpstreamStatus(friendly.status) || undefined,
+      });
+    }
     if (isTransientUpstreamStatus(err.upstreamStatus)) {
       return res.status(err.upstreamStatus).json({
         error: transientMessageFor(err.upstreamStatus),

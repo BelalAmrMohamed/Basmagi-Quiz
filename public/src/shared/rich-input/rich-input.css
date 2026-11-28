@@ -424,3 +424,15 @@ html[data-motion="reduced"] .rmci-codeblock-pre { animation: none; transition: n
   color: color-mix(in srgb, currentColor 45%, transparent);
 }
 .rmci-root--source.is-disabled .rmci-editor { opacity: .6; }
+
+.rmci-menu-badge {
+  margin-inline-start: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.6;
+  vertical-align: middle;
+  background: color-mix(in srgb, var(--rmci-fg) 12%, transparent);
+  color: var(--rmci-fg);
+}

@@ -26,7 +26,9 @@ const capture = async (response, assertion) => {
 
 test("Gemini stream assembles Arabic text and multiple complete tool calls", async () => {
   await capture(sseResponse([["", { candidates: [{ content: { parts: [{ text: "مر" }, { text: "حباً" }, { functionCall: { name: "search_library", args: { query: "a" } }, thoughtSignature: "sig" }, { functionCall: { name: "search_library", args: { query: "b" } } }] } }] }]]), (request, result, events) => {
-    assert.match(request.url, /:streamGenerateContent\?alt=sse&key=key$/);
+    assert.match(request.url, /:streamGenerateContent\?alt=sse$/);
+    assert.ok(!request.url.includes("key="), "API key must not be in the URL");
+    assert.equal(request.init.headers["x-goog-api-key"], "key");
     assert.equal(result.text, "مرحباً");
     assert.equal(result.toolCalls.length, 2);
     assert.equal(result.toolCalls[0].thoughtSignature, "sig");

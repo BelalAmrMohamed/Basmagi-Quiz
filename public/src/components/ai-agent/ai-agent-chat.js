@@ -1263,7 +1263,7 @@ export function createChatPanel(options = {}) {
   let lastErrorMessage = null;
   let lastErrorCount = 0;
 
-  function appendError(message) {
+  function appendError(message, debug) {
     if (lastErrorEl && lastErrorMessage === message && lastErrorEl.isConnected) {
       lastErrorCount += 1;
       renderErrorCount();
@@ -1276,6 +1276,23 @@ export function createChatPanel(options = {}) {
     textEl.className = "ai-agent-msg-error-text";
     textEl.textContent = message;
     el.appendChild(textEl);
+    if (debug) {
+      // Developers / support: copy the full technical error (redacted server-side).
+      const copyBtn = document.createElement("button");
+      copyBtn.type = "button";
+      copyBtn.className = "ai-agent-msg-error-copy";
+      copyBtn.textContent = "نسخ تفاصيل الخطأ";
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(String(debug));
+          copyBtn.textContent = "تم النسخ ✓";
+        } catch {
+          copyBtn.textContent = "تعذر النسخ";
+        }
+        setTimeout(() => { copyBtn.textContent = "نسخ تفاصيل الخطأ"; }, 2000);
+      });
+      el.appendChild(copyBtn);
+    }
     messagesEl.appendChild(el);
     messagesEl.scrollTop = messagesEl.scrollHeight;
 
@@ -1726,7 +1743,7 @@ export function createChatPanel(options = {}) {
           return card;
         },
         flushResultCards: (cards) => appendResultCardsGroup(cards),
-        showError: (msg) => appendError(msg),
+        showError: (msg, debug) => appendError(msg, debug),
         finish: () => {
           typingController.clear();
           currentAbortController = null;

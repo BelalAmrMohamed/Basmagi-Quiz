@@ -11,11 +11,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 * When pages load at first, the notification button doesn't appear for the first second or 2 of loading, but then it appears (for signed in admins). Fix that flashing.
 * Question: Should notifications be visible to all users? And give developers the ability to announce to all students? Or is that useless and we should just keep it for admins only? Because we might all all students to sign-in in the feature. 
 
-### AI Models
-My platform has an integrated AI Chat that uses API Keys for Gemini, DeepSeek, & Claude. Google dropped new models lately, so it's time to update, based on the screenshot, what am I missing?
-
-They always add new models; is there any dynamic way to keep my website updated?
-
 ## New Features
 
 ### Sign-In For Admins: Add Multi-device support and multi-email support

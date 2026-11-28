@@ -15,6 +15,7 @@
 import { createTelegramBotCard } from "../telegram-bot-card/telegram-bot-card.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { isAdminAuthenticated } from "../../shared/adminAuth.js";
+import { getModels, getModelMeta, getEffortLevels, DEFAULT_MODELS, OWN_KEY_DEFAULT_MODELS } from "../../shared/ai-models.js";
 
 const PROVIDER_STORAGE_KEY = "ai_agent_provider";
 const KEY_STORAGE_PREFIX = "ai_agent_key__"; // + provider
@@ -22,32 +23,21 @@ const SYSTEM_PROMPT_STORAGE_PREFIX = "ai_agent_system_prompt__"; // + pageKey
 const MODEL_STORAGE_PREFIX = "ai_agent_model__"; // + provider
 const EFFORT_STORAGE_PREFIX = "ai_agent_effort__"; // + provider
 
-// Per-provider model catalog. The FIRST entry in each list is always the
-// "default" — the fast and reliable model the provider offers.
-const MODELS_BY_PROVIDER = {
-  google: [
-    { value: "gemini-flash-lite-latest", label: "Gemini Flash-Lite", description: "الأخف وزناً ومتاح مجاناً" },
-    { value: "gemini-flash-latest", label: "Gemini Flash", description: "سريع ومتعدد الوسائط" },
-    { value: "gemini-3.8-flash", label: "Gemini 3.8 Flash", description: "مهام برمجية معقدة" },
-    { value: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro", description: "تفكير متقدم وتحليل منطقي" },
-  ],
-  deepseek: [
-    { value: "deepseek-chat", label: "DeepSeek Chat", description: "محادثة ومهام عامة" },
-    { value: "deepseek-reasoner", label: "DeepSeek Reasoner", description: "تفكير منطقي وحل معضلات" },
-  ],
-  claude: [
-    { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5", description: "سريع وخفيف" },
-    { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", description: "توازن ذكي" },
-    { value: "claude-opus-4-6", label: "Claude Opus 4.6", description: "أعلى أداء" },
-  ],
-};
-
+// The model catalog lives in ../../shared/ai-models.js (shared with the server,
+// so the allowlist, defaults, lock rules and thinking levels cannot drift).
 export const EFFORT_LEVELS = [
   { value: "auto", label: "تلقائي (افتراضي)", hint: "يحدد النموذج عمق التفكير آلياً" },
   { value: "low", label: "منخفض (Low)", hint: "تفكير سريع وموجز" },
   { value: "medium", label: "متوسط (Medium)", hint: "تفكير متوازن" },
   { value: "high", label: "عالي (High)", hint: "تفكير عميق وتفصيلي" },
+  { value: "xhigh", label: "فائق (XHigh)", hint: "أقصى عمق تفكير (Hydrogen فقط)" },
 ];
+
+/** Effort options valid for one model (empty = the model has no thinking control). */
+export function getEffortLevelsForModel(provider, model) {
+  const allowed = getEffortLevels(provider, model);
+  return EFFORT_LEVELS.filter((e) => e.value === "auto" ? allowed.length > 0 : allowed.includes(e.value));
+}
 
 const PROVIDERS = [
   { value: "google", label: "Gemini", sub: "Google AI Studio", keyHint: "AIza…" },
@@ -87,7 +77,9 @@ function clearOwnKey(provider) {
  *   unrecognized provider so callers never get `undefined`.
  */
 export function getModelsForProvider(provider) {
-  return MODELS_BY_PROVIDER[provider] || MODELS_BY_PROVIDER.google;
+  return getModels(provider).map((m) => ({
+    value: m.id, label: m.label, description: m.description, badge: m.badge, platformFree: m.platformFree,
+  }));
 }
 
 /**
@@ -99,27 +91,25 @@ export function getModelsForProvider(provider) {
 export function getSelectedModel() {
   const provider = getSelectedProvider();
   const { hasKey } = getOwnKey();
-  if (provider === "google" && !hasKey) {
-    return "gemini-flash-lite-latest";
+  const stored = getFromStorage(`${MODEL_STORAGE_PREFIX}${provider}`, "");
+  const meta = stored ? getModelMeta(provider, stored) : null; // also maps retired ids
+  // Platform keys: only free-tier-safe models; everything else needs the user's own key.
+  if (!hasKey && provider === "google") return meta?.platformFree ? meta.id : DEFAULT_MODELS.google;
+  if (meta) {
+    if (meta.id !== stored) setInStorage(`${MODEL_STORAGE_PREFIX}${provider}`, meta.id);
+    return meta.id;
   }
-  let model = getFromStorage(`${MODEL_STORAGE_PREFIX}${provider}`, "");
-  if (provider === "google" && model === "gemini-2.5-pro") {
-    model = "gemini-3.1-pro-preview";
-    setInStorage(`${MODEL_STORAGE_PREFIX}${provider}`, model);
-  }
-  return model || (MODELS_BY_PROVIDER[provider] && MODELS_BY_PROVIDER[provider][0]?.value) || "";
+  return (hasKey ? OWN_KEY_DEFAULT_MODELS : DEFAULT_MODELS)[provider] || "";
 }
 
 export function setSelectedModel(provider, model) {
   const { hasKey } = getOwnKey();
-  if (provider === "google" && !hasKey) {
-    setInStorage(`${MODEL_STORAGE_PREFIX}${provider}`, "gemini-flash-lite-latest");
+  const meta = getModelMeta(provider, model);
+  if (provider === "google" && !hasKey && !meta?.platformFree) {
+    setInStorage(`${MODEL_STORAGE_PREFIX}${provider}`, DEFAULT_MODELS.google);
     return;
   }
-  if (provider === "google" && model === "gemini-2.5-pro") {
-    model = "gemini-3.1-pro-preview";
-  }
-  setInStorage(`${MODEL_STORAGE_PREFIX}${provider}`, model || "");
+  setInStorage(`${MODEL_STORAGE_PREFIX}${provider}`, meta?.id || "");
 }
 
 export function getSelectedEffort(provider = getSelectedProvider()) {

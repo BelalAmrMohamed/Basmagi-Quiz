@@ -1,4 +1,4 @@
-import { getSelectedProvider, getSelectedModel, getModelsForProvider, setSelectedModel, getOwnKey, EFFORT_LEVELS, getSelectedEffort, setSelectedEffort } from "../ai-agent-settings.js";
+import { getSelectedProvider, getSelectedModel, getModelsForProvider, setSelectedModel, getOwnKey, getEffortLevelsForModel, getSelectedEffort, setSelectedEffort } from "../ai-agent-settings.js";
 import { fetchPlatformUsage, formatReset } from "../ai-agent-usage.js";
 
 export function createChatSettings({ rich, options, appendError }) {
@@ -8,12 +8,15 @@ export function createChatSettings({ rich, options, appendError }) {
     const { hasKey } = getOwnKey();
     const isGoogle = provider === "google";
     const current = getSelectedModel() || (models[0] && models[0].value) || "";
-    const effortLevels = isGoogle ? EFFORT_LEVELS.map(({ value, label, hint }) => ({ id: value, label, hint })) : null;
-    const selectedEffort = getSelectedEffort(provider);
+    // Thinking-level menu only for models that support it, with only the levels they accept.
+    const levelsForModel = getEffortLevelsForModel(provider, current);
+    const effortLevels = levelsForModel.length ? levelsForModel.map(({ value, label, hint }) => ({ id: value, label, hint })) : null;
+    const stored = getSelectedEffort(provider);
+    const selectedEffort = effortLevels && effortLevels.some((e) => e.id === stored) ? stored : "auto";
     rich.setModels({
-      items: models.map(({ value, label, description }) => ({
-        id: value, label, description,
-        locked: isGoogle && !hasKey && value !== "gemini-flash-lite-latest",
+      items: models.map(({ value, label, description, badge, platformFree }) => ({
+        id: value, label, description, badge,
+        locked: isGoogle && !hasKey && !platformFree,
       })),
       value: current,
       disabled: false,

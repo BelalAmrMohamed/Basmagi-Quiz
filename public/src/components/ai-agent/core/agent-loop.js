@@ -49,7 +49,11 @@ export async function readChatResponse(response, { signal, onAssistantStream } =
     if (event === "text") text += payload.delta || "";
     else if (event === "thinking") thinking += payload.delta || "";
     else if (event === "done") result = payload;
-    else if (event === "error") throw new Error(payload.error || "تعذر إكمال الطلب");
+    else if (event === "error") {
+      const e = new Error(payload.error || "تعذر إكمال الطلب");
+      if (payload.debug) e.debug = payload.debug; // technical text for the "copy details" button
+      throw e;
+    }
     if ((event === "text" || event === "thinking") && typeof onAssistantStream === "function") {
       onAssistantStream({ text, thinking });
     }
@@ -251,7 +255,7 @@ export async function runAgentLoop(params) {
         if (typeof onHistoryPersist === "function") await onHistoryPersist().catch(() => { });
       }
       if (signal?.aborted || streamErr?.name === "AbortError") return { success: false, aborted: true };
-      return { success: false, error: streamErr.message || "تعذر إكمال الطلب" };
+      return { success: false, error: streamErr.message || "تعذر إكمال الطلب", ...(streamErr.debug ? { debug: streamErr.debug } : {}) };
     }
     if (signal?.aborted || data._streamAborted) {
       if (data.text || data.thinking) {
@@ -262,8 +266,8 @@ export async function runAgentLoop(params) {
     }
 
     if (!response.ok) {
-      const detailMsg = data.detail ? `${data.error || "خطأ"}: ${data.detail}` : data.error || "تعذر إكمال الطلب";
-      return { success: false, error: detailMsg };
+      // `debug` (full raw provider error) is shown behind a copy button, not inline.
+      return { success: false, error: data.error || "تعذر إكمال الطلب", ...(data.debug || data.detail ? { debug: data.debug || String(data.detail) } : {}) };
     }
 
     // Thinking
