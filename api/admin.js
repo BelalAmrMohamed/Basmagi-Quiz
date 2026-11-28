@@ -29,6 +29,7 @@ import { resolveFolderPath } from "./_folderPath.js";
 import { slugifyHandle, validateHandleFormat, claimHandle } from "./_handle.js";
 import {
   resolveAdminId,
+  withFreshScopes,
   isAuthorizedForItem,
   getTrashRetentionDays,
   computeExpiresAt,
@@ -339,6 +340,34 @@ async function handleControl(req, res) {
 // Public admin-request submission (no JWT required)
 // =============================================================================
 
+/**
+ * Puts a "new admin request" row in every developer's notification center. Several unread
+ * requests merge into one row (group_key) that counts them. Never throws: a failed
+ * notification must not fail the person's request.
+ */
+async function notifyDevelopersOfAdminRequest(supabase, fullName, college) {
+  try {
+    const owners = getOwnerEmails();
+    if (!owners.length) return;
+    const { data } = await supabase.from("admin_users").select("id, email");
+    const devs = (data || []).filter((r) => r.email && owners.includes(r.email.trim().toLowerCase()));
+    await Promise.all(
+      devs.map((d) =>
+        pushNotification(supabase, d.id, {
+          type: "admin_request",
+          title: "طلب انضمام جديد كمشرف",
+          body: college ? `${fullName} — ${college}` : fullName,
+          href: "/control",
+          meta: { name: fullName, college },
+          groupKey: "admin_request",
+        }),
+      ),
+    );
+  } catch (e) {
+    console.error("[admin] request notification failed:", e?.message || e);
+  }
+}
+
 async function handleAdminRequest(req, res) {
   applyCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -400,6 +429,8 @@ async function handleAdminRequest(req, res) {
     console.error("[admin] Failed to insert admin request:", error.message);
     return res.status(500).json({ error: "فشل في تقديم الطلب. حاول مرة أخرى لاحقاً." });
   }
+
+  await notifyDevelopersOfAdminRequest(supabase, fullName.trim(), college ? college.trim() : "");
 
   return res.status(200).json({ success: true });
 }
@@ -2292,6 +2323,8 @@ async function handleItemActions(req, res) {
 
   if (envGuard(res)) return;
   const supabase = makeClient("service");
+  // Re-read the admin's scopes so a developer's change applies immediately (see withFreshScopes).
+  payload = await withFreshScopes(supabase, payload);
   const adminId = await resolveAdminId(supabase, payload);
   const { action } = req.body || {};
 

@@ -92,3 +92,12 @@ Think of a new way to download quizzes and lessons, maybe through canva.
 12. **Code health:** the two copies of `youtube-mcp-model.js` (`public/src/shared/` and `scripts/lib/`) can drift. Add a test that fails when they differ, or generate one from the other in the build.
 
 ### Concentrate on gamefied experience and reward scheduele
+
+### Admin & Developer Suggestions
+1. "إفراغ السلة" for scoped admins. It permanently deletes everything in their scopes, including items other admins deleted. Consider letting scoped admins purge only their own deletions, or requiring a developer for the rest.
+2. Announcement guardrails. The scoped send loops one database call per recipient, with no cooldown and no history. Add a per-admin rate limit and a small sent-announcements log. Better still, do the send as a single SQL function like broadcast_admin_notification.
+Audit log. Record who restored or purged trash, added or removed an admin, or changed scopes. Today only deleted_by on trash items is tracked.
+3. Trash usability. Search, multi-select restore, the deleter's name and the scope on each card, and a warning when an item is close to expiring.
+4. Scope stats on /admin. Counts of content items and open reports per scope, if reports can be tied to a scope.
+Last-active time on the developer's admins list.
+5. Storage panel. It's developer-only now, which is right because it deletes unused files across the whole platform. It could use a per-scope usage breakdown.

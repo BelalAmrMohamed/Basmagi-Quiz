@@ -113,6 +113,34 @@ export function isAuthorizedForItem(adminPayload, adminId, { creatorId, educatio
     return false;
 }
 
+const ALL_SCOPES = ["Primary", "Middle", "High", "University", "Featured"];
+
+/**
+ * The admin JWT carries `allowed_scopes` as of sign-in, so a developer narrowing an admin's
+ * scopes (or removing the admin) would not take effect until that admin signs in again.
+ * Returns a copy of the payload whose `allowed_scopes` is re-read from admin_users.
+ * Developers (isOwner) are returned untouched. A missing row means the admin was removed,
+ * so every scope is dropped. A NULL column keeps api/auth.js's "all scopes" default.
+ * If the lookup itself fails we keep the token's scopes rather than lock everyone out.
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+ * @param {{isOwner?: boolean, id?: string|null, email?: string, allowed_scopes?: string[]}} adminPayload
+ */
+export async function withFreshScopes(supabase, adminPayload) {
+    if (!adminPayload || adminPayload.isOwner) return adminPayload;
+    try {
+        const base = supabase.from("admin_users").select("allowed_scopes");
+        const { data, error } = adminPayload.id
+            ? await base.eq("id", adminPayload.id).maybeSingle()
+            : await base.eq("email", adminPayload.email || "").maybeSingle();
+        if (error) throw error;
+        if (!data) return { ...adminPayload, allowed_scopes: [] };
+        return { ...adminPayload, allowed_scopes: data.allowed_scopes ?? ALL_SCOPES };
+    } catch (e) {
+        console.error("[scopes] fresh lookup failed, using token scopes:", e?.message || e);
+        return adminPayload;
+    }
+}
+
 /**
  * Resolves the caller's admin_users.id from their JWT email. Mirrors the
  * identical lookup already duplicated in college-quiz.js and upload-quiz.js.
