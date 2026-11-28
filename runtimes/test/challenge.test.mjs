@@ -18,9 +18,18 @@ test('normalizeOutput: CRLF, trailing spaces, trailing blank lines', () => {
 test('default (trimmed) mode ignores accidental whitespace but not content', () => {
   const ch = { expectedOutput: 'Hello\nWorld' };
   assert.ok(matches(ch, 'Hello  \r\nWorld\n\n'));
-  assert.ok(!matches(ch, 'Hello\n World'));
+  assert.ok(matches(ch, 'Hello\n World'), 'indentation is layout, not content');
+  assert.ok(!matches(ch, 'Hello\nWorld!'));
+  assert.ok(!matches(ch, 'World\nHello'));
   assert.ok(!matches(ch, 'hello\nWorld'));
   assert.ok(!matches(ch, ''));
+});
+test('trimmed mode: MATLAB matrix padding and blank lines do not matter (neg_img challenge)', () => {
+  const ch = { expectedOutput: 'neg_img =\n\n   245   205\n   155    55' };
+  assert.ok(matches(ch, 'neg_img =\n  245  205\n  155   55\n'));
+  assert.ok(!matches(ch, 'neg_img =\n  245  205\n  155   56'));
+  assert.deepEqual([...differingLines('neg_img =\n  245  205\n  155   55', ch.expectedOutput)], []);
+  assert.deepEqual([...differingLines('a\n\nX\nc', 'a\nb\nc')], [2]);
 });
 test('exact mode only normalizes CRLF', () => {
   const ch = { expectedOutput: 'a\nb\n', matchMode: 'exact' };

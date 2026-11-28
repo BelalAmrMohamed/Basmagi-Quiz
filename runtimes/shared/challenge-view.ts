@@ -49,7 +49,7 @@ export function challengeResult(ctx: Ctx, c: UiCell): HTMLElement | null {
   } else if (r.state === 'error') {
     out.append(h('div', { class: 'ch-pill' }, '⚠ ' + t('Your code raised an error. Fix it and run again.')));
   } else {
-    const mark = ch.matchMode === 'regex' || ch.matchMode === 'numeric' ? null : differingLines(r.actual, ch.expectedOutput);
+    const mark = ch.matchMode === 'regex' || ch.matchMode === 'numeric' ? null : differingLines(r.actual, ch.expectedOutput, ch.matchMode === 'exact' ? 'exact' : 'trimmed');
     out.append(h('div', { class: 'ch-pill' }, '✗ ' + t('Not quite yet. Adjust your code and run again.')),
       h('div', { class: 'ch-cols' },
         h('div', { class: 'ch-col' }, h('div', { class: 'ch-label' }, t('Actual Output')), lines(r.actual.replace(/\r\n?/g, '\n') || t('(no output)'), mark)),

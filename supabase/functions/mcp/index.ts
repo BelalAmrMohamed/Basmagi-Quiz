@@ -419,7 +419,7 @@ const TOOLS = [
                 description: "Code cells only. Turns the cell into an interactive CODING CHALLENGE graded on the program's printed output (stdout), never on the code text. See get_authoring_guide(topic=\"notebook\") → Challenges.",
                 properties: {
                   expectedOutput: { type: "string", description: "Required. The exact text the correct program prints (≤8000 chars). With matchMode=regex it is a regular expression matched against the WHOLE output." },
-                  matchMode: { type: "string", enum: ["trimmed", "exact", "numeric", "regex"], description: "Default trimmed: ignores CRLF, trailing spaces per line and trailing blank lines. exact: only CRLF normalized. numeric: numbers compared with tolerance, words exactly. regex: full-output match." },
+                  matchMode: { type: "string", enum: ["trimmed", "exact", "numeric", "regex"], description: "Default trimmed: ignores CRLF, indentation, repeated spaces and blank lines (words and numbers must still match). exact: only CRLF normalized. numeric: numbers compared with tolerance, words exactly. regex: full-output match." },
                   tolerance: { type: "number", description: "numeric mode only (default 1e-6): |a-b| ≤ tolerance·max(1,|b|)." },
                   testStdin: { type: "string", description: "C++ only, ≤4000 chars: input fed to cin when graded (learner is not prompted)." },
                   hint: { type: "string", description: "Optional hint (≤1000 chars), shown on demand." },
